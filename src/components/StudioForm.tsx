@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useStudioStore } from "@/lib/store";
 
 const LANGUAGES = [
@@ -19,14 +19,12 @@ const LANGUAGES = [
 ];
 
 const PROVIDERS = {
-  lyria: { name: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
-  poyo: { name: "PoYo (Suno)", models: ["v4", "v5.5"], icon: "P" },
-  tempolor: {
-    name: "Tempolor",
-    models: ["v3", "v4.6", "i3", "i3.5"],
-    icon: "T",
-  },
+  lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
+  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v4", "v5.5"], icon: "P" },
+  tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["v3", "v4.6", "i3", "i3.5"], icon: "T" },
 };
+
+const STYLE_TAGS = ["FX Risers", "Epic", "Amapiano", "Soul", "Lo-Fi", "Orchestral", "Synthwave", "Acoustic"];
 
 export default function StudioForm({
   credits,
@@ -48,6 +46,7 @@ export default function StudioForm({
     language,
     customLanguage,
     instrumental,
+    vocalGender,
     setSongIdea,
     setLyrics,
     setTitle,
@@ -56,15 +55,19 @@ export default function StudioForm({
     setLanguage,
     setCustomLanguage,
     setInstrumental,
+    setVocalGender,
   } = useStudioStore();
 
   const [optimizing, setOptimizing] = useState(false);
   const [generatingLyrics, setGeneratingLyrics] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
 
-  const charCount = songIdea.length;
-  const maxChars = 1000;
-  const currentCredits = credits[provider as keyof typeof credits];
+  const promptCharCount = songIdea.length;
+  const promptMaxChars = 2000;
+  const titleCharCount = title.length;
+  const titleMaxChars = 120;
+  const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
 
   async function handleOptimize() {
     if (!songIdea) return;
@@ -87,205 +90,287 @@ export default function StudioForm({
     }
   }
 
+  function addStyleTag(tag: string) {
+    const currentStyle = songIdea.trim();
+    const tagText = tag.toLowerCase();
+    if (currentStyle && !currentStyle.toLowerCase().includes(tagText)) {
+      setSongIdea(currentStyle + ", " + tag);
+    } else if (!currentStyle) {
+      setSongIdea(tag);
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Song Idea & Style
-        </label>
+    <div className="space-y-5">
+      {/* Lyrics Section */}
+      <section className="section-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={instrumental}
+            onClick={() => setInstrumental(!instrumental)}
+            className={`relative w-11 h-6 rounded-full transition-colors ${
+              instrumental ? "bg-primary-500" : "bg-white/10"
+            }`}
+          >
+            <span className="sr-only">Instrumental</span>
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                instrumental ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        {!instrumental && (
+          <>
+            <textarea
+              value={lyrics}
+              onChange={(e) => setLyrics(e.target.value)}
+              placeholder={`Write your lyrics here...
+
+[Verse]
+Your lyrics here
+
+[Chorus]
+Your chorus here`}
+              className="input-field min-h-[140px] resize-y font-mono text-sm leading-relaxed"
+            />
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={handleOptimize}
+                disabled={!songIdea || optimizing}
+                className="btn-ghost text-xs flex items-center gap-1.5"
+              >
+                {optimizing ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                )}
+                {optimizing ? "Optimizing..." : "Optimize"}
+              </button>
+              <button
+                onClick={handleGenerateLyrics}
+                disabled={!songIdea || generatingLyrics}
+                className="btn-ghost text-xs flex items-center gap-1.5"
+              >
+                {generatingLyrics ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+                {generatingLyrics ? "Generating..." : "Generate Lyrics"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {instrumental && (
+          <p className="text-xs text-white/30">Instrumental track — no lyrics needed</p>
+        )}
+      </section>
+
+      {/* Style Section */}
+      <section className="section-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white/80">Style</h3>
+          <button
+            onClick={() => setSongIdea("")}
+            className="text-white/30 hover:text-white/60 transition-colors"
+            title="Clear style"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
         <div className="relative">
           <textarea
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
-            placeholder="Describe your song idea... e.g. 'A dreamy indie pop song about late night drives through the city, feeling nostalgic but hopeful'"
-            className="input-field min-h-[120px] resize-y pr-16"
-            maxLength={maxChars}
+            placeholder="Describe your song style... e.g. 'Dark Dutch Folk, subdued introspective and intimate, piano with sparse arrangement'"
+            className="input-field min-h-[100px] resize-y text-sm leading-relaxed pr-16"
+            maxLength={promptMaxChars}
           />
           <span
             className={`absolute bottom-3 right-3 text-xs ${
-              charCount > maxChars * 0.9
-                ? "text-red-400"
-                : "text-white/30"
+              promptCharCount > promptMaxChars * 0.9 ? "text-red-400" : "text-white/20"
             }`}
           >
-            {charCount}/{maxChars}
+            {promptCharCount}/{promptMaxChars}
           </span>
         </div>
-        <button
-          onClick={handleOptimize}
-          disabled={!songIdea || optimizing}
-          className="mt-2 btn-secondary text-sm flex items-center gap-2"
-        >
-          {optimizing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Optimizing...
-            </>
-          ) : (
-            <>✨ AI Optimize</>
-          )}
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Provider</label>
-          <div className="space-y-2">
-            {Object.entries(PROVIDERS).map(([key, val]) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setProvider(key);
-                  setProviderModel(val.models[0]);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-all text-left ${
-                  provider === key
-                    ? "border-primary-500 bg-primary-500/10"
-                    : "border-white/10 bg-white/5 hover:bg-white/10"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                    provider === key
-                      ? "bg-primary-500 text-white"
-                      : "bg-white/10 text-white/60"
-                  }`}
-                >
-                  {val.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{val.name}</p>
-                  <p className="text-xs text-white/40">
-                    {key === "lyria"
-                      ? "Pay-per-use"
-                      : currentCredits !== null && currentCredits !== "Pay-per-use"
-                      ? `${currentCredits} credits`
-                      : "Not configured"}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {STYLE_TAGS.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => addStyleTag(tag)}
+              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80 hover:border-white/20 transition-colors"
+            >
+              + {tag}
+            </button>
+          ))}
         </div>
+      </section>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Model</label>
-            <select
-              value={providerModel}
-              onChange={(e) => setProviderModel(e.target.value)}
-              className="select-field"
+      {/* Settings Row */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Provider */}
+        <section className="section-card">
+          <h3 className="text-sm font-semibold text-white/80 mb-3">Provider</h3>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+              className="w-full input-field text-left text-sm flex items-center justify-between"
             >
-              {PROVIDERS[provider as keyof typeof PROVIDERS]?.models.map(
-                (model) => (
-                  <option key={model} value={model} className="bg-gray-900">
-                    {model}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
+                  {currentProvider?.icon}
+                </span>
+                <span>{currentProvider?.fullName || "Select..."}</span>
+              </div>
+              <svg className={`w-4 h-4 transition-transform ${showProviderDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Language</label>
-            <select
-              value={language === "Other..." ? customLanguage : language}
-              onChange={(e) => {
-                if (e.target.value === "Other...") {
-                  setLanguage("Other...");
-                } else {
-                  setLanguage(e.target.value);
-                }
-              }}
-              className="select-field mb-2"
-            >
-              {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang} className="bg-gray-900">
-                  {lang}
-                </option>
-              ))}
-            </select>
-            {language === "Other..." && (
-              <input
-                type="text"
-                value={customLanguage}
-                onChange={(e) => setCustomLanguage(e.target.value)}
-                placeholder="Enter language..."
-                className="input-field"
-              />
+            {showProviderDropdown && (
+              <div className="absolute z-50 mt-1 w-full bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+                {Object.entries(PROVIDERS).map(([key, val]) => {
+                  const currentCredits = credits[key as keyof typeof credits];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setProvider(key);
+                        setProviderModel(val.models[0]);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                        provider === key
+                          ? "bg-primary-500/10 text-white"
+                          : "text-white/60 hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
+                        {val.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{val.fullName}</p>
+                        <p className="text-xs text-white/30">
+                          {key === "lyria" ? "Pay-per-use" : currentCredits !== null ? `${currentCredits} credits` : "Not configured"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={instrumental}
-              onClick={() => setInstrumental(!instrumental)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                instrumental ? "bg-primary-500" : "bg-white/20"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  instrumental ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
-            <span className="text-sm">Instrumental</span>
-          </div>
-        </div>
-      </div>
+          {/* Model */}
+          <select
+            value={providerModel}
+            onChange={(e) => setProviderModel(e.target.value)}
+            className="select-field text-sm mt-2"
+          >
+            {currentProvider?.models.map((model) => (
+              <option key={model} value={model} className="bg-gray-900">
+                {model}
+              </option>
+            ))}
+          </select>
+        </section>
 
-      {!instrumental && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">Lyrics</label>
-            <button
-              onClick={handleGenerateLyrics}
-              disabled={!songIdea || generatingLyrics}
-              className="btn-secondary text-sm flex items-center gap-2"
-            >
-              {generatingLyrics ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Writing...
-                </>
-              ) : (
-                <>🎵 AI Generate Lyrics</>
-              )}
-            </button>
-          </div>
-          {showLyrics && (
-            <textarea
-              value={lyrics}
-              onChange={(e) => setLyrics(e.target.value)}
-              placeholder="Generated lyrics will appear here, or write your own..."
-              className="input-field min-h-[150px] resize-y font-mono text-sm"
-            />
+        {/* Language & Vocal Gender */}
+        <section className="section-card">
+          <h3 className="text-sm font-semibold text-white/80 mb-3">Language</h3>
+          <select
+            value={language === "Other..." ? customLanguage : language}
+            onChange={(e) => {
+              if (e.target.value === "Other...") {
+                setLanguage("Other...");
+              } else {
+                setLanguage(e.target.value);
+              }
+            }}
+            className="select-field text-sm mb-3"
+          >
+            {LANGUAGES.map((lang) => (
+              <option key={lang} value={lang} className="bg-gray-900">
+                {lang}
+              </option>
+            ))}
+          </select>
+
+          {!instrumental && (
+            <>
+              <h3 className="text-sm font-semibold text-white/80 mb-3">Vocal Gender</h3>
+              <div className="flex rounded-lg overflow-hidden border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setVocalGender("female")}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                    vocalGender === "female"
+                      ? "bg-primary-500/20 text-primary-300"
+                      : "bg-white/5 text-white/40 hover:bg-white/10"
+                  }`}
+                >
+                  Female
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVocalGender("male")}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                    vocalGender === "male"
+                      ? "bg-primary-500/20 text-primary-300"
+                      : "bg-white/5 text-white/40 hover:bg-white/10"
+                  }`}
+                >
+                  Male
+                </button>
+              </div>
+            </>
           )}
-        </div>
-      )}
-
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Title (optional)
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Give your track a name..."
-          className="input-field"
-        />
+        </section>
       </div>
 
+      {/* Title */}
+      <section className="section-card">
+        <label className="block text-sm font-semibold text-white/80 mb-3">Song Title</label>
+        <div className="relative">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give your track a name..."
+            className="input-field text-sm pr-16"
+            maxLength={titleMaxChars}
+          />
+          <span className={`absolute bottom-3 right-3 text-xs ${titleCharCount > titleMaxChars * 0.9 ? "text-red-400" : "text-white/20"}`}>
+            {titleCharCount}/{titleMaxChars}
+          </span>
+        </div>
+      </section>
+
+      {/* Generate Button */}
       <button
         onClick={onGenerate}
         disabled={!songIdea}
-        className="w-full btn-primary py-3 text-lg font-semibold"
+        className="w-full btn-primary py-3 text-sm font-semibold tracking-wide"
       >
-        🎶 Generate Track
+        Generate Track
       </button>
     </div>
   );

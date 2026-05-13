@@ -9,6 +9,7 @@ interface TrackItem {
   provider: string;
   providerModel: string;
   prompt: string;
+  lyrics: string | null;
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;
@@ -19,8 +20,10 @@ interface TrackItem {
 
 export default function TrackList({
   tracks,
+  onSelect,
 }: {
   tracks: TrackItem[];
+  onSelect: (track: TrackItem) => void;
 }) {
   const { setCurrentTrack } = usePlayerStore();
 
@@ -37,6 +40,7 @@ export default function TrackList({
       s3Key: null,
       s3KeyHd: track.s3KeyHd,
       duration: null,
+      lyrics: track.lyrics,
       createdAt: track.createdAt,
       error: track.error,
     });
@@ -44,32 +48,19 @@ export default function TrackList({
 
   if (tracks.length === 0) {
     return (
-      <div className="text-center py-16">
-        <svg
-          className="w-16 h-16 mx-auto text-white/10 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1}
-            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-          />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <p className="text-white/40 text-lg">No tracks yet</p>
-        <p className="text-white/30 text-sm mt-1">
-          Generate your first track in the Studio
-        </p>
+        <p className="text-white/30 text-sm">No tracks yet</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       {tracks.map((track) => (
-        <TrackCard key={track.id} track={track} onPlay={handlePlay} />
+        <TrackCard key={track.id} track={track} onPlay={handlePlay} onSelect={onSelect} />
       ))}
     </div>
   );
@@ -78,9 +69,11 @@ export default function TrackList({
 function TrackCard({
   track,
   onPlay,
+  onSelect,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
+  onSelect: (track: TrackItem) => void;
 }) {
   const [downloading, setDownloading] = useState(false);
 
@@ -93,101 +86,116 @@ function TrackCard({
     setTimeout(() => setDownloading(false), 1000);
   }
 
-  const statusBadge = {
-    pending: "bg-yellow-500/20 text-yellow-300",
-    generating: "bg-blue-500/20 text-blue-300",
-    done: "bg-green-500/20 text-green-300",
-    failed: "bg-red-500/20 text-red-300",
-  }[track.status];
+  const statusConfig = {
+    pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },
+    generating: { color: "bg-blue-500/20 text-blue-300", label: "Creating" },
+    done: { color: "bg-green-500/20 text-green-300", label: "Ready" },
+    failed: { color: "bg-red-500/20 text-red-300", label: "Failed" },
+  };
+  const status = statusConfig[track.status];
 
-  const statusLabel = {
-    pending: "Queued",
-    generating: "Creating",
-    done: "Ready",
-    failed: "Failed",
-  }[track.status];
+  const timeAgo = getTimeAgo(new Date(track.createdAt));
+  const title = track.title || track.prompt.substring(0, 50);
+  const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
 
   return (
     <div
-      className={`card group transition-all ${
-        track.status === "generating" ? "shimmer" : ""
+      className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
+        track.status === "generating" ? "shimmer" : "hover:bg-white/5"
       }`}
+      onClick={() => onSelect(track)}
     >
-      <div className="flex items-center gap-4">
+      {/* Play button / artwork placeholder */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (track.status === "done") onPlay(track);
+        }}
+        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+          track.status === "done"
+            ? "bg-primary-600/80 hover:bg-primary-600"
+            : track.status === "failed"
+            ? "bg-red-500/10"
+            : "bg-white/5"
+        }`}
+      >
         {track.status === "done" ? (
-          <button
-            onClick={() => onPlay(track)}
-            className="w-12 h-12 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors flex-shrink-0"
-          >
-            <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </button>
+          <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        ) : track.status === "failed" ? (
+          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         ) : (
-          <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-              track.status === "failed"
-                ? "bg-red-500/20"
-                : "bg-white/10 animate-pulse"
-            }`}
-          >
-            {track.status === "failed" ? (
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-              </svg>
-            )}
-          </div>
+          <div className="w-3 h-3 rounded-full bg-white/20 animate-pulse" />
         )}
+      </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium truncate">
-              {track.title || track.prompt.substring(0, 50)}
-            </h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge}`}>
-              {statusLabel}
-            </span>
-          </div>
-          <p className="text-sm text-white/40 truncate">
-            {track.provider} • {track.providerModel}
-          </p>
-          {track.error && (
-            <p className="text-sm text-red-400 mt-1">
-              {track.error}
-              {track.error.includes("Optimize") && (
-                <span className="ml-1 text-primary-400 cursor-pointer hover:underline">
-                  Go to Studio
-                </span>
-              )}
-            </p>
-          )}
+      {/* Track info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium truncate">{title}</h3>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color}`}>
+            {status.label}
+          </span>
         </div>
+        <p className="text-xs text-white/30 truncate mt-0.5">
+          {styleDesc}
+        </p>
+        {track.error && (
+          <p className="text-xs text-red-400 mt-0.5">{track.error}</p>
+        )}
+      </div>
 
-        {track.status === "done" && (
-          <div className="flex items-center gap-2 flex-shrink-0">
+      {/* Time + actions */}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-xs text-white/20 mr-1">{timeAgo}</span>
+        {track.status === "done" && track.audioUrl && (
+          <>
             <button
-              onClick={() => handleDownload(track.audioUrl || "")}
-              disabled={!track.audioUrl || downloading}
-              className="btn-secondary text-sm px-3 py-1.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload(track.audioUrl!);
+              }}
+              disabled={downloading}
+              className="p-1.5 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+              title="Download MP3"
             >
-              MP3
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
             </button>
-            {track.s3KeyHd && (
+            {track.s3KeyHd && track.audioUrlHd && (
               <button
-                onClick={() => handleDownload(track.audioUrlHd || "", true)}
-                disabled={!track.audioUrlHd || downloading}
-                className="btn-secondary text-sm px-3 py-1.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(track.audioUrlHd!, true);
+                }}
+                disabled={downloading}
+                className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                title="Download HD"
               >
                 HD
               </button>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
   );
+}
+
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
 }

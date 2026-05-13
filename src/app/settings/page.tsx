@@ -1,248 +1,477 @@
 "use client";
 
-import { useState } from "react";
-import Header from "@/components/Header";
+import { useState, useEffect } from "react";
+import Sidebar from "@/components/Sidebar";
 import Player from "@/components/Player";
 
+interface ProviderConfig {
+  id: string;
+  name: string;
+  description: string;
+  fields: Array<{
+    key: string;
+    label: string;
+    type: "password" | "text";
+    placeholder: string;
+  }>;
+  testEndpoint: string;
+}
+
+interface LLMModel {
+  id: string;
+  name: string;
+  description: string;
+  pricing: {
+    prompt: string | number;
+    completion: string | number;
+  };
+  context_length: number;
+  architecture: {
+    modality: string;
+    tokenizer: string;
+    instruct_type: string;
+  };
+}
+
+const PROVIDERS: ProviderConfig[] = [
+  {
+    id: "lyria",
+    name: "Google Lyria 3",
+    description: "Synchronous music generation provider",
+    fields: [
+      {
+        key: "LYRIA_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "lyria_...",
+      },
+    ],
+    testEndpoint: "lyria",
+  },
+  {
+    id: "poyo",
+    name: "PoYo (Suno)",
+    description: "Async music generation with webhook support",
+    fields: [
+      {
+        key: "POYO_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "poyo_...",
+      },
+    ],
+    testEndpoint: "poyo",
+  },
+  {
+    id: "tempolor",
+    name: "Tempolor",
+    description: "Async music generation with HD output",
+    fields: [
+      {
+        key: "TEMPOLOR_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "tempolor_...",
+      },
+    ],
+    testEndpoint: "tempolor",
+  },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    description: "Primary LLM provider for prompt optimization and lyrics",
+    fields: [
+      {
+        key: "OPENROUTER_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "sk-or-...",
+      },
+    ],
+    testEndpoint: "openrouter",
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    description: "Fallback LLM provider",
+    fields: [
+      {
+        key: "OPENAI_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "sk-...",
+      },
+      {
+        key: "OPENAI_MODEL",
+        label: "Model",
+        type: "text",
+        placeholder: "gpt-4o",
+      },
+    ],
+    testEndpoint: "openai",
+  },
+];
+
+function formatPrice(price: string | number): string {
+  const num = typeof price === "string" ? parseFloat(price) : price;
+  if (!num || num === 0) return "Free";
+  if (num >= 1) return `$${num.toFixed(2)}/1M tokens`;
+  return `$${(num * 1_000_000).toFixed(2)}/1M tokens`;
+}
+
+function truncateDescription(text: string, maxLines: number = 3): { text: string; truncated: boolean } {
+  if (!text) return { text: "", truncated: false };
+  const words = text.split(" ");
+  const maxWords = maxLines * 12;
+  if (words.length <= maxWords) {
+    return { text, truncated: false };
+  }
+  return { text: words.slice(0, maxWords).join(" ") + "...", truncated: true };
+}
+
 export default function SettingsPage() {
-  const [lyriaKey, setLyriaKey] = useState("");
-  const [poyoKey, setPoyoKey] = useState("");
-  const [tempolorKey, setTempolorKey] = useState("");
-  const [openrouterKey, setOpenrouterKey] = useState("");
-  const [openaiKey, setOpenaiKey] = useState("");
-  const [openrouterModel, setOpenrouterModel] = useState("openai/gpt-5");
-  const [loggingEnabled, setLoggingEnabled] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResults, setTestResults] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [testing, setTesting] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [models, setModels] = useState<LLMModel[]>([]);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
+  const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
+  const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
 
-  async function testConnection() {
-    setTesting(true);
-    const results: Record<string, string> = {};
+  useEffect(() => {
+    async function loadSettings() {
+      const res = await fetch("/api/settings");
+      if (res.ok) {
+        const data = await res.json();
+        setValues(data);
+        if (data.OPENROUTER_MODEL) {
+          setSelectedModel({ id: data.OPENROUTER_MODEL, name: data.OPENROUTER_MODEL, description: "", pricing: { prompt: "0", completion: "0" }, context_length: 0, architecture: { modality: "", tokenizer: "", instruct_type: "" } });
+        }
+      }
 
-    if (lyriaKey) {
-      try {
-        results.lyria = "Connected";
-      } catch {
-        results.lyria = "Failed";
+      const s3Res = await fetch("/api/settings/s3");
+      if (s3Res.ok) {
+        setS3Config(await s3Res.json());
       }
     }
+    loadSettings();
+  }, []);
 
-    if (poyoKey) {
-      try {
-        results.poyo = "Connected";
-      } catch {
-        results.poyo = "Failed";
-      }
-    }
-
-    if (tempolorKey) {
-      try {
-        results.tempolor = "Connected";
-      } catch {
-        results.tempolor = "Failed";
-      }
-    }
-
-    setTestResults(results);
-    setTesting(false);
+  function updateField(key: string, value: string) {
+    setValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function saveSettings() {
-    setSaving(true);
-    const settings = [
-      { key: "LYRIA_API_KEY", value: lyriaKey },
-      { key: "POYO_API_KEY", value: poyoKey },
-      { key: "TEMPOLOR_API_KEY", value: tempolorKey },
-      { key: "OPENROUTER_API_KEY", value: openrouterKey },
-      { key: "OPENAI_API_KEY", value: openaiKey },
-      { key: "OPENROUTER_MODEL", value: openrouterModel },
-      { key: "ENABLE_API_LOGGING", value: loggingEnabled ? "true" : "false" },
-    ];
+  async function saveProvider(provider: ProviderConfig) {
+    setSaving((prev) => ({ ...prev, [provider.id]: true }));
 
-    await Promise.all(
-      settings.map((s) =>
-        fetch("/api/settings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(s),
-        })
-      )
-    );
+    for (const field of provider.fields) {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: field.key, value: values[field.key] || "" }),
+      });
+    }
 
-    setSaving(false);
-    alert("Settings saved");
+    if (provider.id === "openrouter" && selectedModel) {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "OPENROUTER_MODEL", value: selectedModel.id }),
+      });
+    }
+
+    setSaving((prev) => ({ ...prev, [provider.id]: false }));
+  }
+
+  async function testProvider(provider: ProviderConfig) {
+    setTesting((prev) => ({ ...prev, [provider.id]: true }));
+
+    const apiKey = values[provider.fields[0].key] || "";
+
+    const res = await fetch("/api/settings/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: provider.testEndpoint, apiKey }),
+    });
+
+    const data = await res.json();
+    setTestResults((prev) => ({
+      ...prev,
+      [provider.id]: { success: data.success, message: data.message },
+    }));
+
+    if (data.models && data.models.length > 0) {
+      setModels(data.models);
+    }
+
+    setTesting((prev) => ({ ...prev, [provider.id]: false }));
+  }
+
+  function selectModel(model: LLMModel) {
+    setSelectedModel(model);
+    setValues((prev) => ({ ...prev, OPENROUTER_MODEL: model.id }));
+    setShowModelDropdown(false);
   }
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-white/50 mb-8">
-          Bring your own keys — everything is configurable
-        </p>
-
-        <div className="space-y-8">
-          <section className="card">
-            <h2 className="text-lg font-semibold mb-4">Music Providers</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Google Lyria 3 API Key
-                </label>
-                <input
-                  type="password"
-                  value={lyriaKey}
-                  onChange={(e) => setLyriaKey(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="lyria_..."
-                />
-                {testResults.lyria && (
-                  <p className="text-xs mt-1 text-green-400">
-                    {testResults.lyria}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  PoYo (Suno) API Key
-                </label>
-                <input
-                  type="password"
-                  value={poyoKey}
-                  onChange={(e) => setPoyoKey(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="poyo_..."
-                />
-                {testResults.poyo && (
-                  <p className="text-xs mt-1 text-green-400">
-                    {testResults.poyo}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Tempolor API Key
-                </label>
-                <input
-                  type="password"
-                  value={tempolorKey}
-                  onChange={(e) => setTempolorKey(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="tempolor_..."
-                />
-                {testResults.tempolor && (
-                  <p className="text-xs mt-1 text-green-400">
-                    {testResults.tempolor}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={testConnection}
-                disabled={testing}
-                className="btn-secondary text-sm"
-              >
-                {testing ? "Testing..." : "Test Connection"}
-              </button>
-            </div>
-          </section>
-
-          <section className="card">
-            <h2 className="text-lg font-semibold mb-4">
-              AI Provider (Optimize & Lyrics)
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  OpenRouter API Key (takes priority)
-                </label>
-                <input
-                  type="password"
-                  value={openrouterKey}
-                  onChange={(e) => setOpenrouterKey(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="sk-or-..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  OpenRouter Model
-                </label>
-                <input
-                  type="text"
-                  value={openrouterModel}
-                  onChange={(e) => setOpenrouterModel(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="openai/gpt-5"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  OpenAI API Key (fallback)
-                </label>
-                <input
-                  type="password"
-                  value={openaiKey}
-                  onChange={(e) => setOpenaiKey(e.target.value)}
-                  className="input-field font-mono text-sm"
-                  placeholder="sk-..."
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="card">
-            <h2 className="text-lg font-semibold mb-4">S3 Storage</h2>
-            <p className="text-sm text-white/50 mb-4">
-              S3 is configured globally via backend .env variables
-            </p>
-            <div className="text-sm">
-              <p>
-                <span className="text-white/40">Endpoint:</span>{" "}
-                {process.env.S3_ENDPOINT || "Not configured"}
-              </p>
-              <p>
-                <span className="text-white/40">Bucket:</span>{" "}
-                {process.env.S3_BUCKET || "Not configured"}
-              </p>
-              <p>
-                <span className="text-white/40">Region:</span>{" "}
-                {process.env.S3_REGION || "Not configured"}
-              </p>
-            </div>
-          </section>
-
-          <section className="card">
-            <h2 className="text-lg font-semibold mb-4">API Logging</h2>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={loggingEnabled}
-                onClick={() => setLoggingEnabled(!loggingEnabled)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  loggingEnabled ? "bg-primary-500" : "bg-white/20"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    loggingEnabled ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
-              <span className="text-sm">
-                {loggingEnabled ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-          </section>
-
-          <button onClick={saveSettings} disabled={saving} className="btn-primary">
-            {saving ? "Saving..." : "Save Settings"}
-          </button>
+    <div className="min-h-screen bg-[#0a0a0f]">
+      <Sidebar credits={null} />
+      <div className="lg:ml-[240px]">
+        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+          <div className="px-4 py-3">
+            <h1 className="text-lg font-bold">Settings</h1>
+            <p className="text-xs text-white/40 mt-0.5">Configure your API providers</p>
+          </div>
         </div>
-      </main>
+        <main className="p-4 pb-32 max-w-2xl">
+          <div className="space-y-4">
+            {PROVIDERS.map((provider) => (
+              <section key={provider.id} className="section-card">
+                <div className="mb-4">
+                  <h2 className="text-sm font-semibold">{provider.name}</h2>
+                  <p className="text-xs text-white/30">{provider.description}</p>
+                </div>
+
+                <div className="space-y-3">
+                  {provider.fields.map((field) => (
+                    <div key={field.key}>
+                      <label className="block text-xs font-medium text-white/50 mb-1">
+                        {field.label}
+                      </label>
+                      <input
+                        type={field.type}
+                        value={values[field.key] || ""}
+                        onChange={(e) => updateField(field.key, e.target.value)}
+                        className="input-field font-mono text-sm"
+                        placeholder={field.placeholder}
+                      />
+                    </div>
+                  ))}
+
+                  {provider.id === "openrouter" && models.length > 0 && (
+                    <div className="relative">
+                      <label className="block text-xs font-medium text-white/50 mb-1">Model</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowModelDropdown(!showModelDropdown)}
+                        className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+                      >
+                        <span className="truncate">
+                          {selectedModel ? selectedModel.name : "Select a model..."}
+                        </span>
+                        <svg className={`w-4 h-4 transition-transform ${showModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {showModelDropdown && (
+                        <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
+                          <div className="p-2">
+                            <input
+                              type="text"
+                              placeholder="Search models..."
+                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+                              onChange={(e) => {
+                                const query = e.target.value.toLowerCase();
+                                const filtered = models.filter((m) => m.id.toLowerCase().includes(query) || m.name.toLowerCase().includes(query));
+                                setModels(filtered);
+                              }}
+                            />
+                          </div>
+                          {models.map((model) => {
+                            const { text, truncated } = truncateDescription(model.description, 3);
+                            const isSelected = selectedModel?.id === model.id;
+                            return (
+                              <div
+                                key={model.id}
+                                className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
+                                  isSelected ? "bg-primary-500/10" : ""
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white">{model.name}</p>
+                                    <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
+                                      {text}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
+                                      <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
+                                      <span>Completion: {formatPrice(model.pricing.completion)}</span>
+                                      {model.context_length && (
+                                        <span>Context: {model.context_length.toLocaleString()}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {truncated && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setModelDetail(model);
+                                        }}
+                                        className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
+                                      >
+                                        Read more
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => selectModel(model)}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        isSelected
+                                          ? "bg-primary-500 text-white"
+                                          : "bg-white/10 text-white/50 hover:bg-white/20"
+                                      }`}
+                                    >
+                                      {isSelected ? "Selected" : "Select"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => saveProvider(provider)}
+                      disabled={saving[provider.id]}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {saving[provider.id] ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => testProvider(provider)}
+                      disabled={testing[provider.id]}
+                      className="btn-secondary text-xs px-3 py-1.5"
+                    >
+                      {testing[provider.id] ? "Testing..." : "Test Connection"}
+                    </button>
+                  </div>
+
+                  {testResults[provider.id] && (
+                    <p
+                      className={`text-xs ${
+                        testResults[provider.id].success
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {testResults[provider.id].message}
+                    </p>
+                  )}
+                </div>
+              </section>
+            ))}
+
+            <section className="section-card">
+              <h2 className="text-sm font-semibold mb-3">S3 Storage</h2>
+              {s3Config ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-white/30 mb-0.5">Endpoint</p>
+                    <p className="font-mono text-xs text-white/60">{s3Config.endpoint}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/30 mb-0.5">Region</p>
+                    <p className="font-mono text-xs text-white/60">{s3Config.region}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/30 mb-0.5">Bucket</p>
+                    <p className="font-mono text-xs text-white/60">{s3Config.bucket}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/30 mb-0.5">Path Style</p>
+                    <p className="font-mono text-xs text-white/60">{s3Config.forcePathStyle ? "Enabled" : "Disabled"}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-white/30">Loading...</p>
+              )}
+            </section>
+          </div>
+        </main>
+      </div>
       <Player />
+
+      {modelDetail && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setModelDetail(null)}
+        >
+          <div
+            className="bg-[#1a1a24] border border-white/10 rounded-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-bold">{modelDetail.name}</h3>
+                <button
+                  onClick={() => setModelDetail(null)}
+                  className="text-white/50 hover:text-white text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-medium text-white/40 mb-1">ID</h4>
+                  <p className="font-mono text-sm">{modelDetail.id}</p>
+                </div>
+
+                {modelDetail.description && (
+                  <div>
+                    <h4 className="text-xs font-medium text-white/40 mb-1">Description</h4>
+                    <p className="text-sm leading-relaxed text-white/70">{modelDetail.description}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-xs font-medium text-white/40 mb-1">Prompt Price</h4>
+                    <p className="text-sm text-white/60">{formatPrice(modelDetail.pricing.prompt)}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-medium text-white/40 mb-1">Completion Price</h4>
+                    <p className="text-sm text-white/60">{formatPrice(modelDetail.pricing.completion)}</p>
+                  </div>
+                  {modelDetail.context_length && (
+                    <div>
+                      <h4 className="text-xs font-medium text-white/40 mb-1">Context Length</h4>
+                      <p className="text-sm text-white/60">{modelDetail.context_length.toLocaleString()} tokens</p>
+                    </div>
+                  )}
+                  {modelDetail.architecture?.modality && (
+                    <div>
+                      <h4 className="text-xs font-medium text-white/40 mb-1">Modality</h4>
+                      <p className="text-sm text-white/60">{modelDetail.architecture.modality}</p>
+                    </div>
+                  )}
+                  {modelDetail.architecture?.tokenizer && (
+                    <div>
+                      <h4 className="text-xs font-medium text-white/40 mb-1">Tokenizer</h4>
+                      <p className="text-sm text-white/60">{modelDetail.architecture.tokenizer}</p>
+                    </div>
+                  )}
+                  {modelDetail.architecture?.instruct_type && (
+                    <div>
+                      <h4 className="text-xs font-medium text-white/40 mb-1">Instruct Type</h4>
+                      <p className="text-sm text-white/60">{modelDetail.architecture.instruct_type}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
