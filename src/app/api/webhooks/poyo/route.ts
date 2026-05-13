@@ -6,6 +6,11 @@ import { tracks, users, apiLogs, settings } from "@/db/schema";
 import { eq, and, desc, lte } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
+  const secret = request.headers.get("x-webhook-secret");
+  if (!process.env.WEBHOOK_SECRET || secret !== process.env.WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
   const { job_id, status, audio_url } = body;
 
