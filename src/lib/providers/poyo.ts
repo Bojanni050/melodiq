@@ -1,7 +1,5 @@
 import axios from "axios";
-
-const API_KEY = process.env.POYO_API_KEY || "";
-const WEBHOOK_URL = process.env.POYO_WEBHOOK_URL || "";
+import { getSetting, getWebhookUrl } from "@/lib/settings";
 
 export async function generatePoYo({
   prompt,
@@ -14,6 +12,8 @@ export async function generatePoYo({
   instrumental?: boolean;
   model?: string;
 }) {
+  const API_KEY = await getSetting("POYO_API_KEY");
+  const WEBHOOK_URL = await getWebhookUrl("poyo");
   const startTime = Date.now();
   try {
     const response = await axios.post(
@@ -54,6 +54,7 @@ export async function generatePoYo({
 }
 
 export async function getPoYoStatus(jobId: string) {
+  const API_KEY = await getSetting("POYO_API_KEY");
   try {
     const response = await axios.get(
       `https://api.poyo.com/v1/jobs/${jobId}`,
@@ -68,6 +69,7 @@ export async function getPoYoStatus(jobId: string) {
 }
 
 export async function getPoYoCredits() {
+  const API_KEY = await getSetting("POYO_API_KEY");
   try {
     const response = await axios.get("https://api.poyo.com/v1/credits", {
       headers: { Authorization: `Bearer ${API_KEY}` },

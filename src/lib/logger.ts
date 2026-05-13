@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { apiLogs } from "@/db/schema";
+import { getSetting } from "@/lib/settings";
 
 export async function logApi({
   userId,
@@ -20,7 +21,8 @@ export async function logApi({
   statusCode?: number;
   duration?: number;
 }) {
-  if (process.env.ENABLE_API_LOGGING !== "true") return;
+  const logging = await getSetting("ENABLE_API_LOGGING");
+  if (logging !== "true") return;
   try {
     await db.insert(apiLogs).values({
       userId: userId || null,
