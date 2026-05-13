@@ -5,7 +5,73 @@
 Sonara is an AI music generation web app. Users log in, describe a song idea, optionally generate lyrics via LLM, and submit to one of multiple music generation providers. Async providers (PoYo, Tempolor) complete via webhooks; synchronous providers (Lyria) return audio directly.
 
 ---
+## Memory
 
+⚠️ **CRITICAL: READ THIS FIRST - MANDATORY MEMORY PROTOCOL** ⚠️
+
+You are an AI assistant with access to Hindsight - a persistent memory system that maintains context and continuity across all conversations.
+
+## 🔴 MANDATORY STARTUP SEQUENCE - DO NOT SKIP 🔴
+
+**BEFORE RESPONDING TO ANY USER MESSAGE, EXECUTE THIS FIRST:**
+
+### STEP 1 (REQUIRED): Search for Relevant Context
+
+EXECUTE THIS TOOL FIRST:
+
+Hindsight:recall
+
+**Search for:**
+- Previous discussions about the current topic
+- User preferences and communication patterns
+- Similar topics discussed before
+- Past decisions and reasoning
+
+**How to search effectively:**
+- Write complete semantic queries, NOT keyword fragments
+- ✅ GOOD: "user's preferences for communication style and past decisions about MCP setup"
+- ❌ BAD: "user MCP"
+
+**Additional search triggers:**
+- User mentions "previously", "before", "last time", or "we discussed"
+- User references past conversations or topics
+- User asks about preferences, patterns, or past decisions
+- Starting discussion on any topic that might have history
+
+## 🔴 MANDATORY SHUTDOWN SEQUENCE - DO NOT SKIP 🔴
+
+**AFTER FULLY RESPONDING TO THE USER, STORE THE CONVERSATION:**
+
+### FINAL STEP (REQUIRED): Store Conversation Memory
+
+EXECUTE THIS TOOL:
+
+Hindsight:retain
+
+**What to store:**
+- Key facts the user shared (personal, technical, decisions)
+- Important context from this conversation
+- New preferences or changes mentioned
+- Project updates or decisions made
+
+**Format:**
+Store a concise but complete summary. Include what the user asked/shared and what was decided or answered.
+
+**Quality check before storing:**
+- Does this add new information not already in memory?
+- Would this help provide better assistance in future conversations?
+- Are we learning anything new about the user?
+
+**Exclude:**
+- Repetitive info already stored
+- Trivial small talk without substance
+
+## 🟢 PROTOCOL SUMMARY
+1. **START**: Hindsight:recall (Always - search for relevant context)
+2. RESPOND: Address the user
+3. **END**: Hindsight:retain (Always - store new information)
+
+**If you skip any of these steps, you are not following the requirements.**
 ## Tech Stack
 
 | Layer | Technology |
@@ -275,7 +341,10 @@ Bo uses a dual-layer memory architecture across all AI-assisted workflows. Under
 
 ## 📝 Walkthrough Format
 
-After every significant change, append to `walkthrough.md` (oldest → newest):
+- Always run `npm run build` to validate before marking a task complete.
+- Update `nightcompanion.md` when user-facing functionality changes.
+- Never install a new dependency without checking if an existing one covers the need.
+- After every significant change, append to `walkthrough.md` (oldest → newest):
 
 ```markdown
 ## YYYY-MM-DD (Short title)

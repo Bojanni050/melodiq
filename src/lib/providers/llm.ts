@@ -1,11 +1,12 @@
 import axios from "axios";
-
-const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
-const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+import { getSetting } from "@/lib/settings";
 
 async function callLLM(prompt: string, systemPrompt: string) {
+  const OPENROUTER_KEY = await getSetting("OPENROUTER_API_KEY");
+  const OPENROUTER_MODEL = await getSetting("OPENROUTER_MODEL") || "openai/gpt-5";
+  const OPENAI_KEY = await getSetting("OPENAI_API_KEY");
+  const OPENAI_MODEL = await getSetting("OPENAI_MODEL") || "gpt-4o";
+
   if (OPENROUTER_KEY) {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -47,12 +48,11 @@ async function callLLM(prompt: string, systemPrompt: string) {
     return res.data.choices[0].message.content;
   }
 
-  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.");
+  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY in settings.");
 }
 
 export async function generateTitle(lyrics: string): Promise<string> {
   const systemPrompt = `You are a professional music title generator. Based on the lyrics provided, generate a concise, catchy song title (max 8 words). Return only the title, no extra text.`;
-
   return callLLM(lyrics, systemPrompt);
 }
 

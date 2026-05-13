@@ -1,7 +1,5 @@
 import axios from "axios";
-
-const API_KEY = process.env.TEMPOLOR_API_KEY || "";
-const WEBHOOK_URL = process.env.TEMPOLOR_WEBHOOK_URL || "";
+import { getSetting, getWebhookUrl } from "@/lib/settings";
 
 export async function generateTempolor({
   prompt,
@@ -14,6 +12,8 @@ export async function generateTempolor({
   instrumental?: boolean;
   model?: string;
 }) {
+  const API_KEY = await getSetting("TEMPOLOR_API_KEY");
+  const WEBHOOK_URL = await getWebhookUrl("tempolor");
   const startTime = Date.now();
   try {
     const response = await axios.post(
@@ -55,6 +55,7 @@ export async function generateTempolor({
 }
 
 export async function getTempolorStatus(jobId: string) {
+  const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
     const response = await axios.get(
       `https://api.tempolor.com/v1/jobs/${jobId}`,
@@ -69,6 +70,7 @@ export async function getTempolorStatus(jobId: string) {
 }
 
 export async function getTempolorCredits() {
+  const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
     const response = await axios.get("https://api.tempolor.com/v1/credits", {
       headers: { Authorization: `Bearer ${API_KEY}` },

@@ -185,6 +185,27 @@ export default function SettingsPage() {
     setSaving((prev) => ({ ...prev, [provider.id]: false }));
   }
 
+  async function saveWebhooks() {
+    setSaving((prev) => ({ ...prev, webhooks: true }));
+
+    const webhookFields = [
+      "APP_URL",
+      "POYO_WEBHOOK_URL",
+      "TEMPOLOR_WEBHOOK_URL",
+      "MINIMAX_WEBHOOK_URL",
+    ];
+
+    for (const key of webhookFields) {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value: values[key] || "" }),
+      });
+    }
+
+    setSaving((prev) => ({ ...prev, webhooks: false }));
+  }
+
   async function testProvider(provider: ProviderConfig) {
     setTesting((prev) => ({ ...prev, [provider.id]: true }));
 
@@ -369,6 +390,66 @@ export default function SettingsPage() {
                 </div>
               </section>
             ))}
+
+            {/* Webhooks Section */}
+            <section className="section-card">
+              <h2 className="text-sm font-semibold mb-3">Webhooks</h2>
+              <p className="text-xs text-white/40 mb-3">
+                Set your public app URL to auto-generate all webhook URLs, or override them individually.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">App URL</label>
+                  <input
+                    type="text"
+                    value={values.APP_URL || ""}
+                    onChange={(e) => updateField("APP_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder="https://sonara.yourdomain.com"
+                  />
+                  <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">PoYo Webhook URL</label>
+                  <input
+                    type="text"
+                    value={values.POYO_WEBHOOK_URL || ""}
+                    onChange={(e) => updateField("POYO_WEBHOOK_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">Tempolor Webhook URL</label>
+                  <input
+                    type="text"
+                    value={values.TEMPOLOR_WEBHOOK_URL || ""}
+                    onChange={(e) => updateField("TEMPOLOR_WEBHOOK_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/tempolor` : "Leave empty to auto-derive"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">MiniMax Webhook URL</label>
+                  <input
+                    type="text"
+                    value={values.MINIMAX_WEBHOOK_URL || ""}
+                    onChange={(e) => updateField("MINIMAX_WEBHOOK_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => saveWebhooks()}
+                    disabled={saving.webhooks}
+                    className="btn-primary text-xs px-3 py-1.5"
+                  >
+                    {saving.webhooks ? "Saving..." : "Save Webhooks"}
+                  </button>
+                </div>
+              </div>
+            </section>
 
             <section className="section-card">
               <h2 className="text-sm font-semibold mb-3">S3 Storage</h2>

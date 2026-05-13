@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_KEY = process.env.LYRIA_API_KEY || "";
+import { getSetting } from "@/lib/settings";
 
 export async function generateLyria({
   prompt,
@@ -13,6 +12,7 @@ export async function generateLyria({
   instrumental?: boolean;
   model?: string;
 }) {
+  const API_KEY = await getSetting("LYRIA_API_KEY");
   const startTime = Date.now();
   try {
     const response = await axios.post(
