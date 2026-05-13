@@ -1,5 +1,13 @@
 # Sonara — Walkthrough
 
+## 2026-05-13 (S3 connection status on settings page)
+
+- Findings: S3 section only displayed config values read from process.env with no way to verify actual connectivity.
+- Conclusions: Should provide a real connection test using S3 HeadBucket API call.
+- Actions:
+  - Updated `src/app/api/settings/s3/route.ts` — added POST endpoint that creates S3 client and calls HeadBucket to verify connectivity
+  - Updated `src/app/settings/page.tsx` — added test connection button and status display (green for connected, red for error)
+
 ## 2026-05-13 (Settings page with individual provider cards)
 
 - Findings: Settings page had all providers in one section with a single save/test button. No API route existed for settings CRUD.
