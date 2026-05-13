@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { uploadToS3 } from "@/lib/s3";
-import { logApi } from "@/lib/logger";
-import axios from "axios";
+import { db } from "@/db";
+import { tracks, apiLogs } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { job_id, status, audio_url, audio_url_hd } = body;
 
-  const track = await prisma.track.findFirst({
-    where: { jobId: job_id, provider: "tempolor" },
-  });
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(and(eq(tracks.jobId, job_id), eq(tracks.provider, "tempolor")));
 
-  if (!track) {
+  if (result.length === 0) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
 
+  const track = result[0];
+
   if (status === "completed") {
     try {
+      const axios = (await import("axios")).default;
+      const { uploadToS3 } = await import("@/lib/s3");
+
       const [mp3Res, hdRes] = await Promise.all([
         axios.get(audio_url, { responseType: "arraybuffer" }),
         audio_url_hd ? axios.get(audio_url_hd, { responseType: "arraybuffer" }) : null,
@@ -31,16 +36,16 @@ export async function POST(request: NextRequest) {
         await uploadToS3(s3KeyHd, Buffer.from(hdRes.data));
       }
 
-      const updated = await prisma.track.update({
-        where: { id: track.id },
-        data: {
+      await db
+        .update(tracks)
+        .set({
           status: "done",
           s3Key,
           s3KeyHd,
           audioUrl: `/api/tracks/${track.id}/download`,
           audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
-        },
-      });
+        })
+        .where(eq(tracks.id, track.id!));
 
       await logApi({
         userId: track.userId,
@@ -48,29 +53,56 @@ export async function POST(request: NextRequest) {
         provider: "tempolor",
         endpoint: "/api/webhooks/tempolor",
         request: JSON.stringify(body),
-        response: JSON.stringify({ trackId: updated.id }),
+        response: JSON.stringify({ trackId: track.id }),
         statusCode: 200,
       });
 
       return NextResponse.json({ success: true });
     } catch (error: any) {
-      await prisma.track.update({
-        where: { id: track.id },
-        data: { status: "failed", error: `S3 upload failed: ${error.message}` },
-      });
+      await db
+        .update(tracks)
+        .set({ status: "failed", error: `S3 upload failed: ${error.message}` })
+        .where(eq(tracks.id, track.id!));
 
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
   }
 
   if (status === "failed") {
-    await prisma.track.update({
-      where: { id: track.id },
-      data: { status: "failed", error: body.error || "Generation failed" },
-    });
+    await db
+      .update(tracks)
+      .set({ status: "failed", error: body.error || "Generation failed" })
+      .where(eq(tracks.id, track.id!));
 
     return NextResponse.json({ success: true });
   }
 
   return NextResponse.json({ success: true });
+}
+
+async function logApi(data: {
+  userId?: string | null;
+  type: string;
+  provider: string;
+  endpoint: string;
+  request: string;
+  response?: string;
+  statusCode?: number;
+  duration?: number;
+}) {
+  if (process.env.ENABLE_API_LOGGING !== "true") return;
+  try {
+    await db.insert(apiLogs).values({
+      userId: data.userId || null,
+      type: data.type,
+      provider: data.provider,
+      endpoint: data.endpoint,
+      request: data.request,
+      response: data.response || null,
+      statusCode: data.statusCode || null,
+      duration: data.duration || null,
+    });
+  } catch (e) {
+    console.error("Failed to log API call:", e);
+  }
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getPoYoCredits } from "@/lib/providers/poyo";
 import { getTempolorCredits } from "@/lib/providers/tempolor";
 

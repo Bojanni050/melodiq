@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -12,10 +14,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tracks = await prisma.track.findMany({
-    where: { userId: decoded.userId },
-    orderBy: { createdAt: "desc" },
-  });
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(eq(tracks.userId, decoded.userId))
+    .orderBy(desc(tracks.createdAt));
 
-  return NextResponse.json({ tracks });
+  return NextResponse.json({ tracks: result });
 }

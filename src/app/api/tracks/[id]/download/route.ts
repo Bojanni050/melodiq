@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { getPresignedUrl } from "@/lib/s3";
 
 export async function GET(
@@ -20,11 +22,17 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const track = await prisma.track.findFirst({
-    where: { id, userId: decoded.userId },
-  });
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(and(eq(tracks.id, id), eq(tracks.userId, decoded.userId)));
 
-  if (!track || !track.s3Key) {
+  if (result.length === 0) {
+    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+  }
+
+  const track = result[0];
+  if (!track.s3Key) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
 

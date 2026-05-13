@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { apiLogs } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
@@ -15,11 +17,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get("limit") || "100");
 
-  const logs = await prisma.apiLog.findMany({
-    where: { userId: decoded.userId },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+  const logs = await db
+    .select()
+    .from(apiLogs)
+    .where(eq(apiLogs.userId, decoded.userId))
+    .orderBy(desc(apiLogs.createdAt))
+    .limit(limit);
 
   return NextResponse.json({ logs });
 }
