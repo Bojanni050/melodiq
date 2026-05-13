@@ -139,6 +139,8 @@ export default function SettingsPage() {
   const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
   const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
+  const [s3Status, setS3Status] = useState<{ connected: boolean; message: string } | null>(null);
+  const [testingS3, setTestingS3] = useState(false);
 
   useEffect(() => {
     async function loadSettings() {
@@ -228,6 +230,15 @@ export default function SettingsPage() {
     }
 
     setTesting((prev) => ({ ...prev, [provider.id]: false }));
+  }
+
+  async function testS3() {
+    setTestingS3(true);
+    setS3Status(null);
+    const res = await fetch("/api/settings/s3", { method: "POST" });
+    const data = await res.json();
+    setS3Status(data);
+    setTestingS3(false);
   }
 
   function selectModel(model: LLMModel) {
@@ -454,23 +465,39 @@ export default function SettingsPage() {
             <section className="section-card">
               <h2 className="text-sm font-semibold mb-3">S3 Storage</h2>
               {s3Config ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-white/30 mb-0.5">Endpoint</p>
-                    <p className="font-mono text-xs text-white/60">{s3Config.endpoint}</p>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-white/30 mb-0.5">Endpoint</p>
+                      <p className="font-mono text-xs text-white/60">{s3Config.endpoint}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/30 mb-0.5">Region</p>
+                      <p className="font-mono text-xs text-white/60">{s3Config.region}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/30 mb-0.5">Bucket</p>
+                      <p className="font-mono text-xs text-white/60">{s3Config.bucket}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/30 mb-0.5">Path Style</p>
+                      <p className="font-mono text-xs text-white/60">{s3Config.forcePathStyle ? "Enabled" : "Disabled"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-white/30 mb-0.5">Region</p>
-                    <p className="font-mono text-xs text-white/60">{s3Config.region}</p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => testS3()}
+                      disabled={testingS3}
+                      className="btn-secondary text-xs px-3 py-1.5"
+                    >
+                      {testingS3 ? "Testing..." : "Test Connection"}
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-xs text-white/30 mb-0.5">Bucket</p>
-                    <p className="font-mono text-xs text-white/60">{s3Config.bucket}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/30 mb-0.5">Path Style</p>
-                    <p className="font-mono text-xs text-white/60">{s3Config.forcePathStyle ? "Enabled" : "Disabled"}</p>
-                  </div>
+                  {s3Status && (
+                    <p className={`text-xs ${s3Status.connected ? "text-green-400" : "text-red-400"}`}>
+                      {s3Status.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs text-white/30">Loading...</p>
