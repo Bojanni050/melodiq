@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getPresignedUrl } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
@@ -20,13 +20,13 @@ export async function GET(
   const decoded = verifyToken(token || "");
 
   if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const result = await db
     .select()
     .from(tracks)
-    .where(eq(tracks.id, id));
+    .where(and(eq(tracks.id, id), eq(tracks.userId, decoded.userId)));
 
   if (result.length === 0) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
