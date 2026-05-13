@@ -96,6 +96,21 @@ export default function HomePage() {
     }
   }
 
+  async function handleGenerateTitle(lyrics: string): Promise<string | null> {
+    try {
+      const res = await fetch("/api/generate-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lyrics }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.title;
+      }
+    } catch {}
+    return null;
+  }
+
   async function handleGenerate() {
     const {
       songIdea,
@@ -215,6 +230,7 @@ export default function HomePage() {
                   onGenerate={handleGenerate}
                   onOptimize={handleOptimize}
                   onGenerateLyrics={handleGenerateLyrics}
+                  onGenerateTitle={handleGenerateTitle}
                 />
               </div>
 
