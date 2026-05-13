@@ -1,0 +1,22 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/logout/route": "/api/auth/logout",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/credits/route": "/api/credits",
+  "/api/generate/route": "/api/generate",
+  "/api/llm/route": "/api/llm",
+  "/api/logs/route": "/api/logs",
+  "/api/tracks/[id]/download/route": "/api/tracks/[id]/download",
+  "/api/tracks/[id]/route": "/api/tracks/[id]",
+  "/api/tracks/route": "/api/tracks",
+  "/api/webhooks/poyo/route": "/api/webhooks/poyo",
+  "/api/webhooks/tempolor/route": "/api/webhooks/tempolor",
+  "/library/page": "/library",
+  "/login/page": "/login",
+  "/logs/page": "/logs",
+  "/page": "/",
+  "/register/page": "/register",
+  "/settings/page": "/settings"
+}
