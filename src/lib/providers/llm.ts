@@ -50,6 +50,12 @@ async function callLLM(prompt: string, systemPrompt: string) {
   throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.");
 }
 
+export async function generateTitle(lyrics: string): Promise<string> {
+  const systemPrompt = `You are a professional music title generator. Based on the lyrics provided, generate a concise, catchy song title (max 8 words). Return only the title, no extra text.`;
+
+  return callLLM(lyrics, systemPrompt);
+}
+
 export async function optimizePrompt(idea: string, provider: string): Promise<string> {
   const systemPrompt = `You are an expert music prompt engineer. Rewrite the user's rough song idea into a detailed, provider-optimized prompt for AI music generation. 
 

@@ -31,11 +31,13 @@ export default function StudioForm({
   onGenerate,
   onOptimize,
   onGenerateLyrics,
+  onGenerateTitle,
 }: {
   credits: { lyria: string | number; poyo: number | null; tempolor: number | null };
   onGenerate: () => void;
   onOptimize: () => void;
   onGenerateLyrics: () => void;
+  onGenerateTitle: (lyrics: string) => Promise<string | null>;
 }) {
   const {
     songIdea,
@@ -60,6 +62,7 @@ export default function StudioForm({
 
   const [optimizing, setOptimizing] = useState(false);
   const [generatingLyrics, setGeneratingLyrics] = useState(false);
+  const [generatingTitle, setGeneratingTitle] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
 
@@ -68,6 +71,13 @@ export default function StudioForm({
   const titleCharCount = title.length;
   const titleMaxChars = 120;
   const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
+
+  // Generate button logic:
+  // - If instrumental OFF: needs lyrics AND style/prompt
+  // - If instrumental ON: needs title (prompt is optional since no vocals)
+  const canGenerate = instrumental
+    ? !!title.trim()
+    : !!lyrics.trim() && !!songIdea.trim();
 
   async function handleOptimize() {
     if (!songIdea) return;
@@ -90,6 +100,19 @@ export default function StudioForm({
     }
   }
 
+  async function handleGenerateTitle() {
+    if (!lyrics.trim()) return;
+    setGeneratingTitle(true);
+    try {
+      const result = await onGenerateTitle(lyrics);
+      if (result) {
+        setTitle(result);
+      }
+    } finally {
+      setGeneratingTitle(false);
+    }
+  }
+
   function addStyleTag(tag: string) {
     const currentStyle = songIdea.trim();
     const tagText = tag.toLowerCase();
@@ -105,22 +128,29 @@ export default function StudioForm({
       {/* Lyrics Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${instrumental ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-300"}`}>
+              {instrumental ? "INSTRUMENTAL" : "VOCAL"}
+            </span>
+          </div>
           <button
             type="button"
             role="switch"
             aria-checked={instrumental}
             onClick={() => setInstrumental(!instrumental)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${
-              instrumental ? "bg-primary-500" : "bg-white/10"
+            className={`relative w-12 h-6 rounded-full transition-colors ${
+              instrumental ? "bg-amber-500/20" : "bg-emerald-500/20"
             }`}
           >
             <span className="sr-only">Instrumental</span>
             <span
               className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                instrumental ? "translate-x-5" : ""
+                instrumental ? "translate-x-6" : ""
               }`}
             />
+            <span className="absolute left-1 top-0.5 text-[9px] font-bold text-white/60">V</span>
+            <span className="absolute right-1 top-0.5 text-[9px] font-bold text-white/60">I</span>
           </button>
         </div>
 
@@ -151,7 +181,7 @@ Your chorus here`}
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 )}
-                {optimizing ? "Optimizing..." : "Optimize"}
+                {optimizing ? "Optimizing..." : "Optimize Style"}
               </button>
               <button
                 onClick={handleGenerateLyrics}
@@ -172,18 +202,20 @@ Your chorus here`}
         )}
 
         {instrumental && (
-          <p className="text-xs text-white/30">Instrumental track — no lyrics needed</p>
+          <p className="text-xs text-white/30 italic">
+            🎵 <span className="text-white/50">Instrumental mode</span> — no lyrics needed, focus on the style prompt
+          </p>
         )}
       </section>
 
       {/* Style Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">Style</h3>
+          <h3 className="text-sm font-semibold text-white/80">Style & Prompt</h3>
           <button
             onClick={() => setSongIdea("")}
             className="text-white/30 hover:text-white/60 transition-colors"
-            title="Clear style"
+            title="Clear"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -195,7 +227,7 @@ Your chorus here`}
           <textarea
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
-            placeholder="Describe your song style... e.g. 'Dark Dutch Folk, subdued introspective and intimate, piano with sparse arrangement'"
+            placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
             className="input-field min-h-[100px] resize-y text-sm leading-relaxed pr-16"
             maxLength={promptMaxChars}
           />
@@ -214,7 +246,7 @@ Your chorus here`}
               key={tag}
               type="button"
               onClick={() => addStyleTag(tag)}
-              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80 hover:border-white/20 transition-colors"
+              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
             >
               + {tag}
             </button>
@@ -323,22 +355,22 @@ Your chorus here`}
                   onClick={() => setVocalGender("female")}
                   className={`flex-1 py-2 text-xs font-medium transition-colors ${
                     vocalGender === "female"
-                      ? "bg-primary-500/20 text-primary-300"
+                      ? "bg-pink-500/30 text-pink-300"
                       : "bg-white/5 text-white/40 hover:bg-white/10"
                   }`}
                 >
-                  Female
+                  🎤 Female
                 </button>
                 <button
                   type="button"
                   onClick={() => setVocalGender("male")}
                   className={`flex-1 py-2 text-xs font-medium transition-colors ${
                     vocalGender === "male"
-                      ? "bg-primary-500/20 text-primary-300"
+                      ? "bg-blue-500/30 text-blue-300"
                       : "bg-white/5 text-white/40 hover:bg-white/10"
                   }`}
                 >
-                  Male
+                  🎤 Male
                 </button>
               </div>
             </>
@@ -346,9 +378,27 @@ Your chorus here`}
         </section>
       </div>
 
-      {/* Title */}
+      {/* Title Section */}
       <section className="section-card">
-        <label className="block text-sm font-semibold text-white/80 mb-3">Song Title</label>
+        <div className="flex items-center justify-between mb-3">
+          <label className="block text-sm font-semibold text-white/80">Song Title</label>
+          {!instrumental && !title.trim() && lyrics.trim() && (
+            <button
+              onClick={handleGenerateTitle}
+              disabled={generatingTitle || !lyrics.trim()}
+              className="btn-ghost text-xs flex items-center gap-1.5"
+            >
+              {generatingTitle ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              {generatingTitle ? "Generating..." : "🤖 Generate Title"}
+            </button>
+          )}
+        </div>
         <div className="relative">
           <input
             type="text"
@@ -362,16 +412,37 @@ Your chorus here`}
             {titleCharCount}/{titleMaxChars}
           </span>
         </div>
+        {!instrumental && !title.trim() && (
+          <p className="text-xs text-red-400/60 mt-1">
+            ⚠ Title is required for vocal tracks
+          </p>
+        )}
+        {instrumental && (
+          <p className="text-xs text-white/30 mt-1">
+            💡 Tip: A descriptive title helps with search and organization
+          </p>
+        )}
       </section>
 
       {/* Generate Button */}
       <button
         onClick={onGenerate}
-        disabled={!songIdea}
-        className="w-full btn-primary py-3 text-sm font-semibold tracking-wide"
+        disabled={!canGenerate}
+        className="w-full btn-primary py-3 text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        Generate Track
+        🎶 Generate Track
       </button>
+
+      {/* Validation hint when button is disabled */}
+      {!canGenerate && (
+        <p className="text-center text-xs text-red-400/60">
+          {instrumental
+            ? "Set a title to generate"
+            : !lyrics.trim()
+            ? "Write or generate lyrics to continue"
+            : "Describe a style or prompt to continue"}
+        </p>
+      )}
     </div>
   );
 }
