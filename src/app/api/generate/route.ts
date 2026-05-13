@@ -23,6 +23,19 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
 
+  if (!prompt || typeof prompt !== "string") {
+    return NextResponse.json({ error: "prompt is required" }, { status: 400 });
+  }
+  if (prompt.length > 2000) {
+    return NextResponse.json({ error: "prompt must be 2000 characters or fewer" }, { status: 400 });
+  }
+  if (lyrics !== undefined && lyrics !== null && (typeof lyrics !== "string" || lyrics.length > 10000)) {
+    return NextResponse.json({ error: "lyrics must be 10000 characters or fewer" }, { status: 400 });
+  }
+  if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
+    return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
+  }
+
   const result = await db
     .insert(tracks)
     .values({

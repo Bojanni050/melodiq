@@ -8,7 +8,6 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
-const EMERGENT_KEY = process.env.EMERGENT_API_KEY || "";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -21,6 +20,16 @@ export async function POST(request: NextRequest) {
   }
 
   const { type, idea, provider, language, instrumental } = await request.json();
+
+  if (!idea || typeof idea !== "string") {
+    return NextResponse.json({ error: "idea is required" }, { status: 400 });
+  }
+  if (idea.length > 2000) {
+    return NextResponse.json({ error: "idea must be 2000 characters or fewer" }, { status: 400 });
+  }
+  if (language !== undefined && language !== null && (typeof language !== "string" || language.length > 255)) {
+    return NextResponse.json({ error: "language must be 255 characters or fewer" }, { status: 400 });
+  }
 
   let result: string;
 
@@ -130,27 +139,7 @@ async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
     return res.data.choices[0].message.content;
   }
 
-  if (EMERGENT_KEY) {
-    const res = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: OPENAI_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${EMERGENT_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return res.data.choices[0].message.content;
-  }
-
-  throw new Error("No AI provider configured. Add OPENROUTER_API_KEY, OPENAI_API_KEY, or EMERGENT_API_KEY to .env");
+  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.");
 }
 
 async function logApi(data: {

@@ -4,9 +4,8 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
-const EMERGENT_KEY = process.env.EMERGENT_API_KEY || "";
 
-async function callOpenRouter(prompt: string, systemPrompt: string) {
+async function callLLM(prompt: string, systemPrompt: string) {
   if (OPENROUTER_KEY) {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -48,27 +47,7 @@ async function callOpenRouter(prompt: string, systemPrompt: string) {
     return res.data.choices[0].message.content;
   }
 
-  if (EMERGENT_KEY) {
-    const res = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: OPENAI_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${EMERGENT_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return res.data.choices[0].message.content;
-  }
-
-  throw new Error("No AI provider configured");
+  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.");
 }
 
 export async function optimizePrompt(idea: string, provider: string): Promise<string> {
@@ -81,7 +60,7 @@ Rules:
 - Format specifically for ${provider}
 - Keep under 500 characters`;
 
-  return callOpenRouter(idea, systemPrompt);
+  return callLLM(idea, systemPrompt);
 }
 
 export async function generateLyrics(idea: string, language: string, instrumental: boolean): Promise<string> {
@@ -98,5 +77,5 @@ Rules:
 - Make it emotionally resonant and musically structured
 - Keep it 2-4 minutes when sung`;
 
-  return callOpenRouter(idea, systemPrompt);
+  return callLLM(idea, systemPrompt);
 }

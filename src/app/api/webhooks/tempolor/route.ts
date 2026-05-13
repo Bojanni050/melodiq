@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, apiLogs } from "@/db/schema";
+import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { logApi } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-webhook-secret");
@@ -83,31 +84,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ success: true });
-}
-
-async function logApi(data: {
-  userId?: string | null;
-  type: string;
-  provider: string;
-  endpoint: string;
-  request: string;
-  response?: string;
-  statusCode?: number;
-  duration?: number;
-}) {
-  if (process.env.ENABLE_API_LOGGING !== "true") return;
-  try {
-    await db.insert(apiLogs).values({
-      userId: data.userId || null,
-      type: data.type,
-      provider: data.provider,
-      endpoint: data.endpoint,
-      request: data.request,
-      response: data.response || null,
-      statusCode: data.statusCode || null,
-      duration: data.duration || null,
-    });
-  } catch (e) {
-    console.error("Failed to log API call:", e);
-  }
 }
