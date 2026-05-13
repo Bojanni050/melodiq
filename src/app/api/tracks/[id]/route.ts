@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { generateLyria } from "@/lib/providers/lyria";
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { getPresignedUrl } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
-import { uploadToS3, getPresignedUrl } from "@/lib/s3";
+import { uploadToS3 } from "@/lib/s3";
 import axios from "axios";
 
 export async function GET(
@@ -21,13 +23,16 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const track = await prisma.track.findFirst({
-    where: { id, userId: decoded.userId },
-  });
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(eq(tracks.id, id));
 
-  if (!track) {
+  if (result.length === 0) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
+
+  const track = result[0];
 
   if (track.status === "done" || track.status === "failed") {
     let audioUrl = track.audioUrl;
@@ -56,24 +61,27 @@ export async function GET(
         const s3Key = `tracks/${track.id}/audio.mp3`;
         await uploadToS3(s3Key, Buffer.from(response.data));
 
-        const updated = await prisma.track.update({
-          where: { id: track.id },
-          data: {
+        const presignedUrl = await getPresignedUrl(s3Key);
+        const updated = await db
+          .update(tracks)
+          .set({
             status: "done",
             s3Key,
-            audioUrl: await getPresignedUrl(s3Key),
-          },
-        });
+            audioUrl: presignedUrl,
+          })
+          .where(eq(tracks.id, track.id!))
+          .returning();
 
-        return NextResponse.json(updated);
+        return NextResponse.json(updated[0]);
       }
 
       if (status.status === "failed") {
-        const updated = await prisma.track.update({
-          where: { id: track.id },
-          data: { status: "failed", error: status.error || "Generation failed" },
-        });
-        return NextResponse.json(updated);
+        const updated = await db
+          .update(tracks)
+          .set({ status: "failed", error: status.error || "Generation failed" })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+        return NextResponse.json(updated[0]);
       }
 
       return NextResponse.json(track);
@@ -104,26 +112,28 @@ export async function GET(
           await uploadToS3(s3KeyHd, Buffer.from(hdRes.data));
         }
 
-        const updated = await prisma.track.update({
-          where: { id: track.id },
-          data: {
+        const updated = await db
+          .update(tracks)
+          .set({
             status: "done",
             s3Key,
             s3KeyHd,
             audioUrl: await getPresignedUrl(s3Key),
             audioUrlHd: s3KeyHd ? await getPresignedUrl(s3KeyHd) : null,
-          },
-        });
+          })
+          .where(eq(tracks.id, track.id!))
+          .returning();
 
-        return NextResponse.json(updated);
+        return NextResponse.json(updated[0]);
       }
 
       if (status.status === "failed") {
-        const updated = await prisma.track.update({
-          where: { id: track.id },
-          data: { status: "failed", error: status.error || "Generation failed" },
-        });
-        return NextResponse.json(updated);
+        const updated = await db
+          .update(tracks)
+          .set({ status: "failed", error: status.error || "Generation failed" })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+        return NextResponse.json(updated[0]);
       }
 
       return NextResponse.json(track);

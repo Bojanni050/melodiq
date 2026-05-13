@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { generateToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -14,8 +16,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    const existing = await db.select().from(users).where(eq(users.email, email));
+    if (existing.length > 0) {
       return NextResponse.json(
         { error: "Email already registered" },
         { status: 400 }
@@ -23,11 +25,13 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
-    });
+    const result = await db
+      .insert(users)
+      .values({ email, password: hashedPassword, name: name || null })
+      .returning();
 
-    const token = generateToken(user.id);
+    const user = result[0];
+    const token = generateToken(user.id!);
     const response = NextResponse.json({ user: { id: user.id, email: user.email, name: user.name } });
     response.cookies.set("token", token, {
       httpOnly: true,

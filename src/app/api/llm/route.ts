@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { logApi } from "@/lib/logger";
+import { db } from "@/db";
+import { apiLogs } from "@/db/schema";
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
@@ -87,9 +87,10 @@ Rules:
 }
 
 async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
+  const axios = (await import("axios")).default;
+
   if (OPENROUTER_KEY) {
-    const axios = await import("axios");
-    const res = await axios.default.post(
+    const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: OPENROUTER_MODEL,
@@ -110,8 +111,7 @@ async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
   }
 
   if (OPENAI_KEY) {
-    const axios = await import("axios");
-    const res = await axios.default.post(
+    const res = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
         model: OPENAI_MODEL,
@@ -131,8 +131,7 @@ async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
   }
 
   if (EMERGENT_KEY) {
-    const axios = await import("axios");
-    const res = await axios.default.post(
+    const res = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
         model: OPENAI_MODEL,
@@ -152,4 +151,31 @@ async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
   }
 
   throw new Error("No AI provider configured. Add OPENROUTER_API_KEY, OPENAI_API_KEY, or EMERGENT_API_KEY to .env");
+}
+
+async function logApi(data: {
+  userId: string;
+  type: string;
+  provider: string;
+  endpoint: string;
+  request: string;
+  response?: string;
+  statusCode?: number;
+  duration?: number;
+}) {
+  if (process.env.ENABLE_API_LOGGING !== "true") return;
+  try {
+    await db.insert(apiLogs).values({
+      userId: data.userId,
+      type: data.type,
+      provider: data.provider,
+      endpoint: data.endpoint,
+      request: data.request,
+      response: data.response || null,
+      statusCode: data.statusCode || null,
+      duration: data.duration || null,
+    });
+  } catch (e) {
+    console.error("Failed to log API call:", e);
+  }
 }

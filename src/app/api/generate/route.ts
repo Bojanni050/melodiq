@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
@@ -21,8 +23,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
 
-  const track = await prisma.track.create({
-    data: {
+  const result = await db
+    .insert(tracks)
+    .values({
       userId: decoded.userId,
       provider,
       providerModel,
@@ -31,14 +34,16 @@ export async function POST(request: NextRequest) {
       instrumental: instrumental || false,
       title: title || null,
       status: "pending",
-    },
-  });
+    })
+    .returning();
+
+  const track = result[0];
 
   try {
-    let result: any;
+    let genResult: any;
 
     if (provider === "lyria") {
-      result = await generateLyria({
+      genResult = await generateLyria({
         prompt,
         lyrics,
         instrumental,
@@ -46,17 +51,18 @@ export async function POST(request: NextRequest) {
       });
 
       const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, result.audioBuffer);
+      await uploadToS3(s3Key, genResult.audioBuffer);
 
-      const updated = await prisma.track.update({
-        where: { id: track.id },
-        data: {
+      const updated = await db
+        .update(tracks)
+        .set({
           status: "done",
           s3Key,
           audioUrl: `/api/tracks/${track.id}/download`,
-          duration: result.duration,
-        },
-      });
+          duration: genResult.duration,
+        })
+        .where(eq(tracks.id, track.id!))
+        .returning();
 
       await logApi({
         userId: decoded.userId,
@@ -64,29 +70,30 @@ export async function POST(request: NextRequest) {
         provider: "lyria",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "done", trackId: updated.id }),
+        response: JSON.stringify({ status: "done", trackId: updated[0].id }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated });
+      return NextResponse.json({ track: updated[0] });
     }
 
     if (provider === "poyo") {
-      result = await generatePoYo({
+      genResult = await generatePoYo({
         prompt,
         lyrics,
         instrumental,
         model: providerModel,
       });
 
-      const updated = await prisma.track.update({
-        where: { id: track.id },
-        data: {
+      const updated = await db
+        .update(tracks)
+        .set({
           status: "generating",
-          jobId: result.jobId,
-        },
-      });
+          jobId: genResult.jobId,
+        })
+        .where(eq(tracks.id, track.id!))
+        .returning();
 
       await logApi({
         userId: decoded.userId,
@@ -94,29 +101,30 @@ export async function POST(request: NextRequest) {
         provider: "poyo",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: result.jobId }),
+        response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated });
+      return NextResponse.json({ track: updated[0] });
     }
 
     if (provider === "tempolor") {
-      result = await generateTempolor({
+      genResult = await generateTempolor({
         prompt,
         lyrics,
         instrumental,
         model: providerModel,
       });
 
-      const updated = await prisma.track.update({
-        where: { id: track.id },
-        data: {
+      const updated = await db
+        .update(tracks)
+        .set({
           status: "generating",
-          jobId: result.jobId,
-        },
-      });
+          jobId: genResult.jobId,
+        })
+        .where(eq(tracks.id, track.id!))
+        .returning();
 
       await logApi({
         userId: decoded.userId,
@@ -124,12 +132,12 @@ export async function POST(request: NextRequest) {
         provider: "tempolor",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: result.jobId }),
+        response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated });
+      return NextResponse.json({ track: updated[0] });
     }
 
     return NextResponse.json(
@@ -139,15 +147,15 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const isCopyright = error.message === "COPYRIGHT";
 
-    await prisma.track.update({
-      where: { id: track.id },
-      data: {
+    await db
+      .update(tracks)
+      .set({
         status: "failed",
         error: isCopyright
           ? "Copyright detected → click Optimize in Studio to rewrite safely"
           : error.message || "Generation failed",
-      },
-    });
+      })
+      .where(eq(tracks.id, track.id!));
 
     await logApi({
       userId: decoded.userId,
