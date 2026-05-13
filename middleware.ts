@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "./src/lib/auth";
+import { verifyToken } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
-  const isAuthPage =
-    request.nextUrl.pathname === "/login" ||
-    request.nextUrl.pathname === "/register";
-  const isApiPage = request.nextUrl.pathname.startsWith("/api");
+  const { pathname } = request.nextUrl;
+
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isPublicApi = pathname.startsWith("/api/webhooks/");
+  const isApi = pathname.startsWith("/api/");
 
   if (isAuthPage) {
     if (token && verifyToken(token)) {
@@ -15,7 +16,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!isApiPage && !token) {
+  if (isPublicApi) return NextResponse.next();
+
+  if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
