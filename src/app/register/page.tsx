@@ -47,74 +47,109 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Aurora background */}
+      <div className="aurora absolute inset-0 opacity-30" />
+
+      {/* Animated soundwave decoration */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="flex items-end gap-1 opacity-10">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="w-1 bg-white rounded-full"
+              style={{
+                height: `${20 + Math.sin(i * 0.5) * 30 + Math.random() * 40}px`,
+                animation: `soundwave ${1.5 + Math.random() * 1}s ease-in-out ${i * 0.1}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full max-w-sm relative z-10">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent mb-2">
-            Sonara
-          </h1>
-          <p className="text-white/50">AI Music Studio</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-500/20 border border-primary-500/30 mb-4">
+            <svg className="w-8 h-8 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white">Sonara</h1>
+          <p className="text-sm text-white/40 mt-1">Create your account</p>
         </div>
 
-        <div className="card">
-          <h2 className="text-xl font-semibold mb-6">Create Account</h2>
-
+        {/* Form card */}
+        <div className="section-card">
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-300">
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-300">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Name (optional)</label>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Name (optional)</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="input-field"
+                className="input-field text-sm"
+                placeholder="Your name"
                 autoComplete="name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
+                className="input-field text-sm"
+                placeholder="you@example.com"
                 required
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Password</label>
+              <label className="block text-xs font-medium text-white/50 mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
+                className="input-field text-sm"
+                placeholder="Min 8 characters"
                 required
                 minLength={8}
                 autoComplete="new-password"
               />
-              <p className="text-xs text-white/30 mt-1">Minimum 8 characters</p>
             </div>
 
-            <button type="submit" disabled={loading} className="w-full btn-primary">
-              {loading ? "Creating account..." : "Create Account"}
+            <button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full btn-primary py-2.5 text-sm font-medium"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating account...
+                </span>
+              ) : (
+                "Create Account"
+              )}
             </button>
           </form>
-
-          <p className="mt-6 text-sm text-center text-white/50">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary-400 hover:underline">
-              Sign in
-            </Link>
-          </p>
         </div>
+
+        <p className="mt-6 text-xs text-center text-white/30">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary-400 hover:text-primary-300 transition-colors">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

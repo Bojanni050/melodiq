@@ -13,6 +13,7 @@ export interface Track {
   s3Key: string | null;
   s3KeyHd: string | null;
   duration: number | null;
+  lyrics: string | null;
   createdAt: string;
   error: string | null;
 }
@@ -48,6 +49,7 @@ interface StudioState {
   language: string;
   instrumental: boolean;
   customLanguage: string;
+  vocalGender: "female" | "male" | "auto";
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
   setTitle: (title: string) => void;
@@ -56,6 +58,7 @@ interface StudioState {
   setLanguage: (lang: string) => void;
   setCustomLanguage: (lang: string) => void;
   setInstrumental: (val: boolean) => void;
+  setVocalGender: (val: "female" | "male" | "auto") => void;
   reset: () => void;
 }
 
@@ -70,6 +73,7 @@ export const useStudioStore = create<StudioState>()(
       language: "English",
       customLanguage: "",
       instrumental: false,
+      vocalGender: "auto",
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
       setTitle: (title) => set({ title }),
@@ -78,6 +82,7 @@ export const useStudioStore = create<StudioState>()(
       setLanguage: (lang) => set({ language: lang }),
       setCustomLanguage: (lang) => set({ customLanguage: lang }),
       setInstrumental: (val) => set({ instrumental: val }),
+      setVocalGender: (val) => set({ vocalGender: val }),
       reset: () =>
         set({
           songIdea: "",
@@ -88,6 +93,7 @@ export const useStudioStore = create<StudioState>()(
           language: "English",
           customLanguage: "",
           instrumental: false,
+          vocalGender: "auto",
         }),
     }),
     { name: "sonara-studio" }
