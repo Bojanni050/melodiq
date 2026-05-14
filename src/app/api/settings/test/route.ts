@@ -3,26 +3,31 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import axios from "axios";
 
-const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string }> = {
+const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST" }> = {
   lyria: {
     url: "https://api.lyria.google.com/v1/models",
     keyPrefix: "",
+    method: "GET",
   },
   poyo: {
     url: "https://api.poyo.com/v1/credits",
     keyPrefix: "",
+    method: "GET",
   },
   tempolor: {
-    url: "https://api.tempolor.com/v1/credits",
+    url: "https://api.tempolor.com/open-apis/v1/account/billing",
     keyPrefix: "",
+    method: "POST",
   },
   openrouter: {
-    url: "https://openrouter.ai/api/v1/auth/whoami",
+    url: "https://openrouter.ai/api/v1/key",
     keyPrefix: "",
+    method: "GET",
   },
   openai: {
     url: "https://api.openai.com/v1/models",
     keyPrefix: "",
+    method: "GET",
   },
 };
 
@@ -45,7 +50,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await axios.get(endpoint.url, {
+    const response = await axios({
+      method: endpoint.method,
+      url: endpoint.url,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -56,10 +63,12 @@ export async function POST(request: Request) {
     let info = "Connected";
     let models: any[] = [];
 
-    if (provider === "poyo" || provider === "tempolor") {
+    if (provider === "poyo") {
       info = `Connected — ${response.data.credits ?? "unknown"} credits`;
+    } else if (provider === "tempolor") {
+      info = `Connected — ${response.data.data?.balance ?? "unknown"} credits`;
     } else if (provider === "openrouter") {
-      info = `Connected — ${response.data.data?.name || response.data.data?.email || "authenticated"}`;
+      info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {
         const modelsRes = await axios.get("https://openrouter.ai/api/v1/models", {
           headers: {
