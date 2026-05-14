@@ -6,7 +6,7 @@ import Player from "@/components/Player";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { useStudioStore, usePlayerStore } from "@/lib/store";
+import { useStudioStore, usePlayerStore, useUIStore } from "@/lib/store";
 
 interface Track {
   id: string;
@@ -30,7 +30,8 @@ export default function HomePage() {
   const [generating, setGenerating] = useState(false);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null });
   const [showOverlay, setShowOverlay] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("create");
+  const activeTab = useUIStore((state) => state.activeTab);
+  const setActiveTab = useUIStore((state) => state.setActiveTab);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
 
   useEffect(() => {

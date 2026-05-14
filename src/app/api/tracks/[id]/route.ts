@@ -10,6 +10,8 @@ import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
 import axios from "axios";
 
+const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -50,6 +52,18 @@ export async function GET(
       audioUrl,
       audioUrlHd,
     });
+  }
+
+  if (track.createdAt) {
+    const elapsed = Date.now() - new Date(track.createdAt).getTime();
+    if (elapsed > GENERATION_TIMEOUT_MS) {
+      const updated = await db
+        .update(tracks)
+        .set({ status: "failed", error: "Generation timed out. Please try again." })
+        .where(eq(tracks.id, track.id!))
+        .returning();
+      return NextResponse.json(updated[0]);
+    }
   }
 
   if (track.provider === "poyo" && track.jobId) {

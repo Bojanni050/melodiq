@@ -29,16 +29,24 @@ interface PlayerState {
   setProgress: (progress: number) => void;
 }
 
-export const usePlayerStore = create<PlayerState>()((set) => ({
-  currentTrack: null,
-  isPlaying: false,
-  volume: 0.8,
-  progress: 0,
-  setCurrentTrack: (track) => set({ currentTrack: track }),
-  setIsPlaying: (playing) => set({ isPlaying: playing }),
-  setVolume: (volume) => set({ volume }),
-  setProgress: (progress) => set({ progress }),
-}));
+export const usePlayerStore = create<PlayerState>()(
+  persist(
+    (set) => ({
+      currentTrack: null,
+      isPlaying: false,
+      volume: 0.8,
+      progress: 0,
+      setCurrentTrack: (track) => set({ currentTrack: track }),
+      setIsPlaying: (playing) => set({ isPlaying: playing }),
+      setVolume: (volume) => set({ volume }),
+      setProgress: (progress) => set({ progress }),
+    }),
+    {
+      name: "sonara-player",
+      partialize: (state) => ({ volume: state.volume }),
+    }
+  )
+);
 
 interface StudioState {
   songIdea: string;
@@ -97,5 +105,27 @@ export const useStudioStore = create<StudioState>()(
         }),
     }),
     { name: "sonara-studio" }
+  )
+);
+
+interface UIState {
+  activeTab: "create" | "library";
+  selectedTrackId: string | null;
+  setActiveTab: (tab: "create" | "library") => void;
+  setSelectedTrackId: (id: string | null) => void;
+}
+
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      activeTab: "create",
+      selectedTrackId: null,
+      setActiveTab: (tab) => set({ activeTab: tab }),
+      setSelectedTrackId: (id) => set({ selectedTrackId: id }),
+    }),
+    {
+      name: "sonara-ui",
+      partialize: (state) => ({ activeTab: state.activeTab }),
+    }
   )
 );
