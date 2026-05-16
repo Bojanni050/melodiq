@@ -1,21 +1,19 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireAuth } from "@/lib/require-auth";
 
 export async function PUT(request: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   const body = await request.json();
   const { name, currentPassword, newPassword } = body;
 
-  const existing = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+  const existing = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!existing.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const user = existing[0];
@@ -46,7 +44,7 @@ export async function PUT(request: NextRequest) {
   const updated = await db
     .update(users)
     .set(updates)
-    .where(eq(users.id, decoded.userId))
+    .where(eq(users.id, userId))
     .returning({
       id: users.id,
       email: users.email,

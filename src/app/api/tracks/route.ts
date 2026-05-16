@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
+import { requireAuth } from "@/lib/require-auth";
 
 const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-
-  if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   const result = await db
     .select()
     .from(tracks)
-    .where(eq(tracks.userId, decoded.userId))
+    .where(eq(tracks.userId, userId))
     .orderBy(desc(tracks.createdAt));
 
   const now = Date.now();
@@ -43,7 +38,7 @@ export async function GET() {
     const refreshed = await db
       .select()
       .from(tracks)
-      .where(eq(tracks.userId, decoded.userId))
+      .where(eq(tracks.userId, userId))
       .orderBy(desc(tracks.createdAt));
 
     return NextResponse.json({ tracks: refreshed });

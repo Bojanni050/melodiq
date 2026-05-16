@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -9,6 +7,7 @@ import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
 import axios from "axios";
+import { requireAuth } from "@/lib/require-auth";
 
 const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -17,18 +16,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-
-  if (!decoded) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   const result = await db
     .select()
     .from(tracks)
-    .where(and(eq(tracks.id, id), eq(tracks.userId, decoded.userId)));
+    .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
   if (result.length === 0) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });

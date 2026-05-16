@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { apiLogs } from "@/db/schema";
+import { requireAuth } from "@/lib/require-auth";
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
@@ -11,13 +10,9 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-
-  if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   const { type, idea, provider, language, instrumental } = await request.json();
 
@@ -65,7 +60,7 @@ Rules:
     }
 
     await logApi({
-      userId: decoded.userId,
+      userId: userId,
       type: "llm",
       provider: "openrouter",
       endpoint: "/api/llm",
@@ -78,7 +73,7 @@ Rules:
     return NextResponse.json({ result });
   } catch (error: any) {
     await logApi({
-      userId: decoded.userId,
+      userId: userId,
       type: "llm",
       provider: "openrouter",
       endpoint: "/api/llm",

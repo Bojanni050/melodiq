@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { S3, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { getSetting } from "@/lib/settings";
+import { requireAuth } from "@/lib/require-auth";
 
 function getS3Client() {
   const endpoint = process.env.S3_ENDPOINT || "";
@@ -14,10 +13,8 @@ function getS3Client() {
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const { endpoint, region, bucket } = getS3Client();
   return NextResponse.json({
@@ -29,10 +26,8 @@ export async function GET() {
 }
 
 export async function POST() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const { endpoint, region, accessKey, secretKey, bucket } = getS3Client();
 
