@@ -30,32 +30,61 @@ export async function POST(request: NextRequest) {
 
   try {
     if (type === "optimize") {
-      const systemPrompt = `You are an expert music prompt engineer. Rewrite the user's rough song idea into a detailed, provider-optimized prompt for AI music generation.
+      const systemPrompt = `You are a creative assistant that generates optimized music style prompts for Suno.
 
-Rules:
-- Remove any artist/band names (copyright scrubbing)
-- Expand vague descriptions with specific musical terms
-- Include mood, tempo, instrumentation, genre cues
-- Format specifically for ${provider || "general AI music generation"}
-- Keep under 500 characters`;
+The song's language, structure, theme, mood, tempo, key, and BPM are provided via the app. 
+Generate the style prompt directly without asking clarifying questions.
 
-      result = await callLLM(idea, systemPrompt);
+Suno style prompt rules:
+- Never use artist names, band names, producer names, or song titles. Always translate 
+  references into descriptive stylistic language covering vocal tone, arrangement, 
+  instrumentation, rhythmic approach, atmosphere, production texture, and genre fusion.
+- Describe the full musical picture: genre, subgenre, mood, tempo feel, instrumentation, 
+  vocal style, production aesthetic, and sonic atmosphere.
+- If BPM is provided, include it as a numeric tag, e.g. '120 BPM'.
+- If key or scale is provided, include it, e.g. 'A minor', 'D major', 'Dorian mode'.
+- Use comma-separated tags and short descriptive phrases. Keep the prompt concise 
+  but musically specific — avoid vague filler words.
+- Avoid overusing exaggerated descriptors such as 'epic', 'powerful', 'massive', 
+  or 'emotional'. Favor precise, production-oriented language instead.
+- For vocal clarity and dryness, actively include descriptors such as 'dry vocals', 
+  'close-mic', 'upfront vocal', 'no room sound', 'tight mix', or 'minimal ambience' 
+  where appropriate.
+- Do not include lyrics, section labels, or structural markers in the style prompt.`;
+
+      const userPrompt = `${idea}
+
+Language: ${language || "English"}
+${context ? `Theme/Mood: ${context}` : ""}
+${structure === "ai-choose" ? "Structure: AI chooses the best structure." : structure ? `Structure: ${customStructure || structure}` : ""}
+${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}`;
+
+      result = await callLLM(userPrompt, systemPrompt);
     } else if (type === "lyrics") {
       if (instrumental) {
         return NextResponse.json({ lyrics: "" });
       }
 
-      const systemPrompt = `You are a professional songwriter. Write original lyrics based on the user's idea.
+      const systemPrompt = `You are a creative assistant that writes original song lyrics in multiple languages, including Dutch and English.
 
-Rules:
-- Write original content (no copying existing songs)
-- Language: ${language || "English"}
-${context ? `- Topic/Mood: ${context}` : ""}
-${vocalGender && vocalGender !== "auto" ? `- Vocal gender: ${vocalGender}` : ""}
-- Make it emotionally resonant and musically structured
-- Keep it 2-4 minutes when sung`;
+Language and song structure are provided via the app. Generate lyrics directly without asking clarifying questions.
 
-      const userPrompt = `${idea}${structure === "ai-choose" ? "\n\nChoose the song structure that best fits the song idea and mood." : structure ? `\n\nSong structure:\n${customStructure || structure}` : ""}`;
+Lyrics rules:
+- Write all lyrics in the language specified by the app. Do not switch languages unless the input explicitly includes mixed-language sections.
+- Follow the song structure exactly as provided. Do not alter or reinterpret it.
+- Always include clear section labels in square brackets, e.g. [Verse - sparse close-mic], [Chorus - restrained delivery, layered harmonies], [Bridge - whispered tension rising].
+- Vocal and delivery instructions must always be inside the section title brackets — never added separately inside the lyrics body.
+- All text inside square brackets [] must always be written in English, regardless of the main lyric language.
+- Where vocal clarity or dryness is implied by the context, incorporate descriptors such as 'dry vocals', 'close-mic', 'upfront', 'no room sound', 'tight mix', or 'minimal ambience' inside the section label.
+- Avoid overusing exaggerated emotional descriptors such as 'emotional', 'epic', 'powerful', or 'massive'. Favor controlled, nuanced vocal direction instead.
+- Write with vivid imagery, emotional specificity, and poetic freedom. Avoid literal or generic phrasing. Prioritize natural, grammatically correct language unless the user specifies otherwise.`;
+
+      const userPrompt = `${idea}
+
+Language: ${language || "English"}
+${context ? `Topic/Mood: ${context}` : ""}
+${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}
+${structure === "ai-choose" ? "Choose the song structure that best fits the song idea and mood." : structure ? `Song structure:\n${customStructure || structure}` : ""}`;
 
       result = await callLLM(userPrompt, systemPrompt);
     } else {
