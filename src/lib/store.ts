@@ -51,6 +51,8 @@ export const usePlayerStore = create<PlayerState>()(
 interface StudioState {
   songIdea: string;
   lyrics: string;
+  lyricsTopic: string;
+  lyricsMood: string;
   title: string;
   provider: string;
   providerModel: string;
@@ -60,6 +62,8 @@ interface StudioState {
   vocalGender: "female" | "male" | "auto";
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
+  setLyricsTopic: (topic: string) => void;
+  setLyricsMood: (mood: string) => void;
   setTitle: (title: string) => void;
   setProvider: (provider: string) => void;
   setProviderModel: (model: string) => void;
@@ -75,6 +79,8 @@ export const useStudioStore = create<StudioState>()(
     (set) => ({
       songIdea: "",
       lyrics: "",
+      lyricsTopic: "",
+      lyricsMood: "",
       title: "",
       provider: "lyria",
       providerModel: "lyria-3",
@@ -84,6 +90,8 @@ export const useStudioStore = create<StudioState>()(
       vocalGender: "auto",
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
+      setLyricsTopic: (topic) => set({ lyricsTopic: topic }),
+      setLyricsMood: (mood) => set({ lyricsMood: mood }),
       setTitle: (title) => set({ title }),
       setProvider: (provider) => set({ provider }),
       setProviderModel: (model) => set({ providerModel: model }),
@@ -95,6 +103,8 @@ export const useStudioStore = create<StudioState>()(
         set({
           songIdea: "",
           lyrics: "",
+          lyricsTopic: "",
+          lyricsMood: "",
           title: "",
           provider: "lyria",
           providerModel: "lyria-3",
