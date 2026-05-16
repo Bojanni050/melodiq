@@ -1,5 +1,8 @@
 {
   "$schema": "https://app.kilo.ai/config.json",
+  "indexing": {
+    "enabled": true
+  },
   "mcp": {
     "context7": {
       "type": "local",
