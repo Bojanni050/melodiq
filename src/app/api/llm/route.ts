@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
 
-  const { type, idea, provider, language, instrumental } = await request.json();
+  const { type, idea, topic, mood, provider, language, instrumental } = await request.json();
 
   if (!idea || typeof idea !== "string") {
     return NextResponse.json({ error: "idea is required" }, { status: 400 });
@@ -51,6 +51,8 @@ Rules:
 - Use section tags: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus], [Outro]
 - Write original content (no copying existing songs)
 - Language: ${language || "English"}
+${topic ? `- Topic: ${topic}` : ""}
+${mood ? `- Mood: ${mood}` : ""}
 - Make it emotionally resonant and musically structured
 - Keep it 2-4 minutes when sung`;
 

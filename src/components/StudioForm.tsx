@@ -42,6 +42,8 @@ export default function StudioForm({
   const {
     songIdea,
     lyrics,
+    lyricsTopic,
+    lyricsMood,
     title,
     provider,
     providerModel,
@@ -51,6 +53,8 @@ export default function StudioForm({
     vocalGender,
     setSongIdea,
     setLyrics,
+    setLyricsTopic,
+    setLyricsMood,
     setTitle,
     setProvider,
     setProviderModel,
@@ -156,6 +160,28 @@ export default function StudioForm({
 
         {!instrumental && (
           <>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs text-white/50 mb-1.5">Topic</label>
+                <input
+                  type="text"
+                  value={lyricsTopic}
+                  onChange={(e) => setLyricsTopic(e.target.value)}
+                  placeholder="e.g. heartbreak, freedom, love"
+                  className="input-field text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-white/50 mb-1.5">Mood</label>
+                <input
+                  type="text"
+                  value={lyricsMood}
+                  onChange={(e) => setLyricsMood(e.target.value)}
+                  placeholder="e.g. melancholic, joyful, dark"
+                  className="input-field text-sm"
+                />
+              </div>
+            </div>
             <textarea
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
