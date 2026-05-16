@@ -4,3 +4,5 @@ node_modules
 .env.local
 .env*.local
 kilo.json
+.env.local
+.env.production
