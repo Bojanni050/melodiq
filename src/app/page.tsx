@@ -137,13 +137,22 @@ export default function HomePage() {
     setShowOverlay(true);
 
     try {
+      let finalTitle = title;
+
+      if (!instrumental && !title.trim() && lyrics.trim()) {
+        finalTitle = await handleGenerateTitle(lyrics) || "";
+        if (finalTitle) {
+          useStudioStore.getState().setTitle(finalTitle);
+        }
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: songIdea,
           lyrics,
-          title,
+          title: finalTitle,
           provider,
           providerModel,
           language,

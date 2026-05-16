@@ -52,7 +52,21 @@ async function callLLM(prompt: string, systemPrompt: string) {
 }
 
 export async function generateTitle(lyrics: string): Promise<string> {
-  const systemPrompt = `You are a professional music title generator. Based on the lyrics provided, generate a concise, catchy song title (max 8 words). Return only the title, no extra text.`;
+  const systemPrompt = `You are a professional music title generator.
+
+Analyze the lyrics and derive the best title using this priority order:
+
+1. REPEATING LINES — Find any line or phrase that appears more than once across sections (especially in [Chorus] or [Hook]). A repeated line is almost always the title.
+2. HOOK PHRASE — If no exact repetition, extract the most memorable or emotionally charged phrase from a [Chorus] or [Hook] section.
+3. THEMATIC CORE — If no clear hook exists (e.g. instrumental or abstract lyrics), distill the central theme or image into a short, evocative phrase.
+
+Rules:
+- Return ONLY the title — no quotes, no explanation, no punctuation at the end
+- Maximum 6 words
+- Match the language of the lyrics (Dutch title for Dutch lyrics, English for English, etc.)
+- Do not invent words not present in or strongly implied by the lyrics
+- Prefer the exact words from the lyrics over paraphrasing`;
+
   return callLLM(lyrics, systemPrompt);
 }
 

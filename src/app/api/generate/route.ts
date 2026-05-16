@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
+  if (instrumental && (!title || !title.trim())) {
+    return NextResponse.json({ error: "title is required for instrumental tracks" }, { status: 400 });
+  }
 
   const result = await db
     .insert(tracks)
