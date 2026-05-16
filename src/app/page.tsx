@@ -64,7 +64,7 @@ export default function HomePage() {
   }
 
   async function handleOptimize() {
-    const { songIdea, provider } = useStudioStore.getState();
+    const { songIdea, provider, language, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
     const res = await fetch("/api/llm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -72,6 +72,11 @@ export default function HomePage() {
         type: "optimize",
         idea: songIdea,
         provider,
+        language,
+        context: lyricsContext,
+        structure,
+        customStructure,
+        vocalGender,
       }),
     });
     if (res.ok) {
