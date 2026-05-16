@@ -548,9 +548,9 @@ Your chorus here`}
             ⚠ Title is required for vocal tracks
           </p>
         )}
-        {instrumental && (
-          <p className="text-xs text-white/30 mt-1">
-            💡 Tip: A descriptive title helps with search and organization
+        {instrumental && !title.trim() && (
+          <p className="text-xs text-red-400/60 mt-1">
+            ⚠ Title is required for instrumental tracks
           </p>
         )}
       </section>
