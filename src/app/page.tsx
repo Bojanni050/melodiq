@@ -81,17 +81,19 @@ export default function HomePage() {
   }
 
   async function handleGenerateLyrics() {
-    const { songIdea, lyricsTopic, lyricsMood, language, instrumental } = useStudioStore.getState();
+    const { songIdea, lyricsContext, language, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
     const res = await fetch("/api/llm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "lyrics",
         idea: songIdea,
-        topic: lyricsTopic,
-        mood: lyricsMood,
+        context: lyricsContext,
         language,
         instrumental,
+        structure,
+        customStructure,
+        vocalGender,
       }),
     });
     if (res.ok) {

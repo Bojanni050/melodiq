@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
 
-  const { type, idea, topic, mood, provider, language, instrumental } = await request.json();
+  const { type, idea, context, structure, customStructure, vocalGender, provider, language, instrumental } = await request.json();
 
   if (!idea || typeof idea !== "string") {
     return NextResponse.json({ error: "idea is required" }, { status: 400 });
@@ -48,15 +48,16 @@ Rules:
       const systemPrompt = `You are a professional songwriter. Write original lyrics based on the user's idea.
 
 Rules:
-- Use section tags: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus], [Outro]
 - Write original content (no copying existing songs)
 - Language: ${language || "English"}
-${topic ? `- Topic: ${topic}` : ""}
-${mood ? `- Mood: ${mood}` : ""}
+${context ? `- Topic/Mood: ${context}` : ""}
+${vocalGender && vocalGender !== "auto" ? `- Vocal gender: ${vocalGender}` : ""}
 - Make it emotionally resonant and musically structured
 - Keep it 2-4 minutes when sung`;
 
-      result = await callLLM(idea, systemPrompt);
+      const userPrompt = `${idea}${structure === "ai-choose" ? "\n\nChoose the song structure that best fits the song idea and mood." : structure ? `\n\nSong structure:\n${customStructure || structure}` : ""}`;
+
+      result = await callLLM(userPrompt, systemPrompt);
     } else {
       return NextResponse.json({ error: "Unknown type" }, { status: 400 });
     }

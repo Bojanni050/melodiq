@@ -51,19 +51,19 @@ export const usePlayerStore = create<PlayerState>()(
 interface StudioState {
   songIdea: string;
   lyrics: string;
-  lyricsTopic: string;
-  lyricsMood: string;
+  lyricsContext: string;
   title: string;
   provider: string;
   providerModel: string;
   language: string;
-  instrumental: boolean;
   customLanguage: string;
+  instrumental: boolean;
   vocalGender: "female" | "male" | "auto";
+  structure: string;
+  customStructure: string;
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
-  setLyricsTopic: (topic: string) => void;
-  setLyricsMood: (mood: string) => void;
+  setLyricsContext: (context: string) => void;
   setTitle: (title: string) => void;
   setProvider: (provider: string) => void;
   setProviderModel: (model: string) => void;
@@ -71,6 +71,8 @@ interface StudioState {
   setCustomLanguage: (lang: string) => void;
   setInstrumental: (val: boolean) => void;
   setVocalGender: (val: "female" | "male" | "auto") => void;
+  setStructure: (val: string) => void;
+  setCustomStructure: (val: string) => void;
   reset: () => void;
 }
 
@@ -79,8 +81,7 @@ export const useStudioStore = create<StudioState>()(
     (set) => ({
       songIdea: "",
       lyrics: "",
-      lyricsTopic: "",
-      lyricsMood: "",
+      lyricsContext: "",
       title: "",
       provider: "lyria",
       providerModel: "lyria-3",
@@ -88,10 +89,11 @@ export const useStudioStore = create<StudioState>()(
       customLanguage: "",
       instrumental: false,
       vocalGender: "auto",
+      structure: "",
+      customStructure: "",
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
-      setLyricsTopic: (topic) => set({ lyricsTopic: topic }),
-      setLyricsMood: (mood) => set({ lyricsMood: mood }),
+      setLyricsContext: (context) => set({ lyricsContext: context }),
       setTitle: (title) => set({ title }),
       setProvider: (provider) => set({ provider }),
       setProviderModel: (model) => set({ providerModel: model }),
@@ -99,12 +101,13 @@ export const useStudioStore = create<StudioState>()(
       setCustomLanguage: (lang) => set({ customLanguage: lang }),
       setInstrumental: (val) => set({ instrumental: val }),
       setVocalGender: (val) => set({ vocalGender: val }),
+      setStructure: (val) => set({ structure: val }),
+      setCustomStructure: (val) => set({ customStructure: val }),
       reset: () =>
         set({
           songIdea: "",
           lyrics: "",
-          lyricsTopic: "",
-          lyricsMood: "",
+          lyricsContext: "",
           title: "",
           provider: "lyria",
           providerModel: "lyria-3",
@@ -112,6 +115,8 @@ export const useStudioStore = create<StudioState>()(
           customLanguage: "",
           instrumental: false,
           vocalGender: "auto",
+          structure: "",
+          customStructure: "",
         }),
     }),
     { name: "sonara-studio", skipHydration: true }
