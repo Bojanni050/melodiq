@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -9,15 +7,30 @@ import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
+import { requireAuth } from "@/lib/require-auth";
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 5) return false;
+  entry.count++;
+  return true;
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
-  if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!checkRateLimit(userId)) {
+    return NextResponse.json({ error: "Too many requests. Try again in a minute." }, { status: 429 });
   }
 
   const body = await request.json();
@@ -39,7 +52,7 @@ export async function POST(request: NextRequest) {
   const result = await db
     .insert(tracks)
     .values({
-      userId: decoded.userId,
+      userId: userId,
       provider,
       providerModel,
       prompt,
@@ -78,7 +91,7 @@ export async function POST(request: NextRequest) {
         .returning();
 
       await logApi({
-        userId: decoded.userId,
+        userId: userId,
         type: "generation",
         provider: "lyria",
         endpoint: "/api/generate",
@@ -109,7 +122,7 @@ export async function POST(request: NextRequest) {
         .returning();
 
       await logApi({
-        userId: decoded.userId,
+        userId: userId,
         type: "generation",
         provider: "poyo",
         endpoint: "/api/generate",
@@ -140,7 +153,7 @@ export async function POST(request: NextRequest) {
         .returning();
 
       await logApi({
-        userId: decoded.userId,
+        userId: userId,
         type: "generation",
         provider: "tempolor",
         endpoint: "/api/generate",
@@ -171,7 +184,7 @@ export async function POST(request: NextRequest) {
       .where(eq(tracks.id, track.id!));
 
     await logApi({
-      userId: decoded.userId,
+      userId: userId,
       type: "generation",
       provider,
       endpoint: "/api/generate",

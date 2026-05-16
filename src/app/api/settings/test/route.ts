@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import axios from "axios";
+import { requireAuth } from "@/lib/require-auth";
 
 const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST" }> = {
   lyria: {
@@ -32,10 +31,8 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
 };
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const body = await request.json();
   const { provider, apiKey } = body;

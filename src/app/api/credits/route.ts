@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { getPoYoCredits } from "@/lib/providers/poyo";
 import { getTempolorCredits } from "@/lib/providers/tempolor";
+import { requireAuth } from "@/lib/require-auth";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-
-  if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
 
   const [poyoCredits, tempolorCredits] = await Promise.all([
     getPoYoCredits(),

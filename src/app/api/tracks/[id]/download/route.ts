@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getPresignedUrl } from "@/lib/s3";
+import { requireAuth } from "@/lib/require-auth";
 
 export async function GET(
   request: NextRequest,
@@ -14,18 +13,14 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const hd = searchParams.get("hd") === "true";
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  const decoded = verifyToken(token || "");
-
-  if (!decoded) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   const result = await db
     .select()
     .from(tracks)
-    .where(and(eq(tracks.id, id), eq(tracks.userId, decoded.userId)));
+    .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
   if (result.length === 0) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });

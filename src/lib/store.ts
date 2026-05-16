@@ -104,7 +104,7 @@ export const useStudioStore = create<StudioState>()(
           vocalGender: "auto",
         }),
     }),
-    { name: "sonara-studio" }
+    { name: "sonara-studio", skipHydration: true }
   )
 );
 
