@@ -1,0 +1,124 @@
+import postgres from "postgres";
+
+function parseDatabaseUrl(url: string) {
+  const parsed = new URL(url);
+  return {
+    host: parsed.hostname,
+    port: parseInt(parsed.port || "5432"),
+    user: parsed.username,
+    password: parsed.password,
+    database: parsed.pathname.slice(1),
+    ssl: parsed.searchParams.get("sslmode") === "require",
+  };
+}
+
+const createTablesSql = `
+CREATE TABLE IF NOT EXISTS "users" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "email" varchar(255) NOT NULL UNIQUE,
+  "password" text NOT NULL,
+  "name" varchar(255),
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "tracks" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id"),
+  "title" varchar(255),
+  "provider" varchar(50) NOT NULL,
+  "provider_model" varchar(50) NOT NULL,
+  "prompt" text NOT NULL,
+  "lyrics" text,
+  "language" varchar(50),
+  "instrumental" boolean NOT NULL DEFAULT false,
+  "status" varchar(20) NOT NULL DEFAULT 'pending',
+  "audio_url" text,
+  "audio_url_hd" text,
+  "s3_key" text,
+  "s3_key_hd" text,
+  "duration" integer,
+  "job_id" varchar(255),
+  "credits_used" integer NOT NULL DEFAULT 0,
+  "error" text,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "api_logs" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid REFERENCES "users"("id"),
+  "type" varchar(50) NOT NULL,
+  "provider" varchar(50) NOT NULL,
+  "endpoint" varchar(255) NOT NULL,
+  "request" text NOT NULL,
+  "response" text,
+  "status_code" integer,
+  "duration" integer,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "settings" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "key" varchar(255) NOT NULL UNIQUE,
+  "value" text NOT NULL
+);
+`;
+
+export async function initializeDatabase(): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    console.error("DATABASE_URL is not set");
+    return;
+  }
+
+  const config = parseDatabaseUrl(databaseUrl);
+  const targetDb = config.database;
+  if (!targetDb) {
+    console.error("No database name found in DATABASE_URL");
+    return;
+  }
+
+  const postgresUrl = `postgres://${config.user}:${config.password}@${config.host}:${config.port}/postgres`;
+  const client = postgres(postgresUrl);
+
+  try {
+    const result = await client`SELECT 1 FROM pg_database WHERE datname = ${targetDb}`;
+
+    if (result.length === 0) {
+      console.log(`Database "${targetDb}" does not exist, creating...`);
+      await client.unsafe(`CREATE DATABASE "${targetDb}"`);
+      console.log(`Database "${targetDb}" created successfully`);
+    } else {
+      console.log(`Database "${targetDb}" already exists`);
+    }
+  } catch (error) {
+    console.error("Error checking/creating database:", error);
+  } finally {
+    await client.end();
+  }
+
+  const targetClient = postgres(databaseUrl);
+
+  try {
+    await targetClient`SELECT 1 FROM "users" LIMIT 1`;
+    console.log("Tables already exist, skipping creation");
+  } catch {
+    console.log("Tables do not exist, creating...");
+    try {
+      const statements = createTablesSql
+        .split(";")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      for (const statement of statements) {
+        await targetClient.unsafe(statement + ";");
+      }
+      console.log("Tables created successfully");
+    } catch (error) {
+      console.error("Error creating tables:", error);
+    }
+  } finally {
+    await targetClient.end();
+  }
+}
