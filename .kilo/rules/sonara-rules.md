@@ -323,6 +323,30 @@ ENABLE_API_LOGGING=true
 
 ---
 
+## ⚠️ Edge Runtime — Middleware regel
+
+`middleware.ts` draait altijd in de Next.js Edge Runtime. Dit betekent:
+
+**Nooit in middleware of bestanden die middleware importeert:**
+- Static imports van `bcrypt`, `postgres`, `jsonwebtoken`, `pg`, `fs`, `crypto`, `net`, `tls`, `stream`, `os`, `path`
+- Enige Node.js core module of native addon
+
+**Altijd in `src/instrumentation.ts`:**
+- Node.js-only code moet binnen `if (process.env.NEXT_RUNTIME === "nodejs")`
+- Imports van Node.js modules moeten dynamic zijn binnen die check:
+```ts
+const { default: bcrypt } = await import("bcrypt");
+```
+
+**Voor auth in middleware: alleen `jose` gebruiken via `src/lib/auth-edge.ts`**
+- Nooit `jsonwebtoken` in middleware of auth-edge
+- Nooit `src/lib/auth.ts` importeren vanuit middleware
+
+**Bij twijfel:** als een package `fs`, `crypto`, `net` of `tls` gebruikt → niet in Edge.
+
+---
+
+
 ## 🚫 What NOT To Do
 
 | ❌ Don't | ✅ Do instead |
