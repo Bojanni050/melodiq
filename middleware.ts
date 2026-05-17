@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
@@ -10,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const isApi = pathname.startsWith("/api/");
 
   if (isAuthPage) {
-    if (token && verifyToken(token)) {
+    if (token) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
