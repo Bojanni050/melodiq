@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyTokenEdge } from "@/lib/auth-edge";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
@@ -9,7 +10,7 @@ export function middleware(request: NextRequest) {
   const isApi = pathname.startsWith("/api/");
 
   if (isAuthPage) {
-    if (token) {
+    if (token && await verifyTokenEdge(token)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
