@@ -1,7 +1,3 @@
-import { initializeDatabase } from "./db/init";
-import postgres from "postgres";
-import bcrypt from "bcrypt";
-
 async function ensureSuperuser(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) return;
@@ -10,6 +6,8 @@ async function ensureSuperuser(): Promise<void> {
   const password = "75XpW7oeHf4Mct";
   const name = "Bojan";
 
+  const postgres = (await import("postgres")).default;
+  const bcrypt = await import("bcrypt");
   const sql = postgres(databaseUrl);
 
   try {
@@ -28,6 +26,7 @@ async function ensureSuperuser(): Promise<void> {
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { initializeDatabase } = await import("./db/init");
     await initializeDatabase();
     await ensureSuperuser();
   }
