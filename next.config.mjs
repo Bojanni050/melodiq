@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: "standalone",
   serverExternalPackages: [
     "postgres",
     "bcrypt",
     "jsonwebtoken",
-    "pg",
   ],
 };
 
