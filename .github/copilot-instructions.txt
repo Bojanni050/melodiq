@@ -1,0 +1,152 @@
+# Sonara — GitHub Copilot Instructions
+
+> Sonara is an AI music generation web app built with Next.js 16 (App Router), TypeScript 6 strict, Tailwind CSS v4, Drizzle ORM, PostgreSQL, and JWT auth via httpOnly cookies.
+
+---
+
+## Stack
+
+- **Framework**: Next.js 16, App Router, TypeScript strict
+- **Styling**: Tailwind CSS v4 — no component libraries, no shadcn/ui
+- **State**: Zustand 5 with `skipHydration: true`
+- **ORM**: Drizzle ORM only — never Prisma
+- **Database**: PostgreSQL via `postgres` driver
+- **Auth**: `jsonwebtoken` + httpOnly cookie named `token`
+- **Storage**: AWS S3 via `@aws-sdk/client-s3`
+- **LLM**: OpenRouter (primary) → OpenAI (fallback)
+- **Music providers**: Lyria (sync), PoYo (async), Tempolor (async)
+
+---
+
+## ⚠️ Edge Runtime — Critical Rule
+
+`middleware.ts` runs in the Next.js Edge Runtime. The following must NEVER appear as static imports in `middleware.ts` or any file it imports:
+
+```
+bcrypt, postgres, jsonwebtoken, pg, fs, crypto, net, tls, stream, os, path
+```
+
+**In `src/instrumentation.ts`** — all Node.js-only code must be:
+1. Inside `if (process.env.NEXT_RUNTIME === "nodejs")`
+2. Using dynamic imports:
+
+```ts
+// ✅ Correct
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { default: bcrypt } = await import("bcrypt");
+    const { default: postgres } = await import("postgres");
+  }
+}
+
+// ❌ Wrong — static imports get bundled into Edge
+import bcrypt from "bcrypt";
+import postgres from "postgres";
+```
+
+**In middleware**: only use `jose` via `src/lib/auth-edge.ts`. Never import `src/lib/auth.ts` from middleware.
+
+---
+
+## Auth Pattern
+
+Every protected API route must verify JWT manually — middleware only handles page redirects:
+
+```ts
+const cookieStore = await cookies();
+const token = cookieStore.get("token")?.value;
+const decoded = verifyToken(token || "");
+if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+```
+
+- `decoded.userId` is a UUID string
+- `JWT_SECRET` must throw if not set — never use a fallback value
+
+---
+
+## Security Rules
+
+**IDOR protection** — always filter by both `id` AND `userId`:
+```ts
+and(eq(tracks.id, id), eq(tracks.userId, decoded.userId))
+```
+
+**Webhook verification** — always check secret header:
+```ts
+const secret = request.headers.get("x-webhook-secret");
+if (secret !== process.env.WEBHOOK_SECRET) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+```
+
+**Error handling** — never expose internals to client:
+```ts
+catch (error) {
+  console.error(error);
+  return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+}
+```
+
+**S3** — never expose raw S3 URLs or keys to frontend. Serve audio via `/api/tracks/{id}/download`. Generate presigned URLs on demand — never store them in the DB.
+
+---
+
+## What NOT To Do
+
+| ❌ Never | ✅ Instead |
+|---|---|
+| Static Node.js imports in middleware chain | Dynamic imports inside nodejs runtime check |
+| `import bcrypt` at top of instrumentation.ts | `await import("bcrypt")` inside if-block |
+| Use `jsonwebtoken` in Edge context | Use `jose` via `auth-edge.ts` |
+| Use localStorage / sessionStorage | Zustand with skipHydration |
+| Add shadcn/ui | Plain Tailwind only |
+| Use Prisma | Drizzle ORM only |
+| Hardcode secrets | `.env.local` only |
+| Define `logApi` locally | Import from `src/lib/logger.ts` |
+| Store presigned URLs in DB | Generate on demand |
+| Skip auth check on API route | Always verify JWT |
+| Use fallback for `JWT_SECRET` | Throw if not set |
+| Reference Emergent provider | It has been removed permanently |
+
+---
+
+## Coding Conventions
+
+- `async/await` only — no `.then()` chains
+- Import DB client from `@/db` — never instantiate directly
+- Import shared utilities from `@/lib/*` — never duplicate inline
+- `clsx` for conditional classnames
+- No `any` without a comment explaining why
+- File names: `kebab-case.ts` for lib, Next.js conventions for routes
+
+---
+
+## Logging
+
+- Always use `logApi` from `src/lib/logger.ts`
+- Gated by `process.env.ENABLE_API_LOGGING === "true"`
+- Log all generation attempts, webhook events, and LLM calls
+
+---
+
+## Deployment Context
+
+- Docker Compose: Next.js standalone + PostgreSQL 16 alpine
+- VPS: Strato + Plesk reverse proxy, port 3000
+- Env: `.env.production` on VPS — never in repo
+- `next.config.mjs` must include:
+
+```js
+const nextConfig = {
+  output: "standalone",
+  serverExternalPackages: ["postgres", "bcrypt", "jsonwebtoken"],
+};
+```
+
+---
+
+## After Every Change
+
+- Run `npm run build` to validate — never mark complete without it
+- Append to `walkthrough.md` with date, findings, conclusions, actions
+- Update `sonara-user.md` if user-facing functionality changed
