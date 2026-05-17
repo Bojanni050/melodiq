@@ -1,7 +1,9 @@
 node_modules
 .next
 .git
-.env*
-*.log
-README.md
-.DS_Store
+.env.local
+.env.production
+.env*.local
+kilo.json
+*.md
+!.env.production.example
