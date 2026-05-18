@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
-const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST" }> = {
+const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string }> = {
   lyria: {
-    url: "https://api.lyria.google.com/v1/models",
+    url: "https://generativelanguage.googleapis.com/v1beta/models",
     keyPrefix: "",
     method: "GET",
+    authHeader: "x-goog-api-key",
   },
   poyo: {
     url: "https://api.poyo.ai/api/user/balance",
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       method: endpoint.method,
       url: endpoint.url,
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        ...(endpoint.authHeader ? { [endpoint.authHeader]: apiKey } : { Authorization: `Bearer ${apiKey}` }),
         "Content-Type": "application/json",
       },
       timeout: 10000,
@@ -90,6 +91,8 @@ export async function POST(request: Request) {
       }
     } else if (provider === "openai") {
       info = `Connected — ${response.data.data?.length ?? 0} models available`;
+    } else if (provider === "lyria") {
+      info = `Connected — ${response.data.models?.length ?? response.data.data?.length ?? "unknown"} models available`;
     }
 
     return NextResponse.json({ success: true, message: info, models });
