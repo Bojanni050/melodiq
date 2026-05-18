@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
-const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string }> = {
+const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string }> = {
   lyria: {
     url: "https://generativelanguage.googleapis.com/v1beta/models",
     keyPrefix: "",
@@ -18,6 +18,7 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     url: "https://api.tempolor.com/open-apis/v1/account/billing",
     keyPrefix: "",
     method: "POST",
+    authPrefix: "Tempo-",  // Tempolor requires "Tempo-{key}", not "Bearer {key}"
   },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
@@ -52,7 +53,9 @@ export async function POST(request: Request) {
       method: endpoint.method,
       url: endpoint.url,
       headers: {
-        ...(endpoint.authHeader ? { [endpoint.authHeader]: apiKey } : { Authorization: `Bearer ${apiKey}` }),
+        ...(endpoint.authHeader
+          ? { [endpoint.authHeader]: apiKey }
+          : { Authorization: `${endpoint.authPrefix ?? "Bearer "}${apiKey}` }),
         "Content-Type": "application/json",
       },
       timeout: 10000,
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
     let models: any[] = [];
 
     if (provider === "poyo") {
-      info = `Connected — ${response.data.credits ?? "unknown"} credits`;
+      info = `Connected — ${response.data.data?.credits_amount ?? "unknown"} credits`;
     } else if (provider === "tempolor") {
       info = `Connected — ${response.data.data?.balance ?? "unknown"} credits`;
     } else if (provider === "openrouter") {
