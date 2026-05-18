@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "@/lib/store";
 
+const WAVE_DELAYS = ["[animation-delay:0ms]", "[animation-delay:55ms]", "[animation-delay:110ms]", "[animation-delay:165ms]", "[animation-delay:220ms]"];
+const WAVE_DURATIONS = ["[animation-duration:700ms]", "[animation-duration:790ms]", "[animation-duration:880ms]", "[animation-duration:970ms]", "[animation-duration:1060ms]"];
+
 // Staggered delays for organic waveform feel
 function WaveformBars({ count = 5, className = "" }: { count?: number; className?: string }) {
   return (
@@ -10,7 +13,7 @@ function WaveformBars({ count = 5, className = "" }: { count?: number; className
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className={`h-full w-0.5 animate-wave-bar bg-current rounded-[1px] shrink-0 ${i % 3 === 0 ? "opacity-100" : i % 3 === 1 ? "opacity-80" : "opacity-60"}`}
+          className={`h-full w-0.5 animate-wave-bar bg-current rounded-[1px] shrink-0 ${i % 3 === 0 ? "opacity-100" : i % 3 === 1 ? "opacity-80" : "opacity-60"} ${WAVE_DELAYS[i % WAVE_DELAYS.length]} ${WAVE_DURATIONS[i % WAVE_DURATIONS.length]}`}
         />
       ))}
     </div>
@@ -364,7 +367,7 @@ function TrackCard({
   };
   const status = statusConfig[track.status];
 
-  const timeAgo = getTimeAgo(new Date(track.createdAt));
+  const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = track.title || track.prompt.substring(0, 50);
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
 
@@ -467,7 +470,10 @@ function TrackCard({
 
       {/* Time + actions */}
       <div className="flex items-center gap-1 shrink-0">
-        <span className="text-xs text-white/20 mr-1">{timeAgo}</span>
+        <div className="mr-1 text-right leading-tight">
+          <p className="text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
+          <p className="text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
+        </div>
         {track.status === "done" && track.audioUrl && (
           <>
             <button
@@ -568,16 +574,17 @@ function TrackCard({
   );
 }
 
-function getTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
+function formatTrackDateTime(date: Date): { date: string; time: string } {
+  const dateLabel = date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
 
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString();
+  const timeLabel = date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return { date: dateLabel, time: timeLabel };
 }

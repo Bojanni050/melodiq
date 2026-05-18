@@ -25,9 +25,9 @@ body {
   --color-primary-800: #5b21b6;
   --color-primary-900: #4c1d95;
 
-  --animation-shimmer: shimmer 2s linear infinite;
-  --animation-soundwave: soundwave 1.2s ease-in-out infinite;
-  --animation-aurora: aurora-move 8s ease infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-soundwave: soundwave 1.2s ease-in-out infinite;
+  --animate-aurora: aurora-move 8s ease infinite;
 
   --keyframes-shimmer: {
     0% { background-position: -200% 0; }
@@ -43,7 +43,7 @@ body {
     0%, 100% { height: 3px; }
     50% { height: 14px; }
   }
-  --animation-wave-bar: wave-bar 0.8s ease-in-out infinite;
+  --animate-wave-bar: wave-bar 0.8s ease-in-out infinite;
 
   --keyframes-aurora-move: {
     0% { background-position: 0% 50%; }
