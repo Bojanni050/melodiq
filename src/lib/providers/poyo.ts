@@ -41,7 +41,7 @@ export async function generatePoYo({
           custom_mode: !!lyrics,
           instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
-          ...(lyrics ? { style: prompt, title: title || "Generated Track" } : {}),
+          ...(lyrics ? { style: prompt, title: title || "Generated Track", lyrics } : {}),
         },
       },
       {
