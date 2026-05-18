@@ -6,11 +6,13 @@ export async function generatePoYo({
   lyrics,
   instrumental,
   model,
+  title,
 }: {
   prompt: string;
   lyrics?: string;
   instrumental?: boolean;
   model?: string;
+  title?: string;
 }) {
   const API_KEY = await getSetting("POYO_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("poyo");
@@ -23,6 +25,7 @@ export async function generatePoYo({
         callback_url: WEBHOOK_URL,
         input: {
           prompt,
+          title,
           lyrics: lyrics || undefined,
           instrumental: instrumental || false,
           custom_mode: true,
