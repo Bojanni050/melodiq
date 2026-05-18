@@ -2,8 +2,8 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
 const PIXAZO_GENERATE_URL = "https://gateway.pixazo.ai/flux-1-schnell/v1/getData";
-const POLL_INTERVAL_MS = 4000;
-const MAX_POLLS = 30;
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLLS = 15;
 
 type PixazoGenerateResponse = {
   output?: string;
@@ -89,7 +89,7 @@ export async function generateCoverArt({
     console.log(`[cover-art] Pixazo status: ${status} (poll ${i + 1}/${MAX_POLLS})`);
   }
 
-  throw new Error("Pixazo: cover art timed out after 2 minutes");
+  throw new Error("Pixazo: cover art timed out after 45 seconds");
 }
 
 async function downloadImage(url: string): Promise<Buffer> {

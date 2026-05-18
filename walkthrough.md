@@ -224,3 +224,23 @@
 - Findings: Registration was open to anyone. Internal error messages were exposed in the register catch block. MiniMax webhook route was missing.
 - Conclusions: Gate registration behind REGISTRATION_ENABLED env flag (absent = closed). Fix catch block to log internally and return generic message. MiniMax uses PoYo's webhook payload format so the route is a direct adaptation.
 - Actions: Added REGISTRATION_ENABLED gate to src/app/api/auth/register/route.ts. Fixed catch block to use console.error and return generic message. Created src/app/api/webhooks/minimax/route.ts (task_id, status: finished, files[].audio_url, provider: "minimax"). Removed MiniMax open issue from sonara-rules.md. Validated with npm run build.
+
+## 2026-05-18 (Webhook secret check — alle routes)
+- Findings: Not all webhook routes verified WEBHOOK_SECRET.
+- Conclusions: Uniform secret check required on all webhook endpoints.
+- Actions: Added query-param secret check to tempolor/minimax/musicgpt webhook routes; validated.
+
+## 2026-05-18 (Pixazo polling timeout verkleind)
+- Findings: MAX_POLLS 30 × 4s = 120s max blocking time in server-side route.
+- Conclusions: 15 × 3s = 45s is a safer upper bound.
+- Actions: Updated POLL_INTERVAL_MS and MAX_POLLS in cover-art.ts; updated error message; validated.
+
+## 2026-05-18 (init.ts schema sync)
+- Findings: createTablesSql tracks definition missing format/cover art columns added via ALTER TABLE.
+- Conclusions: CREATE TABLE should reflect full current schema to avoid confusion on fresh installs.
+- Actions: Added missing columns to createTablesSql in init.ts; added explanatory comment; validated.
+
+## 2026-05-18 (Rate limiter cleanup interval)
+- Findings: Rate limit Map had no cleanup, allowing unbounded entry accumulation over time.
+- Conclusions: Periodic purge prevents memory growth; setInterval guard handles Edge environments.
+- Actions: Added cleanup interval with 5-min sweep to rate limiter in generate/route.ts; validated.

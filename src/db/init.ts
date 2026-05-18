@@ -37,12 +37,15 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "audio_url_hd" text,
   "s3_key" text,
   "s3_key_hd" text,
-  "format" VARCHAR(10) DEFAULT 'mp3',
-  "format_hd" VARCHAR(10),
   "duration" integer,
   "job_id" varchar(255),
   "credits_used" integer NOT NULL DEFAULT 0,
   "error" text,
+  "format" VARCHAR(10) DEFAULT 'mp3',
+  "format_hd" VARCHAR(10),
+  "cover_url" TEXT,
+  "s3_key_cover" TEXT,
+  "audio_id" VARCHAR(255),
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -67,6 +70,8 @@ CREATE TABLE IF NOT EXISTS "settings" (
 );
 `;
 
+// These ALTER TABLE statements handle existing databases. On fresh installs,
+// the columns above are already in createTablesSql. IF NOT EXISTS makes this safe either way.
 const alterTracksSql = `
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
