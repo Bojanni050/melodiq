@@ -9,7 +9,7 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     method: "GET",
   },
   poyo: {
-    url: "https://api.poyo.com/v1/credits",
+    url: "https://api.poyo.ai/api/user/balance",
     keyPrefix: "",
     method: "GET",
   },
