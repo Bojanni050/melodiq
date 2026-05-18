@@ -38,6 +38,8 @@ export const tracks = pgTable("tracks", {
   audioUrlHd: text("audio_url_hd"),
   s3Key: text("s3_key"),
   s3KeyHd: text("s3_key_hd"),
+  format: varchar("format", { length: 10 }).default("mp3"),
+  formatHd: varchar("format_hd", { length: 10 }),
   duration: integer("duration"),
   jobId: varchar("job_id", { length: 255 }),
   creditsUsed: integer("credits_used").default(0).notNull(),

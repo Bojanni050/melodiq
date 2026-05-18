@@ -11,6 +11,7 @@ import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
 import { getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
+import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -111,14 +112,16 @@ export async function POST(request: NextRequest) {
         model: providerModel,
       });
 
-      const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, genResult.audioBuffer);
+      const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
+      const s3Key = `tracks/${track.id}/audio.${format}`;
+      await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
 
       const updated = await db
         .update(tracks)
         .set({
           status: "done",
           s3Key,
+          format,
           audioUrl: `/api/tracks/${track.id}/download`,
           duration: genResult.duration,
         })
@@ -148,11 +151,16 @@ export async function POST(request: NextRequest) {
         title: resolvedTitle || undefined,
       });
 
+      const primaryJobId = genResult.jobIds?.[0];
+      if (!primaryJobId) {
+        throw new Error("PoYo returned no job IDs");
+      }
+
       const updated = await db
         .update(tracks)
         .set({
           status: "generating",
-          jobId: genResult.jobId,
+          jobId: primaryJobId,
         })
         .where(eq(tracks.id, track.id!))
         .returning();
@@ -163,12 +171,12 @@ export async function POST(request: NextRequest) {
         provider: "poyo",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
+        response: JSON.stringify({ status: "generating", jobId: primaryJobId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated[0] });
+      return NextResponse.json({ tracks: [updated[0]] });
     }
 
     if (provider === "tempolor") {
@@ -179,14 +187,41 @@ export async function POST(request: NextRequest) {
         model: providerModel,
       });
 
+      const jobIds: string[] = genResult.jobIds;
+      if (!Array.isArray(jobIds) || jobIds.length === 0) {
+        throw new Error("Tempolor returned no job IDs");
+      }
+
       const updated = await db
         .update(tracks)
         .set({
           status: "generating",
-          jobId: genResult.jobId,
+          jobId: jobIds[0],
         })
         .where(eq(tracks.id, track.id!))
         .returning();
+
+      let extraInserted: typeof updated = [];
+      if (jobIds.length > 1) {
+        const baseTitle = resolvedTitle || track.title || "Generated Track";
+        extraInserted = await db
+          .insert(tracks)
+          .values(
+            jobIds.slice(1).map((jobId: string, index: number) => ({
+              userId: track.userId,
+              provider: track.provider,
+              providerModel: track.providerModel,
+              prompt: track.prompt,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+              language: track.language,
+              status: "generating" as const,
+              jobId,
+              title: `${baseTitle} (${index + 2})`,
+            }))
+          )
+          .returning();
+      }
 
       await logApi({
         userId: userId,
@@ -194,12 +229,12 @@ export async function POST(request: NextRequest) {
         provider: "tempolor",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
+        response: JSON.stringify({ status: "generating", jobIds }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated[0] });
+      return NextResponse.json({ tracks: [updated[0], ...extraInserted] });
     }
 
     if (provider === "musicgpt") {

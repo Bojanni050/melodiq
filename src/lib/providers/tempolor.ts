@@ -74,17 +74,17 @@ export async function generateTempolor({
       };
     }
 
-    const itemId = response.data?.data?.item_ids?.[0];
-    if (!itemId) {
+    const itemIds = response.data?.data?.item_ids;
+    if (!Array.isArray(itemIds) || itemIds.length === 0) {
       console.error("[tempolor] Unexpected response structure:", JSON.stringify(response.data));
       throw {
-        message: `Tempolor returned no item_id. Response: ${JSON.stringify(response.data)}`,
+        message: `Tempolor returned no item_ids array. Response: ${JSON.stringify(response.data)}`,
         duration: Date.now() - startTime,
         statusCode: 500,
       };
     }
     return {
-      jobId: itemId,
+      jobIds: itemIds,
       duration: Date.now() - startTime,
     };
   } catch (error: any) {

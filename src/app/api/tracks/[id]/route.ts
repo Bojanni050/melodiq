@@ -6,6 +6,13 @@ import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
+import { getPoYoStatusValue } from "@/lib/providers/poyo";
+import { syncPoYoTaskResult } from "@/lib/poyo-sync";
+import {
+  contentTypeForFormat,
+  detectFormatFromContentType,
+  detectFormatFromUrl,
+} from "@/lib/audio-format";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -64,29 +71,24 @@ export async function GET(
   if (track.provider === "poyo" && track.jobId) {
     try {
       const status = await getPoYoStatus(track.jobId);
+      const statusValue = getPoYoStatusValue(status);
 
-      if (status.status === "completed") {
-        const response = await axios.get(status.audio_url, { responseType: "arraybuffer" });
-        const s3Key = `tracks/${track.id}/audio.mp3`;
-        await uploadToS3(s3Key, Buffer.from(response.data));
+      if (statusValue === "completed" || statusValue === "finished") {
+        await syncPoYoTaskResult(track.jobId, status);
+        const refreshed = await db
+          .select()
+          .from(tracks)
+          .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
-        const updated = await db
-          .update(tracks)
-          .set({
-            status: "done",
-            s3Key,
-            audioUrl: `/api/tracks/${track.id}/download`,
-          })
-          .where(eq(tracks.id, track.id!))
-          .returning();
-
-        return NextResponse.json(updated[0]);
+        if (refreshed.length > 0) {
+          return NextResponse.json(refreshed[0]);
+        }
       }
 
-      if (status.status === "failed") {
+      if (statusValue === "failed" || statusValue === "error") {
         const updated = await db
           .update(tracks)
-          .set({ status: "failed", error: status.error || "Generation failed" })
+          .set({ status: "failed", error: status.error || status?.data?.error || "Generation failed" })
           .where(eq(tracks.id, track.id!))
           .returning();
         return NextResponse.json(updated[0]);
@@ -110,14 +112,22 @@ export async function GET(
             : null,
         ]);
 
-        const s3Key = `tracks/${track.id}/audio.mp3`;
-        const s3KeyHd = status.audio_url_hd
-          ? `tracks/${track.id}/audio_hd.mp3`
+        const primaryHeaderType = String(mp3Res.headers?.["content-type"] || "");
+        const format = /\.wav(\?|$)/i.test(status.audio_url)
+          ? detectFormatFromUrl(status.audio_url)
+          : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
+        const formatHd = status.audio_url_hd
+          ? detectFormatFromUrl(status.audio_url_hd)
           : null;
 
-        await uploadToS3(s3Key, Buffer.from(mp3Res.data));
+        const s3Key = `tracks/${track.id}/audio.${format}`;
+        const s3KeyHd = status.audio_url_hd && formatHd
+          ? `tracks/${track.id}/audio_hd.${formatHd}`
+          : null;
+
+        await uploadToS3(s3Key, Buffer.from(mp3Res.data), contentTypeForFormat(format));
         if (hdRes && s3KeyHd) {
-          await uploadToS3(s3KeyHd, Buffer.from(hdRes.data));
+          await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd!));
         }
 
         const updated = await db
@@ -126,6 +136,8 @@ export async function GET(
             status: "done",
             s3Key,
             s3KeyHd,
+            format,
+            formatHd,
             audioUrl: `/api/tracks/${track.id}/download`,
             audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
           })

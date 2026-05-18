@@ -32,7 +32,12 @@ export async function GET(
   }
 
   const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
+  const fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
   const url = await getPresignedUrl(s3Key);
 
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, {
+    headers: {
+      "Content-Disposition": `attachment; filename="${track.title ?? "track"}.${fmt}"`,
+    },
+  });
 }

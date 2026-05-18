@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "audio_url_hd" text,
   "s3_key" text,
   "s3_key_hd" text,
+  "format" VARCHAR(10) DEFAULT 'mp3',
+  "format_hd" VARCHAR(10),
   "duration" integer,
   "job_id" varchar(255),
   "credits_used" integer NOT NULL DEFAULT 0,
@@ -63,6 +65,11 @@ CREATE TABLE IF NOT EXISTS "settings" (
   "key" varchar(255) NOT NULL UNIQUE,
   "value" text NOT NULL
 );
+`;
+
+const alterTracksSql = `
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
 `;
 
 export async function initializeDatabase(): Promise<void> {
@@ -119,6 +126,19 @@ export async function initializeDatabase(): Promise<void> {
       console.error("Error creating tables:", error);
     }
   } finally {
+    try {
+      const alterStatements = alterTracksSql
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const statement of alterStatements) {
+        await targetClient.unsafe(statement + ";");
+      }
+    } catch (error) {
+      console.error("Error applying tracks alter statements:", error);
+    }
+
     await targetClient.end();
   }
 }

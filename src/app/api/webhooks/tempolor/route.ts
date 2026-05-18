@@ -3,6 +3,11 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
+import {
+  contentTypeForFormat,
+  detectFormatFromContentType,
+  detectFormatFromUrl,
+} from "@/lib/audio-format";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -58,16 +63,26 @@ export async function POST(request: NextRequest) {
         audioUrlHd ? axios.get(audioUrlHd, { responseType: "arraybuffer" }) : null,
       ]);
 
-      const s3Key = `tracks/${track.id}/audio.mp3`;
-      const s3KeyHd = audioUrlHd ? `tracks/${track.id}/audio_hd.mp3` : null;
+      const mp3ContentType = String(mp3Res.headers?.["content-type"] || "");
+      const format = /\.wav(\?|$)/i.test(audioUrl)
+        ? detectFormatFromUrl(audioUrl)
+        : detectFormatFromContentType(mp3ContentType || "audio/mpeg");
+      const formatHd = audioUrlHd ? detectFormatFromUrl(audioUrlHd) : null;
 
-      await uploadToS3(s3Key, Buffer.from(mp3Res.data));
-      if (hdRes && s3KeyHd) await uploadToS3(s3KeyHd, Buffer.from(hdRes.data));
+      const s3Key = `tracks/${track.id}/audio.${format}`;
+      const s3KeyHd = audioUrlHd && formatHd ? `tracks/${track.id}/audio_hd.${formatHd}` : null;
+
+      await uploadToS3(s3Key, Buffer.from(mp3Res.data), contentTypeForFormat(format));
+      if (hdRes && s3KeyHd && formatHd) {
+        await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
+      }
 
       await db.update(tracks).set({
         status: "done",
         s3Key,
         s3KeyHd,
+        format,
+        formatHd,
         audioUrl: `/api/tracks/${track.id}/download`,
         audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
       }).where(eq(tracks.id, track.id!));

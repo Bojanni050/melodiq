@@ -12,6 +12,8 @@ export interface Track {
   audioUrlHd: string | null;
   s3Key: string | null;
   s3KeyHd: string | null;
+  format?: string | null;
+  formatHd?: string | null;
   duration: number | null;
   lyrics: string | null;
   createdAt: string;

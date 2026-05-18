@@ -3,6 +3,11 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
+import {
+  contentTypeForFormat,
+  detectFormatFromContentType,
+  detectFormatFromUrl,
+} from "@/lib/audio-format";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -51,11 +56,16 @@ export async function POST(request: NextRequest) {
       const axios = (await import("axios")).default;
       const { uploadToS3 } = await import("@/lib/s3");
       const audioRes = await axios.get(audioUrl, { responseType: "arraybuffer" });
-      const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, Buffer.from(audioRes.data));
+      const headerType = String(audioRes.headers?.["content-type"] || "");
+      const format = /\.wav(\?|$)/i.test(audioUrl)
+        ? detectFormatFromUrl(audioUrl)
+        : detectFormatFromContentType(headerType || "audio/mpeg");
+      const s3Key = `tracks/${track.id}/audio.${format}`;
+      await uploadToS3(s3Key, Buffer.from(audioRes.data), contentTypeForFormat(format));
       await db.update(tracks).set({
         status: "done",
         s3Key,
+        format,
         audioUrl: `/api/tracks/${track.id}/download`,
       }).where(eq(tracks.id, track.id!));
       await logApi({

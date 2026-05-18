@@ -56,6 +56,7 @@ export async function generateLyria({
     const duration = Date.now() - startTime;
     return {
       audioBuffer,
+      mimeType: audioPart.inline_data.mime_type,
       duration,
       jobId: null,
     };

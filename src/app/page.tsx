@@ -17,6 +17,8 @@ interface Track {
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
@@ -73,6 +75,8 @@ export default function HomePage() {
       status: track.status,
       audioUrl: track.audioUrl,
       audioUrlHd: track.audioUrlHd,
+      format: track.format,
+      formatHd: track.formatHd,
       s3Key: null,
       s3KeyHd: track.s3KeyHd,
       duration: null,
@@ -196,9 +200,15 @@ export default function HomePage() {
 
       const data = await res.json();
 
+      const generatedTrack = data.tracks?.[0] ?? data.track;
+
       if (!res.ok) {
         setNotice({ type: "error", message: data.error || "Generation failed" });
         return;
+      }
+
+      if (!generatedTrack && provider !== "lyria") {
+        setNotice({ type: "error", message: "Generation started but no track payload returned" });
       }
 
       await fetchTracks();
@@ -221,6 +231,8 @@ export default function HomePage() {
         status: selectedTrack.status,
         audioUrl: url,
         audioUrlHd: selectedTrack.audioUrlHd,
+        format: selectedTrack.format,
+        formatHd: selectedTrack.formatHd,
         s3Key: null,
         s3KeyHd: selectedTrack.s3KeyHd,
         duration: null,
@@ -234,7 +246,10 @@ export default function HomePage() {
   function handleDownloadTrack(url: string, hd: boolean) {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.mp3`;
+    const fmt = hd
+      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
+      : (selectedTrack?.format ?? "mp3");
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
     a.click();
   }
 

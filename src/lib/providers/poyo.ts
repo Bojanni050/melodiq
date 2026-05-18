@@ -70,7 +70,7 @@ export async function generatePoYo({
       };
     }
     return {
-      jobId: taskId,
+      jobIds: [taskId],
       duration: Date.now() - startTime,
     };
   } catch (error: any) {
@@ -98,6 +98,67 @@ export async function getPoYoStatus(jobId: string) {
   } catch (error: any) {
     throw new Error(error.response?.data?.error?.message || error.response?.data?.message || error.message);
   }
+}
+
+function stripQuery(url: string): string {
+  return url.split("?")[0];
+}
+
+function inferVariantKey(file: any, index: number): string {
+  const explicit = file?.song_id || file?.songId || file?.id || file?.clip_id || file?.track_id;
+  if (explicit) return String(explicit);
+
+  const url = file?.audio_url || file?.audio_url_hd || file?.wav_url || file?.mp3_url || "";
+  if (!url) return `variant-${index + 1}`;
+
+  const clean = stripQuery(String(url));
+  const withoutExt = clean.replace(/\.(mp3|wav)$/i, "");
+  return withoutExt.replace(/_(mp3|wav|hd)$/i, "");
+}
+
+export function getPoYoStatusValue(payload: any): string {
+  return String(payload?.status || payload?.data?.status || "").toLowerCase();
+}
+
+export function extractPoYoVariants(payload: any): Array<{ audioUrl?: string; audioUrlHd?: string; title?: string }> {
+  const rawFiles: any[] = payload?.files || payload?.data?.files || [];
+  const grouped = new Map<string, { audioUrl?: string; audioUrlHd?: string; title?: string }>();
+
+  rawFiles.forEach((file, index) => {
+    const key = inferVariantKey(file, index);
+    const existing = grouped.get(key) || {};
+
+    const mp3Url = file?.audio_url || file?.mp3_url || file?.url;
+    const wavUrl = file?.audio_url_hd || file?.wav_url;
+    const fallbackUrl = mp3Url || wavUrl;
+
+    const next = {
+      title: file?.title || file?.name || existing.title,
+      audioUrl: existing.audioUrl || mp3Url || (fallbackUrl && /\.mp3(\?|$)/i.test(fallbackUrl) ? fallbackUrl : undefined),
+      audioUrlHd:
+        existing.audioUrlHd ||
+        wavUrl ||
+        (fallbackUrl && /\.wav(\?|$)/i.test(fallbackUrl) ? fallbackUrl : undefined),
+    };
+
+    if (!next.audioUrl && fallbackUrl) {
+      next.audioUrl = fallbackUrl;
+    }
+
+    grouped.set(key, next);
+  });
+
+  const variants = Array.from(grouped.values()).filter((v) => v.audioUrl || v.audioUrlHd);
+
+  if (variants.length === 0) {
+    const fallbackAudio = payload?.audio_url || payload?.data?.audio_url;
+    const fallbackAudioHd = payload?.audio_url_hd || payload?.data?.audio_url_hd;
+    if (fallbackAudio || fallbackAudioHd) {
+      return [{ audioUrl: fallbackAudio || fallbackAudioHd, audioUrlHd: fallbackAudioHd }];
+    }
+  }
+
+  return variants;
 }
 
 export async function getPoYoCredits() {

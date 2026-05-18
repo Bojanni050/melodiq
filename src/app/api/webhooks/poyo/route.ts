@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
+import { getPoYoStatusValue } from "@/lib/providers/poyo";
+import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,10 +23,7 @@ export async function POST(request: NextRequest) {
   console.log("[webhook/poyo] received:", JSON.stringify(body));
 
   const taskId = body.task_id;
-  const status = body.status;
-  const files: any[] = body.files ?? [];
-  const firstFile = files[0];
-  const audioUrl = firstFile?.audio_url;
+  const status = getPoYoStatusValue(body);
 
   if (!taskId) {
     return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
@@ -42,32 +41,30 @@ export async function POST(request: NextRequest) {
 
   const track = result[0];
 
-  if (status === "finished") {
-    if (!audioUrl) {
-      await db.update(tracks).set({ status: "failed", error: "No audio URL in webhook" }).where(eq(tracks.id, track.id!));
-      return NextResponse.json({ error: "No audio URL" }, { status: 400 });
-    }
+  if (status === "finished" || status === "completed") {
     try {
-      const axios = (await import("axios")).default;
-      const { uploadToS3 } = await import("@/lib/s3");
-      const audioRes = await axios.get(audioUrl, { responseType: "arraybuffer" });
-      const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, Buffer.from(audioRes.data));
-      await db.update(tracks).set({
-        status: "done",
-        s3Key,
-        audioUrl: `/api/tracks/${track.id}/download`,
-      }).where(eq(tracks.id, track.id!));
+      const syncResult = await syncPoYoTaskResult(taskId, body);
+
+      if (syncResult.variantCount === 0) {
+        await db.update(tracks).set({ status: "failed", error: syncResult.error || "No audio URL in webhook" }).where(eq(tracks.id, track.id!));
+        return NextResponse.json({ error: syncResult.error || "No audio URL" }, { status: 400 });
+      }
+
       await logApi({
         userId: track.userId,
         type: "webhook",
         provider: "poyo",
         endpoint: "/api/webhooks/poyo",
         request: JSON.stringify(body),
-        response: JSON.stringify({ trackId: track.id }),
+        response: JSON.stringify({
+          taskId,
+          variantCount: syncResult.variantCount,
+          updatedTrackIds: syncResult.updatedTrackIds,
+          createdTrackIds: syncResult.createdTrackIds,
+        }),
         statusCode: 200,
       });
-      console.log(`[webhook/poyo] track ${track.id} done`);
+      console.log(`[webhook/poyo] task ${taskId} synced (${syncResult.variantCount} variants)`);
       return NextResponse.json({ success: true });
     } catch (error: any) {
       console.error("[webhook/poyo] S3 upload failed:", error.message);

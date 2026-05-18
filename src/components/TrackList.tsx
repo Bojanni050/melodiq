@@ -67,6 +67,8 @@ interface TrackItem {
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
@@ -150,6 +152,8 @@ export default function TrackList({
       status: track.status,
       audioUrl: track.audioUrl,
       audioUrlHd: track.audioUrlHd,
+      format: track.format,
+      formatHd: track.formatHd,
       s3Key: null,
       s3KeyHd: track.s3KeyHd,
       duration: null,
@@ -344,7 +348,8 @@ function TrackCard({
     setDownloading(true);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${track.title || "track"}${hd ? "_hd" : ""}.mp3`;
+    const fmt = hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3");
+    a.download = `${track.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
     a.click();
     setTimeout(() => setDownloading(false), 1000);
   }
