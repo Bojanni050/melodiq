@@ -122,6 +122,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "poyo") {
+      const POYO_VALID_MODELS = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
+      const normalizedModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
+      if (!POYO_VALID_MODELS.includes(normalizedModel)) {
+        return NextResponse.json(
+          { error: `Invalid PoYo model. Supported: ${POYO_VALID_MODELS.join(", ")}` },
+          { status: 400 }
+        );
+      }
+
       genResult = await generatePoYo({
         prompt,
         lyrics,
