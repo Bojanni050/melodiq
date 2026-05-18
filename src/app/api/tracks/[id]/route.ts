@@ -70,13 +70,12 @@ export async function GET(
         const s3Key = `tracks/${track.id}/audio.mp3`;
         await uploadToS3(s3Key, Buffer.from(response.data));
 
-        const presignedUrl = await getPresignedUrl(s3Key);
         const updated = await db
           .update(tracks)
           .set({
             status: "done",
             s3Key,
-            audioUrl: presignedUrl,
+            audioUrl: `/api/tracks/${track.id}/download`,
           })
           .where(eq(tracks.id, track.id!))
           .returning();
@@ -127,8 +126,8 @@ export async function GET(
             status: "done",
             s3Key,
             s3KeyHd,
-            audioUrl: await getPresignedUrl(s3Key),
-            audioUrlHd: s3KeyHd ? await getPresignedUrl(s3KeyHd) : null,
+            audioUrl: `/api/tracks/${track.id}/download`,
+            audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
           })
           .where(eq(tracks.id, track.id!))
           .returning();

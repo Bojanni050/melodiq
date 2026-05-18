@@ -105,3 +105,12 @@
   - Created `src/db/init.ts` — startup utility that connects to PostgreSQL's default `postgres` database, checks if target database exists (via `pg_database` query), creates it if not, then connects to target database and creates all four tables (`users`, `tracks`, `api_logs`, `settings`) using `CREATE TABLE IF NOT EXISTS` with raw SQL matching the Drizzle schema
   - Created `src/instrumentation.ts` — Next.js instrumentation file with `register()` function that runs `initializeDatabase()` on server startup (nodejs runtime only); works in both dev (`next dev`) and production (`next start`); standalone Docker builds include the init logic without needing drizzle-kit at runtime
   - Validated with `npm run build`.
+
+## 2026-05-18 (Fix Tempolor endpoint + presigned URL storage)
+
+- Findings: Tempolor generate/status/credits used wrong base path (v1 instead of open-apis/v1).
+  PoYo and Tempolor polling routes stored presigned URLs in DB instead of internal download paths.
+- Conclusions: Use open-apis/v1 for all Tempolor calls. Store /api/tracks/{id}/download in DB,
+  generate presigned URLs on the fly in GET /api/tracks/[id].
+- Actions: Updated src/lib/providers/tempolor.ts (3 URLs). Updated src/app/api/tracks/[id]/route.ts
+  (audioUrl fix in PoYo block + Tempolor block). Validated with npm run build.

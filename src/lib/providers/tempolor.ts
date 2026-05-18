@@ -17,7 +17,7 @@ export async function generateTempolor({
   const startTime = Date.now();
   try {
     const response = await axios.post(
-      "https://api.tempolor.com/v1/generate",
+      "https://api.tempolor.com/open-apis/v1/generate",
       {
         model: model || "v4.6",
         prompt,
@@ -58,7 +58,7 @@ export async function getTempolorStatus(jobId: string) {
   const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
     const response = await axios.get(
-      `https://api.tempolor.com/v1/jobs/${jobId}`,
+      `https://api.tempolor.com/open-apis/v1/jobs/${jobId}`,
       {
         headers: { Authorization: `Bearer ${API_KEY}` },
       }
@@ -72,7 +72,7 @@ export async function getTempolorStatus(jobId: string) {
 export async function getTempolorCredits() {
   const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
-    const response = await axios.get("https://api.tempolor.com/v1/credits", {
+    const response = await axios.get("https://api.tempolor.com/open-apis/v1/credits", {
       headers: { Authorization: `Bearer ${API_KEY}` },
     });
     return response.data.credits;
