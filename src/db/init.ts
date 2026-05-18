@@ -72,6 +72,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover_url TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_id VARCHAR(255);
 `;
 
 export async function initializeDatabase(): Promise<void> {

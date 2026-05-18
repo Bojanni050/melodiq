@@ -6,9 +6,14 @@ import { uploadToS3 } from "@/lib/s3";
 
 /**
  * Genereert cover art voor een track, of hergebruikt een bestaande cover als
- * dezelfde gebruiker al een track heeft met dezelfde prompt + titel en een cover.
- * Dekt automatisch Tempolor en PoYo multi-song batches (beide songs delen de cover).
- * Faalt altijd stil - breekt nooit audio delivery.
+ * dezelfde gebruiker al een track heeft met dezelfde prompt + titel én een cover.
+ *
+ * Race condition fix voor multi-song batches (Tempolor/PoYo genereren 2 songs tegelijk):
+ * Bij de eerste lookup wordt 8 seconden gewacht als er geen cover gevonden wordt.
+ * Dit geeft de "eerste" song in de batch tijd om zijn cover te genereren en op te slaan,
+ * zodat de "tweede" song die cover kan hergebruiken in plaats van opnieuw te genereren.
+ *
+ * Faalt altijd stil — breekt nooit audio delivery.
  */
 export async function generateAndSaveCoverArt(track: {
   id: string;
@@ -18,37 +23,33 @@ export async function generateAndSaveCoverArt(track: {
   instrumental: boolean;
 }): Promise<void> {
   try {
-    // Zoek bestaande cover met dezelfde prompt + titel van dezelfde gebruiker
-    const existing = await db
-      .select({ s3KeyCover: tracks.s3KeyCover })
-      .from(tracks)
-      .where(
-        and(
-          eq(tracks.userId, track.userId),
-          eq(tracks.prompt, track.prompt),
-          eq(tracks.title, track.title ?? ""),
-          isNotNull(tracks.s3KeyCover)
-        )
-      )
-      .limit(1);
+    // Eerste poging: zoek bestaande cover
+    let existing = await findExistingCover(track);
 
-    if (existing.length > 0 && existing[0].s3KeyCover) {
-      // Hergebruik bestaande S3 cover - geen nieuwe API call nodig
+    if (!existing) {
+      // Geen cover gevonden — wacht 8 seconden en probeer opnieuw.
+      // Dit lost de race condition op bij multi-song batches:
+      // als een andere song in dezelfde batch al bezig is met genereren,
+      // is die cover na 8s waarschijnlijk al in de DB.
+      await new Promise((r) => setTimeout(r, 8000));
+      existing = await findExistingCover(track);
+    }
+
+    if (existing?.s3KeyCover) {
+      // Hergebruik bestaande S3 cover — geen nieuwe API call nodig
       await db
         .update(tracks)
         .set({
-          s3KeyCover: existing[0].s3KeyCover,
+          s3KeyCover: existing.s3KeyCover,
           coverUrl: `/api/tracks/${track.id}/cover`,
         })
         .where(eq(tracks.id, track.id));
 
-      console.log(
-        `[cover-art] reused existing cover for track ${track.id} (same prompt+title)`
-      );
+      console.log(`[cover-art] reused existing cover for track ${track.id}`);
       return;
     }
 
-    // Geen bestaande cover - genereer nieuw via Pixazo Flux 1 Schnell
+    // Nog steeds geen cover na wachten — genereer nieuw via Pixazo Flux 1 Schnell
     const imageBuffer = await generateCoverArt({
       prompt: track.prompt,
       title: track.title || "Untitled",
@@ -73,4 +74,25 @@ export async function generateAndSaveCoverArt(track: {
       error?.message ?? error
     );
   }
+}
+
+async function findExistingCover(track: {
+  userId: string;
+  prompt: string;
+  title: string | null;
+}): Promise<{ s3KeyCover: string } | null> {
+  const result = await db
+    .select({ s3KeyCover: tracks.s3KeyCover })
+    .from(tracks)
+    .where(
+      and(
+        eq(tracks.userId, track.userId),
+        eq(tracks.prompt, track.prompt),
+        eq(tracks.title, track.title ?? ""),
+        isNotNull(tracks.s3KeyCover)
+      )
+    )
+    .limit(1);
+
+  return result[0]?.s3KeyCover ? { s3KeyCover: result[0].s3KeyCover } : null;
 }

@@ -6,6 +6,7 @@ import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
+import { requestWavConversion } from "@/lib/request-wav-conversion";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -25,6 +26,12 @@ export async function POST(request: NextRequest) {
 
   const taskId = body.task_id;
   const status = getPoYoStatusValue(body);
+  const files = Array.isArray(body.files)
+    ? (body.files as Array<{ audio_url?: string; audio_id?: string | null }>)
+    : [];
+  const firstFile = files[0];
+  const audioUrl = firstFile?.audio_url;
+  const audioId = firstFile?.audio_id ?? null;
 
   if (!taskId) {
     return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
@@ -57,6 +64,24 @@ export async function POST(request: NextRequest) {
       if (syncResult.variantCount === 0) {
         await db.update(tracks).set({ status: "failed", error: syncResult.error || "No audio URL in webhook" }).where(eq(tracks.id, track.id!));
         return NextResponse.json({ error: syncResult.error || "No audio URL" }, { status: 400 });
+      }
+
+      if (audioId) {
+        await db
+          .update(tracks)
+          .set({
+            audioId,
+          })
+          .where(eq(tracks.id, track.id!));
+      }
+
+      // Vraag meteen WAV conversie aan - PoYo bewaart bestanden maar 3 dagen.
+      if (audioId && track.jobId) {
+        requestWavConversion({
+          id: track.id!,
+          jobId: track.jobId,
+          audioId,
+        }).catch(() => {});
       }
 
       await logApi({
