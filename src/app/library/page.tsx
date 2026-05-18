@@ -40,6 +40,11 @@ export default function LibraryPage() {
     setLoading(false);
   }
 
+  function handleDeleteTrack(trackId: string) {
+    setTracks((prev) => prev.filter((t) => t.id !== trackId));
+    if (selectedTrack?.id === trackId) setSelectedTrack(null);
+  }
+
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       usePlayerStore.getState().setCurrentTrack({
@@ -90,7 +95,7 @@ export default function LibraryPage() {
           </div>
         </div>
         <main className="p-4 pb-32">
-          <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} />
+          <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
         </main>
       </div>
       <Player />

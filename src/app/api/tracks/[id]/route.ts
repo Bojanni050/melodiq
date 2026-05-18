@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getPresignedUrl } from "@/lib/s3";
+import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
@@ -151,4 +151,43 @@ export async function GET(
   }
 
   return NextResponse.json(track);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
+
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
+
+  if (result.length === 0) {
+    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+  }
+
+  const track = result[0];
+
+  try {
+    if (track.s3Key) {
+      await deleteFromS3(track.s3Key);
+    }
+    if (track.s3KeyHd) {
+      await deleteFromS3(track.s3KeyHd);
+    }
+
+    await db
+      .delete(tracks)
+      .where(eq(tracks.id, id));
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to delete track" }, { status: 500 });
+  }
 }
