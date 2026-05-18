@@ -5,7 +5,8 @@ import { eq, and } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get("x-webhook-secret");
+  const { searchParams } = new URL(request.url);
+  const secret = searchParams.get("secret");
   if (!process.env.WEBHOOK_SECRET || secret !== process.env.WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
