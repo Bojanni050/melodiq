@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (status === "failed") {
+  if (status === "failed" || status === "error") {
     await db.update(tracks).set({
       status: "failed",
       error: body.error_message || "Generation failed",
