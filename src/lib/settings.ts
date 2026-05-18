@@ -3,17 +3,15 @@ import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getSetting(key: string): Promise<string> {
-  try {
-    const result = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.key, key))
-      .limit(1);
-    if (result.length > 0 && result[0].value) {
-      return result[0].value;
-    }
-  } catch {}
-  return process.env[key] || "";
+  const result = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, key))
+    .limit(1);
+  if (result.length > 0 && result[0].value) {
+    return result[0].value;
+  }
+  return "";
 }
 
 
