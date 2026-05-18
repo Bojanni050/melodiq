@@ -108,7 +108,7 @@ export default function Player() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors shrink-0"
+              className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 active:scale-90 active:bg-primary-800 flex items-center justify-center transition-all shrink-0"
             >
               {isPlaying ? (
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
