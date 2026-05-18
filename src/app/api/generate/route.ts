@@ -8,6 +8,7 @@ import { generateTempolor } from "@/lib/providers/tempolor";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
+import { validateProviderApiKeys } from "@/lib/settings";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -50,6 +51,17 @@ export async function POST(request: NextRequest) {
   }
   if (instrumental && (!title || !title.trim())) {
     return NextResponse.json({ error: "title is required for instrumental tracks" }, { status: 400 });
+  }
+
+  // Validate that required API keys are configured
+  const validation = await validateProviderApiKeys(provider);
+  if (!validation.valid) {
+    return NextResponse.json(
+      {
+        error: `Missing API configuration: ${validation.missing.join(", ")}. Please configure these in Settings.`,
+      },
+      { status: 400 }
+    );
   }
 
   const result = await db
