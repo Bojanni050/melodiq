@@ -261,7 +261,7 @@ export default function TrackList({
 
 function GeneratingRow() {
   return (
-    <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-600/5 border border-primary-600/20">
+    <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-600/5 border border-primary-600/20 animate-[pulse_3s_ease-in-out_infinite]">
       {/* Empty selection dot — generating tracks can't be selected */}
       <div className="w-5 h-5 shrink-0" />
 
@@ -273,7 +273,7 @@ function GeneratingRow() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium truncate">Composing your track</h3>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 animate-[pulse_2s_ease-in-out_infinite]">
             Creating
           </span>
         </div>
@@ -366,6 +366,7 @@ function TrackCard({
     failed: { color: "bg-red-500/20 text-red-300", label: "Failed" },
   };
   const status = statusConfig[track.status];
+  const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
 
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = track.title || track.prompt.substring(0, 50);
@@ -452,7 +453,7 @@ function TrackCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium truncate">{title}</h3>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color}`}>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
         </div>
