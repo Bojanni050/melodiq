@@ -1,6 +1,37 @@
 import axios from "axios";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 
+const TEMPOLOR_VALID_MODELS = [
+  "TemPolor v4.5",
+  "TemPolor v3.5",
+  "TemPolor v3",
+  "TemPolor i3.5",
+  "TemPolor i3",
+];
+
+// Map legacy/short names → full API model names
+const TEMPOLOR_MODEL_ALIASES: Record<string, string> = {
+  "v4.5": "TemPolor v4.5",
+  "v4.6": "TemPolor v4.5",  // old invalid name → nearest valid
+  "v4.0": "TemPolor v4.5",
+  "v3.5": "TemPolor v3.5",
+  "v3":   "TemPolor v3",
+  "i3.5": "TemPolor i3.5",
+  "i3":   "TemPolor i3",
+};
+
+function normalizeTempolorModel(model?: string): string {
+  if (!model) return "TemPolor v4.5";
+  if (TEMPOLOR_VALID_MODELS.includes(model)) return model;
+  const alias = TEMPOLOR_MODEL_ALIASES[model.toLowerCase().replace("tempolor ", "").trim()];
+  if (alias) {
+    console.warn(`[tempolor] Remapped model "${model}" → "${alias}"`);
+    return alias;
+  }
+  console.warn(`[tempolor] Unknown model "${model}", falling back to TemPolor v4.5`);
+  return "TemPolor v4.5";
+}
+
 export async function generateTempolor({
   prompt,
   lyrics,
@@ -21,7 +52,7 @@ export async function generateTempolor({
       "https://api.tempolor.com/open-apis/v1/song/generate",
       {
         prompt,
-        model: model || "TemPolor v4.5",
+        model: normalizeTempolorModel(model),
         lyrics: lyrics || undefined,
         callback_url: WEBHOOK_URL,
       },
