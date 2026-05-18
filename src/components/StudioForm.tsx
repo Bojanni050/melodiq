@@ -22,6 +22,7 @@ const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
   poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4"], icon: "P" },
   tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["TemPolor v4.6", "TemPolor v3.5", "TemPolor v3", "TemPolor i3.5", "TemPolor i3"], icon: "T" },
+  musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
 };
 
 const STYLE_TAGS = ["FX Risers", "Epic", "Amapiano", "Soul", "Lo-Fi", "Orchestral", "Synthwave", "Acoustic"];

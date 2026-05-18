@@ -6,6 +6,7 @@ import { eq, desc } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
+import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
   const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
-  const allowedProviders = ["lyria", "poyo", "tempolor"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
 
@@ -194,6 +195,40 @@ export async function POST(request: NextRequest) {
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
         response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ track: updated[0] });
+    }
+
+    if (provider === "musicgpt") {
+      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/musicgpt?secret=${process.env.WEBHOOK_SECRET}`;
+      
+      genResult = await generateMusicGpt({
+        prompt,
+        lyrics,
+        instrumental,
+        gender: body.gender || "",
+        webhookUrl,
+      });
+
+      const updated = await db
+        .update(tracks)
+        .set({
+          status: "generating",
+          jobId: genResult.taskId,
+        })
+        .where(eq(tracks.id, track.id!))
+        .returning();
+
+      await logApi({
+        userId: userId,
+        type: "generation",
+        provider: "musicgpt",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ status: "generating", jobId: genResult.taskId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });

@@ -20,6 +20,11 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     method: "POST",
     authPrefix: "",  // key is the full Authorization value (e.g. Tempo-xxxxx-3w)
   },
+  musicgpt: {
+    url: "https://api.musicgpt.com/api/public/v1/MusicAI",
+    keyPrefix: "",
+    method: "POST",
+  },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
     keyPrefix: "",
@@ -68,6 +73,8 @@ export async function POST(request: Request) {
       info = `Connected — ${response.data.data?.credits_amount ?? "unknown"} credits`;
     } else if (provider === "tempolor") {
       info = `Connected — ${response.data.data?.balance ?? "unknown"} credits`;
+    } else if (provider === "musicgpt") {
+      info = `Connected — MusicGPT API is active`;
     } else if (provider === "openrouter") {
       info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {

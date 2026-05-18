@@ -58,6 +58,9 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
   } else if (provider === "tempolor") {
     const key = await getSetting("TEMPOLOR_API_KEY");
     if (!key) missing.push("TEMPOLOR_API_KEY");
+  } else if (provider === "musicgpt") {
+    const key = await getSetting("MUSICGPT_API_KEY");
+    if (!key) missing.push("MUSICGPT_API_KEY");
   }
 
   // Check S3 keys (required for uploads)
