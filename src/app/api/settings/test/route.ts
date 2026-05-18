@@ -18,7 +18,7 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     url: "https://api.tempolor.com/open-apis/v1/account/billing",
     keyPrefix: "",
     method: "POST",
-    authPrefix: "Tempo-",  // Tempolor requires "Tempo-{key}", not "Bearer {key}"
+    authPrefix: "",  // key is the full Authorization value (e.g. Tempo-xxxxx-3w)
   },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
