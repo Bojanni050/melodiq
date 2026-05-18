@@ -29,6 +29,7 @@ export async function generatePoYo({
   const API_KEY = await getSetting("POYO_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("poyo");
   const startTime = Date.now();
+
   try {
     const response = await axios.post(
       "https://api.poyo.ai/api/generate/submit",
@@ -37,11 +38,10 @@ export async function generatePoYo({
         callback_url: WEBHOOK_URL,
         input: {
           prompt,
-          title,
-          lyrics: lyrics || undefined,
-          instrumental: instrumental || false,
-          custom_mode: true,
+          custom_mode: !!lyrics,
+          instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
+          ...(lyrics ? { style: prompt, title: title || "Generated Track" } : {}),
         },
       },
       {
@@ -52,32 +52,17 @@ export async function generatePoYo({
       }
     );
 
-    const jobId =
-      response.data?.data?.task_id ||
-      response.data?.task_id ||
-      response.data?.job_id ||
-      response.data?.data?.job_id ||
-      response.data?.id;
-
-    if (!jobId) {
-      throw new Error(`PoYo submit response missing job id: ${JSON.stringify(response.data)}`);
-    }
-
-    const duration = Date.now() - startTime;
     return {
-      jobId,
-      duration,
+      jobId: response.data.data.task_id,
+      duration: Date.now() - startTime,
     };
   } catch (error: any) {
-    const duration = Date.now() - startTime;
     const isCopyright =
       error.response?.status === 400 &&
       /copyright|policy/i.test(error.response?.data?.message || "");
     throw {
-      message: isCopyright
-        ? "COPYRIGHT"
-        : error.response?.data?.message || error.message,
-      duration,
+      message: isCopyright ? "COPYRIGHT" : error.response?.data?.message || error.message,
+      duration: Date.now() - startTime,
       statusCode: error.response?.status,
     };
   }

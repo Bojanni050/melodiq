@@ -15,40 +15,35 @@ export async function generateTempolor({
   const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("tempolor");
   const startTime = Date.now();
+
   try {
     const response = await axios.post(
-      "https://api.tempolor.com/open-apis/v1/generate",
+      "https://api.tempolor.com/open-apis/v1/song/generate",
       {
-        model: model || "v4.6",
         prompt,
+        model: model || "TemPolor v4.0",
         lyrics: lyrics || undefined,
-        instrumental: instrumental || false,
-        hd: true,
-        webhook_url: WEBHOOK_URL,
+        callback_url: WEBHOOK_URL,
       },
       {
         headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization: `Tempo-${API_KEY}`,
+          "Content-Type": "application/json; charset=utf-8",
         },
       }
     );
 
-    const duration = Date.now() - startTime;
     return {
-      jobId: response.data.job_id,
-      duration,
+      jobId: response.data.data.item_ids[0],
+      duration: Date.now() - startTime,
     };
   } catch (error: any) {
-    const duration = Date.now() - startTime;
     const isCopyright =
       error.response?.status === 400 &&
       /copyright|policy/i.test(error.response?.data?.message || "");
     throw {
-      message: isCopyright
-        ? "COPYRIGHT"
-        : error.response?.data?.message || error.message,
-      duration,
+      message: isCopyright ? "COPYRIGHT" : error.response?.data?.message || error.message,
+      duration: Date.now() - startTime,
       statusCode: error.response?.status,
     };
   }
@@ -57,10 +52,14 @@ export async function generateTempolor({
 export async function getTempolorStatus(jobId: string) {
   const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
-    const response = await axios.get(
-      `https://api.tempolor.com/open-apis/v1/jobs/${jobId}`,
+    const response = await axios.post(
+      "https://api.tempolor.com/open-apis/v1/song/detail",
+      { item_ids: [jobId] },
       {
-        headers: { Authorization: `Bearer ${API_KEY}` },
+        headers: {
+          Authorization: `Tempo-${API_KEY}`,
+          "Content-Type": "application/json; charset=utf-8",
+        },
       }
     );
     return response.data;
@@ -72,10 +71,12 @@ export async function getTempolorStatus(jobId: string) {
 export async function getTempolorCredits() {
   const API_KEY = await getSetting("TEMPOLOR_API_KEY");
   try {
-    const response = await axios.get("https://api.tempolor.com/open-apis/v1/credits", {
-      headers: { Authorization: `Bearer ${API_KEY}` },
-    });
-    return response.data.credits;
+    const response = await axios.post(
+      "https://api.tempolor.com/open-apis/v1/account/billing",
+      {},
+      { headers: { Authorization: `Tempo-${API_KEY}` } }
+    );
+    return response.data?.data?.balance ?? null;
   } catch {
     return null;
   }
