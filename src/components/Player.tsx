@@ -15,22 +15,36 @@ export default function Player() {
       audioRef.current = new Audio();
       audioRef.current.volume = volume;
 
-      audioRef.current.addEventListener("timeupdate", () => {
+      const handleTimeUpdate = () => {
         setCurrentTime(audioRef.current?.currentTime || 0);
-      });
+      };
 
-      audioRef.current.addEventListener("loadedmetadata", () => {
+      const handleLoadedMetadata = () => {
         setDuration(audioRef.current?.duration || 0);
-      });
+      };
 
-      audioRef.current.addEventListener("ended", () => {
+      const handleEnded = () => {
         usePlayerStore.getState().playNext();
-      });
+      };
+
+      audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
+      audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audioRef.current.addEventListener("ended", handleEnded);
+
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
+          audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
+          audioRef.current.removeEventListener("ended", handleEnded);
+        }
+      };
     }
   }, []);
 
   useEffect(() => {
     if (audioRef.current && currentTrack?.audioUrl) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       audioRef.current.src = currentTrack.audioUrl;
       audioRef.current.play().catch(() => {});
       usePlayerStore.getState().setIsPlaying(true);
