@@ -61,24 +61,24 @@ export async function getPoYoStatus(jobId: string) {
   const API_KEY = await getSetting("POYO_API_KEY");
   try {
     const response = await axios.get(
-      `https://api.poyo.com/v1/jobs/${jobId}`,
+      `https://api.poyo.ai/api/generate/status/${jobId}`,
       {
         headers: { Authorization: `Bearer ${API_KEY}` },
       }
     );
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || error.message);
+    throw new Error(error.response?.data?.error?.message || error.response?.data?.message || error.message);
   }
 }
 
 export async function getPoYoCredits() {
   const API_KEY = await getSetting("POYO_API_KEY");
   try {
-    const response = await axios.get("https://api.poyo.com/v1/credits", {
+    const response = await axios.get("https://api.poyo.ai/api/user/balance", {
       headers: { Authorization: `Bearer ${API_KEY}` },
     });
-    return response.data.credits;
+    return response.data.data?.credits_amount;
   } catch {
     return null;
   }
