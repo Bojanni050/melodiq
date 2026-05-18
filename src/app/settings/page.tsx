@@ -77,6 +77,20 @@ const PROVIDERS: ProviderConfig[] = [
     testEndpoint: "tempolor",
   },
   {
+    id: "musicgpt",
+    name: "MusicGPT",
+    description: "Async music generation with AI voice models",
+    fields: [
+      {
+        key: "MUSICGPT_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "musicgpt_...",
+      },
+    ],
+    testEndpoint: "musicgpt",
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     description: "Primary LLM provider for prompt optimization and lyrics",
@@ -141,6 +155,8 @@ export default function SettingsPage() {
   const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
   const [s3Status, setS3Status] = useState<{ connected: boolean; message: string } | null>(null);
   const [testingS3, setTestingS3] = useState(false);
+  const [s3Stats, setS3Stats] = useState<{ totalSize: number; objectCount: number; formattedSize: string } | null>(null);
+  const [loadingS3Stats, setLoadingS3Stats] = useState(false);
 
   useEffect(() => {
     async function loadSettings() {
@@ -194,6 +210,7 @@ export default function SettingsPage() {
       "APP_URL",
       "POYO_WEBHOOK_URL",
       "TEMPOLOR_WEBHOOK_URL",
+      "MUSICGPT_WEBHOOK_URL",
       "MINIMAX_WEBHOOK_URL",
     ];
 
@@ -239,6 +256,20 @@ export default function SettingsPage() {
     const data = await res.json();
     setS3Status(data);
     setTestingS3(false);
+  }
+
+  async function fetchS3Stats() {
+    setLoadingS3Stats(true);
+    try {
+      const res = await fetch("/api/settings/s3/stats");
+      const data = await res.json();
+      if (res.ok) {
+        setS3Stats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching S3 stats:", error);
+    }
+    setLoadingS3Stats(false);
   }
 
   async function saveApiLogging() {
@@ -460,6 +491,16 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">MusicGPT Webhook URL</label>
+                  <input
+                    type="text"
+                    value={values.MUSICGPT_WEBHOOK_URL || ""}
+                    onChange={(e) => updateField("MUSICGPT_WEBHOOK_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/musicgpt` : "Leave empty to auto-derive"}
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-white/50 mb-1">MiniMax Webhook URL</label>
                   <input
                     type="text"
@@ -567,6 +608,27 @@ export default function SettingsPage() {
                     {s3Status.message}
                   </p>
                 )}
+                {s3Stats && (
+                  <div className="mt-3 p-2 bg-white/5 rounded border border-white/10">
+                    <div className="text-xs space-y-1">
+                      <p className="text-white/60">
+                        <span className="text-white/40">Total Size:</span> <span className="text-white/80 font-mono">{s3Stats.formattedSize}</span>
+                      </p>
+                      <p className="text-white/60">
+                        <span className="text-white/40">Objects:</span> <span className="text-white/80 font-mono">{s3Stats.objectCount.toLocaleString()}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => fetchS3Stats()}
+                    disabled={loadingS3Stats}
+                    className="btn-secondary text-xs px-3 py-1.5"
+                  >
+                    {loadingS3Stats ? "Loading..." : "Refresh Storage Stats"}
+                  </button>
+                </div>
               </div>
             </section>
 
