@@ -21,7 +21,7 @@ export async function generateTempolor({
       "https://api.tempolor.com/open-apis/v1/song/generate",
       {
         prompt,
-        model: model || "TemPolor v4.0",
+        model: model || "TemPolor v4.5",
         lyrics: lyrics || undefined,
         callback_url: WEBHOOK_URL,
       },

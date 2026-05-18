@@ -20,8 +20,8 @@ const LANGUAGES = [
 
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
-  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v4", "v4.5", "v5", "v5.5"], icon: "P" },
-  tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["v3", "v4.6", "i3", "i3.5"], icon: "T" },
+  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4"], icon: "P" },
+  tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["TemPolor v4.5", "TemPolor v3.5", "TemPolor v3", "TemPolor i3.5", "TemPolor i3"], icon: "T" },
 };
 
 const STYLE_TAGS = ["FX Risers", "Epic", "Amapiano", "Soul", "Lo-Fi", "Orchestral", "Synthwave", "Acoustic"];
