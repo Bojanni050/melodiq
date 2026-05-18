@@ -1,5 +1,18 @@
 # Sonara — Walkthrough
 
+## 2026-05-18 (Directe batch cover art vanuit generate-route)
+
+- Findings: PoYo en Tempolor cover-art werd pas gestart vanuit webhooks, wat bij multi-track batches race-condition gedrag gaf en cover-toewijzing per track versplinterde.
+- Conclusions: Cover-art moet direct starten in de generate-route, parallel aan audiogeneratie, met een enkele batch-cover die aan alle tracks wordt toegewezen.
+- Actions:
+  - Updated `src/lib/generate-cover.ts` — delay/race-wachtlogica verwijderd; helper opgesplitst in single-track `generateAndSaveCoverArt` en batch-helper `generateAndSaveCoverArtForBatch`.
+  - Updated `src/app/api/generate/route.ts` — PoYo- en Tempolor-blokken vervangen zodat ze batch tracks opbouwen en fire-and-forget `generateAndSaveCoverArtForBatch(...).catch(() => {})` starten.
+  - Updated `src/app/api/webhooks/poyo/route.ts` — cover-art aanroep verwijderd (WAV-flow en sync blijven intact).
+  - Updated `src/app/api/webhooks/tempolor/route.ts` — cover-art aanroep verwijderd.
+  - Confirmed `src/lib/providers/poyo.ts` en `src/lib/providers/tempolor.ts` al `jobIds[]` returnen; geen aanvullende wijziging nodig.
+  - Confirmed `src/app/page.tsx` bleef ongewijzigd zoals gevraagd.
+  - Validated with `npm run build` na elke fase (1 t/m 4).
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.

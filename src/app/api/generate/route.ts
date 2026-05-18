@@ -7,7 +7,7 @@ import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
-import { generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
@@ -160,19 +160,46 @@ export async function POST(request: NextRequest) {
         title: resolvedTitle || undefined,
       });
 
-      const primaryJobId = genResult.jobIds?.[0];
-      if (!primaryJobId) {
-        throw new Error("PoYo returned no job IDs");
-      }
+      const jobIds: string[] = genResult.jobIds;
 
-      const updated = await db
+      const firstUpdated = await db
         .update(tracks)
-        .set({
-          status: "generating",
-          jobId: primaryJobId,
-        })
+        .set({ status: "generating", jobId: jobIds[0] })
         .where(eq(tracks.id, track.id!))
         .returning();
+
+      const extraInserted = await Promise.all(
+        jobIds.slice(1).map((jobId, i) =>
+          db
+            .insert(tracks)
+            .values({
+              userId,
+              provider,
+              providerModel,
+              prompt,
+              lyrics: lyrics || null,
+              instrumental: instrumental || false,
+              title: resolvedTitle ? `${resolvedTitle} (${i + 2})` : null,
+              status: "generating",
+              jobId,
+            })
+            .returning()
+        )
+      );
+
+      const allTracks = [firstUpdated[0], ...extraInserted.map((r) => r[0])];
+
+      // Start cover art direct - parallel aan audio generatie bij PoYo
+      // Een cover voor de hele batch, toegewezen aan alle tracks tegelijk
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch(() => {});
 
       await logApi({
         userId: userId,
@@ -180,12 +207,12 @@ export async function POST(request: NextRequest) {
         provider: "poyo",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: primaryJobId }),
+        response: JSON.stringify({ status: "generating", jobIds }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ tracks: [updated[0]] });
+      return NextResponse.json({ tracks: allTracks });
     }
 
     if (provider === "tempolor") {
@@ -197,40 +224,45 @@ export async function POST(request: NextRequest) {
       });
 
       const jobIds: string[] = genResult.jobIds;
-      if (!Array.isArray(jobIds) || jobIds.length === 0) {
-        throw new Error("Tempolor returned no job IDs");
-      }
 
-      const updated = await db
+      const firstUpdated = await db
         .update(tracks)
-        .set({
-          status: "generating",
-          jobId: jobIds[0],
-        })
+        .set({ status: "generating", jobId: jobIds[0] })
         .where(eq(tracks.id, track.id!))
         .returning();
 
-      let extraInserted: typeof updated = [];
-      if (jobIds.length > 1) {
-        const baseTitle = resolvedTitle || track.title || "Generated Track";
-        extraInserted = await db
-          .insert(tracks)
-          .values(
-            jobIds.slice(1).map((jobId: string, index: number) => ({
-              userId: track.userId,
-              provider: track.provider,
-              providerModel: track.providerModel,
-              prompt: track.prompt,
-              lyrics: track.lyrics,
-              instrumental: track.instrumental,
-              language: track.language,
-              status: "generating" as const,
+      const extraInserted = await Promise.all(
+        jobIds.slice(1).map((jobId, i) =>
+          db
+            .insert(tracks)
+            .values({
+              userId,
+              provider,
+              providerModel,
+              prompt,
+              lyrics: lyrics || null,
+              instrumental: instrumental || false,
+              title: resolvedTitle ? `${resolvedTitle} (${i + 2})` : null,
+              status: "generating",
               jobId,
-              title: `${baseTitle} (${index + 2})`,
-            }))
-          )
-          .returning();
-      }
+            })
+            .returning()
+        )
+      );
+
+      const allTracks = [firstUpdated[0], ...extraInserted.map((r) => r[0])];
+
+      // Start cover art direct - parallel aan audio generatie bij Tempolor
+      // Een cover voor de hele batch, toegewezen aan alle tracks tegelijk
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch(() => {});
 
       await logApi({
         userId: userId,
@@ -243,7 +275,7 @@ export async function POST(request: NextRequest) {
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ tracks: [updated[0], ...extraInserted] });
+      return NextResponse.json({ tracks: allTracks });
     }
 
     if (provider === "musicgpt") {

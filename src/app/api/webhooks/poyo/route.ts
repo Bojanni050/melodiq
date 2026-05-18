@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -52,14 +51,6 @@ export async function POST(request: NextRequest) {
   if (status === "finished" || status === "completed") {
     try {
       const syncResult = await syncPoYoTaskResult(taskId, body);
-
-      generateAndSaveCoverArt({
-        id: track.id,
-        userId: track.userId,
-        title: track.title,
-        prompt: track.prompt,
-        instrumental: track.instrumental,
-      }).catch(() => {});
 
       if (syncResult.variantCount === 0) {
         await db.update(tracks).set({ status: "failed", error: syncResult.error || "No audio URL in webhook" }).where(eq(tracks.id, track.id!));
