@@ -20,10 +20,15 @@ export interface Track {
 
 interface PlayerState {
   currentTrack: Track | null;
+  queue: Track[];
   isPlaying: boolean;
   volume: number;
   progress: number;
   setCurrentTrack: (track: Track | null) => void;
+  enqueueTrack: (track: Track) => void;
+  removeFromQueue: (trackId: string) => void;
+  clearQueue: () => void;
+  playNext: () => void;
   setIsPlaying: (playing: boolean) => void;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
@@ -33,17 +38,108 @@ export const usePlayerStore = create<PlayerState>()(
   persist(
     (set) => ({
       currentTrack: null,
+      queue: [],
       isPlaying: false,
       volume: 0.8,
       progress: 0,
       setCurrentTrack: (track) => set({ currentTrack: track }),
+      enqueueTrack: (track) =>
+        set((state) => {
+          const exists = state.queue.some((item) => item.id === track.id);
+          if (exists) return state;
+          return { queue: [...state.queue, track] };
+        }),
+      removeFromQueue: (trackId) =>
+        set((state) => ({ queue: state.queue.filter((track) => track.id !== trackId) })),
+      clearQueue: () => set({ queue: [] }),
+      playNext: () =>
+        set((state) => {
+          if (state.queue.length === 0) {
+            return { currentTrack: null, isPlaying: false };
+          }
+          const [nextTrack, ...rest] = state.queue;
+          return { currentTrack: nextTrack, queue: rest, isPlaying: true };
+        }),
       setIsPlaying: (playing) => set({ isPlaying: playing }),
       setVolume: (volume) => set({ volume }),
       setProgress: (progress) => set({ progress }),
     }),
     {
       name: "sonara-player",
-      partialize: (state) => ({ volume: state.volume }),
+      partialize: (state) => ({
+        volume: state.volume,
+        queue: state.queue,
+        currentTrack: state.currentTrack,
+      }),
+    }
+  )
+);
+
+export interface Playlist {
+  id: string;
+  name: string;
+  trackIds: string[];
+  createdAt: string;
+}
+
+interface PlaylistState {
+  playlists: Playlist[];
+  selectedPlaylistId: string | null;
+  createPlaylist: (name: string) => string;
+  addTrackToPlaylist: (playlistId: string, trackId: string) => void;
+  removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
+  deletePlaylist: (playlistId: string) => void;
+  setSelectedPlaylistId: (playlistId: string | null) => void;
+}
+
+export const usePlaylistStore = create<PlaylistState>()(
+  persist(
+    (set) => ({
+      playlists: [],
+      selectedPlaylistId: null,
+      createPlaylist: (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return "";
+        const id =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        set((state) => ({
+          playlists: [
+            ...state.playlists,
+            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString() },
+          ],
+        }));
+        return id;
+      },
+      addTrackToPlaylist: (playlistId, trackId) =>
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => {
+            if (playlist.id !== playlistId) return playlist;
+            if (playlist.trackIds.includes(trackId)) return playlist;
+            return { ...playlist, trackIds: [...playlist.trackIds, trackId] };
+          }),
+        })),
+      removeTrackFromPlaylist: (playlistId, trackId) =>
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => {
+            if (playlist.id !== playlistId) return playlist;
+            return {
+              ...playlist,
+              trackIds: playlist.trackIds.filter((id) => id !== trackId),
+            };
+          }),
+        })),
+      deletePlaylist: (playlistId) =>
+        set((state) => ({
+          playlists: state.playlists.filter((playlist) => playlist.id !== playlistId),
+          selectedPlaylistId:
+            state.selectedPlaylistId === playlistId ? null : state.selectedPlaylistId,
+        })),
+      setSelectedPlaylistId: (playlistId) => set({ selectedPlaylistId: playlistId }),
+    }),
+    {
+      name: "sonara-playlists",
     }
   )
 );

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { useStudioStore, usePlayerStore, useUIStore } from "@/lib/store";
+import { useStudioStore, usePlayerStore, useUIStore, usePlaylistStore } from "@/lib/store";
 
 interface Track {
   id: string;
@@ -28,10 +27,13 @@ type TabType = "create" | "library";
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null });
   const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
   const activeTab = useUIStore((state) => state.activeTab);
   const setActiveTab = useUIStore((state) => state.setActiveTab);
+  const playlists = usePlaylistStore((state) => state.playlists);
+  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
 
   useEffect(() => {
@@ -59,6 +61,29 @@ export default function HomePage() {
   function handleDeleteTrack(trackId: string) {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
     if (selectedTrack?.id === trackId) setSelectedTrack(null);
+  }
+
+  function handleAddToQueue(track: Track) {
+    usePlayerStore.getState().enqueueTrack({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      status: track.status,
+      audioUrl: track.audioUrl,
+      audioUrlHd: track.audioUrlHd,
+      s3Key: null,
+      s3KeyHd: track.s3KeyHd,
+      duration: null,
+      lyrics: track.lyrics,
+      createdAt: track.createdAt,
+      error: track.error,
+    });
+  }
+
+  function handleAddToPlaylist(trackId: string, playlistId: string) {
+    addTrackToPlaylist(playlistId, trackId);
   }
 
   async function fetchCredits() {
@@ -171,13 +196,15 @@ export default function HomePage() {
 
       const data = await res.json();
 
-      await fetchTracks();
-
       if (!res.ok) {
-        alert(data.error || "Generation failed");
+        setNotice({ type: "error", message: data.error || "Generation failed" });
+        return;
       }
+
+      await fetchTracks();
+      setNotice(null);
     } catch {
-      alert("Failed to generate track");
+      setNotice({ type: "error", message: "Failed to generate track" });
     } finally {
       setGenerating(false);
     }
@@ -219,6 +246,27 @@ export default function HomePage() {
 
       {/* Main content area */}
       <div className="lg:ml-60">
+        {notice && (
+          <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
+            <div className="flex items-start gap-3">
+              <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <div className="min-w-0">
+                <p className="text-sm text-red-100">{notice.message}</p>
+              </div>
+              <button
+                onClick={() => setNotice(null)}
+                className="text-red-200/70 hover:text-red-100"
+                aria-label="Close notification"
+                title="Close"
+              >
+                x
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Top bar */}
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="flex items-center justify-between px-4 py-2">
@@ -267,13 +315,29 @@ export default function HomePage() {
                   <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
                   <span className="text-xs text-white/30">{tracks.length} tracks</span>
                 </div>
-                <TrackList tracks={tracks} isGenerating={generating} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
+                <TrackList
+                  tracks={tracks}
+                  isGenerating={generating}
+                  onSelect={(t) => setSelectedTrack(t)}
+                  onDelete={handleDeleteTrack}
+                  onAddToQueue={handleAddToQueue}
+                  onAddToPlaylist={handleAddToPlaylist}
+                  playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                />
               </div>
             </div>
           ) : (
             <div className="max-w-4xl">
               <h2 className="text-lg font-semibold mb-4">Library</h2>
-              <TrackList tracks={tracks.filter((t) => t.status === "done")} isGenerating={generating} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
+              <TrackList
+                tracks={tracks.filter((t) => t.status === "done")}
+                isGenerating={generating}
+                onSelect={(t) => setSelectedTrack(t)}
+                onDelete={handleDeleteTrack}
+                onAddToQueue={handleAddToQueue}
+                onAddToPlaylist={handleAddToPlaylist}
+                playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+              />
             </div>
           )}
         </main>
@@ -306,8 +370,6 @@ export default function HomePage() {
           onDownload={handleDownloadTrack}
         />
       )}
-
-      <Player />
     </div>
   );
 }

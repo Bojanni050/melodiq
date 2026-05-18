@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
   const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
+  const allowedProviders = ["lyria", "poyo", "tempolor"];
+  const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
+  const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
 
   if (!prompt || typeof prompt !== "string") {
     return NextResponse.json({ error: "prompt is required" }, { status: 400 });
@@ -58,6 +61,15 @@ export async function POST(request: NextRequest) {
   }
   if (instrumental && (!resolvedTitle || !resolvedTitle.trim())) {
     return NextResponse.json({ error: "title is required for instrumental tracks" }, { status: 400 });
+  }
+  if (!allowedProviders.includes(provider)) {
+    return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
+  }
+  if (provider === "poyo" && !poyoValidModels.includes(normalizedPoYoModel)) {
+    return NextResponse.json(
+      { error: `Invalid PoYo model. Supported: ${poyoValidModels.join(", ")}` },
+      { status: 400 }
+    );
   }
 
   // Validate that required API keys are configured
@@ -127,20 +139,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "poyo") {
-      const POYO_VALID_MODELS = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
-      const normalizedModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
-      if (!POYO_VALID_MODELS.includes(normalizedModel)) {
-        return NextResponse.json(
-          { error: `Invalid PoYo model. Supported: ${POYO_VALID_MODELS.join(", ")}` },
-          { status: 400 }
-        );
-      }
-
       genResult = await generatePoYo({
         prompt,
         lyrics,
         instrumental,
-        model: providerModel,
+        model: normalizedPoYoModel,
         title: resolvedTitle || undefined,
       });
 
@@ -198,10 +201,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ track: updated[0] });
     }
 
-    return NextResponse.json(
-      { error: "Unknown provider" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
   } catch (error: any) {
     const isCopyright = error.message === "COPYRIGHT";
 

@@ -1,19 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "@/lib/store";
 
 // Staggered delays for organic waveform feel
-const WAVE_DELAYS = [0, 80, 160, 40, 200, 120, 280, 60, 220, 100, 340, 20, 180, 260, 80, 300, 140, 60, 240, 180, 320, 40, 200, 100];
-
-function WaveformBars({ count = 5, height = 14, className = "" }: { count?: number; height?: number; className?: string }) {
+function WaveformBars({ count = 5, className = "" }: { count?: number; className?: string }) {
   return (
-    <div className={`flex items-center gap-[2px] overflow-hidden ${className}`} style={{ height }}>
+    <div className={`flex items-center gap-0.5 overflow-hidden ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="animate-wave-bar bg-current rounded-[1px] shrink-0"
-          style={{ width: 2, animationDelay: `${WAVE_DELAYS[i % WAVE_DELAYS.length]}ms` }}
+          className={`h-full w-0.5 animate-wave-bar bg-current rounded-[1px] shrink-0 ${i % 3 === 0 ? "opacity-100" : i % 3 === 1 ? "opacity-80" : "opacity-60"}`}
         />
       ))}
     </div>
@@ -75,16 +72,27 @@ interface TrackItem {
   s3KeyHd: string | null;
 }
 
+interface PlaylistOption {
+  id: string;
+  name: string;
+}
+
 export default function TrackList({
   tracks,
   isGenerating,
   onSelect,
   onDelete,
+  onAddToQueue,
+  onAddToPlaylist,
+  playlists,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
+  onAddToQueue?: (track: TrackItem) => void;
+  onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  playlists?: PlaylistOption[];
 }) {
   const { setCurrentTrack } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -230,6 +238,9 @@ export default function TrackList({
           onPlay={handlePlay}
           onSelect={onSelect}
           onDelete={onDelete}
+          onAddToQueue={onAddToQueue}
+          onAddToPlaylist={onAddToPlaylist}
+          playlists={playlists}
           isSelected={selectedIds.has(track.id)}
           onToggleSelect={toggleSelection}
         />
@@ -247,7 +258,7 @@ function GeneratingRow() {
 
       {/* Waveform in play button area */}
       <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-600/20 text-primary-400">
-        <WaveformBars count={5} height={14} />
+        <WaveformBars count={5} className="h-3.5" />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -259,7 +270,7 @@ function GeneratingRow() {
         </div>
         {/* Full-width waveform in description row */}
         <div className="mt-1.5 text-primary-500/40 w-full">
-          <WaveformBars count={32} height={10} className="w-full" />
+          <WaveformBars count={32} className="h-2.5 w-full" />
         </div>
       </div>
 
@@ -275,6 +286,9 @@ function TrackCard({
   onPlay,
   onSelect,
   onDelete,
+  onAddToQueue,
+  onAddToPlaylist,
+  playlists,
   isSelected,
   onToggleSelect,
 }: {
@@ -282,12 +296,30 @@ function TrackCard({
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
+  onAddToQueue?: (track: TrackItem) => void;
+  onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  playlists?: PlaylistOption[];
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
 }) {
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   async function executeDelete() {
     setConfirmDelete(false);
@@ -390,7 +422,7 @@ function TrackCard({
           </svg>
         ) : (
           <div className="text-primary-400/60">
-            <WaveformBars count={4} height={12} />
+            <WaveformBars count={4} className="h-3" />
           </div>
         )}
       </button>
@@ -405,7 +437,7 @@ function TrackCard({
         </div>
         {(track.status === "generating" || track.status === "pending") ? (
           <div className="mt-1.5 text-primary-500/40 w-full">
-            <WaveformBars count={32} height={8} className="w-full" />
+            <WaveformBars count={32} className="h-2 w-full" />
           </div>
         ) : (
           <p className="text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
@@ -447,6 +479,56 @@ function TrackCard({
               </button>
             )}
           </>
+        )}
+        {track.status === "done" && (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((open) => !open);
+              }}
+              className="p-1.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors"
+              title="Track actions"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+              </svg>
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onAddToQueue?.(track);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Add to queue
+                </button>
+                <div className="my-1 h-px bg-white/10" />
+                <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Add to playlist</p>
+                {playlists && playlists.length > 0 ? (
+                  playlists.map((playlist) => (
+                    <button
+                      key={playlist.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onAddToPlaylist?.(track.id, playlist.id);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                    >
+                      {playlist.name}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-2.5 py-1.5 text-xs text-white/40">Create a playlist in Library first</p>
+                )}
+              </div>
+            )}
+          </div>
         )}
         <button
           onClick={handleDelete}

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore } from "@/lib/store";
 
 interface Track {
   id: string;
@@ -26,6 +25,15 @@ export default function LibraryPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
+  const playlists = usePlaylistStore((state) => state.playlists);
+  const selectedPlaylistId = usePlaylistStore((state) => state.selectedPlaylistId);
+  const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
+  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
+  const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
+  const deletePlaylist = usePlaylistStore((state) => state.deletePlaylist);
+  const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
 
   useEffect(() => {
     fetchTracks();
@@ -42,8 +50,52 @@ export default function LibraryPage() {
 
   function handleDeleteTrack(trackId: string) {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
+    for (const playlist of playlists) {
+      removeTrackFromPlaylist(playlist.id, trackId);
+    }
     if (selectedTrack?.id === trackId) setSelectedTrack(null);
   }
+
+  function handleAddToQueue(track: Track) {
+    usePlayerStore.getState().enqueueTrack({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      status: track.status,
+      audioUrl: track.audioUrl,
+      audioUrlHd: track.audioUrlHd,
+      s3Key: null,
+      s3KeyHd: track.s3KeyHd,
+      duration: null,
+      lyrics: track.lyrics,
+      createdAt: track.createdAt,
+      error: track.error,
+    });
+  }
+
+  function handleCreatePlaylist() {
+    const id = createPlaylist(newPlaylistName);
+    if (id) {
+      setSelectedPlaylistId(id);
+      setNewPlaylistName("");
+      setShowCreatePlaylist(false);
+    }
+  }
+
+  function handleAddToPlaylist(trackId: string, playlistId: string) {
+    addTrackToPlaylist(playlistId, trackId);
+  }
+
+  const selectedPlaylist =
+    selectedPlaylistId === null
+      ? null
+      : playlists.find((playlist) => playlist.id === selectedPlaylistId) || null;
+
+  const visibleTracks = selectedPlaylist
+    ? tracks.filter((track) => selectedPlaylist.trackIds.includes(track.id))
+    : tracks;
 
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
@@ -77,7 +129,7 @@ export default function LibraryPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0f]">
         <Sidebar credits={null} />
-        <div className="lg:ml-[240px] flex items-center justify-center min-h-screen">
+        <div className="lg:ml-60 flex items-center justify-center min-h-screen">
           <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
         </div>
       </div>
@@ -87,18 +139,91 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       <Sidebar credits={null} />
-      <div className="lg:ml-[240px]">
+      <div className="lg:ml-60">
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="px-4 py-3">
-            <h1 className="text-lg font-bold">Library</h1>
-            <p className="text-xs text-white/40 mt-0.5">{tracks.length} tracks</p>
+          <div className="px-4 py-3 space-y-3">
+            <div>
+              <h1 className="text-lg font-bold">Library</h1>
+              <p className="text-xs text-white/40 mt-0.5">{visibleTracks.length} tracks shown</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setSelectedPlaylistId(null)}
+                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                  selectedPlaylistId === null
+                    ? "bg-primary-500/25 text-primary-200 border border-primary-400/30"
+                    : "bg-white/5 text-white/60 hover:text-white/80"
+                }`}
+              >
+                All tracks
+              </button>
+              {playlists.map((playlist) => (
+                <div key={playlist.id} className="flex items-center rounded-md bg-white/5 border border-white/10">
+                  <button
+                    onClick={() => setSelectedPlaylistId(playlist.id)}
+                    className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
+                      selectedPlaylistId === playlist.id ? "text-white bg-white/10" : "text-white/60 hover:text-white/80"
+                    }`}
+                  >
+                    {playlist.name}
+                  </button>
+                  <button
+                    onClick={() => deletePlaylist(playlist.id)}
+                    className="px-2 py-1 text-xs text-white/40 hover:text-red-400 transition-colors"
+                    title="Delete playlist"
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+
+              {showCreatePlaylist ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="Playlist name"
+                    className="h-7 px-2 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
+                  />
+                  <button
+                    onClick={handleCreatePlaylist}
+                    className="h-7 px-2 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCreatePlaylist(false);
+                      setNewPlaylistName("");
+                    }}
+                    className="h-7 px-2 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowCreatePlaylist(true)}
+                  className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
+                >
+                  + Playlist
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <main className="p-4 pb-32">
-          <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
+          <TrackList
+            tracks={visibleTracks}
+            onSelect={(t) => setSelectedTrack(t)}
+            onDelete={handleDeleteTrack}
+            onAddToQueue={handleAddToQueue}
+            onAddToPlaylist={handleAddToPlaylist}
+            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+          />
         </main>
       </div>
-      <Player />
       {selectedTrack && (
         <TrackDetail
           track={selectedTrack}

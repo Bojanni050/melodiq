@@ -5,7 +5,7 @@ import { usePlayerStore, Track } from "@/lib/store";
 import { useState } from "react";
 
 export default function Player() {
-  const { currentTrack, isPlaying, volume, setProgress } = usePlayerStore();
+  const { currentTrack, queue, isPlaying, volume } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -24,7 +24,7 @@ export default function Player() {
       });
 
       audioRef.current.addEventListener("ended", () => {
-        usePlayerStore.getState().setIsPlaying(false);
+        usePlayerStore.getState().playNext();
       });
     }
   }, []);
@@ -92,7 +92,7 @@ export default function Player() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors flex-shrink-0"
+              className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors shrink-0"
             >
               {isPlaying ? (
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -112,6 +112,11 @@ export default function Player() {
               <p className="text-xs text-white/50 capitalize">
                 {currentTrack.provider} • {currentTrack.providerModel}
               </p>
+              {queue.length > 0 && (
+                <p className="text-[11px] text-primary-300/90 truncate">
+                  Up next: {queue[0].title || queue[0].prompt.substring(0, 28)} (+{queue.length - 1})
+                </p>
+              )}
             </div>
           </div>
 
@@ -125,6 +130,8 @@ export default function Player() {
               max={duration || 100}
               value={currentTime}
               onChange={handleSeek}
+              title="Seek"
+              aria-label="Seek playback"
               className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
             />
             <span className="text-xs text-white/40 w-10">
@@ -143,6 +150,8 @@ export default function Player() {
               step={0.01}
               value={volume}
               onChange={handleVolume}
+              title="Volume"
+              aria-label="Volume"
               className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
             />
           </div>
