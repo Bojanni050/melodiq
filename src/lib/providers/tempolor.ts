@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 
 const TEMPOLOR_VALID_MODELS = [
-  "TemPolor v4.5",
+  "TemPolor v4.6",
   "TemPolor v3.5",
   "TemPolor v3",
   "TemPolor i3.5",
@@ -11,9 +11,9 @@ const TEMPOLOR_VALID_MODELS = [
 
 // Map legacy/short names → full API model names
 const TEMPOLOR_MODEL_ALIASES: Record<string, string> = {
-  "v4.5": "TemPolor v4.5",
-  "v4.6": "TemPolor v4.5",  // old invalid name → nearest valid
-  "v4.0": "TemPolor v4.5",
+  "v4.6": "TemPolor v4.6",
+  "v4.5": "TemPolor v4.6",
+  "v4.0": "TemPolor v4.6",
   "v3.5": "TemPolor v3.5",
   "v3":   "TemPolor v3",
   "i3.5": "TemPolor i3.5",
@@ -21,15 +21,15 @@ const TEMPOLOR_MODEL_ALIASES: Record<string, string> = {
 };
 
 function normalizeTempolorModel(model?: string): string {
-  if (!model) return "TemPolor v4.5";
+  if (!model) return "TemPolor v4.6";
   if (TEMPOLOR_VALID_MODELS.includes(model)) return model;
   const alias = TEMPOLOR_MODEL_ALIASES[model.toLowerCase().replace("tempolor ", "").trim()];
   if (alias) {
     console.warn(`[tempolor] Remapped model "${model}" → "${alias}"`);
     return alias;
   }
-  console.warn(`[tempolor] Unknown model "${model}", falling back to TemPolor v4.5`);
-  return "TemPolor v4.5";
+  console.warn(`[tempolor] Unknown model "${model}", falling back to TemPolor v4.6`);
+  return "TemPolor v4.6";
 }
 
 export async function generateTempolor({
@@ -64,6 +64,15 @@ export async function generateTempolor({
         timeout: 30000,
       }
     );
+
+    if (response.data?.success === false || response.data?.fail === true) {
+      console.error("[tempolor] API error response:", JSON.stringify(response.data));
+      throw {
+        message: response.data.message || "Tempolor generation failed",
+        duration: Date.now() - startTime,
+        statusCode: response.data.status || 500,
+      };
+    }
 
     const itemId = response.data?.data?.item_ids?.[0];
     if (!itemId) {
