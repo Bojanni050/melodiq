@@ -1,6 +1,12 @@
 import axios from "axios";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 
+function normalizePoYoModel(model?: string): string {
+  if (!model) return "V5_5";
+  const normalized = model.toUpperCase().replace(/\./g, "_");
+  return normalized;
+}
+
 export async function generatePoYo({
   prompt,
   lyrics,
@@ -29,7 +35,7 @@ export async function generatePoYo({
           lyrics: lyrics || undefined,
           instrumental: instrumental || false,
           custom_mode: true,
-          mv: model || "V5_5",
+          mv: normalizePoYoModel(model),
         },
       },
       {
