@@ -55,6 +55,7 @@ export async function generatePoYo({
           Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
+        timeout: 30000,
       }
     );
 
@@ -105,7 +106,8 @@ export async function getPoYoCredits() {
       headers: { Authorization: `Bearer ${API_KEY}` },
     });
     return response.data.data?.credits_amount;
-  } catch {
+  } catch (error: any) {
+    console.warn("[poyo] Failed to fetch credits:", error.message);
     return null;
   }
 }

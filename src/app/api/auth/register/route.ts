@@ -6,6 +6,10 @@ import { eq } from "drizzle-orm";
 import { generateToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  if (process.env.REGISTRATION_ENABLED !== "true") {
+    return NextResponse.json({ error: "Registration is closed" }, { status: 403 });
+  }
+
   try {
     const { email, password, name } = await request.json();
 
@@ -41,7 +45,8 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("[register] error:", error);
+    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }
