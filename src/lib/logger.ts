@@ -22,7 +22,10 @@ export async function logApi({
   duration?: number;
 }) {
   const logging = await getSetting("ENABLE_API_LOGGING");
-  if (logging !== "true") return;
+  const enabled = logging
+    ? logging === "true"
+    : process.env.ENABLE_API_LOGGING === "true";
+  if (!enabled) return;
   try {
     await db.insert(apiLogs).values({
       userId: userId || null,

@@ -172,7 +172,6 @@ export default function HomePage() {
         alert(data.error || "Generation failed");
       } else {
         fetchTracks();
-        useStudioStore.getState().reset();
       }
     } catch {
       alert("Failed to generate track");
