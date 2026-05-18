@@ -33,12 +33,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Key and value are required" }, { status: 400 });
   }
 
+  // Auto-correct webhook URL typo before saving
+  let sanitizedValue = value;
+  if (key.endsWith("_WEBHOOK_URL") && value.includes("/api/webhook/")) {
+    sanitizedValue = value.replace(/\/api\/webhook\//g, "/api/webhooks/");
+    console.warn(`[settings] Auto-corrected webhook URL for ${key}: /api/webhook/ → /api/webhooks/`);
+  }
+
   const existing = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
 
   if (existing.length > 0) {
-    await db.update(settings).set({ value }).where(eq(settings.key, key));
+    await db.update(settings).set({ value: sanitizedValue }).where(eq(settings.key, key));
   } else {
-    await db.insert(settings).values({ key, value });
+    await db.insert(settings).values({ key, value: sanitizedValue });
   }
 
   return NextResponse.json({ success: true });

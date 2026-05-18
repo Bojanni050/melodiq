@@ -17,12 +17,25 @@ export async function getSetting(key: string): Promise<string> {
 
 export async function getWebhookUrl(provider: string): Promise<string> {
   const key = `${provider.toUpperCase()}_WEBHOOK_URL`;
-  const explicit = await getSetting(key);
-  if (explicit) return explicit;
-  // Auto-derive from APP_URL if not explicitly set
-  const appUrl = (await getSetting("APP_URL")) || process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) return `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
-  return "";
+  let url = await getSetting(key);
+
+  if (url) {
+    // Auto-correct the known singular/plural typo
+    url = url.replace(/\/api\/webhook\//g, "/api/webhooks/");
+    return url;
+  }
+
+  // Auto-derive from APP_URL
+  const appUrl = await getSetting("APP_URL");
+  if (appUrl) {
+    return `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
+  }
+
+  // Neither explicit URL nor APP_URL is set — this will break generation
+  throw new Error(
+    `No webhook URL configured for provider "${provider}". ` +
+    `Set ${key} or APP_URL in the Settings page.`
+  );
 }
 
 export async function validateProviderApiKeys(provider: string): Promise<{ valid: boolean; missing: string[] }> {
