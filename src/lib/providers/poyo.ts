@@ -17,13 +17,17 @@ export async function generatePoYo({
   const startTime = Date.now();
   try {
     const response = await axios.post(
-      "https://api.poyo.com/v1/generate",
+      "https://api.poyo.ai/api/generate/submit",
       {
-        model: model || "v5.5",
-        prompt,
-        lyrics: lyrics || undefined,
-        instrumental: instrumental || false,
-        webhook_url: WEBHOOK_URL,
+        model: "generate-music",
+        callback_url: WEBHOOK_URL,
+        input: {
+          prompt,
+          lyrics: lyrics || undefined,
+          instrumental: instrumental || false,
+          custom_mode: true,
+          mv: model || "V5_5",
+        },
       },
       {
         headers: {
@@ -35,7 +39,7 @@ export async function generatePoYo({
 
     const duration = Date.now() - startTime;
     return {
-      jobId: response.data.job_id,
+      jobId: response.data.data.task_id,
       duration,
     };
   } catch (error: any) {
