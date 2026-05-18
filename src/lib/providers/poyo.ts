@@ -37,9 +37,20 @@ export async function generatePoYo({
       }
     );
 
+    const jobId =
+      response.data?.data?.task_id ||
+      response.data?.task_id ||
+      response.data?.job_id ||
+      response.data?.data?.job_id ||
+      response.data?.id;
+
+    if (!jobId) {
+      throw new Error(`PoYo submit response missing job id: ${JSON.stringify(response.data)}`);
+    }
+
     const duration = Date.now() - startTime;
     return {
-      jobId: response.data.data.task_id,
+      jobId,
       duration,
     };
   } catch (error: any) {

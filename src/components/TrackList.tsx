@@ -20,10 +20,12 @@ interface TrackItem {
 
 export default function TrackList({
   tracks,
+  isGenerating,
   onSelect,
   onDelete,
 }: {
   tracks: TrackItem[];
+  isGenerating?: boolean;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
 }) {
@@ -61,9 +63,36 @@ export default function TrackList({
 
   return (
     <div className="space-y-1">
+      {isGenerating && <GeneratingRow />}
       {tracks.map((track) => (
         <TrackCard key={track.id} track={track} onPlay={handlePlay} onSelect={onSelect} onDelete={onDelete} />
       ))}
+    </div>
+  );
+}
+
+function GeneratingRow() {
+  return (
+    <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5 shimmer border border-white/10">
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-600/20">
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-pulse" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium truncate">Composing your track</h3>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+            Creating
+          </span>
+        </div>
+        <p className="text-xs text-white/30 truncate mt-0.5">
+          Adding it to your songs list now...
+        </p>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-xs text-white/20 mr-1">now</span>
+      </div>
     </div>
   );
 }
@@ -133,7 +162,7 @@ function TrackCard({
           e.stopPropagation();
           if (track.status === "done") onPlay(track);
         }}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
           track.status === "done"
             ? "bg-primary-600/80 hover:bg-primary-600"
             : track.status === "failed"
@@ -171,7 +200,7 @@ function TrackCard({
       </div>
 
       {/* Time + actions */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
         <span className="text-xs text-white/20 mr-1">{timeAgo}</span>
         {track.status === "done" && track.audioUrl && (
           <>
