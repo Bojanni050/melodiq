@@ -33,8 +33,17 @@ export async function generateTempolor({
       }
     );
 
+    const itemId = response.data?.data?.item_ids?.[0];
+    if (!itemId) {
+      console.error("[tempolor] Unexpected response structure:", JSON.stringify(response.data));
+      throw {
+        message: `Tempolor returned no item_id. Response: ${JSON.stringify(response.data)}`,
+        duration: Date.now() - startTime,
+        statusCode: 500,
+      };
+    }
     return {
-      jobId: response.data.data.item_ids[0],
+      jobId: itemId,
       duration: Date.now() - startTime,
     };
   } catch (error: any) {
