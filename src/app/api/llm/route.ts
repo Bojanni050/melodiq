@@ -3,11 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { apiLogs } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
-
-const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openai/gpt-5";
-const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+import { getSetting } from "@/lib/settings";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -125,6 +121,15 @@ ${structure === "ai-choose" ? "Choose the song structure that best fits the song
 
 async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
   const axios = (await import("axios")).default;
+
+  const OPENROUTER_KEY =
+    (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
+  const OPENROUTER_MODEL =
+    (await getSetting("OPENROUTER_MODEL")) || process.env.OPENROUTER_MODEL || "openai/gpt-5";
+  const OPENAI_KEY =
+    (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
+  const OPENAI_MODEL =
+    (await getSetting("OPENAI_MODEL")) || process.env.OPENAI_MODEL || "gpt-4o";
 
   if (OPENROUTER_KEY) {
     const res = await axios.post(
