@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
+  const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
 
   if (!prompt || typeof prompt !== "string") {
     return NextResponse.json({ error: "prompt is required" }, { status: 400 });
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
-  if (instrumental && (!title || !title.trim())) {
+  if (instrumental && (!resolvedTitle || !resolvedTitle.trim())) {
     return NextResponse.json({ error: "title is required for instrumental tracks" }, { status: 400 });
   }
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       prompt,
       lyrics: lyrics || null,
       instrumental: instrumental || false,
-      title: title || null,
+      title: resolvedTitle,
       status: "pending",
     })
     .returning();
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
         lyrics,
         instrumental,
         model: providerModel,
+        title: resolvedTitle || undefined,
       });
 
       const updated = await db
