@@ -1,0 +1,122 @@
+import axios from "axios";
+import { getSetting } from "@/lib/settings";
+
+const PIXAZO_GENERATE_URL = "https://gateway.pixazo.ai/flux-1-schnell/v1/getData";
+const POLL_INTERVAL_MS = 4000;
+const MAX_POLLS = 30;
+
+type PixazoGenerateResponse = {
+  output?: string;
+  request_id?: string;
+};
+
+type PixazoStatusResponse = {
+  status?: string;
+  output?: {
+    media_url?: string[];
+  };
+  error?: string;
+};
+
+export async function generateCoverArt({
+  prompt,
+  title,
+  instrumental,
+}: {
+  prompt: string;
+  title: string;
+  instrumental: boolean;
+}): Promise<Buffer> {
+  const apiKey = (await getSetting("PIXAZO_API_KEY")) || process.env.PIXAZO_API_KEY || "";
+
+  if (!apiKey) {
+    throw new Error("PIXAZO_API_KEY not configured");
+  }
+
+  const imagePrompt = buildImagePrompt({ prompt, title, instrumental });
+
+  const generateRes = await axios.post<PixazoGenerateResponse>(
+    PIXAZO_GENERATE_URL,
+    {
+      prompt: imagePrompt,
+      width: 1024,
+      height: 1024,
+      num_steps: 4,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "Ocp-Apim-Subscription-Key": apiKey,
+      },
+      timeout: 60000,
+    }
+  );
+
+  const directUrl = generateRes.data?.output;
+  if (directUrl) {
+    return await downloadImage(directUrl);
+  }
+
+  const requestId = generateRes.data?.request_id;
+  if (!requestId) {
+    throw new Error(`Pixazo: unexpected response — ${JSON.stringify(generateRes.data)}`);
+  }
+
+  for (let i = 0; i < MAX_POLLS; i++) {
+    await sleep(POLL_INTERVAL_MS);
+
+    const statusRes = await axios.get<PixazoStatusResponse>(
+      `https://gateway.pixazo.ai/v2/requests/status/${requestId}`,
+      {
+        headers: { "Ocp-Apim-Subscription-Key": apiKey },
+        timeout: 10000,
+      }
+    );
+
+    const status = statusRes.data?.status;
+
+    if (status === "COMPLETED") {
+      const mediaUrl = statusRes.data?.output?.media_url?.[0];
+      if (!mediaUrl) throw new Error("Pixazo: COMPLETED but no media_url");
+      return await downloadImage(mediaUrl);
+    }
+
+    if (status === "FAILED" || status === "ERROR") {
+      throw new Error(`Pixazo ${status}: ${statusRes.data?.error ?? "unknown"}`);
+    }
+
+    console.log(`[cover-art] Pixazo status: ${status} (poll ${i + 1}/${MAX_POLLS})`);
+  }
+
+  throw new Error("Pixazo: cover art timed out after 2 minutes");
+}
+
+async function downloadImage(url: string): Promise<Buffer> {
+  const res = await axios.get(url, { responseType: "arraybuffer", timeout: 30000 });
+  return Buffer.from(res.data);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildImagePrompt({
+  prompt,
+  title,
+  instrumental,
+}: {
+  prompt: string;
+  title: string;
+  instrumental: boolean;
+}): string {
+  const cleanPrompt = prompt.replace(/[^\w\s,.-]/g, "").slice(0, 300);
+  const type = instrumental ? "instrumental" : "vocal";
+
+  return (
+    `Album cover art for a ${type} music track titled "${title}". ` +
+    `Musical style: ${cleanPrompt}. ` +
+    `Square format, artistic and evocative, no text, no letters, no words, ` +
+    `cinematic lighting, high quality illustration or photorealistic render.`
+  );
+}

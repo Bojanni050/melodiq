@@ -7,6 +7,7 @@ import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
+import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
@@ -127,6 +128,14 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(tracks.id, track.id!))
         .returning();
+
+      generateAndSaveCoverArt({
+        id: track.id,
+        userId: track.userId,
+        title: resolvedTitle,
+        prompt,
+        instrumental: instrumental || false,
+      }).catch(() => {});
 
       await logApi({
         userId: userId,

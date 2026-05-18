@@ -192,6 +192,9 @@ export async function DELETE(
     if (track.s3KeyHd) {
       await deleteFromS3(track.s3KeyHd);
     }
+    if (track.s3KeyCover) {
+      await deleteFromS3(track.s3KeyCover);
+    }
 
     await db
       .delete(tracks)

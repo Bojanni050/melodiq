@@ -22,6 +22,8 @@ interface Track {
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
+  coverUrl?: string | null;
+  s3KeyCover?: string | null;
 }
 
 type TabType = "create" | "library";
@@ -45,11 +47,20 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const hasGenerating = tracks.some((t) => t.status === "generating");
-      if (hasGenerating) fetchTracks();
-    }, 30000);
-    return () => clearInterval(interval);
+    const hasGenerating = tracks.some(
+      (t) => t.status === "generating" || t.status === "pending"
+    );
+    const hasDoneWithoutCover = tracks.some(
+      (t) => t.status === "done" && !t.coverUrl
+    );
+
+    const interval = hasGenerating ? 5000 : hasDoneWithoutCover ? 8000 : 30000;
+
+    const timer = setInterval(() => {
+      fetchTracks();
+    }, interval);
+
+    return () => clearInterval(timer);
   }, [tracks]);
 
   async function fetchTracks() {

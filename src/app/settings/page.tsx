@@ -452,6 +452,44 @@ export default function SettingsPage() {
               </section>
             ))}
 
+            {/* Cover Art */}
+            <section className="section-card">
+              <h2 className="text-sm font-semibold mb-3">Cover Art</h2>
+              <p className="text-xs text-white/40 mb-3">
+                AI-generated cover art via Pixazo Flux 1 Schnell (free).
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-white/50 mb-1 block">Pixazo API Key</label>
+                  <input
+                    type="password"
+                    value={values["PIXAZO_API_KEY"] ?? ""}
+                    onChange={(e) => updateField("PIXAZO_API_KEY", e.target.value)}
+                    placeholder="Your Pixazo subscription key"
+                    className="input-field"
+                  />
+                  <p className="text-xs text-white/30 mt-1">
+                    Get your key at pixazo.ai · Flux 1 Schnell is free
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setSaving((prev) => ({ ...prev, coverart: true }));
+                    await fetch("/api/settings", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ key: "PIXAZO_API_KEY", value: values["PIXAZO_API_KEY"] || "" }),
+                    });
+                    setSaving((prev) => ({ ...prev, coverart: false }));
+                  }}
+                  disabled={saving.coverart}
+                  className="btn-primary text-xs px-3 py-1.5"
+                >
+                  {saving.coverart ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </section>
+
             {/* Webhooks Section */}
             <section className="section-card">
               <h2 className="text-sm font-semibold mb-3">Webhooks</h2>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -66,6 +67,14 @@ export async function POST(request: NextRequest) {
           audioUrl: `/api/tracks/${track.id}/download`,
         })
         .where(eq(tracks.id, track.id!));
+
+      generateAndSaveCoverArt({
+        id: track.id,
+        userId: track.userId,
+        title: track.title,
+        prompt: track.prompt,
+        instrumental: track.instrumental,
+      }).catch(() => {});
 
       await logApi({
         userId: track.userId,

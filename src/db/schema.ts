@@ -44,6 +44,8 @@ export const tracks = pgTable("tracks", {
   jobId: varchar("job_id", { length: 255 }),
   creditsUsed: integer("credits_used").default(0).notNull(),
   error: text("error"),
+  coverUrl: text("cover_url"),
+  s3KeyCover: text("s3_key_cover"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

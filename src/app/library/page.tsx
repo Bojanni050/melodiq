@@ -21,6 +21,8 @@ interface Track {
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
+  coverUrl?: string | null;
+  s3KeyCover?: string | null;
 }
 
 export default function LibraryPage() {

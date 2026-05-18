@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS "settings" (
 const alterTracksSql = `
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover_url TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover TEXT;
 `;
 
 export async function initializeDatabase(): Promise<void> {

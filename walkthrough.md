@@ -1,5 +1,78 @@
 # Sonara — Walkthrough
 
+## 2026-05-18 (Cover art fase 11 — env template)
+
+- Findings: The example env file had no Pixazo key entry.
+- Conclusions: The new cover-art integration should be discoverable in the local env template.
+- Actions:
+  - Updated `.env.example` — added `PIXAZO_API_KEY` under the Pixazo cover-art section
+
+## 2026-05-18 (Cover art fase 10 — settings page)
+
+- Findings: Pixazo had no dedicated settings entry point in the UI.
+- Conclusions: Cover-art configuration should live beside the other provider credentials.
+- Actions:
+  - Updated `src/app/settings/page.tsx` — added a Pixazo cover-art section with save support
+
+## 2026-05-18 (Cover art fase 8 — UI rendering)
+
+- Findings: The UI still showed placeholders even when cover art existed.
+- Conclusions: List and detail views should prefer the generated cover art and fall back cleanly.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — artwork button now renders `coverUrl` when available
+  - Updated `src/components/TrackDetail.tsx` — artwork panel now shows `coverUrl` when available
+
+## 2026-05-18 (Cover art fase 7 — UI types)
+
+- Findings: The list/detail/page track types did not include the new cover-art fields.
+- Conclusions: The UI types should mirror the DB-backed track shape before rendering cover art.
+- Actions:
+  - Updated `src/components/TrackList.tsx`, `src/components/TrackDetail.tsx`, `src/app/page.tsx`, and `src/app/library/page.tsx` with `coverUrl` and `s3KeyCover`
+
+## 2026-05-18 (Cover art fase 6 — delete cleanup)
+
+- Findings: Track deletion still left cover-art files behind in S3.
+- Conclusions: Cleanup should remove the cover-art object alongside the audio assets.
+- Actions:
+  - Updated `src/app/api/tracks/[id]/route.ts` — delete `s3KeyCover` via `deleteFromS3`
+
+## 2026-05-18 (Cover art fase 5 — generation triggers)
+
+- Findings: Completed tracks still had no hook to start cover-art generation.
+- Conclusions: Fire-and-forget calls belong right after the existing done updates so audio stays independent.
+- Actions:
+  - Updated `src/app/api/webhooks/tempolor/route.ts`, `src/app/api/webhooks/poyo/route.ts`, `src/app/api/webhooks/minimax/route.ts`, `src/app/api/webhooks/musicgpt/route.ts` — trigger cover art after completion
+  - Updated `src/app/api/generate/route.ts` — trigger cover art in the Lyria done path
+
+## 2026-05-18 (Cover art fase 4 — download route)
+
+- Findings: Cover art needed an authenticated route that exposes only the internal track path.
+- Conclusions: The route should resolve the S3 key and redirect to a presigned URL.
+- Actions:
+  - Created `src/app/api/tracks/[id]/cover/route.ts` — auth-guarded redirect to presigned cover art URL
+
+## 2026-05-18 (Cover art fase 3 — persist helper)
+
+- Findings: Cover art generation needed a single non-blocking persistence path.
+- Conclusions: The helper should swallow failures and only update the track when upload succeeds.
+- Actions:
+  - Created `src/lib/generate-cover.ts` — generates cover art, uploads to S3, and writes `coverUrl` plus `s3KeyCover`
+
+## 2026-05-18 (Cover art fase 2 — Pixazo Flux provider)
+
+- Findings: No dedicated image-generation provider existed for cover art.
+- Conclusions: Cover art needs its own reusable provider module with polling fallback.
+- Actions:
+  - Created `src/lib/providers/cover-art.ts` — Pixazo Flux 1 Schnell integration with direct URL and polling support
+
+## 2026-05-18 (Cover art fase 1 — database schema en init)
+
+- Findings: Tracks hadden nog geen opslagvelden voor cover art.
+- Conclusions: Nieuwe kolommen zijn nodig voor interne cover-URL en S3 key.
+- Actions:
+  - Updated `src/db/schema.ts` — added `coverUrl` and `s3KeyCover` to `tracks`
+  - Updated `src/db/init.ts` — added `ALTER TABLE` statements for `cover_url` and `s3_key_cover`
+
 ## 2026-05-13 (S3 connection status on settings page)
 
 - Findings: S3 section only displayed config values read from process.env with no way to verify actual connectivity.

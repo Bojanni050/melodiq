@@ -72,6 +72,8 @@ interface TrackItem {
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
+  coverUrl?: string | null;
+  s3KeyCover?: string | null;
 }
 
 interface PlaylistOption {
@@ -409,24 +411,35 @@ function TrackCard({
           e.stopPropagation();
           if (track.status === "done") onPlay(track);
         }}
-        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-          track.status === "done"
-            ? "bg-primary-600/80 hover:bg-primary-600"
-            : track.status === "failed"
-            ? "bg-red-500/10"
-            : "bg-white/5"
-        }`}
+        className="relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play"
       >
-        {track.status === "done" ? (
-          <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
+        {track.coverUrl ? (
+          <>
+            <img
+              src={track.coverUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
+              <svg className="w-4 h-4 ml-0.5 text-white opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </>
+        ) : track.status === "done" ? (
+          <div className="w-full h-full bg-primary-600/80 hover:bg-primary-600 flex items-center justify-center">
+            <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
         ) : track.status === "failed" ? (
-          <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <div className="w-full h-full bg-red-500/10 flex items-center justify-center">
+            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
         ) : (
-          <div className="text-primary-400/60">
+          <div className="w-full h-full bg-white/5 flex items-center justify-center text-primary-400/60">
             <WaveformBars count={4} className="h-3" />
           </div>
         )}
