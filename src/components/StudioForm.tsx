@@ -96,7 +96,9 @@ export default function StudioForm({
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
 
   const promptCharCount = songIdea.length;
-  const promptMaxChars = 2000;
+  const styleMaxChars = 1000;
+  const lyricsCharCount = lyrics.length;
+  const lyricsMaxChars = 3000;
   const titleCharCount = title.length;
   const titleMaxChars = 120;
   const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
@@ -284,18 +286,25 @@ export default function StudioForm({
                 className="input-field text-sm"
               />
             </div>
-            <textarea
-              value={lyrics}
-              onChange={(e) => setLyrics(e.target.value)}
-              placeholder={`Write your lyrics here...
+            <div className="relative">
+              <textarea
+                value={lyrics}
+                onChange={(e) => setLyrics(e.target.value)}
+                placeholder={`Write your lyrics here...
 
 [Verse]
 Your lyrics here
 
 [Chorus]
 Your chorus here`}
-              className="input-field min-h-[140px] resize-y font-mono text-sm leading-relaxed"
-            />
+                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed pb-6"
+              />
+              <span className={`absolute bottom-2 right-3 text-xs pointer-events-none ${
+                lyricsCharCount >= lyricsMaxChars ? "text-red-400" : "text-white/20"
+              }`}>
+                {lyricsCharCount}/{lyricsMaxChars}
+              </span>
+            </div>
             <div className="flex items-center gap-2 mt-2">
               <button
                 onClick={handleGenerateLyrics}
@@ -342,15 +351,14 @@ Your chorus here`}
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
             placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
-            className="input-field min-h-[100px] resize-y text-sm leading-relaxed pr-16"
-            maxLength={promptMaxChars}
+            className="input-field min-h-[120px] resize-y text-sm leading-relaxed pb-6"
           />
           <span
-            className={`absolute bottom-3 right-3 text-xs ${
-              promptCharCount > promptMaxChars * 0.9 ? "text-red-400" : "text-white/20"
+            className={`absolute bottom-2 right-3 text-xs pointer-events-none ${
+              promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/20"
             }`}
           >
-            {promptCharCount}/{promptMaxChars}
+            {promptCharCount}/{styleMaxChars}
           </span>
         </div>
 
