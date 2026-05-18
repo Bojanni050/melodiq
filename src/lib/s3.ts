@@ -6,14 +6,14 @@ export async function uploadToS3(
   body: Buffer | Uint8Array,
   contentType = "audio/mpeg"
 ) {
-  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT;
+  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
-  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY;
-  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY;
+  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
+  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
   const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
 
   const s3 = new S3({
-    endpoint,
+    endpoint: endpoint || undefined,
     region,
     credentials: {
       accessKeyId: accessKey,
@@ -32,14 +32,14 @@ export async function uploadToS3(
 }
 
 export async function getPresignedUrl(key: string, expiresIn = 3600) {
-  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT;
+  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
-  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY;
-  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY;
+  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
+  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
   const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
 
   const s3 = new S3({
-    endpoint,
+    endpoint: endpoint || undefined,
     region,
     credentials: {
       accessKeyId: accessKey,
