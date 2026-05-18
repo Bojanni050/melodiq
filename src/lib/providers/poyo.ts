@@ -59,18 +59,15 @@ export async function generatePoYo({
       }
     );
 
-    console.log("[poyo] generate response:", JSON.stringify(response.data));
-
-    const taskId =
-      response.data?.data?.task_id ??
-      response.data?.task_id ??
-      response.data?.data?.taskId ??
-      response.data?.taskId;
-
+    const taskId = response.data?.data?.task_id ?? response.data?.task_id;
     if (!taskId) {
-      throw new Error(`PoYo returned no task_id. Response: ${JSON.stringify(response.data)}`);
+      console.error("[poyo] Unexpected response structure:", JSON.stringify(response.data));
+      throw {
+        message: `PoYo returned no task_id. Response: ${JSON.stringify(response.data)}`,
+        duration: Date.now() - startTime,
+        statusCode: 500,
+      };
     }
-
     return {
       jobId: taskId,
       duration: Date.now() - startTime,
