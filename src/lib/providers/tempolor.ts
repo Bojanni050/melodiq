@@ -27,7 +27,7 @@ export async function generateTempolor({
       },
       {
         headers: {
-          Authorization: `Tempo-${API_KEY}`,
+          Authorization: API_KEY,
           "Content-Type": "application/json; charset=utf-8",
         },
         timeout: 30000,
@@ -67,7 +67,7 @@ export async function getTempolorStatus(jobId: string) {
       { item_ids: [jobId] },
       {
         headers: {
-          Authorization: `Tempo-${API_KEY}`,
+          Authorization: API_KEY,
           "Content-Type": "application/json; charset=utf-8",
         },
       }
@@ -84,7 +84,7 @@ export async function getTempolorCredits() {
     const response = await axios.post(
       "https://api.tempolor.com/open-apis/v1/account/billing",
       {},
-      { headers: { Authorization: `Tempo-${API_KEY}` } }
+      { headers: { Authorization: API_KEY } }
     );
     return response.data?.data?.balance ?? null;
   } catch (error: any) {
