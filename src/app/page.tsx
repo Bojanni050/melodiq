@@ -30,6 +30,7 @@ export default function HomePage() {
   const [generating, setGenerating] = useState(false);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null });
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
   const activeTab = useUIStore((state) => state.activeTab);
   const setActiveTab = useUIStore((state) => state.setActiveTab);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -86,24 +87,29 @@ export default function HomePage() {
   }
 
   async function handleGenerateLyrics() {
+    setShowLyricsOverlay(true);
     const { songIdea, lyricsContext, language, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
-    const res = await fetch("/api/llm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "lyrics",
-        idea: songIdea,
-        context: lyricsContext,
-        language,
-        instrumental,
-        structure,
-        customStructure,
-        vocalGender,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      useStudioStore.getState().setLyrics(data.result);
+    try {
+      const res = await fetch("/api/llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "lyrics",
+          idea: songIdea,
+          context: lyricsContext,
+          language,
+          instrumental,
+          structure,
+          customStructure,
+          vocalGender,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        useStudioStore.getState().setLyrics(data.result);
+      }
+    } finally {
+      setShowLyricsOverlay(false);
     }
   }
 
@@ -290,6 +296,25 @@ export default function HomePage() {
             </div>
             <h2 className="text-xl font-bold mb-2">Composing your track</h2>
             <p className="text-white/50 text-sm">This may take a moment...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Lyrics generation overlay */}
+      {showLyricsOverlay && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-6">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                />
+              ))}
+            </div>
+            <h2 className="text-xl font-bold mb-2">Writing lyrics</h2>
+            <p className="text-white/50 text-sm">Crafting your song lyrics...</p>
           </div>
         </div>
       )}
