@@ -10,7 +10,7 @@ import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
-import { validateProviderApiKeys } from "@/lib/settings";
+import { getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "musicgpt") {
-      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/musicgpt?secret=${process.env.WEBHOOK_SECRET}`;
+      const webhookUrl = await getWebhookUrl("musicgpt");
       
       genResult = await generateMusicGpt({
         prompt,

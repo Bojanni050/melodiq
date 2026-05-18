@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getSetting } from "@/lib/settings";
 
 export interface GenerateMusicGptRequest {
   prompt: string;
@@ -19,7 +20,7 @@ export interface GenerateMusicGptResponse {
 export async function generateMusicGpt(
   req: GenerateMusicGptRequest
 ): Promise<GenerateMusicGptResponse> {
-  const apiKey = process.env.MUSICGPT_API_KEY;
+  const apiKey = (await getSetting("MUSICGPT_API_KEY")) || process.env.MUSICGPT_API_KEY;
   if (!apiKey) throw new Error("MUSICGPT_API_KEY not configured");
 
   const {

@@ -109,6 +109,14 @@ export async function POST(request: Request) {
   } catch (error: any) {
     const status = error.response?.status;
     const message = error.response?.data?.error?.message || error.response?.data?.message || error.message;
+
+    if (provider === "musicgpt" && status === 422) {
+      return NextResponse.json({
+        success: true,
+        message: "Connected — MusicGPT API key is valid (test payload rejected with 422 validation, expected).",
+      });
+    }
+
     return NextResponse.json(
       { success: false, message: `Failed (${status || "network error"}): ${message}` },
       { status: 200 }
