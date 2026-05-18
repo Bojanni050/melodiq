@@ -59,8 +59,20 @@ export async function generatePoYo({
       }
     );
 
+    console.log("[poyo] generate response:", JSON.stringify(response.data));
+
+    const taskId =
+      response.data?.data?.task_id ??
+      response.data?.task_id ??
+      response.data?.data?.taskId ??
+      response.data?.taskId;
+
+    if (!taskId) {
+      throw new Error(`PoYo returned no task_id. Response: ${JSON.stringify(response.data)}`);
+    }
+
     return {
-      jobId: response.data.data.task_id,
+      jobId: taskId,
       duration: Date.now() - startTime,
     };
   } catch (error: any) {
