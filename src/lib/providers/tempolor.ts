@@ -65,6 +65,15 @@ export async function generateTempolor({
       }
     );
 
+    if (response.data?.success === false || response.data?.fail === true) {
+      console.error("[tempolor] API error response:", JSON.stringify(response.data));
+      throw {
+        message: response.data.message || "Tempolor generation failed",
+        duration: Date.now() - startTime,
+        statusCode: response.data.status || 500,
+      };
+    }
+
     const itemId = response.data?.data?.item_ids?.[0];
     if (!itemId) {
       console.error("[tempolor] Unexpected response structure:", JSON.stringify(response.data));
