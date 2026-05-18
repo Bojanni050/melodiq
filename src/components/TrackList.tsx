@@ -84,6 +84,16 @@ export default function TrackList({
     setSelectedIds(newSelected);
   }
 
+  function toggleSelectAll() {
+    if (selectedIds.size === tracks.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(tracks.map((t) => t.id)));
+    }
+  }
+
+  const allSelected = tracks.length > 0 && selectedIds.size === tracks.length;
+
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
     setConfirmMassDelete(true);
@@ -145,13 +155,44 @@ export default function TrackList({
         />
       )}
       <div className="space-y-1">
+      {/* Selection controls */}
+      <div className="flex items-center gap-3 px-3 py-1.5">
+        <button
+          onClick={toggleSelectAll}
+          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
+          title={allSelected ? "Deselect all" : "Select all"}
+        >
+          {allSelected ? (
+            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          ) : selectedIds.size > 0 ? (
+            <div className="w-4 h-4 rounded-full bg-blue-500/50 flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          ) : (
+            <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
+          )}
+        </button>
+        <span className="text-xs text-white/30">{selectedIds.size > 0 ? `${selectedIds.size} of ${tracks.length}` : `${tracks.length} tracks`}</span>
+      </div>
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-2">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
           <span className="text-sm text-blue-300">{selectedIds.size} selected</span>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-xs text-white/40 hover:text-white/70 transition-colors"
+          >
+            Clear
+          </button>
           <button
             onClick={handleMassDelete}
             disabled={deleting}
-            className="ml-auto p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+            className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
             title="Delete selected"
           >
             {deleting ? (
@@ -184,6 +225,8 @@ export default function TrackList({
 function GeneratingRow() {
   return (
     <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5 shimmer border border-white/10">
+      {/* Empty selection dot — generating tracks can't be selected */}
+      <div className="w-5 h-5 shrink-0" />
       <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-600/20">
         <div className="w-3 h-3 rounded-full bg-white/80 animate-pulse" />
       </div>
@@ -281,6 +324,26 @@ function TrackCard({
         }`}
         onClick={() => onSelect(track)}
       >
+      {/* Selection dot */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect?.(track.id);
+        }}
+        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
+        title="Select track"
+      >
+        {isSelected ? (
+          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-4 h-4 rounded-full border-2 border-white/20 group-hover:border-white/40 transition-colors" />
+        )}
+      </button>
+
       {/* Play button / artwork placeholder */}
       <button
         onClick={(e) => {

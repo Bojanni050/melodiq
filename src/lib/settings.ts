@@ -22,13 +22,21 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   if (url) {
     // Auto-correct the known singular/plural typo
     url = url.replace(/\/api\/webhook\//g, "/api/webhooks/");
+    // If already has ?secret= param, return as-is
+    if (url.includes("?secret=")) return url;
+    // Append secret from env
+    const secret = process.env.WEBHOOK_SECRET;
+    if (secret) return `${url}?secret=${encodeURIComponent(secret)}`;
     return url;
   }
 
   // Auto-derive from APP_URL
   const appUrl = await getSetting("APP_URL");
   if (appUrl) {
-    return `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
+    const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
+    const secret = process.env.WEBHOOK_SECRET;
+    if (secret) return `${base}?secret=${encodeURIComponent(secret)}`;
+    return base;
   }
 
   // Neither explicit URL nor APP_URL is set — this will break generation
