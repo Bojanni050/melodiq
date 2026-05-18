@@ -282,23 +282,29 @@ export default function SettingsPage() {
                     </div>
                   ))}
 
-                  {provider.id === "openrouter" && models.length > 0 && (
+                  {provider.id === "openrouter" && (
                     <div className="relative">
                       <label className="block text-xs font-medium text-white/50 mb-1">Model</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowModelDropdown(!showModelDropdown)}
-                        className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
-                      >
-                        <span className="truncate">
-                          {selectedModel ? selectedModel.name : "Select a model..."}
-                        </span>
-                        <svg className={`w-4 h-4 transition-transform ${showModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+                      {models.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowModelDropdown(!showModelDropdown)}
+                          className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+                        >
+                          <span className="truncate">
+                            {selectedModel ? selectedModel.name : "Select a model..."}
+                          </span>
+                          <svg className={`w-4 h-4 transition-transform ${showModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <div className="input-field font-mono text-sm text-white/60">
+                          {selectedModel ? selectedModel.name : "Test connection to select model"}
+                        </div>
+                      )}
 
-                      {showModelDropdown && (
+                      {showModelDropdown && models.length > 0 && (
                         <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
                           <div className="p-2">
                             <input

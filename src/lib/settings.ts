@@ -24,3 +24,32 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   if (appUrl) return `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
   return "";
 }
+
+export async function validateProviderApiKeys(provider: string): Promise<{ valid: boolean; missing: string[] }> {
+  const missing: string[] = [];
+
+  if (provider === "lyria") {
+    const key = await getSetting("LYRIA_API_KEY");
+    if (!key) missing.push("LYRIA_API_KEY");
+  } else if (provider === "poyo") {
+    const key = await getSetting("POYO_API_KEY");
+    if (!key) missing.push("POYO_API_KEY");
+  } else if (provider === "tempolor") {
+    const key = await getSetting("TEMPOLOR_API_KEY");
+    if (!key) missing.push("TEMPOLOR_API_KEY");
+  }
+
+  // Check S3 keys (required for uploads)
+  const s3Endpoint = await getSetting("S3_ENDPOINT");
+  const s3AccessKey = await getSetting("S3_ACCESS_KEY");
+  const s3SecretKey = await getSetting("S3_SECRET_KEY");
+  
+  if (!s3Endpoint) missing.push("S3_ENDPOINT");
+  if (!s3AccessKey) missing.push("S3_ACCESS_KEY");
+  if (!s3SecretKey) missing.push("S3_SECRET_KEY");
+
+  return {
+    valid: missing.length === 0,
+    missing,
+  };
+}
