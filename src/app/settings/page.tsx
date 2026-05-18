@@ -241,6 +241,19 @@ export default function SettingsPage() {
     setTestingS3(false);
   }
 
+  async function saveApiLogging() {
+    setSaving((prev) => ({ ...prev, apiLogging: true }));
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: "ENABLE_API_LOGGING",
+        value: values.ENABLE_API_LOGGING === "true" ? "true" : "false",
+      }),
+    });
+    setSaving((prev) => ({ ...prev, apiLogging: false }));
+  }
+
   function selectModel(model: LLMModel) {
     setSelectedModel(model);
     setValues((prev) => ({ ...prev, OPENROUTER_MODEL: model.id }));
@@ -554,6 +567,49 @@ export default function SettingsPage() {
                     {s3Status.message}
                   </p>
                 )}
+              </div>
+            </section>
+
+            <section className="section-card">
+              <h2 className="text-sm font-semibold mb-3">API Logging</h2>
+              <p className="text-xs text-white/40 mb-3">
+                Store provider requests and responses in Logs for debugging.
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-white/70">Enable API logging</span>
+                  <button
+                    type="button"
+                    aria-pressed={values.ENABLE_API_LOGGING === "true"}
+                    onClick={() =>
+                      updateField(
+                        "ENABLE_API_LOGGING",
+                        values.ENABLE_API_LOGGING === "true" ? "false" : "true"
+                      )
+                    }
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      values.ENABLE_API_LOGGING === "true"
+                        ? "bg-emerald-500/20"
+                        : "bg-white/10"
+                    }`}
+                  >
+                    <span className="sr-only">Enable API logging</span>
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                        values.ENABLE_API_LOGGING === "true" ? "translate-x-6" : ""
+                      }`}
+                    />
+                  </button>
+                </label>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => saveApiLogging()}
+                    disabled={saving.apiLogging}
+                    className="btn-primary text-xs px-3 py-1.5"
+                  >
+                    {saving.apiLogging ? "Saving..." : "Save"}
+                  </button>
+                </div>
               </div>
             </section>
           </div>
