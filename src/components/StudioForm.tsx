@@ -20,7 +20,7 @@ const LANGUAGES = [
 
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
-  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v4", "v5.5"], icon: "P" },
+  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v4", "v4.5", "v5", "v5.5"], icon: "P" },
   tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["v3", "v4.6", "i3", "i3.5"], icon: "T" },
 };
 
