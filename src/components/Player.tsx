@@ -7,6 +7,7 @@ import { useState } from "react";
 export default function Player() {
   const { currentTrack, queue, isPlaying, volume } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const srcChangedRef = useRef(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
@@ -43,20 +44,23 @@ export default function Player() {
 
   useEffect(() => {
     if (audioRef.current && currentTrack?.audioUrl) {
+      srcChangedRef.current = true;
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current.src = currentTrack.audioUrl;
+      audioRef.current.play().catch(() => {});
       usePlayerStore.getState().setIsPlaying(true);
     }
   }, [currentTrack?.audioUrl]);
 
   useEffect(() => {
+    if (srcChangedRef.current) {
+      srcChangedRef.current = false;
+      return;
+    }
     if (audioRef.current) {
       if (isPlaying) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {});
-        }
+        audioRef.current.play().catch(() => {});
       } else {
         audioRef.current.pause();
       }

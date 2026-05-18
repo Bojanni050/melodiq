@@ -254,24 +254,40 @@ export default function StudioForm({
               {instrumental ? "INSTRUMENTAL" : "VOCAL"}
             </span>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={instrumental}
-            onClick={() => setInstrumental(!instrumental)}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              instrumental ? "bg-amber-500/20" : "bg-emerald-500/20"
-            }`}
-          >
-            <span className="sr-only">Instrumental</span>
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                instrumental ? "translate-x-6" : ""
+          <div className="flex items-center gap-2">
+            {!instrumental && (
+              <button
+                type="button"
+                onClick={() => setLyrics("")}
+                disabled={!lyrics.trim()}
+                className="text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Clear lyrics"
+                aria-label="Clear lyrics"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={instrumental ? "true" : "false"}
+              onClick={() => setInstrumental(!instrumental)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${
+                instrumental ? "bg-amber-500/20" : "bg-emerald-500/20"
               }`}
-            />
-            <span className="absolute left-1 top-0.5 text-[9px] font-bold text-white/60">V</span>
-            <span className="absolute right-1 top-0.5 text-[9px] font-bold text-white/60">I</span>
-          </button>
+            >
+              <span className="sr-only">Instrumental</span>
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  instrumental ? "translate-x-6" : ""
+                }`}
+              />
+              <span className="absolute left-1 top-0.5 text-[9px] font-bold text-white/60">V</span>
+              <span className="absolute right-1 top-0.5 text-[9px] font-bold text-white/60">I</span>
+            </button>
+          </div>
         </div>
 
         {!instrumental && (
