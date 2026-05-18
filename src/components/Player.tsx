@@ -46,7 +46,6 @@ export default function Player() {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current.src = currentTrack.audioUrl;
-      audioRef.current.play().catch(() => {});
       usePlayerStore.getState().setIsPlaying(true);
     }
   }, [currentTrack?.audioUrl]);
@@ -54,7 +53,10 @@ export default function Player() {
   useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.play().catch(() => {});
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
       } else {
         audioRef.current.pause();
       }
