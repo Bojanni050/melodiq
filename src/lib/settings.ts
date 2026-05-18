@@ -20,7 +20,7 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   const explicit = await getSetting(key);
   if (explicit) return explicit;
   // Auto-derive from APP_URL if not explicitly set
-  const appUrl = await getSetting("APP_URL");
+  const appUrl = (await getSetting("APP_URL")) || process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) return `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
   return "";
 }

@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { generateTitle } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
