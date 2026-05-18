@@ -13,6 +13,12 @@ export async function GET() {
   for (const s of allSettings) {
     settingsMap[s.key] = s.value;
   }
+
+  // Auto-populate APP_URL from env if not stored in DB yet
+  if (!settingsMap.APP_URL && process.env.NEXT_PUBLIC_APP_URL) {
+    settingsMap.APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+  }
+
   return NextResponse.json(settingsMap);
 }
 
