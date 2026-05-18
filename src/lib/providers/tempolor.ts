@@ -30,6 +30,7 @@ export async function generateTempolor({
           Authorization: `Tempo-${API_KEY}`,
           "Content-Type": "application/json; charset=utf-8",
         },
+        timeout: 30000,
       }
     );
 
@@ -86,7 +87,8 @@ export async function getTempolorCredits() {
       { headers: { Authorization: `Tempo-${API_KEY}` } }
     );
     return response.data?.data?.balance ?? null;
-  } catch {
+  } catch (error: any) {
+    console.warn("[tempolor] Failed to fetch credits:", error.message);
     return null;
   }
 }

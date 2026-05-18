@@ -425,10 +425,9 @@ After every significant change, append to `walkthrough.md` (oldest → newest):
 
 | Issue | Risk | Status |
 |---|---|---|
-| Registration is open | Anyone can create an account | Consider closing for private use |
+| Registration is open | Anyone can create an account | Locked behind `REGISTRATION_ENABLED=true` env flag |
 | Rate limiting | Missing on `/api/generate` | Add in-memory rate limit (5 req/min per userId) |
 | `gpt-5` in `.env.example` as default OpenRouter model | Model likely unavailable | Update to a valid model |
-| MiniMax webhook route | Listed in settings UI but `/api/webhooks/minimax` may not exist | Verify or create route |
 
 ---
 
