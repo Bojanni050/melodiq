@@ -42,7 +42,11 @@ export const usePlayerStore = create<PlayerState>()(
       isPlaying: false,
       volume: 0.8,
       progress: 0,
-      setCurrentTrack: (track) => set({ currentTrack: track }),
+      setCurrentTrack: (track) =>
+        set({
+          currentTrack: track,
+          isPlaying: track ? true : false,
+        }),
       enqueueTrack: (track) =>
         set((state) => {
           const exists = state.queue.some((item) => item.id === track.id);

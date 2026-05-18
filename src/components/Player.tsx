@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { usePlayerStore, Track } from "@/lib/store";
+import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
 export default function Player() {
@@ -48,10 +48,11 @@ export default function Player() {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current.src = currentTrack.audioUrl;
+      audioRef.current.load();
       audioRef.current.play().catch(() => {});
       usePlayerStore.getState().setIsPlaying(true);
     }
-  }, [currentTrack?.audioUrl]);
+  }, [currentTrack?.id, currentTrack?.audioUrl]);
 
   useEffect(() => {
     if (srcChangedRef.current) {
