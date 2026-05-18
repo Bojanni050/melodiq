@@ -29,7 +29,6 @@ export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null });
-  const [showOverlay, setShowOverlay] = useState(false);
   const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
   const activeTab = useUIStore((state) => state.activeTab);
   const setActiveTab = useUIStore((state) => state.setActiveTab);
@@ -145,7 +144,6 @@ export default function HomePage() {
     } = useStudioStore.getState();
 
     setGenerating(true);
-    setShowOverlay(true);
 
     try {
       let finalTitle = title;
@@ -173,16 +171,15 @@ export default function HomePage() {
 
       const data = await res.json();
 
+      await fetchTracks();
+
       if (!res.ok) {
         alert(data.error || "Generation failed");
-      } else {
-        fetchTracks();
       }
     } catch {
       alert("Failed to generate track");
     } finally {
       setGenerating(false);
-      setShowOverlay(false);
     }
   }
 
@@ -221,7 +218,7 @@ export default function HomePage() {
       <Sidebar credits={creditValue} />
 
       {/* Main content area */}
-      <div className="lg:ml-[240px]">
+      <div className="lg:ml-60">
         {/* Top bar */}
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="flex items-center justify-between px-4 py-2">
@@ -244,7 +241,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <select className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/50">
+            <select aria-label="Version selector" className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/50">
               <option>v1</option>
             </select>
           </div>
@@ -270,39 +267,17 @@ export default function HomePage() {
                   <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
                   <span className="text-xs text-white/30">{tracks.length} tracks</span>
                 </div>
-                <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
+                <TrackList tracks={tracks} isGenerating={generating} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
               </div>
             </div>
           ) : (
             <div className="max-w-4xl">
               <h2 className="text-lg font-semibold mb-4">Library</h2>
-              <TrackList tracks={tracks.filter((t) => t.status === "done")} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
+              <TrackList tracks={tracks.filter((t) => t.status === "done")} isGenerating={generating} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
             </div>
           )}
         </main>
       </div>
-
-      {/* Generation overlay */}
-      {showOverlay && (
-        <div className="fixed inset-0 z-50 aurora flex items-center justify-center">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-white/80 rounded-full"
-                  style={{
-                    animation: `soundwave 1.2s ease-in-out ${i * 0.15}s infinite`,
-                    height: 16,
-                  }}
-                />
-              ))}
-            </div>
-            <h2 className="text-xl font-bold mb-2">Composing your track</h2>
-            <p className="text-white/50 text-sm">This may take a moment...</p>
-          </div>
-        </div>
-      )}
 
       {/* Lyrics generation overlay */}
       {showLyricsOverlay && (
@@ -312,8 +287,7 @@ export default function HomePage() {
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
+                  className={`w-2 h-2 bg-primary-400 rounded-full animate-bounce ${i === 1 ? "animation-delay-150" : i === 2 ? "animation-delay-300" : ""}`}
                 />
               ))}
             </div>
