@@ -3,6 +3,23 @@
 import { useState } from "react";
 import { usePlayerStore } from "@/lib/store";
 
+// Staggered delays for organic waveform feel
+const WAVE_DELAYS = [0, 80, 160, 40, 200, 120, 280, 60, 220, 100, 340, 20, 180, 260, 80, 300, 140, 60, 240, 180, 320, 40, 200, 100];
+
+function WaveformBars({ count = 5, height = 14, className = "" }: { count?: number; height?: number; className?: string }) {
+  return (
+    <div className={`flex items-center gap-[2px] overflow-hidden ${className}`} style={{ height }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="animate-wave-bar bg-current rounded-[1px] shrink-0"
+          style={{ width: 2, animationDelay: `${WAVE_DELAYS[i % WAVE_DELAYS.length]}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function ConfirmDialog({
   message,
   onConfirm,
@@ -224,23 +241,26 @@ export default function TrackList({
 
 function GeneratingRow() {
   return (
-    <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5 shimmer border border-white/10">
+    <div className="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-600/5 border border-primary-600/20">
       {/* Empty selection dot — generating tracks can't be selected */}
       <div className="w-5 h-5 shrink-0" />
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-600/20">
-        <div className="w-3 h-3 rounded-full bg-white/80 animate-pulse" />
+
+      {/* Waveform in play button area */}
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary-600/20 text-primary-400">
+        <WaveformBars count={5} height={14} />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium truncate">Composing your track</h3>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300">
             Creating
           </span>
         </div>
-        <p className="text-xs text-white/30 truncate mt-0.5">
-          Adding it to your songs list now...
-        </p>
+        {/* Full-width waveform in description row */}
+        <div className="mt-1.5 text-primary-500/40 w-full">
+          <WaveformBars count={32} height={10} className="w-full" />
+        </div>
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
@@ -320,7 +340,9 @@ function TrackCard({
       )}
       <div
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
-          track.status === "generating" ? "shimmer" : "hover:bg-white/5"
+          track.status === "generating" || track.status === "pending"
+            ? "bg-primary-600/5 border border-primary-600/20"
+            : "hover:bg-white/5"
         }`}
         onClick={() => onSelect(track)}
       >
@@ -367,7 +389,9 @@ function TrackCard({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <div className="w-3 h-3 rounded-full bg-white/20 animate-pulse" />
+          <div className="text-primary-400/60">
+            <WaveformBars count={4} height={12} />
+          </div>
         )}
       </button>
 
@@ -379,9 +403,13 @@ function TrackCard({
             {status.label}
           </span>
         </div>
-        <p className="text-xs text-white/30 truncate mt-0.5">
-          {styleDesc}
-        </p>
+        {(track.status === "generating" || track.status === "pending") ? (
+          <div className="mt-1.5 text-primary-500/40 w-full">
+            <WaveformBars count={32} height={8} className="w-full" />
+          </div>
+        ) : (
+          <p className="text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+        )}
         {track.error && (
           <p className="text-xs text-red-400 mt-0.5">{track.error}</p>
         )}
