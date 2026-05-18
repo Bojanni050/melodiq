@@ -37,11 +37,18 @@ export async function generatePoYo({
         model: "generate-music",
         callback_url: WEBHOOK_URL,
         input: {
-          prompt,
           custom_mode: !!lyrics,
           instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
-          ...(lyrics ? { style: prompt, title: title || "Generated Track", lyrics } : {}),
+          ...(lyrics
+            ? {
+                lyrics,
+                style: prompt,
+                title: title || "Generated Track",
+              }
+            : {
+                prompt,
+              }),
         },
       },
       {
