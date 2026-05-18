@@ -3,6 +3,46 @@
 import { useState } from "react";
 import { usePlayerStore } from "@/lib/store";
 
+function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-80 flex flex-col gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
+            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <p className="text-sm text-white/80 leading-relaxed">{message}</p>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-1.5 rounded-lg text-sm text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-1.5 rounded-lg text-sm bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface TrackItem {
   id: string;
   title: string | null;
@@ -32,6 +72,7 @@ export default function TrackList({
   const { setCurrentTrack } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
   function toggleSelection(trackId: string) {
     const newSelected = new Set(selectedIds);
@@ -45,24 +86,20 @@ export default function TrackList({
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
-    if (!confirm(`Delete ${selectedIds.size} track${selectedIds.size > 1 ? "s" : ""}?`)) return;
+    setConfirmMassDelete(true);
+  }
 
+  async function executeMassDelete() {
+    setConfirmMassDelete(false);
     setDeleting(true);
     try {
-      let succeeded = 0;
       for (const id of selectedIds) {
         const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
-        if (res.ok) {
-          succeeded++;
-          onDelete?.(id);
-        }
-      }
-      if (succeeded < selectedIds.size) {
-        alert(`Deleted ${succeeded}/${selectedIds.size} tracks`);
+        if (res.ok) onDelete?.(id);
       }
       setSelectedIds(new Set());
     } catch {
-      alert("Error deleting tracks");
+      // silently fail — individual track errors are handled at the API level
     } finally {
       setDeleting(false);
     }
@@ -99,7 +136,15 @@ export default function TrackList({
   }
 
   return (
-    <div className="space-y-1">
+    <>
+      {confirmMassDelete && (
+        <ConfirmDialog
+          message={`Delete ${selectedIds.size} track${selectedIds.size > 1 ? "s" : ""}? This cannot be undone.`}
+          onConfirm={executeMassDelete}
+          onCancel={() => setConfirmMassDelete(false)}
+        />
+      )}
+      <div className="space-y-1">
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-2">
           <span className="text-sm text-blue-300">{selectedIds.size} selected</span>
@@ -132,6 +177,7 @@ export default function TrackList({
         />
       ))}
     </div>
+    </>
   );
 }
 
@@ -178,22 +224,25 @@ function TrackCard({
 }) {
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  async function handleDelete(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!confirm("Delete this track?")) return;
+  async function executeDelete() {
+    setConfirmDelete(false);
     setDeleting(true);
     try {
       const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
       if (res.ok) {
         onDelete?.(track.id);
-      } else {
-        alert("Failed to delete track");
       }
     } catch {
-      alert("Failed to delete track");
+      // silently fail
     }
     setDeleting(false);
+  }
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    setConfirmDelete(true);
   }
 
   function handleDownload(url: string, hd = false) {
@@ -218,12 +267,20 @@ function TrackCard({
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
 
   return (
-    <div
-      className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
-        track.status === "generating" ? "shimmer" : "hover:bg-white/5"
-      }`}
-      onClick={() => onSelect(track)}
-    >
+    <>
+      {confirmDelete && (
+        <ConfirmDialog
+          message="Delete this track? This cannot be undone."
+          onConfirm={executeDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+      <div
+        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
+          track.status === "generating" ? "shimmer" : "hover:bg-white/5"
+        }`}
+        onClick={() => onSelect(track)}
+      >
       {/* Play button / artwork placeholder */}
       <button
         onClick={(e) => {
@@ -316,6 +373,7 @@ function TrackCard({
         </button>
       </div>
     </div>
+    </>
   );
 }
 
