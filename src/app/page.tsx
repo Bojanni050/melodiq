@@ -57,6 +57,11 @@ export default function HomePage() {
     }
   }
 
+  function handleDeleteTrack(trackId: string) {
+    setTracks((prev) => prev.filter((t) => t.id !== trackId));
+    if (selectedTrack?.id === trackId) setSelectedTrack(null);
+  }
+
   async function fetchCredits() {
     const res = await fetch("/api/credits");
     if (res.ok) {
@@ -265,13 +270,13 @@ export default function HomePage() {
                   <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
                   <span className="text-xs text-white/30">{tracks.length} tracks</span>
                 </div>
-                <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} />
+                <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
               </div>
             </div>
           ) : (
             <div className="max-w-4xl">
               <h2 className="text-lg font-semibold mb-4">Library</h2>
-              <TrackList tracks={tracks} onSelect={(t) => setSelectedTrack(t)} />
+              <TrackList tracks={tracks.filter((t) => t.status === "done")} onSelect={(t) => setSelectedTrack(t)} onDelete={handleDeleteTrack} />
             </div>
           )}
         </main>

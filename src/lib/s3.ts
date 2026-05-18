@@ -56,3 +56,27 @@ export async function getPresignedUrl(key: string, expiresIn = 3600) {
   });
   return getSignedUrl(s3, command, { expiresIn });
 }
+
+export async function deleteFromS3(key: string) {
+  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
+  const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
+  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
+  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
+  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
+
+  const s3 = new S3({
+    endpoint: endpoint || undefined,
+    region,
+    credentials: {
+      accessKeyId: accessKey,
+      secretAccessKey: secretKey,
+    },
+    forcePathStyle: true,
+  });
+
+  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+  await s3.send(new DeleteObjectCommand({
+    Bucket: bucket,
+    Key: key,
+  }));
+}

@@ -21,9 +21,11 @@ interface TrackItem {
 export default function TrackList({
   tracks,
   onSelect,
+  onDelete,
 }: {
   tracks: TrackItem[];
   onSelect: (track: TrackItem) => void;
+  onDelete?: (trackId: string) => void;
 }) {
   const { setCurrentTrack } = usePlayerStore();
 
@@ -60,7 +62,7 @@ export default function TrackList({
   return (
     <div className="space-y-1">
       {tracks.map((track) => (
-        <TrackCard key={track.id} track={track} onPlay={handlePlay} onSelect={onSelect} />
+        <TrackCard key={track.id} track={track} onPlay={handlePlay} onSelect={onSelect} onDelete={onDelete} />
       ))}
     </div>
   );
@@ -70,12 +72,32 @@ function TrackCard({
   track,
   onPlay,
   onSelect,
+  onDelete,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
+  onDelete?: (trackId: string) => void;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Delete this track?")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
+      if (res.ok) {
+        onDelete?.(track.id);
+      } else {
+        alert("Failed to delete track");
+      }
+    } catch {
+      alert("Failed to delete track");
+    }
+    setDeleting(false);
+  }
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
@@ -181,6 +203,20 @@ function TrackCard({
             )}
           </>
         )}
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="p-1.5 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+          title={deleting ? "Deleting..." : "Delete track"}
+        >
+          {deleting ? (
+            <div className="w-4 h-4 rounded-full border-2 border-red-400/30 border-t-red-400 animate-spin" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          )}
+        </button>
       </div>
     </div>
   );
