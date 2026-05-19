@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { requestWavConversion } from "@/lib/request-wav-conversion";
+import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -73,6 +74,27 @@ export async function POST(request: NextRequest) {
           jobId: track.jobId,
           audioId,
         }).catch(() => {});
+      }
+
+      const syncedIds = syncResult.updatedTrackIds;
+      if (syncedIds.length > 0) {
+        const syncedTracks = await db
+          .select()
+          .from(tracks)
+          .where(inArray(tracks.id, syncedIds));
+
+        // Fire cover art for all synced tracks as one batch
+        if (syncedTracks.length > 0) {
+          generateAndSaveCoverArtForBatch({
+            tracks: syncedTracks.map((t) => ({
+              id: t.id!,
+              userId: t.userId,
+              prompt: t.prompt,
+              title: t.title ?? null,
+              instrumental: t.instrumental,
+            })),
+          }).catch(() => {});
+        }
       }
 
       await logApi({

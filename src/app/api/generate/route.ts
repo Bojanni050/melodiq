@@ -203,18 +203,6 @@ export async function POST(request: NextRequest) {
 
       const allTracks = [firstUpdated[0], ...extraInserted.map((r) => r[0])];
 
-      // Start cover art direct - parallel aan audio generatie bij PoYo
-      // Een cover voor de hele batch, toegewezen aan alle tracks tegelijk
-      generateAndSaveCoverArtForBatch({
-        tracks: allTracks.map((t) => ({
-          id: t.id!,
-          userId: t.userId,
-          prompt: t.prompt,
-          title: resolvedTitle,
-          instrumental: t.instrumental,
-        })),
-      }).catch(() => {});
-
       await logApi({
         userId: userId,
         type: "generation",
