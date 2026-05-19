@@ -308,7 +308,7 @@ export default function HomePage() {
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       const player = usePlayerStore.getState();
-      player.setCurrentTrack({
+      player.playTrackFromGesture({
         id: selectedTrack.id,
         title: selectedTrack.title,
         provider: selectedTrack.provider,
@@ -326,7 +326,6 @@ export default function HomePage() {
         createdAt: selectedTrack.createdAt,
         error: selectedTrack.error,
       });
-      player.setIsPlaying(true);
     }
   }
 

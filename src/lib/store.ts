@@ -31,6 +31,7 @@ interface PlayerState {
   rightPanelWidth: number;
   volume: number;
   progress: number;
+  audioElement: HTMLAudioElement | null;
   setCurrentTrack: (track: Track | null) => void;
   enqueueTrack: (track: Track) => void;
   removeFromQueue: (trackId: string) => void;
@@ -38,6 +39,8 @@ interface PlayerState {
   playNext: () => void;
   playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
+  setAudioElement: (audioElement: HTMLAudioElement | null) => void;
+  playTrackFromGesture: (track: Track) => void;
   setAutoPlayNext: (enabled: boolean) => void;
   setAutoOpenNowPlayingPanel: (enabled: boolean) => void;
   setShowTrackDetailsPanel: (enabled: boolean) => void;
@@ -48,7 +51,7 @@ interface PlayerState {
 
 export const usePlayerStore = create<PlayerState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentTrack: null,
       queue: [],
       history: [],
@@ -59,6 +62,7 @@ export const usePlayerStore = create<PlayerState>()(
       rightPanelWidth: 380,
       volume: 0.8,
       progress: 0,
+      audioElement: null,
       setCurrentTrack: (track) =>
         set((state) => {
           if (!track) {
@@ -122,6 +126,29 @@ export const usePlayerStore = create<PlayerState>()(
           };
         }),
       setIsPlaying: (playing) => set({ isPlaying: playing }),
+      setAudioElement: (audioElement) => set({ audioElement }),
+      playTrackFromGesture: (track) => {
+        get().setCurrentTrack(track);
+
+        const audioElement = get().audioElement;
+        if (!audioElement) return;
+
+        const url = track.audioUrl || `/api/tracks/${track.id}/download`;
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        audioElement.src = url;
+        audioElement.volume = get().volume;
+        audioElement.load();
+
+        const playPromise = audioElement.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch((error) => {
+            if (error instanceof DOMException && error.name === "NotAllowedError") {
+              set({ isPlaying: false });
+            }
+          });
+        }
+      },
       setAutoPlayNext: (enabled) => set({ autoPlayNext: enabled }),
       setAutoOpenNowPlayingPanel: (enabled) => set({ autoOpenNowPlayingPanel: enabled }),
       setShowTrackDetailsPanel: (enabled) => set({ showTrackDetailsPanel: enabled }),

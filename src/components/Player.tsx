@@ -85,6 +85,7 @@ export default function Player() {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.volume = volume;
+      usePlayerStore.getState().setAudioElement(audioRef.current);
 
       const handleTimeUpdate = () => {
         setCurrentTime(audioRef.current?.currentTime || 0);
@@ -118,6 +119,7 @@ export default function Player() {
           audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
           audioRef.current.removeEventListener("ended", handleEnded);
         }
+        usePlayerStore.getState().setAudioElement(null);
       };
     }
   }, []);
@@ -135,19 +137,66 @@ export default function Player() {
       const trackUrl = trackSnapshot.audioUrl || "";
       const wantsHd = trackUrl.includes("hd=true");
 
+      const fallbackUrl = trackUrl || `/api/tracks/${trackId}/download${wantsHd ? "?hd=true" : ""}`;
+      const fallbackAbs = new URL(fallbackUrl, window.location.href).href;
+
+      if (audioRef.current.src !== fallbackAbs) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.src = fallbackUrl;
+        audioRef.current.load();
+      }
+
+      if (usePlayerStore.getState().isPlaying) {
+        void tryPlay();
+      }
+
+      const shouldResolve =
+        fallbackUrl.startsWith("/api/") || fallbackUrl.includes("/download");
+      if (!shouldResolve) {
+        setResolvingUrl(false);
+        return;
+      }
+
       setResolvingUrl(true);
       const resolvedUrl = await getAudioUrl(trackId, wantsHd);
       if (cancelled || requestId !== requestIdRef.current || !audioRef.current) {
         return;
       }
 
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current.src = resolvedUrl;
-      audioRef.current.load();
       setResolvingUrl(false);
 
-      if (isPlaying) {
+      const resolvedAbs = new URL(resolvedUrl, window.location.href).href;
+      if (audioRef.current.src === resolvedAbs) return;
+
+      const resumeTime = audioRef.current.currentTime || 0;
+      const shouldResume = usePlayerStore.getState().isPlaying && !audioRef.current.paused;
+
+      audioRef.current.src = resolvedUrl;
+      audioRef.current.load();
+
+      await new Promise<void>((resolve) => {
+        if (!audioRef.current) {
+          resolve();
+          return;
+        }
+
+        const done = () => resolve();
+        audioRef.current.addEventListener("loadedmetadata", done, { once: true });
+        audioRef.current.addEventListener("canplay", done, { once: true });
+      });
+
+      if (cancelled || requestId !== requestIdRef.current || !audioRef.current) {
+        return;
+      }
+
+      if (resumeTime > 0) {
+        try {
+          audioRef.current.currentTime = resumeTime;
+        } catch {}
+      }
+
+      if (usePlayerStore.getState().isPlaying || shouldResume) {
         void tryPlay();
       }
     }
@@ -157,7 +206,7 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, isPlaying, getAudioUrl, tryPlay]);
+  }, [currentTrack?.id, currentTrack?.audioUrl, getAudioUrl, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -189,7 +238,11 @@ export default function Player() {
     }
 
     if (!currentTrack) return;
-    usePlayerStore.getState().setIsPlaying(!isPlaying);
+    const nextPlaying = !isPlaying;
+    usePlayerStore.getState().setIsPlaying(nextPlaying);
+    if (nextPlaying && audioRef.current) {
+      void tryPlay();
+    }
   }, [currentTrack, isPlaying, queue.length]);
 
   const handlePrevious = useCallback(() => {
