@@ -13,10 +13,12 @@ export default function Player() {
     volume,
     autoPlayNext,
     autoOpenNowPlayingPanel,
+    showTrackDetailsPanel,
     playNext,
     playPrevious,
     setAutoPlayNext,
     setAutoOpenNowPlayingPanel,
+    setShowTrackDetailsPanel,
   } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
@@ -343,6 +345,19 @@ export default function Player() {
               aria-label="Toggle automatic opening of right info and lyrics panel for current song"
             >
               Info Auto {autoOpenNowPlayingPanel ? "On" : "Off"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTrackDetailsPanel(!showTrackDetailsPanel)}
+              className={`px-2 py-1 rounded text-[11px] border transition-colors ${
+                showTrackDetailsPanel
+                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
+                  : "bg-white/5 border-white/10 text-white/45 hover:text-white/65"
+              }`}
+              title="Show or hide the right track details panel"
+              aria-label="Toggle right track details panel"
+            >
+              Details {showTrackDetailsPanel ? "On" : "Off"}
             </button>
             <span className="hidden md:inline text-[10px] text-white/35">
               Auto-opens right panel for current song

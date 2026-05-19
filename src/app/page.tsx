@@ -39,9 +39,9 @@ export default function HomePage() {
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-  const [dismissedNowPlayingTrackId, setDismissedNowPlayingTrackId] = useState<string | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const autoOpenNowPlayingPanel = usePlayerStore((state) => state.autoOpenNowPlayingPanel);
+  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const resizeStartXRef = useRef(0);
@@ -71,8 +71,7 @@ export default function HomePage() {
   }, [tracks]);
 
   useEffect(() => {
-    if (!autoOpenNowPlayingPanel || !currentTrack) return;
-    if (dismissedNowPlayingTrackId === currentTrack.id) return;
+    if (!showTrackDetailsPanel || !autoOpenNowPlayingPanel || !currentTrack) return;
 
     const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
     if (matchedTrack) {
@@ -98,16 +97,7 @@ export default function HomePage() {
       coverUrl: null,
       s3KeyCover: null,
     });
-  }, [autoOpenNowPlayingPanel, currentTrack, dismissedNowPlayingTrackId, tracks]);
-
-  useEffect(() => {
-    if (!currentTrack) {
-      setDismissedNowPlayingTrackId(null);
-      return;
-    }
-
-    setDismissedNowPlayingTrackId((prev) => (prev === currentTrack.id ? prev : null));
-  }, [currentTrack?.id]);
+  }, [showTrackDetailsPanel, autoOpenNowPlayingPanel, currentTrack, tracks]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
@@ -456,38 +446,37 @@ export default function HomePage() {
           </main>
         </div>
 
-        <div
-          className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
-          onMouseDown={startRightPanelResize}
-          title="Resize details panel"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize details panel"
-        />
+        {showTrackDetailsPanel && (
+          <div
+            className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
+            onMouseDown={startRightPanelResize}
+            title="Resize details panel"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize details panel"
+          />
+        )}
 
-        <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
-          <div className="sticky top-0 h-screen pb-28">
-            {selectedTrack ? (
-              <TrackDetail
-                mode="sidebar"
-                track={selectedTrack}
-                onClose={() => {
-                  setSelectedTrack(null);
-                  if (currentTrack?.id) {
-                    setDismissedNowPlayingTrackId(currentTrack.id);
-                  }
-                }}
-                onPlay={handlePlayTrack}
-                onDownload={handleDownloadTrack}
-              />
-            ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
-              </div>
-            )}
-          </div>
-        </aside>
+        {showTrackDetailsPanel && (
+          <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
+            <div className="sticky top-0 h-screen pb-28">
+              {selectedTrack ? (
+                <TrackDetail
+                  mode="sidebar"
+                  track={selectedTrack}
+                  onClose={() => setSelectedTrack(null)}
+                  onPlay={handlePlayTrack}
+                  onDownload={handleDownloadTrack}
+                />
+              ) : (
+                <div className="h-full px-5 py-6 text-white/45">
+                  <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                  <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* Lyrics generation overlay */}
@@ -513,12 +502,7 @@ export default function HomePage() {
         <div className="lg:hidden">
           <TrackDetail
             track={selectedTrack}
-            onClose={() => {
-              setSelectedTrack(null);
-              if (currentTrack?.id) {
-                setDismissedNowPlayingTrackId(currentTrack.id);
-              }
-            }}
+            onClose={() => setSelectedTrack(null)}
             onPlay={handlePlayTrack}
             onDownload={handleDownloadTrack}
             mode="overlay"
