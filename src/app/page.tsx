@@ -170,8 +170,13 @@ export default function HomePage() {
     }
   }
 
+  function getEffectiveLanguage() {
+    const { language, customLanguage } = useStudioStore.getState();
+    return language === "Other..." ? customLanguage.trim() || language : language;
+  }
+
   async function handleOptimize() {
-    const { songIdea, provider, language, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
+    const { songIdea, provider, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
     const res = await fetch("/api/llm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -179,7 +184,7 @@ export default function HomePage() {
         type: "optimize",
         idea: songIdea,
         provider,
-        language,
+        language: getEffectiveLanguage(),
         context: lyricsContext,
         structure,
         customStructure,
@@ -194,7 +199,7 @@ export default function HomePage() {
 
   async function handleGenerateLyrics() {
     setShowLyricsOverlay(true);
-    const { songIdea, lyricsContext, language, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
+    const { songIdea, lyricsContext, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
     try {
       const res = await fetch("/api/llm", {
         method: "POST",
@@ -203,7 +208,7 @@ export default function HomePage() {
           type: "lyrics",
           idea: songIdea,
           context: lyricsContext,
-          language,
+          language: getEffectiveLanguage(),
           instrumental,
           structure,
           customStructure,
@@ -241,7 +246,6 @@ export default function HomePage() {
       title,
       provider,
       providerModel,
-      language,
       instrumental,
     } = useStudioStore.getState();
 
@@ -266,7 +270,7 @@ export default function HomePage() {
           title: finalTitle,
           provider,
           providerModel,
-          language,
+          language: getEffectiveLanguage(),
           instrumental,
         }),
       });

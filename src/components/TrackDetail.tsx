@@ -13,6 +13,8 @@ interface TrackDetailProps {
     status: string;
     audioUrl: string | null;
     audioUrlHd: string | null;
+    format: string | null;
+    formatHd: string | null;
     createdAt: string;
     error: string | null;
     s3KeyHd: string | null;
@@ -35,6 +37,8 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   }
 
   const title = track.title || track.prompt.substring(0, 60);
+  const mp3Label = (track.format ?? "mp3").toUpperCase();
+  const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
 
   const panelContent = (
     <>
@@ -89,7 +93,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
                 disabled={downloading}
                 className="btn-secondary text-sm px-3 py-2.5"
               >
-                MP3
+                {mp3Label}
               </button>
               {track.s3KeyHd && track.audioUrlHd && (
                 <button
@@ -97,7 +101,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
                   disabled={downloading}
                   className="btn-secondary text-sm px-3 py-2.5"
                 >
-                  HD
+                  {wavLabel}
                 </button>
               )}
             </>

@@ -423,6 +423,8 @@ function TrackCard({
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = track.title || track.prompt.substring(0, 50);
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
+  const mp3Label = (track.format ?? "mp3").toUpperCase();
+  const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
 
   return (
     <>
@@ -580,12 +582,10 @@ function TrackCard({
                 handleDownload(track.audioUrl!);
               }}
               disabled={downloading}
-              className="p-1.5 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
-              title="Download MP3"
+              className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+              title={`Download ${mp3Label}`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              {mp3Label}
             </button>
             {track.s3KeyHd && track.audioUrlHd && (
               <button
@@ -595,9 +595,9 @@ function TrackCard({
                 }}
                 disabled={downloading}
                 className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
-                title="Download HD"
+                title={`Download ${hdLabel}`}
               >
-                HD
+                {hdLabel}
               </button>
             )}
           </>

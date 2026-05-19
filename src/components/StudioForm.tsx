@@ -104,6 +104,8 @@ export default function StudioForm({
   const titleCharCount = title.length;
   const titleMaxChars = 120;
   const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
+  const isCustomLanguage = language === "Other...";
+  const selectedLanguage = isCustomLanguage ? "Other..." : language;
 
   // Generate button logic:
   // - If instrumental OFF: needs lyrics AND style/prompt
@@ -498,23 +500,56 @@ Your chorus here`}
         {/* Language & Vocal Gender */}
         <section className="section-card">
           <h3 className="text-sm font-semibold text-white/80 mb-3">Language</h3>
-          <select
-            value={language === "Other..." ? customLanguage : language}
-            onChange={(e) => {
-              if (e.target.value === "Other...") {
-                setLanguage("Other...");
-              } else {
-                setLanguage(e.target.value);
-              }
-            }}
-            className="select-field text-sm mb-3"
-          >
-            {LANGUAGES.map((lang) => (
-              <option key={lang} value={lang} className="bg-gray-900">
-                {lang}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-3">
+            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="select-field w-full appearance-none border-0 bg-[#12121a] text-sm pr-10 shadow-none"
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang} value={lang} className="bg-gray-900">
+                    {lang}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 text-white/40"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            {isCustomLanguage && (
+              <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-medium text-white/60">
+                    Custom language
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/35 uppercase tracking-wider">
+                    Manual
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={customLanguage}
+                  onChange={(e) => setCustomLanguage(e.target.value)}
+                  placeholder="e.g. Dutch, Spanglish, Limburgs dialect"
+                  className="input-field text-sm"
+                />
+                <p className="text-xs text-white/30">
+                  De handmatige taal wordt gebruikt in de generatieprompt.
+                </p>
+              </div>
+            )}
+
+            <p className="text-xs text-white/30">
+              Kies een preset of vul een eigen taal in via <span className="text-white/50">Other...</span>
+            </p>
+          </div>
 
           {!instrumental && (
             <>
