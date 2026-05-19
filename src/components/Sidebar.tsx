@@ -12,6 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const buildVersion = process.env.NEXT_PUBLIC_BUILD_VERSION;
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -75,9 +76,16 @@ export default function Sidebar({ credits }: SidebarProps) {
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             {!collapsed && (
-              <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
-                Sonara
-              </span>
+              <div className="flex flex-col leading-tight">
+                <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
+                  Sonara
+                </span>
+                {buildVersion && (
+                  <span className="text-[11px] text-white/35">
+                    version number {buildVersion}
+                  </span>
+                )}
+              </div>
             )}
           </Link>
         </div>
@@ -130,9 +138,16 @@ export default function Sidebar({ credits }: SidebarProps) {
             <svg className="w-6 h-6 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
-            <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
-              Sonara
-            </span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
+                Sonara
+              </span>
+              {buildVersion && (
+                <span className="text-[11px] text-white/35">
+                  version number {buildVersion}
+                </span>
+              )}
+            </div>
           </Link>
           <nav className="flex items-center gap-1">
             {navItems.map((item) => {
