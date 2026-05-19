@@ -25,7 +25,7 @@ export default function Header() {
     <header className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
+          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
             Sonara
           </Link>
 

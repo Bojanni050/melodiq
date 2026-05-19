@@ -53,7 +53,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
       </div>
 
       {/* Artwork */}
-      <div className="aspect-square relative bg-linear-to-br from-primary-500/20 to-purple-500/20 overflow-hidden">
+      <div className="aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ff530c]/20 overflow-hidden">
         {track.coverUrl ? (
           <img
             src={track.coverUrl}

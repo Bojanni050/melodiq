@@ -12,7 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "0.dinsdag-15:05";
+  const buildVersion = "0.dinsdag-15:10";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -77,7 +77,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             </svg>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
-                <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
+                <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
                   Sonara
                 </span>
                 {buildVersion && (
@@ -139,7 +139,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-purple-300 bg-clip-text text-transparent">
+              <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
                 Sonara
               </span>
               {buildVersion && (

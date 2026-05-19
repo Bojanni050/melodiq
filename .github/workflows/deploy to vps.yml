@@ -23,5 +23,4 @@ jobs:
             cd /var/www/vhosts/bojannatuurlijk.nl/sonara.bojannatuurlijk.nl
             git pull origin main
             /usr/bin/docker compose up -d --build
-            /usr/bin/docker compose exec -T app npx drizzle-kit push
             /usr/bin/docker image prune -f

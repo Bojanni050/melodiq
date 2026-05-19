@@ -1,12 +1,10 @@
 FROM node:20-alpine AS base
 
-# Dependencies
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-# Build
 FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -15,7 +13,6 @@ COPY . .
 ENV NODE_ENV=production
 RUN npm run build
 
-# Production
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -29,8 +26,7 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Drizzle migrations
 COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/src/lib/db ./src/lib/db
-COPY --from=builder /app/src/lib/schema.ts ./src/lib/schema.ts
+COPY --from=builder /app/src/db ./src/db
 COPY --from=builder /app/node_modules ./node_modules
 
 USER nextjs
