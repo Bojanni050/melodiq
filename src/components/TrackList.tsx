@@ -103,7 +103,7 @@ export default function TrackList({
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
 }) {
-  const { setCurrentTrack } = usePlayerStore();
+  const { setCurrentTrack, setIsPlaying } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
@@ -168,6 +168,7 @@ export default function TrackList({
       createdAt: track.createdAt,
       error: track.error,
     });
+    setIsPlaying(true);
   }
 
   if (tracks.length === 0) {
