@@ -286,6 +286,7 @@ export default function SettingsPage() {
     const webhookFields = [
       "APP_URL",
       "POYO_WEBHOOK_URL",
+      "POYO_WAV_WEBHOOK_URL",
       "TEMPOLOR_WEBHOOK_URL",
       "MUSICGPT_WEBHOOK_URL",
       "MINIMAX_WEBHOOK_URL",
@@ -711,6 +712,16 @@ export default function SettingsPage() {
                     onChange={(e) => updateField("POYO_WEBHOOK_URL", e.target.value)}
                     className="input-field font-mono text-sm"
                     placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">PoYo WAV Webhook URL</label>
+                  <input
+                    type="text"
+                    value={values.POYO_WAV_WEBHOOK_URL || ""}
+                    onChange={(e) => updateField("POYO_WAV_WEBHOOK_URL", e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo-wav` : "Leave empty to auto-derive"}
                   />
                 </div>
                 <div>

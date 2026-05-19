@@ -19,6 +19,10 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   const key = `${provider.toUpperCase()}_WEBHOOK_URL`;
   let url = await getSetting(key);
 
+  if (!url && process.env[key]) {
+    url = process.env[key] || "";
+  }
+
   if (url) {
     // Auto-correct the known singular/plural typo
     url = url.replace(/\/api\/webhook\//g, "/api/webhooks/");

@@ -19,6 +19,10 @@ export async function GET() {
     settingsMap.APP_URL = process.env.NEXT_PUBLIC_APP_URL;
   }
 
+  if (!settingsMap.POYO_WAV_WEBHOOK_URL && process.env.POYO_WAV_WEBHOOK_URL) {
+    settingsMap.POYO_WAV_WEBHOOK_URL = process.env.POYO_WAV_WEBHOOK_URL;
+  }
+
   return NextResponse.json(settingsMap);
 }
 
