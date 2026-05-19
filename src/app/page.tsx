@@ -308,35 +308,33 @@ export default function HomePage() {
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       const player = usePlayerStore.getState();
-      if (activeTab === "library") {
-        const playContext = tracks
-          .filter((t) => t.status === "done")
-          .map((t) => ({
-            id: t.id,
-            title: t.title,
-            provider: t.provider,
-            providerModel: t.providerModel,
-            prompt: t.prompt,
-            status: t.status,
-            audioUrl: t.audioUrl,
-            audioUrlHd: t.audioUrlHd,
-            format: t.format,
-            formatHd: t.formatHd,
-            s3Key: null,
-            s3KeyHd: t.s3KeyHd,
-            duration: null,
-            lyrics: t.lyrics,
-            createdAt: t.createdAt,
-            error: t.error,
-          }));
+      const playContext = tracks
+        .filter((t) => t.status === "done")
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          provider: t.provider,
+          providerModel: t.providerModel,
+          prompt: t.prompt,
+          status: t.status,
+          audioUrl: t.audioUrl,
+          audioUrlHd: t.audioUrlHd,
+          format: t.format,
+          formatHd: t.formatHd,
+          s3Key: null,
+          s3KeyHd: t.s3KeyHd,
+          duration: null,
+          lyrics: t.lyrics,
+          createdAt: t.createdAt,
+          error: t.error,
+        }));
 
-        player.setPlayContext(playContext);
+      player.setPlayContext(playContext);
 
-        if (player.autoPlayNext) {
-          const index = playContext.findIndex((t) => t.id === selectedTrack.id);
-          if (index >= 0) {
-            player.setQueue(playContext.slice(index + 1));
-          }
+      if (player.autoPlayNext) {
+        const index = playContext.findIndex((t) => t.id === selectedTrack.id);
+        if (index >= 0) {
+          player.setQueue(playContext.slice(index + 1));
         }
       }
       player.playTrackFromGesture({
@@ -450,6 +448,7 @@ export default function HomePage() {
                   </div>
                   <TrackList
                     tracks={tracks}
+                    autoQueueAfterPlay
                     isGenerating={generating}
                     onSelect={(t) => setSelectedTrack(t)}
                     onDelete={handleDeleteTrack}
