@@ -14,16 +14,16 @@ body {
 }
 
 @theme {
-  --color-primary-50: #f5f3ff;
-  --color-primary-100: #ede9fe;
-  --color-primary-200: #ddd6fe;
-  --color-primary-300: #c4b5fd;
-  --color-primary-400: #a78bfa;
-  --color-primary-500: #8b5cf6;
-  --color-primary-600: #7c3aed;
-  --color-primary-700: #6d28d9;
-  --color-primary-800: #5b21b6;
-  --color-primary-900: #4c1d95;
+  --color-primary-50: #fff5f0;
+  --color-primary-100: #ffe8dc;
+  --color-primary-200: #ffd1b8;
+  --color-primary-300: #ffb894;
+  --color-primary-400: #ff8550;
+  --color-primary-500: #ff530c;
+  --color-primary-600: #e64a0b;
+  --color-primary-700: #cc4109;
+  --color-primary-800: #b33808;
+  --color-primary-900: #992f07;
 
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-soundwave: soundwave 1.2s ease-in-out infinite;
