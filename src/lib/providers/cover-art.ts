@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
+import { generateImagePrompt } from "@/lib/providers/llm";
 
 const PIXAZO_GENERATE_URL = "https://gateway.pixazo.ai/flux-1-schnell/v1/getData";
 const POLL_INTERVAL_MS = 3000;
@@ -33,7 +34,7 @@ export async function generateCoverArt({
     throw new Error("PIXAZO_API_KEY not configured");
   }
 
-  const imagePrompt = buildImagePrompt({ prompt, title, instrumental });
+  const imagePrompt = await buildImagePrompt({ prompt, title, instrumental });
 
   const generateRes = await axios.post<PixazoGenerateResponse>(
     PIXAZO_GENERATE_URL,
@@ -101,7 +102,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function buildImagePrompt({
+async function buildImagePrompt({
   prompt,
   title,
   instrumental,
@@ -109,14 +110,21 @@ function buildImagePrompt({
   prompt: string;
   title: string;
   instrumental: boolean;
-}): string {
-  const cleanPrompt = prompt.replace(/[^\w\s,.-]/g, "").slice(0, 300);
+}): Promise<string> {
   const type = instrumental ? "instrumental" : "vocal";
 
+  let visualSummary: string;
+  try {
+    visualSummary = await generateImagePrompt(prompt, title, instrumental);
+  } catch {
+    // fallback if LLM fails
+    visualSummary = prompt.replace(/[^\w\s,.-]/g, " ").slice(0, 150).trim();
+  }
+
   return (
-    `Album cover art for a ${type} music track titled "${title}". ` +
-    `Musical style: ${cleanPrompt}. ` +
-    `Square format, artistic and evocative, no text, no letters, no words, ` +
+    `Album cover art for a ${type} music track. ` +
+    `${visualSummary} ` +
+    `Square format, no text, no letters, no words, ` +
     `cinematic lighting, high quality illustration or photorealistic render.`
   );
 }

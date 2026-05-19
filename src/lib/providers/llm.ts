@@ -99,3 +99,28 @@ Rules:
 
   return callLLM(idea, systemPrompt);
 }
+
+export async function generateImagePrompt(
+  songContent: string,
+  title: string,
+  instrumental: boolean
+): Promise<string> {
+  const type = instrumental ? "instrumental" : "vocal";
+
+  const systemPrompt = `You are a visual art director specializing in album cover design.
+Given a song title and content, write a short visual scene description for an AI image generator.
+
+Rules:
+- Respond with ONLY the visual description — no explanation, no preamble
+- Maximum 2 sentences
+- Focus on: mood, atmosphere, lighting, colors, and a concrete visual scene or subject
+- No text, letters, or words in the description
+- No mention of music, instruments, or song titles
+- Make it cinematic and evocative`;
+
+  const userPrompt = `Song title: ${title}
+Type: ${type}
+Content: ${songContent.slice(0, 600)}`;
+
+  return callLLM(userPrompt, systemPrompt);
+}
