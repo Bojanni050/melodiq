@@ -8,6 +8,8 @@ const LANGUAGES = [
   "Spanish",
   "French",
   "German",
+  "Polish",
+  "Serbian",
   "Japanese",
   "Korean",
   "Hindi",
@@ -499,7 +501,12 @@ Your chorus here`}
 
         {/* Language & Vocal Gender */}
         <section className="section-card">
-          <h3 className="text-sm font-semibold text-white/80 mb-3">Language</h3>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-white/80">Language</h3>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+              Voice language
+            </span>
+          </div>
           <div className="space-y-3">
             <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <select
