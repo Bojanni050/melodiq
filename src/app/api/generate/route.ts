@@ -13,6 +13,7 @@ import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
 import { getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
 import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
+import { extractAudioDuration } from "@/lib/audio-duration";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 // Note: this resets on container restart. For multi-container setups, use Redis instead.
@@ -131,6 +132,9 @@ export async function POST(request: NextRequest) {
       const s3Key = `tracks/${track.id}/audio.${format}`;
       await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
 
+      // Extract actual audio duration
+      const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+
       const updated = await db
         .update(tracks)
         .set({
@@ -138,7 +142,7 @@ export async function POST(request: NextRequest) {
           s3Key,
           format,
           audioUrl: `/api/tracks/${track.id}/download`,
-          duration: genResult.duration,
+          duration: audioDuration,
         })
         .where(eq(tracks.id, track.id!))
         .returning();

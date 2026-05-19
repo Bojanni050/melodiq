@@ -8,6 +8,7 @@ import {
   detectFormatFromContentType,
   detectFormatFromUrl,
 } from "@/lib/audio-format";
+import { extractAudioDuration } from "@/lib/audio-duration";
 
 function pickAudioUrl(body: any): string | null {
   const files: any[] = body?.files ?? body?.data?.files ?? [];
@@ -86,13 +87,20 @@ export async function POST(request: NextRequest) {
     const { uploadToS3 } = await import("@/lib/s3");
 
     const audioRes = await axios.get(audioUrl, { responseType: "arraybuffer" });
+    const audioBuffer = Buffer.from(audioRes.data);
     const headerType = String(audioRes.headers?.["content-type"] || "");
     const formatHd = detectFormatFromUrl(audioUrl) === "wav"
       ? "wav"
       : detectFormatFromContentType(headerType || "audio/wav");
 
     const s3KeyHd = `tracks/${track.id}/audio_hd.${formatHd}`;
-    await uploadToS3(s3KeyHd, Buffer.from(audioRes.data), contentTypeForFormat(formatHd));
+    await uploadToS3(s3KeyHd, audioBuffer, contentTypeForFormat(formatHd));
+
+    // Extract duration if not already set
+    let duration = track.duration;
+    if (!duration) {
+      duration = await extractAudioDuration(audioBuffer);
+    }
 
     await db
       .update(tracks)
@@ -101,6 +109,7 @@ export async function POST(request: NextRequest) {
         audioId: audioId ? String(audioId) : track.audioId,
         s3KeyHd,
         formatHd,
+        duration,
         audioUrlHd: `/api/tracks/${track.id}/download?hd=true`,
       })
       .where(eq(tracks.id, track.id!));

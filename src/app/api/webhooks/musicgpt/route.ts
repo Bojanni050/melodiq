@@ -4,6 +4,7 @@ import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
+import { extractAudioDuration } from "@/lib/audio-duration";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -56,14 +57,19 @@ export async function POST(request: NextRequest) {
       const { uploadToS3 } = await import("@/lib/s3");
 
       const audioRes = await axios.get(conversionPath, { responseType: "arraybuffer" });
+      const audioBuffer = Buffer.from(audioRes.data);
       const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, Buffer.from(audioRes.data));
+      await uploadToS3(s3Key, audioBuffer);
+
+      // Extract duration
+      const duration = await extractAudioDuration(audioBuffer);
 
       await db
         .update(tracks)
         .set({
           status: "done",
           s3Key,
+          duration,
           audioUrl: `/api/tracks/${track.id}/download`,
         })
         .where(eq(tracks.id, track.id!));

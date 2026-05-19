@@ -9,6 +9,7 @@ import {
   detectFormatFromContentType,
   detectFormatFromUrl,
 } from "@/lib/audio-format";
+import { extractAudioDuration } from "@/lib/audio-duration";
 
 interface SyncPoYoTaskResult {
   found: boolean;
@@ -100,12 +101,16 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
     }
 
     const audioRes = await axios.get(primaryUrl, { responseType: "arraybuffer" });
+    const audioBuffer = Buffer.from(audioRes.data);
     const primaryHeaderType = String(audioRes.headers?.["content-type"] || "");
     const format = /\.wav(\?|$)/i.test(primaryUrl)
       ? detectFormatFromUrl(primaryUrl)
       : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
     const s3Key = `tracks/${targetTrack.id}/audio.${format}`;
-    await uploadToS3(s3Key, Buffer.from(audioRes.data), contentTypeForFormat(format));
+    await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(format));
+
+    // Extract duration from audio file
+    const duration = await extractAudioDuration(audioBuffer);
 
     let s3KeyHd: string | null = null;
     let formatHd: "mp3" | "wav" | null = null;
@@ -128,6 +133,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
         s3KeyHd,
         format,
         formatHd,
+        duration,
         audioUrl: `/api/tracks/${targetTrack.id}/download`,
         audioUrlHd: s3KeyHd ? `/api/tracks/${targetTrack.id}/download?hd=true` : null,
         error: null,
