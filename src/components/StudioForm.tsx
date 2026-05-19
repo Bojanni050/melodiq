@@ -7,6 +7,7 @@ const LANGUAGES = [
   "English",
   "Spanish",
   "French",
+  "Frisian",
   "German",
   "Polish",
   "Serbian",

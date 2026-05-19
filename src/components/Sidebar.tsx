@@ -12,7 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "0.dinsdag-15:00";
+  const buildVersion = "0.dinsdag-15:05";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
