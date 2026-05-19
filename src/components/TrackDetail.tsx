@@ -30,11 +30,22 @@ interface TrackDetailProps {
 
 export default function TrackDetail({ track, onClose, onPlay, onDownload, mode = "overlay" }: TrackDetailProps) {
   const [downloading, setDownloading] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
     onDownload(url, hd);
     setTimeout(() => setDownloading(false), 1000);
+  }
+
+  async function handleCopy(text: string, field: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   }
 
   const title = track.title || track.prompt.substring(0, 60);
@@ -121,14 +132,48 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
 
         {/* Prompt */}
         <div>
-          <h4 className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">Prompt</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Prompt</h4>
+            <button
+              onClick={() => handleCopy(track.prompt, "prompt")}
+              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+              title="Copy prompt"
+            >
+              {copiedField === "prompt" ? (
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+          </div>
           <p className="text-sm text-white/70 leading-relaxed">{track.prompt}</p>
         </div>
 
         {/* Lyrics */}
         {track.lyrics && (
           <div>
-            <h4 className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">Lyrics</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Lyrics</h4>
+              <button
+                onClick={() => handleCopy(track.lyrics!, "lyrics")}
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                title="Copy lyrics"
+              >
+                {copiedField === "lyrics" ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
             <pre className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono">{track.lyrics}</pre>
           </div>
         )}
