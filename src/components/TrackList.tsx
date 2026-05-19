@@ -393,7 +393,7 @@ function TrackCard({
       <div
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
           isCurrentlyPlaying
-            ? "bg-primary-500/8 border border-primary-500/20"
+            ? "bg-primary-500/15 border-l-2 border-l-primary-400 pl-2"
             : track.status === "generating" || track.status === "pending"
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
@@ -532,7 +532,19 @@ function TrackCard({
       {/* Track info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-200" : ""}`}>{title}</h3>
+          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-300" : ""}`}>{title}</h3>
+          {isCurrentlyPlaying && (
+            <div className="shrink-0 text-primary-400 h-3.5 w-6">
+              {isPlaying ? (
+                <WaveformBars count={4} className="h-3.5" />
+              ) : (
+                <svg className="w-3 h-3 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              )}
+            </div>
+          )}
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
