@@ -105,7 +105,7 @@ export default function TrackList({
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
 }) {
-  const { playTrackFromGesture, setQueue } = usePlayerStore();
+  const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
@@ -153,30 +153,38 @@ export default function TrackList({
 
   function handlePlay(track: TrackItem) {
     if (autoQueueAfterPlay) {
-      const index = tracks.findIndex((t) => t.id === track.id);
-      if (index >= 0) {
-        const nextQueue = tracks
-          .slice(index + 1)
+      const playContext = tracks
+        .filter((t) => t.status === "done")
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          provider: t.provider,
+          providerModel: t.providerModel,
+          prompt: t.prompt,
+          status: t.status,
+          audioUrl: t.audioUrl,
+          audioUrlHd: t.audioUrlHd,
+          format: t.format,
+          formatHd: t.formatHd,
+          s3Key: null,
+          s3KeyHd: t.s3KeyHd,
+          duration: null,
+          lyrics: t.lyrics,
+          createdAt: t.createdAt,
+          error: t.error,
+        }));
+
+      setPlayContext(playContext);
+
+      if (autoPlayNext) {
+        const index = playContext.findIndex((t) => t.id === track.id);
+        if (index >= 0) {
+          const nextQueue = playContext
+            .slice(index + 1)
           .filter((t) => t.status === "done")
-          .map((t) => ({
-            id: t.id,
-            title: t.title,
-            provider: t.provider,
-            providerModel: t.providerModel,
-            prompt: t.prompt,
-            status: t.status,
-            audioUrl: t.audioUrl,
-            audioUrlHd: t.audioUrlHd,
-            format: t.format,
-            formatHd: t.formatHd,
-            s3Key: null,
-            s3KeyHd: t.s3KeyHd,
-            duration: null,
-            lyrics: t.lyrics,
-            createdAt: t.createdAt,
-            error: t.error,
-          }));
-        setQueue(nextQueue);
+          ;
+          setQueue(nextQueue);
+        }
       }
     }
 
@@ -433,6 +441,8 @@ function TrackCard({
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
         }`}
+        data-now-playing={isCurrentlyPlaying ? "true" : undefined}
+        data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={() => onSelect(track)}
       >
       {/* Selection dot */}
@@ -471,6 +481,7 @@ function TrackCard({
           }
         }}
         className={`relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play ${isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""}`}
+        data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
       >
         {track.coverUrl ? (

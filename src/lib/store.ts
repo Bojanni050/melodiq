@@ -32,6 +32,7 @@ interface PlayerState {
   volume: number;
   progress: number;
   audioElement: HTMLAudioElement | null;
+  playContext: Track[] | null;
   setCurrentTrack: (track: Track | null) => void;
   enqueueTrack: (track: Track) => void;
   removeFromQueue: (trackId: string) => void;
@@ -42,6 +43,8 @@ interface PlayerState {
   setIsPlaying: (playing: boolean) => void;
   setAudioElement: (audioElement: HTMLAudioElement | null) => void;
   playTrackFromGesture: (track: Track) => void;
+  setPlayContext: (tracks: Track[] | null) => void;
+  hydrateQueueFromContext: () => void;
   setAutoPlayNext: (enabled: boolean) => void;
   setAutoOpenNowPlayingPanel: (enabled: boolean) => void;
   setShowTrackDetailsPanel: (enabled: boolean) => void;
@@ -64,26 +67,40 @@ export const usePlayerStore = create<PlayerState>()(
       volume: 0.8,
       progress: 0,
       audioElement: null,
-      setCurrentTrack: (track) =>
-        set((state) => {
-          if (!track) {
-            return {
-              currentTrack: null,
-              isPlaying: false,
-            };
-          }
+      playContext: null,
+      setCurrentTrack: (track) => {
+        if (!track) {
+          set({
+            currentTrack: null,
+            isPlaying: false,
+          });
+          return;
+        }
 
+        set((state) => {
           const shouldPushHistory =
             !!state.currentTrack && state.currentTrack.id !== track.id;
 
-          return {
+          const nextState: Partial<PlayerState> = {
             currentTrack: track,
             isPlaying: true,
             history: shouldPushHistory
               ? [...state.history, state.currentTrack!].slice(-50)
               : state.history,
           };
-        }),
+
+          if (state.autoPlayNext && state.playContext && state.playContext.length > 0) {
+            const index = state.playContext.findIndex((t) => t.id === track.id);
+            if (index >= 0) {
+              nextState.queue = state.playContext
+                .slice(index + 1)
+                .filter((t) => t.status === "done");
+            }
+          }
+
+          return nextState as PlayerState;
+        });
+      },
       enqueueTrack: (track) =>
         set((state) => {
           const exists = state.queue.some((item) => item.id === track.id);
@@ -151,7 +168,21 @@ export const usePlayerStore = create<PlayerState>()(
           });
         }
       },
-      setAutoPlayNext: (enabled) => set({ autoPlayNext: enabled }),
+      setPlayContext: (tracks) => set({ playContext: tracks }),
+      hydrateQueueFromContext: () => {
+        const current = get().currentTrack;
+        const context = get().playContext;
+        if (!current || !context || context.length === 0) return;
+        const index = context.findIndex((t) => t.id === current.id);
+        if (index < 0) return;
+        set({ queue: context.slice(index + 1).filter((t) => t.status === "done") });
+      },
+      setAutoPlayNext: (enabled) => {
+        set({ autoPlayNext: enabled });
+        if (enabled) {
+          get().hydrateQueueFromContext();
+        }
+      },
       setAutoOpenNowPlayingPanel: (enabled) => set({ autoOpenNowPlayingPanel: enabled }),
       setShowTrackDetailsPanel: (enabled) => set({ showTrackDetailsPanel: enabled }),
       setRightPanelWidth: (width) =>
