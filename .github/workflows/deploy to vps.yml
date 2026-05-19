@@ -1,11 +1,15 @@
-name: Deploy to Plesk via Webhook
+name: Deploy to VPS
+
 on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -13,8 +17,11 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd /var/www/vhosts/bojannatuurlijk.nl/sonara.bojannatuurlijk.nl
             git pull origin main
-            /usr/bin/docker compose down
             /usr/bin/docker compose up -d --build
+            /usr/bin/docker compose exec -T app npx drizzle-kit push
+            /usr/bin/docker image prune -f
