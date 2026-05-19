@@ -1,16 +1,18 @@
 name: Deploy to Plesk via Webhook
-
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Trigger Plesk Git deployment
         run: |
-          curl -s -o /dev/null -w "%{http_code}" 
-            "${{ secrets.PLESK_WEBHOOK_URL }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.PLESK_WEBHOOK_URL }}")
+          echo "HTTP status: $STATUS"
+          if [[ "$STATUS" != 2* ]]; then
+            echo "Deployment failed with status $STATUS"
+            exit 1
+          fi
