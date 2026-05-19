@@ -87,6 +87,7 @@ export default function StudioForm({
     setVocalGender,
     setStructure,
     setCustomStructure,
+    reset,
   } = useStudioStore();
 
   const [optimizing, setOptimizing] = useState(false);
@@ -157,6 +158,19 @@ export default function StudioForm({
 
   return (
     <div className="space-y-5">
+      <section className="section-card">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white/80">Studio</h3>
+          <button
+            type="button"
+            onClick={reset}
+            className="btn-secondary text-xs px-3 py-1.5"
+          >
+            Clear All
+          </button>
+        </div>
+      </section>
+
       {/* Structure Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">

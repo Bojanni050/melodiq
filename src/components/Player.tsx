@@ -7,8 +7,39 @@ import { useState } from "react";
 export default function Player() {
   const { currentTrack, queue, isPlaying, volume } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const urlCacheRef = useRef<Map<string, string>>(new Map());
+  const requestIdRef = useRef(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [resolvingUrl, setResolvingUrl] = useState(false);
+
+  const getAudioUrl = useCallback(async (trackId: string, hd = false): Promise<string> => {
+    const cacheKey = hd ? `${trackId}:hd` : trackId;
+    const cached = urlCacheRef.current.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const res = await fetch(`/api/tracks/${trackId}/stream${hd ? "?hd=true" : ""}`);
+      if (!res.ok) {
+        return `/api/tracks/${trackId}/download${hd ? "?hd=true" : ""}`;
+      }
+
+      const data = await res.json();
+      const url = data?.url;
+      if (!url || typeof url !== "string") {
+        return `/api/tracks/${trackId}/download${hd ? "?hd=true" : ""}`;
+      }
+
+      urlCacheRef.current.set(cacheKey, url);
+      setTimeout(() => {
+        urlCacheRef.current.delete(cacheKey);
+      }, 240_000);
+
+      return url;
+    } catch {
+      return `/api/tracks/${trackId}/download${hd ? "?hd=true" : ""}`;
+    }
+  }, []);
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -42,16 +73,41 @@ export default function Player() {
   }, []);
 
   useEffect(() => {
-    if (audioRef.current && currentTrack?.audioUrl) {
+    if (!audioRef.current || !currentTrack?.id) return;
+    const trackSnapshot = currentTrack;
+
+    let cancelled = false;
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
+    async function resolveAndLoad() {
+      const trackId = trackSnapshot.id;
+      const trackUrl = trackSnapshot.audioUrl || "";
+      const wantsHd = trackUrl.includes("hd=true");
+
+      setResolvingUrl(true);
+      const resolvedUrl = await getAudioUrl(trackId, wantsHd);
+      if (cancelled || requestId !== requestIdRef.current || !audioRef.current) {
+        return;
+      }
+
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current.src = currentTrack.audioUrl;
+      audioRef.current.src = resolvedUrl;
       audioRef.current.load();
+      setResolvingUrl(false);
+
       if (isPlaying) {
         audioRef.current.play().catch(() => {});
       }
     }
-  }, [currentTrack?.id, currentTrack?.audioUrl, isPlaying]);
+
+    resolveAndLoad();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTrack?.id, currentTrack?.audioUrl, isPlaying, getAudioUrl]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -108,9 +164,12 @@ export default function Player() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={togglePlay}
+              disabled={resolvingUrl}
               className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 active:scale-90 active:bg-primary-800 flex items-center justify-center transition-all shrink-0"
             >
-              {isPlaying ? (
+              {resolvingUrl ? (
+                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : isPlaying ? (
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />

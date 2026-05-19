@@ -231,6 +231,18 @@ export default function HomePage() {
     }
   }
 
+  function handleReusePrompt(track: Track) {
+    const studio = useStudioStore.getState();
+
+    // Clear current fields first, then apply values from selected track.
+    studio.setSongIdea("");
+    studio.setLyrics("");
+    studio.setSongIdea(track.prompt || "");
+    studio.setLyrics(track.lyrics || "");
+
+    setActiveTab("create");
+  }
+
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       usePlayerStore.getState().setCurrentTrack({
@@ -346,6 +358,7 @@ export default function HomePage() {
                   isGenerating={generating}
                   onSelect={(t) => setSelectedTrack(t)}
                   onDelete={handleDeleteTrack}
+                  onReusePrompt={handleReusePrompt}
                   onAddToQueue={handleAddToQueue}
                   onAddToPlaylist={handleAddToPlaylist}
                   playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
@@ -360,6 +373,7 @@ export default function HomePage() {
                 isGenerating={generating}
                 onSelect={(t) => setSelectedTrack(t)}
                 onDelete={handleDeleteTrack}
+                onReusePrompt={handleReusePrompt}
                 onAddToQueue={handleAddToQueue}
                 onAddToPlaylist={handleAddToPlaylist}
                 playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}

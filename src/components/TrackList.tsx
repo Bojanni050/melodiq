@@ -89,6 +89,7 @@ export default function TrackList({
   isGenerating,
   onSelect,
   onDelete,
+  onReusePrompt,
   onAddToQueue,
   onAddToPlaylist,
   playlists,
@@ -97,6 +98,7 @@ export default function TrackList({
   isGenerating?: boolean;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
+  onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
@@ -247,6 +249,7 @@ export default function TrackList({
           onPlay={handlePlay}
           onSelect={onSelect}
           onDelete={onDelete}
+          onReusePrompt={onReusePrompt}
           onAddToQueue={onAddToQueue}
           onAddToPlaylist={onAddToPlaylist}
           playlists={playlists}
@@ -295,6 +298,7 @@ function TrackCard({
   onPlay,
   onSelect,
   onDelete,
+  onReusePrompt,
   onAddToQueue,
   onAddToPlaylist,
   playlists,
@@ -305,6 +309,7 @@ function TrackCard({
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
+  onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
@@ -522,6 +527,16 @@ function TrackCard({
 
             {menuOpen && (
               <div className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onReusePrompt?.(track);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Reuse Prompt
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
