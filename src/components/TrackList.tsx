@@ -94,6 +94,7 @@ export default function TrackList({
   onAddToQueue,
   onAddToPlaylist,
   playlists,
+  onTitleUpdate,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
@@ -104,6 +105,7 @@ export default function TrackList({
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
+  onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -293,6 +295,7 @@ export default function TrackList({
           playlists={playlists}
           isSelected={selectedIds.has(track.id)}
           onToggleSelect={toggleSelection}
+          onTitleUpdate={onTitleUpdate}
         />
       ))}
     </div>
@@ -342,6 +345,7 @@ function TrackCard({
   playlists,
   isSelected,
   onToggleSelect,
+  onTitleUpdate,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -353,6 +357,7 @@ function TrackCard({
   playlists?: PlaylistOption[];
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
+  onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -362,7 +367,18 @@ function TrackCard({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(track.title || "");
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -394,6 +410,45 @@ function TrackCard({
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
     setConfirmDelete(true);
+  }
+
+  async function saveTitle() {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle || trimmedTitle === track.title || isSavingTitle) return;
+
+    setIsSavingTitle(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmedTitle }),
+      });
+
+      if (res.ok) {
+        onTitleUpdate?.(track.id, trimmedTitle);
+        setIsEditingTitle(false);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsSavingTitle(false);
+    }
+  }
+
+  function handleTitleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveTitle();
+    } else if (e.key === "Escape") {
+      setIsEditingTitle(false);
+      setEditTitle(track.title || "");
+    }
+  }
+
+  function handleTitleDoubleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    setIsEditingTitle(true);
+    setEditTitle(track.title || track.prompt.substring(0, 50));
   }
 
   function handleDownload(url: string, hd = false) {
@@ -551,7 +606,28 @@ function TrackCard({
       {/* Track info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-200" : ""}`}>{title}</h3>
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              onBlur={saveTitle}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isSavingTitle}
+              className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
+              maxLength={200}
+            />
+          ) : (
+            <h3
+              className={`text-sm font-medium truncate cursor-text ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
+              onDoubleClick={handleTitleDoubleClick}
+              title="Double-click to edit"
+            >
+              {title}
+            </h3>
+          )}
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>

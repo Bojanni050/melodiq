@@ -165,6 +165,45 @@ export async function GET(
   return NextResponse.json(track);
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
+
+  const result = await db
+    .select()
+    .from(tracks)
+    .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
+
+  if (result.length === 0) {
+    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+  }
+
+  try {
+    const body = await request.json();
+    const { title } = body;
+
+    if (title === undefined) {
+      return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
+    }
+
+    const updated = await db
+      .update(tracks)
+      .set({ title })
+      .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
+      .returning();
+
+    return NextResponse.json(updated[0]);
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to update track" }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

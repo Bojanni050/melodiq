@@ -122,6 +122,15 @@ export default function LibraryPage() {
     if (selectedTrack?.id === trackId) setSelectedTrack(null);
   }
 
+  function handleTitleUpdate(trackId: string, newTitle: string) {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t))
+    );
+    if (selectedTrack?.id === trackId) {
+      setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
+    }
+  }
+
   function handleAddToQueue(track: Track) {
     usePlayerStore.getState().enqueueTrack({
       id: track.id,
@@ -329,6 +338,7 @@ export default function LibraryPage() {
               onAddToQueue={handleAddToQueue}
               onAddToPlaylist={handleAddToPlaylist}
               playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+              onTitleUpdate={handleTitleUpdate}
             />
           </main>
         </div>
