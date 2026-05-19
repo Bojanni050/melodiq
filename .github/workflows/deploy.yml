@@ -7,12 +7,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Plesk Git deployment
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.PLESK_WEBHOOK_URL }}")
-          echo "HTTP status: $STATUS"
-          if [[ "$STATUS" != 2* ]]; then
-            echo "Deployment failed with status $STATUS"
-            exit 1
-          fi
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/vhosts/bojannatuurlijk.nl/sonara.bojannatuurlijk.nl
+            git pull origin main
+            /usr/bin/docker compose down
+            /usr/bin/docker compose up -d --build

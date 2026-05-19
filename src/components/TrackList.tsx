@@ -316,6 +316,10 @@ function TrackCard({
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
 }) {
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
+  const isCurrentlyPlaying = currentTrack?.id === track.id;
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -388,9 +392,11 @@ function TrackCard({
       )}
       <div
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
-          track.status === "generating" || track.status === "pending"
-            ? "bg-primary-600/5 border border-primary-600/20"
-            : "hover:bg-white/5"
+          isCurrentlyPlaying
+            ? "bg-primary-500/8 border border-primary-500/20"
+            : track.status === "generating" || track.status === "pending"
+              ? "bg-primary-600/5 border border-primary-600/20"
+              : "hover:bg-white/5"
         }`}
         onClick={() => onSelect(track)}
       >
@@ -418,9 +424,15 @@ function TrackCard({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          if (track.status === "done") onPlay(track);
+          if (track.status !== "done") return;
+          if (isCurrentlyPlaying) {
+            setIsPlaying(!isPlaying);
+          } else {
+            onPlay(track);
+          }
         }}
         className="relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play"
+        aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
       >
         {track.coverUrl ? (
           <>
@@ -429,17 +441,80 @@ function TrackCard({
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
-              <svg className="w-4 h-4 ml-0.5 text-white opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
+            {/* Currently playing overlay: waveform + stop/play on hover */}
+            {isCurrentlyPlaying ? (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                {/* Waveform shown when playing; paused bars when paused */}
+                <div className={`absolute inset-0 flex items-center justify-center text-primary-400 transition-opacity ${isPlaying ? "opacity-100 group-hover/play:opacity-0" : "opacity-60 group-hover/play:opacity-0"}`}>
+                  {isPlaying ? (
+                    <WaveformBars count={4} className="h-3.5" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  )}
+                </div>
+                {/* On hover: show stop or play */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/play:opacity-100 transition-opacity">
+                  {isPlaying ? (
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 ml-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
+                <svg className="w-4 h-4 ml-0.5 text-white opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            )}
           </>
         ) : track.status === "done" ? (
-          <div className="w-full h-full bg-primary-600/80 hover:bg-primary-600 flex items-center justify-center">
-            <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+          <div className={`w-full h-full flex items-center justify-center relative ${
+            isCurrentlyPlaying ? "bg-primary-600" : "bg-primary-600/80 hover:bg-primary-600"
+          }`}>
+            {isCurrentlyPlaying ? (
+              <>
+                {/* Waveform bars when playing; paused icon when paused */}
+                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                  isPlaying ? "opacity-100 group-hover/play:opacity-0" : "opacity-70 group-hover/play:opacity-0"
+                }`}>
+                  {isPlaying ? (
+                    <WaveformBars count={4} className="h-3.5" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  )}
+                </div>
+                {/* Hover: show pause or play icon */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/play:opacity-100 transition-opacity">
+                  {isPlaying ? (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </div>
+              </>
+            ) : (
+              <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
           </div>
         ) : track.status === "failed" ? (
           <div className="w-full h-full bg-red-500/10 flex items-center justify-center">
@@ -457,7 +532,7 @@ function TrackCard({
       {/* Track info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium truncate">{title}</h3>
+          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-200" : ""}`}>{title}</h3>
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
