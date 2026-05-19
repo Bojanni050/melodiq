@@ -333,7 +333,7 @@ export default function LibraryPage() {
         )}
       </div>
 
-      {selectedTrack && (
+      {showTrackDetailsPanel && selectedTrack && (
         <div className="lg:hidden">
           <TrackDetail
             mode="overlay"

@@ -277,6 +277,21 @@ export default function Player() {
                 <path d="M16 5h2v14h-2zM6 19l10-7L6 5z" />
               </svg>
             </button>
+            <button
+              type="button"
+              onClick={() => setShowTrackDetailsPanel(!showTrackDetailsPanel)}
+              className={`sm:hidden w-8 h-8 rounded-full border transition-colors flex items-center justify-center shrink-0 ${
+                showTrackDetailsPanel
+                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
+                  : "bg-white/5 border-white/10 text-white/45"
+              }`}
+              title="Show or hide track details"
+              aria-label="Toggle track details"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+              </svg>
+            </button>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">
                 {currentTrack

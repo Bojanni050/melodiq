@@ -498,7 +498,7 @@ export default function HomePage() {
       )}
 
       {/* Mobile/tablet detail overlay */}
-      {selectedTrack && (
+      {showTrackDetailsPanel && selectedTrack && (
         <div className="lg:hidden">
           <TrackDetail
             track={selectedTrack}
