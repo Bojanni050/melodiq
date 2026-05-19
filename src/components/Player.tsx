@@ -307,7 +307,7 @@ export default function Player() {
             <button
               onClick={togglePlay}
               disabled={resolvingUrl || (!currentTrack && queue.length === 0)}
-              className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 active:scale-90 active:bg-primary-800 flex items-center justify-center transition-all shrink-0"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 hover:shadow-lg hover:shadow-primary-500/50 active:scale-90 flex items-center justify-center transition-all shrink-0"
             >
               {resolvingUrl ? (
                 <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
