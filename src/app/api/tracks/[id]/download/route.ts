@@ -33,11 +33,24 @@ export async function GET(
 
   const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
   const fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
-  const url = await getPresignedUrl(s3Key);
+  const filename = `${track.title ?? "track"}.${fmt}`;
 
-  return NextResponse.redirect(url, {
+  // Fetch the presigned URL then proxy the content server-side
+  const presignedUrl = await getPresignedUrl(s3Key);
+  const s3Response = await fetch(presignedUrl);
+
+  if (!s3Response.ok) {
+    return NextResponse.json({ error: "Failed to fetch audio" }, { status: 502 });
+  }
+
+  const contentType = s3Response.headers.get("content-type") ?? `audio/${fmt}`;
+
+  return new NextResponse(s3Response.body, {
+    status: 200,
     headers: {
-      "Content-Disposition": `attachment; filename="${track.title ?? "track"}.${fmt}"`,
+      "Content-Type": contentType,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "private, no-store",
     },
   });
 }
