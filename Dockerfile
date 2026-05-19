@@ -27,6 +27,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Drizzle migrations
+COPY --from=builder /app/drizzle.config.ts ./
+COPY --from=builder /app/src/lib/db ./src/lib/db
+COPY --from=builder /app/src/lib/schema.ts ./src/lib/schema.ts
+COPY --from=builder /app/node_modules ./node_modules
+
 USER nextjs
 
 EXPOSE 3000
