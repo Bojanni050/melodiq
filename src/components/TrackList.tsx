@@ -440,7 +440,7 @@ function TrackCard({
             : track.status === "generating" || track.status === "pending"
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
-        }`}
+        } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={() => onSelect(track)}
