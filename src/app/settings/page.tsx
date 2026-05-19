@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
 
 interface ProviderConfig {
   id: string;
@@ -911,7 +910,6 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
-      <Player />
 
       {modelDetail && (
         <div

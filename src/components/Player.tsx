@@ -13,6 +13,16 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
 
+  const tryPlay = useCallback(async () => {
+    if (!audioRef.current) return;
+    try {
+      await audioRef.current.play();
+    } catch {
+      // Browser autoplay policies can block play() calls without a recent user gesture.
+      usePlayerStore.getState().setIsPlaying(false);
+    }
+  }, []);
+
   const getAudioUrl = useCallback(async (trackId: string, hd = false): Promise<string> => {
     const cacheKey = hd ? `${trackId}:hd` : trackId;
     const cached = urlCacheRef.current.get(cacheKey);
@@ -55,8 +65,8 @@ export default function Player() {
       };
 
       const handleEnded = () => {
-        const { autoPlayNext, playNext, setIsPlaying } = usePlayerStore.getState();
-        if (autoPlayNext) {
+        const { autoPlayNext, queue, playNext, setIsPlaying } = usePlayerStore.getState();
+        if (autoPlayNext && queue.length > 0) {
           playNext();
           return;
         }
@@ -108,7 +118,7 @@ export default function Player() {
       setResolvingUrl(false);
 
       if (isPlaying) {
-        audioRef.current.play().catch(() => {});
+        void tryPlay();
       }
     }
 
@@ -117,17 +127,17 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, isPlaying, getAudioUrl]);
+  }, [currentTrack?.id, currentTrack?.audioUrl, isPlaying, getAudioUrl, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.play().catch(() => {});
+        void tryPlay();
       } else {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -135,9 +145,22 @@ export default function Player() {
     }
   }, [volume]);
 
+  useEffect(() => {
+    if (!currentTrack) {
+      setCurrentTime(0);
+      setDuration(0);
+    }
+  }, [currentTrack]);
+
   const togglePlay = useCallback(() => {
+    if (!currentTrack && queue.length > 0) {
+      usePlayerStore.getState().playNext();
+      return;
+    }
+
+    if (!currentTrack) return;
     usePlayerStore.getState().setIsPlaying(!isPlaying);
-  }, [isPlaying]);
+  }, [currentTrack, isPlaying, queue.length]);
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,8 +188,6 @@ export default function Player() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  if (!currentTrack) return null;
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -174,7 +195,7 @@ export default function Player() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={togglePlay}
-              disabled={resolvingUrl}
+              disabled={resolvingUrl || (!currentTrack && queue.length === 0)}
               className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 active:scale-90 active:bg-primary-800 flex items-center justify-center transition-all shrink-0"
             >
               {resolvingUrl ? (
@@ -192,10 +213,18 @@ export default function Player() {
             </button>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">
-                {currentTrack.title || currentTrack.prompt.substring(0, 40)}
+                {currentTrack
+                  ? currentTrack.title || currentTrack.prompt.substring(0, 40)
+                  : queue.length > 0
+                    ? "Ready to play queue"
+                    : "Nothing playing"}
               </p>
               <p className="text-xs text-white/50 capitalize">
-                {currentTrack.provider} • {currentTrack.providerModel}
+                {currentTrack
+                  ? `${currentTrack.provider} • ${currentTrack.providerModel}`
+                  : queue.length > 0
+                    ? `${queue.length} track${queue.length === 1 ? "" : "s"} queued`
+                    : "Choose a track from your library"}
               </p>
               {queue.length > 0 && (
                 <p className="text-[11px] text-primary-300/90 truncate">
@@ -215,6 +244,7 @@ export default function Player() {
               max={duration || 100}
               value={currentTime}
               onChange={handleSeek}
+              disabled={!currentTrack}
               title="Seek"
               aria-label="Seek playback"
               className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
@@ -234,7 +264,6 @@ export default function Player() {
                   : "bg-white/5 border-white/10 text-white/45 hover:text-white/65"
               }`}
               title="Auto play next track"
-              aria-pressed={autoPlayNext}
             >
               Autoplay {autoPlayNext ? "On" : "Off"}
             </button>

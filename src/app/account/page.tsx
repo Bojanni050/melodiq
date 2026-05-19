@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
 
 interface User {
   id: string;
@@ -203,7 +202,6 @@ export default function AccountPage() {
           </div>
         </main>
       </div>
-      <Player />
     </div>
   );
 }

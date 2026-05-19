@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
 
 interface ApiLog {
   id: string;
@@ -108,7 +107,6 @@ export default function LogsPage() {
           )}
         </main>
       </div>
-      <Player />
     </div>
   );
 }
