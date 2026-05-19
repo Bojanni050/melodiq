@@ -137,14 +137,17 @@ export default function Player() {
       const trackUrl = trackSnapshot.audioUrl || "";
       const wantsHd = trackUrl.includes("hd=true");
 
+      const audioEl = audioRef.current;
+      if (!audioEl) return;
+
       const fallbackUrl = trackUrl || `/api/tracks/${trackId}/download${wantsHd ? "?hd=true" : ""}`;
       const fallbackAbs = new URL(fallbackUrl, window.location.href).href;
 
-      if (audioRef.current.src !== fallbackAbs) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.src = fallbackUrl;
-        audioRef.current.load();
+      if (audioEl.src !== fallbackAbs) {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.src = fallbackUrl;
+        audioEl.load();
       }
 
       if (usePlayerStore.getState().isPlaying) {
@@ -160,39 +163,39 @@ export default function Player() {
 
       setResolvingUrl(true);
       const resolvedUrl = await getAudioUrl(trackId, wantsHd);
-      if (cancelled || requestId !== requestIdRef.current || !audioRef.current) {
+      if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
         return;
       }
 
       setResolvingUrl(false);
 
       const resolvedAbs = new URL(resolvedUrl, window.location.href).href;
-      if (audioRef.current.src === resolvedAbs) return;
+      if (audioEl.src === resolvedAbs) return;
 
-      const resumeTime = audioRef.current.currentTime || 0;
-      const shouldResume = usePlayerStore.getState().isPlaying && !audioRef.current.paused;
+      const resumeTime = audioEl.currentTime || 0;
+      const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
 
-      audioRef.current.src = resolvedUrl;
-      audioRef.current.load();
+      audioEl.src = resolvedUrl;
+      audioEl.load();
 
       await new Promise<void>((resolve) => {
-        if (!audioRef.current) {
+        if (audioRef.current !== audioEl) {
           resolve();
           return;
         }
 
         const done = () => resolve();
-        audioRef.current.addEventListener("loadedmetadata", done, { once: true });
-        audioRef.current.addEventListener("canplay", done, { once: true });
+        audioEl.addEventListener("loadedmetadata", done, { once: true });
+        audioEl.addEventListener("canplay", done, { once: true });
       });
 
-      if (cancelled || requestId !== requestIdRef.current || !audioRef.current) {
+      if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
         return;
       }
 
       if (resumeTime > 0) {
         try {
-          audioRef.current.currentTime = resumeTime;
+          audioEl.currentTime = resumeTime;
         } catch {}
       }
 
