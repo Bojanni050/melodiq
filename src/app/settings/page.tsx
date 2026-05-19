@@ -101,6 +101,12 @@ const PROVIDERS: ProviderConfig[] = [
         type: "password",
         placeholder: "sk-or-...",
       },
+      {
+        key: "OPENROUTER_MODEL",
+        label: "Model",
+        type: "text",
+        placeholder: "openai/gpt-5",
+      },
     ],
     testEndpoint: "openrouter",
   },
@@ -149,6 +155,8 @@ export default function SettingsPage() {
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [models, setModels] = useState<LLMModel[]>([]);
+  const [allModels, setAllModels] = useState<LLMModel[]>([]);
+  const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
@@ -181,6 +189,64 @@ export default function SettingsPage() {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
+  async function getOpenRouterModels() {
+    const apiKey = values.OPENROUTER_API_KEY || "";
+    if (!apiKey) {
+      setTestResults((prev) => ({
+        ...prev,
+        openrouter: { success: false, message: "Enter OpenRouter API key first" },
+      }));
+      return;
+    }
+
+    setTesting((prev) => ({ ...prev, openrouterModels: true }));
+
+    try {
+      const res = await fetch("/api/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "openrouter", apiKey }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setTestResults((prev) => ({
+          ...prev,
+          openrouter: { success: false, message: data.message || "Failed to get models" },
+        }));
+        return;
+      }
+
+      const fetchedModels: LLMModel[] = data.models || [];
+      setAllModels(fetchedModels);
+      setModels(fetchedModels);
+      setModelSearchQuery("");
+
+      if (values.OPENROUTER_MODEL) {
+        const matched = fetchedModels.find((m) => m.id === values.OPENROUTER_MODEL);
+        if (matched) {
+          setSelectedModel(matched);
+        }
+      }
+
+      setTestResults((prev) => ({
+        ...prev,
+        openrouter: {
+          success: true,
+          message: `Loaded ${fetchedModels.length} OpenRouter models`,
+        },
+      }));
+    } catch {
+      setTestResults((prev) => ({
+        ...prev,
+        openrouter: { success: false, message: "Failed to fetch OpenRouter models" },
+      }));
+    } finally {
+      setTesting((prev) => ({ ...prev, openrouterModels: false }));
+    }
+  }
+
   async function saveProvider(provider: ProviderConfig) {
     setSaving((prev) => ({ ...prev, [provider.id]: true }));
 
@@ -189,14 +255,6 @@ export default function SettingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: field.key, value: values[field.key] || "" }),
-      });
-    }
-
-    if (provider.id === "openrouter" && selectedModel) {
-      await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "OPENROUTER_MODEL", value: selectedModel.id }),
       });
     }
 
@@ -291,6 +349,14 @@ export default function SettingsPage() {
     setShowModelDropdown(false);
   }
 
+  const filteredModels = modelSearchQuery
+    ? allModels.filter(
+        (m) =>
+          m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+          m.name.toLowerCase().includes(modelSearchQuery.toLowerCase())
+      )
+    : allModels;
+
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       <Sidebar credits={null} />
@@ -329,7 +395,7 @@ export default function SettingsPage() {
                   {provider.id === "openrouter" && (
                     <div className="relative">
                       <label className="block text-xs font-medium text-white/50 mb-1">Model</label>
-                      {models.length > 0 ? (
+                      {allModels.length > 0 ? (
                         <button
                           type="button"
                           onClick={() => setShowModelDropdown(!showModelDropdown)}
@@ -348,21 +414,18 @@ export default function SettingsPage() {
                         </div>
                       )}
 
-                      {showModelDropdown && models.length > 0 && (
+                      {showModelDropdown && filteredModels.length > 0 && (
                         <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
                           <div className="p-2">
                             <input
                               type="text"
                               placeholder="Search models..."
+                              value={modelSearchQuery}
                               className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                              onChange={(e) => {
-                                const query = e.target.value.toLowerCase();
-                                const filtered = models.filter((m) => m.id.toLowerCase().includes(query) || m.name.toLowerCase().includes(query));
-                                setModels(filtered);
-                              }}
+                              onChange={(e) => setModelSearchQuery(e.target.value)}
                             />
                           </div>
-                          {models.map((model) => {
+                          {filteredModels.map((model) => {
                             const { text, truncated } = truncateDescription(model.description, 3);
                             const isSelected = selectedModel?.id === model.id;
                             return (
@@ -435,6 +498,15 @@ export default function SettingsPage() {
                     >
                       {testing[provider.id] ? "Testing..." : "Test Connection"}
                     </button>
+                    {provider.id === "openrouter" && (
+                      <button
+                        onClick={() => getOpenRouterModels()}
+                        disabled={testing.openrouterModels}
+                        className="btn-secondary text-xs px-3 py-1.5"
+                      >
+                        {testing.openrouterModels ? "Loading Models..." : "Get Models"}
+                      </button>
+                    )}
                   </div>
 
                   {testResults[provider.id] && (
