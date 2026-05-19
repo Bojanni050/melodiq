@@ -5,7 +5,7 @@ import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
 export default function Player() {
-  const { currentTrack, queue, isPlaying, volume } = usePlayerStore();
+  const { currentTrack, queue, isPlaying, volume, autoPlayNext, setAutoPlayNext } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
@@ -55,7 +55,17 @@ export default function Player() {
       };
 
       const handleEnded = () => {
-        usePlayerStore.getState().playNext();
+        const { autoPlayNext, playNext, setIsPlaying } = usePlayerStore.getState();
+        if (autoPlayNext) {
+          playNext();
+          return;
+        }
+
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+        }
+        setCurrentTime(0);
+        setIsPlaying(false);
       };
 
       audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
@@ -215,6 +225,19 @@ export default function Player() {
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAutoPlayNext(!autoPlayNext)}
+              className={`px-2 py-1 rounded text-[11px] border transition-colors ${
+                autoPlayNext
+                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
+                  : "bg-white/5 border-white/10 text-white/45 hover:text-white/65"
+              }`}
+              title="Auto play next track"
+              aria-pressed={autoPlayNext}
+            >
+              Autoplay {autoPlayNext ? "On" : "Off"}
+            </button>
             <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 12a1 1 0 100-2 1 1 0 000 2z" />
             </svg>
