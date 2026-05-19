@@ -5,7 +5,16 @@ import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
 export default function Player() {
-  const { currentTrack, queue, isPlaying, volume, autoPlayNext, setAutoPlayNext } = usePlayerStore();
+  const {
+    currentTrack,
+    queue,
+    isPlaying,
+    volume,
+    autoPlayNext,
+    autoOpenNowPlayingPanel,
+    setAutoPlayNext,
+    setAutoOpenNowPlayingPanel,
+  } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
@@ -267,6 +276,22 @@ export default function Player() {
             >
               Autoplay {autoPlayNext ? "On" : "Off"}
             </button>
+            <button
+              type="button"
+              onClick={() => setAutoOpenNowPlayingPanel(!autoOpenNowPlayingPanel)}
+              className={`px-2 py-1 rounded text-[11px] border transition-colors ${
+                autoOpenNowPlayingPanel
+                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
+                  : "bg-white/5 border-white/10 text-white/45 hover:text-white/65"
+              }`}
+              title="Automatically open the right info and lyrics panel for the currently playing song"
+              aria-label="Toggle automatic opening of right info and lyrics panel for current song"
+            >
+              Info Auto {autoOpenNowPlayingPanel ? "On" : "Off"}
+            </button>
+            <span className="hidden md:inline text-[10px] text-white/35">
+              Auto-opens right panel for current song
+            </span>
             <svg className="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 12a1 1 0 100-2 1 1 0 000 2z" />
             </svg>

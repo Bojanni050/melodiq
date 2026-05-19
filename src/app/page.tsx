@@ -39,6 +39,9 @@ export default function HomePage() {
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [dismissedNowPlayingTrackId, setDismissedNowPlayingTrackId] = useState<string | null>(null);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const autoOpenNowPlayingPanel = usePlayerStore((state) => state.autoOpenNowPlayingPanel);
 
   useEffect(() => {
     fetchTracks();
@@ -62,6 +65,45 @@ export default function HomePage() {
 
     return () => clearInterval(timer);
   }, [tracks]);
+
+  useEffect(() => {
+    if (!autoOpenNowPlayingPanel || !currentTrack) return;
+    if (dismissedNowPlayingTrackId === currentTrack.id) return;
+
+    const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
+    if (matchedTrack) {
+      setSelectedTrack(matchedTrack);
+      return;
+    }
+
+    setSelectedTrack({
+      id: currentTrack.id,
+      title: currentTrack.title,
+      provider: currentTrack.provider,
+      providerModel: currentTrack.providerModel,
+      prompt: currentTrack.prompt,
+      lyrics: currentTrack.lyrics,
+      status: currentTrack.status,
+      audioUrl: currentTrack.audioUrl,
+      audioUrlHd: currentTrack.audioUrlHd,
+      format: currentTrack.format ?? null,
+      formatHd: currentTrack.formatHd ?? null,
+      createdAt: currentTrack.createdAt,
+      error: currentTrack.error,
+      s3KeyHd: currentTrack.s3KeyHd,
+      coverUrl: null,
+      s3KeyCover: null,
+    });
+  }, [autoOpenNowPlayingPanel, currentTrack, dismissedNowPlayingTrackId, tracks]);
+
+  useEffect(() => {
+    if (!currentTrack) {
+      setDismissedNowPlayingTrackId(null);
+      return;
+    }
+
+    setDismissedNowPlayingTrackId((prev) => (prev === currentTrack.id ? prev : null));
+  }, [currentTrack?.id]);
 
   async function fetchTracks() {
     const res = await fetch("/api/tracks");
@@ -405,7 +447,12 @@ export default function HomePage() {
       {selectedTrack && (
         <TrackDetail
           track={selectedTrack}
-          onClose={() => setSelectedTrack(null)}
+          onClose={() => {
+            setSelectedTrack(null);
+            if (currentTrack?.id) {
+              setDismissedNowPlayingTrackId(currentTrack.id);
+            }
+          }}
           onPlay={handlePlayTrack}
           onDownload={handleDownloadTrack}
         />

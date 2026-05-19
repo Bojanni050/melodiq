@@ -25,6 +25,7 @@ interface PlayerState {
   queue: Track[];
   isPlaying: boolean;
   autoPlayNext: boolean;
+  autoOpenNowPlayingPanel: boolean;
   volume: number;
   progress: number;
   setCurrentTrack: (track: Track | null) => void;
@@ -34,6 +35,7 @@ interface PlayerState {
   playNext: () => void;
   setIsPlaying: (playing: boolean) => void;
   setAutoPlayNext: (enabled: boolean) => void;
+  setAutoOpenNowPlayingPanel: (enabled: boolean) => void;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
 }
@@ -45,6 +47,7 @@ export const usePlayerStore = create<PlayerState>()(
       queue: [],
       isPlaying: false,
       autoPlayNext: true,
+      autoOpenNowPlayingPanel: true,
       volume: 0.8,
       progress: 0,
       setCurrentTrack: (track) =>
@@ -71,6 +74,7 @@ export const usePlayerStore = create<PlayerState>()(
         }),
       setIsPlaying: (playing) => set({ isPlaying: playing }),
       setAutoPlayNext: (enabled) => set({ autoPlayNext: enabled }),
+      setAutoOpenNowPlayingPanel: (enabled) => set({ autoOpenNowPlayingPanel: enabled }),
       setVolume: (volume) => set({ volume }),
       setProgress: (progress) => set({ progress }),
     }),
@@ -81,6 +85,7 @@ export const usePlayerStore = create<PlayerState>()(
         queue: state.queue,
         currentTrack: state.currentTrack,
         autoPlayNext: state.autoPlayNext,
+        autoOpenNowPlayingPanel: state.autoOpenNowPlayingPanel,
       }),
     }
   )
