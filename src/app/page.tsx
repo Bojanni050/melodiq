@@ -19,6 +19,7 @@ interface Track {
   audioUrlHd: string | null;
   format: string | null;
   formatHd: string | null;
+  duration: number | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
@@ -91,6 +92,7 @@ export default function HomePage() {
       audioUrlHd: currentTrack.audioUrlHd,
       format: currentTrack.format ?? null,
       formatHd: currentTrack.formatHd ?? null,
+      duration: currentTrack.duration ?? null,
       createdAt: currentTrack.createdAt,
       error: currentTrack.error,
       s3KeyHd: currentTrack.s3KeyHd,

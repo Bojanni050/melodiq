@@ -15,6 +15,7 @@ interface TrackDetailProps {
     audioUrlHd: string | null;
     format: string | null;
     formatHd: string | null;
+    duration: number | null;
     createdAt: string;
     error: string | null;
     s3KeyHd: string | null;
@@ -39,6 +40,13 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const title = track.title || track.prompt.substring(0, 60);
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
+
+  function formatDuration(seconds: number | null): string {
+    if (!seconds || seconds <= 0) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
 
   const panelContent = (
     <>
@@ -75,6 +83,9 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
           <h2 className="text-xl font-bold">{title}</h2>
           <p className="text-sm text-white/40 mt-1">
             {track.provider} • {track.providerModel}
+            {track.duration && (
+              <span className="ml-2 text-white/30">• {formatDuration(track.duration)}</span>
+            )}
           </p>
         </div>
 

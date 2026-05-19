@@ -72,6 +72,7 @@ interface TrackItem {
   audioUrlHd: string | null;
   format: string | null;
   formatHd: string | null;
+  duration: number | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
@@ -170,7 +171,7 @@ export default function TrackList({
           formatHd: t.formatHd,
           s3Key: null,
           s3KeyHd: t.s3KeyHd,
-          duration: null,
+          duration: t.duration,
           lyrics: t.lyrics,
           createdAt: t.createdAt,
           error: t.error,
@@ -203,7 +204,7 @@ export default function TrackList({
       formatHd: track.formatHd,
       s3Key: null,
       s3KeyHd: track.s3KeyHd,
-      duration: null,
+      duration: track.duration,
       lyrics: track.lyrics,
       createdAt: track.createdAt,
       error: track.error,
@@ -649,6 +650,9 @@ function TrackCard({
         <div className="mr-1 text-right leading-tight">
           <p className="text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
           <p className="text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
+          {track.duration && track.status === "done" && (
+            <p className="text-[10px] text-white/20 whitespace-nowrap mt-0.5">{formatDuration(track.duration)}</p>
+          )}
         </div>
         {track.status === "done" && track.audioUrl && (
           <>
@@ -759,16 +763,33 @@ function TrackCard({
 }
 
 function formatTrackDateTime(date: Date): { date: string; time: string } {
-  const dateLabel = date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  });
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  const timeLabel = date.toLocaleTimeString(undefined, {
+  let dateStr;
+  if (isToday) {
+    dateStr = "Today";
+  } else if (isYesterday) {
+    dateStr = "Yesterday";
+  } else {
+    dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
+  const timeStr = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   });
 
-  return { date: dateLabel, time: timeLabel };
+  return { date: dateStr, time: timeStr };
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds || seconds <= 0) return "—";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
