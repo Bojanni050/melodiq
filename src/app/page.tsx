@@ -308,6 +308,35 @@ export default function HomePage() {
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       const player = usePlayerStore.getState();
+      if (activeTab === "library") {
+        const libraryTracks = tracks.filter((t) => t.status === "done");
+        const index = libraryTracks.findIndex((t) => t.id === selectedTrack.id);
+        if (index >= 0) {
+          player.setQueue(
+            libraryTracks
+              .slice(index + 1)
+              .filter((t) => t.status === "done")
+              .map((t) => ({
+                id: t.id,
+                title: t.title,
+                provider: t.provider,
+                providerModel: t.providerModel,
+                prompt: t.prompt,
+                status: t.status,
+                audioUrl: t.audioUrl,
+                audioUrlHd: t.audioUrlHd,
+                format: t.format,
+                formatHd: t.formatHd,
+                s3Key: null,
+                s3KeyHd: t.s3KeyHd,
+                duration: null,
+                lyrics: t.lyrics,
+                createdAt: t.createdAt,
+                error: t.error,
+              }))
+          );
+        }
+      }
       player.playTrackFromGesture({
         id: selectedTrack.id,
         title: selectedTrack.title,
@@ -434,6 +463,7 @@ export default function HomePage() {
                 <h2 className="text-lg font-semibold mb-4">Library</h2>
                 <TrackList
                   tracks={tracks.filter((t) => t.status === "done")}
+                  autoQueueAfterPlay
                   isGenerating={generating}
                   onSelect={(t) => setSelectedTrack(t)}
                   onDelete={handleDeleteTrack}

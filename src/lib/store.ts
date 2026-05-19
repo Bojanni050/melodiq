@@ -36,6 +36,7 @@ interface PlayerState {
   enqueueTrack: (track: Track) => void;
   removeFromQueue: (trackId: string) => void;
   clearQueue: () => void;
+  setQueue: (queue: Track[]) => void;
   playNext: () => void;
   playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
@@ -92,6 +93,7 @@ export const usePlayerStore = create<PlayerState>()(
       removeFromQueue: (trackId) =>
         set((state) => ({ queue: state.queue.filter((track) => track.id !== trackId) })),
       clearQueue: () => set({ queue: [] }),
+      setQueue: (queue) => set({ queue }),
       playNext: () =>
         set((state) => {
           if (state.queue.length === 0) {

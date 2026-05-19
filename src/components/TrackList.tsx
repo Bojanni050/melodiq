@@ -87,6 +87,7 @@ interface PlaylistOption {
 export default function TrackList({
   tracks,
   isGenerating,
+  autoQueueAfterPlay,
   onSelect,
   onDelete,
   onReusePrompt,
@@ -96,6 +97,7 @@ export default function TrackList({
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
+  autoQueueAfterPlay?: boolean;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
   onReusePrompt?: (track: TrackItem) => void;
@@ -103,7 +105,7 @@ export default function TrackList({
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   playlists?: PlaylistOption[];
 }) {
-  const { playTrackFromGesture } = usePlayerStore();
+  const { playTrackFromGesture, setQueue } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
@@ -150,6 +152,34 @@ export default function TrackList({
   }
 
   function handlePlay(track: TrackItem) {
+    if (autoQueueAfterPlay) {
+      const index = tracks.findIndex((t) => t.id === track.id);
+      if (index >= 0) {
+        const nextQueue = tracks
+          .slice(index + 1)
+          .filter((t) => t.status === "done")
+          .map((t) => ({
+            id: t.id,
+            title: t.title,
+            provider: t.provider,
+            providerModel: t.providerModel,
+            prompt: t.prompt,
+            status: t.status,
+            audioUrl: t.audioUrl,
+            audioUrlHd: t.audioUrlHd,
+            format: t.format,
+            formatHd: t.formatHd,
+            s3Key: null,
+            s3KeyHd: t.s3KeyHd,
+            duration: null,
+            lyrics: t.lyrics,
+            createdAt: t.createdAt,
+            error: t.error,
+          }));
+        setQueue(nextQueue);
+      }
+    }
+
     playTrackFromGesture({
       id: track.id,
       title: track.title,
@@ -441,33 +471,18 @@ function TrackCard({
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
-            {/* Currently playing overlay: waveform + stop/play on hover */}
             {isCurrentlyPlaying ? (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                {/* Waveform shown when playing; paused bars when paused */}
-                <div className={`absolute inset-0 flex items-center justify-center text-primary-400 transition-opacity ${isPlaying ? "opacity-100 group-hover/play:opacity-0" : "opacity-60 group-hover/play:opacity-0"}`}>
-                  {isPlaying ? (
-                    <WaveformBars count={4} className="h-3.5" />
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  )}
-                </div>
-                {/* On hover: show stop or play */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/play:opacity-100 transition-opacity">
-                  {isPlaying ? (
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 ml-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </div>
+                {isPlaying ? (
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 ml-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
               </div>
             ) : (
               <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
@@ -482,34 +497,16 @@ function TrackCard({
             isCurrentlyPlaying ? "bg-primary-600" : "bg-primary-600/80 hover:bg-primary-600"
           }`}>
             {isCurrentlyPlaying ? (
-              <>
-                {/* Waveform bars when playing; paused icon when paused */}
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                  isPlaying ? "opacity-100 group-hover/play:opacity-0" : "opacity-70 group-hover/play:opacity-0"
-                }`}>
-                  {isPlaying ? (
-                    <WaveformBars count={4} className="h-3.5" />
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  )}
-                </div>
-                {/* Hover: show pause or play icon */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/play:opacity-100 transition-opacity">
-                  {isPlaying ? (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </div>
-              </>
+              isPlaying ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )
             ) : (
               <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
@@ -534,16 +531,15 @@ function TrackCard({
         <div className="flex items-center gap-2">
           <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-300" : ""}`}>{title}</h3>
           {isCurrentlyPlaying && (
-            <div className="shrink-0 text-primary-400 h-3.5 w-6">
-              {isPlaying ? (
-                <WaveformBars count={4} className="h-3.5" />
-              ) : (
-                <svg className="w-3 h-3 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
-              )}
-            </div>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                isPlaying
+                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
+                  : "bg-white/5 border-white/10 text-white/50"
+              }`}
+            >
+              {isPlaying ? "Playing" : "Paused"}
+            </span>
           )}
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}

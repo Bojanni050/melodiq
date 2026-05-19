@@ -168,6 +168,32 @@ export default function LibraryPage() {
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
       const player = usePlayerStore.getState();
+      const index = visibleTracks.findIndex((t) => t.id === selectedTrack.id);
+      if (index >= 0) {
+        player.setQueue(
+          visibleTracks
+            .slice(index + 1)
+            .filter((t) => t.status === "done")
+            .map((t) => ({
+              id: t.id,
+              title: t.title,
+              provider: t.provider,
+              providerModel: t.providerModel,
+              prompt: t.prompt,
+              status: t.status,
+              audioUrl: t.audioUrl,
+              audioUrlHd: t.audioUrlHd,
+              format: t.format,
+              formatHd: t.formatHd,
+              s3Key: null,
+              s3KeyHd: t.s3KeyHd,
+              duration: null,
+              lyrics: t.lyrics,
+              createdAt: t.createdAt,
+              error: t.error,
+            }))
+        );
+      }
       player.playTrackFromGesture({
         id: selectedTrack.id,
         title: selectedTrack.title,
@@ -292,6 +318,7 @@ export default function LibraryPage() {
           <main className="p-4 pb-32">
             <TrackList
               tracks={visibleTracks}
+              autoQueueAfterPlay
               onSelect={(t) => setSelectedTrack(t)}
               onDelete={handleDeleteTrack}
               onAddToQueue={handleAddToQueue}
