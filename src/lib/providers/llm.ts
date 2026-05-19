@@ -1,9 +1,9 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
-async function callLLM(prompt: string, systemPrompt: string) {
+async function callLLM(prompt: string, systemPrompt: string, openRouterModelOverride?: string) {
   const OPENROUTER_KEY = await getSetting("OPENROUTER_API_KEY");
-  const OPENROUTER_MODEL = await getSetting("OPENROUTER_MODEL") || "openai/gpt-5";
+  const OPENROUTER_MODEL = openRouterModelOverride || (await getSetting("OPENROUTER_MODEL")) || "openai/gpt-5";
   const OPENAI_KEY = await getSetting("OPENAI_API_KEY");
   const OPENAI_MODEL = await getSetting("OPENAI_MODEL") || "gpt-4o";
 
@@ -122,5 +122,6 @@ Rules:
 Type: ${type}
 Content: ${songContent.slice(0, 600)}`;
 
-  return callLLM(userPrompt, systemPrompt);
+  const imageModel = await getSetting("OPENROUTER_IMAGE_MODEL");
+  return callLLM(userPrompt, systemPrompt, imageModel || undefined);
 }

@@ -101,12 +101,6 @@ const PROVIDERS: ProviderConfig[] = [
         type: "password",
         placeholder: "sk-or-...",
       },
-      {
-        key: "OPENROUTER_MODEL",
-        label: "Model",
-        type: "text",
-        placeholder: "openai/gpt-5",
-      },
     ],
     testEndpoint: "openrouter",
   },
@@ -158,7 +152,9 @@ export default function SettingsPage() {
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showImageModelDropdown, setShowImageModelDropdown] = useState(false);
   const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
+  const [selectedImageModel, setSelectedImageModel] = useState<LLMModel | null>(null);
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
   const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
   const [s3Status, setS3Status] = useState<{ connected: boolean; message: string } | null>(null);
@@ -174,6 +170,9 @@ export default function SettingsPage() {
         setValues(data);
         if (data.OPENROUTER_MODEL) {
           setSelectedModel({ id: data.OPENROUTER_MODEL, name: data.OPENROUTER_MODEL, description: "", pricing: { prompt: "0", completion: "0" }, context_length: 0, architecture: { modality: "", tokenizer: "", instruct_type: "" } });
+        }
+        if (data.OPENROUTER_IMAGE_MODEL) {
+          setSelectedImageModel({ id: data.OPENROUTER_IMAGE_MODEL, name: data.OPENROUTER_IMAGE_MODEL, description: "", pricing: { prompt: "0", completion: "0" }, context_length: 0, architecture: { modality: "", tokenizer: "", instruct_type: "" } });
         }
       }
 
@@ -230,6 +229,13 @@ export default function SettingsPage() {
         }
       }
 
+      if (values.OPENROUTER_IMAGE_MODEL) {
+        const matchedImage = fetchedModels.find((m) => m.id === values.OPENROUTER_IMAGE_MODEL);
+        if (matchedImage) {
+          setSelectedImageModel(matchedImage);
+        }
+      }
+
       setTestResults((prev) => ({
         ...prev,
         openrouter: {
@@ -255,6 +261,20 @@ export default function SettingsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: field.key, value: values[field.key] || "" }),
+      });
+    }
+
+    if (provider.id === "openrouter") {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "OPENROUTER_MODEL", value: values.OPENROUTER_MODEL || "" }),
+      });
+
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "OPENROUTER_IMAGE_MODEL", value: values.OPENROUTER_IMAGE_MODEL || "" }),
       });
     }
 
@@ -301,6 +321,7 @@ export default function SettingsPage() {
     }));
 
     if (data.models && data.models.length > 0) {
+      setAllModels(data.models);
       setModels(data.models);
     }
 
@@ -349,6 +370,12 @@ export default function SettingsPage() {
     setShowModelDropdown(false);
   }
 
+  function selectImageModel(model: LLMModel) {
+    setSelectedImageModel(model);
+    setValues((prev) => ({ ...prev, OPENROUTER_IMAGE_MODEL: model.id }));
+    setShowImageModelDropdown(false);
+  }
+
   const filteredModels = modelSearchQuery
     ? allModels.filter(
         (m) =>
@@ -394,11 +421,14 @@ export default function SettingsPage() {
 
                   {provider.id === "openrouter" && (
                     <div className="relative">
-                      <label className="block text-xs font-medium text-white/50 mb-1">Model</label>
+                      <label className="block text-xs font-medium text-white/50 mb-1">Lyrics & Prompt Model</label>
                       {allModels.length > 0 ? (
                         <button
                           type="button"
-                          onClick={() => setShowModelDropdown(!showModelDropdown)}
+                          onClick={() => {
+                            setShowModelDropdown(!showModelDropdown);
+                            setShowImageModelDropdown(false);
+                          }}
                           className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
                         >
                           <span className="truncate">
@@ -410,7 +440,7 @@ export default function SettingsPage() {
                         </button>
                       ) : (
                         <div className="input-field font-mono text-sm text-white/60">
-                          {selectedModel ? selectedModel.name : "Test connection to select model"}
+                          {selectedModel ? selectedModel.name : "Retrieve models to select"}
                         </div>
                       )}
 
@@ -483,6 +513,100 @@ export default function SettingsPage() {
                     </div>
                   )}
 
+                  {provider.id === "openrouter" && (
+                    <div className="relative">
+                      <label className="block text-xs font-medium text-white/50 mb-1">Image Prompt Model</label>
+                      {allModels.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowImageModelDropdown(!showImageModelDropdown);
+                            setShowModelDropdown(false);
+                          }}
+                          className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+                        >
+                          <span className="truncate">
+                            {selectedImageModel ? selectedImageModel.name : "Select a model..."}
+                          </span>
+                          <svg className={`w-4 h-4 transition-transform ${showImageModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <div className="input-field font-mono text-sm text-white/60">
+                          {selectedImageModel ? selectedImageModel.name : "Retrieve models to select"}
+                        </div>
+                      )}
+
+                      {showImageModelDropdown && filteredModels.length > 0 && (
+                        <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
+                          <div className="p-2">
+                            <input
+                              type="text"
+                              placeholder="Search models..."
+                              value={modelSearchQuery}
+                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+                              onChange={(e) => setModelSearchQuery(e.target.value)}
+                            />
+                          </div>
+                          {filteredModels.map((model) => {
+                            const { text, truncated } = truncateDescription(model.description, 3);
+                            const isSelected = selectedImageModel?.id === model.id;
+                            return (
+                              <div
+                                key={model.id}
+                                className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
+                                  isSelected ? "bg-primary-500/10" : ""
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white">{model.name}</p>
+                                    <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
+                                      {text}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
+                                      <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
+                                      <span>Completion: {formatPrice(model.pricing.completion)}</span>
+                                      {model.context_length && (
+                                        <span>Context: {model.context_length.toLocaleString()}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {truncated && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setModelDetail(model);
+                                        }}
+                                        className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
+                                      >
+                                        Read more
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => selectImageModel(model)}
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        isSelected
+                                          ? "bg-primary-500 text-white"
+                                          : "bg-white/10 text-white/50 hover:bg-white/20"
+                                      }`}
+                                    >
+                                      {isSelected ? "Selected" : "Select"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => saveProvider(provider)}
@@ -504,7 +628,7 @@ export default function SettingsPage() {
                         disabled={testing.openrouterModels}
                         className="btn-secondary text-xs px-3 py-1.5"
                       >
-                        {testing.openrouterModels ? "Loading Models..." : "Get Models"}
+                        {testing.openrouterModels ? "Loading Models..." : "Retrieve Models"}
                       </button>
                     )}
                   </div>
