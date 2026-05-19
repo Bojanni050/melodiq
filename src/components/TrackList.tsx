@@ -404,7 +404,12 @@ function TrackCard({
     done: { color: "bg-green-500/20 text-green-300", label: "Ready" },
     failed: { color: "bg-red-500/20 text-red-300", label: "Failed" },
   };
-  const status = statusConfig[track.status];
+  const baseStatus = statusConfig[track.status];
+  const status = isCurrentlyPlaying
+    ? isPlaying
+      ? { color: "bg-primary-500/20 text-primary-200 border border-primary-500/30", label: "Now playing" }
+      : { color: "bg-white/5 text-white/60 border border-white/10", label: "Paused" }
+    : baseStatus;
   const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
 
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
@@ -423,7 +428,7 @@ function TrackCard({
       <div
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
           isCurrentlyPlaying
-            ? "bg-primary-500/15 border-l-2 border-l-primary-400 pl-2"
+            ? "bg-primary-500/20 border border-primary-500/25 border-l-4 border-l-primary-400 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
             : track.status === "generating" || track.status === "pending"
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
@@ -445,6 +450,10 @@ function TrackCard({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
+        ) : isCurrentlyPlaying ? (
+          <div className="w-4 h-4 rounded-full bg-primary-500/25 border border-primary-500/35 flex items-center justify-center animate-[pulse_1.8s_ease-in-out_infinite]">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-200" />
+          </div>
         ) : (
           <div className="w-4 h-4 rounded-full border-2 border-white/20 group-hover:border-white/40 transition-colors" />
         )}
@@ -461,7 +470,7 @@ function TrackCard({
             onPlay(track);
           }
         }}
-        className="relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play"
+        className={`relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play ${isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""}`}
         aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
       >
         {track.coverUrl ? (
@@ -529,18 +538,7 @@ function TrackCard({
       {/* Track info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-300" : ""}`}>{title}</h3>
-          {isCurrentlyPlaying && (
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                isPlaying
-                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
-                  : "bg-white/5 border-white/10 text-white/50"
-              }`}
-            >
-              {isPlaying ? "Playing" : "Paused"}
-            </span>
-          )}
+          <h3 className={`text-sm font-medium truncate ${isCurrentlyPlaying ? "text-primary-200" : ""}`}>{title}</h3>
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
