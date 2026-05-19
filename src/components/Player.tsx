@@ -8,10 +8,13 @@ export default function Player() {
   const {
     currentTrack,
     queue,
+    history,
     isPlaying,
     volume,
     autoPlayNext,
     autoOpenNowPlayingPanel,
+    playNext,
+    playPrevious,
     setAutoPlayNext,
     setAutoOpenNowPlayingPanel,
   } = usePlayerStore();
@@ -24,11 +27,27 @@ export default function Player() {
 
   const tryPlay = useCallback(async () => {
     if (!audioRef.current) return;
-    try {
-      await audioRef.current.play();
-    } catch {
-      // Browser autoplay policies can block play() calls without a recent user gesture.
-      usePlayerStore.getState().setIsPlaying(false);
+    for (let i = 0; i < 3; i += 1) {
+      try {
+        await audioRef.current.play();
+        return;
+      } catch (error) {
+        if (!(error instanceof DOMException)) {
+          continue;
+        }
+
+        if (error.name === "NotAllowedError") {
+          // Browser autoplay policies can block play() calls without a recent user gesture.
+          usePlayerStore.getState().setIsPlaying(false);
+          return;
+        }
+
+        if (error.name !== "AbortError") {
+          continue;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 120));
+      }
     }
   }, []);
 
@@ -171,6 +190,20 @@ export default function Player() {
     usePlayerStore.getState().setIsPlaying(!isPlaying);
   }, [currentTrack, isPlaying, queue.length]);
 
+  const handlePrevious = useCallback(() => {
+    if (audioRef.current && audioRef.current.currentTime > 3) {
+      audioRef.current.currentTime = 0;
+      setCurrentTime(0);
+      return;
+    }
+
+    playPrevious();
+  }, [playPrevious]);
+
+  const handleNext = useCallback(() => {
+    playNext();
+  }, [playNext]);
+
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const time = parseFloat(e.target.value);
@@ -203,6 +236,17 @@ export default function Player() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
+              onClick={handlePrevious}
+              disabled={history.length === 0 && currentTime <= 3}
+              className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 flex items-center justify-center transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Previous track"
+              aria-label="Previous track"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 5h2v14H6zM9 12l10 7V5z" />
+              </svg>
+            </button>
+            <button
               onClick={togglePlay}
               disabled={resolvingUrl || (!currentTrack && queue.length === 0)}
               className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 active:scale-90 active:bg-primary-800 flex items-center justify-center transition-all shrink-0"
@@ -219,6 +263,17 @@ export default function Player() {
                   <path d="M8 5v14l11-7z" />
                 </svg>
               )}
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={queue.length === 0}
+              className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 active:scale-95 flex items-center justify-center transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Next track"
+              aria-label="Next track"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M16 5h2v14h-2zM6 19l10-7L6 5z" />
+              </svg>
             </button>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">

@@ -23,9 +23,11 @@ export interface Track {
 interface PlayerState {
   currentTrack: Track | null;
   queue: Track[];
+  history: Track[];
   isPlaying: boolean;
   autoPlayNext: boolean;
   autoOpenNowPlayingPanel: boolean;
+  rightPanelWidth: number;
   volume: number;
   progress: number;
   setCurrentTrack: (track: Track | null) => void;
@@ -33,9 +35,11 @@ interface PlayerState {
   removeFromQueue: (trackId: string) => void;
   clearQueue: () => void;
   playNext: () => void;
+  playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
   setAutoPlayNext: (enabled: boolean) => void;
   setAutoOpenNowPlayingPanel: (enabled: boolean) => void;
+  setRightPanelWidth: (width: number) => void;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
 }
@@ -45,15 +49,32 @@ export const usePlayerStore = create<PlayerState>()(
     (set) => ({
       currentTrack: null,
       queue: [],
+      history: [],
       isPlaying: false,
       autoPlayNext: true,
       autoOpenNowPlayingPanel: true,
+      rightPanelWidth: 380,
       volume: 0.8,
       progress: 0,
       setCurrentTrack: (track) =>
-        set({
-          currentTrack: track,
-          isPlaying: track ? true : false,
+        set((state) => {
+          if (!track) {
+            return {
+              currentTrack: null,
+              isPlaying: false,
+            };
+          }
+
+          const shouldPushHistory =
+            !!state.currentTrack && state.currentTrack.id !== track.id;
+
+          return {
+            currentTrack: track,
+            isPlaying: true,
+            history: shouldPushHistory
+              ? [...state.history, state.currentTrack!].slice(-50)
+              : state.history,
+          };
         }),
       enqueueTrack: (track) =>
         set((state) => {
@@ -70,11 +91,38 @@ export const usePlayerStore = create<PlayerState>()(
             return { currentTrack: null, isPlaying: false };
           }
           const [nextTrack, ...rest] = state.queue;
-          return { currentTrack: nextTrack, queue: rest, isPlaying: true };
+          return {
+            currentTrack: nextTrack,
+            queue: rest,
+            isPlaying: true,
+            history: state.currentTrack
+              ? [...state.history, state.currentTrack].slice(-50)
+              : state.history,
+          };
+        }),
+      playPrevious: () =>
+        set((state) => {
+          if (state.history.length === 0) {
+            return state;
+          }
+
+          const previousTrack = state.history[state.history.length - 1];
+          const nextHistory = state.history.slice(0, -1);
+
+          return {
+            currentTrack: previousTrack,
+            isPlaying: true,
+            history: nextHistory,
+            queue: state.currentTrack
+              ? [state.currentTrack, ...state.queue]
+              : state.queue,
+          };
         }),
       setIsPlaying: (playing) => set({ isPlaying: playing }),
       setAutoPlayNext: (enabled) => set({ autoPlayNext: enabled }),
       setAutoOpenNowPlayingPanel: (enabled) => set({ autoOpenNowPlayingPanel: enabled }),
+      setRightPanelWidth: (width) =>
+        set({ rightPanelWidth: Math.max(320, Math.min(560, Math.round(width))) }),
       setVolume: (volume) => set({ volume }),
       setProgress: (progress) => set({ progress }),
     }),
@@ -86,6 +134,7 @@ export const usePlayerStore = create<PlayerState>()(
         currentTrack: state.currentTrack,
         autoPlayNext: state.autoPlayNext,
         autoOpenNowPlayingPanel: state.autoOpenNowPlayingPanel,
+        rightPanelWidth: state.rightPanelWidth,
       }),
     }
   )

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
@@ -42,6 +42,10 @@ export default function HomePage() {
   const [dismissedNowPlayingTrackId, setDismissedNowPlayingTrackId] = useState<string | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const autoOpenNowPlayingPanel = usePlayerStore((state) => state.autoOpenNowPlayingPanel);
+  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const resizeStartXRef = useRef(0);
+  const resizeStartWidthRef = useRef(0);
 
   useEffect(() => {
     fetchTracks();
@@ -104,6 +108,32 @@ export default function HomePage() {
 
     setDismissedNowPlayingTrackId((prev) => (prev === currentTrack.id ? prev : null));
   }, [currentTrack?.id]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
+  }, [rightPanelWidth]);
+
+  function startRightPanelResize(e: React.MouseEvent<HTMLDivElement>) {
+    resizeStartXRef.current = e.clientX;
+    resizeStartWidthRef.current = rightPanelWidth;
+
+    const onMouseMove = (event: MouseEvent) => {
+      const delta = resizeStartXRef.current - event.clientX;
+      setRightPanelWidth(resizeStartWidthRef.current + delta);
+    };
+
+    const onMouseUp = () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
 
   async function fetchTracks() {
     const res = await fetch("/api/tracks");
@@ -325,78 +355,94 @@ export default function HomePage() {
       <Sidebar credits={creditValue} />
 
       {/* Main content area */}
-      <div className="lg:ml-60">
-        {notice && (
-          <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
-            <div className="flex items-start gap-3">
-              <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-              </svg>
-              <div className="min-w-0">
-                <p className="text-sm text-red-100">{notice.message}</p>
-              </div>
-              <button
-                onClick={() => setNotice(null)}
-                className="text-red-200/70 hover:text-red-100"
-                aria-label="Close notification"
-                title="Close"
-              >
-                x
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Top bar */}
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="flex items-center justify-between px-4 py-2">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveTab("create")}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === "create" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
-                }`}
-              >
-                Create
-              </button>
-              <button
-                onClick={() => setActiveTab("library")}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === "library" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
-                }`}
-              >
-                Library
-              </button>
-            </div>
-
-            <select aria-label="Version selector" className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/50">
-              <option>v1</option>
-            </select>
-          </div>
-        </div>
-
-        <main className="p-4 pb-32">
-          {activeTab === "create" ? (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Form column */}
-              <div className="xl:col-span-1 max-w-xl">
-                <StudioForm
-                  credits={credits}
-                  onGenerate={handleGenerate}
-                  onOptimize={handleOptimize}
-                  onGenerateLyrics={handleGenerateLyrics}
-                  onGenerateTitle={handleGenerateTitle}
-                />
-              </div>
-
-              {/* Track list column */}
-              <div className="xl:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
-                  <span className="text-xs text-white/30">{tracks.length} tracks</span>
+      <div className="lg:ml-60 lg:flex">
+        <div className="min-w-0 flex-1">
+          {notice && (
+            <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
+              <div className="flex items-start gap-3">
+                <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                </svg>
+                <div className="min-w-0">
+                  <p className="text-sm text-red-100">{notice.message}</p>
                 </div>
+                <button
+                  onClick={() => setNotice(null)}
+                  className="text-red-200/70 hover:text-red-100"
+                  aria-label="Close notification"
+                  title="Close"
+                >
+                  x
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Top bar */}
+          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setActiveTab("create")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === "create" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => setActiveTab("library")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === "library" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  Library
+                </button>
+              </div>
+
+              <select aria-label="Version selector" className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/50">
+                <option>v1</option>
+              </select>
+            </div>
+          </div>
+
+          <main className="p-4 pb-32">
+            {activeTab === "create" ? (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Form column */}
+                <div className="xl:col-span-1 max-w-xl">
+                  <StudioForm
+                    credits={credits}
+                    onGenerate={handleGenerate}
+                    onOptimize={handleOptimize}
+                    onGenerateLyrics={handleGenerateLyrics}
+                    onGenerateTitle={handleGenerateTitle}
+                  />
+                </div>
+
+                {/* Track list column */}
+                <div className="xl:col-span-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
+                    <span className="text-xs text-white/30">{tracks.length} tracks</span>
+                  </div>
+                  <TrackList
+                    tracks={tracks}
+                    isGenerating={generating}
+                    onSelect={(t) => setSelectedTrack(t)}
+                    onDelete={handleDeleteTrack}
+                    onReusePrompt={handleReusePrompt}
+                    onAddToQueue={handleAddToQueue}
+                    onAddToPlaylist={handleAddToPlaylist}
+                    playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-4xl">
+                <h2 className="text-lg font-semibold mb-4">Library</h2>
                 <TrackList
-                  tracks={tracks}
+                  tracks={tracks.filter((t) => t.status === "done")}
                   isGenerating={generating}
                   onSelect={(t) => setSelectedTrack(t)}
                   onDelete={handleDeleteTrack}
@@ -406,23 +452,42 @@ export default function HomePage() {
                   playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                 />
               </div>
-            </div>
-          ) : (
-            <div className="max-w-4xl">
-              <h2 className="text-lg font-semibold mb-4">Library</h2>
-              <TrackList
-                tracks={tracks.filter((t) => t.status === "done")}
-                isGenerating={generating}
-                onSelect={(t) => setSelectedTrack(t)}
-                onDelete={handleDeleteTrack}
-                onReusePrompt={handleReusePrompt}
-                onAddToQueue={handleAddToQueue}
-                onAddToPlaylist={handleAddToPlaylist}
-                playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+            )}
+          </main>
+        </div>
+
+        <div
+          className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
+          onMouseDown={startRightPanelResize}
+          title="Resize details panel"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize details panel"
+        />
+
+        <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
+          <div className="sticky top-0 h-screen pb-28">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={() => {
+                  setSelectedTrack(null);
+                  if (currentTrack?.id) {
+                    setDismissedNowPlayingTrackId(currentTrack.id);
+                  }
+                }}
+                onPlay={handlePlayTrack}
+                onDownload={handleDownloadTrack}
               />
-            </div>
-          )}
-        </main>
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
 
       {/* Lyrics generation overlay */}
@@ -443,19 +508,22 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Track detail panel */}
+      {/* Mobile/tablet detail overlay */}
       {selectedTrack && (
-        <TrackDetail
-          track={selectedTrack}
-          onClose={() => {
-            setSelectedTrack(null);
-            if (currentTrack?.id) {
-              setDismissedNowPlayingTrackId(currentTrack.id);
-            }
-          }}
-          onPlay={handlePlayTrack}
-          onDownload={handleDownloadTrack}
-        />
+        <div className="lg:hidden">
+          <TrackDetail
+            track={selectedTrack}
+            onClose={() => {
+              setSelectedTrack(null);
+              if (currentTrack?.id) {
+                setDismissedNowPlayingTrackId(currentTrack.id);
+              }
+            }}
+            onPlay={handlePlayTrack}
+            onDownload={handleDownloadTrack}
+            mode="overlay"
+          />
+        </div>
       )}
     </div>
   );

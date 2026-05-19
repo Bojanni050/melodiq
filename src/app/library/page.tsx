@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
@@ -34,6 +34,10 @@ export default function LibraryPage() {
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const autoOpenNowPlayingPanel = usePlayerStore((state) => state.autoOpenNowPlayingPanel);
+  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const resizeStartXRef = useRef(0);
+  const resizeStartWidthRef = useRef(0);
   const playlists = usePlaylistStore((state) => state.playlists);
   const selectedPlaylistId = usePlaylistStore((state) => state.selectedPlaylistId);
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
@@ -84,6 +88,32 @@ export default function LibraryPage() {
 
     setDismissedNowPlayingTrackId((prev) => (prev === currentTrack.id ? prev : null));
   }, [currentTrack?.id]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
+  }, [rightPanelWidth]);
+
+  function startRightPanelResize(e: React.MouseEvent<HTMLDivElement>) {
+    resizeStartXRef.current = e.clientX;
+    resizeStartWidthRef.current = rightPanelWidth;
+
+    const onMouseMove = (event: MouseEvent) => {
+      const delta = resizeStartXRef.current - event.clientX;
+      setRightPanelWidth(resizeStartWidthRef.current + delta);
+    };
+
+    const onMouseUp = () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
 
   async function fetchTracks() {
     const res = await fetch("/api/tracks");
@@ -192,103 +222,143 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       <Sidebar credits={null} />
-      <div className="lg:ml-60">
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="px-4 py-3 space-y-3">
-            <div>
-              <h1 className="text-lg font-bold">Library</h1>
-              <p className="text-xs text-white/40 mt-0.5">{visibleTracks.length} tracks shown</p>
-            </div>
+      <div className="lg:ml-60 lg:flex">
+        <div className="min-w-0 flex-1">
+          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+            <div className="px-4 py-3 space-y-3">
+              <div>
+                <h1 className="text-lg font-bold">Library</h1>
+                <p className="text-xs text-white/40 mt-0.5">{visibleTracks.length} tracks shown</p>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setSelectedPlaylistId(null)}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                  selectedPlaylistId === null
-                    ? "bg-primary-500/25 text-primary-200 border border-primary-400/30"
-                    : "bg-white/5 text-white/60 hover:text-white/80"
-                }`}
-              >
-                All tracks
-              </button>
-              {playlists.map((playlist) => (
-                <div key={playlist.id} className="flex items-center rounded-md bg-white/5 border border-white/10">
-                  <button
-                    onClick={() => setSelectedPlaylistId(playlist.id)}
-                    className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
-                      selectedPlaylistId === playlist.id ? "text-white bg-white/10" : "text-white/60 hover:text-white/80"
-                    }`}
-                  >
-                    {playlist.name}
-                  </button>
-                  <button
-                    onClick={() => deletePlaylist(playlist.id)}
-                    className="px-2 py-1 text-xs text-white/40 hover:text-red-400 transition-colors"
-                    title="Delete playlist"
-                  >
-                    x
-                  </button>
-                </div>
-              ))}
-
-              {showCreatePlaylist ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    value={newPlaylistName}
-                    onChange={(e) => setNewPlaylistName(e.target.value)}
-                    placeholder="Playlist name"
-                    className="h-7 px-2 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                  />
-                  <button
-                    onClick={handleCreatePlaylist}
-                    className="h-7 px-2 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCreatePlaylist(false);
-                      setNewPlaylistName("");
-                    }}
-                    className="h-7 px-2 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
+              <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => setShowCreatePlaylist(true)}
-                  className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
+                  onClick={() => setSelectedPlaylistId(null)}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                    selectedPlaylistId === null
+                      ? "bg-primary-500/25 text-primary-200 border border-primary-400/30"
+                      : "bg-white/5 text-white/60 hover:text-white/80"
+                  }`}
                 >
-                  + Playlist
+                  All tracks
                 </button>
-              )}
+                {playlists.map((playlist) => (
+                  <div key={playlist.id} className="flex items-center rounded-md bg-white/5 border border-white/10">
+                    <button
+                      onClick={() => setSelectedPlaylistId(playlist.id)}
+                      className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
+                        selectedPlaylistId === playlist.id ? "text-white bg-white/10" : "text-white/60 hover:text-white/80"
+                      }`}
+                    >
+                      {playlist.name}
+                    </button>
+                    <button
+                      onClick={() => deletePlaylist(playlist.id)}
+                      className="px-2 py-1 text-xs text-white/40 hover:text-red-400 transition-colors"
+                      title="Delete playlist"
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+
+                {showCreatePlaylist ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={newPlaylistName}
+                      onChange={(e) => setNewPlaylistName(e.target.value)}
+                      placeholder="Playlist name"
+                      className="h-7 px-2 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
+                    />
+                    <button
+                      onClick={handleCreatePlaylist}
+                      className="h-7 px-2 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowCreatePlaylist(false);
+                        setNewPlaylistName("");
+                      }}
+                      className="h-7 px-2 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowCreatePlaylist(true)}
+                    className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
+                  >
+                    + Playlist
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+
+          <main className="p-4 pb-32">
+            <TrackList
+              tracks={visibleTracks}
+              onSelect={(t) => setSelectedTrack(t)}
+              onDelete={handleDeleteTrack}
+              onAddToQueue={handleAddToQueue}
+              onAddToPlaylist={handleAddToPlaylist}
+              playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+            />
+          </main>
         </div>
-        <main className="p-4 pb-32">
-          <TrackList
-            tracks={visibleTracks}
-            onSelect={(t) => setSelectedTrack(t)}
-            onDelete={handleDeleteTrack}
-            onAddToQueue={handleAddToQueue}
-            onAddToPlaylist={handleAddToPlaylist}
-            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-          />
-        </main>
-      </div>
-      {selectedTrack && (
-        <TrackDetail
-          track={selectedTrack}
-          onClose={() => {
-            setSelectedTrack(null);
-            if (currentTrack?.id) {
-              setDismissedNowPlayingTrackId(currentTrack.id);
-            }
-          }}
-          onPlay={handlePlayTrack}
-          onDownload={handleDownloadTrack}
+
+        <div
+          className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
+          onMouseDown={startRightPanelResize}
+          title="Resize details panel"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize details panel"
         />
+
+        <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
+          <div className="sticky top-0 h-screen pb-28">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={() => {
+                  setSelectedTrack(null);
+                  if (currentTrack?.id) {
+                    setDismissedNowPlayingTrackId(currentTrack.id);
+                  }
+                }}
+                onPlay={handlePlayTrack}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {selectedTrack && (
+        <div className="lg:hidden">
+          <TrackDetail
+            mode="overlay"
+            track={selectedTrack}
+            onClose={() => {
+              setSelectedTrack(null);
+              if (currentTrack?.id) {
+                setDismissedNowPlayingTrackId(currentTrack.id);
+              }
+            }}
+            onPlay={handlePlayTrack}
+            onDownload={handleDownloadTrack}
+          />
+        </div>
       )}
     </div>
   );
