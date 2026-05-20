@@ -183,6 +183,23 @@
   - Updated `src/lib/providers/llm.ts` — replaced generic generateTitle prompt with structured priority system: repeating lines first, then hook phrase, then thematic core; tightened rules to max 6 words, language matching, no invented words, return title only
   - Validated with `npm run build`.
 
+## 2026-05-20 (Brand color unification — orange consistency)
+
+- Findings: Purple (#8b5cf6) had leaked into focus rings, range slider thumb, aurora background, and VOCAL badge — conflicting with Sonara's orange (#ff530c) brand identity.
+- Conclusions: Replace all purple UI elements with orange to maintain consistent brand identity throughout the app.
+- Actions:
+  - Updated `src/app/globals.css` — replaced purple aurora gradient with orange gradient (#cc4109, #e64a0b, #ff530c, #ff8550); replaced purple focus rings with orange for `.input-field:focus` and `.select-field:focus` (rgba(255, 83, 12, 0.3) and rgba(255, 83, 12, 0.5)); replaced purple range slider thumb (#8b5cf6) with orange (#ff530c)
+  - Updated `src/components/StudioForm.tsx` — replaced green VOCAL badge with orange primary colors (bg-primary-500/20 text-primary-400 border border-primary-500/30); added font-medium and changed from rounded-full to rounded
+  - Validated met `npm run build`.
+
+## 2026-05-20 (poyo-wav webhook cover art fallback)
+
+- Findings: De poyo-wav webhook heeft geen cover art trigger — als Pixazo down was bij generate, krijgt de track nooit een cover.
+- Conclusions: Voeg een cover art fallback toe aan poyo-wav webhook: als de track na succesvolle WAV upload nog geen s3KeyCover heeft, start dan fire-and-forget generateAndSaveCoverArt.
+- Actions:
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — import toegevoegd voor `generateAndSaveCoverArt`; na logApi call en vóór return: fallback check `if (!track.s3KeyCover)` triggert fire-and-forget cover art generatie met `.catch(() => {})`
+  - Validated met `npm run build`.
+
 ## 2026-05-20 (Poll PoYo tracks voor async WAV download)
 
 - Findings: De poyo-wav webhook levert het WAV bestand asynchroon — minuten nadat de track al status "done" heeft. De frontend poll stopt bij "done", waardoor s3KeyHd/audioUrlHd nooit in de UI terechtkomen. De WAV download knop blijft verborgen voor PoYo tracks.

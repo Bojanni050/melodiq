@@ -270,7 +270,7 @@ export default function StudioForm({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${instrumental ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-300"}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${instrumental ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" : "bg-primary-500/20 text-primary-400 border border-primary-500/30"}`}>
               {instrumental ? "INSTRUMENTAL" : "VOCAL"}
             </span>
           </div>

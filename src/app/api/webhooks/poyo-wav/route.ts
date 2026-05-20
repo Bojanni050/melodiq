@@ -9,6 +9,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 
 function pickAudioUrl(body: any): string | null {
   const files: any[] = body?.files ?? body?.data?.files ?? [];
@@ -123,6 +124,17 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ trackId: track.id, audioId: audioId ?? track.audioId, formatHd }),
       statusCode: 200,
     });
+
+    // Fire cover art only if not already set (fallback for when Pixazo was down at generate time)
+    if (!track.s3KeyCover) {
+      generateAndSaveCoverArt({
+        id: track.id!,
+        userId: track.userId,
+        title: track.title ?? null,
+        prompt: track.prompt,
+        instrumental: track.instrumental,
+      }).catch(() => {});
+    }
 
     console.log(`[webhook/poyo-wav] track ${track.id} WAV synced`);
     return NextResponse.json({ success: true });
