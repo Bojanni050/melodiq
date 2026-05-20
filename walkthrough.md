@@ -217,6 +217,12 @@
   - Updated `src/db/schema.ts` — toegevoegd: `wavJobId: varchar("wav_job_id", { length: 255 })`
   - Updated `src/db/init.ts` — toegevoegd aan alterTracksSql: `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);`
   - Updated `src/app/api/webhooks/poyo-wav/route.ts` — DB lookup uitgebreid om ook te matchen op `wavJobId`: `or(taskId ? eq(tracks.jobId, taskId) : undefined, taskId ? eq(tracks.wavJobId, taskId) : undefined, audioId ? eq(tracks.audioId, String(audioId)) : undefined)`
+  - Created `src/app/api/tracks/retry-wav/route.ts` — POST endpoint om WAV conversie opnieuw aan te vragen voor oude tracks zonder HD audio; selecteert tracks met `status='done', provider='poyo', audioId NOT NULL, s3KeyHd NULL`; roept `requestWavConversion()` aan en saved nieuwe `wavJobId`; returned stats over hoeveel tracks zijn geretried
+  - Created `retry-wav-browser.js` — browser console script om `/api/tracks/retry-wav` aan te roepen; toont welke tracks zijn geretried
+  - Created `check-wav-status-browser.js` — browser console script om WAV status van tracks te inspecteren; toont welke velden wel/niet gevuld zijn
+  - Created `check-wav-status-db.sh` — database query script om WAV status van recent PoYo tracks te checken
+  - Updated `fix-db-schema.sh` — toegevoegd: `wav_job_id VARCHAR(255)` kolom
+  - Created `add-wav-job-id-column.sh` — dedicated script om alleen `wav_job_id` kolom toe te voegen
   - Validated met `npm run build`.
 
 ## 2026-05-20 (PoYo webhook — per-variant audioId + WAV conversie)
