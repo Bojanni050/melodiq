@@ -53,6 +53,25 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    const hasDoneWithoutCover = tracks.some(
+      (t) => t.status === "done" && !t.coverUrl
+    );
+    const hasDoneWithoutHd = tracks.some(
+      (t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd
+    );
+
+    const interval = hasDoneWithoutCover || hasDoneWithoutHd ? 15000 : null;
+
+    if (interval) {
+      const timer = setInterval(() => {
+        fetchTracks();
+      }, interval);
+
+      return () => clearInterval(timer);
+    }
+  }, [tracks]);
+
+  useEffect(() => {
     if (!showTrackDetailsPanel || !autoOpenNowPlayingPanel || !currentTrack) return;
 
     const matchedTrack = tracks.find((track) => track.id === currentTrack.id);

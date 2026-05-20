@@ -62,8 +62,11 @@ export default function HomePage() {
     const hasDoneWithoutCover = tracks.some(
       (t) => t.status === "done" && !t.coverUrl
     );
+    const hasDoneWithoutHd = tracks.some(
+      (t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd
+    );
 
-    const interval = hasGenerating ? 5000 : hasDoneWithoutCover ? 8000 : 30000;
+    const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
 
     const timer = setInterval(() => {
       fetchTracks();
