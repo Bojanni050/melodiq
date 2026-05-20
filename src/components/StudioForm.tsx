@@ -3,24 +3,6 @@
 import { useState } from "react";
 import { useStudioStore } from "@/lib/store";
 
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "French",
-  "Frisian",
-  "German",
-  "Polish",
-  "Serbian",
-  "Japanese",
-  "Korean",
-  "Hindi",
-  "Portuguese",
-  "Italian",
-  "Mandarin",
-  "Dutch",
-  "Other...",
-];
-
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3"], icon: "G" },
   poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4"], icon: "P" },
@@ -50,8 +32,6 @@ export default function StudioForm({
     title,
     provider,
     providerModel,
-    language,
-    customLanguage,
     instrumental,
     vocalGender,
     setSongIdea,
@@ -60,8 +40,6 @@ export default function StudioForm({
     setTitle,
     setProvider,
     setProviderModel,
-    setLanguage,
-    setCustomLanguage,
     setInstrumental,
     setVocalGender,
     reset,
@@ -80,8 +58,6 @@ export default function StudioForm({
   const titleCharCount = title.length;
   const titleMaxChars = 120;
   const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
-  const isCustomLanguage = language === "Other...";
-  const selectedLanguage = isCustomLanguage ? "Other..." : language;
 
   // Generate button logic:
   // - If instrumental OFF: needs lyrics AND style/prompt
@@ -146,6 +122,74 @@ export default function StudioForm({
           >
             Clear All
           </button>
+        </div>
+
+        <div className="mt-3">
+          <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40 mb-2">Provider</h4>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+              className="w-full input-field text-left text-sm flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
+                  {currentProvider?.icon}
+                </span>
+                <span>{currentProvider?.fullName || "Select..."}</span>
+              </div>
+              <svg className={`w-4 h-4 transition-transform ${showProviderDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showProviderDropdown && (
+              <div className="absolute z-50 mt-1 w-full bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+                {Object.entries(PROVIDERS).map(([key, val]) => {
+                  const currentCredits = credits[key as keyof typeof credits];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setProvider(key);
+                        setProviderModel(val.models[0]);
+                        setShowProviderDropdown(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                        provider === key
+                          ? "bg-primary-500/10 text-white"
+                          : "text-white/60 hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
+                        {val.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{val.fullName}</p>
+                        <p className="text-xs text-white/30">
+                          {key === "lyria" ? "Pay-per-use" : currentCredits !== null ? `${currentCredits} credits` : "Not configured"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <select
+            value={providerModel}
+            onChange={(e) => setProviderModel(e.target.value)}
+            aria-label="Provider model"
+            className="select-field text-sm mt-2"
+          >
+            {currentProvider?.models.map((model) => (
+              <option key={model} value={model} className="bg-gray-900">
+                {model}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
@@ -313,167 +357,35 @@ Your chorus here`}
         </div>
       </section>
 
-      {/* Settings Row */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Provider */}
+      {!instrumental && (
         <section className="section-card">
-          <h3 className="text-sm font-semibold text-white/80 mb-3">Provider</h3>
-          <div className="relative">
+          <h3 className="text-sm font-semibold text-white/80 mb-3">Vocal Gender</h3>
+          <div className="flex rounded-lg overflow-hidden border border-white/10">
             <button
               type="button"
-              onClick={() => setShowProviderDropdown(!showProviderDropdown)}
-              className="w-full input-field text-left text-sm flex items-center justify-between"
+              onClick={() => setVocalGender("female")}
+              className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                vocalGender === "female"
+                  ? "bg-pink-500/30 text-pink-300"
+                  : "bg-white/5 text-white/40 hover:bg-white/10"
+              }`}
             >
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                  {currentProvider?.icon}
-                </span>
-                <span>{currentProvider?.fullName || "Select..."}</span>
-              </div>
-              <svg className={`w-4 h-4 transition-transform ${showProviderDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              🎤 Female
             </button>
-
-            {showProviderDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-                {Object.entries(PROVIDERS).map(([key, val]) => {
-                  const currentCredits = credits[key as keyof typeof credits];
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => {
-                        setProvider(key);
-                        setProviderModel(val.models[0]);
-                        setShowProviderDropdown(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                        provider === key
-                          ? "bg-primary-500/10 text-white"
-                          : "text-white/60 hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                        {val.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm">{val.fullName}</p>
-                        <p className="text-xs text-white/30">
-                          {key === "lyria" ? "Pay-per-use" : currentCredits !== null ? `${currentCredits} credits` : "Not configured"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setVocalGender("male")}
+              className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                vocalGender === "male"
+                  ? "bg-blue-500/30 text-blue-300"
+                  : "bg-white/5 text-white/40 hover:bg-white/10"
+              }`}
+            >
+              🎤 Male
+            </button>
           </div>
-
-          {/* Model */}
-          <select
-            value={providerModel}
-            onChange={(e) => setProviderModel(e.target.value)}
-            className="select-field text-sm mt-2"
-          >
-            {currentProvider?.models.map((model) => (
-              <option key={model} value={model} className="bg-gray-900">
-                {model}
-              </option>
-            ))}
-          </select>
         </section>
-
-        {/* Language & Vocal Gender */}
-        <section className="section-card">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-white/80">Language</h3>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
-              Voice language
-            </span>
-          </div>
-          <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="select-field w-full appearance-none border-0 bg-[#12121a] text-sm pr-10 shadow-none"
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang} value={lang} className="bg-gray-900">
-                    {lang}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="pointer-events-none absolute right-3 top-1/2 w-4 h-4 -translate-y-1/2 text-white/40"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-
-            {isCustomLanguage && (
-              <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label className="text-xs font-medium text-white/60">
-                    Custom language
-                  </label>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/35 uppercase tracking-wider">
-                    Manual
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={customLanguage}
-                  onChange={(e) => setCustomLanguage(e.target.value)}
-                  placeholder="e.g. Dutch, Spanglish, Limburgs dialect"
-                  className="input-field text-sm"
-                />
-                <p className="text-xs text-white/30">
-                  De handmatige taal wordt gebruikt in de generatieprompt.
-                </p>
-              </div>
-            )}
-
-            <p className="text-xs text-white/30">
-              Kies een preset of vul een eigen taal in via <span className="text-white/50">Other...</span>
-            </p>
-          </div>
-
-          {!instrumental && (
-            <>
-              <h3 className="text-sm font-semibold text-white/80 mb-3">Vocal Gender</h3>
-              <div className="flex rounded-lg overflow-hidden border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setVocalGender("female")}
-                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    vocalGender === "female"
-                      ? "bg-pink-500/30 text-pink-300"
-                      : "bg-white/5 text-white/40 hover:bg-white/10"
-                  }`}
-                >
-                  🎤 Female
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVocalGender("male")}
-                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    vocalGender === "male"
-                      ? "bg-blue-500/30 text-blue-300"
-                      : "bg-white/5 text-white/40 hover:bg-white/10"
-                  }`}
-                >
-                  🎤 Male
-                </button>
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+      )}
 
       {/* Title Section */}
       <section className="section-card">

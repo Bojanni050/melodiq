@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 23:18**
+**Versie: do 01:34**
 
 > AI Music Generation Web App
 
@@ -51,8 +51,15 @@ Select which AI music service to use. Each provider shows its current credit bal
 - **PoYo** (Suno) — asynchronous, webhook-based
 - **Tempolor** — asynchronous, webhook-based
 
-### Language & Vocal Gender
+This selector now lives in the **Studio** card on the Create page.
+
+### Language (Lyric Studio)
 - **Language** — sets the language for AI-generated lyrics (English, Dutch, Spanish, etc.)
+- **Other...** — lets you define a custom language or dialect
+
+The language selector now lives on the **Lyric Studio** page.
+
+### Vocal Gender
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
 
 ### Song Title

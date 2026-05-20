@@ -259,6 +259,15 @@
   - Updated `src/app/library/page.tsx` — nieuwe polling useEffect toegevoegd met dezelfde `hasDoneWithoutHd` logica en 15 seconden interval wanneer tracks cover art of HD audio missen
   - Validated met `npm run build`.
 
+## 2026-05-21 (Provider naar Studio card, taal naar Lyric Studio)
+
+- Findings: Provider-keuze stond in een losse settings-rij in de Create-form, terwijl de language-selector op dezelfde plek stond en niet in de context van Lyric Studio.
+- Conclusions: Provider hoort dicht bij de primaire Studio-controls op de Create-pagina; language hoort bij lyric- en structuurinstellingen op de Lyric Studio-pagina.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — provider dropdown + model-select verplaatst naar de `Studio` card; language-selector verwijderd uit de Create-pagina; `Vocal Gender` als losse card behouden voor vocal mode
+  - Updated `src/app/lyrics-studio/page.tsx` — language-selector (incl. `Other...` custom language input) toegevoegd boven de Structure-sectie
+  - Updated `sonara-user.md` — secties geactualiseerd met nieuwe locatie van Provider en Language + versie bump
+
 ## 2026-05-16 (Automatic database creation on app startup)
 
 - Findings: App assumed the PostgreSQL database and tables already existed. On a fresh deploy (e.g. Docker Compose first run), the database is created via `POSTGRES_DB` env var but tables still require manual `drizzle-kit push`. No automatic initialization on startup.
