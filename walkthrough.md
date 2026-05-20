@@ -183,6 +183,14 @@
   - Updated `src/lib/providers/llm.ts` — replaced generic generateTitle prompt with structured priority system: repeating lines first, then hook phrase, then thematic core; tightened rules to max 6 words, language matching, no invented words, return title only
   - Validated with `npm run build`.
 
+## 2026-05-20 (PoYo webhook — per-variant audioId + WAV conversie)
+
+- Findings: PoYo webhook sloeg audioId alleen op voor het eerste track en vroeg maar één WAV conversie aan, terwijl PoYo meerdere variants retourneert (elk met eigen audio_id in body.files[]). Variants zonder audioId kregen geen WAV conversie.
+- Conclusions: Loop over alle files[] en match elk bestand aan de corresponderende track (via index). Sla voor elk bestand met audio_id die audio_id op in het juiste track en vraag WAV conversie aan.
+- Actions:
+  - Updated `src/app/api/webhooks/poyo/route.ts` — single audioId save + single requestWavConversion vervangen door loop over files[]; voor elk bestand met audio_id: track ophalen uit syncedTracks[i], audioId opslaan via db.update, requestWavConversion aanroepen met correct trackId + jobId + audioId; cover art batch blijft ongewijzigd
+  - Validated met `npm run build`.
+
 ## 2026-05-20 (Brand color unification — orange consistency)
 
 - Findings: Purple (#8b5cf6) had leaked into focus rings, range slider thumb, aurora background, and VOCAL badge — conflicting with Sonara's orange (#ff530c) brand identity.

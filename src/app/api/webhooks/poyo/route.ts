@@ -58,30 +58,36 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: syncResult.error || "No audio URL" }, { status: 400 });
       }
 
-      if (audioId) {
-        await db
-          .update(tracks)
-          .set({
-            audioId,
-          })
-          .where(eq(tracks.id, track.id!));
-      }
-
-      // Vraag meteen WAV conversie aan - PoYo bewaart bestanden maar 3 dagen.
-      if (audioId && track.jobId) {
-        requestWavConversion({
-          id: track.id!,
-          jobId: track.jobId,
-          audioId,
-        }).catch(() => {});
-      }
-
-      const syncedIds = syncResult.updatedTrackIds;
-      if (syncedIds.length > 0) {
+      // Match each file to its corresponding track and save audioId + request WAV conversion
+      const allSyncedIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+      if (allSyncedIds.length > 0) {
         const syncedTracks = await db
           .select()
           .from(tracks)
-          .where(inArray(tracks.id, syncedIds));
+          .where(inArray(tracks.id, allSyncedIds));
+
+        // Loop over files and match by index
+        for (let i = 0; i < files.length && i < syncedTracks.length; i++) {
+          const file = files[i];
+          const trackForFile = syncedTracks[i];
+          
+          if (file.audio_id && trackForFile) {
+            // Save audioId to this track
+            await db
+              .update(tracks)
+              .set({ audioId: file.audio_id })
+              .where(eq(tracks.id, trackForFile.id!));
+
+            // Request WAV conversion for this variant
+            if (trackForFile.jobId) {
+              requestWavConversion({
+                id: trackForFile.id!,
+                jobId: trackForFile.jobId,
+                audioId: file.audio_id,
+              }).catch(() => {});
+            }
+          }
+        }
 
         // Fire cover art for all synced tracks as one batch
         if (syncedTracks.length > 0) {
