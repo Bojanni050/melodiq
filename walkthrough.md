@@ -183,6 +183,17 @@
   - Updated `src/lib/providers/llm.ts` — replaced generic generateTitle prompt with structured priority system: repeating lines first, then hook phrase, then thematic core; tightened rules to max 6 words, language matching, no invented words, return title only
   - Validated with `npm run build`.
 
+## 2026-05-20 (Database schema completeness — missende kolommen fix)
+
+- Findings: VPS database miste kolommen die wel in schema.ts staan: `audio_url_hd`, `s3_key_hd`, en `rating`. CREATE TABLE IF NOT EXISTS voegt ze niet toe als de tabel al bestaat. ALTER TABLE statements in init.ts waren incompleet.
+- Conclusions: ALTER TABLE statements in init.ts moeten alle kolommen bevatten die later zijn toegevoegd. Voeg helper scripts toe om kolommen te checken en repareren op bestaande databases.
+- Actions:
+  - Updated `src/db/init.ts` — toegevoegd aan alterTracksSql: `audio_url_hd TEXT`, `s3_key_hd TEXT`, `rating VARCHAR(10)`; toegevoegd aan CREATE TABLE: `rating VARCHAR(10)` (voor nieuwe installs)
+  - Created `check-columns.sh` — script om te checken welke kolommen bestaan in tracks table via PostgreSQL information_schema
+  - Created `fix-columns.sh` — script om missende kolommen toe te voegen met ALTER TABLE IF NOT EXISTS
+  - Updated `migrate.sh` — roept nu eerst init.ts aan (voor ALTER TABLE statements) voordat drizzle-kit push draait
+  - Validated met `npm run build`.
+
 ## 2026-05-20 (PoYo webhook — per-variant audioId + WAV conversie)
 
 - Findings: PoYo webhook sloeg audioId alleen op voor het eerste track en vroeg maar één WAV conversie aan, terwijl PoYo meerdere variants retourneert (elk met eigen audio_id in body.files[]). Variants zonder audioId kregen geen WAV conversie.

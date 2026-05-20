@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "cover_url" TEXT,
   "s3_key_cover" TEXT,
   "audio_id" VARCHAR(255),
+  "rating" VARCHAR(10),
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -78,6 +79,9 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover_url TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_id VARCHAR(255);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_url_hd TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_hd TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS rating VARCHAR(10);
 `;
 
 export async function initializeDatabase(): Promise<void> {
