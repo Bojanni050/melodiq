@@ -1,3 +1,13 @@
+# ⚠️ Archivo generado automáticamente
+# Fuente: Ai_Rules.md
+# Fecha: 2026-05-20 02:26:41
+# No editar directamente - los cambios se sobrescribirán
+# 
+# Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
+# "AI Rules: Sincronizar todas las reglas"
+
+---
+
 # 🤖 AI Rules - Source of Truth
 
 This file is the **single source of truth** for all AI rules in this project.

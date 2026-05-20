@@ -1,4 +1,10 @@
 {
   "sourcePath": "Ai_Rules.md",
-  "targets": {}
+  "targets": {
+    "copilot": {
+      "path": ".github/copilot-instructions.md",
+      "lastSyncHash": "5f68b614dbc194a563b911b90301dfc6aea664b91a839efd8a574164200727f9",
+      "lastSyncDate": "2026-05-20T02:26:41.637Z"
+    }
+  }
 }
