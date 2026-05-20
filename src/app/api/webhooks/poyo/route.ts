@@ -66,33 +66,29 @@ export async function POST(request: NextRequest) {
           .from(tracks)
           .where(inArray(tracks.id, allSyncedIds));
 
-        // Loop over files and match by index
-        for (let i = 0; i < files.length && i < syncedTracks.length; i++) {
+        for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const trackForFile = syncedTracks[i];
-          
-          if (file.audio_id && trackForFile) {
-            // Save audioId to this track
-            await db
-              .update(tracks)
-              .set({ audioId: file.audio_id })
-              .where(eq(tracks.id, trackForFile.id!));
+          const trackId = syncResult.variantIndexToTrackId[i];
+          if (!file.audio_id || !trackId) continue;
 
-            // Request WAV conversion for this variant
-            if (trackForFile.jobId) {
-              const wavTaskId = await requestWavConversion({
-                id: trackForFile.id!,
-                jobId: trackForFile.jobId,
-                audioId: file.audio_id,
-              });
+          await db
+            .update(tracks)
+            .set({ audioId: file.audio_id })
+            .where(eq(tracks.id, trackId));
 
-              // Save WAV task_id to DB for webhook lookup
-              if (wavTaskId) {
-                await db
-                  .update(tracks)
-                  .set({ wavJobId: wavTaskId })
-                  .where(eq(tracks.id, trackForFile.id!));
-              }
+          const trackForFile = syncedTracks.find((t) => t.id === trackId);
+          if (trackForFile?.jobId) {
+            const wavTaskId = await requestWavConversion({
+              id: trackId,
+              jobId: trackForFile.jobId,
+              audioId: file.audio_id,
+            });
+
+            if (wavTaskId) {
+              await db
+                .update(tracks)
+                .set({ wavJobId: wavTaskId })
+                .where(eq(tracks.id, trackId));
             }
           }
         }

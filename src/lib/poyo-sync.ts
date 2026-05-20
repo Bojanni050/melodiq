@@ -16,6 +16,7 @@ interface SyncPoYoTaskResult {
   variantCount: number;
   updatedTrackIds: string[];
   createdTrackIds: string[];
+  variantIndexToTrackId: (string | null)[];
   userId?: string;
   error?: string;
 }
@@ -45,6 +46,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
       variantCount: 0,
       updatedTrackIds: [],
       createdTrackIds: [],
+      variantIndexToTrackId: [],
       error: "Track not found",
     };
   }
@@ -58,6 +60,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
       variantCount: 0,
       updatedTrackIds: [],
       createdTrackIds: [],
+      variantIndexToTrackId: [],
       userId: baseTrack.userId,
       error: "No audio variants in PoYo payload",
     };
@@ -148,6 +151,10 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
     variantCount: variants.length,
     updatedTrackIds,
     createdTrackIds,
+    variantIndexToTrackId: variants.map((_, i) => {
+      const variantJobId = i === 0 ? taskId : `${taskId}:v${i + 1}`;
+      return existingTracks.find((t) => t.jobId === variantJobId)?.id ?? null;
+    }),
     userId: baseTrack.userId,
   };
 }
