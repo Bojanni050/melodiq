@@ -19,6 +19,8 @@ export interface Track {
   createdAt: string;
   error: string | null;
   rating?: string | null;
+  coverUrl?: string | null;
+  s3KeyCover?: string | null;
 }
 
 interface PlayerState {
@@ -33,6 +35,7 @@ interface PlayerState {
   progress: number;
   audioElement: HTMLAudioElement | null;
   playContext: Track[] | null;
+  isFullscreen: boolean;
   setCurrentTrack: (track: Track | null) => void;
   enqueueTrack: (track: Track) => void;
   removeFromQueue: (trackId: string) => void;
@@ -50,6 +53,7 @@ interface PlayerState {
   setRightPanelWidth: (width: number) => void;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
+  setIsFullscreen: (fullscreen: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -66,6 +70,7 @@ export const usePlayerStore = create<PlayerState>()(
       progress: 0,
       audioElement: null,
       playContext: null,
+      isFullscreen: false,
       setCurrentTrack: (track) => {
         if (!track) {
           set({
@@ -186,6 +191,7 @@ export const usePlayerStore = create<PlayerState>()(
         set({ rightPanelWidth: Math.max(320, Math.min(560, Math.round(width))) }),
       setVolume: (volume) => set({ volume }),
       setProgress: (progress) => set({ progress }),
+      setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
     }),
     {
       name: "sonara-player",
@@ -196,6 +202,7 @@ export const usePlayerStore = create<PlayerState>()(
         autoPlayNext: state.autoPlayNext,
         showTrackDetailsPanel: state.showTrackDetailsPanel,
         rightPanelWidth: state.rightPanelWidth,
+        isFullscreen: state.isFullscreen,
       }),
     }
   )

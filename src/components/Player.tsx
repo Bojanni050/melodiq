@@ -4,6 +4,265 @@ import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
+function FullscreenPlayer() {
+  const {
+    currentTrack,
+    isPlaying,
+    volume,
+    setIsFullscreen,
+    setVolume,
+  } = usePlayerStore();
+  
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioElement = usePlayerStore((state) => state.audioElement);
+
+  useEffect(() => {
+    if (!audioElement) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audioElement.currentTime || 0);
+      setDuration(audioElement.duration || 0);
+    };
+
+    audioElement.addEventListener("timeupdate", handleTimeUpdate);
+    audioElement.addEventListener("loadedmetadata", handleTimeUpdate);
+
+    return () => {
+      audioElement.removeEventListener("timeupdate", handleTimeUpdate);
+      audioElement.removeEventListener("loadedmetadata", handleTimeUpdate);
+    };
+  }, [audioElement]);
+
+  const handleSeek = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const time = parseFloat(e.target.value);
+      if (audioElement) {
+        audioElement.currentTime = time;
+        setCurrentTime(time);
+      }
+    },
+    [audioElement]
+  );
+
+  const handleVolume = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const vol = parseFloat(e.target.value);
+      setVolume(vol);
+    },
+    [setVolume]
+  );
+
+  const togglePlay = useCallback(() => {
+    if (!currentTrack) return;
+    const nextPlaying = !isPlaying;
+    usePlayerStore.getState().setIsPlaying(nextPlaying);
+  }, [currentTrack, isPlaying]);
+
+  const handlePrevious = useCallback(() => {
+    if (audioElement && audioElement.currentTime > 3) {
+      audioElement.currentTime = 0;
+      setCurrentTime(0);
+      return;
+    }
+    usePlayerStore.getState().playPrevious();
+  }, [audioElement]);
+
+  const handleNext = useCallback(() => {
+    usePlayerStore.getState().playNext();
+  }, []);
+
+  const formatTime = (s: number) => {
+    if (!s || isNaN(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const coverUrl = currentTrack?.coverUrl;
+  const lyrics = currentTrack?.lyrics || "";
+  const lyricsLines = lyrics.split("\n").filter((line) => line.trim());
+  
+  // Verdeel lyrics in kolommen
+  const getColumnCount = () => {
+    if (lyricsLines.length <= 20) return 1;
+    if (lyricsLines.length <= 40) return 2;
+    return 3;
+  };
+
+  const columnCount = getColumnCount();
+  const linesPerColumn = Math.ceil(lyricsLines.length / columnCount);
+
+  const columns = Array.from({ length: columnCount }, (_, i) => {
+    const start = i * linesPerColumn;
+    const end = start + linesPerColumn;
+    return lyricsLines.slice(start, end);
+  });
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black overflow-hidden">
+      {/* Diffuse background met ingezoomde album art */}
+      {coverUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center scale-110 blur-3xl opacity-30"
+          style={{ backgroundImage: `url(${coverUrl})` }}
+        />
+      )}
+      
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/90" />
+
+      {/* Content */}
+      <div className="relative h-full flex flex-col">
+        {/* Header met close button */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              title="Exit fullscreen"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div>
+              <h2 className="text-xl font-semibold">
+                {currentTrack?.title || currentTrack?.prompt.substring(0, 50) || "No track"}
+              </h2>
+              <p className="text-sm text-white/60 capitalize">
+                {currentTrack ? `${currentTrack.provider} • ${currentTrack.providerModel}` : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content area */}
+        <div className="flex-1 flex items-center gap-12 px-12 pb-32 overflow-hidden">
+          {/* Lyrics section - links */}
+          <div className="flex-1 flex items-center justify-center">
+            {lyrics ? (
+              <div className={`grid gap-12 max-w-6xl w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                {columns.map((column, colIndex) => (
+                  <div key={colIndex} className="space-y-2">
+                    {column.map((line, lineIndex) => (
+                      <p
+                        key={lineIndex}
+                        className="text-white/80 text-lg leading-relaxed"
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-white/40 text-lg">No lyrics available</p>
+            )}
+          </div>
+
+          {/* Album art - rechts */}
+          <div className="w-96 shrink-0">
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt="Album art"
+                className="w-full aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
+                <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Player controls onderaan */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10">
+          <div className="px-8 py-6">
+            {/* Progress bar */}
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-sm text-white/60 w-12 text-right">
+                {formatTime(currentTime)}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                disabled={!currentTrack}
+                className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
+              />
+              <span className="text-sm text-white/60 w-12">
+                {formatTime(duration)}
+              </span>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-6">
+              <button
+                onClick={handlePrevious}
+                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
+                title="Previous"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 5h2v14H6zM9 12l10 7V5z" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={togglePlay}
+                disabled={!currentTrack}
+                className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 hover:shadow-2xl hover:shadow-primary-500/50 active:scale-95 flex items-center justify-center transition-all disabled:opacity-50"
+              >
+                {isPlaying ? (
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              
+              <button
+                onClick={handleNext}
+                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
+                title="Next"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16 5h2v14h-2zM6 19l10-7L6 5z" />
+                </svg>
+              </button>
+
+              {/* Volume control */}
+              <div className="flex items-center gap-3 ml-8">
+                <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 12a1 1 0 100-2 1 1 0 000 2z" />
+                </svg>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={volume}
+                  onChange={handleVolume}
+                  className="w-24 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Player() {
   const {
     currentTrack,
@@ -13,10 +272,12 @@ export default function Player() {
     volume,
     autoPlayNext,
     showTrackDetailsPanel,
+    isFullscreen,
     playNext,
     playPrevious,
     setAutoPlayNext,
     setShowTrackDetailsPanel,
+    setIsFullscreen,
   } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
@@ -286,6 +547,11 @@ export default function Player() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Show fullscreen player when active
+  if (isFullscreen && currentTrack) {
+    return <FullscreenPlayer />;
+  }
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -390,6 +656,17 @@ export default function Player() {
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(true)}
+              disabled={!currentTrack}
+              className="p-1.5 rounded hover:bg-white/10 text-white/50 hover:text-white/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Open fullscreen player"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
             <button
               type="button"
               onClick={() => setAutoPlayNext(!autoPlayNext)}
