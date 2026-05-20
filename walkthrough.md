@@ -268,6 +268,17 @@
   - Updated `src/app/lyrics-studio/page.tsx` — language-selector (incl. `Other...` custom language input) toegevoegd boven de Structure-sectie
   - Updated `sonara-user.md` — secties geactualiseerd met nieuwe locatie van Provider en Language + versie bump
 
+## 2026-05-21 (Fullscreen player album art zichtbaar + fuzzy achtergrond)
+
+- Findings: In fullscreen mode werd album art vaak niet getoond omdat `currentTrack.coverUrl` niet op alle play/queue paden werd doorgegeven; daarnaast miste de fullscreen achtergrond een uitgesproken fuzzy ambience en waren lyrics visueel te groot.
+- Conclusions: Cover-art velden moeten consequent door alle player context-objecten lopen (play, queue, autoplay-next) en fullscreen moet een robuuste fallback hebben. Voor leesbaarheid in fullscreen hoort de lyrics-typografie compacter te zijn.
+- Actions:
+  - Updated `src/components/Player.tsx` — cover-resolve fallback toegevoegd (`coverUrl` of `/api/tracks/{id}/cover` wanneer `s3KeyCover` aanwezig is); fuzzy ambience layer toegevoegd boven diffuse artwork-bg; lyrics font size verkleind naar `text-sm md:text-base`; aria-labels toegevoegd op seek/volume sliders in fullscreen
+  - Updated `src/components/TrackList.tsx` — `coverUrl` en `s3KeyCover` toegevoegd aan `playContext` en `playTrackFromGesture(...)`
+  - Updated `src/app/page.tsx` — `coverUrl` en `s3KeyCover` toegevoegd aan `enqueueTrack`, `playContext` en fullscreen play-start object
+  - Updated `src/app/library/page.tsx` — `coverUrl` en `s3KeyCover` toegevoegd aan `enqueueTrack`, `playContext` en fullscreen play-start object
+  - Validated met `npm run build`.
+
 ## 2026-05-16 (Automatic database creation on app startup)
 
 - Findings: App assumed the PostgreSQL database and tables already existed. On a fresh deploy (e.g. Docker Compose first run), the database is created via `POSTGRES_DB` env var but tables still require manual `drizzle-kit push`. No automatic initialization on startup.

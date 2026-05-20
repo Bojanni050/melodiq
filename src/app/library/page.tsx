@@ -170,6 +170,8 @@ export default function LibraryPage() {
       lyrics: track.lyrics,
       createdAt: track.createdAt,
       error: track.error,
+      coverUrl: track.coverUrl,
+      s3KeyCover: track.s3KeyCover,
     });
   }
 
@@ -218,6 +220,8 @@ export default function LibraryPage() {
           lyrics: t.lyrics,
           createdAt: t.createdAt,
           error: t.error,
+          coverUrl: t.coverUrl,
+          s3KeyCover: t.s3KeyCover,
         }));
 
       player.setPlayContext(playContext);
@@ -246,6 +250,8 @@ export default function LibraryPage() {
         lyrics: selectedTrack.lyrics,
         createdAt: selectedTrack.createdAt,
         error: selectedTrack.error,
+        coverUrl: selectedTrack.coverUrl,
+        s3KeyCover: selectedTrack.s3KeyCover,
       });
     }
   }

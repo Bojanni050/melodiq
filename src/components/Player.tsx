@@ -79,7 +79,7 @@ function FullscreenPlayer() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const coverUrl = currentTrack?.coverUrl;
+  const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
   const lyrics = currentTrack?.lyrics || "";
   const lyricsLines = lyrics.split("\n").filter((line) => line.trim());
   
@@ -104,10 +104,13 @@ function FullscreenPlayer() {
       {/* Diffuse background met ingezoomde album art */}
       {coverUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center scale-110 blur-3xl opacity-30"
+          className="absolute inset-0 bg-cover bg-center scale-115 blur-[90px] opacity-45 saturate-150"
           style={{ backgroundImage: `url(${coverUrl})` }}
         />
       )}
+
+      {/* Fuzzy ambience layer */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70" />
       
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/90" />
@@ -148,7 +151,7 @@ function FullscreenPlayer() {
                     {column.map((line, lineIndex) => (
                       <p
                         key={lineIndex}
-                        className="text-white/80 text-lg leading-relaxed"
+                        className="text-white/80 text-sm md:text-base leading-relaxed"
                       >
                         {line}
                       </p>
@@ -194,6 +197,7 @@ function FullscreenPlayer() {
                 value={currentTime}
                 onChange={handleSeek}
                 disabled={!currentTrack}
+                aria-label="Seek position"
                 className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
               />
               <span className="text-sm text-white/60 w-12">
@@ -252,6 +256,7 @@ function FullscreenPlayer() {
                   step={0.01}
                   value={volume}
                   onChange={handleVolume}
+                  aria-label="Volume"
                   className="w-24 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
                 />
               </div>

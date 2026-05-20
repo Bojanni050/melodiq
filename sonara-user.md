@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 01:34**
+**Versie: do 01:41**
 
 > AI Music Generation Web App
 
@@ -93,6 +93,11 @@ Click a track to open a slide-out panel with:
 - Full lyrics (if vocal)
 - **Play** — stream the audio inline
 - **Download** — save the MP3 file (HD version if available)
+
+### Fullscreen Player
+- Album art now stays visible in fullscreen playback, including autoplay/next-track transitions
+- Fullscreen background now has a fuzzy ambient glow based on the current artwork
+- Lyrics are rendered in a smaller font for better readability on dense/long songs
 
 ---
 

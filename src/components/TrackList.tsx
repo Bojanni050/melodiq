@@ -176,6 +176,8 @@ export default function TrackList({
           lyrics: t.lyrics,
           createdAt: t.createdAt,
           error: t.error,
+          coverUrl: t.coverUrl,
+          s3KeyCover: t.s3KeyCover,
         }));
 
       setPlayContext(playContext);
@@ -209,6 +211,8 @@ export default function TrackList({
       lyrics: track.lyrics,
       createdAt: track.createdAt,
       error: track.error,
+      coverUrl: track.coverUrl,
+      s3KeyCover: track.s3KeyCover,
     });
   }
 
