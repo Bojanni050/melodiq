@@ -18,6 +18,7 @@ export interface Track {
   lyrics: string | null;
   createdAt: string;
   error: string | null;
+  rating?: string | null;
 }
 
 interface PlayerState {

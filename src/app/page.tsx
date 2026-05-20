@@ -25,6 +25,7 @@ interface Track {
   s3KeyHd: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
+  rating?: string | null;
 }
 
 type TabType = "create" | "library";

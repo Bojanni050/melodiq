@@ -47,6 +47,7 @@ export const tracks = pgTable("tracks", {
   error: text("error"),
   coverUrl: text("cover_url"),
   s3KeyCover: text("s3_key_cover"),
+  rating: varchar("rating", { length: 10 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

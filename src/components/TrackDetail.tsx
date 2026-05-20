@@ -21,6 +21,7 @@ interface TrackDetailProps {
     s3KeyHd: string | null;
     coverUrl?: string | null;
     s3KeyCover?: string | null;
+    rating?: string | null;
   };
   onClose: () => void;
   onPlay: (url: string) => void;
@@ -31,11 +32,35 @@ interface TrackDetailProps {
 export default function TrackDetail({ track, onClose, onPlay, onDownload, mode = "overlay" }: TrackDetailProps) {
   const [downloading, setDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
+  const [ratingLoading, setRatingLoading] = useState(false);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
     onDownload(url, hd);
     setTimeout(() => setDownloading(false), 1000);
+  }
+
+  async function handleRating(newRating: "up" | "down") {
+    // Toggle: if same rating clicked, set to null
+    const rating = currentRating === newRating ? null : newRating;
+    
+    setRatingLoading(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/rating`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+
+      if (res.ok) {
+        setCurrentRating(rating);
+      }
+    } catch (error) {
+      console.error("Failed to update rating:", error);
+    } finally {
+      setRatingLoading(false);
+    }
   }
 
   async function handleCopy(text: string, field: string) {
@@ -129,6 +154,52 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
             </>
           )}
         </div>
+
+        {/* Rating */}
+        {track.status === "done" && (
+          <div className="flex items-center justify-center gap-3 py-2">
+            <button
+              onClick={() => handleRating("up")}
+              disabled={ratingLoading}
+              className={`group relative p-3 rounded-xl transition-all duration-200 ${
+                currentRating === "up"
+                  ? "text-green-400"
+                  : "text-white/40 hover:text-green-300"
+              }`}
+              style={{
+                boxShadow: currentRating === "up"
+                  ? "inset -2px -2px 6px rgba(74, 222, 128, 0.1), inset 2px 2px 6px rgba(0, 0, 0, 0.4)"
+                  : "-2px -2px 6px rgba(255, 255, 255, 0.05), 2px 2px 6px rgba(0, 0, 0, 0.3)",
+              }}
+              title="Thumbs up"
+              aria-label="Rate track positive"
+            >
+              <svg className="w-5 h-5" fill={currentRating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleRating("down")}
+              disabled={ratingLoading}
+              className={`group relative p-3 rounded-xl transition-all duration-200 ${
+                currentRating === "down"
+                  ? "text-red-400"
+                  : "text-white/40 hover:text-red-300"
+              }`}
+              style={{
+                boxShadow: currentRating === "down"
+                  ? "inset -2px -2px 6px rgba(248, 113, 113, 0.1), inset 2px 2px 6px rgba(0, 0, 0, 0.4)"
+                  : "-2px -2px 6px rgba(255, 255, 255, 0.05), 2px 2px 6px rgba(0, 0, 0, 0.3)",
+              }}
+              title="Thumbs down"
+              aria-label="Rate track negative"
+            >
+              <svg className="w-5 h-5" fill={currentRating === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Prompt */}
         <div>
