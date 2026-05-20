@@ -82,6 +82,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_url_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS rating VARCHAR(10);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 `;
 
 export async function initializeDatabase(): Promise<void> {

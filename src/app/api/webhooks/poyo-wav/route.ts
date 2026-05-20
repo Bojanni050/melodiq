@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         eq(tracks.provider, "poyo"),
         or(
           taskId ? eq(tracks.jobId, taskId) : undefined,
+          taskId ? eq(tracks.wavJobId, taskId) : undefined,
           audioId ? eq(tracks.audioId, String(audioId)) : undefined
         )
       )

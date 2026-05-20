@@ -195,15 +195,28 @@
   - Updated `migrate.sh` — roept nu eerst init.ts aan (voor ALTER TABLE statements) voordat drizzle-kit push draait
   - Validated met `npm run build`.
 
-## 2026-05-20 (Info Auto functionaliteit verwijderd)
+## 2026-05-20 (Info Auto button verwijderd — auto-open gedrag behouden)
 
-- Findings: "Info Auto On/Off" button in Player component opende automatisch het track details panel wanneer een track afspeelde. Gebruiker wilde deze functionaliteit volledig verwijderd.
-- Conclusions: Auto-open gedrag kan verwarrend zijn voor gebruikers die zelf willen bepalen wanneer het details panel geopend is. Details button blijft beschikbaar voor handmatige controle.
+- Findings: "Info Auto On/Off" button in Player component bood een toggle voor het automatisch openen van het track details panel. Gebruiker wilde de button verwijderd maar het auto-open gedrag behouden.
+- Conclusions: Het automatisch openen van het details panel bij afspelen van een track is gewenst gedrag. De toggle button was overbodig omdat gebruikers de "Details On/Off" button kunnen gebruiken om het panel te verbergen als ze het niet willen zien.
 - Actions:
   - Removed `autoOpenNowPlayingPanel` state uit `src/lib/store.ts` — verwijderd uit PlayerState interface, initial state, setter functie en persist configuratie
   - Removed "Info Auto On/Off" button uit `src/components/Player.tsx` — alleen Autoplay en Details buttons blijven over
-  - Removed auto-open useEffect uit `src/app/page.tsx` — het track details panel opent niet meer automatisch bij afspelen
-  - Removed auto-open useEffect uit `src/app/library/page.tsx` — consistent gedrag op beide pagina's
+  - Kept auto-open useEffect in `src/app/page.tsx` — het track details panel opent automatisch bij afspelen wanneer `showTrackDetailsPanel` true is
+  - Kept auto-open useEffect in `src/app/library/page.tsx` — consistent gedrag op beide pagina's
+  - Het auto-open gedrag is nu altijd actief als het Details panel zichtbaar is — geen aparte toggle meer nodig
+  - Validated met `npm run build`.
+
+## 2026-05-20 (PoYo WAV webhook matching fix — wavJobId tracking)
+
+- Findings: Wanneer `requestWavConversion()` een WAV conversie vraag stuurt naar PoYo, krijgt het een nieuwe `task_id` terug (de WAV job ID), maar deze werd nooit opgeslagen in de database. Wanneer de `poyo-wav` webhook later binnenkomt met die WAV task_id, kan het de bijbehorende track niet vinden — de lookup zocht alleen op de originele `jobId` (van de muziek generatie) of `audioId`.
+- Conclusions: De WAV task_id moet worden opgeslagen als aparte kolom (`wav_job_id`) in de tracks tabel, zodat de webhook de track kan vinden via deze ID. Dit lost het probleem op dat WAV downloads niet verschenen na webhook ontvangst.
+- Actions:
+  - Updated `src/lib/request-wav-conversion.ts` — functie return type veranderd van `Promise<void>` naar `Promise<string | null>`; extraheert `task_id` uit response data (`response.data.task_id` of `response.data.data.task_id`); returned de WAV task_id of null bij failure; logt: `[wav] conversion task_id: {wavTaskId} for track {track.id}`
+  - Updated `src/app/api/webhooks/poyo/route.ts` — `await` de result van `requestWavConversion()` om de WAV task_id te krijgen; als een WAV task_id terugkomt, save deze naar DB: `db.update(tracks).set({ wavJobId: wavTaskId }).where(eq(tracks.id, trackForFile.id!))`
+  - Updated `src/db/schema.ts` — toegevoegd: `wavJobId: varchar("wav_job_id", { length: 255 })`
+  - Updated `src/db/init.ts` — toegevoegd aan alterTracksSql: `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);`
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — DB lookup uitgebreid om ook te matchen op `wavJobId`: `or(taskId ? eq(tracks.jobId, taskId) : undefined, taskId ? eq(tracks.wavJobId, taskId) : undefined, audioId ? eq(tracks.audioId, String(audioId)) : undefined)`
   - Validated met `npm run build`.
 
 ## 2026-05-20 (PoYo webhook — per-variant audioId + WAV conversie)

@@ -80,11 +80,19 @@ export async function POST(request: NextRequest) {
 
             // Request WAV conversion for this variant
             if (trackForFile.jobId) {
-              requestWavConversion({
+              const wavTaskId = await requestWavConversion({
                 id: trackForFile.id!,
                 jobId: trackForFile.jobId,
                 audioId: file.audio_id,
-              }).catch(() => {});
+              });
+
+              // Save WAV task_id to DB for webhook lookup
+              if (wavTaskId) {
+                await db
+                  .update(tracks)
+                  .set({ wavJobId: wavTaskId })
+                  .where(eq(tracks.id, trackForFile.id!));
+              }
             }
           }
         }
