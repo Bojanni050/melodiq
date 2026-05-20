@@ -195,6 +195,17 @@
   - Updated `migrate.sh` — roept nu eerst init.ts aan (voor ALTER TABLE statements) voordat drizzle-kit push draait
   - Validated met `npm run build`.
 
+## 2026-05-20 (Info Auto functionaliteit verwijderd)
+
+- Findings: "Info Auto On/Off" button in Player component opende automatisch het track details panel wanneer een track afspeelde. Gebruiker wilde deze functionaliteit volledig verwijderd.
+- Conclusions: Auto-open gedrag kan verwarrend zijn voor gebruikers die zelf willen bepalen wanneer het details panel geopend is. Details button blijft beschikbaar voor handmatige controle.
+- Actions:
+  - Removed `autoOpenNowPlayingPanel` state uit `src/lib/store.ts` — verwijderd uit PlayerState interface, initial state, setter functie en persist configuratie
+  - Removed "Info Auto On/Off" button uit `src/components/Player.tsx` — alleen Autoplay en Details buttons blijven over
+  - Removed auto-open useEffect uit `src/app/page.tsx` — het track details panel opent niet meer automatisch bij afspelen
+  - Removed auto-open useEffect uit `src/app/library/page.tsx` — consistent gedrag op beide pagina's
+  - Validated met `npm run build`.
+
 ## 2026-05-20 (PoYo webhook — per-variant audioId + WAV conversie)
 
 - Findings: PoYo webhook sloeg audioId alleen op voor het eerste track en vroeg maar één WAV conversie aan, terwijl PoYo meerdere variants retourneert (elk met eigen audio_id in body.files[]). Variants zonder audioId kregen geen WAV conversie.

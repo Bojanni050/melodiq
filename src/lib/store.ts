@@ -27,7 +27,6 @@ interface PlayerState {
   history: Track[];
   isPlaying: boolean;
   autoPlayNext: boolean;
-  autoOpenNowPlayingPanel: boolean;
   showTrackDetailsPanel: boolean;
   rightPanelWidth: number;
   volume: number;
@@ -47,7 +46,6 @@ interface PlayerState {
   setPlayContext: (tracks: Track[] | null) => void;
   hydrateQueueFromContext: () => void;
   setAutoPlayNext: (enabled: boolean) => void;
-  setAutoOpenNowPlayingPanel: (enabled: boolean) => void;
   setShowTrackDetailsPanel: (enabled: boolean) => void;
   setRightPanelWidth: (width: number) => void;
   setVolume: (volume: number) => void;
@@ -62,7 +60,6 @@ export const usePlayerStore = create<PlayerState>()(
       history: [],
       isPlaying: false,
       autoPlayNext: true,
-      autoOpenNowPlayingPanel: true,
       showTrackDetailsPanel: true,
       rightPanelWidth: 380,
       volume: 0.8,
@@ -184,7 +181,6 @@ export const usePlayerStore = create<PlayerState>()(
           get().hydrateQueueFromContext();
         }
       },
-      setAutoOpenNowPlayingPanel: (enabled) => set({ autoOpenNowPlayingPanel: enabled }),
       setShowTrackDetailsPanel: (enabled) => set({ showTrackDetailsPanel: enabled }),
       setRightPanelWidth: (width) =>
         set({ rightPanelWidth: Math.max(320, Math.min(560, Math.round(width))) }),
@@ -198,7 +194,6 @@ export const usePlayerStore = create<PlayerState>()(
         queue: state.queue,
         currentTrack: state.currentTrack,
         autoPlayNext: state.autoPlayNext,
-        autoOpenNowPlayingPanel: state.autoOpenNowPlayingPanel,
         showTrackDetailsPanel: state.showTrackDetailsPanel,
         rightPanelWidth: state.rightPanelWidth,
       }),

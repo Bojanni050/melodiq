@@ -34,7 +34,6 @@ export default function LibraryPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const autoOpenNowPlayingPanel = usePlayerStore((state) => state.autoOpenNowPlayingPanel);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
@@ -70,36 +69,6 @@ export default function LibraryPage() {
       return () => clearInterval(timer);
     }
   }, [tracks]);
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel || !autoOpenNowPlayingPanel || !currentTrack) return;
-
-    const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-    if (matchedTrack) {
-      setSelectedTrack(matchedTrack);
-      return;
-    }
-
-    setSelectedTrack({
-      id: currentTrack.id,
-      title: currentTrack.title,
-      provider: currentTrack.provider,
-      providerModel: currentTrack.providerModel,
-      prompt: currentTrack.prompt,
-      lyrics: currentTrack.lyrics,
-      status: currentTrack.status,
-      audioUrl: currentTrack.audioUrl,
-      audioUrlHd: currentTrack.audioUrlHd,
-      format: currentTrack.format ?? null,
-      formatHd: currentTrack.formatHd ?? null,
-      duration: currentTrack.duration ?? null,
-      createdAt: currentTrack.createdAt,
-      error: currentTrack.error,
-      s3KeyHd: currentTrack.s3KeyHd,
-      coverUrl: null,
-      s3KeyCover: null,
-    });
-  }, [showTrackDetailsPanel, autoOpenNowPlayingPanel, currentTrack, tracks]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);

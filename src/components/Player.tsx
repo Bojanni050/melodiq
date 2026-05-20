@@ -12,12 +12,10 @@ export default function Player() {
     isPlaying,
     volume,
     autoPlayNext,
-    autoOpenNowPlayingPanel,
     showTrackDetailsPanel,
     playNext,
     playPrevious,
     setAutoPlayNext,
-    setAutoOpenNowPlayingPanel,
     setShowTrackDetailsPanel,
   } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -403,19 +401,6 @@ export default function Player() {
               title="Auto play next track"
             >
               Autoplay {autoPlayNext ? "On" : "Off"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setAutoOpenNowPlayingPanel(!autoOpenNowPlayingPanel)}
-              className={`px-2 py-1 rounded text-[11px] border transition-colors ${
-                autoOpenNowPlayingPanel
-                  ? "bg-primary-500/15 border-primary-500/40 text-primary-200"
-                  : "bg-white/5 border-white/10 text-white/45 hover:text-white/65"
-              }`}
-              title="Automatically open the right info and lyrics panel for the currently playing song"
-              aria-label="Toggle automatic opening of right info and lyrics panel for current song"
-            >
-              Info Auto {autoOpenNowPlayingPanel ? "On" : "Off"}
             </button>
             <button
               type="button"
