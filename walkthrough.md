@@ -191,6 +191,7 @@
   - Updated `src/db/init.ts` — toegevoegd aan alterTracksSql: `audio_url_hd TEXT`, `s3_key_hd TEXT`, `rating VARCHAR(10)`; toegevoegd aan CREATE TABLE: `rating VARCHAR(10)` (voor nieuwe installs)
   - Created `check-columns.sh` — script om te checken welke kolommen bestaan in tracks table via PostgreSQL information_schema
   - Created `fix-columns.sh` — script om missende kolommen toe te voegen met ALTER TABLE IF NOT EXISTS
+  - Created `fix-db-schema.sh` — run-once script dat alle missende kolommen toevoegt en de volledige tracks table structuur toont; safe om meerdere keren te draaien; instructie om app container te restarten na fix
   - Updated `migrate.sh` — roept nu eerst init.ts aan (voor ALTER TABLE statements) voordat drizzle-kit push draait
   - Validated met `npm run build`.
 
