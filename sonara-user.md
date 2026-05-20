@@ -1,4 +1,5 @@
 # Sonara — User Guide
+**Versie: wo 23:07**
 
 > AI Music Generation Web App
 

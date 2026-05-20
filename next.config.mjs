@@ -1,3 +1,5 @@
+import withPWA from 'next-pwa';
+
 /** @type {import('next').NextConfig} */
 const pad2 = (value) => String(value).padStart(2, "0");
 const buildNow = new Date();
@@ -14,6 +16,11 @@ const nextConfig = {
     "bcrypt",
     "jsonwebtoken",
   ],
+  turbopack: {}, // Silence webpack/turbopack warning for next-pwa
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+})(nextConfig);

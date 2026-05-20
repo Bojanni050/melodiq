@@ -320,3 +320,8 @@
 - Findings: Rate limit Map had no cleanup, allowing unbounded entry accumulation over time.
 - Conclusions: Periodic purge prevents memory growth; setInterval guard handles Edge environments.
 - Actions: Added cleanup interval with 5-min sweep to rate limiter in generate/route.ts; validated.
+
+## 2026-05-20 (PWA ondersteuning)
+- Findings: Sonara had geen Progressive Web App functionaliteit — geen installeerbaar maken, geen offline ondersteuning, geen app manifest.
+- Conclusions: PWA-ondersteuning met next-pwa zorgt voor installable web app ervaring met service worker en manifest. Next.js 16 vereist Turbopack-compatibiliteit en correcte TypeScript manifest types. Icons placeholder met README voor toekomstige generatie.
+- Actions: Geïnstalleerd next-pwa dependency. Gemaakt src/app/manifest.ts met Sonara manifest config (name, icons, theme colors, standalone mode). Updated next.config.mjs — wrapped config met withPWA (dest: public, disable in dev, register: true), toegevoegd turbopack: {} voor compatibiliteit. Updated src/app/layout.tsx — toegevoegd PWA meta tags (theme-color, apple-mobile-web-app-capable, status-bar-style). Gemaakt public/icons/ folder met README.icons.md voor placeholder icons instructies (192×192 en 512×512 PNG, muzieknoot SVG basis). Updated .gitignore — excluded PWA-gegenereerde bestanden (sw.js, workbox-*.js, worker-*.js plus maps). Fixed manifest purpose type ("maskable" in plaats van "any maskable" voor TypeScript). Validated met npm run build — manifest route beschikbaar op /manifest.webmanifest; validated.
