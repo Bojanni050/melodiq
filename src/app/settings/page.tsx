@@ -560,6 +560,276 @@ export default function SettingsPage() {
     );
   }
 
+  function renderProviderSection(provider: ProviderConfig) {
+    return (
+      <section key={provider.id} className="section-card">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold">{provider.name}</h2>
+          <p className="text-xs text-white/30">{provider.description}</p>
+        </div>
+
+        <div className="space-y-3">
+          {provider.fields.map((field) => (
+            <div key={field.key}>
+              <label className="block text-xs font-medium text-white/50 mb-1">
+                {field.label}
+              </label>
+              <input
+                type={field.type}
+                value={values[field.key] || ""}
+                onChange={(e) => updateField(field.key, e.target.value)}
+                className="input-field font-mono text-sm"
+                placeholder={field.placeholder}
+              />
+            </div>
+          ))}
+
+          {provider.id === "openrouter" && (
+            <div className="relative">
+              <label className="block text-xs font-medium text-white/50 mb-1">Prompt Model</label>
+              {allModels.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPromptModelDropdown(!showPromptModelDropdown);
+                    setShowImageModelDropdown(false);
+                    setShowLyricsModelDropdown(false);
+                  }}
+                  className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {selectedPromptModel ? selectedPromptModel.name : "Select a model..."}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${showPromptModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="input-field font-mono text-sm text-white/60">
+                  {selectedPromptModel ? selectedPromptModel.name : "Retrieve models to select"}
+                </div>
+              )}
+
+              {showPromptModelDropdown && filteredModels.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Search models..."
+                      value={modelSearchQuery}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+                      onChange={(e) => setModelSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  {filteredModels.map((model) => {
+                    const { text, truncated } = truncateDescription(model.description, 3);
+                    const isSelected = selectedPromptModel?.id === model.id;
+                    return (
+                      <div
+                        key={model.id}
+                        className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
+                          isSelected ? "bg-primary-500/10" : ""
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">{model.name}</p>
+                            <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
+                              {text}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
+                              <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
+                              <span>Completion: {formatPrice(model.pricing.completion)}</span>
+                              {model.context_length && (
+                                <span>Context: {model.context_length.toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {truncated && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setModelDetail(model);
+                                }}
+                                className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
+                              >
+                                Read more
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => selectPromptModel(model)}
+                              className={`text-xs px-2 py-1 rounded ${
+                                isSelected
+                                  ? "bg-primary-500 text-white"
+                                  : "bg-white/10 text-white/50 hover:bg-white/20"
+                              }`}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {provider.id === "openrouter" && (
+            renderOpenRouterModelSelect({
+              label: "Lyrics Model",
+              selected: selectedLyricsModel,
+              open: showLyricsModelDropdown,
+              onToggle: () => {
+                setShowLyricsModelDropdown(!showLyricsModelDropdown);
+                setShowPromptModelDropdown(false);
+                setShowImageModelDropdown(false);
+              },
+              onSelect: selectLyricsModel,
+            })
+          )}
+
+          {provider.id === "openrouter" && (
+            <div className="relative">
+              <label className="block text-xs font-medium text-white/50 mb-1">Image Prompt Model</label>
+              {allModels.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImageModelDropdown(!showImageModelDropdown);
+                    setShowPromptModelDropdown(false);
+                    setShowLyricsModelDropdown(false);
+                  }}
+                  className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+                >
+                  <span className="truncate">
+                    {selectedImageModel ? selectedImageModel.name : "Select a model..."}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${showImageModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="input-field font-mono text-sm text-white/60">
+                  {selectedImageModel ? selectedImageModel.name : "Retrieve models to select"}
+                </div>
+              )}
+
+              {showImageModelDropdown && filteredModels.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Search models..."
+                      value={modelSearchQuery}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+                      onChange={(e) => setModelSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  {filteredModels.map((model) => {
+                    const { text, truncated } = truncateDescription(model.description, 3);
+                    const isSelected = selectedImageModel?.id === model.id;
+                    return (
+                      <div
+                        key={model.id}
+                        className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
+                          isSelected ? "bg-primary-500/10" : ""
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">{model.name}</p>
+                            <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
+                              {text}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
+                              <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
+                              <span>Completion: {formatPrice(model.pricing.completion)}</span>
+                              {model.context_length && (
+                                <span>Context: {model.context_length.toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {truncated && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setModelDetail(model);
+                                }}
+                                className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
+                              >
+                                Read more
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => selectImageModel(model)}
+                              className={`text-xs px-2 py-1 rounded ${
+                                isSelected
+                                  ? "bg-primary-500 text-white"
+                                  : "bg-white/10 text-white/50 hover:bg-white/20"
+                              }`}
+                            >
+                              {isSelected ? "Selected" : "Select"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={() => saveProvider(provider)}
+              disabled={saving[provider.id]}
+              className="btn-primary text-xs px-3 py-1.5"
+            >
+              {saving[provider.id] ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => testProvider(provider)}
+              disabled={testing[provider.id]}
+              className="btn-secondary text-xs px-3 py-1.5"
+            >
+              {testing[provider.id] ? "Testing..." : "Test Connection"}
+            </button>
+            {provider.id === "openrouter" && (
+              <button
+                onClick={() => getOpenRouterModels()}
+                disabled={testing.openrouterModels}
+                className="btn-secondary text-xs px-3 py-1.5"
+              >
+                {testing.openrouterModels ? "Loading Models..." : "Retrieve Models"}
+              </button>
+            )}
+          </div>
+
+          {testResults[provider.id] && (
+            <p
+              className={`text-xs ${
+                testResults[provider.id].success
+                  ? "text-green-400"
+                  : "text-red-400"
+              }`}
+            >
+              {testResults[provider.id].message}
+            </p>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   const filteredModels = modelSearchQuery
     ? allModels.filter(
         (m) =>
@@ -578,601 +848,369 @@ export default function SettingsPage() {
             <p className="text-xs text-white/40 mt-0.5">Configure your API providers</p>
           </div>
         </div>
-        <main className="p-4 pb-32 max-w-2xl">
-          <div className="space-y-4">
-            <section className="section-card">
-              <div className="mb-4">
-                <h2 className="text-sm font-semibold">LLM Routing</h2>
-                <p className="text-xs text-white/30">
-                  Kies apart welke provider prompt-generatie en lyric-generatie gebruikt.
+        <main className="p-4 pb-32">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 max-w-[1600px]">
+            <div className="space-y-4">
+              <section className="section-card">
+                <div className="mb-2">
+                  <h2 className="text-sm font-semibold">Music Providers</h2>
+                  <p className="text-xs text-white/30">Configure music generation APIs and webhooks.</p>
+                </div>
+              </section>
+
+              {PROVIDERS.filter((provider) => ["lyria", "poyo", "tempolor", "musicgpt"].includes(provider.id)).map((provider) =>
+                renderProviderSection(provider)
+              )}
+
+              {/* Webhooks Section */}
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">Webhooks</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Set your public app URL to auto-generate all webhook URLs, or override them individually.
                 </p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">
-                    Prompt provider
-                  </label>
-                  <select
-                    value={values.PROMPT_LLM_PROVIDER || "openrouter"}
-                    onChange={(e) => updateField("PROMPT_LLM_PROVIDER", e.target.value)}
-                    className="select-field font-mono text-sm"
-                  >
-                    <option value="openrouter">OpenRouter</option>
-                    <option value="openai">OpenAI</option>
-                  </select>
-                  <p className="text-xs text-white/25 mt-1">
-                    Used by Generate Style / prompt optimization.
-                  </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">App URL</label>
+                    <input
+                      type="text"
+                      value={values.APP_URL || ""}
+                      onChange={(e) => updateField("APP_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="https://sonara.yourdomain.com"
+                    />
+                    <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">PoYo Webhook URL</label>
+                    <input
+                      type="text"
+                      value={values.POYO_WEBHOOK_URL || ""}
+                      onChange={(e) => updateField("POYO_WEBHOOK_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">PoYo WAV Webhook URL</label>
+                    <input
+                      type="text"
+                      value={values.POYO_WAV_WEBHOOK_URL || ""}
+                      onChange={(e) => updateField("POYO_WAV_WEBHOOK_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo-wav` : "Leave empty to auto-derive"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Tempolor Webhook URL</label>
+                    <input
+                      type="text"
+                      value={values.TEMPOLOR_WEBHOOK_URL || ""}
+                      onChange={(e) => updateField("TEMPOLOR_WEBHOOK_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/tempolor` : "Leave empty to auto-derive"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">MusicGPT Webhook URL</label>
+                    <input
+                      type="text"
+                      value={values.MUSICGPT_WEBHOOK_URL || ""}
+                      onChange={(e) => updateField("MUSICGPT_WEBHOOK_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/musicgpt` : "Leave empty to auto-derive"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">MiniMax Webhook URL</label>
+                    <input
+                      type="text"
+                      value={values.MINIMAX_WEBHOOK_URL || ""}
+                      onChange={(e) => updateField("MINIMAX_WEBHOOK_URL", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => saveWebhooks()}
+                      disabled={saving.webhooks}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {saving.webhooks ? "Saving..." : "Save Webhooks"}
+                    </button>
+                  </div>
                 </div>
+              </section>
+            </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">
-                    Lyrics provider
-                  </label>
-                  <select
-                    value={values.LYRICS_LLM_PROVIDER || "openrouter"}
-                    onChange={(e) => updateField("LYRICS_LLM_PROVIDER", e.target.value)}
-                    className="select-field font-mono text-sm"
-                  >
-                    <option value="openrouter">OpenRouter</option>
-                    <option value="openai">OpenAI</option>
-                  </select>
-                  <p className="text-xs text-white/25 mt-1">
-                    Used by Generate Lyrics and Lyric Studio block generation.
-                  </p>
+            <div className="space-y-4">
+              <section className="section-card">
+                <div className="mb-2">
+                  <h2 className="text-sm font-semibold">AI & Models</h2>
+                  <p className="text-xs text-white/30">LLM routing, model selection, and cover generation.</p>
                 </div>
+              </section>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => saveLLMRouting()}
-                    disabled={saving.llmRouting}
-                    className="btn-primary text-xs px-3 py-1.5"
-                  >
-                    {saving.llmRouting ? "Saving..." : "Save LLM Routing"}
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {PROVIDERS.map((provider) => (
-              <section key={provider.id} className="section-card">
+              <section className="section-card">
                 <div className="mb-4">
-                  <h2 className="text-sm font-semibold">{provider.name}</h2>
-                  <p className="text-xs text-white/30">{provider.description}</p>
+                  <h2 className="text-sm font-semibold">LLM Routing</h2>
+                  <p className="text-xs text-white/30">
+                    Kies apart welke provider prompt-generatie en lyric-generatie gebruikt.
+                  </p>
                 </div>
 
                 <div className="space-y-3">
-                  {provider.fields.map((field) => (
-                    <div key={field.key}>
-                      <label className="block text-xs font-medium text-white/50 mb-1">
-                        {field.label}
-                      </label>
-                      <input
-                        type={field.type}
-                        value={values[field.key] || ""}
-                        onChange={(e) => updateField(field.key, e.target.value)}
-                        className="input-field font-mono text-sm"
-                        placeholder={field.placeholder}
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">
+                      Prompt provider
+                    </label>
+                    <select
+                      value={values.PROMPT_LLM_PROVIDER || "openrouter"}
+                      onChange={(e) => updateField("PROMPT_LLM_PROVIDER", e.target.value)}
+                      className="select-field font-mono text-sm"
+                    >
+                      <option value="openrouter">OpenRouter</option>
+                      <option value="openai">OpenAI</option>
+                    </select>
+                    <p className="text-xs text-white/25 mt-1">
+                      Used by Generate Style / prompt optimization.
+                    </p>
+                  </div>
 
-                  {provider.id === "openrouter" && (
-                    <div className="relative">
-                      <label className="block text-xs font-medium text-white/50 mb-1">Prompt Model</label>
-                      {allModels.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowPromptModelDropdown(!showPromptModelDropdown);
-                            setShowImageModelDropdown(false);
-                            setShowLyricsModelDropdown(false);
-                          }}
-                          className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
-                        >
-                          <span className="truncate">
-                            {selectedPromptModel ? selectedPromptModel.name : "Select a model..."}
-                          </span>
-                          <svg className={`w-4 h-4 transition-transform ${showPromptModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      ) : (
-                        <div className="input-field font-mono text-sm text-white/60">
-                          {selectedPromptModel ? selectedPromptModel.name : "Retrieve models to select"}
-                        </div>
-                      )}
-
-                      {showPromptModelDropdown && filteredModels.length > 0 && (
-                        <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
-                          <div className="p-2">
-                            <input
-                              type="text"
-                              placeholder="Search models..."
-                              value={modelSearchQuery}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                              onChange={(e) => setModelSearchQuery(e.target.value)}
-                            />
-                          </div>
-                          {filteredModels.map((model) => {
-                            const { text, truncated } = truncateDescription(model.description, 3);
-                            const isSelected = selectedPromptModel?.id === model.id;
-                            return (
-                              <div
-                                key={model.id}
-                                className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
-                                  isSelected ? "bg-primary-500/10" : ""
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-white">{model.name}</p>
-                                    <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
-                                      {text}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
-                                      <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
-                                      <span>Completion: {formatPrice(model.pricing.completion)}</span>
-                                      {model.context_length && (
-                                        <span>Context: {model.context_length.toLocaleString()}</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    {truncated && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setModelDetail(model);
-                                        }}
-                                        className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
-                                      >
-                                        Read more
-                                      </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => selectPromptModel(model)}
-                                      className={`text-xs px-2 py-1 rounded ${
-                                        isSelected
-                                          ? "bg-primary-500 text-white"
-                                          : "bg-white/10 text-white/50 hover:bg-white/20"
-                                      }`}
-                                    >
-                                      {isSelected ? "Selected" : "Select"}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {provider.id === "openrouter" && (
-                    renderOpenRouterModelSelect({
-                      label: "Lyrics Model",
-                      selected: selectedLyricsModel,
-                      open: showLyricsModelDropdown,
-                      onToggle: () => {
-                        setShowLyricsModelDropdown(!showLyricsModelDropdown);
-                        setShowPromptModelDropdown(false);
-                        setShowImageModelDropdown(false);
-                      },
-                      onSelect: selectLyricsModel,
-                    })
-                  )}
-
-                  {provider.id === "openrouter" && (
-                    <div className="relative">
-                      <label className="block text-xs font-medium text-white/50 mb-1">Image Prompt Model</label>
-                      {allModels.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowImageModelDropdown(!showImageModelDropdown);
-                            setShowPromptModelDropdown(false);
-                            setShowLyricsModelDropdown(false);
-                          }}
-                          className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
-                        >
-                          <span className="truncate">
-                            {selectedImageModel ? selectedImageModel.name : "Select a model..."}
-                          </span>
-                          <svg className={`w-4 h-4 transition-transform ${showImageModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      ) : (
-                        <div className="input-field font-mono text-sm text-white/60">
-                          {selectedImageModel ? selectedImageModel.name : "Retrieve models to select"}
-                        </div>
-                      )}
-
-                      {showImageModelDropdown && filteredModels.length > 0 && (
-                        <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
-                          <div className="p-2">
-                            <input
-                              type="text"
-                              placeholder="Search models..."
-                              value={modelSearchQuery}
-                              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                              onChange={(e) => setModelSearchQuery(e.target.value)}
-                            />
-                          </div>
-                          {filteredModels.map((model) => {
-                            const { text, truncated } = truncateDescription(model.description, 3);
-                            const isSelected = selectedImageModel?.id === model.id;
-                            return (
-                              <div
-                                key={model.id}
-                                className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
-                                  isSelected ? "bg-primary-500/10" : ""
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-white">{model.name}</p>
-                                    <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
-                                      {text}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
-                                      <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
-                                      <span>Completion: {formatPrice(model.pricing.completion)}</span>
-                                      {model.context_length && (
-                                        <span>Context: {model.context_length.toLocaleString()}</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    {truncated && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setModelDetail(model);
-                                        }}
-                                        className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
-                                      >
-                                        Read more
-                                      </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => selectImageModel(model)}
-                                      className={`text-xs px-2 py-1 rounded ${
-                                        isSelected
-                                          ? "bg-primary-500 text-white"
-                                          : "bg-white/10 text-white/50 hover:bg-white/20"
-                                      }`}
-                                    >
-                                      {isSelected ? "Selected" : "Select"}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">
+                      Lyrics provider
+                    </label>
+                    <select
+                      value={values.LYRICS_LLM_PROVIDER || "openrouter"}
+                      onChange={(e) => updateField("LYRICS_LLM_PROVIDER", e.target.value)}
+                      className="select-field font-mono text-sm"
+                    >
+                      <option value="openrouter">OpenRouter</option>
+                      <option value="openai">OpenAI</option>
+                    </select>
+                    <p className="text-xs text-white/25 mt-1">
+                      Used by Generate Lyrics and Lyric Studio block generation.
+                    </p>
+                  </div>
 
                   <div className="flex items-center gap-2 pt-1">
                     <button
-                      onClick={() => saveProvider(provider)}
-                      disabled={saving[provider.id]}
+                      onClick={() => saveLLMRouting()}
+                      disabled={saving.llmRouting}
                       className="btn-primary text-xs px-3 py-1.5"
                     >
-                      {saving[provider.id] ? "Saving..." : "Save"}
+                      {saving.llmRouting ? "Saving..." : "Save LLM Routing"}
                     </button>
-                    <button
-                      onClick={() => testProvider(provider)}
-                      disabled={testing[provider.id]}
-                      className="btn-secondary text-xs px-3 py-1.5"
-                    >
-                      {testing[provider.id] ? "Testing..." : "Test Connection"}
-                    </button>
-                    {provider.id === "openrouter" && (
-                      <button
-                        onClick={() => getOpenRouterModels()}
-                        disabled={testing.openrouterModels}
-                        className="btn-secondary text-xs px-3 py-1.5"
-                      >
-                        {testing.openrouterModels ? "Loading Models..." : "Retrieve Models"}
-                      </button>
-                    )}
                   </div>
-
-                  {testResults[provider.id] && (
-                    <p
-                      className={`text-xs ${
-                        testResults[provider.id].success
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {testResults[provider.id].message}
-                    </p>
-                  )}
                 </div>
               </section>
-            ))}
 
-            {/* Cover Art */}
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-3">Cover Art</h2>
-              <p className="text-xs text-white/40 mb-3">
-                AI-generated cover art via Pixazo Flux 1 Schnell (free).
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-white/50 mb-1 block">Pixazo API Key</label>
-                  <input
-                    type="password"
-                    value={values["PIXAZO_API_KEY"] ?? ""}
-                    onChange={(e) => updateField("PIXAZO_API_KEY", e.target.value)}
-                    placeholder="Your Pixazo subscription key"
-                    className="input-field"
-                  />
-                  <p className="text-xs text-white/30 mt-1">
-                    Get your key at pixazo.ai · Flux 1 Schnell is free
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    setSaving((prev) => ({ ...prev, coverart: true }));
-                    await fetch("/api/settings", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ key: "PIXAZO_API_KEY", value: values["PIXAZO_API_KEY"] || "" }),
-                    });
-                    setSaving((prev) => ({ ...prev, coverart: false }));
-                  }}
-                  disabled={saving.coverart}
-                  className="btn-primary text-xs px-3 py-1.5"
-                >
-                  {saving.coverart ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </section>
+              {PROVIDERS.filter((provider) => ["openrouter", "openai"].includes(provider.id)).map((provider) =>
+                renderProviderSection(provider)
+              )}
 
-            {/* Webhooks Section */}
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-3">Webhooks</h2>
-              <p className="text-xs text-white/40 mb-3">
-                Set your public app URL to auto-generate all webhook URLs, or override them individually.
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">App URL</label>
-                  <input
-                    type="text"
-                    value={values.APP_URL || ""}
-                    onChange={(e) => updateField("APP_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="https://sonara.yourdomain.com"
-                  />
-                  <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">PoYo Webhook URL</label>
-                  <input
-                    type="text"
-                    value={values.POYO_WEBHOOK_URL || ""}
-                    onChange={(e) => updateField("POYO_WEBHOOK_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">PoYo WAV Webhook URL</label>
-                  <input
-                    type="text"
-                    value={values.POYO_WAV_WEBHOOK_URL || ""}
-                    onChange={(e) => updateField("POYO_WAV_WEBHOOK_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo-wav` : "Leave empty to auto-derive"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Tempolor Webhook URL</label>
-                  <input
-                    type="text"
-                    value={values.TEMPOLOR_WEBHOOK_URL || ""}
-                    onChange={(e) => updateField("TEMPOLOR_WEBHOOK_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/tempolor` : "Leave empty to auto-derive"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">MusicGPT Webhook URL</label>
-                  <input
-                    type="text"
-                    value={values.MUSICGPT_WEBHOOK_URL || ""}
-                    onChange={(e) => updateField("MUSICGPT_WEBHOOK_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/musicgpt` : "Leave empty to auto-derive"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">MiniMax Webhook URL</label>
-                  <input
-                    type="text"
-                    value={values.MINIMAX_WEBHOOK_URL || ""}
-                    onChange={(e) => updateField("MINIMAX_WEBHOOK_URL", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
-                  />
-                </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => saveWebhooks()}
-                    disabled={saving.webhooks}
-                    className="btn-primary text-xs px-3 py-1.5"
-                  >
-                    {saving.webhooks ? "Saving..." : "Save Webhooks"}
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* S3 Storage Section */}
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-3">S3 Storage</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Endpoint</label>
-                  <input
-                    type="text"
-                    value={values.S3_ENDPOINT || ""}
-                    onChange={(e) => updateField("S3_ENDPOINT", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="https://s3.example.com or https://minio.local"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Region</label>
-                  <input
-                    type="text"
-                    value={values.AWS_REGION || ""}
-                    onChange={(e) => updateField("AWS_REGION", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="auto"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Access Key</label>
-                  <input
-                    type="password"
-                    value={values.S3_ACCESS_KEY || ""}
-                    onChange={(e) => updateField("S3_ACCESS_KEY", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="your-access-key"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Secret Key</label>
-                  <input
-                    type="password"
-                    value={values.S3_SECRET_KEY || ""}
-                    onChange={(e) => updateField("S3_SECRET_KEY", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="your-secret-key"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Bucket Name</label>
-                  <input
-                    type="text"
-                    value={values.S3_BUCKET || ""}
-                    onChange={(e) => updateField("S3_BUCKET", e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="sonara-tracks"
-                  />
-                </div>
-                <div className="flex items-center gap-2 pt-1">
+              {/* Cover Art */}
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">Cover Art</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  AI-generated cover art via Pixazo Flux 1 Schnell (free).
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-white/50 mb-1 block">Pixazo API Key</label>
+                    <input
+                      type="password"
+                      value={values["PIXAZO_API_KEY"] ?? ""}
+                      onChange={(e) => updateField("PIXAZO_API_KEY", e.target.value)}
+                      placeholder="Your Pixazo subscription key"
+                      className="input-field"
+                    />
+                    <p className="text-xs text-white/30 mt-1">
+                      Get your key at pixazo.ai · Flux 1 Schnell is free
+                    </p>
+                  </div>
                   <button
                     onClick={async () => {
-                      setSaving((prev) => ({ ...prev, s3: true }));
-                      const s3Fields = ["S3_ENDPOINT", "AWS_REGION", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_BUCKET"];
-                      for (const key of s3Fields) {
-                        await fetch("/api/settings", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ key, value: values[key] || "" }),
-                        });
-                      }
-                      setSaving((prev) => ({ ...prev, s3: false }));
+                      setSaving((prev) => ({ ...prev, coverart: true }));
+                      await fetch("/api/settings", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ key: "PIXAZO_API_KEY", value: values["PIXAZO_API_KEY"] || "" }),
+                      });
+                      setSaving((prev) => ({ ...prev, coverart: false }));
                     }}
-                    disabled={saving.s3}
+                    disabled={saving.coverart}
                     className="btn-primary text-xs px-3 py-1.5"
                   >
-                    {saving.s3 ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => testS3()}
-                    disabled={testingS3}
-                    className="btn-secondary text-xs px-3 py-1.5"
-                  >
-                    {testingS3 ? "Testing..." : "Test Connection"}
+                    {saving.coverart ? "Saving..." : "Save"}
                   </button>
                 </div>
-                {s3Status && (
-                  <p className={`text-xs ${s3Status.connected ? "text-green-400" : "text-red-400"}`}>
-                    {s3Status.message}
-                  </p>
-                )}
-                {s3Stats && (
-                  <div className="mt-3 p-2 bg-white/5 rounded border border-white/10">
-                    <div className="text-xs space-y-1">
-                      <p className="text-white/60">
-                        <span className="text-white/40">Total Size:</span> <span className="text-white/80 font-mono">{s3Stats.formattedSize}</span>
-                      </p>
-                      <p className="text-white/60">
-                        <span className="text-white/40">Objects:</span> <span className="text-white/80 font-mono">{s3Stats.objectCount.toLocaleString()}</span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => fetchS3Stats()}
-                    disabled={loadingS3Stats}
-                    className="btn-secondary text-xs px-3 py-1.5"
-                  >
-                    {loadingS3Stats ? "Loading..." : "Refresh Storage Stats"}
-                  </button>
-                </div>
-              </div>
-            </section>
+              </section>
+            </div>
 
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-3">API Logging</h2>
-              <p className="text-xs text-white/40 mb-3">
-                Store provider requests and responses in Logs for debugging.
-              </p>
-              <div className="space-y-3">
-                <label className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-white/70">Enable API logging</span>
-                  <button
-                    type="button"
-                    aria-pressed={values.ENABLE_API_LOGGING === "true"}
-                    onClick={() =>
-                      updateField(
-                        "ENABLE_API_LOGGING",
-                        values.ENABLE_API_LOGGING === "true" ? "false" : "true"
-                      )
-                    }
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                      values.ENABLE_API_LOGGING === "true"
-                        ? "bg-emerald-500/20"
-                        : "bg-white/10"
-                    }`}
-                  >
-                    <span className="sr-only">Enable API logging</span>
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                        values.ENABLE_API_LOGGING === "true" ? "translate-x-6" : ""
-                      }`}
-                    />
-                  </button>
-                </label>
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={() => saveApiLogging()}
-                    disabled={saving.apiLogging}
-                    className="btn-primary text-xs px-3 py-1.5"
-                  >
-                    {saving.apiLogging ? "Saving..." : "Save"}
-                  </button>
+            <div className="space-y-4">
+              <section className="section-card">
+                <div className="mb-2">
+                  <h2 className="text-sm font-semibold">Storage & Diagnostics</h2>
+                  <p className="text-xs text-white/30">Object storage settings and debugging controls.</p>
                 </div>
-              </div>
-            </section>
+              </section>
+
+              {/* S3 Storage Section */}
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">S3 Storage</h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Endpoint</label>
+                    <input
+                      type="text"
+                      value={values.S3_ENDPOINT || ""}
+                      onChange={(e) => updateField("S3_ENDPOINT", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="https://s3.example.com or https://minio.local"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Region</label>
+                    <input
+                      type="text"
+                      value={values.AWS_REGION || ""}
+                      onChange={(e) => updateField("AWS_REGION", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="auto"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Access Key</label>
+                    <input
+                      type="password"
+                      value={values.S3_ACCESS_KEY || ""}
+                      onChange={(e) => updateField("S3_ACCESS_KEY", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="your-access-key"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Secret Key</label>
+                    <input
+                      type="password"
+                      value={values.S3_SECRET_KEY || ""}
+                      onChange={(e) => updateField("S3_SECRET_KEY", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="your-secret-key"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-white/50 mb-1">Bucket Name</label>
+                    <input
+                      type="text"
+                      value={values.S3_BUCKET || ""}
+                      onChange={(e) => updateField("S3_BUCKET", e.target.value)}
+                      className="input-field font-mono text-sm"
+                      placeholder="sonara-tracks"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={async () => {
+                        setSaving((prev) => ({ ...prev, s3: true }));
+                        const s3Fields = ["S3_ENDPOINT", "AWS_REGION", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_BUCKET"];
+                        for (const key of s3Fields) {
+                          await fetch("/api/settings", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ key, value: values[key] || "" }),
+                          });
+                        }
+                        setSaving((prev) => ({ ...prev, s3: false }));
+                      }}
+                      disabled={saving.s3}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {saving.s3 ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => testS3()}
+                      disabled={testingS3}
+                      className="btn-secondary text-xs px-3 py-1.5"
+                    >
+                      {testingS3 ? "Testing..." : "Test Connection"}
+                    </button>
+                  </div>
+                  {s3Status && (
+                    <p className={`text-xs ${s3Status.connected ? "text-green-400" : "text-red-400"}`}>
+                      {s3Status.message}
+                    </p>
+                  )}
+                  {s3Stats && (
+                    <div className="mt-3 p-2 bg-white/5 rounded border border-white/10">
+                      <div className="text-xs space-y-1">
+                        <p className="text-white/60">
+                          <span className="text-white/40">Total Size:</span> <span className="text-white/80 font-mono">{s3Stats.formattedSize}</span>
+                        </p>
+                        <p className="text-white/60">
+                          <span className="text-white/40">Objects:</span> <span className="text-white/80 font-mono">{s3Stats.objectCount.toLocaleString()}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => fetchS3Stats()}
+                      disabled={loadingS3Stats}
+                      className="btn-secondary text-xs px-3 py-1.5"
+                    >
+                      {loadingS3Stats ? "Loading..." : "Refresh Storage Stats"}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">API Logging</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Store provider requests and responses in Logs for debugging.
+                </p>
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-white/70">Enable API logging</span>
+                    <button
+                      type="button"
+                      aria-pressed={values.ENABLE_API_LOGGING === "true"}
+                      onClick={() =>
+                        updateField(
+                          "ENABLE_API_LOGGING",
+                          values.ENABLE_API_LOGGING === "true" ? "false" : "true"
+                        )
+                      }
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        values.ENABLE_API_LOGGING === "true"
+                          ? "bg-emerald-500/20"
+                          : "bg-white/10"
+                      }`}
+                    >
+                      <span className="sr-only">Enable API logging</span>
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                          values.ENABLE_API_LOGGING === "true" ? "translate-x-6" : ""
+                        }`}
+                      />
+                    </button>
+                  </label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => saveApiLogging()}
+                      disabled={saving.apiLogging}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {saving.apiLogging ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>
+
           </div>
         </main>
       </div>
