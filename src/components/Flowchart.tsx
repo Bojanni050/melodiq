@@ -44,7 +44,7 @@ export default function Flowchart({ blocks }: FlowchartProps) {
       <div className="overflow-x-auto text-sm font-mono whitespace-nowrap text-primary-400">
         {flow}
       </div>
-      <div className="mt-2 text-xs text-white/30">Legenda: ( ) Intro/Outro, [ ] Verse, < > Pre-Chorus, { } Chorus, <=> Post-Chorus, [::] Bridge</div>
+      <div className="mt-2 text-xs text-white/30">Legenda: ( ) Intro/Outro, [ ] Verse, {'< >'} Pre-Chorus, {'{ }'} Chorus, {'<=>'} Post-Chorus, [::] Bridge</div>
     </div>
   );
 }
