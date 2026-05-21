@@ -10,7 +10,37 @@ const PROVIDERS = {
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
 };
 
-const STYLE_TAGS = ["FX Risers", "Epic", "Amapiano", "Soul", "Lo-Fi", "Orchestral", "Synthwave", "Acoustic"];
+const STYLE_TAGS = [
+  // Genre — Electronic
+  "House", "Deep House", "Tech House", "Techno", "Minimal Techno",
+  "Drum & Bass", "Jungle", "Trance", "Progressive Trance", "Psytrance",
+  "Ambient", "Dark Ambient", "Synthwave", "Retrowave", "Vaporwave",
+  "IDM", "Breakbeat", "UK Garage", "2-Step", "Dubstep",
+  // Genre — Urban & World
+  "Hip-Hop", "Boom Bap", "Trap", "Drill", "R&B",
+  "Neo Soul", "Afrobeats", "Amapiano", "Dancehall", "Reggaeton",
+  "Latin Pop", "Baile Funk", "Gqom", "Kuduro",
+  // Genre — Band & Organic
+  "Indie Pop", "Dream Pop", "Shoegaze", "Indie Rock", "Post-Rock",
+  "Folk", "Acoustic", "Singer-Songwriter", "Country", "Bluegrass",
+  "Jazz", "Nu Jazz", "Blues", "Gospel", "Soul",
+  // Genre — Cinematic & Classical
+  "Orchestral", "Cinematic", "Epic Orchestral", "Chamber Music", "Baroque",
+  // Production & Sound Design
+  "Lo-Fi", "808 Bass", "Side-Chain Compression", "Granular Synthesis",
+  "Glitchy", "Distorted", "Saturated", "Vinyl Crackle", "Tape Hiss",
+  "Pitched Vocals", "Vocal Chops", "FX Risers", "Reverse Reverb",
+  "Layered Pads", "Plucked Strings", "Prepared Piano",
+  // Mood & Texture
+  "Melancholic", "Euphoric", "Brooding", "Nostalgic", "Hypnotic",
+  "Sparse", "Lush", "Raw", "Intimate", "Eerie",
+  "Uplifting", "Tense", "Dreamy", "Aggressive", "Romantic",
+  // Vocal Style
+  "Close-Mic Vocals", "Dry Vocals", "Layered Harmonies",
+  "Falsetto", "Spoken Word", "Whispered", "No Vocals",
+  // Tempo & Energy
+  "Slow Burn", "Uptempo", "Half-Time", "Driving",
+];
 
 export default function StudioForm({
   credits,
@@ -50,6 +80,7 @@ export default function StudioForm({
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showTags, setShowTags] = useState(false);
 
   const promptCharCount = songIdea.length;
   const styleMaxChars = 1000;
@@ -326,17 +357,37 @@ Your chorus here`}
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          {STYLE_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => addStyleTag(tag)}
-              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowTags(!showTags)}
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
+          >
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 ${showTags ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              + {tag}
-            </button>
-          ))}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            {showTags ? "Hide style tags" : "Browse style tags"}
+          </button>
+
+          {showTags && (
+            <div className="mt-2 flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+              {STYLE_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => addStyleTag(tag)}
+                  className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
+                >
+                  + {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 mt-3">
