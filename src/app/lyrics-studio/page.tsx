@@ -417,7 +417,7 @@ export default function LyricsStudioPage() {
               </button>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
+            <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
               <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
                 <section className="section-card">
                   <div className="mb-4">
@@ -626,6 +626,27 @@ export default function LyricsStudioPage() {
               </aside>
 
               <section className="min-h-[620px] rounded-2xl border border-white/10 bg-[#101018]/80 p-4 lg:p-5">
+                {/* Kolom-toggles */}
+                <div className="flex justify-end mb-2">
+                  <label className="flex items-center gap-2 text-xs text-white/50 select-none">
+                    <input
+                      type="radio"
+                      name="lyric-cols"
+                      checked={blocks.length > 0 && (window?.__SONARA_LYRIC_COLS__ ?? 2) === 1}
+                      onChange={() => { window.__SONARA_LYRIC_COLS__ = 1; forceUpdate(); }}
+                    />
+                    1 kolom
+                  </label>
+                  <label className="flex items-center gap-2 ml-4 text-xs text-white/50 select-none">
+                    <input
+                      type="radio"
+                      name="lyric-cols"
+                      checked={blocks.length > 0 && (window?.__SONARA_LYRIC_COLS__ ?? 2) === 2}
+                      onChange={() => { window.__SONARA_LYRIC_COLS__ = 2; forceUpdate(); }}
+                    />
+                    2 kolommen
+                  </label>
+                </div>
                 {blocks.length === 0 ? (
                   <div className="flex min-h-[460px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
                     <p className="text-sm text-white/40">Add your first block to get started</p>
@@ -633,7 +654,12 @@ export default function LyricsStudioPage() {
                 ) : (
                   <>
                     <div
-                      className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+                      className={
+                        `grid gap-4 ` +
+                        ((typeof window !== 'undefined' && window.__SONARA_LYRIC_COLS__ === 1)
+                          ? 'grid-cols-1'
+                          : 'grid-cols-1 lg:grid-cols-2')
+                      }
                     >
                       {blocks.map((block, index) => (
                         <article
@@ -752,6 +778,14 @@ export default function LyricsStudioPage() {
                   </button>
                 </div>
               </section>
+
+              {/* Derde kolom rechts van lyric blocks */}
+              <aside className="hidden lg:block">
+                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
+                  <div className="text-white/60 text-sm font-semibold mb-2">Extra kolom</div>
+                  <div className="text-white/30 text-xs">Hier kun je extra features, notities of previews tonen.</div>
+                </div>
+              </aside>
             </div>
           </div>
         </div>
