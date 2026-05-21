@@ -609,11 +609,13 @@ export default function LyricsStudioPage() {
                     <p className="text-sm text-white/40">Add your first block to get started</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div
+                    className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+                  >
                     {blocks.map((block, index) => (
                       <article
                         key={block.id}
-                        className="rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]"
+                        className="rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col"
                         style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
                       >
                         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -677,7 +679,8 @@ export default function LyricsStudioPage() {
                           onChange={(event) => updateBlock(block.id, { content: event.target.value })}
                           placeholder="Lyrics will appear here..."
                           rows={4}
-                          className="min-h-[112px] w-full resize-none overflow-hidden rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
+                          className="min-h-[112px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
+                          style={{overflow: 'auto'}}
                         />
 
                         <div className="mt-3 flex items-center justify-between gap-3">
