@@ -21,6 +21,14 @@ interface GenerateBlockBody {
   language?: unknown;
   style?: unknown;
   existingBlocks?: unknown;
+  chorusMode?: unknown;
+  isFirstChorus?: unknown;
+}
+
+type ChorusMode = "repeat" | "variation";
+
+function isChorusMode(value: unknown): value is ChorusMode {
+  return value === "repeat" || value === "variation";
 }
 
 const BLOCK_TYPES: BlockType[] = [
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus } = body;
 
   if (!isBlockType(blockType)) {
     return NextResponse.json({ error: "blockType is required" }, { status: 400 });
@@ -86,12 +94,31 @@ export async function POST(request: NextRequest) {
   if (!Array.isArray(existingBlocks) || !existingBlocks.every(isExistingBlock)) {
     return NextResponse.json({ error: "existingBlocks must be an array" }, { status: 400 });
   }
+  if (chorusMode !== undefined && !isChorusMode(chorusMode)) {
+    return NextResponse.json({ error: "chorusMode must be repeat or variation" }, { status: 400 });
+  }
+  if (isFirstChorus !== undefined && typeof isFirstChorus !== "boolean") {
+    return NextResponse.json({ error: "isFirstChorus must be a boolean" }, { status: 400 });
+  }
 
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
   const styleText = typeof style === "string" ? style.trim() : "";
   const context = contextBlocks
     .map((block) => `[${block.label}]\n${block.content.trim()}`)
     .join("\n\n");
+
+  let chorusInstruction = "";
+  if (blockType === "chorus") {
+    if (chorusMode === "repeat") {
+      chorusInstruction = isFirstChorus
+        ? "Write one definitive, memorable chorus that can be repeated verbatim later in the song."
+        : "Keep this chorus extremely close to the first chorus and preserve the exact hook phrasing.";
+    } else if (chorusMode === "variation") {
+      chorusInstruction = isFirstChorus
+        ? "Write a strong first chorus hook that can later be varied."
+        : "Write a clear variation of the earlier chorus: keep the same core hook and message, but change some wording and line flow.";
+    }
+  }
 
   const systemPrompt = `You are a professional songwriter writing lyrics for one specific section of a song.
 
@@ -109,6 +136,7 @@ Topic: ${topic}
 Mood/Vibe: ${mood}
 Language: ${language}
 ${styleText ? `Style/Genre: ${styleText}` : ""}
+${chorusInstruction ? `Chorus instruction: ${chorusInstruction}` : ""}
 ${context ? `--- EXISTING SECTIONS (for context and coherence) ---
 ${context}
 --- END CONTEXT ---` : ""}

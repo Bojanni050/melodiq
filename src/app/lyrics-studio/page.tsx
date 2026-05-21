@@ -202,6 +202,7 @@ export default function LyricsStudioPage() {
   const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+  const [repetitiveChorus, setRepetitiveChorus] = useState(true);
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
@@ -240,6 +241,7 @@ export default function LyricsStudioPage() {
         customStructure?: string;
         language?: string;
         customLanguage?: string;
+        repetitiveChorus?: boolean;
         styleSuggestion?: string;
       };
 
@@ -253,6 +255,7 @@ export default function LyricsStudioPage() {
       if (typeof parsed.customStructure === "string") setCustomStructure(parsed.customStructure);
       if (typeof parsed.language === "string") setLanguage(parsed.language);
       if (typeof parsed.customLanguage === "string") setCustomLanguage(parsed.customLanguage);
+      if (typeof parsed.repetitiveChorus === "boolean") setRepetitiveChorus(parsed.repetitiveChorus);
       if (typeof parsed.styleSuggestion === "string") setStyleSuggestion(parsed.styleSuggestion);
 
       if (Array.isArray(parsed.blocks)) {
@@ -290,6 +293,7 @@ export default function LyricsStudioPage() {
       customStructure,
       language,
       customLanguage,
+      repetitiveChorus,
       styleSuggestion,
     };
 
@@ -303,6 +307,7 @@ export default function LyricsStudioPage() {
     language,
     lyricCols,
     mood,
+    repetitiveChorus,
     showLyricsSidebar,
     styleSuggestion,
     structure,
@@ -368,7 +373,11 @@ export default function LyricsStudioPage() {
     setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
   }
 
-  async function requestBlockLyrics(block: LyricBlock, contextBlocks: LyricBlock[]) {
+  async function requestBlockLyrics(
+    block: LyricBlock,
+    contextBlocks: LyricBlock[],
+    options?: { chorusMode?: "repeat" | "variation"; isFirstChorus?: boolean }
+  ) {
     const response = await fetch("/api/lyric-studio/generate-block", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -382,6 +391,8 @@ export default function LyricsStudioPage() {
         existingBlocks: contextBlocks
           .filter((existingBlock) => existingBlock.id !== block.id)
           .map(({ type, label, content }) => ({ type, label, content })),
+        chorusMode: options?.chorusMode,
+        isFirstChorus: options?.isFirstChorus,
       }),
     });
 
@@ -446,13 +457,33 @@ export default function LyricsStudioPage() {
       generating: true,
     }));
 
+    let firstChorusContent = "";
+
     setBlocks(generatedBlocks);
 
     for (let index = 0; index < generatedBlocks.length; index += 1) {
       const block = generatedBlocks[index];
 
+      if (block.type === "chorus" && repetitiveChorus && firstChorusContent.trim()) {
+        generatedBlocks[index] = {
+          ...block,
+          content: firstChorusContent,
+          generating: false,
+        };
+        setBlocks([...generatedBlocks]);
+        continue;
+      }
+
       try {
-        const result = await requestBlockLyrics(block, generatedBlocks);
+        const result = await requestBlockLyrics(block, generatedBlocks, {
+          chorusMode: repetitiveChorus ? "repeat" : "variation",
+          isFirstChorus: block.type === "chorus" ? !firstChorusContent.trim() : undefined,
+        });
+
+        if (block.type === "chorus" && repetitiveChorus && !firstChorusContent.trim()) {
+          firstChorusContent = result;
+        }
+
         generatedBlocks[index] = {
           ...block,
           content: result,
@@ -556,6 +587,7 @@ export default function LyricsStudioPage() {
     setShowStructureDropdown(false);
     setStructure("");
     setCustomStructure("");
+    setRepetitiveChorus(true);
     setLanguage("English");
     setCustomLanguage("");
     setStyleSuggestion("");
@@ -775,6 +807,23 @@ export default function LyricsStudioPage() {
                       ))}
                     </div>
                   </div>
+
+                  <label className="mt-4 flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={repetitiveChorus}
+                      onChange={(event) => setRepetitiveChorus(event.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      Repetitive chorus
+                      <span className="block text-xs text-white/45">
+                        {repetitiveChorus
+                          ? "AI writes one chorus and repeats it throughout the song."
+                          : "AI writes chorus variations throughout the song."}
+                      </span>
+                    </span>
+                  </label>
 
                   <button
                     type="button"

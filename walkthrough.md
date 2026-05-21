@@ -577,3 +577,16 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:43`
   - Updated `sonara-user.md` — version updated to `do 11:43`
   - Validated with `npm run build`.
+
+## 2026-05-21 do 12:16 (Lyric Studio repetitive chorus toggle)
+
+- Findings: In Lyric Studio was er geen directe manier om chorus-gedrag te sturen; meerdere chorusblokken werden steeds opnieuw gegenereerd zonder expliciete keuze tussen exact herhalen of variëren.
+- Conclusions: Voeg in de Song Structure card een `Repetitive chorus` checkbox toe (standaard aan), persist die in de local draft, en stuur de AI-generatie met expliciete chorus-mode instructies.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added `repetitiveChorus` state (default `true`) + restore/persist in `LYRICS_STUDIO_STORAGE_KEY`
+  - Updated `src/app/lyrics-studio/page.tsx` — added checkbox UI in Song Structure card with helper text for repeat vs variation mode
+  - Updated `src/app/lyrics-studio/page.tsx` — updated full-song generation flow: first chorus is generated once and reused verbatim when repetitive mode is enabled; when disabled, chorus blocks are generated with variation mode
+  - Updated `src/app/api/lyric-studio/generate-block/route.ts` — added `chorusMode` and `isFirstChorus` request handling + validation + prompt instructions for repeat/variation behavior
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:16`
+  - Updated `sonara-user.md` — version updated to `do 12:16` and Lyric Studio docs include repetitive chorus option
+  - Validated with `npm run build`.
