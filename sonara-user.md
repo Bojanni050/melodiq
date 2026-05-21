@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 02:19**
+**Versie: do 05:34**
 
 > AI Music Generation Web App
 
@@ -13,7 +13,7 @@ Sonara is a web app that lets you create music using AI providers. You describe 
 
 ## Quick Start
 
-1. **Open the Studio** — the Create tab is the main workspace
+1. **Open the Studio** — the Create page is the main workspace
 2. **Describe your song** — use the Style & Prompt textarea to describe genre, mood, instrumentation, tempo
 3. **Set lyrics** — either write your own or use the AI lyrics generator (see below)
 4. **Pick a provider** — choose from Lyria, PoYo (Suno), or Tempolor
@@ -93,8 +93,8 @@ Lyria tracks complete in the same request. PoYo and Tempolor tracks may take lon
 
 ## Recent Tracks & Library
 
-- **Recent Tracks** — shown alongside the form on the Create tab. Click any track to open the detail panel.
-- **Library tab** — browse all your tracks in a full list view.
+- **Recent Tracks** — shown alongside the form on the Studio Create page. Click any track to open the detail panel.
+- **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
@@ -124,4 +124,4 @@ The Settings page lets you configure each provider independently:
 
 ## Tips
 
- On desktop Create view, **Generate Track** now stays anchored at the bottom of the Studio column while the form content above it scrolls
+- On desktop Studio Create page, **Generate Track** stays anchored at the bottom of the Studio column while the form content above it scrolls

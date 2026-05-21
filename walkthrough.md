@@ -508,3 +508,22 @@
   - Updated `src/app/page.tsx` — form-kolom aangepast naar desktop sticky + vaste hoogte (`xl:sticky`, `xl:top-16`, `xl:h-[calc(100vh-10rem)]`)
   - Updated `src/components/StudioForm.tsx` — form herstructureerd naar flex-kolom met scrollbare contentzone en non-viewport-sticky generate container onderaan
   - Validated with `npm run build`.
+
+## 2026-05-21 do 05:29 (Studio-kolom sticky precisie boven player)
+
+- Findings: De sticky hoogte van de Studio-kolom was nog gebaseerd op een vaste rem-waarde, waardoor de uitlijning per schermhoogte kon verschillen.
+- Conclusions: Gebruik gedeelde CSS-variabelen voor player-hoogte, sticky-top en ondermarge zodat de kolomhoogte exact berekend wordt uit de viewport.
+- Actions:
+  - Updated `src/app/globals.css` — added `--player-height`, `--studio-top-offset`, `--studio-bottom-gap`
+  - Updated `src/app/layout.tsx` — bottom padding nu via `pb-[var(--player-height)]`
+  - Updated `src/app/page.tsx` — sticky top en kolomhoogte nu op basis van CSS variabelen (`calc(100vh - top - player - gap)`)
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:29`
+
+## 2026-05-21 do 05:34 (Studio zonder Create/Library submenu)
+
+- Findings: De Studio-pagina had bovenaan een Create/Library submenu, terwijl de gewenste flow alleen de Create-ervaring op deze pagina is.
+- Conclusions: Verwijder tabs-state en submenu-UI uit de Studio-pagina en render de Create-layout altijd direct.
+- Actions:
+  - Updated `src/app/page.tsx` — removed `useUIStore` tab state, removed Create/Library top submenu, removed conditional tab rendering, and kept only the Create layout
+  - Updated `sonara-user.md` — wording aangepast naar Studio Create page + Library page via sidebar
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:34`

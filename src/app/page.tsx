@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { useStudioStore, usePlayerStore, useUIStore, usePlaylistStore } from "@/lib/store";
+import { useStudioStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
 
 interface Track {
   id: string;
@@ -28,16 +28,12 @@ interface Track {
   rating?: string | null;
 }
 
-type TabType = "create" | "library";
-
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null });
   const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
-  const activeTab = useUIStore((state) => state.activeTab);
-  const setActiveTab = useUIStore((state) => state.setActiveTab);
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
@@ -321,8 +317,6 @@ export default function HomePage() {
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
-
-    setActiveTab("create");
   }
 
   function handlePlayTrack(url: string) {
@@ -422,73 +416,27 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Top bar */}
-          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-            <div className="flex items-center justify-between px-4 py-2">
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setActiveTab("create")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === "create" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => setActiveTab("library")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === "library" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  Library
-                </button>
-              </div>
-
-              <select aria-label="Version selector" className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/50">
-                <option>v1</option>
-              </select>
-            </div>
-          </div>
-
           <main className="p-4 pb-32">
-            {activeTab === "create" ? (
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Form column */}
-                <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-16 xl:h-[calc(100vh-10rem)]">
-                  <StudioForm
-                    credits={credits}
-                    onGenerate={handleGenerate}
-                    onOptimize={handleOptimize}
-                    onGenerateLyrics={handleGenerateLyrics}
-                    onGenerateTitle={handleGenerateTitle}
-                  />
-                </div>
-
-                {/* Track list column */}
-                <div className="xl:col-span-2">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
-                    <span className="text-xs text-white/30">{tracks.length} tracks</span>
-                  </div>
-                  <TrackList
-                    tracks={tracks}
-                    autoQueueAfterPlay
-                    isGenerating={generating}
-                    onSelect={(t) => setSelectedTrack(t)}
-                    onDelete={handleDeleteTrack}
-                    onReusePrompt={handleReusePrompt}
-                    onAddToQueue={handleAddToQueue}
-                    onAddToPlaylist={handleAddToPlaylist}
-                    playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-                    onTitleUpdate={handleTitleUpdate}
-                  />
-                </div>
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* Form column */}
+              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-[var(--studio-top-offset)] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+                <StudioForm
+                  credits={credits}
+                  onGenerate={handleGenerate}
+                  onOptimize={handleOptimize}
+                  onGenerateLyrics={handleGenerateLyrics}
+                  onGenerateTitle={handleGenerateTitle}
+                />
               </div>
-            ) : (
-              <div className="max-w-4xl">
-                <h2 className="text-lg font-semibold mb-4">Library</h2>
+
+              {/* Track list column */}
+              <div className="xl:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
+                  <span className="text-xs text-white/30">{tracks.length} tracks</span>
+                </div>
                 <TrackList
-                  tracks={tracks.filter((t) => t.status === "done")}
+                  tracks={tracks}
                   autoQueueAfterPlay
                   isGenerating={generating}
                   onSelect={(t) => setSelectedTrack(t)}
@@ -500,7 +448,7 @@ export default function HomePage() {
                   onTitleUpdate={handleTitleUpdate}
                 />
               </div>
-            )}
+            </div>
           </main>
         </div>
 
