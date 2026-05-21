@@ -115,8 +115,14 @@ const PROVIDERS: ProviderConfig[] = [
         placeholder: "sk-...",
       },
       {
-        key: "OPENAI_MODEL",
-        label: "Model",
+        key: "OPENAI_PROMPT_MODEL",
+        label: "Prompt Model",
+        type: "text",
+        placeholder: "gpt-4o",
+      },
+      {
+        key: "OPENAI_LYRICS_MODEL",
+        label: "Lyrics Model",
         type: "text",
         placeholder: "gpt-4o",
       },
@@ -142,6 +148,17 @@ function truncateDescription(text: string, maxLines: number = 3): { text: string
   return { text: words.slice(0, maxWords).join(" ") + "...", truncated: true };
 }
 
+function createModelPlaceholder(id: string): LLMModel {
+  return {
+    id,
+    name: id,
+    description: "",
+    pricing: { prompt: "0", completion: "0" },
+    context_length: 0,
+    architecture: { modality: "", tokenizer: "", instruct_type: "" },
+  };
+}
+
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
@@ -150,9 +167,11 @@ export default function SettingsPage() {
   const [models, setModels] = useState<LLMModel[]>([]);
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showPromptModelDropdown, setShowPromptModelDropdown] = useState(false);
+  const [showLyricsModelDropdown, setShowLyricsModelDropdown] = useState(false);
   const [showImageModelDropdown, setShowImageModelDropdown] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<LLMModel | null>(null);
+  const [selectedPromptModel, setSelectedPromptModel] = useState<LLMModel | null>(null);
+  const [selectedLyricsModel, setSelectedLyricsModel] = useState<LLMModel | null>(null);
   const [selectedImageModel, setSelectedImageModel] = useState<LLMModel | null>(null);
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
   const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
@@ -166,12 +185,25 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings");
       if (res.ok) {
         const data = await res.json();
-        setValues(data);
-        if (data.OPENROUTER_MODEL) {
-          setSelectedModel({ id: data.OPENROUTER_MODEL, name: data.OPENROUTER_MODEL, description: "", pricing: { prompt: "0", completion: "0" }, context_length: 0, architecture: { modality: "", tokenizer: "", instruct_type: "" } });
+        const settings = {
+          ...data,
+          PROMPT_LLM_PROVIDER: data.PROMPT_LLM_PROVIDER || "openrouter",
+          LYRICS_LLM_PROVIDER: data.LYRICS_LLM_PROVIDER || "openrouter",
+          OPENROUTER_PROMPT_MODEL: data.OPENROUTER_PROMPT_MODEL || data.OPENROUTER_MODEL || "",
+          OPENROUTER_LYRICS_MODEL: data.OPENROUTER_LYRICS_MODEL || data.OPENROUTER_MODEL || "",
+          OPENAI_PROMPT_MODEL: data.OPENAI_PROMPT_MODEL || data.OPENAI_MODEL || "gpt-4o",
+          OPENAI_LYRICS_MODEL: data.OPENAI_LYRICS_MODEL || data.OPENAI_MODEL || "gpt-4o",
+        };
+
+        setValues(settings);
+        if (settings.OPENROUTER_PROMPT_MODEL) {
+          setSelectedPromptModel(createModelPlaceholder(settings.OPENROUTER_PROMPT_MODEL));
         }
-        if (data.OPENROUTER_IMAGE_MODEL) {
-          setSelectedImageModel({ id: data.OPENROUTER_IMAGE_MODEL, name: data.OPENROUTER_IMAGE_MODEL, description: "", pricing: { prompt: "0", completion: "0" }, context_length: 0, architecture: { modality: "", tokenizer: "", instruct_type: "" } });
+        if (settings.OPENROUTER_LYRICS_MODEL) {
+          setSelectedLyricsModel(createModelPlaceholder(settings.OPENROUTER_LYRICS_MODEL));
+        }
+        if (settings.OPENROUTER_IMAGE_MODEL) {
+          setSelectedImageModel(createModelPlaceholder(settings.OPENROUTER_IMAGE_MODEL));
         }
       }
 
@@ -221,10 +253,21 @@ export default function SettingsPage() {
       setModels(fetchedModels);
       setModelSearchQuery("");
 
-      if (values.OPENROUTER_MODEL) {
-        const matched = fetchedModels.find((m) => m.id === values.OPENROUTER_MODEL);
+      if (values.OPENROUTER_PROMPT_MODEL || values.OPENROUTER_MODEL) {
+        const matched = fetchedModels.find(
+          (m) => m.id === (values.OPENROUTER_PROMPT_MODEL || values.OPENROUTER_MODEL)
+        );
         if (matched) {
-          setSelectedModel(matched);
+          setSelectedPromptModel(matched);
+        }
+      }
+
+      if (values.OPENROUTER_LYRICS_MODEL || values.OPENROUTER_MODEL) {
+        const matched = fetchedModels.find(
+          (m) => m.id === (values.OPENROUTER_LYRICS_MODEL || values.OPENROUTER_MODEL)
+        );
+        if (matched) {
+          setSelectedLyricsModel(matched);
         }
       }
 
@@ -267,7 +310,13 @@ export default function SettingsPage() {
       await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "OPENROUTER_MODEL", value: values.OPENROUTER_MODEL || "" }),
+        body: JSON.stringify({ key: "OPENROUTER_PROMPT_MODEL", value: values.OPENROUTER_PROMPT_MODEL || values.OPENROUTER_MODEL || "" }),
+      });
+
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "OPENROUTER_LYRICS_MODEL", value: values.OPENROUTER_LYRICS_MODEL || values.OPENROUTER_MODEL || "" }),
       });
 
       await fetch("/api/settings", {
@@ -275,6 +324,17 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: "OPENROUTER_IMAGE_MODEL", value: values.OPENROUTER_IMAGE_MODEL || "" }),
       });
+    }
+
+    if (provider.id === "openai") {
+      const openAiFields = ["OPENAI_PROMPT_MODEL", "OPENAI_LYRICS_MODEL"];
+      for (const key of openAiFields) {
+        await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key, value: values[key] || "" }),
+        });
+      }
     }
 
     setSaving((prev) => ({ ...prev, [provider.id]: false }));
@@ -364,16 +424,140 @@ export default function SettingsPage() {
     setSaving((prev) => ({ ...prev, apiLogging: false }));
   }
 
-  function selectModel(model: LLMModel) {
-    setSelectedModel(model);
-    setValues((prev) => ({ ...prev, OPENROUTER_MODEL: model.id }));
-    setShowModelDropdown(false);
+  async function saveLLMRouting() {
+    setSaving((prev) => ({ ...prev, llmRouting: true }));
+    const routingFields = ["PROMPT_LLM_PROVIDER", "LYRICS_LLM_PROVIDER"];
+    for (const key of routingFields) {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value: values[key] || "openrouter" }),
+      });
+    }
+    setSaving((prev) => ({ ...prev, llmRouting: false }));
+  }
+
+  function selectPromptModel(model: LLMModel) {
+    setSelectedPromptModel(model);
+    setValues((prev) => ({ ...prev, OPENROUTER_PROMPT_MODEL: model.id }));
+    setShowPromptModelDropdown(false);
+  }
+
+  function selectLyricsModel(model: LLMModel) {
+    setSelectedLyricsModel(model);
+    setValues((prev) => ({ ...prev, OPENROUTER_LYRICS_MODEL: model.id }));
+    setShowLyricsModelDropdown(false);
   }
 
   function selectImageModel(model: LLMModel) {
     setSelectedImageModel(model);
     setValues((prev) => ({ ...prev, OPENROUTER_IMAGE_MODEL: model.id }));
     setShowImageModelDropdown(false);
+  }
+
+  function renderOpenRouterModelSelect({
+    label,
+    selected,
+    open,
+    onToggle,
+    onSelect,
+  }: {
+    label: string;
+    selected: LLMModel | null;
+    open: boolean;
+    onToggle: () => void;
+    onSelect: (model: LLMModel) => void;
+  }) {
+    return (
+      <div className="relative">
+        <label className="block text-xs font-medium text-white/50 mb-1">{label}</label>
+        {allModels.length > 0 ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
+          >
+            <span className="truncate">
+              {selected ? selected.name : "Select a model..."}
+            </span>
+            <svg className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        ) : (
+          <div className="input-field font-mono text-sm text-white/60">
+            {selected ? selected.name : "Retrieve models to select"}
+          </div>
+        )}
+
+        {open && filteredModels.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
+            <div className="p-2">
+              <input
+                type="text"
+                placeholder="Search models..."
+                value={modelSearchQuery}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+                onChange={(e) => setModelSearchQuery(e.target.value)}
+              />
+            </div>
+            {filteredModels.map((model) => {
+              const { text, truncated } = truncateDescription(model.description, 3);
+              const isSelected = selected?.id === model.id;
+              return (
+                <div
+                  key={model.id}
+                  className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
+                    isSelected ? "bg-primary-500/10" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white">{model.name}</p>
+                      <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
+                        {text}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
+                        <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
+                        <span>Completion: {formatPrice(model.pricing.completion)}</span>
+                        {model.context_length && (
+                          <span>Context: {model.context_length.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {truncated && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModelDetail(model);
+                          }}
+                          className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
+                        >
+                          Read more
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onSelect(model)}
+                        className={`text-xs px-2 py-1 rounded ${
+                          isSelected
+                            ? "bg-primary-500 text-white"
+                            : "bg-white/10 text-white/50 hover:bg-white/20"
+                        }`}
+                      >
+                        {isSelected ? "Selected" : "Select"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   }
 
   const filteredModels = modelSearchQuery
@@ -396,6 +580,61 @@ export default function SettingsPage() {
         </div>
         <main className="p-4 pb-32 max-w-2xl">
           <div className="space-y-4">
+            <section className="section-card">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold">LLM Routing</h2>
+                <p className="text-xs text-white/30">
+                  Kies apart welke provider prompt-generatie en lyric-generatie gebruikt.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">
+                    Prompt provider
+                  </label>
+                  <select
+                    value={values.PROMPT_LLM_PROVIDER || "openrouter"}
+                    onChange={(e) => updateField("PROMPT_LLM_PROVIDER", e.target.value)}
+                    className="select-field font-mono text-sm"
+                  >
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="openai">OpenAI</option>
+                  </select>
+                  <p className="text-xs text-white/25 mt-1">
+                    Used by Generate Style / prompt optimization.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">
+                    Lyrics provider
+                  </label>
+                  <select
+                    value={values.LYRICS_LLM_PROVIDER || "openrouter"}
+                    onChange={(e) => updateField("LYRICS_LLM_PROVIDER", e.target.value)}
+                    className="select-field font-mono text-sm"
+                  >
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="openai">OpenAI</option>
+                  </select>
+                  <p className="text-xs text-white/25 mt-1">
+                    Used by Generate Lyrics and Lyric Studio block generation.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => saveLLMRouting()}
+                    disabled={saving.llmRouting}
+                    className="btn-primary text-xs px-3 py-1.5"
+                  >
+                    {saving.llmRouting ? "Saving..." : "Save LLM Routing"}
+                  </button>
+                </div>
+              </div>
+            </section>
+
             {PROVIDERS.map((provider) => (
               <section key={provider.id} className="section-card">
                 <div className="mb-4">
@@ -421,30 +660,31 @@ export default function SettingsPage() {
 
                   {provider.id === "openrouter" && (
                     <div className="relative">
-                      <label className="block text-xs font-medium text-white/50 mb-1">Lyrics & Prompt Model</label>
+                      <label className="block text-xs font-medium text-white/50 mb-1">Prompt Model</label>
                       {allModels.length > 0 ? (
                         <button
                           type="button"
                           onClick={() => {
-                            setShowModelDropdown(!showModelDropdown);
+                            setShowPromptModelDropdown(!showPromptModelDropdown);
                             setShowImageModelDropdown(false);
+                            setShowLyricsModelDropdown(false);
                           }}
                           className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
                         >
                           <span className="truncate">
-                            {selectedModel ? selectedModel.name : "Select a model..."}
+                            {selectedPromptModel ? selectedPromptModel.name : "Select a model..."}
                           </span>
-                          <svg className={`w-4 h-4 transition-transform ${showModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 transition-transform ${showPromptModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                       ) : (
                         <div className="input-field font-mono text-sm text-white/60">
-                          {selectedModel ? selectedModel.name : "Retrieve models to select"}
+                          {selectedPromptModel ? selectedPromptModel.name : "Retrieve models to select"}
                         </div>
                       )}
 
-                      {showModelDropdown && filteredModels.length > 0 && (
+                      {showPromptModelDropdown && filteredModels.length > 0 && (
                         <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
                           <div className="p-2">
                             <input
@@ -457,7 +697,7 @@ export default function SettingsPage() {
                           </div>
                           {filteredModels.map((model) => {
                             const { text, truncated } = truncateDescription(model.description, 3);
-                            const isSelected = selectedModel?.id === model.id;
+                            const isSelected = selectedPromptModel?.id === model.id;
                             return (
                               <div
                                 key={model.id}
@@ -494,7 +734,7 @@ export default function SettingsPage() {
                                     )}
                                     <button
                                       type="button"
-                                      onClick={() => selectModel(model)}
+                                      onClick={() => selectPromptModel(model)}
                                       className={`text-xs px-2 py-1 rounded ${
                                         isSelected
                                           ? "bg-primary-500 text-white"
@@ -514,6 +754,20 @@ export default function SettingsPage() {
                   )}
 
                   {provider.id === "openrouter" && (
+                    renderOpenRouterModelSelect({
+                      label: "Lyrics Model",
+                      selected: selectedLyricsModel,
+                      open: showLyricsModelDropdown,
+                      onToggle: () => {
+                        setShowLyricsModelDropdown(!showLyricsModelDropdown);
+                        setShowPromptModelDropdown(false);
+                        setShowImageModelDropdown(false);
+                      },
+                      onSelect: selectLyricsModel,
+                    })
+                  )}
+
+                  {provider.id === "openrouter" && (
                     <div className="relative">
                       <label className="block text-xs font-medium text-white/50 mb-1">Image Prompt Model</label>
                       {allModels.length > 0 ? (
@@ -521,7 +775,8 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => {
                             setShowImageModelDropdown(!showImageModelDropdown);
-                            setShowModelDropdown(false);
+                            setShowPromptModelDropdown(false);
+                            setShowLyricsModelDropdown(false);
                           }}
                           className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
                         >

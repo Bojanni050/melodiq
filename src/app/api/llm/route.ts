@@ -1,9 +1,13 @@
 export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { apiLogs } from "@/db/schema";
+import { logApi } from "@/lib/logger";
+import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
-import { getSetting } from "@/lib/settings";
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "AI provider failed";
+}
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -11,7 +15,17 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
 
-  const { type, idea, context, structure, customStructure, vocalGender, provider, language, instrumental } = await request.json();
+  const {
+    type,
+    idea,
+    context,
+    structure,
+    customStructure,
+    vocalGender,
+    provider,
+    language,
+    instrumental,
+  } = await request.json();
 
   if (!idea || typeof idea !== "string") {
     return NextResponse.json({ error: "idea is required" }, { status: 400 });
@@ -24,9 +38,11 @@ export async function POST(request: NextRequest) {
   }
 
   let result: string;
+  let llmProvider = "openrouter";
 
   try {
     if (type === "optimize") {
+      llmProvider = await getLLMProviderForPurpose("prompt");
       const systemPrompt = `You are a creative assistant that generates optimized music style prompts for Suno.
 
 The song's language, structure, theme, mood, tempo, key, and BPM are provided via the app. 
@@ -56,8 +72,9 @@ ${context ? `Theme/Mood: ${context}` : ""}
 ${structure === "ai-choose" ? "Structure: AI chooses the best structure." : structure ? `Structure: ${customStructure || structure}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt);
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt" });
     } else if (type === "lyrics") {
+      llmProvider = await getLLMProviderForPurpose("lyrics");
       if (instrumental) {
         return NextResponse.json({ lyrics: "" });
       }
@@ -73,7 +90,7 @@ Lyrics rules:
 - Vocal and delivery instructions must always be inside the section title brackets — never added separately inside the lyrics body.
 - All text inside square brackets [] must always be written in English, regardless of the main lyric language.
 - Where vocal clarity or dryness is implied by the context, incorporate descriptors such as 'dry vocals', 'close-mic', 'upfront', 'no room sound', 'tight mix', or 'minimal ambience' inside the section label.
-- Avoid overusing exaggerated emotional descriptors such as 'emotional', 'epic', 'powerful', or 'massive'. Favor controlled, nuanced vocal direction instead.
+- Avoid overusing exaggerated emotional descriptors such as 'emotional', 'epic', 'powerful', or 'massive'. Favor controlled, nuanced direction instead.
 - Write with vivid imagery, emotional specificity, and poetic freedom. Avoid literal or generic phrasing. Prioritize natural, grammatically correct language unless the user specifies otherwise.`;
 
       const userPrompt = `${idea}
@@ -83,15 +100,15 @@ ${context ? `Topic/Mood: ${context}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}
 ${structure === "ai-choose" ? "Choose the song structure that best fits the song idea and mood." : structure ? `Song structure:\n${customStructure || structure}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt);
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics" });
     } else {
       return NextResponse.json({ error: "Unknown type" }, { status: 400 });
     }
 
     await logApi({
-      userId: userId,
+      userId,
       type: "llm",
-      provider: "openrouter",
+      provider: llmProvider,
       endpoint: "/api/llm",
       request: JSON.stringify({ type, idea, provider, language }),
       response: JSON.stringify({ result: result?.substring(0, 200) }),
@@ -100,104 +117,21 @@ ${structure === "ai-choose" ? "Choose the song structure that best fits the song
     });
 
     return NextResponse.json({ result });
-  } catch (error: any) {
+  } catch (error) {
+    const message = getErrorMessage(error);
+
     await logApi({
-      userId: userId,
+      userId,
       type: "llm",
-      provider: "openrouter",
+      provider: llmProvider,
       endpoint: "/api/llm",
       request: JSON.stringify({ type, idea }),
-      response: JSON.stringify({ error: error.message }),
-      statusCode: error.statusCode || 500,
+      response: JSON.stringify({ error: message }),
+      statusCode: 500,
       duration: Date.now() - startTime,
     });
 
-    return NextResponse.json(
-      { error: error.message || "AI provider failed" },
-      { status: 500 }
-    );
-  }
-}
-
-async function callLLM(prompt: string, systemPrompt: string): Promise<string> {
-  const axios = (await import("axios")).default;
-
-  const OPENROUTER_KEY =
-    (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
-  const OPENROUTER_MODEL =
-    (await getSetting("OPENROUTER_MODEL")) || process.env.OPENROUTER_MODEL || "openai/gpt-5";
-  const OPENAI_KEY =
-    (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
-  const OPENAI_MODEL =
-    (await getSetting("OPENAI_MODEL")) || process.env.OPENAI_MODEL || "gpt-4o";
-
-  if (OPENROUTER_KEY) {
-    const res = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: OPENROUTER_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-        },
-      }
-    );
-    return res.data.choices[0].message.content;
-  }
-
-  if (OPENAI_KEY) {
-    const res = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: OPENAI_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return res.data.choices[0].message.content;
-  }
-
-  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.");
-}
-
-async function logApi(data: {
-  userId: string;
-  type: string;
-  provider: string;
-  endpoint: string;
-  request: string;
-  response?: string;
-  statusCode?: number;
-  duration?: number;
-}) {
-  if (process.env.ENABLE_API_LOGGING !== "true") return;
-  try {
-    await db.insert(apiLogs).values({
-      userId: data.userId,
-      type: data.type,
-      provider: data.provider,
-      endpoint: data.endpoint,
-      request: data.request,
-      response: data.response || null,
-      statusCode: data.statusCode || null,
-      duration: data.duration || null,
-    });
-  } catch (e) {
-    console.error("Failed to log API call:", e);
+    console.error(error);
+    return NextResponse.json({ error: message || "AI provider failed" }, { status: 500 });
   }
 }

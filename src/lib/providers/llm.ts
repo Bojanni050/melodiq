@@ -1,13 +1,67 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
-async function callLLM(prompt: string, systemPrompt: string, openRouterModelOverride?: string) {
-  const OPENROUTER_KEY = await getSetting("OPENROUTER_API_KEY");
-  const OPENROUTER_MODEL = openRouterModelOverride || (await getSetting("OPENROUTER_MODEL")) || "openai/gpt-5";
-  const OPENAI_KEY = await getSetting("OPENAI_API_KEY");
-  const OPENAI_MODEL = await getSetting("OPENAI_MODEL") || "gpt-4o";
+export type LLMProvider = "openrouter" | "openai";
+export type LLMPurpose = "prompt" | "lyrics" | "image" | "default";
 
-  if (OPENROUTER_KEY) {
+interface CallLLMOptions {
+  purpose?: LLMPurpose;
+  provider?: LLMProvider;
+  openRouterModelOverride?: string;
+  openAiModelOverride?: string;
+}
+
+function normalizeProvider(value: string): LLMProvider | "" {
+  if (value === "openrouter" || value === "openai") return value;
+  return "";
+}
+
+async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""> {
+  if (purpose === "prompt") {
+    return normalizeProvider(await getSetting("PROMPT_LLM_PROVIDER")) || "openrouter";
+  }
+  if (purpose === "lyrics") {
+    return normalizeProvider(await getSetting("LYRICS_LLM_PROVIDER")) || "openrouter";
+  }
+  if (purpose === "image") {
+    return "openrouter";
+  }
+  return normalizeProvider(await getSetting("LLM_PROVIDER"));
+}
+
+export async function getLLMProviderForPurpose(purpose: LLMPurpose): Promise<LLMProvider> {
+  return (await getPurposeProvider(purpose)) || "openrouter";
+}
+
+export async function callLLM(
+  prompt: string,
+  systemPrompt: string,
+  options: string | CallLLMOptions = {}
+) {
+  const normalizedOptions =
+    typeof options === "string" ? { openRouterModelOverride: options } : options;
+  const purpose = normalizedOptions.purpose || "default";
+  const requestedProvider =
+    normalizedOptions.provider || (await getPurposeProvider(purpose)) || "openrouter";
+
+  const OPENROUTER_KEY = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
+  const OPENROUTER_MODEL =
+    normalizedOptions.openRouterModelOverride ||
+    (purpose === "prompt" ? await getSetting("OPENROUTER_PROMPT_MODEL") : "") ||
+    (purpose === "lyrics" ? await getSetting("OPENROUTER_LYRICS_MODEL") : "") ||
+    (await getSetting("OPENROUTER_MODEL")) ||
+    process.env.OPENROUTER_MODEL ||
+    "openai/gpt-5";
+  const OPENAI_KEY = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
+  const OPENAI_MODEL =
+    normalizedOptions.openAiModelOverride ||
+    (purpose === "prompt" ? await getSetting("OPENAI_PROMPT_MODEL") : "") ||
+    (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
+    (await getSetting("OPENAI_MODEL")) ||
+    process.env.OPENAI_MODEL ||
+    "gpt-4o";
+
+  if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
@@ -28,7 +82,7 @@ async function callLLM(prompt: string, systemPrompt: string, openRouterModelOver
     return res.data.choices[0].message.content;
   }
 
-  if (OPENAI_KEY) {
+  if (requestedProvider === "openai" && OPENAI_KEY) {
     const res = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -48,7 +102,7 @@ async function callLLM(prompt: string, systemPrompt: string, openRouterModelOver
     return res.data.choices[0].message.content;
   }
 
-  throw new Error("No LLM provider configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY in settings.");
+  throw new Error(`No ${requestedProvider} LLM provider configured. Check the selected provider and API key in Settings.`);
 }
 
 export async function generateTitle(lyrics: string): Promise<string> {
@@ -67,7 +121,7 @@ Rules:
 - Do not invent words not present in or strongly implied by the lyrics
 - Prefer the exact words from the lyrics over paraphrasing`;
 
-  return callLLM(lyrics, systemPrompt);
+  return callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
 }
 
 export async function optimizePrompt(idea: string, provider: string): Promise<string> {
@@ -80,7 +134,7 @@ Rules:
 - Format specifically for ${provider}
 - Keep under 500 characters`;
 
-  return callLLM(idea, systemPrompt);
+  return callLLM(idea, systemPrompt, { purpose: "prompt" });
 }
 
 export async function generateLyrics(idea: string, language: string, instrumental: boolean): Promise<string> {
@@ -97,7 +151,7 @@ Rules:
 - Make it emotionally resonant and musically structured
 - Keep it 2-4 minutes when sung`;
 
-  return callLLM(idea, systemPrompt);
+  return callLLM(idea, systemPrompt, { purpose: "lyrics" });
 }
 
 export async function generateImagePrompt(
@@ -123,5 +177,8 @@ Type: ${type}
 Content: ${songContent.slice(0, 600)}`;
 
   const imageModel = await getSetting("OPENROUTER_IMAGE_MODEL");
-  return callLLM(userPrompt, systemPrompt, imageModel || undefined);
+  return callLLM(userPrompt, systemPrompt, {
+    purpose: "image",
+    openRouterModelOverride: imageModel || undefined,
+  });
 }

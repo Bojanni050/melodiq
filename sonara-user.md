@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 01:41**
+**Versie: do 02:12**
 
 > AI Music Generation Web App
 
@@ -59,6 +59,15 @@ This selector now lives in the **Studio** card on the Create page.
 
 The language selector now lives on the **Lyric Studio** page.
 
+### Lyric Studio
+Use **Lyric Studio** to build lyrics as separate editable blocks before sending them to the main Studio.
+- Add blocks such as Intro, Verse, Pre-Chorus, Chorus, Bridge, and Outro
+- Use presets like Simple, Pop, ABABCB, and Extended to create a full structure quickly
+- Generate one block at a time with the song topic, mood, language, style, and existing blocks as context
+- Reorder blocks with the up/down controls, edit labels and lyrics manually, or delete sections
+- **Copy all lyrics** copies the finished block sequence
+- **Use in Studio →** sends all filled blocks to the main Studio lyrics field
+
 ### Vocal Gender
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
 
@@ -106,7 +115,9 @@ Click a track to open a slide-out panel with:
 The Settings page lets you configure each provider independently:
 - API keys and connection testing per provider
 - S3 storage configuration and connectivity check
-- OpenRouter model selection with pricing info
+- LLM Routing for separate prompt and lyrics providers
+- Separate OpenRouter/OpenAI models for prompt generation and lyric generation
+- OpenRouter image prompt model selection with pricing info
 
 ---
 
