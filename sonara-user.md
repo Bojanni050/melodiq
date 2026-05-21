@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 02:12**
+**Versie: do 02:19**
 
 > AI Music Generation Web App
 
@@ -62,9 +62,10 @@ The language selector now lives on the **Lyric Studio** page.
 ### Lyric Studio
 Use **Lyric Studio** to build lyrics as separate editable blocks before sending them to the main Studio.
 - Add blocks such as Intro, Verse, Pre-Chorus, Chorus, Bridge, and Outro
-- Use presets like Simple, Pop, ABABCB, and Extended to create a full structure quickly
+- Use presets like Pop, ABABCB, AABA, Extended, and EDM/Dance structures to create a full structure quickly
 - Generate one block at a time with the song topic, mood, language, style, and existing blocks as context
-- Reorder blocks with the up/down controls, edit labels and lyrics manually, or delete sections
+- Generate a complete song from the selected structure; each section is placed in its own block
+- Reorder blocks with the up/down controls, duplicate blocks, edit labels and lyrics manually, or delete sections
 - **Copy all lyrics** copies the finished block sequence
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
 

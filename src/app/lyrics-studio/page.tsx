@@ -66,10 +66,14 @@ const BLOCK_TYPES: BlockType[] = [
 ];
 
 const BLOCK_PRESETS: Record<string, BlockType[]> = {
-  Simple: ["verse", "chorus", "verse", "chorus", "bridge", "chorus"],
-  Pop: ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus", "outro"],
-  ABABCB: ["verse", "chorus", "verse", "chorus", "bridge", "chorus"],
-  Extended: ["intro", "verse", "chorus", "verse", "chorus", "bridge", "chorus", "chorus", "outro"],
+  "Pop": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus", "outro"],
+  "ABABCB": ["verse", "chorus", "verse", "chorus", "bridge", "chorus"],
+  "AABA": ["verse", "verse", "bridge", "verse"],
+  "Extended": ["intro", "verse", "chorus", "verse", "chorus", "bridge", "chorus", "chorus", "outro"],
+  "EDM — 2 Drops": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "outro"],
+  "EDM — Build & Drop": ["intro", "verse", "chorus", "bridge", "chorus", "outro"],
+  "Dance — Early Drop": ["intro", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus", "outro"],
+  "Minimal / One Drop": ["intro", "verse", "chorus", "outro"],
 };
 
 const BLOCK_COLORS: Record<BlockType, string> = {
@@ -92,6 +96,55 @@ const BLOCK_LABELS: Record<BlockType, string> = {
   outro: "Outro",
 };
 
+const STRUCTURE_PRESET_MAP: Record<string, string> = {
+  abab: "ABABCB",
+  ababc: "ABABCB",
+  ababcbc: "Extended",
+  aaa: "AABA",
+  aaba: "AABA",
+  "dance-2drops": "EDM — 2 Drops",
+  "dance-breaks": "EDM — Build & Drop",
+  "dance-earlydrop": "Dance — Early Drop",
+  "one-drop": "Minimal / One Drop",
+  "pop-classic": "Pop",
+  "pop-finallift": "Extended",
+  "pop-prechorus": "Pop",
+  "pop-triplechorus": "Extended",
+  "pop-instrumental": "Extended",
+};
+
+function isDancePreset(presetName?: string) {
+  return Boolean(
+    presetName?.startsWith("EDM") ||
+      presetName?.startsWith("Dance") ||
+      presetName?.startsWith("Minimal")
+  );
+}
+
+function getPresetBlockLabel(type: BlockType, presetName?: string) {
+  if (!isDancePreset(presetName)) return BLOCK_LABELS[type];
+  if (type === "chorus") return "Drop";
+  if (type === "bridge") return "Breakdown";
+  if (type === "pre-chorus") return "Build-up";
+  return BLOCK_LABELS[type];
+}
+
+function parseStructureText(text: string): BlockType[] {
+  const normalized = text.toLowerCase();
+  const matches = normalized.match(/pre[-\s]?chorus|post[-\s]?chorus|build[-\s]?up|breakdown|intro|verse|chorus|bridge|outro|drop|build|break/g);
+  if (!matches) return [];
+
+  return matches.map((match) => {
+    if (match.includes("pre") || match.includes("build")) return "pre-chorus";
+    if (match.includes("post")) return "post-chorus";
+    if (match.includes("drop") || match.includes("chorus")) return "chorus";
+    if (match.includes("break") || match.includes("bridge")) return "bridge";
+    if (match.includes("intro")) return "intro";
+    if (match.includes("outro")) return "outro";
+    return "verse";
+  });
+}
+
 function createBlock(type: BlockType, label?: string): LyricBlock {
   return {
     id: crypto.randomUUID(),
@@ -102,29 +155,19 @@ function createBlock(type: BlockType, label?: string): LyricBlock {
   };
 }
 
-function createPresetBlocks(types: BlockType[]): LyricBlock[] {
-  const totalByType = types.reduce<Record<BlockType, number>>((counts, type) => {
-    counts[type] += 1;
+function createPresetBlocks(types: BlockType[], presetName?: string): LyricBlock[] {
+  const totalByLabel = types.reduce<Record<string, number>>((counts, type) => {
+    const label = getPresetBlockLabel(type, presetName);
+    counts[label] = (counts[label] || 0) + 1;
     return counts;
-  }, {
-    intro: 0,
-    verse: 0,
-    "pre-chorus": 0,
-    chorus: 0,
-    "post-chorus": 0,
-    bridge: 0,
-    outro: 0,
-  });
+  }, {});
 
-  const seenByType = { ...totalByType };
-  Object.keys(seenByType).forEach((key) => {
-    seenByType[key as BlockType] = 0;
-  });
+  const seenByLabel: Record<string, number> = {};
 
   return types.map((type) => {
-    seenByType[type] += 1;
-    const label =
-      totalByType[type] > 1 ? `${BLOCK_LABELS[type]} ${seenByType[type]}` : BLOCK_LABELS[type];
+    const baseLabel = getPresetBlockLabel(type, presetName);
+    seenByLabel[baseLabel] = (seenByLabel[baseLabel] || 0) + 1;
+    const label = totalByLabel[baseLabel] > 1 ? `${baseLabel} ${seenByLabel[baseLabel]}` : baseLabel;
     return createBlock(type, label);
   });
 }
@@ -149,6 +192,8 @@ export default function LyricsStudioPage() {
   const [style, setStyle] = useState("");
   const [blocks, setBlocks] = useState<LyricBlock[]>([]);
   const [copied, setCopied] = useState(false);
+  const [activePreset, setActivePreset] = useState("");
+  const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
   const {
     language,
@@ -187,6 +232,23 @@ export default function LyricsStudioPage() {
     setBlocks((current) => current.filter((block) => block.id !== id));
   }
 
+  function duplicateBlock(id: string) {
+    setBlocks((current) => {
+      const index = current.findIndex((block) => block.id === id);
+      if (index < 0) return current;
+
+      const original = current[index];
+      const duplicate: LyricBlock = {
+        ...original,
+        id: crypto.randomUUID(),
+        generating: false,
+      };
+      const next = [...current];
+      next.splice(index + 1, 0, duplicate);
+      return next;
+    });
+  }
+
   function moveBlock(id: string, direction: -1 | 1) {
     setBlocks((current) => {
       const index = current.findIndex((block) => block.id === id);
@@ -202,39 +264,112 @@ export default function LyricsStudioPage() {
 
   function applyPreset(name: string) {
     if (blocks.length > 0 && !window.confirm("Replace current blocks?")) return;
-    setBlocks(createPresetBlocks(BLOCK_PRESETS[name]));
+    setActivePreset(name);
+    setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
+  }
+
+  async function requestBlockLyrics(block: LyricBlock, contextBlocks: LyricBlock[]) {
+    const response = await fetch("/api/lyric-studio/generate-block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        blockType: block.type,
+        blockLabel: block.label,
+        topic,
+        mood,
+        language: effectiveLanguage,
+        style,
+        existingBlocks: contextBlocks
+          .filter((existingBlock) => existingBlock.id !== block.id)
+          .map(({ type, label, content }) => ({ type, label, content })),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Could not generate lyrics");
+    }
+
+    return data.result || "";
   }
 
   async function generateBlock(block: LyricBlock) {
     updateBlock(block.id, { generating: true });
 
     try {
-      const response = await fetch("/api/lyric-studio/generate-block", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blockType: block.type,
-          blockLabel: block.label,
-          topic,
-          mood,
-          language: effectiveLanguage,
-          style,
-          existingBlocks: blocks
-            .filter((existingBlock) => existingBlock.id !== block.id)
-            .map(({ type, label, content }) => ({ type, label, content })),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Could not generate lyrics");
-      }
-
-      updateBlock(block.id, { content: data.result || "", generating: false });
+      const result = await requestBlockLyrics(block, blocks);
+      updateBlock(block.id, { content: result, generating: false });
     } catch (error) {
       console.error(error);
       updateBlock(block.id, { generating: false });
     }
+  }
+
+  function getGenerationBlocks() {
+    if (blocks.length > 0) return blocks;
+
+    if (structure === "manual" && customStructure.trim()) {
+      const manualTypes = parseStructureText(customStructure);
+      if (manualTypes.length > 0) {
+        return createPresetBlocks(manualTypes, activePreset);
+      }
+    }
+
+    if (structure && structure !== "manual" && structure !== "ai-choose") {
+      const selectedStructure = STRUCTURES.find((item) => item.value === structure);
+      const structureTypes = parseStructureText(selectedStructure?.label || "");
+      if (structureTypes.length > 0) {
+        return createPresetBlocks(structureTypes, STRUCTURE_PRESET_MAP[structure]);
+      }
+    }
+
+    const presetName = activePreset || STRUCTURE_PRESET_MAP[structure] || "Pop";
+    const presetTypes = BLOCK_PRESETS[presetName] || BLOCK_PRESETS.Pop;
+    return createPresetBlocks(presetTypes, presetName);
+  }
+
+  async function generateSongLyrics() {
+    if (!canGenerateBlocks || generatingSong) return;
+
+    const startingBlocks = getGenerationBlocks();
+    if (blocks.length === 0) {
+      setBlocks(startingBlocks);
+    } else {
+      setBlocks((current) => current.map((block) => ({ ...block, generating: true })));
+    }
+
+    setGeneratingSong(true);
+
+    const generatedBlocks: LyricBlock[] = startingBlocks.map((block) => ({
+      ...block,
+      content: "",
+      generating: true,
+    }));
+
+    setBlocks(generatedBlocks);
+
+    for (let index = 0; index < generatedBlocks.length; index += 1) {
+      const block = generatedBlocks[index];
+
+      try {
+        const result = await requestBlockLyrics(block, generatedBlocks);
+        generatedBlocks[index] = {
+          ...block,
+          content: result,
+          generating: false,
+        };
+      } catch (error) {
+        console.error(error);
+        generatedBlocks[index] = {
+          ...block,
+          generating: false,
+        };
+      }
+
+      setBlocks([...generatedBlocks]);
+    }
+
+    setGeneratingSong(false);
   }
 
   async function copyAllLyrics() {
@@ -330,6 +465,7 @@ export default function LyricsStudioPage() {
                         onClick={() => {
                           setStructure("");
                           setCustomStructure("");
+                          setActivePreset("");
                         }}
                         className="text-white/30 hover:text-white/60 transition-colors"
                         title="Clear"
@@ -376,6 +512,7 @@ export default function LyricsStudioPage() {
                               type="button"
                               onClick={() => {
                                 setStructure(item.value || "");
+                                setActivePreset(STRUCTURE_PRESET_MAP[item.value || ""] || "");
                                 setShowStructureDropdown(false);
                               }}
                               className={`w-full text-left px-3 py-2.5 transition-colors ${
@@ -418,13 +555,31 @@ export default function LyricsStudioPage() {
                           key={name}
                           type="button"
                           onClick={() => applyPreset(name)}
-                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:border-primary-500/50 hover:bg-primary-500/10 hover:text-white"
+                          className={`rounded-lg border px-3 py-2 text-sm transition hover:border-primary-500/50 hover:bg-primary-500/10 hover:text-white ${
+                            activePreset === name
+                              ? "border-primary-500/50 bg-primary-500/10 text-white"
+                              : "border-white/10 bg-white/5 text-white/70"
+                          }`}
                         >
                           {name}
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={generateSongLyrics}
+                    disabled={!canGenerateBlocks || generatingSong}
+                    title={canGenerateBlocks ? "Generate complete song lyrics" : "Add topic and mood first"}
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {generatingSong ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    ) : (
+                      "Generate complete song"
+                    )}
+                  </button>
                 </section>
 
                 <section className="section-card">
@@ -493,6 +648,16 @@ export default function LyricsStudioPage() {
                               title="Move down"
                             >
                               ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => duplicateBlock(block.id)}
+                              className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white"
+                              title="Duplicate block"
+                            >
+                              <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
                             </button>
                             <button
                               type="button"

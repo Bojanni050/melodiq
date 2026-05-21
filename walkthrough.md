@@ -367,3 +367,9 @@
 - Findings: Settings gebruikte een gecombineerd Lyrics & Prompt model, en /api/llm had nog lokale LLM/logging-logica waardoor prompt- en lyric-generatie niet apart routeerbaar waren.
 - Conclusions: Prompt-optimalisatie en lyric-generatie hebben aparte provider/model-keuzes nodig. Centrale callLLM() moet daarom purpose-aware zijn, zodat Studio lyrics en Lyric Studio blocks dezelfde lyrics provider gebruiken.
 - Actions: Updated src/app/settings/page.tsx met LLM Routing, aparte Prompt/Lyrics providers, aparte OpenRouter prompt/lyrics model selectors en aparte OpenAI prompt/lyrics model fields. Updated src/lib/providers/llm.ts met purpose-based provider/model selectie via PROMPT_LLM_PROVIDER, LYRICS_LLM_PROVIDER, OPENROUTER_PROMPT_MODEL, OPENROUTER_LYRICS_MODEL, OPENAI_PROMPT_MODEL en OPENAI_LYRICS_MODEL. Rebuilt src/app/api/llm/route.ts op centrale callLLM() en logApi(). Updated src/app/api/lyric-studio/generate-block/route.ts om de lyrics provider te gebruiken. Updated src/components/Sidebar.tsx versie naar do 02:12 en sonara-user.md Settings uitleg. Validated met npm run build; validated.
+
+## 2026-05-21 (Lyric Studio presets and complete song generation)
+
+- Findings: De Simple preset was dubbel met Pop en Lyric Studio miste snelle block-duplicatie en een manier om direct alle secties van een songstructuur te vullen.
+- Conclusions: Presets moeten scherper aansluiten op pop, AABA en dance/EDM flows; complete-song generatie kan veilig sequentieel per block lopen zodat eerdere blocks context geven aan latere blocks.
+- Actions: Updated src/app/lyrics-studio/page.tsx met nieuwe BLOCK_PRESETS, EDM/Dance labelmapping (Drop, Breakdown, Build-up), duplicateBlock(), duplicate button per block, preset/structure parsing en Generate complete song button in de Song Structure card. Updated src/components/Sidebar.tsx versie naar do 02:19 en sonara-user.md Lyric Studio uitleg. Validated met npm run build; validated.
