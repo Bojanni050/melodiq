@@ -382,3 +382,11 @@
   - Updated `src/app/lyrics-studio/page.tsx`: lyric blocks in 3 kolommen op xl, textarea nu `resize-y`, flowchart onderaan toegevoegd (alleen zichtbaar op 1 kolom).
   - Added `src/components/Flowchart.tsx`: eenvoudige flowchart met symbolen per block type.
   - Validated met `npm run build` (geen errors).
+
+## 2026-05-21 (Player: altijd voldoende bottom-marge)
+
+- Findings: Buttons/controls konden wegvallen achter de vaste player onderin.
+- Conclusions: Altijd een vaste bottom padding onder de hoofdcontent voorkomt dit probleem.
+- Actions:
+  - Updated `src/app/layout.tsx`: body krijgt nu standaard `pb-[120px]` (120px bottom padding) zodat alle content altijd boven de player blijft.
+  - Build gevalideerd met `npm run build`.
