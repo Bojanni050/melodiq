@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Flowchart from "@/components/Flowchart";
 import { useStudioStore } from "@/lib/store";
 
 type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
@@ -609,15 +610,16 @@ export default function LyricsStudioPage() {
                     <p className="text-sm text-white/40">Add your first block to get started</p>
                   </div>
                 ) : (
-                  <div
-                    className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
-                  >
-                    {blocks.map((block, index) => (
-                      <article
-                        key={block.id}
-                        className="rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col"
-                        style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
-                      >
+                  <>
+                    <div
+                      className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+                    >
+                      {blocks.map((block, index) => (
+                        <article
+                          key={block.id}
+                          className="rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col"
+                          style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
+                        >
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                           <span
                             className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
@@ -701,7 +703,13 @@ export default function LyricsStudioPage() {
                         </div>
                       </article>
                     ))}
-                  </div>
+
+                    </div>
+                    {/* Alleen tonen op 1 kolom (mobile/tablet), onderaan blocks */}
+                    <div className="block xl:hidden">
+                      <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
+                    </div>
+                  </>
                 )}
 
                 <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
