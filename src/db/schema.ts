@@ -42,6 +42,7 @@ export const tracks = pgTable("tracks", {
   formatHd: varchar("format_hd", { length: 10 }),
   duration: integer("duration"),
   jobId: varchar("job_id", { length: 255 }),
+  conversionId: varchar("conversion_id", { length: 255 }),
   audioId: varchar("audio_id", { length: 255 }),
   wavJobId: varchar("wav_job_id", { length: 255 }),
   creditsUsed: integer("credits_used").default(0).notNull(),

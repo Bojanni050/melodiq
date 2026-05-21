@@ -300,9 +300,38 @@ export async function POST(request: NextRequest) {
         .set({
           status: "generating",
           jobId: genResult.taskId,
+          conversionId: genResult.conversionId1,
         })
         .where(eq(tracks.id, track.id!))
         .returning();
+
+      const track2 = await db
+        .insert(tracks)
+        .values({
+          userId,
+          provider: "musicgpt",
+          providerModel,
+          prompt,
+          lyrics: lyrics || null,
+          instrumental: instrumental || false,
+          title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          status: "generating",
+          jobId: genResult.taskId,
+          conversionId: genResult.conversionId2,
+        })
+        .returning();
+
+      const allTracks = [updated[0], track2[0]];
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch(() => {});
 
       await logApi({
         userId: userId,
@@ -310,12 +339,12 @@ export async function POST(request: NextRequest) {
         provider: "musicgpt",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobId: genResult.taskId }),
+        response: JSON.stringify({ status: "generating", taskId: genResult.taskId, conversions: [genResult.conversionId1, genResult.conversionId2] }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
 
-      return NextResponse.json({ track: updated[0] });
+      return NextResponse.json({ tracks: allTracks });
     }
 
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });

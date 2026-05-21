@@ -52,12 +52,15 @@ export async function generateMusicGpt(
           Authorization: apiKey,
           "Content-Type": "application/json",
         },
+        timeout: 30000,
       }
     );
 
     if (!response.data.success) {
       throw new Error(response.data.message || "MusicGPT request failed");
     }
+
+    console.log(`[musicgpt] task submitted — task_id=${response.data.task_id} eta=${response.data.eta}s`);
 
     return {
       taskId: response.data.task_id,

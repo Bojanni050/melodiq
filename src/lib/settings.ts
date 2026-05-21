@@ -16,6 +16,33 @@ export async function getSetting(key: string): Promise<string> {
 
 
 export async function getWebhookUrl(provider: string): Promise<string> {
+  if (provider.toLowerCase() === "musicgpt") {
+    const configured = await getSetting("MUSICGPT_WEBHOOK_URL");
+    const explicit = configured || process.env.MUSICGPT_WEBHOOK_URL || "";
+    if (explicit) {
+      let normalized = explicit.replace(/\/api\/webhook\//g, "/api/webhooks/");
+      if (!normalized.includes("?secret=")) {
+        const secret = process.env.WEBHOOK_SECRET;
+        if (secret) {
+          normalized = `${normalized}?secret=${encodeURIComponent(secret)}`;
+        }
+      }
+      return normalized;
+    }
+
+    const appUrl = await getSetting("APP_URL") || process.env.APP_URL;
+    if (appUrl) {
+      const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/musicgpt`;
+      const secret = process.env.WEBHOOK_SECRET;
+      if (secret) return `${base}?secret=${encodeURIComponent(secret)}`;
+      return base;
+    }
+
+    throw new Error(
+      "No webhook URL configured for provider \"musicgpt\". Set MUSICGPT_WEBHOOK_URL or APP_URL in the Settings page."
+    );
+  }
+
   const key = `${provider.toUpperCase()}_WEBHOOK_URL`;
   let url = await getSetting(key);
 
