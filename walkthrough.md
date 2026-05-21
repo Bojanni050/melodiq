@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 05:04 (Studio create button sticky)
+
+- Findings: In de Studio create-flow scrollt de `Generate Track` knop buiten beeld bij lange forms, waardoor de primaire actie minder toegankelijk is.
+- Conclusions: Maak de create/generate action sticky onderaan de form-kolom zodat de knop zichtbaar blijft tijdens scrollen.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — wrapped generate button + validation hint in sticky container (`sticky bottom-3 z-20`) with translucent background and border
+  - Preserve existing generate logic (`onGenerate`, `canGenerate`) while improving persistent visibility of the CTA
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 04:43 (PoYo WAV debug visibility — matchedBy logging)
 
 - Findings: Voor verificatie van multi-variant WAV matching ontbrak inzicht op welke sleutel (`wavJobId`, `audioId`, of `jobId`) een callback precies werd gematcht.
