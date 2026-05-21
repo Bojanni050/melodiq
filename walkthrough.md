@@ -1,5 +1,16 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 03:57 (Lyric Studio persistentie + Clear all)
+
+- Findings: Lyric Studio verloor lokale invoer (topic/mood/style/blocks/layout) na refresh, omdat deze state buiten Zustand stond en niet werd opgeslagen.
+- Conclusions: Voeg expliciete localStorage-persistentie toe in de pagina voor lokale lyric-studio state en geef gebruikers een `Clear all`-actie die zowel state als opgeslagen draft reset.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added `LYRICS_STUDIO_STORAGE_KEY` load/restore effect met veilige JSON parsing en block-sanitizing
+  - Updated `src/app/lyrics-studio/page.tsx` — added save effect that persists `topic`, `mood`, `style`, `blocks`, `activePreset`, `lyricCols`, `showLyricsSidebar`, `structure`, `customStructure`, `language`, `customLanguage`
+  - Updated `src/app/lyrics-studio/page.tsx` — added `clearAllDraft()` with confirm dialog that clears all lyric-studio fields and removes stored draft
+  - Updated `src/app/lyrics-studio/page.tsx` — added visible `Clear all` button in header controls next to `Lyrics`
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 03:30 (Grouped style tags with category headers)
 
 - Findings: Style tags were displayed as a flat list of 80+ items; difficult to navigate and discover relevant tags by genre, mood, or production style.

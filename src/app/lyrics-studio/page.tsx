@@ -17,6 +17,8 @@ interface LyricBlock {
   generating: boolean;
 }
 
+const LYRICS_STUDIO_STORAGE_KEY = "sonara-lyrics-studio";
+
 const LANGUAGES = [
   "English",
   "Spanish",
@@ -187,8 +189,8 @@ function autoGrowTextarea(element: HTMLTextAreaElement) {
 }
 
 export default function LyricsStudioPage() {
-    const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
-    const [lyricCols, setLyricCols] = useState(2); // 1 of 2 kolommen
+  const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
+  const [lyricCols, setLyricCols] = useState(2); // 1 of 2 kolommen
   const router = useRouter();
   const [credits] = useState<number | null>(null);
   const [topic, setTopic] = useState("");
@@ -199,6 +201,7 @@ export default function LyricsStudioPage() {
   const [activePreset, setActivePreset] = useState("");
   const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const {
     language,
     customLanguage,
@@ -213,6 +216,92 @@ export default function LyricsStudioPage() {
   useEffect(() => {
     useStudioStore.persist.rehydrate();
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LYRICS_STUDIO_STORAGE_KEY);
+      if (!raw) {
+        setHasRestoredDraft(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        topic?: string;
+        mood?: string;
+        style?: string;
+        blocks?: Array<Partial<LyricBlock>>;
+        activePreset?: string;
+        lyricCols?: number;
+        showLyricsSidebar?: boolean;
+        structure?: string;
+        customStructure?: string;
+        language?: string;
+        customLanguage?: string;
+      };
+
+      if (typeof parsed.topic === "string") setTopic(parsed.topic);
+      if (typeof parsed.mood === "string") setMood(parsed.mood);
+      if (typeof parsed.style === "string") setStyle(parsed.style);
+      if (typeof parsed.activePreset === "string") setActivePreset(parsed.activePreset);
+      if (parsed.lyricCols === 1 || parsed.lyricCols === 2) setLyricCols(parsed.lyricCols);
+      if (typeof parsed.showLyricsSidebar === "boolean") setShowLyricsSidebar(parsed.showLyricsSidebar);
+      if (typeof parsed.structure === "string") setStructure(parsed.structure);
+      if (typeof parsed.customStructure === "string") setCustomStructure(parsed.customStructure);
+      if (typeof parsed.language === "string") setLanguage(parsed.language);
+      if (typeof parsed.customLanguage === "string") setCustomLanguage(parsed.customLanguage);
+
+      if (Array.isArray(parsed.blocks)) {
+        const validTypes = new Set<BlockType>(BLOCK_TYPES);
+        const restoredBlocks: LyricBlock[] = parsed.blocks
+          .filter((block): block is Partial<LyricBlock> & { type: BlockType } => !!block?.type && validTypes.has(block.type as BlockType))
+          .map((block, index) => ({
+            id: typeof block.id === "string" && block.id.trim() ? block.id : `restored-${index}-${crypto.randomUUID()}`,
+            type: block.type,
+            label: typeof block.label === "string" && block.label.trim() ? block.label : BLOCK_LABELS[block.type],
+            content: typeof block.content === "string" ? block.content : "",
+            generating: false,
+          }));
+        setBlocks(restoredBlocks);
+      }
+    } catch {
+      window.localStorage.removeItem(LYRICS_STUDIO_STORAGE_KEY);
+    } finally {
+      setHasRestoredDraft(true);
+    }
+  }, [setCustomLanguage, setCustomStructure, setLanguage, setStructure]);
+
+  useEffect(() => {
+    if (!hasRestoredDraft) return;
+
+    const payload = {
+      topic,
+      mood,
+      style,
+      blocks,
+      activePreset,
+      lyricCols,
+      showLyricsSidebar,
+      structure,
+      customStructure,
+      language,
+      customLanguage,
+    };
+
+    window.localStorage.setItem(LYRICS_STUDIO_STORAGE_KEY, JSON.stringify(payload));
+  }, [
+    activePreset,
+    blocks,
+    customLanguage,
+    customStructure,
+    hasRestoredDraft,
+    language,
+    lyricCols,
+    mood,
+    showLyricsSidebar,
+    structure,
+    style,
+    topic,
+  ]);
 
   const isCustomLanguage = language === "Other...";
   const selectedLanguage = isCustomLanguage ? "Other..." : language;
@@ -387,6 +476,24 @@ export default function LyricsStudioPage() {
     router.push("/");
   }
 
+  function clearAllDraft() {
+    if (!window.confirm("Clear all lyric studio data?")) return;
+
+    setTopic("");
+    setMood("");
+    setStyle("");
+    setBlocks([]);
+    setActivePreset("");
+    setLyricCols(2);
+    setShowLyricsSidebar(false);
+    setShowStructureDropdown(false);
+    setStructure("");
+    setCustomStructure("");
+    setLanguage("English");
+    setCustomLanguage("");
+    window.localStorage.removeItem(LYRICS_STUDIO_STORAGE_KEY);
+  }
+
   return (
     <div className="flex h-screen bg-[#0d0d12] text-white overflow-hidden">
       <Sidebar credits={credits} />
@@ -400,22 +507,32 @@ export default function LyricsStudioPage() {
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
                 <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowLyricsSidebar((v) => !v)}
-                className="hidden xl:inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-                title="Toon/verberg volledige lyrics"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
-                </svg>
-                Lyrics
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clearAllDraft}
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20"
+                  title="Clear all lyric studio data"
+                >
+                  Clear all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLyricsSidebar((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                  title="Toon/verberg volledige lyrics"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                  </svg>
+                  Lyrics
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
