@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 16:07**
+**Versie: do 17:53**
 
 > AI Music Generation Web App
 
@@ -131,6 +131,15 @@ The Settings page lets you configure each provider independently:
 - LLM Routing for separate prompt and lyrics providers
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
+
+---
+
+## Logs
+
+- The Logs page now shows each API call as a collapsed item by default.
+- Click a log row to expand details for that specific call.
+- Expanded view shows both **Input** (request payload) and **Output** (response payload).
+- Click the same row again to collapse it.
 
 ---
 

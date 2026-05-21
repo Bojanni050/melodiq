@@ -18,6 +18,7 @@ interface ApiLog {
 export default function LogsPage() {
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchLogs();
@@ -28,6 +29,7 @@ export default function LogsPage() {
     if (res.ok) {
       const data = await res.json();
       setLogs(data.logs);
+      setExpandedLogIds(new Set());
     }
     setLoading(false);
   }
@@ -40,6 +42,29 @@ export default function LogsPage() {
 
   function formatDate(date: string) {
     return new Date(date).toLocaleString();
+  }
+
+  function formatPayload(payload: string | null) {
+    if (!payload) return "-";
+
+    try {
+      const parsed = JSON.parse(payload);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return payload;
+    }
+  }
+
+  function toggleLog(logId: string) {
+    setExpandedLogIds((current) => {
+      const next = new Set(current);
+      if (next.has(logId)) {
+        next.delete(logId);
+      } else {
+        next.add(logId);
+      }
+      return next;
+    });
   }
 
   return (
@@ -68,41 +93,59 @@ export default function LogsPage() {
               <p className="text-white/20 text-xs mt-1">Enable API logging in Settings</p>
             </div>
           ) : (
-            <div className="section-card overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Time</th>
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Type</th>
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Provider</th>
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Endpoint</th>
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Status</th>
-                    <th className="text-left py-2 px-3 text-white/40 font-medium text-xs">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log) => (
-                    <tr key={log.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                      <td className="py-2 px-3 text-white/40 text-xs">{formatDate(log.createdAt)}</td>
-                      <td className="py-2 px-3 capitalize text-xs">{log.type}</td>
-                      <td className="py-2 px-3 capitalize text-xs">{log.provider}</td>
-                      <td className="py-2 px-3 font-mono text-xs text-white/50">{log.endpoint}</td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-xs ${
-                            log.statusCode && log.statusCode >= 200 && log.statusCode < 300
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
-                          {log.statusCode || "-"}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-white/40 text-xs">{formatDuration(log.duration)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {logs.map((log) => {
+                const isExpanded = expandedLogIds.has(log.id);
+                const isSuccess = Boolean(log.statusCode && log.statusCode >= 200 && log.statusCode < 300);
+
+                return (
+                  <section key={log.id} className="section-card overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleLog(log.id)}
+                      className="w-full px-3 py-2.5 text-left hover:bg-white/[0.02] transition"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-white/40">{formatDate(log.createdAt)}</p>
+                          <p className="mt-1 font-mono text-xs text-white/70 truncate">{log.endpoint}</p>
+                          <p className="mt-1 text-xs text-white/55 capitalize">
+                            {log.type} • {log.provider}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-xs ${
+                              isSuccess ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                            }`}
+                          >
+                            {log.statusCode || "-"}
+                          </span>
+                          <span className="text-xs text-white/40">{formatDuration(log.duration)}</span>
+                          <span className="text-xs text-white/50">{isExpanded ? "Hide" : "Show"}</span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="border-t border-white/5 px-3 py-3 grid gap-3 lg:grid-cols-2">
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-wide text-white/45 mb-1.5">Input</p>
+                          <pre className="w-full overflow-x-auto rounded-lg border border-white/10 bg-[#0f0f16] p-3 text-xs text-white/80 leading-5 whitespace-pre-wrap break-words">
+                            {formatPayload(log.request)}
+                          </pre>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-wide text-white/45 mb-1.5">Output</p>
+                          <pre className="w-full overflow-x-auto rounded-lg border border-white/10 bg-[#0f0f16] p-3 text-xs text-white/80 leading-5 whitespace-pre-wrap break-words">
+                            {formatPayload(log.response)}
+                          </pre>
+                        </div>
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })}
             </div>
           )}
         </main>

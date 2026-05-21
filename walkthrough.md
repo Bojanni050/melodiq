@@ -640,3 +640,16 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-16:07`
   - Updated `sonara-user.md` — version updated to `do 16:07` and Lyric Studio docs now include snapshot and unique chorus override usage
   - Validated with `npm run build`.
+
+## 2026-05-21 do 17:53 (Logs page collapsible input/output per call)
+
+- Findings: Op de Logs-pagina was alleen een compacte tabel zichtbaar; input/output payloads per call waren niet direct beschikbaar in de UI.
+- Conclusions: Vervang tabelweergave met klikbare call-items die standaard collapsed zijn en per item openklappen om Input en Output te tonen.
+- Actions:
+  - Updated `src/app/logs/page.tsx` — replaced table rows with collapsed-by-default clickable log cards
+  - Updated `src/app/logs/page.tsx` — added per-log expand/collapse state and toggle behavior on click
+  - Updated `src/app/logs/page.tsx` — expanded detail view now shows both Input (`request`) and Output (`response`) payloads in formatted panels
+  - Updated `src/app/logs/page.tsx` — refresh now resets expanded state so all calls return to collapsed view
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-17:53`
+  - Updated `sonara-user.md` — version updated to `do 17:53` and added Logs section behavior
+  - Validated with `npm run build`.
