@@ -626,3 +626,17 @@
   - Updated `src/lib/logger.ts` — added safe truncation helper (`MAX_LOG_CHARS = 4000`) to avoid oversized terminal log spam
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-15:51`
   - Validated with `npm run build`.
+
+## 2026-05-21 do 16:07 (Lyric Studio snapshots + unieke chorus override)
+
+- Findings: Er ontbrak een snelle manier om lyric-drafts op te slaan/herladen, en bij repetitieve chorus was er geen block-level escape om een specifieke chorus toch uniek te genereren.
+- Conclusions: Voeg lokale snapshot-opslag toe voor volledige Lyric Studio state en voeg per chorus block een expliciete unique override toe die de auto-repeat kan overrulen.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added local snapshot model/state (`LYRICS_STUDIO_SNAPSHOTS_KEY`) with save, load, and delete actions for up to 30 named snapshots
+  - Updated `src/app/lyrics-studio/page.tsx` — added snapshot load UI panel and safe hydration/sanitization of loaded block data
+  - Updated `src/app/lyrics-studio/page.tsx` — extended `LyricBlock` with `uniqueChorusOverride` and added per-chorus checkbox in block editor UI
+  - Updated `src/app/lyrics-studio/page.tsx` — generation logic now reuses first chorus only when repetitive mode is on and the current chorus block does not request unique override
+  - Updated `src/app/lyrics-studio/page.tsx` — single block generation now also respects repetitive chorus mode versus unique override
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-16:07`
+  - Updated `sonara-user.md` — version updated to `do 16:07` and Lyric Studio docs now include snapshot and unique chorus override usage
+  - Validated with `npm run build`.

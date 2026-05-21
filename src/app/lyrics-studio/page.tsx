@@ -15,9 +15,34 @@ interface LyricBlock {
   label: string;
   content: string;
   generating: boolean;
+  uniqueChorusOverride: boolean;
+}
+
+interface LyricStudioSnapshot {
+  id: string;
+  name: string;
+  createdAt: string;
+  payload: {
+    topic: string;
+    mood: string;
+    style: string;
+    blocks: LyricBlock[];
+    activePreset: string;
+    lyricCols: number;
+    showLyricsSidebar: boolean;
+    structure: string;
+    customStructure: string;
+    language: string;
+    customLanguage: string;
+    repetitiveChorus: boolean;
+    creativityLevel: number;
+    contextLevel: number;
+    styleSuggestion: string;
+  };
 }
 
 const LYRICS_STUDIO_STORAGE_KEY = "sonara-lyrics-studio";
+const LYRICS_STUDIO_SNAPSHOTS_KEY = "sonara-lyrics-studio-snapshots";
 
 const LANGUAGES = [
   "English",
@@ -156,6 +181,7 @@ function createBlock(type: BlockType, label?: string): LyricBlock {
     label: label || BLOCK_LABELS[type],
     content: "",
     generating: false,
+    uniqueChorusOverride: false,
   };
 }
 
@@ -208,6 +234,8 @@ export default function LyricsStudioPage() {
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
+  const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
+  const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
   const songGenerationAbortRef = useRef<AbortController | null>(null);
   const stopSongGenerationRef = useRef(false);
   const {
@@ -280,6 +308,10 @@ export default function LyricsStudioPage() {
             label: typeof block.label === "string" && block.label.trim() ? block.label : BLOCK_LABELS[block.type],
             content: typeof block.content === "string" ? block.content : "",
             generating: false,
+            uniqueChorusOverride:
+              block.type === "chorus" && typeof block.uniqueChorusOverride === "boolean"
+                ? block.uniqueChorusOverride
+                : false,
           }));
         setBlocks(restoredBlocks);
       }
@@ -289,6 +321,26 @@ export default function LyricsStudioPage() {
       setHasRestoredDraft(true);
     }
   }, [setCustomLanguage, setCustomStructure, setLanguage, setStructure]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(LYRICS_STUDIO_SNAPSHOTS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const validSnapshots = parsed.filter((item) => {
+        return (
+          item &&
+          typeof item.id === "string" &&
+          typeof item.name === "string" &&
+          typeof item.createdAt === "string" &&
+          item.payload &&
+          typeof item.payload === "object"
+        );
+      }) as LyricStudioSnapshot[];
+      setSavedSnapshots(validSnapshots);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!hasRestoredDraft) return;
@@ -393,6 +445,94 @@ export default function LyricsStudioPage() {
     setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
   }
 
+  function buildDraftPayload() {
+    return {
+      topic,
+      mood,
+      style,
+      blocks,
+      activePreset,
+      lyricCols,
+      showLyricsSidebar,
+      structure,
+      customStructure,
+      language,
+      customLanguage,
+      repetitiveChorus,
+      creativityLevel,
+      contextLevel,
+      styleSuggestion,
+    };
+  }
+
+  function saveLyricsSnapshot() {
+    const defaultName = `Lyrics ${new Date().toLocaleString()}`;
+    const name = window.prompt("Snapshot naam", defaultName)?.trim();
+    if (!name) return;
+
+    const snapshot: LyricStudioSnapshot = {
+      id: crypto.randomUUID(),
+      name,
+      createdAt: new Date().toISOString(),
+      payload: buildDraftPayload(),
+    };
+
+    const next = [snapshot, ...savedSnapshots].slice(0, 30);
+    setSavedSnapshots(next);
+    window.localStorage.setItem(LYRICS_STUDIO_SNAPSHOTS_KEY, JSON.stringify(next));
+  }
+
+  function sanitizeBlocksForLoad(input: LyricBlock[]): LyricBlock[] {
+    const validTypes = new Set<BlockType>(BLOCK_TYPES);
+    return (input || [])
+      .filter((block) => !!block && validTypes.has(block.type))
+      .map((block, index) => ({
+        id: typeof block.id === "string" && block.id.trim() ? block.id : `loaded-${index}-${crypto.randomUUID()}`,
+        type: block.type,
+        label: typeof block.label === "string" && block.label.trim() ? block.label : BLOCK_LABELS[block.type],
+        content: typeof block.content === "string" ? block.content : "",
+        generating: false,
+        uniqueChorusOverride:
+          block.type === "chorus" && typeof block.uniqueChorusOverride === "boolean"
+            ? block.uniqueChorusOverride
+            : false,
+      }));
+  }
+
+  function loadLyricsSnapshot(snapshot: LyricStudioSnapshot) {
+    const payload = snapshot.payload;
+    setTopic(payload.topic || "");
+    setMood(payload.mood || "");
+    setStyle(payload.style || "");
+    setBlocks(sanitizeBlocksForLoad(payload.blocks || []));
+    setActivePreset(payload.activePreset || "");
+    setLyricCols(payload.lyricCols === 1 ? 1 : 2);
+    setShowLyricsSidebar(Boolean(payload.showLyricsSidebar));
+    setStructure(payload.structure || "");
+    setCustomStructure(payload.customStructure || "");
+    setLanguage(payload.language || "English");
+    setCustomLanguage(payload.customLanguage || "");
+    setRepetitiveChorus(typeof payload.repetitiveChorus === "boolean" ? payload.repetitiveChorus : true);
+    setCreativityLevel(
+      typeof payload.creativityLevel === "number" && payload.creativityLevel >= 1 && payload.creativityLevel <= 10
+        ? Math.round(payload.creativityLevel)
+        : 5
+    );
+    setContextLevel(
+      typeof payload.contextLevel === "number" && payload.contextLevel >= 1 && payload.contextLevel <= 10
+        ? Math.round(payload.contextLevel)
+        : 7
+    );
+    setStyleSuggestion(payload.styleSuggestion || "");
+    setShowLoadSnapshots(false);
+  }
+
+  function deleteLyricsSnapshot(snapshotId: string) {
+    const next = savedSnapshots.filter((snapshot) => snapshot.id !== snapshotId);
+    setSavedSnapshots(next);
+    window.localStorage.setItem(LYRICS_STUDIO_SNAPSHOTS_KEY, JSON.stringify(next));
+  }
+
   async function requestBlockLyrics(
     block: LyricBlock,
     contextBlocks: LyricBlock[],
@@ -432,7 +572,11 @@ export default function LyricsStudioPage() {
     updateBlock(block.id, { generating: true });
 
     try {
-      const result = await requestBlockLyrics(block, blocks);
+      const forceUniqueChorus =
+        block.type === "chorus" && repetitiveChorus && block.uniqueChorusOverride;
+      const result = await requestBlockLyrics(block, blocks, {
+        chorusMode: repetitiveChorus && !forceUniqueChorus ? "repeat" : "variation",
+      });
       updateBlock(block.id, { content: result, generating: false });
     } catch (error) {
       console.error(error);
@@ -501,7 +645,7 @@ export default function LyricsStudioPage() {
         break;
       }
 
-      if (block.type === "chorus" && repetitiveChorus && firstChorusContent.trim()) {
+      if (block.type === "chorus" && repetitiveChorus && firstChorusContent.trim() && !block.uniqueChorusOverride) {
         generatedBlocks[index] = {
           ...block,
           content: firstChorusContent,
@@ -515,8 +659,11 @@ export default function LyricsStudioPage() {
         const controller = new AbortController();
         songGenerationAbortRef.current = controller;
 
+        const forceUniqueChorus =
+          block.type === "chorus" && repetitiveChorus && block.uniqueChorusOverride;
+
         const result = await requestBlockLyrics(block, generatedBlocks, {
-          chorusMode: repetitiveChorus ? "repeat" : "variation",
+          chorusMode: repetitiveChorus && !forceUniqueChorus ? "repeat" : "variation",
           isFirstChorus: block.type === "chorus" ? !firstChorusContent.trim() : undefined,
         }, controller.signal);
 
@@ -663,6 +810,7 @@ export default function LyricsStudioPage() {
     setCustomLanguage("");
     setStyleSuggestion("");
     setCopiedStyleSuggestion(false);
+    setShowLoadSnapshots(false);
     window.localStorage.removeItem(LYRICS_STUDIO_STORAGE_KEY);
   }
 
@@ -687,6 +835,23 @@ export default function LyricsStudioPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={saveLyricsSnapshot}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                  title="Save lyrics snapshot"
+                >
+                  Save lyrics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLoadSnapshots(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Load lyrics snapshot"
+                  disabled={savedSnapshots.length === 0}
+                >
+                  Load lyrics
+                </button>
+                <button
+                  type="button"
                   onClick={clearAllDraft}
                   className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20"
                   title="Clear all lyric studio data"
@@ -706,6 +871,48 @@ export default function LyricsStudioPage() {
                 </button>
               </div>
             </div>
+
+            {showLoadSnapshots && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-[#11111a] p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white/80">Load saved lyrics</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowLoadSnapshots(false)}
+                    className="text-white/40 hover:text-white/70"
+                    title="Close"
+                  >
+                    x
+                  </button>
+                </div>
+                {savedSnapshots.length === 0 ? (
+                  <p className="text-xs text-white/45">No saved snapshots yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {savedSnapshots.map((snapshot) => (
+                      <div key={snapshot.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => loadLyricsSnapshot(snapshot)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <p className="truncate text-sm text-white/85">{snapshot.name}</p>
+                          <p className="text-xs text-white/45">{new Date(snapshot.createdAt).toLocaleString()}</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteLyricsSnapshot(snapshot.id)}
+                          className="px-2 py-1 text-xs text-red-300/80 hover:text-red-200"
+                          title="Delete snapshot"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
               <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
@@ -1070,6 +1277,19 @@ export default function LyricsStudioPage() {
                             </button>
                           </div>
                         </div>
+
+                        {block.type === "chorus" && (
+                          <label className="mb-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75">
+                            <input
+                              type="checkbox"
+                              checked={block.uniqueChorusOverride}
+                              onChange={(event) =>
+                                updateBlock(block.id, { uniqueChorusOverride: event.target.checked })
+                              }
+                            />
+                            Unique chorus override
+                          </label>
+                        )}
 
                         <textarea
                           value={block.content}
