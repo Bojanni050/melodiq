@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 17:53**
+**Versie: do 18:00**
 
 > AI Music Generation Web App
 
@@ -36,6 +36,7 @@ Toggle between **VOCAL** and **INSTRUMENTAL** mode.
 - **Topic & Mood** — short description to guide the AI (e.g. "heartbreak, melancholic")
 - **Lyrics textarea** — write lyrics manually or click **Generate Lyrics** to have AI write them based on your topic and style prompt
 - Section labels in square brackets are expected: `[Verse]`, `[Chorus]`, `[Bridge]`
+- Generated lyrics output is strict format: section tags + lyric lines only (no intro text, notes, or extra commentary)
 
 **Instrumental mode:**
 - No lyrics needed. Focus on the style prompt and give the track a descriptive title.

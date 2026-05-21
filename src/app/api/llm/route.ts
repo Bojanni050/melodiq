@@ -86,10 +86,10 @@ Language and song structure are provided via the app. Generate lyrics directly w
 Lyrics rules:
 - Write all lyrics in the language specified by the app. Do not switch languages unless the input explicitly includes mixed-language sections.
 - Follow the song structure exactly as provided. Do not alter or reinterpret it.
-- Always include clear section labels in square brackets, e.g. [Verse - sparse close-mic], [Chorus - restrained delivery, layered harmonies], [Bridge - whispered tension rising].
-- Vocal and delivery instructions must always be inside the section title brackets — never added separately inside the lyrics body.
-- All text inside square brackets [] must always be written in English, regardless of the main lyric language.
-- Where vocal clarity or dryness is implied by the context, incorporate descriptors such as 'dry vocals', 'close-mic', 'upfront', 'no room sound', 'tight mix', or 'minimal ambience' inside the section label.
+    - Every section MUST start with one plain section tag in square brackets, e.g. [Verse], [Chorus], [Bridge].
+    - Use only section tags and lyric lines. Do not add any intro text, outro text, explanation, numbering, markdown, quotes, notes, or commentary.
+    - Return exactly the lyrics content with section tags, and nothing else.
+    - Keep section tags in English.
 - Avoid overusing exaggerated emotional descriptors such as 'emotional', 'epic', 'powerful', or 'massive'. Favor controlled, nuanced direction instead.
 - Write with vivid imagery, emotional specificity, and poetic freedom. Avoid literal or generic phrasing. Prioritize natural, grammatically correct language unless the user specifies otherwise.`;
 

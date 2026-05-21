@@ -653,3 +653,14 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-17:53`
   - Updated `sonara-user.md` — version updated to `do 17:53` and added Logs section behavior
   - Validated with `npm run build`.
+
+## 2026-05-21 do 18:00 (Lyrics generator: alleen section-tagged output)
+
+- Findings: De algemene Generate Lyrics output kon soms extra tekst bevatten buiten de lyrics-body.
+- Conclusions: Versterk de LLM system-instructies zodat output strikt alleen uit section tags en lyricregels bestaat.
+- Actions:
+  - Updated `src/app/api/llm/route.ts` — tightened `type === "lyrics"` system prompt to require plain section tags (`[Verse]`, `[Chorus]`, `[Bridge]`) and forbid intro/outro text, commentary, numbering, markdown, quotes, or notes
+  - Updated `src/app/api/llm/route.ts` — added explicit rule: return exactly lyrics content with section tags, nothing else
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-18:00`
+  - Updated `sonara-user.md` — version updated to `do 18:00` and documented strict generated-lyrics output format
+  - Validated with `npm run build`.
