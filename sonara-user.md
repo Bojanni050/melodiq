@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 12:16**
+**Versie: do 12:18**
 
 > AI Music Generation Web App
 
@@ -66,6 +66,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Repetitive chorus** (default ON) in Song Structure: when enabled, AI writes one chorus and repeats it; when disabled, AI generates chorus variations
 - Generate one block at a time with the song topic, mood, language, style, and existing blocks as context
 - Generate a complete song from the selected structure; each section is placed in its own block
+- While full-song generation is running, use **Stop generating** to cancel remaining AI block generation
 - Reorder blocks with the up/down controls, duplicate blocks, edit labels and lyrics manually, or delete sections
 - **Copy all lyrics** copies the finished block sequence
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field

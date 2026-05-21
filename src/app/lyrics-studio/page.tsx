@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Flowchart from "@/components/Flowchart";
@@ -206,6 +206,8 @@ export default function LyricsStudioPage() {
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
+  const songGenerationAbortRef = useRef<AbortController | null>(null);
+  const stopSongGenerationRef = useRef(false);
   const {
     language,
     customLanguage,
@@ -376,11 +378,13 @@ export default function LyricsStudioPage() {
   async function requestBlockLyrics(
     block: LyricBlock,
     contextBlocks: LyricBlock[],
-    options?: { chorusMode?: "repeat" | "variation"; isFirstChorus?: boolean }
+    options?: { chorusMode?: "repeat" | "variation"; isFirstChorus?: boolean },
+    signal?: AbortSignal
   ) {
     const response = await fetch("/api/lyric-studio/generate-block", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal,
       body: JSON.stringify({
         blockType: block.type,
         blockLabel: block.label,
@@ -442,6 +446,8 @@ export default function LyricsStudioPage() {
   async function generateSongLyrics() {
     if (!canGenerateBlocks || generatingSong) return;
 
+    stopSongGenerationRef.current = false;
+
     const startingBlocks = getGenerationBlocks();
     if (blocks.length === 0) {
       setBlocks(startingBlocks);
@@ -464,6 +470,17 @@ export default function LyricsStudioPage() {
     for (let index = 0; index < generatedBlocks.length; index += 1) {
       const block = generatedBlocks[index];
 
+      if (stopSongGenerationRef.current) {
+        for (let i = index; i < generatedBlocks.length; i += 1) {
+          generatedBlocks[i] = {
+            ...generatedBlocks[i],
+            generating: false,
+          };
+        }
+        setBlocks([...generatedBlocks]);
+        break;
+      }
+
       if (block.type === "chorus" && repetitiveChorus && firstChorusContent.trim()) {
         generatedBlocks[index] = {
           ...block,
@@ -475,10 +492,15 @@ export default function LyricsStudioPage() {
       }
 
       try {
+        const controller = new AbortController();
+        songGenerationAbortRef.current = controller;
+
         const result = await requestBlockLyrics(block, generatedBlocks, {
           chorusMode: repetitiveChorus ? "repeat" : "variation",
           isFirstChorus: block.type === "chorus" ? !firstChorusContent.trim() : undefined,
-        });
+        }, controller.signal);
+
+        songGenerationAbortRef.current = null;
 
         if (block.type === "chorus" && repetitiveChorus && !firstChorusContent.trim()) {
           firstChorusContent = result;
@@ -490,6 +512,25 @@ export default function LyricsStudioPage() {
           generating: false,
         };
       } catch (error) {
+        songGenerationAbortRef.current = null;
+
+        if (stopSongGenerationRef.current) {
+          generatedBlocks[index] = {
+            ...block,
+            generating: false,
+          };
+
+          for (let i = index + 1; i < generatedBlocks.length; i += 1) {
+            generatedBlocks[i] = {
+              ...generatedBlocks[i],
+              generating: false,
+            };
+          }
+
+          setBlocks([...generatedBlocks]);
+          break;
+        }
+
         console.error(error);
         generatedBlocks[index] = {
           ...block,
@@ -500,7 +541,15 @@ export default function LyricsStudioPage() {
       setBlocks([...generatedBlocks]);
     }
 
+    stopSongGenerationRef.current = false;
+    songGenerationAbortRef.current = null;
     setGeneratingSong(false);
+  }
+
+  function stopSongGeneration() {
+    stopSongGenerationRef.current = true;
+    songGenerationAbortRef.current?.abort();
+    songGenerationAbortRef.current = null;
   }
 
   async function copyAllLyrics() {
@@ -838,6 +887,16 @@ export default function LyricsStudioPage() {
                       "Generate complete song"
                     )}
                   </button>
+
+                  {generatingSong && (
+                    <button
+                      type="button"
+                      onClick={stopSongGeneration}
+                      className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+                    >
+                      Stop generating
+                    </button>
+                  )}
                 </section>
 
                 <section className="section-card">

@@ -590,3 +590,15 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:16`
   - Updated `sonara-user.md` — version updated to `do 12:16` and Lyric Studio docs include repetitive chorus option
   - Validated with `npm run build`.
+
+## 2026-05-21 do 12:18 (Lyric Studio stop generating button)
+
+- Findings: Tijdens `Generate complete song` bestond er geen manier om een lopende AI-lyrics run te stoppen; gebruikers moesten wachten tot alle blokken klaar waren.
+- Conclusions: Voeg een expliciete stopactie toe die de lopende request abort, de generatie-loop breekt en resterende blokken direct uit loading haalt.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added `Stop generating` button shown while full-song generation is active
+  - Updated `src/app/lyrics-studio/page.tsx` — added `AbortController` + stop refs (`songGenerationAbortRef`, `stopSongGenerationRef`) and wired cancellation into block generation loop
+  - Updated `src/app/lyrics-studio/page.tsx` — `requestBlockLyrics` now accepts `AbortSignal` for cancellable fetch calls
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:18`
+  - Updated `sonara-user.md` — version updated to `do 12:18` and Lyric Studio section mentions stop action
+  - Validated with `npm run build`.
