@@ -188,6 +188,7 @@ function autoGrowTextarea(element: HTMLTextAreaElement) {
 
 export default function LyricsStudioPage() {
     const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
+    const [lyricCols, setLyricCols] = useState(2); // 1 of 2 kolommen
   const router = useRouter();
   const [credits] = useState<number | null>(null);
   const [topic, setTopic] = useState("");
@@ -406,9 +407,9 @@ export default function LyricsStudioPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowLyricsSidebar(true)}
+                onClick={() => setShowLyricsSidebar((v) => !v)}
                 className="hidden xl:inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-                title="Toon volledige lyrics"
+                title="Toon/verberg volledige lyrics"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
@@ -632,8 +633,8 @@ export default function LyricsStudioPage() {
                     <input
                       type="radio"
                       name="lyric-cols"
-                      checked={blocks.length > 0 && (window?.__SONARA_LYRIC_COLS__ ?? 2) === 1}
-                      onChange={() => { window.__SONARA_LYRIC_COLS__ = 1; forceUpdate(); }}
+                      checked={lyricCols === 1}
+                      onChange={() => setLyricCols(1)}
                     />
                     1 kolom
                   </label>
@@ -641,8 +642,8 @@ export default function LyricsStudioPage() {
                     <input
                       type="radio"
                       name="lyric-cols"
-                      checked={blocks.length > 0 && (window?.__SONARA_LYRIC_COLS__ ?? 2) === 2}
-                      onChange={() => { window.__SONARA_LYRIC_COLS__ = 2; forceUpdate(); }}
+                      checked={lyricCols === 2}
+                      onChange={() => setLyricCols(2)}
                     />
                     2 kolommen
                   </label>
@@ -654,12 +655,7 @@ export default function LyricsStudioPage() {
                 ) : (
                   <>
                     <div
-                      className={
-                        `grid gap-4 ` +
-                        ((typeof window !== 'undefined' && window.__SONARA_LYRIC_COLS__ === 1)
-                          ? 'grid-cols-1'
-                          : 'grid-cols-1 lg:grid-cols-2')
-                      }
+                      className={`grid gap-4 ${lyricCols === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}
                     >
                       {blocks.map((block, index) => (
                         <article

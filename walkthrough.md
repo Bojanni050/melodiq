@@ -383,6 +383,14 @@
   - Updated `src/app/lyrics-studio/page.tsx`: knop toegevoegd (alleen zichtbaar op xl), sidebar toont altijd de actuele lyrics (`combinedLyrics`).
   - Build gevalideerd met `npm run build`.
 
+## 2026-05-21 (Lyric Studio: derde kolom + kolom-toggles)
+
+- Findings: Alleen lyric blocks in het midden, geen ruimte voor extra features. Kolom-indeling was niet aanpasbaar.
+- Conclusions: Een derde kolom rechts maakt uitbreidingen mogelijk. Gebruiker kan nu kiezen tussen 1 of 2 lyric block kolommen.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx`: derde kolom toegevoegd, toggle voor 1/2 lyric block kolommen (state-based, geen window property meer).
+  - Build gevalideerd met `npm run build`.
+
 ## 2026-05-21 (Lyric Studio: 3 kolommen, resizebare tekstvakken, flowchart mobiel)
 
 - Findings: Op grote schermen was de lyric studio slechts 1 kolom, tekstvakken waren niet resizebaar, en er was geen visueel overzicht van de songstructuur.
