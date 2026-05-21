@@ -567,3 +567,13 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:39`
   - Updated `sonara-user.md` — version updated to `do 11:39`
   - Validated with `npm run build`.
+
+## 2026-05-21 do 11:43 (Sidebar credits/logout boven player)
+
+- Findings: In desktop sidebar konden het creditsblok en de logout-link visueel achter de fixed player vallen omdat de sidebar tot onderaan viewport doorliep.
+- Conclusions: Laat de sidebar eindigen op de player-top door de fixed bottom-offset gelijk te maken aan `--player-height`.
+- Actions:
+  - Updated `src/components/Sidebar.tsx` — desktop sidebar changed from `bottom-0` to `bottom-[var(--player-height)]`
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:43`
+  - Updated `sonara-user.md` — version updated to `do 11:43`
+  - Validated with `npm run build`.

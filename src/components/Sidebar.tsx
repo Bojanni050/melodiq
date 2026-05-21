@@ -12,7 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "0.do-11:39";
+  const buildVersion = "0.do-11:43";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -75,7 +75,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   return (
     <>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 ${collapsed ? "w-[60px]" : "w-[240px]"}`}>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-[var(--player-height)] bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 ${collapsed ? "w-[60px]" : "w-[240px]"}`}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
           <Link href="/" className="flex items-center gap-2">
