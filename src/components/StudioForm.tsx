@@ -307,7 +307,7 @@ export default function StudioForm({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-20">
       <section className="section-card">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white/80">Studio</h3>
