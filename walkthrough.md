@@ -1,5 +1,16 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 03:30 (Grouped style tags with category headers)
+
+- Findings: Style tags were displayed as a flat list of 80+ items; difficult to navigate and discover relevant tags by genre, mood, or production style.
+- Conclusions: Organize tags into 12 logical categories (Electronic, Urban & World, Band & Organic, Cinematic & Classical, Ambient & Texture, Drums & Rhythm, Bass & Low End, Synths & Keys, Guitar & Strings, FX & Processing, Mood & Energy, Vocal Style) with uppercase category headers for better UX.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — replaced flat `STYLE_TAGS` array with `STYLE_TAG_GROUPS: { label: string; tags: string[] }[]` structure containing 12 organized categories
+  - Updated tag panel UI — changed from flex flex-wrap layout to grouped layout with category headers (`text-[10px] font-semibold uppercase tracking-wider text-white/25 mb-1.5`) above each group's tag flex row
+  - Updated container from `max-h-48` to `max-h-64` to accommodate more visible categories
+  - `addStyleTag(tag: string)` function remains unchanged (works with plain string tags)
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 03:28 (Flowchart visualization in lyric studio right column)
 
 - Findings: Song structure flowchart was only visible on mobile/tablet (xl:hidden), even though a 3-column layout exists on lg+ screens with an empty right sidebar.

@@ -10,36 +10,201 @@ const PROVIDERS = {
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
 };
 
-const STYLE_TAGS = [
-  // Genre — Electronic
-  "House", "Deep House", "Tech House", "Techno", "Minimal Techno",
-  "Drum & Bass", "Jungle", "Trance", "Progressive Trance", "Psytrance",
-  "Ambient", "Dark Ambient", "Synthwave", "Retrowave", "Vaporwave",
-  "IDM", "Breakbeat", "UK Garage", "2-Step", "Dubstep",
-  // Genre — Urban & World
-  "Hip-Hop", "Boom Bap", "Trap", "Drill", "R&B",
-  "Neo Soul", "Afrobeats", "Amapiano", "Dancehall", "Reggaeton",
-  "Latin Pop", "Baile Funk", "Gqom", "Kuduro",
-  // Genre — Band & Organic
-  "Indie Pop", "Dream Pop", "Shoegaze", "Indie Rock", "Post-Rock",
-  "Folk", "Acoustic", "Singer-Songwriter", "Country", "Bluegrass",
-  "Jazz", "Nu Jazz", "Blues", "Gospel", "Soul",
-  // Genre — Cinematic & Classical
-  "Orchestral", "Cinematic", "Epic Orchestral", "Chamber Music", "Baroque",
-  // Production & Sound Design
-  "Lo-Fi", "808 Bass", "Side-Chain Compression", "Granular Synthesis",
-  "Glitchy", "Distorted", "Saturated", "Vinyl Crackle", "Tape Hiss",
-  "Pitched Vocals", "Vocal Chops", "FX Risers", "Reverse Reverb",
-  "Layered Pads", "Plucked Strings", "Prepared Piano",
-  // Mood & Texture
-  "Melancholic", "Euphoric", "Brooding", "Nostalgic", "Hypnotic",
-  "Sparse", "Lush", "Raw", "Intimate", "Eerie",
-  "Uplifting", "Tense", "Dreamy", "Aggressive", "Romantic",
-  // Vocal Style
-  "Close-Mic Vocals", "Dry Vocals", "Layered Harmonies",
-  "Falsetto", "Spoken Word", "Whispered", "No Vocals",
-  // Tempo & Energy
-  "Slow Burn", "Uptempo", "Half-Time", "Driving",
+const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
+  {
+    label: "Electronic",
+    tags: [
+      "House",
+      "Deep House",
+      "Tech House",
+      "Techno",
+      "Minimal Techno",
+      "Drum & Bass",
+      "Jungle",
+      "Trance",
+      "Progressive Trance",
+      "Psytrance",
+      "Synthwave",
+      "Retrowave",
+      "Vaporwave",
+      "IDM",
+      "Breakbeat",
+      "UK Garage",
+      "2-Step",
+      "Dubstep",
+      "Future Bass",
+      "Electro",
+    ],
+  },
+  {
+    label: "Urban & World",
+    tags: [
+      "Hip-Hop",
+      "Boom Bap",
+      "Trap",
+      "Drill",
+      "R&B",
+      "Neo Soul",
+      "Afrobeats",
+      "Amapiano",
+      "Dancehall",
+      "Reggaeton",
+      "Latin Pop",
+      "Baile Funk",
+      "Gqom",
+      "Kuduro",
+      "Afro House",
+    ],
+  },
+  {
+    label: "Band & Organic",
+    tags: [
+      "Indie Pop",
+      "Dream Pop",
+      "Shoegaze",
+      "Indie Rock",
+      "Post-Rock",
+      "Folk",
+      "Acoustic",
+      "Singer-Songwriter",
+      "Country",
+      "Bluegrass",
+      "Jazz",
+      "Nu Jazz",
+      "Blues",
+      "Gospel",
+      "Soul",
+    ],
+  },
+  {
+    label: "Cinematic & Classical",
+    tags: [
+      "Orchestral",
+      "Cinematic",
+      "Chamber Music",
+      "Baroque",
+      "Minimalist Classical",
+    ],
+  },
+  {
+    label: "Ambient & Texture",
+    tags: [
+      "Ambient",
+      "Dark Ambient",
+      "Drone",
+      "Soundscape",
+      "Granular",
+      "Noise",
+      "Glitch",
+      "Microsound",
+      "Field Recording",
+      "Lo-Fi",
+    ],
+  },
+  {
+    label: "Drums & Rhythm",
+    tags: [
+      "808 Bass",
+      "Boom Bap Drums",
+      "Live Drums",
+      "Drum Machine",
+      "Half-Time",
+      "Breakbeat",
+      "Polyrhythmic",
+      "Swing",
+      "Trap Hi-Hats",
+      "Brushed Snare",
+    ],
+  },
+  {
+    label: "Bass & Low End",
+    tags: [
+      "Sub Bass",
+      "Reese Bass",
+      "Wobble Bass",
+      "Sidechain Compression",
+      "Pumping Bass",
+      "Walking Bassline",
+      "Fretless Bass",
+      "Synth Bass",
+    ],
+  },
+  {
+    label: "Synths & Keys",
+    tags: [
+      "Analog Synth",
+      "FM Synthesis",
+      "Wavetable",
+      "Pad Chords",
+      "Layered Pads",
+      "Arpeggiated Synth",
+      "Rhodes Piano",
+      "Prepared Piano",
+      "Wurlitzer",
+      "Mellotron",
+    ],
+  },
+  {
+    label: "Guitar & Strings",
+    tags: [
+      "Fingerpicked Guitar",
+      "Slide Guitar",
+      "Tremolo Guitar",
+      "Plucked Strings",
+      "String Quartet",
+      "Pizzicato",
+      "Electric Guitar",
+      "Nylon Guitar",
+    ],
+  },
+  {
+    label: "FX & Processing",
+    tags: [
+      "Vinyl Crackle",
+      "Tape Hiss",
+      "Reverse Reverb",
+      "Pitch Shift",
+      "Vocal Chops",
+      "FX Risers",
+      "White Noise Sweeps",
+      "Bitcrusher",
+      "Saturated",
+      "Distorted",
+      "Glitchy",
+    ],
+  },
+  {
+    label: "Mood & Energy",
+    tags: [
+      "Melancholic",
+      "Euphoric",
+      "Brooding",
+      "Nostalgic",
+      "Hypnotic",
+      "Eerie",
+      "Uplifting",
+      "Tense",
+      "Dreamy",
+      "Aggressive",
+      "Romantic",
+      "Sparse",
+      "Lush",
+      "Intimate",
+      "Raw",
+    ],
+  },
+  {
+    label: "Vocal Style",
+    tags: [
+      "Close-Mic Vocals",
+      "Dry Vocals",
+      "Layered Harmonies",
+      "Falsetto",
+      "Whispered",
+      "Spoken Word",
+      "No Vocals",
+    ],
+  },
 ];
 
 export default function StudioForm({
@@ -375,16 +540,25 @@ Your chorus here`}
           </button>
 
           {showTags && (
-            <div className="mt-2 flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
-              {STYLE_TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => addStyleTag(tag)}
-                  className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
-                >
-                  + {tag}
-                </button>
+            <div className="mt-3 max-h-64 overflow-y-auto pr-1 space-y-3">
+              {STYLE_TAG_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/25 mb-1.5">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.tags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => addStyleTag(tag)}
+                        className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
+                      >
+                        + {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
