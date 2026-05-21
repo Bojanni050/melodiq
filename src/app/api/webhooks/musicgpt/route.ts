@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -22,13 +22,18 @@ export async function POST(request: NextRequest) {
 
   console.log("[webhook/musicgpt] received:", JSON.stringify(body));
 
-  const taskId = body.task_id;
-  const conversionId = body.conversion_id;
-  const success = body.success;
-  const conversionPath = body.conversion_path;
+  // MusicGPT webhook payload fields (from official docs):
+  // task_id, status ("COMPLETED" | "FAILED"), audio_url, title, conversion_cost
+  const taskId: string | undefined =
+    body.task_id ?? body.taskId ?? undefined;
+  const status: string | undefined =
+    (body.status ?? body.status_msg ?? "").toUpperCase();
+  const audioUrl: string | undefined =
+    body.audio_url ?? body.audioUrl ?? body.conversion_path ?? undefined;
 
-  if (!taskId || !conversionId) {
-    return new Response("missing task_id or conversion_id", { status: 400 });
+  if (!taskId) {
+    console.error("[webhook/musicgpt] missing task_id in payload");
+    return new Response("missing task_id", { status: 400 });
   }
 
   const result = await db
@@ -37,31 +42,27 @@ export async function POST(request: NextRequest) {
     .where(eq(tracks.jobId, taskId));
 
   if (result.length === 0) {
-    console.error(`[webhook/musicgpt] track not found for taskId: ${taskId}`);
+    console.error(`[webhook/musicgpt] no track found for task_id: ${taskId}`);
+    // Return 200 so MusicGPT doesn't keep retrying for unknown tasks
     return new Response("success", { status: 200 });
   }
 
   const track = result[0];
 
-  if (success && conversionPath) {
-    if (!conversionPath) {
-      await db
-        .update(tracks)
-        .set({ status: "failed", error: "No audio URL in webhook" })
-        .where(eq(tracks.id, track.id!));
-      return new Response("success", { status: 200 });
-    }
-
+  if (status === "COMPLETED" && audioUrl) {
     try {
       const axios = (await import("axios")).default;
       const { uploadToS3 } = await import("@/lib/s3");
 
-      const audioRes = await axios.get(conversionPath, { responseType: "arraybuffer" });
+      console.log(`[webhook/musicgpt] downloading audio from ${audioUrl}`);
+      const audioRes = await axios.get(audioUrl, {
+        responseType: "arraybuffer",
+        timeout: 60000,
+      });
       const audioBuffer = Buffer.from(audioRes.data);
       const s3Key = `tracks/${track.id}/audio.mp3`;
       await uploadToS3(s3Key, audioBuffer);
 
-      // Extract duration
       const duration = await extractAudioDuration(audioBuffer);
 
       await db
@@ -94,23 +95,26 @@ export async function POST(request: NextRequest) {
 
       console.log(`[webhook/musicgpt] track ${track.id} done`);
       return new Response("success", { status: 200 });
+
     } catch (error: any) {
-      console.error("[webhook/musicgpt] S3 upload failed:", error.message);
+      console.error("[webhook/musicgpt] failed:", error.message);
       await db
         .update(tracks)
-        .set({ status: "failed", error: `S3 upload failed: ${error.message}` })
+        .set({ status: "failed", error: `Processing failed: ${error.message}` })
         .where(eq(tracks.id, track.id!));
       return new Response("success", { status: 200 });
     }
   }
 
-  if (!success) {
+  if (status === "FAILED" || (status && status.includes("FAIL"))) {
     await db
       .update(tracks)
-      .set({ status: "failed", error: body.reason || "Generation failed" })
+      .set({ status: "failed", error: body.status_msg || "Generation failed" })
       .where(eq(tracks.id, track.id!));
     return new Response("success", { status: 200 });
   }
 
+  // Still processing — just acknowledge
+  console.log(`[webhook/musicgpt] task ${taskId} status=${status}, waiting...`);
   return new Response("success", { status: 200 });
 }
