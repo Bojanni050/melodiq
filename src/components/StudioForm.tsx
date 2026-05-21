@@ -659,24 +659,26 @@ Your chorus here`}
       </section>
 
       {/* Generate Button */}
-      <button
-        onClick={onGenerate}
-        disabled={!canGenerate}
-        className="w-full btn-primary py-3 text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        🎶 Generate Track
-      </button>
+      <div className="sticky bottom-3 z-20 space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
+        <button
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          className="w-full btn-primary py-3 text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          🎶 Generate Track
+        </button>
 
-      {/* Validation hint when button is disabled */}
-      {!canGenerate && (
-        <p className="text-center text-xs text-red-400/60">
-          {instrumental
-            ? "Set a title to generate"
-            : !lyrics.trim()
-            ? "Write or generate lyrics to continue"
-            : "Describe a style or prompt to continue"}
-        </p>
-      )}
+        {/* Validation hint when button is disabled */}
+        {!canGenerate && (
+          <p className="text-center text-xs text-red-400/60">
+            {instrumental
+              ? "Set a title to generate"
+              : !lyrics.trim()
+              ? "Write or generate lyrics to continue"
+              : "Describe a style or prompt to continue"}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
