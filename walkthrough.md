@@ -374,6 +374,15 @@
 - Conclusions: Presets moeten scherper aansluiten op pop, AABA en dance/EDM flows; complete-song generatie kan veilig sequentieel per block lopen zodat eerdere blocks context geven aan latere blocks.
 - Actions: Updated src/app/lyrics-studio/page.tsx met nieuwe BLOCK_PRESETS, EDM/Dance labelmapping (Drop, Breakdown, Build-up), duplicateBlock(), duplicate button per block, preset/structure parsing en Generate complete song button in de Song Structure card. Updated src/components/Sidebar.tsx versie naar do 02:19 en sonara-user.md Lyric Studio uitleg. Validated met npm run build; validated.
 
+## 2026-05-21 (Lyric Studio: rechter lyrics-sidebar)
+
+- Findings: Er was geen mogelijkheid om de volledige lyrics direct te bekijken tijdens het bouwen.
+- Conclusions: Een dynamische, inklapbare rechter zijbalk met alle lyrics verhoogt overzicht en workflow.
+- Actions:
+  - Added `src/components/CollapsibleSidebar.tsx`: generieke collapsible sidebar component.
+  - Updated `src/app/lyrics-studio/page.tsx`: knop toegevoegd (alleen zichtbaar op xl), sidebar toont altijd de actuele lyrics (`combinedLyrics`).
+  - Build gevalideerd met `npm run build`.
+
 ## 2026-05-21 (Lyric Studio: 3 kolommen, resizebare tekstvakken, flowchart mobiel)
 
 - Findings: Op grote schermen was de lyric studio slechts 1 kolom, tekstvakken waren niet resizebaar, en er was geen visueel overzicht van de songstructuur.

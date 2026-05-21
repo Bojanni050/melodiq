@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Flowchart from "@/components/Flowchart";
+import CollapsibleSidebar from "@/components/CollapsibleSidebar";
 import { useStudioStore } from "@/lib/store";
 
 type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
@@ -186,6 +187,7 @@ function autoGrowTextarea(element: HTMLTextAreaElement) {
 }
 
 export default function LyricsStudioPage() {
+    const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
   const router = useRouter();
   const [credits] = useState<number | null>(null);
   const [topic, setTopic] = useState("");
@@ -388,12 +390,31 @@ export default function LyricsStudioPage() {
     <div className="flex h-screen bg-[#0d0d12] text-white overflow-hidden">
       <Sidebar credits={credits} />
 
+      {/* Collapsible lyrics sidebar */}
+      <CollapsibleSidebar open={showLyricsSidebar} onClose={() => setShowLyricsSidebar(false)}>
+        <h2 className="text-xl font-bold mb-4">Volledige lyrics</h2>
+        <pre className="whitespace-pre-wrap text-white/90 text-base font-mono">{combinedLyrics || "(nog geen lyrics)"}</pre>
+      </CollapsibleSidebar>
+
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
-              <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
+                <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLyricsSidebar(true)}
+                className="hidden xl:inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                title="Toon volledige lyrics"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                </svg>
+                Lyrics
+              </button>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
