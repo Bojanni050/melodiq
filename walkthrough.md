@@ -1,5 +1,17 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 04:03 (Lyric Studio third-column AI style suggestion + copy)
+
+- Findings: In de derde kolom bestond alleen de flowchart; er was geen snelle manier om op basis van topic, mood en bestaande lyrics een bruikbare style prompt te laten genereren.
+- Conclusions: Voeg een dedicated Lyric Studio style-suggestie endpoint toe en render een compacte “Style Suggestion” kaart in de rechterkolom met AI-fill en copy workflow.
+- Actions:
+  - Added `src/app/api/lyric-studio/style-suggestion/route.ts` — authenticated endpoint dat topic/mood/lyrics/language/styleHint accepteert en via LLM een enkele compacte stijlregel (comma-separated) teruggeeft
+  - Updated `src/app/lyrics-studio/page.tsx` — added state voor `styleSuggestion`, `generatingStyleSuggestion`, `copiedStyleSuggestion`
+  - Updated `src/app/lyrics-studio/page.tsx` — added `generateStyleSuggestion()` (calls `/api/lyric-studio/style-suggestion`) en `copyStyleSuggestion()`
+  - Updated `src/app/lyrics-studio/page.tsx` — third column uitgebreid met nieuwe “Style Suggestion” card inclusief `AI Fill` en `Copy` knop
+  - Updated `src/app/lyrics-studio/page.tsx` — style suggestion opgenomen in lokale draft-persistentie en `Clear all` reset
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 03:57 (Lyric Studio persistentie + Clear all)
 
 - Findings: Lyric Studio verloor lokale invoer (topic/mood/style/blocks/layout) na refresh, omdat deze state buiten Zustand stond en niet werd opgeslagen.

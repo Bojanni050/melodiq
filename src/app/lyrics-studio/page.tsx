@@ -202,6 +202,9 @@ export default function LyricsStudioPage() {
   const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+  const [styleSuggestion, setStyleSuggestion] = useState("");
+  const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
+  const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
   const {
     language,
     customLanguage,
@@ -237,6 +240,7 @@ export default function LyricsStudioPage() {
         customStructure?: string;
         language?: string;
         customLanguage?: string;
+        styleSuggestion?: string;
       };
 
       if (typeof parsed.topic === "string") setTopic(parsed.topic);
@@ -249,6 +253,7 @@ export default function LyricsStudioPage() {
       if (typeof parsed.customStructure === "string") setCustomStructure(parsed.customStructure);
       if (typeof parsed.language === "string") setLanguage(parsed.language);
       if (typeof parsed.customLanguage === "string") setCustomLanguage(parsed.customLanguage);
+      if (typeof parsed.styleSuggestion === "string") setStyleSuggestion(parsed.styleSuggestion);
 
       if (Array.isArray(parsed.blocks)) {
         const validTypes = new Set<BlockType>(BLOCK_TYPES);
@@ -285,6 +290,7 @@ export default function LyricsStudioPage() {
       customStructure,
       language,
       customLanguage,
+      styleSuggestion,
     };
 
     window.localStorage.setItem(LYRICS_STUDIO_STORAGE_KEY, JSON.stringify(payload));
@@ -298,6 +304,7 @@ export default function LyricsStudioPage() {
     lyricCols,
     mood,
     showLyricsSidebar,
+    styleSuggestion,
     structure,
     style,
     topic,
@@ -476,6 +483,40 @@ export default function LyricsStudioPage() {
     router.push("/");
   }
 
+  async function generateStyleSuggestion() {
+    if (!topic.trim() || !mood.trim() || !combinedLyrics.trim()) return;
+
+    setGeneratingStyleSuggestion(true);
+    try {
+      const response = await fetch("/api/lyric-studio/style-suggestion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          mood,
+          lyrics: combinedLyrics,
+          language: effectiveLanguage,
+          styleHint: style,
+        }),
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data?.suggestion && typeof data.suggestion === "string") {
+        setStyleSuggestion(data.suggestion);
+      }
+    } finally {
+      setGeneratingStyleSuggestion(false);
+    }
+  }
+
+  async function copyStyleSuggestion() {
+    if (!styleSuggestion.trim()) return;
+    await navigator.clipboard.writeText(styleSuggestion);
+    setCopiedStyleSuggestion(true);
+    window.setTimeout(() => setCopiedStyleSuggestion(false), 2000);
+  }
+
   function clearAllDraft() {
     if (!window.confirm("Clear all lyric studio data?")) return;
 
@@ -491,6 +532,8 @@ export default function LyricsStudioPage() {
     setCustomStructure("");
     setLanguage("English");
     setCustomLanguage("");
+    setStyleSuggestion("");
+    setCopiedStyleSuggestion(false);
     window.localStorage.removeItem(LYRICS_STUDIO_STORAGE_KEY);
   }
 
@@ -894,10 +937,46 @@ export default function LyricsStudioPage() {
 
               {/* Derde kolom rechts van lyric blocks */}
               <aside className="hidden lg:block">
-                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4 flex flex-col">
-                  <h3 className="text-white/60 text-sm font-semibold mb-4">Song Flow</h3>
-                  <div className="flex-1 overflow-auto">
-                    <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
+                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4 flex flex-col gap-4">
+                  <div className="min-h-[220px] rounded-xl border border-white/10 bg-[#11111a] p-3">
+                    <h3 className="text-white/60 text-sm font-semibold mb-3">Song Flow</h3>
+                    <div className="h-[calc(100%-1.75rem)] overflow-auto">
+                      <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-[#11111a] p-3">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <h3 className="text-white/70 text-sm font-semibold">Style Suggestion</h3>
+                      <button
+                        type="button"
+                        onClick={generateStyleSuggestion}
+                        disabled={!topic.trim() || !mood.trim() || !combinedLyrics.trim() || generatingStyleSuggestion}
+                        className="inline-flex items-center justify-center rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                        title="Generate style suggestion from topic, mood and lyrics"
+                      >
+                        {generatingStyleSuggestion ? "Generating..." : "AI Fill"}
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={styleSuggestion}
+                      onChange={(event) => setStyleSuggestion(event.target.value)}
+                      placeholder="AI style suggestion will appear here"
+                      className="min-h-[120px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-xs leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
+                    />
+
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-white/35">Based on topic, mood and current lyrics.</p>
+                      <button
+                        type="button"
+                        onClick={copyStyleSuggestion}
+                        disabled={!styleSuggestion.trim()}
+                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        {copiedStyleSuggestion ? "Copied" : "Copy"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </aside>
