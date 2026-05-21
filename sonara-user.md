@@ -124,8 +124,4 @@ The Settings page lets you configure each provider independently:
 
 ## Tips
 
-- Use **Generate Style** to turn a rough idea into a polished, provider-optimized prompt
-- Use **Generate Lyrics** when you have a topic but no words yet — the AI writes structured lyrics with section labels
-- For instrumental tracks, always provide a descriptive title — it's required and helps with organization
-- Keep style prompts concise but specific: genre, mood, instrumentation, BPM, vocal style
-- Avoid artist names in prompts — the AI will strip them automatically, but it's better to use descriptive language instead
+ On desktop Create view, **Generate Track** now stays anchored at the bottom of the Studio column while the form content above it scrolls

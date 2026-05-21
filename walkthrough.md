@@ -499,3 +499,12 @@
 - Actions:
   - Updated `src/app/layout.tsx`: body krijgt nu standaard `pb-[120px]` (120px bottom padding) zodat alle content altijd boven de player blijft.
   - Build gevalideerd met `npm run build`.
+
+## 2026-05-21 do 05:29 (Generate button onderaan Studio-kolom)
+
+- Findings: De generate CTA stond als viewport-sticky en hoorde visueel niet bij de Studio-kolom, waardoor de knop niet duidelijk aan de linker form-kolom gekoppeld bleef.
+- Conclusions: Maak van de Studio-kolom op desktop een vaste/sticky kolom met interne scroll voor form-secties, en plaats de generate CTA vast onderaan die kolom.
+- Actions:
+  - Updated `src/app/page.tsx` — form-kolom aangepast naar desktop sticky + vaste hoogte (`xl:sticky`, `xl:top-16`, `xl:h-[calc(100vh-10rem)]`)
+  - Updated `src/components/StudioForm.tsx` — form herstructureerd naar flex-kolom met scrollbare contentzone en non-viewport-sticky generate container onderaan
+  - Validated with `npm run build`.

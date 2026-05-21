@@ -307,7 +307,8 @@ export default function StudioForm({
   }
 
   return (
-    <div className="space-y-5 pb-20">
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
       <section className="section-card">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white/80">Studio</h3>
@@ -657,9 +658,10 @@ Your chorus here`}
           </p>
         )}
       </section>
+      </div>
 
       {/* Generate Button */}
-      <div className="sticky bottom-3 z-20 space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
+      <div className="space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
         <button
           onClick={onGenerate}
           disabled={!canGenerate}

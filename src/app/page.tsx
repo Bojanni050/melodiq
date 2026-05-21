@@ -454,7 +454,7 @@ export default function HomePage() {
             {activeTab === "create" ? (
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Form column */}
-                <div className="xl:col-span-1 max-w-xl">
+                <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-16 xl:h-[calc(100vh-10rem)]">
                   <StudioForm
                     credits={credits}
                     onGenerate={handleGenerate}
