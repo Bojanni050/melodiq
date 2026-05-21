@@ -203,6 +203,8 @@ export default function LyricsStudioPage() {
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const [repetitiveChorus, setRepetitiveChorus] = useState(true);
+  const [creativityLevel, setCreativityLevel] = useState(5);
+  const [contextLevel, setContextLevel] = useState(7);
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
@@ -244,6 +246,8 @@ export default function LyricsStudioPage() {
         language?: string;
         customLanguage?: string;
         repetitiveChorus?: boolean;
+        creativityLevel?: number;
+        contextLevel?: number;
         styleSuggestion?: string;
       };
 
@@ -258,6 +262,12 @@ export default function LyricsStudioPage() {
       if (typeof parsed.language === "string") setLanguage(parsed.language);
       if (typeof parsed.customLanguage === "string") setCustomLanguage(parsed.customLanguage);
       if (typeof parsed.repetitiveChorus === "boolean") setRepetitiveChorus(parsed.repetitiveChorus);
+      if (typeof parsed.creativityLevel === "number" && parsed.creativityLevel >= 1 && parsed.creativityLevel <= 10) {
+        setCreativityLevel(Math.round(parsed.creativityLevel));
+      }
+      if (typeof parsed.contextLevel === "number" && parsed.contextLevel >= 1 && parsed.contextLevel <= 10) {
+        setContextLevel(Math.round(parsed.contextLevel));
+      }
       if (typeof parsed.styleSuggestion === "string") setStyleSuggestion(parsed.styleSuggestion);
 
       if (Array.isArray(parsed.blocks)) {
@@ -296,6 +306,8 @@ export default function LyricsStudioPage() {
       language,
       customLanguage,
       repetitiveChorus,
+      creativityLevel,
+      contextLevel,
       styleSuggestion,
     };
 
@@ -310,6 +322,8 @@ export default function LyricsStudioPage() {
     lyricCols,
     mood,
     repetitiveChorus,
+    creativityLevel,
+    contextLevel,
     showLyricsSidebar,
     styleSuggestion,
     structure,
@@ -320,6 +334,10 @@ export default function LyricsStudioPage() {
   const isCustomLanguage = language === "Other...";
   const selectedLanguage = isCustomLanguage ? "Other..." : language;
   const effectiveLanguage = isCustomLanguage ? customLanguage.trim() || "Other" : language;
+  const temperature = Number((0.1 + ((creativityLevel - 1) / 9) * 1.1).toFixed(2));
+  const topP = Number((0.1 + ((contextLevel - 1) / 9) * 0.9).toFixed(2));
+  const creativityZone = creativityLevel <= 3 ? "Laag" : creativityLevel <= 7 ? "Middel" : "Hoog";
+  const contextZone = contextLevel <= 3 ? "Smal" : contextLevel <= 7 ? "Gebalanceerd" : "Breed";
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
 
@@ -397,6 +415,8 @@ export default function LyricsStudioPage() {
           .map(({ type, label, content }) => ({ type, label, content })),
         chorusMode: options?.chorusMode,
         isFirstChorus: options?.isFirstChorus,
+        temperature,
+        topP,
       }),
     });
 
@@ -637,6 +657,8 @@ export default function LyricsStudioPage() {
     setStructure("");
     setCustomStructure("");
     setRepetitiveChorus(true);
+    setCreativityLevel(5);
+    setContextLevel(7);
     setLanguage("English");
     setCustomLanguage("");
     setStyleSuggestion("");
@@ -873,6 +895,44 @@ export default function LyricsStudioPage() {
                       </span>
                     </span>
                   </label>
+
+                  <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                    <div className="flex items-center justify-between text-sm text-white/85">
+                      <span>Creativity</span>
+                      <span>{creativityLevel}/10</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={creativityLevel}
+                      onChange={(event) => setCreativityLevel(Number(event.target.value))}
+                      className="mt-2 w-full accent-primary-500"
+                    />
+                    <p className="mt-1 text-xs text-white/50">
+                      {creativityZone} • temp {temperature.toFixed(2)} • zones: 1-3 laag, 4-7 middel, 8-10 hoog
+                    </p>
+                  </div>
+
+                  <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                    <div className="flex items-center justify-between text-sm text-white/85">
+                      <span>Context (Top-P)</span>
+                      <span>{contextLevel}/10</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={contextLevel}
+                      onChange={(event) => setContextLevel(Number(event.target.value))}
+                      className="mt-2 w-full accent-primary-500"
+                    />
+                    <p className="mt-1 text-xs text-white/50">
+                      {contextZone} • top-p {topP.toFixed(2)} • intern 0.1-1.0
+                    </p>
+                  </div>
 
                   <button
                     type="button"

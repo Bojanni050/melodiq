@@ -9,6 +9,8 @@ interface CallLLMOptions {
   provider?: LLMProvider;
   openRouterModelOverride?: string;
   openAiModelOverride?: string;
+  temperature?: number;
+  topP?: number;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
@@ -66,6 +68,8 @@ export async function callLLM(
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model: OPENROUTER_MODEL,
+        temperature: normalizedOptions.temperature,
+        top_p: normalizedOptions.topP,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
@@ -87,6 +91,8 @@ export async function callLLM(
       "https://api.openai.com/v1/chat/completions",
       {
         model: OPENAI_MODEL,
+        temperature: normalizedOptions.temperature,
+        top_p: normalizedOptions.topP,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt },

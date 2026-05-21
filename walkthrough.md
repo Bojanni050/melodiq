@@ -602,3 +602,17 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:18`
   - Updated `sonara-user.md` — version updated to `do 12:18` and Lyric Studio section mentions stop action
   - Validated with `npm run build`.
+
+## 2026-05-21 do 15:34 (Lyric Studio creativity + top-p sliders)
+
+- Findings: Er was geen directe controle in Lyric Studio op LLM sampling; temperature en top-p konden niet per generatie worden gestuurd.
+- Conclusions: Voeg twee sliders toe in de Song Structure card met 1-10 UX-schaal en map intern naar API-waardige waarden, vervolgens meesturen naar de LLM-call.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added `creativityLevel` and `contextLevel` sliders (1-10), with internal mapping to `temperature` (0.1-1.2) and `topP` (0.1-1.0)
+  - Updated `src/app/lyrics-studio/page.tsx` — added zone labels for creativity (laag/middel/hoog) and persisted slider values in lyric-studio local draft storage
+  - Updated `src/app/lyrics-studio/page.tsx` — request payload for `/api/lyric-studio/generate-block` now includes `temperature` and `topP`
+  - Updated `src/app/api/lyric-studio/generate-block/route.ts` — added validation for `temperature` (0.1-1.2) and `topP` (0.1-1.0), then forwarded both into `callLLM(...)`
+  - Updated `src/lib/providers/llm.ts` — `callLLM` now accepts `temperature` and `topP` options and passes them to OpenRouter/OpenAI payloads (`temperature`, `top_p`)
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-15:34`
+  - Updated `sonara-user.md` — version updated to `do 15:34` and Lyric Studio docs mention both sliders
+  - Validated with `npm run build`.

@@ -23,6 +23,8 @@ interface GenerateBlockBody {
   existingBlocks?: unknown;
   chorusMode?: unknown;
   isFirstChorus?: unknown;
+  temperature?: unknown;
+  topP?: unknown;
 }
 
 type ChorusMode = "repeat" | "variation";
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP } = body;
 
   if (!isBlockType(blockType)) {
     return NextResponse.json({ error: "blockType is required" }, { status: 400 });
@@ -99,6 +101,12 @@ export async function POST(request: NextRequest) {
   }
   if (isFirstChorus !== undefined && typeof isFirstChorus !== "boolean") {
     return NextResponse.json({ error: "isFirstChorus must be a boolean" }, { status: 400 });
+  }
+  if (temperature !== undefined && (typeof temperature !== "number" || temperature < 0.1 || temperature > 1.2)) {
+    return NextResponse.json({ error: "temperature must be between 0.1 and 1.2" }, { status: 400 });
+  }
+  if (topP !== undefined && (typeof topP !== "number" || topP < 0.1 || topP > 1.0)) {
+    return NextResponse.json({ error: "topP must be between 0.1 and 1.0" }, { status: 400 });
   }
 
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
@@ -144,14 +152,18 @@ Now write only the lyrics for: ${blockLabel}`;
 
   try {
     const llmProvider = await getLLMProviderForPurpose("lyrics");
-    const result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics" });
+    const result = await callLLM(userPrompt, systemPrompt, {
+      purpose: "lyrics",
+      temperature: typeof temperature === "number" ? temperature : undefined,
+      topP: typeof topP === "number" ? topP : undefined,
+    });
 
     await logApi({
       userId: auth.userId,
       type: "llm",
       provider: llmProvider,
       endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style }),
+      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, temperature, topP }),
       response: JSON.stringify({ result: result.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,
@@ -167,7 +179,7 @@ Now write only the lyrics for: ${blockLabel}`;
       type: "llm",
       provider: llmProvider,
       endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language }),
+      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, temperature, topP }),
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
