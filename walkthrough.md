@@ -1,5 +1,15 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 04:43 (PoYo WAV debug visibility — matchedBy logging)
+
+- Findings: Voor verificatie van multi-variant WAV matching ontbrak inzicht op welke sleutel (`wavJobId`, `audioId`, of `jobId`) een callback precies werd gematcht.
+- Conclusions: Voeg expliciete `matchedBy` debug metadata toe in webhook logs en API logging, zodat productiegedrag direct traceerbaar is.
+- Actions:
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — split matching in `byWavJobId`, `byAudioId`, `byJobId` + computed `matchedBy`
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — `logApi(...response...)` uitgebreid met `matchedBy`
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — console success-log uitgebreid met `matchedBy`, `taskId`, `audioId`
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 04:32 (PoYo WAV matching fix — voorkom overschrijven van eerste track)
 
 - Findings: Bij multi-variant PoYo WAV webhooks kon de query meerdere tracks tegelijk matchen (`jobId` + `audioId` + `wavJobId`), maar de handler gebruikte altijd `result[0]`; daardoor werd vaak alleen de eerste track met WAV bijgewerkt.

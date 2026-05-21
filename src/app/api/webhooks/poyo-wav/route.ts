@@ -74,11 +74,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  const track =
-    (taskId ? result.find((item) => item.wavJobId === String(taskId)) : undefined) ||
-    (audioId ? result.find((item) => item.audioId === String(audioId)) : undefined) ||
-    (taskId ? result.find((item) => item.jobId === String(taskId)) : undefined) ||
-    result[0];
+  const byWavJobId = taskId ? result.find((item) => item.wavJobId === String(taskId)) : undefined;
+  const byAudioId = audioId ? result.find((item) => item.audioId === String(audioId)) : undefined;
+  const byJobId = taskId ? result.find((item) => item.jobId === String(taskId)) : undefined;
+
+  const track = byWavJobId || byAudioId || byJobId || result[0];
+  const matchedBy = byWavJobId
+    ? "wavJobId"
+    : byAudioId
+      ? "audioId"
+      : byJobId
+        ? "jobId"
+        : "fallback-first";
 
   if (!audioUrl) {
     await db
@@ -126,7 +133,12 @@ export async function POST(request: NextRequest) {
       provider: "poyo",
       endpoint: "/api/webhooks/poyo-wav",
       request: JSON.stringify(body),
-      response: JSON.stringify({ trackId: track.id, audioId: audioId ?? track.audioId, formatHd }),
+      response: JSON.stringify({
+        trackId: track.id,
+        audioId: audioId ?? track.audioId,
+        formatHd,
+        matchedBy,
+      }),
       statusCode: 200,
     });
 
@@ -141,7 +153,9 @@ export async function POST(request: NextRequest) {
       }).catch(() => {});
     }
 
-    console.log(`[webhook/poyo-wav] track ${track.id} WAV synced`);
+    console.log(
+      `[webhook/poyo-wav] track ${track.id} WAV synced (matchedBy=${matchedBy}, taskId=${taskId ?? "(none)"}, audioId=${audioId ?? "(none)"})`
+    );
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[webhook/poyo-wav] S3 upload failed:", error.message);
