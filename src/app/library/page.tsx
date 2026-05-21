@@ -300,8 +300,8 @@ export default function LibraryPage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden lg:ml-60 lg:flex">
-        <div className="min-w-0 flex-1 overflow-y-auto">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
             <div className="px-4 py-3 space-y-3">
               <div>

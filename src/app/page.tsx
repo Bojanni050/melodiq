@@ -399,8 +399,8 @@ export default function HomePage() {
       <Sidebar credits={creditValue} />
 
       {/* Main content area */}
-      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden lg:ml-60 lg:flex">
-        <div className="min-w-0 flex-1 overflow-y-auto">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           {notice && (
             <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
               <div className="flex items-start gap-3">
