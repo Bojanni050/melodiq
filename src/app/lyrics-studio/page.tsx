@@ -483,6 +483,32 @@ export default function LyricsStudioPage() {
     router.push("/");
   }
 
+  function useLyricsAndStyleInStudio() {
+    const nextLyrics = combinedLyrics.trim();
+    const nextStyle = (styleSuggestion.trim() || style.trim()).trim();
+    if (!nextLyrics || !nextStyle) return;
+
+    const studio = useStudioStore.getState();
+    const hasExistingStudioData = Boolean(
+      studio.songIdea.trim() ||
+      studio.lyrics.trim() ||
+      studio.lyricsContext.trim() ||
+      studio.title.trim()
+    );
+
+    if (
+      hasExistingStudioData &&
+      !window.confirm("Studio already contains data. Clear Studio and replace with current lyrics + style?")
+    ) {
+      return;
+    }
+
+    studio.reset();
+    studio.setLyrics(nextLyrics);
+    studio.setSongIdea(nextStyle);
+    router.push("/");
+  }
+
   async function generateStyleSuggestion() {
     if (!topic.trim() || !mood.trim() || !combinedLyrics.trim()) return;
 
@@ -977,6 +1003,16 @@ export default function LyricsStudioPage() {
                         {copiedStyleSuggestion ? "Copied" : "Copy"}
                       </button>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={useLyricsAndStyleInStudio}
+                      disabled={!combinedLyrics.trim() || !(styleSuggestion.trim() || style.trim())}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Copy lyrics and style to Studio"
+                    >
+                      Use lyrics + style in Studio
+                    </button>
                   </div>
                 </div>
               </aside>

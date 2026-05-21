@@ -1,5 +1,16 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 04:17 (Use lyrics + style to Studio met safety confirm)
+
+- Findings: Derde kolom had al style suggestion + copy, maar geen directe workflow om zowel lyrics als style naar Studio te sturen met bescherming tegen overschrijven van bestaande Studio-inhoud.
+- Conclusions: Voeg een dedicated knop onder de style suggestion box toe die eerst controleert of Studio leeg is, anders bevestiging vraagt, en daarna Studio reset + vult met huidige lyrics en style.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added `useLyricsAndStyleInStudio()`
+  - Updated `src/app/lyrics-studio/page.tsx` — safety check op bestaande Studio-data (`songIdea`, `lyrics`, `lyricsContext`, `title`) met confirm prompt bij overschrijven
+  - Updated `src/app/lyrics-studio/page.tsx` — bij bevestiging: `reset()`, daarna `setLyrics(combinedLyrics)` en `setSongIdea(styleSuggestion || style)`, vervolgens navigatie naar Studio (`/`)
+  - Updated `src/app/lyrics-studio/page.tsx` — added button “Use lyrics + style in Studio” onder de style suggestion box
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 04:03 (Lyric Studio third-column AI style suggestion + copy)
 
 - Findings: In de derde kolom bestond alleen de flowchart; er was geen snelle manier om op basis van topic, mood en bestaande lyrics een bruikbare style prompt te laten genereren.
