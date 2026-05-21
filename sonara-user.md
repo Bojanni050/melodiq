@@ -96,6 +96,11 @@ Lyria tracks complete in the same request. PoYo and Tempolor tracks may take lon
 - **Recent Tracks** — shown alongside the form on the Studio Create page. Click any track to open the detail panel.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
+### Library Views
+- **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
+- **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
+- Clicking a playlist card opens that playlist in Songs view
+
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
 - Track info (provider, model, status, date)

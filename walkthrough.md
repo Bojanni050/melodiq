@@ -527,3 +527,15 @@
   - Updated `src/app/page.tsx` — removed `useUIStore` tab state, removed Create/Library top submenu, removed conditional tab rendering, and kept only the Create layout
   - Updated `sonara-user.md` — wording aangepast naar Studio Create page + Library page via sidebar
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:34`
+
+## 2026-05-21 do 05:41 (Library playlists als gallery view)
+
+- Findings: In Library bestond alleen een songlist met playlist-filters; er was geen visuele playlist-overview zoals een galerij.
+- Conclusions: Voeg een aparte Playlists-view toe met cards en cover-collage op basis van cover art van tracks in de playlist.
+- Actions:
+  - Updated `src/app/library/page.tsx` — added `Songs`/`Playlists` view switch in Library header
+  - Updated `src/app/library/page.tsx` — added playlist gallery grid with create-card and playlist cards
+  - Updated `src/app/library/page.tsx` — playlist card cover now uses up to 4 song cover images from that playlist (collage), fallback placeholder when empty
+  - Updated `src/app/library/page.tsx` — clicking playlist card sets active playlist and switches to Songs view
+  - Updated `sonara-user.md` — added Library Views section
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:41`

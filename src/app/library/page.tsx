@@ -30,6 +30,7 @@ interface Track {
 export default function LibraryPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
+  const [libraryView, setLibraryView] = useState<"songs" | "playlists">("songs");
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
@@ -188,6 +189,19 @@ export default function LibraryPage() {
     addTrackToPlaylist(playlistId, trackId);
   }
 
+  function getPlaylistTracks(playlistId: string) {
+    const playlist = playlists.find((item) => item.id === playlistId);
+    if (!playlist) return [] as Track[];
+    return tracks.filter((track) => playlist.trackIds.includes(track.id));
+  }
+
+  function getPlaylistCoverImages(playlistId: string) {
+    return getPlaylistTracks(playlistId)
+      .map((track) => track.coverUrl)
+      .filter((cover): cover is string => !!cover)
+      .slice(0, 4);
+  }
+
   const selectedPlaylist =
     selectedPlaylistId === null
       ? null
@@ -286,10 +300,38 @@ export default function LibraryPage() {
             <div className="px-4 py-3 space-y-3">
               <div>
                 <h1 className="text-lg font-bold">Library</h1>
-                <p className="text-xs text-white/40 mt-0.5">{visibleTracks.length} tracks shown</p>
+                <p className="text-xs text-white/40 mt-0.5">
+                  {libraryView === "songs"
+                    ? `${visibleTracks.length} tracks shown`
+                    : `${playlists.length} playlists`}
+                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setLibraryView("songs")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    libraryView === "songs"
+                      ? "bg-white/10 text-white"
+                      : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  Songs
+                </button>
+                <button
+                  onClick={() => setLibraryView("playlists")}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    libraryView === "playlists"
+                      ? "bg-white/10 text-white"
+                      : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  Playlists
+                </button>
+              </div>
+
+              {libraryView === "songs" && (
+                <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setSelectedPlaylistId(null)}
                   className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
@@ -352,21 +394,132 @@ export default function LibraryPage() {
                     + Playlist
                   </button>
                 )}
-              </div>
+                </div>
+              )}
+
+              {libraryView === "playlists" && (
+                <div>
+                  {showCreatePlaylist ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        value={newPlaylistName}
+                        onChange={(e) => setNewPlaylistName(e.target.value)}
+                        placeholder="Playlist name"
+                        className="h-8 px-2.5 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
+                      />
+                      <button
+                        onClick={handleCreatePlaylist}
+                        className="h-8 px-3 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreatePlaylist(false);
+                          setNewPlaylistName("");
+                        }}
+                        className="h-8 px-3 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowCreatePlaylist(true)}
+                      className="px-3 py-1.5 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
+                    >
+                      + Create Playlist
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           <main className="p-4 pb-32">
-            <TrackList
-              tracks={visibleTracks}
-              autoQueueAfterPlay
-              onSelect={(t) => setSelectedTrack(t)}
-              onDelete={handleDeleteTrack}
-              onAddToQueue={handleAddToQueue}
-              onAddToPlaylist={handleAddToPlaylist}
-              playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-              onTitleUpdate={handleTitleUpdate}
-            />
+            {libraryView === "songs" ? (
+              <TrackList
+                tracks={visibleTracks}
+                autoQueueAfterPlay
+                onSelect={(t) => setSelectedTrack(t)}
+                onDelete={handleDeleteTrack}
+                onAddToQueue={handleAddToQueue}
+                onAddToPlaylist={handleAddToPlaylist}
+                playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                onTitleUpdate={handleTitleUpdate}
+              />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                <button
+                  onClick={() => setShowCreatePlaylist(true)}
+                  className="rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors p-4 min-h-55 flex flex-col items-center justify-center text-center"
+                >
+                  <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-3xl text-white/80 mb-3">+</div>
+                  <p className="text-sm font-medium text-white/90">Create Playlist</p>
+                </button>
+
+                {playlists.map((playlist) => {
+                  const playlistTracks = getPlaylistTracks(playlist.id);
+                  const coverImages = getPlaylistCoverImages(playlist.id);
+                  const coverGrid = [...coverImages];
+                  while (coverGrid.length > 0 && coverGrid.length < 4) {
+                    coverGrid.push(coverGrid[coverGrid.length - 1]);
+                  }
+
+                  return (
+                    <div key={playlist.id} className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setSelectedPlaylistId(playlist.id);
+                          setLibraryView("songs");
+                        }}
+                        className="w-full text-left"
+                      >
+                        <div className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#13131b] relative">
+                          {coverGrid.length === 0 ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-white/5 to-white/2">
+                              <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2zm12-3c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2zM9 10l12-3" />
+                              </svg>
+                            </div>
+                          ) : coverGrid.length === 1 ? (
+                            <img src={coverGrid[0]} alt={playlist.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="grid grid-cols-2 grid-rows-2 h-full w-full gap-px bg-black/40">
+                              {coverGrid.slice(0, 4).map((cover, index) => (
+                                <img key={`${playlist.id}-${index}`} src={cover} alt={playlist.name} className="w-full h-full object-cover" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+
+                      <div className="px-0.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedPlaylistId(playlist.id);
+                              setLibraryView("songs");
+                            }}
+                            className="text-left min-w-0"
+                          >
+                            <p className="text-white/95 text-sm font-medium truncate">{playlist.name}</p>
+                            <p className="text-white/60 text-xs">{playlistTracks.length} songs</p>
+                          </button>
+                          <button
+                            onClick={() => deletePlaylist(playlist.id)}
+                            className="text-white/35 hover:text-red-400 transition-colors text-xs px-1.5 py-1"
+                            title="Delete playlist"
+                          >
+                            x
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </main>
         </div>
 
