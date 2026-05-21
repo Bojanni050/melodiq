@@ -777,9 +777,11 @@ export default function LyricsStudioPage() {
 
               {/* Derde kolom rechts van lyric blocks */}
               <aside className="hidden lg:block">
-                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
-                  <div className="text-white/60 text-sm font-semibold mb-2">Extra kolom</div>
-                  <div className="text-white/30 text-xs">Hier kun je extra features, notities of previews tonen.</div>
+                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4 flex flex-col">
+                  <h3 className="text-white/60 text-sm font-semibold mb-4">Song Flow</h3>
+                  <div className="flex-1 overflow-auto">
+                    <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
+                  </div>
                 </div>
               </aside>
             </div>

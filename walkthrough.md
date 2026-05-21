@@ -1,5 +1,24 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 03:28 (Flowchart visualization in lyric studio right column)
+
+- Findings: Song structure flowchart was only visible on mobile/tablet (xl:hidden), even though a 3-column layout exists on lg+ screens with an empty right sidebar.
+- Conclusions: The flowchart should display in the right column (340px) on lg+ screens alongside the lyric blocks, giving users instant visual feedback on their song structure.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — replaced placeholder "Extra kolom" aside with Flowchart component; flowchart now receives `blocks.map(b => ({ label: b.label, type: b.type }))` and displays in a styled container
+  - Updated `src/components/Flowchart.tsx` — removed `mt-8` margin and `p-4 bg-[#181820]` styling for inline integration; restructured as compact embedded component with `p-3 bg-[#0f0f16] rounded-lg border border-white/10`; legend rearranged as stacked list instead of single line for better readability in narrow sidebar
+  - Validated with `npm run build`.
+
+## 2026-05-21 do 03:27 (StudioForm STYLE_TAGS expansion — 8 to 80+ tags with collapsible panel)
+
+- Findings: Only 8 basic style tags available in the form; users needed more genre, mood, and production options to describe their song effectively.
+- Conclusions: Expand tag library to 80+ tags organized in 8 categories (Electronic, Urban & World, Band & Organic, Cinematic & Classical, Production, Mood & Texture, Vocal, Tempo) with a collapsible panel UI to keep the form compact.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — replaced `STYLE_TAGS` constant with 80+ categorized tags (organized by genre, production style, mood, and tempo)
+  - Added local state `const [showTags, setShowTags] = useState(false);` to toggle tag panel visibility
+  - Replaced hardcoded tag flex layout with collapsible button ("Browse style tags"/"Hide style tags") with chevron icon and conditional tag grid rendering (`max-h-48 overflow-y-auto`)
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Directe batch cover art vanuit generate-route)
 
 - Findings: PoYo en Tempolor cover-art werd pas gestart vanuit webhooks, wat bij multi-track batches race-condition gedrag gaf en cover-toewijzing per track versplinterde.

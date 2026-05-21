@@ -39,12 +39,19 @@ export default function Flowchart({ blocks }: FlowchartProps) {
     .join("  →  ");
 
   return (
-    <div className="mt-8 p-4 bg-[#181820] rounded-xl border border-white/10">
-      <div className="mb-2 text-xs text-white/40 font-semibold uppercase tracking-wider">Song Flowchart</div>
-      <div className="overflow-x-auto text-sm font-mono whitespace-nowrap text-primary-400">
+    <div className="p-3 bg-[#0f0f16] rounded-lg border border-white/10">
+      <div className="mb-3 text-xs text-white/40 font-semibold uppercase tracking-wider">Flowchart</div>
+      <div className="overflow-x-auto text-xs font-mono whitespace-normal text-primary-400 leading-relaxed break-words">
         {flow}
       </div>
-      <div className="mt-2 text-xs text-white/30">Legenda: ( ) Intro/Outro, [ ] Verse, {'< >'} Pre-Chorus, {'{ }'} Chorus, {'<=>'} Post-Chorus, [::] Bridge</div>
+      <div className="mt-3 text-[10px] text-white/25 space-y-1">
+        <div>( ) Intro/Outro</div>
+        <div>[ ] Verse</div>
+        <div>{'< >'} Pre-Chorus</div>
+        <div>{'{ }'} Chorus</div>
+        <div>{'<=>'} Post-Chorus</div>
+        <div>[::] Bridge</div>
+      </div>
     </div>
   );
 }
