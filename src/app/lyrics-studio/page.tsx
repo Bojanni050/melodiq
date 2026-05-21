@@ -399,7 +399,7 @@ export default function LyricsStudioPage() {
 
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-7xl px-4 py-6 lg:px-8 lg:py-8">
+          <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
