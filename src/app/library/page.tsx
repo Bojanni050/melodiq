@@ -288,9 +288,9 @@ export default function LibraryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f]">
+      <div className="h-screen bg-[#0a0a0f] overflow-hidden">
         <Sidebar credits={null} />
-        <div className="lg:ml-60 flex items-center justify-center min-h-screen">
+        <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
         </div>
       </div>
@@ -298,10 +298,10 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="lg:ml-60 lg:flex">
-        <div className="min-w-0 flex-1">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden lg:ml-60 lg:flex">
+        <div className="min-w-0 flex-1 overflow-y-auto">
           <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
             <div className="px-4 py-3 space-y-3">
               <div>
@@ -542,7 +542,7 @@ export default function LibraryPage() {
 
         {showTrackDetailsPanel && (
           <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
-            <div className="sticky top-0 h-screen pb-28">
+            <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
               {selectedTrack ? (
                 <TrackDetail
                   mode="sidebar"

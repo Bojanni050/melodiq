@@ -395,12 +395,12 @@ export default function HomePage() {
   const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={creditValue} />
 
       {/* Main content area */}
-      <div className="lg:ml-60 lg:flex">
-        <div className="min-w-0 flex-1">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden lg:ml-60 lg:flex">
+        <div className="min-w-0 flex-1 overflow-y-auto">
           {notice && (
             <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
               <div className="flex items-start gap-3">
@@ -471,7 +471,7 @@ export default function HomePage() {
 
         {showTrackDetailsPanel && (
           <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
-            <div className="sticky top-0 h-screen pb-28">
+            <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
               {selectedTrack ? (
                 <TrackDetail
                   mode="sidebar"

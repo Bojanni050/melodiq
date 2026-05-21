@@ -839,9 +839,9 @@ export default function SettingsPage() {
     : allModels;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="lg:ml-[240px]">
+      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="px-4 py-3">
             <h1 className="text-lg font-bold">Settings</h1>

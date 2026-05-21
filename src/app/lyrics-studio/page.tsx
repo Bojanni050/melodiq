@@ -564,7 +564,7 @@ export default function LyricsStudioPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0d0d12] text-white overflow-hidden">
+    <div className="flex h-[calc(100vh-var(--player-height))] bg-[#0d0d12] text-white overflow-hidden">
       <Sidebar credits={credits} />
 
       {/* Collapsible lyrics sidebar */}

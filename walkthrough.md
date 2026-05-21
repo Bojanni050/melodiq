@@ -539,3 +539,31 @@
   - Updated `src/app/library/page.tsx` — clicking playlist card sets active playlist and switches to Songs view
   - Updated `sonara-user.md` — added Library Views section
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:41`
+
+## 2026-05-21 do 11:14 (Player spacing + mobile details panel start-off fix)
+
+- Findings: Pagina's hadden dubbele bottom spacing (`body` + `main pb-32`) en de mobile track details overlay kon terug blijven komen doordat sluiten alleen `selectedTrack` leegmaakte terwijl `showTrackDetailsPanel` actief bleef (ook persisted).
+- Conclusions: Maak de player-bottomruimte globaal leidend op exact `76.5px`, verwijder extra page-level bottom padding, en koppel detail-close aan het daadwerkelijk uitschakelen van de panel-state; forceer daarnaast mobile start op `off`.
+- Actions:
+  - Updated `src/app/globals.css` — changed `--player-height` from `120px` to `76.5px`
+  - Updated `src/app/page.tsx`, `src/app/library/page.tsx`, `src/app/account/page.tsx`, `src/app/logs/page.tsx`, `src/app/settings/page.tsx` — removed redundant `pb-32` page-level bottom padding
+  - Updated `src/app/page.tsx`, `src/app/library/page.tsx` — added shared close handler that sets `showTrackDetailsPanel=false` on close (sidebar + mobile overlay)
+  - Updated `src/components/Player.tsx` — added mobile-on-mount guard to start details panel off for viewports `<=1023px`
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:14`
+  - Updated `sonara-user.md` — version updated to `do 11:14`
+  - Validated with `npm run build`.
+
+## 2026-05-21 do 11:39 (Viewport shell boven fixed player, geen overlap)
+
+- Findings: Hoewel player-height was afgestemd, konden pagina's nog body-scroll of viewport-overlap krijgen doordat content-shells `min-h-screen` gebruikten; hierdoor kon content (zoals `Generate Track`) te dicht bij of onder de fixed player vallen.
+- Conclusions: Alle hoofdpagina's moeten een vaste shell gebruiken met hoogte `calc(100vh - 77px)` en interne `overflow-y-auto`, zodat scroll altijd stopt exact boven de fixed player.
+- Actions:
+  - Updated `src/app/globals.css` — set `--player-height` to exact `77px`
+  - Updated `src/app/layout.tsx` — removed global body bottom padding; scrolling is now owned by per-page constrained shells
+  - Updated `src/app/page.tsx` — main shell set to `h-[calc(100vh-var(--player-height))]` with internal scrolling; right details panel height aligned to same calc height
+  - Updated `src/app/library/page.tsx` — same constrained shell + loading state alignment; details panel aligned to calc height
+  - Updated `src/app/account/page.tsx`, `src/app/logs/page.tsx`, `src/app/settings/page.tsx` — replaced full-page scroll wrappers with constrained `calc(100vh - player)` scroll containers
+  - Updated `src/app/lyrics-studio/page.tsx` — root shell constrained to `h-[calc(100vh-var(--player-height))]`
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:39`
+  - Updated `sonara-user.md` — version updated to `do 11:39`
+  - Validated with `npm run build`.
