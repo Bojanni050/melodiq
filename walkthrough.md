@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-21 do 04:32 (PoYo WAV matching fix — voorkom overschrijven van eerste track)
+
+- Findings: Bij multi-variant PoYo WAV webhooks kon de query meerdere tracks tegelijk matchen (`jobId` + `audioId` + `wavJobId`), maar de handler gebruikte altijd `result[0]`; daardoor werd vaak alleen de eerste track met WAV bijgewerkt.
+- Conclusions: Trackselectie in de WAV webhook moet prioriteit geven aan unieke identifiers (`wavJobId`, daarna `audioId`) i.p.v. blind de eerste query-rij te pakken.
+- Actions:
+  - Updated `src/app/api/webhooks/poyo-wav/route.ts` — trackselectie aangepast naar prioriteit: `wavJobId === taskId` → `audioId === audioId` → `jobId === taskId` → fallback `result[0]`
+  - Hiermee wordt bij meerdere matches de juiste variant-track geüpdatet in plaats van steeds de eerste
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 04:17 (Use lyrics + style to Studio met safety confirm)
 
 - Findings: Derde kolom had al style suggestion + copy, maar geen directe workflow om zowel lyrics als style naar Studio te sturen met bescherming tegen overschrijven van bestaande Studio-inhoud.

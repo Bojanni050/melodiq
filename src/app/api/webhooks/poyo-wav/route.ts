@@ -74,7 +74,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  const track = result[0];
+  const track =
+    (taskId ? result.find((item) => item.wavJobId === String(taskId)) : undefined) ||
+    (audioId ? result.find((item) => item.audioId === String(audioId)) : undefined) ||
+    (taskId ? result.find((item) => item.jobId === String(taskId)) : undefined) ||
+    result[0];
 
   if (!audioUrl) {
     await db
