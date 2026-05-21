@@ -57,7 +57,7 @@ export default function LogsPage() {
             </button>
           </div>
         </div>
-        <main className="p-4 pb-32">
+        <main className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />

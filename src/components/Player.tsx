@@ -291,6 +291,12 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
 
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      setShowTrackDetailsPanel(false);
+    }
+  }, [setShowTrackDetailsPanel]);
+
   const tryPlay = useCallback(async () => {
     if (!audioRef.current) return;
     for (let i = 0; i < 3; i += 1) {

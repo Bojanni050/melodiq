@@ -39,6 +39,7 @@ export default function HomePage() {
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const resizeStartXRef = useRef(0);
@@ -124,6 +125,11 @@ export default function HomePage() {
     document.body.style.userSelect = "none";
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
+  }
+
+  function handleCloseTrackDetails() {
+    setSelectedTrack(null);
+    setShowTrackDetailsPanel(false);
   }
 
   async function fetchTracks() {
@@ -416,7 +422,7 @@ export default function HomePage() {
             </div>
           )}
 
-          <main className="p-4 pb-32">
+          <main className="p-4">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Form column */}
               <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-[var(--studio-top-offset)] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
@@ -470,7 +476,7 @@ export default function HomePage() {
                 <TrackDetail
                   mode="sidebar"
                   track={selectedTrack}
-                  onClose={() => setSelectedTrack(null)}
+                  onClose={handleCloseTrackDetails}
                   onPlay={handlePlayTrack}
                   onDownload={handleDownloadTrack}
                 />
@@ -508,7 +514,7 @@ export default function HomePage() {
         <div className="lg:hidden">
           <TrackDetail
             track={selectedTrack}
-            onClose={() => setSelectedTrack(null)}
+            onClose={handleCloseTrackDetails}
             onPlay={handlePlayTrack}
             onDownload={handleDownloadTrack}
             mode="overlay"

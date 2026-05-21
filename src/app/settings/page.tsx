@@ -848,7 +848,7 @@ export default function SettingsPage() {
             <p className="text-xs text-white/40 mt-0.5">Configure your API providers</p>
           </div>
         </div>
-        <main className="p-4 pb-32">
+        <main className="p-4">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 max-w-[1600px]">
             <div className="space-y-4">
               <section className="section-card">

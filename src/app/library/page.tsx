@@ -36,6 +36,7 @@ export default function LibraryPage() {
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const resizeStartXRef = useRef(0);
@@ -125,6 +126,11 @@ export default function LibraryPage() {
     document.body.style.userSelect = "none";
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
+  }
+
+  function handleCloseTrackDetails() {
+    setSelectedTrack(null);
+    setShowTrackDetailsPanel(false);
   }
 
   async function fetchTracks() {
@@ -436,7 +442,7 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          <main className="p-4 pb-32">
+          <main className="p-4">
             {libraryView === "songs" ? (
               <TrackList
                 tracks={visibleTracks}
@@ -541,7 +547,7 @@ export default function LibraryPage() {
                 <TrackDetail
                   mode="sidebar"
                   track={selectedTrack}
-                  onClose={() => setSelectedTrack(null)}
+                  onClose={handleCloseTrackDetails}
                   onPlay={handlePlayTrack}
                   onDownload={handleDownloadTrack}
                 />
@@ -561,7 +567,7 @@ export default function LibraryPage() {
           <TrackDetail
             mode="overlay"
             track={selectedTrack}
-            onClose={() => setSelectedTrack(null)}
+            onClose={handleCloseTrackDetails}
             onPlay={handlePlayTrack}
             onDownload={handleDownloadTrack}
           />

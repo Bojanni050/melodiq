@@ -110,7 +110,7 @@ export default function AccountPage() {
             <p className="text-xs text-white/40 mt-0.5">Manage your profile and security settings</p>
           </div>
         </div>
-        <main className="p-4 pb-32 max-w-2xl">
+        <main className="p-4 max-w-2xl">
           <div className="space-y-4">
             {/* Profile Section */}
             <section className="section-card">
