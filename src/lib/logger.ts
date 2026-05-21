@@ -2,6 +2,13 @@ import { db } from "@/db";
 import { apiLogs } from "@/db/schema";
 import { getSetting } from "@/lib/settings";
 
+const MAX_LOG_CHARS = 4000;
+
+function truncateForConsole(value: string) {
+  if (value.length <= MAX_LOG_CHARS) return value;
+  return `${value.slice(0, MAX_LOG_CHARS)}... [truncated ${value.length - MAX_LOG_CHARS} chars]`;
+}
+
 export async function logApi({
   userId,
   type,
@@ -37,6 +44,14 @@ export async function logApi({
       statusCode: statusCode || null,
       duration: duration || null,
     });
+
+    const requestLog = truncateForConsole(request || "");
+    const responseLog = truncateForConsole(response || "");
+    console.log(
+      `[api-log] ${type.toUpperCase()} ${provider} ${endpoint} status=${statusCode ?? "n/a"} duration=${duration ?? "n/a"}ms\n` +
+      `  sent: ${requestLog || "(empty)"}\n` +
+      `  received: ${responseLog || "(empty)"}`
+    );
   } catch (e) {
     console.error("Failed to log API call:", e);
   }

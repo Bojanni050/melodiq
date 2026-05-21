@@ -616,3 +616,13 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-15:34`
   - Updated `sonara-user.md` — version updated to `do 15:34` and Lyric Studio docs mention both sliders
   - Validated with `npm run build`.
+
+## 2026-05-21 do 15:51 (API sent/received logging in centrale logger)
+
+- Findings: API logging bestond al in `api_logs`, maar er was geen directe server-side output van wat precies werd verstuurd en ontvangen per gelogde API-call.
+- Conclusions: Centraliseer sent/received output in `logApi` zodat alle bestaande route-calls die `logApi(...)` gebruiken automatisch ook leesbare request/response console-logging krijgen.
+- Actions:
+  - Updated `src/lib/logger.ts` — added console output for every successful `logApi(...)` call with endpoint, status, duration, sent payload, and received payload
+  - Updated `src/lib/logger.ts` — added safe truncation helper (`MAX_LOG_CHARS = 4000`) to avoid oversized terminal log spam
+  - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-15:51`
+  - Validated with `npm run build`.
