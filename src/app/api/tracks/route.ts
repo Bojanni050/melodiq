@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 
-const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
+const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 export async function GET() {
   const auth = await requireAuth();

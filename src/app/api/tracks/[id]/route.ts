@@ -16,7 +16,7 @@ import {
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
-const GENERATION_TIMEOUT_MS = 10 * 60 * 1000;
+const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 export async function GET(
   request: NextRequest,
