@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const WAVE_DELAYS = ["[animation-delay:0ms]", "[animation-delay:55ms]", "[animation-delay:110ms]", "[animation-delay:165ms]", "[animation-delay:220ms]"];
@@ -86,6 +86,8 @@ interface PlaylistOption {
   name: string;
 }
 
+type SortOrder = "newest" | "oldest";
+
 export default function TrackList({
   tracks,
   isGenerating,
@@ -111,8 +113,24 @@ export default function TrackList({
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
+
+  const displayedTracks = useMemo(() => {
+    const list = [...tracks];
+
+    list.sort((left, right) => {
+      const leftTime = Number(new Date(left.createdAt));
+      const rightTime = Number(new Date(right.createdAt));
+
+      if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
+      if (sortOrder === "oldest") return leftTime - rightTime;
+      return rightTime - leftTime;
+    });
+
+    return list;
+  }, [sortOrder, tracks]);
 
   function toggleSelection(trackId: string) {
     const newSelected = new Set(selectedIds);
@@ -125,14 +143,14 @@ export default function TrackList({
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === tracks.length) {
+    if (selectedIds.size === displayedTracks.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(tracks.map((t) => t.id)));
+      setSelectedIds(new Set(displayedTracks.map((t) => t.id)));
     }
   }
 
-  const allSelected = tracks.length > 0 && selectedIds.size === tracks.length;
+  const allSelected = displayedTracks.length > 0 && selectedIds.size === displayedTracks.length;
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
@@ -157,7 +175,7 @@ export default function TrackList({
 
   function handlePlay(track: TrackItem) {
     if (autoQueueAfterPlay) {
-      const playContext = tracks
+      const orderedPlayContext = displayedTracks
         .filter((t) => t.status === "done")
         .map((t) => ({
           id: t.id,
@@ -180,12 +198,12 @@ export default function TrackList({
           s3KeyCover: t.s3KeyCover,
         }));
 
-      setPlayContext(playContext);
+      setPlayContext(orderedPlayContext);
 
       if (autoPlayNext) {
-        const index = playContext.findIndex((t) => t.id === track.id);
+        const index = orderedPlayContext.findIndex((t) => t.id === track.id);
         if (index >= 0) {
-          const nextQueue = playContext
+          const nextQueue = orderedPlayContext
             .slice(index + 1)
           .filter((t) => t.status === "done")
           ;
@@ -216,7 +234,7 @@ export default function TrackList({
     });
   }
 
-  if (tracks.length === 0) {
+  if (displayedTracks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,7 +278,20 @@ export default function TrackList({
             <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
           )}
         </button>
-        <span className="text-xs text-white/30">{selectedIds.size > 0 ? `${selectedIds.size} of ${tracks.length}` : `${tracks.length} tracks`}</span>
+        <span className="text-xs text-white/30">{selectedIds.size > 0 ? `${selectedIds.size} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}</span>
+        <div className="ml-auto flex items-center gap-2">
+          <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
+          <select
+            id="track-sort"
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/75 outline-none hover:border-white/20"
+            aria-label="Sort tracks"
+          >
+            <option value="newest" className="bg-[#161621]">New to old</option>
+            <option value="oldest" className="bg-[#161621]">Old to new</option>
+          </select>
+        </div>
       </div>
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
@@ -288,7 +319,7 @@ export default function TrackList({
         </div>
       )}
       {isGenerating && <GeneratingRow />}
-      {tracks.map((track) => (
+      {displayedTracks.map((track) => (
         <TrackCard
           key={track.id}
           track={track}
