@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { useStudioStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
+import { useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 
@@ -38,6 +38,9 @@ export default function HomePage() {
   const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
+  const workspaces = useWorkspaceStore((state) => state.workspaces);
+  const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
+  const setSelectedWorkspaceId = useWorkspaceStore((state) => state.setSelectedWorkspaceId);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -403,6 +406,12 @@ export default function HomePage() {
   }
 
   const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
+  const selectedWorkspace = selectedWorkspaceId
+    ? workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null
+    : null;
+  const selectedWorkspaceTracks = selectedWorkspace
+    ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
+    : [];
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -435,7 +444,7 @@ export default function HomePage() {
           <main className="p-4">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Form column */}
-              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-[var(--studio-top-offset)] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <StudioForm
                   credits={credits}
                   onGenerate={handleGenerate}
@@ -446,23 +455,76 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="xl:col-span-2">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
-                  <span className="text-xs text-white/30">{tracks.length} tracks</span>
+              <div className="xl:col-span-2 xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+                <div className="grid h-full min-h-0 grid-rows-2 gap-4">
+                  <section className="section-card min-h-0 overflow-hidden flex flex-col">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[11px] text-white/35 mb-1.5 truncate">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkspaceId(null)}
+                            className="hover:text-white/70 transition-colors"
+                          >
+                            Workspaces
+                          </button>
+                          <span className="mx-1 text-white/20">/</span>
+                          <span className="text-white/70">
+                            {selectedWorkspace?.name ?? "No workspace selected"}
+                          </span>
+                        </div>
+                        <h2 className="text-sm font-semibold text-white/70">Workspace Tracks</h2>
+                      </div>
+                      <span className="text-xs text-white/30 shrink-0">
+                        {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
+                      </span>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                      {selectedWorkspace ? (
+                        <TrackList
+                          tracks={selectedWorkspaceTracks}
+                          autoQueueAfterPlay
+                          onSelect={(t) => setSelectedTrack(t)}
+                          onDelete={handleDeleteTrack}
+                          onReusePrompt={handleReusePrompt}
+                          onAddToQueue={handleAddToQueue}
+                          onAddToPlaylist={handleAddToPlaylist}
+                          playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                          onTitleUpdate={handleTitleUpdate}
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
+                          <p className="text-sm text-white/45">
+                            Select a workspace in the Workspaces page to pin its tracks here.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="section-card min-h-0 overflow-hidden flex flex-col">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
+                      <span className="text-xs text-white/30">{tracks.length} tracks</span>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                      <TrackList
+                        tracks={tracks}
+                        autoQueueAfterPlay
+                        isGenerating={generating}
+                        onSelect={(t) => setSelectedTrack(t)}
+                        onDelete={handleDeleteTrack}
+                        onReusePrompt={handleReusePrompt}
+                        onAddToQueue={handleAddToQueue}
+                        onAddToPlaylist={handleAddToPlaylist}
+                        playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                        onTitleUpdate={handleTitleUpdate}
+                      />
+                    </div>
+                  </section>
                 </div>
-                <TrackList
-                  tracks={tracks}
-                  autoQueueAfterPlay
-                  isGenerating={generating}
-                  onSelect={(t) => setSelectedTrack(t)}
-                  onDelete={handleDeleteTrack}
-                  onReusePrompt={handleReusePrompt}
-                  onAddToQueue={handleAddToQueue}
-                  onAddToPlaylist={handleAddToPlaylist}
-                  playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-                  onTitleUpdate={handleTitleUpdate}
-                />
               </div>
             </div>
           </main>
