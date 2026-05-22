@@ -34,12 +34,14 @@ export async function POST(request: NextRequest) {
     body.conversion_id ??
     body.conversionId ??
     body.conversion_id_1 ??
-    body.conversion_id_2 ??
     undefined;
   const conversionType: string | undefined =
-    body.conversion_type ?? body.conversionType ?? undefined;
+    body.conversion_type ??
+    body.conversionType ??
+    body.feature ??
+    undefined;
   const status: string =
-    ((body.status ?? body.status_msg ?? "") as string).toUpperCase();
+    ((body.status ?? body.status_msg ?? body.message ?? "") as string).toUpperCase();
   const audioUrl: string | undefined =
     body.audio_url ??
     body.audioUrl ??
@@ -60,7 +62,11 @@ export async function POST(request: NextRequest) {
   // Skip non-audio webhooks early to avoid unnecessary DB lookups.
   if (conversionType) {
     const type = conversionType.toUpperCase();
-    if (type.includes("LYRIC") || type.includes("IMAGE") || type.includes("COVER")) {
+    if (
+      !type.includes("MUSIC") &&
+      !type.includes("AUDIO") &&
+      (type.includes("LYRIC") || type.includes("IMAGE") || type.includes("COVER") || type.includes("ALBUM"))
+    ) {
       console.log(`[webhook/musicgpt] skipping non-audio webhook (type=${conversionType})`);
       return new Response("success", { status: 200 });
     }
