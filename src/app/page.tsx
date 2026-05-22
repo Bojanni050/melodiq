@@ -527,7 +527,8 @@ export default function HomePage() {
           ? "grid-cols-[repeat(12,minmax(0,1fr))]"
           : "grid-cols-[repeat(16,minmax(0,1fr))]";
 
-  function handleMoveTrackToWorkspace(_trackId: string, workspaceId: string) {
+  function handleMoveTrackToWorkspace(trackId: string, workspaceId: string) {
+    moveTrackToWorkspace(workspaceId, trackId);
     setSelectedWorkspaceId(workspaceId);
   }
 

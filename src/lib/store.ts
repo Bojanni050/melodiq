@@ -363,23 +363,29 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         return id;
       },
       moveTrackToWorkspace: (workspaceId, trackId) =>
-        set((state) => ({
-          workspaces: state.workspaces.map((workspace) => {
-            if (workspace.id === workspaceId) {
+        set((state) => {
+          const targetWorkspace = state.workspaces.find((workspace) => workspace.id === workspaceId);
+          if (!targetWorkspace) return state;
+
+          // Silently skip when the track is already part of the requested workspace.
+          if (targetWorkspace.trackIds.includes(trackId)) return state;
+
+          return {
+            workspaces: state.workspaces.map((workspace) => {
+              if (workspace.id === workspaceId) {
+                return {
+                  ...workspace,
+                  trackIds: [...workspace.trackIds.filter((id) => id !== trackId), trackId],
+                };
+              }
+
               return {
                 ...workspace,
-                trackIds: workspace.trackIds.includes(trackId)
-                  ? workspace.trackIds
-                  : [...workspace.trackIds.filter((id) => id !== trackId), trackId],
+                trackIds: workspace.trackIds.filter((id) => id !== trackId),
               };
-            }
-
-            return {
-              ...workspace,
-              trackIds: workspace.trackIds.filter((id) => id !== trackId),
-            };
-          }),
-        })),
+            }),
+          };
+        }),
       removeTrackFromWorkspace: (workspaceId, trackId) =>
         set((state) => ({
           workspaces: state.workspaces.map((workspace) => {

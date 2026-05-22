@@ -428,6 +428,10 @@ function TrackCard({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const assignedWorkspaceName = useMemo(() => {
+    const assignedWorkspace = workspaces.find((workspace) => workspace.trackIds.includes(track.id));
+    return assignedWorkspace?.name || null;
+  }, [track.id, workspaces]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -869,6 +873,11 @@ function TrackCard({
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
+          {assignedWorkspaceName && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px]" title={assignedWorkspaceName}>
+              {assignedWorkspaceName}
+            </span>
+          )}
         </div>
         {(track.status === "generating" || track.status === "pending") ? (
           <div className="mt-1.5 text-primary-500/40 w-full">

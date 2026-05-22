@@ -494,6 +494,17 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:37`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
+
+- Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.
+- Conclusions: Borg assignment in de parent callback (toevoegen + openen), maak move idempotent (track al aanwezig stil overslaan) en toon workspace-label direct in elke trackrij.
+- Actions:
+  - Updated `src/app/page.tsx` — `handleMoveTrackToWorkspace(trackId, workspaceId)` voert nu zowel `moveTrackToWorkspace(...)` als `setSelectedWorkspaceId(...)` uit
+  - Updated `src/lib/store.ts` — `moveTrackToWorkspace` doet nu een stille no-op wanneer de track al in de doel-workspace zit
+  - Updated `src/components/TrackList.tsx` — added workspace badge per track op basis van huidige store-assignments
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:54`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.
