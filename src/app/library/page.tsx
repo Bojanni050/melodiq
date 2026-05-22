@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import {
+  DEFAULT_WORKSPACE_ID,
   WORKSPACE_FOLDER_GRADIENTS,
   usePlaylistStore,
   useWorkspaceStore,
@@ -293,12 +294,16 @@ export default function LibraryPage() {
                             >
                               Open workspace
                             </button>
-                            <button
-                              onClick={() => deleteWorkspace(workspace.id)}
-                              className="text-sm text-white/35 transition-colors hover:text-red-400"
-                            >
-                              Delete
-                            </button>
+                            {workspace.id === DEFAULT_WORKSPACE_ID ? (
+                              <span className="text-sm text-white/35">Default</span>
+                            ) : (
+                              <button
+                                onClick={() => deleteWorkspace(workspace.id)}
+                                className="text-sm text-white/35 transition-colors hover:text-red-400"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </article>
                       );

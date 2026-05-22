@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { WORKSPACE_FOLDER_GRADIENTS, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, WORKSPACE_FOLDER_GRADIENTS, useWorkspaceStore } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -241,12 +241,16 @@ export default function WorkspacesPage() {
                   <h2 className="text-sm font-semibold">{selectedWorkspace.name}</h2>
                   <p className="text-xs text-white/40">{selectedWorkspaceTracks.length} songs inside this workspace</p>
                 </div>
-                <button
-                  onClick={() => deleteWorkspace(selectedWorkspace.id)}
-                  className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/65 hover:bg-red-500/10 hover:text-red-200"
-                >
-                  Delete workspace
-                </button>
+                {selectedWorkspace.id !== DEFAULT_WORKSPACE_ID ? (
+                  <button
+                    onClick={() => deleteWorkspace(selectedWorkspace.id)}
+                    className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/65 hover:bg-red-500/10 hover:text-red-200"
+                  >
+                    Delete workspace
+                  </button>
+                ) : (
+                  <span className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/45">System default</span>
+                )}
               </div>
 
               <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">

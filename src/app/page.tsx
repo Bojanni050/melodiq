@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { WORKSPACE_FOLDER_GRADIENTS, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, WORKSPACE_FOLDER_GRADIENTS, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara-studio-workspace-grid-size";
@@ -72,6 +72,9 @@ export default function HomePage() {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const setSelectedWorkspaceId = useWorkspaceStore((state) => state.setSelectedWorkspaceId);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
+  const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
+  const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
@@ -85,10 +88,11 @@ export default function HomePage() {
   const resizeStartWidthRef = useRef(0);
 
   useEffect(() => {
+    ensureDefaultWorkspace();
     fetchTracks();
     fetchCredits();
     useStudioStore.persist.rehydrate();
-  }, []);
+  }, [ensureDefaultWorkspace]);
 
   useEffect(() => {
     try {
@@ -213,6 +217,8 @@ export default function HomePage() {
     if (res.ok) {
       const data = await res.json();
       setTracks(data.tracks);
+      const knownTrackIds = (data.tracks || []).map((track: Track) => track.id);
+      syncTracksToDefaultWorkspace(knownTrackIds);
     }
   }
 
@@ -352,6 +358,9 @@ export default function HomePage() {
     }
 
     setGenerating(true);
+    const targetWorkspaceId = selectedWorkspaceId && selectedWorkspaceId !== DEFAULT_WORKSPACE_ID
+      ? selectedWorkspaceId
+      : ensureDefaultWorkspace();
 
     try {
       let finalTitle = title;
@@ -389,6 +398,16 @@ export default function HomePage() {
       if (!generatedTrack && provider !== "lyria") {
         setNotice({ type: "error", message: "Generation started but no track payload returned" });
       }
+
+      const generatedTrackIds = Array.isArray(data.tracks)
+        ? data.tracks.map((track: Track) => track.id).filter(Boolean)
+        : data.track?.id
+          ? [data.track.id]
+          : [];
+
+      generatedTrackIds.forEach((trackId: string) => {
+        moveTrackToWorkspace(targetWorkspaceId, trackId);
+      });
 
       await fetchTracks();
       setNotice(null);

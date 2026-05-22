@@ -221,7 +221,11 @@ export interface Workspace {
   trackIds: string[];
   createdAt: string;
   folderGradient?: string;
+  isDefault?: boolean;
 }
+
+export const DEFAULT_WORKSPACE_ID = "workspace-default";
+export const DEFAULT_WORKSPACE_NAME = "Default Workspace";
 
 export const WORKSPACE_FOLDER_GRADIENTS = [
   "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)",
@@ -304,12 +308,42 @@ interface WorkspaceState {
   removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
+  ensureDefaultWorkspace: () => string;
+  syncTracksToDefaultWorkspace: (trackIds: string[]) => void;
+}
+
+function createDefaultWorkspace(): Workspace {
+  return {
+    id: DEFAULT_WORKSPACE_ID,
+    name: DEFAULT_WORKSPACE_NAME,
+    trackIds: [],
+    createdAt: new Date().toISOString(),
+    folderGradient: WORKSPACE_FOLDER_GRADIENTS[0],
+    isDefault: true,
+  };
+}
+
+function withDefaultWorkspace(workspaces: Workspace[]) {
+  const defaultWorkspace = workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
+  const normalizedDefault = {
+    ...(defaultWorkspace || createDefaultWorkspace()),
+    id: DEFAULT_WORKSPACE_ID,
+    name: DEFAULT_WORKSPACE_NAME,
+    isDefault: true,
+    folderGradient: defaultWorkspace?.folderGradient || WORKSPACE_FOLDER_GRADIENTS[0],
+  };
+
+  const otherWorkspaces = workspaces
+    .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+    .map((workspace) => ({ ...workspace, isDefault: false }));
+
+  return [normalizedDefault, ...otherWorkspaces];
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
-    (set) => ({
-      workspaces: [],
+    (set, get) => ({
+      workspaces: [createDefaultWorkspace()],
       selectedWorkspaceId: null,
       createWorkspace: (name) => {
         const trimmed = name.trim();
@@ -323,7 +357,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           workspaces: [
             ...state.workspaces,
-            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString(), folderGradient },
+            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString(), folderGradient, isDefault: false },
           ],
         }));
         return id;
@@ -356,16 +390,65 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             };
           }),
         })),
-      deleteWorkspace: (workspaceId) =>
+      deleteWorkspace: (workspaceId) => {
+        if (workspaceId === DEFAULT_WORKSPACE_ID) return;
         set((state) => ({
           workspaces: state.workspaces.filter((workspace) => workspace.id !== workspaceId),
           selectedWorkspaceId:
             state.selectedWorkspaceId === workspaceId ? null : state.selectedWorkspaceId,
-        })),
+        }));
+      },
       setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),
+      ensureDefaultWorkspace: () => {
+        let defaultId = DEFAULT_WORKSPACE_ID;
+        set((state) => ({ workspaces: withDefaultWorkspace(state.workspaces) }));
+        const existing = get().workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
+        if (!existing) {
+          defaultId = DEFAULT_WORKSPACE_ID;
+        }
+        return defaultId;
+      },
+      syncTracksToDefaultWorkspace: (trackIds) =>
+        set((state) => {
+          const normalizedWorkspaces = withDefaultWorkspace(state.workspaces);
+          const knownTrackIds = new Set(trackIds);
+
+          const cleaned = normalizedWorkspaces.map((workspace) => ({
+            ...workspace,
+            trackIds: workspace.trackIds.filter((trackId) => knownTrackIds.has(trackId)),
+          }));
+
+          const assignedOutsideDefault = new Set(
+            cleaned
+              .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+              .flatMap((workspace) => workspace.trackIds)
+          );
+
+          const defaultTrackIds = trackIds.filter((trackId) => !assignedOutsideDefault.has(trackId));
+
+          return {
+            workspaces: cleaned.map((workspace) =>
+              workspace.id === DEFAULT_WORKSPACE_ID
+                ? { ...workspace, trackIds: defaultTrackIds }
+                : workspace
+            ),
+          };
+        }),
     }),
     {
       name: "sonara-workspaces",
+      merge: (persistedState, currentState) => {
+        const typedPersisted = (persistedState as Partial<WorkspaceState>) || {};
+        const merged = {
+          ...currentState,
+          ...typedPersisted,
+        } as WorkspaceState;
+
+        return {
+          ...merged,
+          workspaces: withDefaultWorkspace(merged.workspaces || []),
+        };
+      },
     }
   )
 );
