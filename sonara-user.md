@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 22:39**
+**Versie: vr 22:50**
 
 > AI Music Generation Web App
 
@@ -107,7 +107,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 ## Recent Tracks & Library
 
-- **Recent Tracks** — shown alongside the form on the Studio Create page. Click any track to open the detail panel.
+- **Recent Tracks** — shown in the lower half of the right Studio column. Click any track to open the detail panel.
+- **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`).
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views

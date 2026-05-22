@@ -748,3 +748,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:39`
   - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:39` en MusicGPT als webhook-provider verduidelijkt
   - Validated with `npm run build`.
+
+## 2026-05-22 vr 22:50 (Studio tracks kolom gesplitst: workspace + recent)
+
+- Findings: In Studio stond rechts alleen één lange `Recent Tracks` lijst, waardoor workspace-context ontbrak en navigatie tussen workspace en globale tracks onduidelijk bleef.
+- Conclusions: Splits de rechterkolom in twee gelijke blokken met eigen scroll: boven de geselecteerde workspace-tracks met breadcrumb, onder de volledige recente tracks.
+- Actions:
+  - Updated `src/app/page.tsx` — imported `useWorkspaceStore` and wired `selectedWorkspaceId`, selected workspace lookup, and workspace track filtering
+  - Updated `src/app/page.tsx` — replaced single right-column list with two half-height cards: top `Workspace Tracks` block with breadcrumb (`Workspaces / {workspace}`), bottom `Recent Tracks` block
+  - Updated `src/app/page.tsx` — each block now has independent `overflow-y-auto` for easier browsing in long lists
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:50`
+  - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:50` en Studio split-column gedrag gedocumenteerd
+  - Validated with `npm run build`.
