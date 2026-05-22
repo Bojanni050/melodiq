@@ -219,7 +219,10 @@ export default function HomePage() {
       setTracks(data.tracks);
       const knownTrackIds = (data.tracks || []).map((track: Track) => track.id);
       syncTracksToDefaultWorkspace(knownTrackIds);
+      return data.tracks as Track[];
     }
+
+    return [] as Track[];
   }
 
   function handleDeleteTrack(trackId: string) {
@@ -357,6 +360,7 @@ export default function HomePage() {
       return;
     }
 
+    const existingTrackIds = new Set(tracks.map((track) => track.id));
     setGenerating(true);
     const targetWorkspaceId = selectedWorkspaceId && selectedWorkspaceId !== DEFAULT_WORKSPACE_ID
       ? selectedWorkspaceId
@@ -409,7 +413,18 @@ export default function HomePage() {
         moveTrackToWorkspace(targetWorkspaceId, trackId);
       });
 
-      await fetchTracks();
+      const latestTracks = await fetchTracks();
+
+      if (generatedTrackIds.length === 0 && targetWorkspaceId !== DEFAULT_WORKSPACE_ID) {
+        const discoveredTrackIds = latestTracks
+          .map((track) => track.id)
+          .filter((trackId) => !existingTrackIds.has(trackId));
+
+        discoveredTrackIds.forEach((trackId) => {
+          moveTrackToWorkspace(targetWorkspaceId, trackId);
+        });
+      }
+
       setNotice(null);
     } catch {
       setNotice({ type: "error", message: "Failed to generate track" });

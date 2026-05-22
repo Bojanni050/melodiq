@@ -431,6 +431,20 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:49`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 00:53 (Default workspace + automatische track-toewijzing)
+
+- Findings: Er bestond geen vaste fallback-workspace, waardoor niet-toegewezen songs verspreid konden raken en nieuwe generations niet consistent aan een map werden gekoppeld.
+- Conclusions: Introduceer een niet-verwijderbare Default Workspace en sync alle niet-toegewezen tracks daarheen. Nieuwe tracks moeten naar Default gaan, behalve wanneer een andere workspace actief geselecteerd is tijdens generation.
+- Actions:
+  - Updated `src/lib/store.ts` — toegevoegd: `DEFAULT_WORKSPACE_ID`, `DEFAULT_WORKSPACE_NAME`, `ensureDefaultWorkspace()`, `syncTracksToDefaultWorkspace(trackIds)` en persist-merge die legacy state migreert met een default workspace
+  - Updated `src/lib/store.ts` — `deleteWorkspace` blokkeert nu verwijderen van de default workspace
+  - Updated `src/app/page.tsx` — Studio mount zorgt voor `ensureDefaultWorkspace()`, `fetchTracks()` synct niet-toegewezen tracks naar default, en `handleGenerate()` routeert nieuwe tracks naar actieve workspace of anders default
+  - Updated `src/app/library/page.tsx` — delete-actie verborgen voor default workspace (label `Default`)
+  - Updated `src/app/workspaces/page.tsx` — delete-knop vervangen door `System default` badge voor de default workspace
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:53`
+  - Updated `sonara-user.md` — gebruikersdocumentatie uitgebreid met default workspace gedrag
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.
