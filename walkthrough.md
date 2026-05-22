@@ -485,6 +485,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:25`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 01:37 (Exacte 4/8/12/16 folders per rij)
+
+- Findings: De selector moest exact het aantal folders per rij bepalen; responsive profielen konden op sommige schermen minder kolommen tonen dan geselecteerd.
+- Conclusions: Gebruik vaste grid-template kolommen per gekozen waarde (4, 8, 12, 16) zodat de rij altijd exact overeenkomt met de selector.
+- Actions:
+  - Updated `src/app/page.tsx` — `workspaceGridClass` omgezet naar vaste kolomclasses: `repeat(4|8|12|16, minmax(0, 1fr))`
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:37`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.

@@ -520,12 +520,12 @@ export default function HomePage() {
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass =
     workspaceGridSize === 4
-      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      ? "grid-cols-[repeat(4,minmax(0,1fr))]"
       : workspaceGridSize === 8
-        ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
+        ? "grid-cols-[repeat(8,minmax(0,1fr))]"
         : workspaceGridSize === 12
-          ? "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12"
-          : "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 2xl:grid-cols-[repeat(16,minmax(0,1fr))]";
+          ? "grid-cols-[repeat(12,minmax(0,1fr))]"
+          : "grid-cols-[repeat(16,minmax(0,1fr))]";
 
   function handleMoveTrackToWorkspace(_trackId: string, workspaceId: string) {
     setSelectedWorkspaceId(workspaceId);
