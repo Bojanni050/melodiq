@@ -458,6 +458,19 @@
   - Updated `sonara-user.md` — user guide aangevuld met folder-open gedrag en terugnavigatie
   - Validated with `npm run build`.
 
+## 2026-05-23 za 01:03 (Grid selector gedrag + Workspaces pagina playable TrackList)
+
+- Findings: De workspace grid-selector voelde defect omdat de layout visueel op 2 kolommen bleef; daarnaast toonde de Workspaces pagina een losse, niet-standaard trackweergave i.p.v. de normale speelbare TrackList.
+- Conclusions: Laat de selector ook de grid-dichtheid sturen (niet alleen max aantal items) en gebruik op de Workspaces pagina dezelfde TrackList-component als elders voor consistente playback/acties.
+- Actions:
+  - Updated `src/app/page.tsx` — toegevoegd `workspaceGridClass` mapping op basis van selector (4/8/12/16) zodat het aantal grid-kolommen meeschakelt
+  - Updated `src/app/page.tsx` — overviewtekst toont nu `Showing X of Y folders` voor directe feedback
+  - Updated `src/app/page.tsx` — `No workspace` kaart uit de folders-grid verwijderd om selector-gedrag en foldertellingen eenduidig te houden
+  - Updated `src/app/workspaces/page.tsx` — vervangen van custom track tiles door `TrackList` met `autoQueueAfterPlay`, playlist-opties en delete callback
+  - Updated `src/app/workspaces/page.tsx` — track type uitgebreid naar volledige velden die `TrackList` gebruikt
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:03`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.

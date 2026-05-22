@@ -519,6 +519,14 @@ export default function HomePage() {
     : [];
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const visibleWorkspaces = workspaces.slice(0, workspaceGridSize);
+  const workspaceGridClass =
+    workspaceGridSize === 4
+      ? "grid-cols-1 sm:grid-cols-2"
+      : workspaceGridSize === 8
+        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        : workspaceGridSize === 12
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -571,7 +579,7 @@ export default function HomePage() {
                         <p className="text-xs text-white/40">
                           {isWorkspaceFolderOpen
                             ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
-                            : "Select a folder card to open it."}
+                            : `Showing ${visibleWorkspaces.length} of ${workspaces.length} folders.`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -647,7 +655,7 @@ export default function HomePage() {
 
                     {!isWorkspaceFolderOpen && (
                       <div className="mb-3 overflow-y-auto pr-1">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className={`grid gap-3 ${workspaceGridClass}`}>
                           {visibleWorkspaces.map((workspace) => {
                             const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                             const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
@@ -701,17 +709,6 @@ export default function HomePage() {
                               </button>
                             );
                           })}
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWorkspaceId(null)}
-                            className={`rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-left transition-colors hover:bg-white/[0.05] ${
-                              selectedWorkspaceId ? "" : "ring-2 ring-primary-500/40"
-                            }`}
-                          >
-                            <p className="text-sm font-semibold text-white/80">No workspace</p>
-                            <p className="mt-1 text-xs text-white/45">Show only Recent Tracks below.</p>
-                          </button>
                         </div>
                       </div>
                     )}

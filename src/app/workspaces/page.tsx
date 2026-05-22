@@ -3,15 +3,27 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { DEFAULT_WORKSPACE_ID, WORKSPACE_FOLDER_GRADIENTS, useWorkspaceStore } from "@/lib/store";
+import TrackList from "@/components/TrackList";
+import { DEFAULT_WORKSPACE_ID, WORKSPACE_FOLDER_GRADIENTS, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 type Track = {
   id: string;
   title: string | null;
   provider: string;
+  providerModel: string;
   prompt: string;
+  lyrics: string | null;
   status: "pending" | "generating" | "done" | "failed";
+  audioUrl: string | null;
+  audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
+  duration: number | null;
+  error: string | null;
+  s3KeyHd: string | null;
   coverUrl?: string | null;
+  s3KeyCover?: string | null;
+  rating?: string | null;
   createdAt: string;
 };
 
@@ -52,6 +64,8 @@ export default function WorkspacesPage() {
   const [loading, setLoading] = useState(true);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const playlists = usePlaylistStore((state) => state.playlists);
+  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
 
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
@@ -101,6 +115,10 @@ export default function WorkspacesPage() {
       setShowCreateWorkspace(false);
       setNewWorkspaceName("");
     }
+  }
+
+  function handleDeleteTrack(trackId: string) {
+    setTracks((current) => current.filter((track) => track.id !== trackId));
   }
 
   if (loading) {
@@ -253,27 +271,19 @@ export default function WorkspacesPage() {
                 )}
               </div>
 
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {selectedWorkspaceTracks.map((track) => (
-                  <div key={track.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                    {track.coverUrl ? (
-                      <img src={track.coverUrl} alt={track.title || "Cover art"} className="h-12 w-12 rounded-xl object-cover" />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white/40">
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                        </svg>
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">{track.title || track.prompt.slice(0, 40)}</p>
-                      <p className="truncate text-xs text-white/35">{track.provider} · {track.status}</p>
-                    </div>
-                  </div>
-                ))}
-                {selectedWorkspaceTracks.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm text-white/40 sm:col-span-2 xl:col-span-3">
-                    This workspace has no songs yet. Use Track Actions → Move To Workspace to add songs.
+              <div className="mt-4">
+                {selectedWorkspaceTracks.length > 0 ? (
+                  <TrackList
+                    tracks={selectedWorkspaceTracks}
+                    autoQueueAfterPlay
+                    onSelect={() => undefined}
+                    onDelete={handleDeleteTrack}
+                    onAddToPlaylist={(trackId, playlistId) => addTrackToPlaylist(playlistId, trackId)}
+                    playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                  />
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm text-white/40">
+                    This workspace has no songs yet. Use Track Actions -&gt; Move To Workspace to add songs.
                   </div>
                 )}
               </div>
