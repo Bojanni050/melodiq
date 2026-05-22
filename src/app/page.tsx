@@ -518,15 +518,18 @@ export default function HomePage() {
     ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
     : [];
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
-  const visibleWorkspaces = workspaces.slice(0, workspaceGridSize);
   const workspaceGridClass =
     workspaceGridSize === 4
-      ? "grid-cols-1 sm:grid-cols-2"
+      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       : workspaceGridSize === 8
-        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8"
         : workspaceGridSize === 12
-          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
+          ? "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12"
+          : "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 2xl:grid-cols-[repeat(16,minmax(0,1fr))]";
+
+  function handleMoveTrackToWorkspace(_trackId: string, workspaceId: string) {
+    setSelectedWorkspaceId(workspaceId);
+  }
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -579,7 +582,7 @@ export default function HomePage() {
                         <p className="text-xs text-white/40">
                           {isWorkspaceFolderOpen
                             ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
-                            : `Showing ${visibleWorkspaces.length} of ${workspaces.length} folders.`}
+                            : `Max ${workspaceGridSize} folders per row.`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -656,7 +659,7 @@ export default function HomePage() {
                     {!isWorkspaceFolderOpen && (
                       <div className="mb-3 overflow-y-auto pr-1">
                         <div className={`grid gap-3 ${workspaceGridClass}`}>
-                          {visibleWorkspaces.map((workspace) => {
+                          {workspaces.map((workspace) => {
                             const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                             const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
                             const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
@@ -773,6 +776,7 @@ export default function HomePage() {
                         onReusePrompt={handleReusePrompt}
                         onAddToQueue={handleAddToQueue}
                         onAddToPlaylist={handleAddToPlaylist}
+                        onMoveToWorkspace={handleMoveTrackToWorkspace}
                         playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                         onTitleUpdate={handleTitleUpdate}
                       />

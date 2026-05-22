@@ -471,6 +471,20 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:03`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 01:25 (Selector semantiek: max per rij + Add to Workspace fix vanuit Recent Tracks)
+
+- Findings: De 4/8/12/16 selector werd nog als limiet op zichtbare items gebruikt i.p.v. “max folders per rij”; daarnaast gaf Move To Workspace vanuit Recent Tracks geen directe folderfocus waardoor het leek alsof de actie niets deed.
+- Conclusions: Selector moet alle folders blijven tonen en alleen de rij-dichtheid sturen; na Move To Workspace vanuit Recent Tracks moet de gekozen workspace direct geselecteerd/opengezet worden voor zichtbare feedback.
+- Actions:
+  - Updated `src/app/page.tsx` — verwijderd `slice(0, workspaceGridSize)` zodat alle folders zichtbaar blijven
+  - Updated `src/app/page.tsx` — selector stuurt nu griddichtheid met expliciete kolomprofielen voor 4/8/12/16 (max per rij)
+  - Updated `src/app/page.tsx` — helpertekst aangepast naar `Max {n} folders per row`
+  - Updated `src/components/TrackList.tsx` — added optional `onMoveToWorkspace(trackId, workspaceId)` callback
+  - Updated `src/components/TrackList.tsx` — callback wordt aangeroepen na `moveTrackToWorkspace(...)`
+  - Updated `src/app/page.tsx` — Recent Tracks `TrackList` gebruikt nu `onMoveToWorkspace` en opent direct de gekozen workspace
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:25`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.

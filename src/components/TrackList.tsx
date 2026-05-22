@@ -97,6 +97,7 @@ export default function TrackList({
   onReusePrompt,
   onAddToQueue,
   onAddToPlaylist,
+  onMoveToWorkspace,
   playlists,
   onTitleUpdate,
 }: {
@@ -108,6 +109,7 @@ export default function TrackList({
   onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
@@ -329,6 +331,7 @@ export default function TrackList({
           onReusePrompt={onReusePrompt}
           onAddToQueue={onAddToQueue}
           onAddToPlaylist={onAddToPlaylist}
+          onMoveToWorkspace={onMoveToWorkspace}
           playlists={playlists}
           isSelected={selectedIds.has(track.id)}
           onToggleSelect={toggleSelection}
@@ -379,6 +382,7 @@ function TrackCard({
   onReusePrompt,
   onAddToQueue,
   onAddToPlaylist,
+  onMoveToWorkspace,
   playlists,
   isSelected,
   onToggleSelect,
@@ -391,6 +395,7 @@ function TrackCard({
   onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
@@ -1006,6 +1011,7 @@ function TrackCard({
                             onClick={(e) => {
                               e.stopPropagation();
                               moveTrackToWorkspace(workspace.id, track.id);
+                              onMoveToWorkspace?.(track.id, workspace.id);
                               setWorkspaceMenuOpen(false);
                               setMenuOpen(false);
                             }}
