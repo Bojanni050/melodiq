@@ -5,7 +5,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
-import { requestWavConversion } from "@/lib/request-wav-conversion";
+import { requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 
 export async function POST(request: NextRequest) {
@@ -29,9 +29,6 @@ export async function POST(request: NextRequest) {
   const files = Array.isArray(body.files)
     ? (body.files as Array<{ audio_url?: string; audio_id?: string | null }>)
     : [];
-  const firstFile = files[0];
-  const audioUrl = firstFile?.audio_url;
-  const audioId = firstFile?.audio_id ?? null;
 
   if (!taskId) {
     return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
@@ -77,19 +74,12 @@ export async function POST(request: NextRequest) {
             .where(eq(tracks.id, trackId));
 
           const trackForFile = syncedTracks.find((t) => t.id === trackId);
-          if (trackForFile?.jobId) {
-            const wavTaskId = await requestWavConversion({
-              id: trackId,
-              jobId: trackForFile.jobId,
+          if (trackForFile) {
+            await requestMissingWavConversion({
+              ...trackForFile,
+              jobId: taskId,
               audioId: file.audio_id,
             });
-
-            if (wavTaskId) {
-              await db
-                .update(tracks)
-                .set({ wavJobId: wavTaskId })
-                .where(eq(tracks.id, trackId));
-            }
           }
         }
 

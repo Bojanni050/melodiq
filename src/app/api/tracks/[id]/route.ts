@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
@@ -9,6 +9,7 @@ import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
+import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import {
   contentTypeForFormat,
   detectFormatFromContentType,
@@ -61,11 +62,24 @@ export async function GET(
 
   if (track.provider === "poyo" && track.jobId) {
     try {
-      const status = await getPoYoStatus(track.jobId);
+      const sourceJobId = getOriginalPoYoTaskId(track.jobId);
+      const status = await getPoYoStatus(sourceJobId);
       const statusValue = getPoYoStatusValue(status);
 
       if (statusValue === "completed" || statusValue === "finished") {
-        await syncPoYoTaskResult(track.jobId, status);
+        const syncResult = await syncPoYoTaskResult(sourceJobId, status);
+        const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+        if (syncedTrackIds.length > 0) {
+          const syncedTracks = await db
+            .select()
+            .from(tracks)
+            .where(inArray(tracks.id, syncedTrackIds));
+
+          await Promise.allSettled(
+            syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
+          );
+        }
+
         const refreshed = await db
           .select()
           .from(tracks)

@@ -132,6 +132,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
       .set({
         status: "done",
         title: buildVariantTitle(baseTrack.title, i, variant.title),
+        audioId: variant.audioId ?? targetTrack.audioId,
         s3Key,
         s3KeyHd,
         format,

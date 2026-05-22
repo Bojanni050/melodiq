@@ -105,7 +105,14 @@ function stripQuery(url: string): string {
 }
 
 function inferVariantKey(file: any, index: number): string {
-  const explicit = file?.song_id || file?.songId || file?.id || file?.clip_id || file?.track_id;
+  const explicit =
+    file?.audio_id ||
+    file?.audioId ||
+    file?.song_id ||
+    file?.songId ||
+    file?.id ||
+    file?.clip_id ||
+    file?.track_id;
   if (explicit) return String(explicit);
 
   const url = file?.audio_url || file?.audio_url_hd || file?.wav_url || file?.mp3_url || "";
@@ -120,9 +127,9 @@ export function getPoYoStatusValue(payload: any): string {
   return String(payload?.status || payload?.data?.status || "").toLowerCase();
 }
 
-export function extractPoYoVariants(payload: any): Array<{ audioUrl?: string; audioUrlHd?: string; title?: string }> {
+export function extractPoYoVariants(payload: any): Array<{ audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }> {
   const rawFiles: any[] = payload?.files || payload?.data?.files || [];
-  const grouped = new Map<string, { audioUrl?: string; audioUrlHd?: string; title?: string }>();
+  const grouped = new Map<string, { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }>();
 
   rawFiles.forEach((file, index) => {
     const key = inferVariantKey(file, index);
@@ -133,6 +140,7 @@ export function extractPoYoVariants(payload: any): Array<{ audioUrl?: string; au
     const fallbackUrl = mp3Url || wavUrl;
 
     const next = {
+      audioId: existing.audioId || file?.audio_id || file?.audioId,
       title: file?.title || file?.name || existing.title,
       audioUrl: existing.audioUrl || mp3Url || (fallbackUrl && /\.mp3(\?|$)/i.test(fallbackUrl) ? fallbackUrl : undefined),
       audioUrlHd:

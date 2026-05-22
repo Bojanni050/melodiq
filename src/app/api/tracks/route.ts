@@ -5,6 +5,7 @@ import { eq, desc, and, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
+import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -19,18 +20,34 @@ export async function GET() {
     .where(eq(tracks.userId, userId))
     .orderBy(desc(tracks.createdAt));
 
-  const generatingPoYoTracks = result
-    .filter((track) => track.provider === "poyo" && track.status === "generating" && !!track.jobId)
-    .slice(0, 5);
+  const generatingPoYoTracks = Array.from(
+    new Map(
+      result
+        .filter((track) => track.provider === "poyo" && track.status === "generating" && !!track.jobId)
+        .map((track) => [getOriginalPoYoTaskId(track.jobId!), track])
+    ).values()
+  ).slice(0, 5);
 
   if (generatingPoYoTracks.length > 0) {
     await Promise.allSettled(
       generatingPoYoTracks.map(async (track) => {
         try {
-          const statusPayload = await getPoYoStatus(track.jobId!);
+          const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
+          const statusPayload = await getPoYoStatus(sourceJobId);
           const statusValue = getPoYoStatusValue(statusPayload);
           if (statusValue === "completed" || statusValue === "finished") {
-            await syncPoYoTaskResult(track.jobId!, statusPayload);
+            const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
+            const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+            if (syncedTrackIds.length > 0) {
+              const syncedTracks = await db
+                .select()
+                .from(tracks)
+                .where(inArray(tracks.id, syncedTrackIds));
+
+              await Promise.allSettled(
+                syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
+              );
+            }
           }
         } catch {
           // Best-effort fallback polling for missed webhooks.

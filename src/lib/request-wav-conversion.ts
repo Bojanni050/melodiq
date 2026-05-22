@@ -1,5 +1,12 @@
 import axios from "axios";
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
+
+export function getOriginalPoYoTaskId(jobId: string): string {
+  return jobId.replace(/:v\d+$/i, "");
+}
 
 /**
  * Vraagt WAV conversie aan bij PoYo voor een gegenereerde track.
@@ -12,6 +19,7 @@ export async function requestWavConversion(track: {
   audioId: string;
 }): Promise<string | null> {
   try {
+    const originalTaskId = getOriginalPoYoTaskId(track.jobId);
     const apiKey =
       (await getSetting("POYO_API_KEY")) || process.env.POYO_API_KEY || "";
 
@@ -28,7 +36,7 @@ export async function requestWavConversion(track: {
         model: "convert-to-wav",
         callback_url: webhookUrl,
         input: {
-          task_id: track.jobId,
+          task_id: originalTaskId,
           audio_id: track.audioId,
         },
       },
@@ -45,7 +53,7 @@ export async function requestWavConversion(track: {
 
     if (wavTaskId) {
       console.log(
-        `[wav] conversion task_id: ${wavTaskId} for track ${track.id} (audio_id: ${track.audioId})`
+        `[wav] conversion task_id: ${wavTaskId} for track ${track.id} (source_task_id: ${originalTaskId}, audio_id: ${track.audioId})`
       );
       return wavTaskId;
     }
@@ -60,4 +68,31 @@ export async function requestWavConversion(track: {
     );
     return null;
   }
+}
+
+export async function requestMissingWavConversion(track: {
+  id: string | null;
+  jobId: string | null;
+  audioId: string | null;
+  wavJobId?: string | null;
+  s3KeyHd?: string | null;
+}): Promise<string | null> {
+  if (!track.id || !track.jobId || !track.audioId || track.wavJobId || track.s3KeyHd) {
+    return null;
+  }
+
+  const wavTaskId = await requestWavConversion({
+    id: track.id,
+    jobId: track.jobId,
+    audioId: track.audioId,
+  });
+
+  if (!wavTaskId) return null;
+
+  await db
+    .update(tracks)
+    .set({ wavJobId: wavTaskId })
+    .where(eq(tracks.id, track.id));
+
+  return wavTaskId;
 }

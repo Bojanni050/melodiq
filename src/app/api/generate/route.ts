@@ -174,24 +174,27 @@ export async function POST(request: NextRequest) {
       });
 
       const jobIds: string[] = genResult.jobIds;
+      const [baseJobId] = jobIds;
+      if (!baseJobId) {
+        throw {
+          message: "PoYo returned no task ID",
+          duration: Date.now() - startTime,
+          statusCode: 500,
+        };
+      }
+      const secondVariantJobId = jobIds[1] ?? `${baseJobId}:v2`;
 
       const [updatedTrack1Result, updatedTrack2Result] = await Promise.all([
         db
           .update(tracks)
-          .set({ status: "generating", jobId: jobIds[0] })
+          .set({ status: "generating", jobId: baseJobId, error: null })
           .where(eq(tracks.id, reservedTrack1[0].id!))
           .returning(),
-        jobIds[1]
-          ? db
-              .update(tracks)
-              .set({ status: "generating", jobId: jobIds[1], error: null })
-              .where(eq(tracks.id, reservedTrack2[0].id!))
-              .returning()
-          : db
-              .update(tracks)
-              .set({ status: "failed", error: "Provider returned only one variant" })
-              .where(eq(tracks.id, reservedTrack2[0].id!))
-              .returning(),
+        db
+          .update(tracks)
+          .set({ status: "generating", jobId: secondVariantJobId, error: null })
+          .where(eq(tracks.id, reservedTrack2[0].id!))
+          .returning(),
       ]);
 
       const allTracks = [updatedTrack1Result[0], updatedTrack2Result[0]];

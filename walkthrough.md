@@ -772,3 +772,27 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 23:31`
   - Updated `sonara-user.md` — user guide versie ververst naar `vr 23:31` en sorteeropties gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-23 za 00:21 (Studio workspace cards gelijk aan Workspaces)
+
+- Findings: De Studio-pagina gebruikte een dropdown voor workspace-selectie, terwijl de Workspaces-pagina werkt met folder-cards (gradient + collage), waardoor look-and-feel en interactie niet consistent waren.
+- Conclusions: Studio moet dezelfde workspace card-ervaring gebruiken als Workspaces, inclusief kaartselectie, actieve state en dezelfde create-workspace flow.
+- Actions:
+  - Updated `src/app/page.tsx` — dropdown vervangen door workspace folder cards met dezelfde gradient/collage styling en klik-selectie als op de Workspaces-pagina
+  - Updated `src/app/page.tsx` — create-workspace controls in Studio gelijkgetrokken met de Workspaces implementatie (`+ Create Workspace`, Add/Cancel flow)
+  - Updated `src/app/page.tsx` — `No workspace` card toegevoegd om selectie expliciet te resetten en alleen recent tracks te tonen
+  - Updated `sonara-user.md` — Workspace-sectie geactualiseerd en versiestempel bijgewerkt
+  - Validated with `npm run build`.
+
+## 2026-05-23 za 00:27 (PoYo WAV per variant)
+
+- Findings: PoYo retourneert volgens de docs een enkele generation `task_id` met meerdere `files[]`, ieder met een eigen `audio_id`; Sonara gaf variant 2 intern een synthetische `jobId` (`taskId:v2`) en gebruikte die vervolgens voor `convert-to-wav`, waardoor alleen variant 1 een geldige WAV-conversie kreeg.
+- Conclusions: WAV-conversies moeten altijd de originele PoYo generation task-id gebruiken en alleen per variant verschillen via `audio_id`; fallback-polling moet dezelfde normalisatie gebruiken zodat gemiste webhooks geen WAV-aanvraag overslaan.
+- Actions:
+  - Updated `src/app/api/generate/route.ts` — tweede PoYo-reservetrack blijft `generating` met synthetische lokale variant-id in plaats van direct `failed`
+  - Updated `src/lib/request-wav-conversion.ts` — lokale `:vN` suffix wordt verwijderd voordat PoYo `convert-to-wav` wordt aangeroepen; helper toegevoegd om ontbrekende WAV-jobs idempotent aan te vragen en op te slaan
+  - Updated `src/lib/providers/poyo.ts` en `src/lib/poyo-sync.ts` — `audio_id` wordt meegenomen in variantextractie en opgeslagen op de juiste track
+  - Updated `src/app/api/webhooks/poyo/route.ts`, `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` — webhook en fallback-polling vragen WAV-conversie per gesyncte variant aan met de originele task-id
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:27`
+  - Updated `sonara-user.md` — user guide versie ververst naar `za 00:27` en PoYo HD/WAV per variant verduidelijkt
+  - Validated with `npm run build`.

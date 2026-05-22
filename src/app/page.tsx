@@ -46,6 +46,19 @@ function pickSeededItems<T>(items: T[], seed: string, limit: number) {
     .slice(0, limit);
 }
 
+function getCoverCollage(workspaceId: string, tracks: Track[]) {
+  const coverUrls = tracks
+    .filter((track) => !!track.coverUrl)
+    .map((track) => track.coverUrl as string);
+
+  return pickSeededItems(coverUrls, workspaceId, 4);
+}
+
+function getWorkspaceGradient(workspaceId: string, gradient?: string) {
+  if (gradient) return gradient;
+  return WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length];
+}
+
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -497,68 +510,123 @@ export default function HomePage() {
                   <section className="section-card min-h-0 overflow-hidden flex flex-col">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-[11px] text-white/35 mb-1.5 truncate">
+                        <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
+                        <p className="text-xs text-white/40">Select a folder card to show its tracks below.</p>
+                      </div>
+                      {showCreateWorkspace ? (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <input
+                            value={newWorkspaceName}
+                            onChange={(event) => setNewWorkspaceName(event.target.value)}
+                            onKeyDown={handleCreateWorkspaceKeyDown}
+                            placeholder="Workspace name"
+                            className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
+                            aria-label="Workspace name"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCreateWorkspace}
+                            className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCreateWorkspace(false);
+                              setNewWorkspaceName("");
+                            }}
+                            className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateWorkspace(true)}
+                          className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90 shrink-0"
+                        >
+                          + Create Workspace
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-3 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {workspaces.map((workspace) => {
+                          const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
+                          const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
+                          const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+
+                          return (
+                            <button
+                              key={workspace.id}
+                              type="button"
+                              onClick={() => setSelectedWorkspaceId(workspace.id)}
+                              className={`group rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
+                                selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
+                              }`}
+                            >
+                              <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                                <div className="absolute inset-0 bg-black/10" />
+                                {coverUrls.length > 0 ? (
+                                  <div className="absolute inset-3 grid grid-cols-2 grid-rows-2 gap-1.5 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner">
+                                    {coverUrls.map((cover, index) => (
+                                      <img
+                                        key={`${workspace.id}-${index}`}
+                                        src={cover}
+                                        alt={workspace.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+                                      <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="absolute inset-x-0 bottom-0 p-4">
+                                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
+                                    <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
+                                    <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedWorkspaceId(null)}
+                          className={`rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-left transition-colors hover:bg-white/[0.05] ${
+                            selectedWorkspaceId ? "" : "ring-2 ring-primary-500/40"
+                          }`}
+                        >
+                          <p className="text-sm font-semibold text-white/80">No workspace</p>
+                          <p className="mt-1 text-xs text-white/45">Show only Recent Tracks below.</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[11px] text-white/35 mb-1 truncate">
                           <span className="text-white/60">Workspace</span>
                           <span className="mx-1 text-white/20">/</span>
                           <span className="text-white/70">{selectedWorkspace?.name ?? "None"}</span>
                         </div>
-                        <h2 className="text-sm font-semibold text-white/70">Workspace Tracks</h2>
+                        <h3 className="text-xs font-semibold text-white/60">Workspace Tracks</h3>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {showCreateWorkspace ? (
-                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-1.5">
-                            <input
-                              value={newWorkspaceName}
-                              onChange={(event) => setNewWorkspaceName(event.target.value)}
-                              onKeyDown={handleCreateWorkspaceKeyDown}
-                              placeholder="Workspace name"
-                              className="h-8 w-44 rounded-full bg-transparent px-3 text-xs text-white placeholder:text-white/30 outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleCreateWorkspace}
-                              className="h-8 rounded-full bg-white px-3 text-xs font-medium text-black transition-colors hover:bg-white/90"
-                            >
-                              Create
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowCreateWorkspace(false);
-                                setNewWorkspaceName("");
-                              }}
-                              className="h-8 rounded-full bg-white/5 px-3 text-xs text-white/70 hover:bg-white/10"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <select
-                              value={selectedWorkspaceId ?? ""}
-                              onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
-                              className="h-8 max-w-[220px] rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white/80 outline-none"
-                            >
-                              <option value="">No workspace</option>
-                              {workspaces.map((workspace) => (
-                                <option key={workspace.id} value={workspace.id}>
-                                  {workspace.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => setShowCreateWorkspace(true)}
-                              className="h-8 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white/70 hover:bg-white/10"
-                            >
-                              + Workspace
-                            </button>
-                          </>
-                        )}
-                        <span className="text-xs text-white/30 ml-1">
-                          {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
-                        </span>
-                      </div>
+                      <span className="text-xs text-white/30 shrink-0">
+                        {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
+                      </span>
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">

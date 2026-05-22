@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 23:31**
+**Versie: za 00:27**
 
 > AI Music Generation Web App
 
@@ -49,7 +49,7 @@ Describe the musical style — genre, mood, instrumentation, production aestheti
 ### Provider & Model
 Select which AI music service to use. Each provider shows its current credit balance.
 - **Lyria** (Google) — synchronous, fast turnaround
-- **PoYo** (Suno) — asynchronous, webhook-based
+- **PoYo** (Suno) — asynchronous, webhook-based; generated variants request their own HD/WAV conversion
 - **Tempolor** — asynchronous, webhook-based
 - **MusicGPT** — asynchronous, webhook-based, returns two generated variants
 
@@ -108,7 +108,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 ## Recent Tracks & Library
 
 - **Recent Tracks** — shown in the lower half of the right Studio column. Click any track to open the detail panel.
-- **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`).
+- **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`). Workspace selection in Studio now uses the same folder cards (gradient + cover collage) as the dedicated Workspaces page.
 - All track lists now include sorting controls: **New to old** and **Old to new**.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
@@ -120,6 +120,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 ### Workspaces
 - **Workspaces** live in the sidebar and open a dedicated page with folder-style cards
 - Workspace cards keep a persistent gradient folder color and a seeded collage of cover art from the songs inside
+- Studio now uses the same folder-card interaction (including create flow and active selection state) to choose which workspace is pinned in the Workspace Tracks panel
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
 
 ### Track Detail Panel
