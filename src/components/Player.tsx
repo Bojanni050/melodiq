@@ -4,6 +4,8 @@ import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
+let sharedAudioElement: HTMLAudioElement | null = null;
+
 function FullscreenPlayer() {
   const {
     currentTrack,
@@ -352,47 +354,51 @@ export default function Player() {
   }, []);
 
   useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.volume = volume;
-      usePlayerStore.getState().setAudioElement(audioRef.current);
-
-      const handleTimeUpdate = () => {
-        setCurrentTime(audioRef.current?.currentTime || 0);
-      };
-
-      const handleLoadedMetadata = () => {
-        setDuration(audioRef.current?.duration || 0);
-      };
-
-      const handleEnded = () => {
-        const { autoPlayNext, queue, playNext, setIsPlaying } = usePlayerStore.getState();
-        if (autoPlayNext && queue.length > 0) {
-          playNext();
-          return;
-        }
-
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-        }
-        setCurrentTime(0);
-        setIsPlaying(false);
-      };
-
-      audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
-      audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
-      audioRef.current.addEventListener("ended", handleEnded);
-
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
-          audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
-          audioRef.current.removeEventListener("ended", handleEnded);
-        }
-        usePlayerStore.getState().setAudioElement(null);
-      };
+    if (!sharedAudioElement) {
+      sharedAudioElement = new Audio();
     }
-  }, []);
+
+    audioRef.current = sharedAudioElement;
+    audioRef.current.volume = volume;
+    usePlayerStore.getState().setAudioElement(audioRef.current);
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audioRef.current?.currentTime || 0);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(audioRef.current?.duration || 0);
+    };
+
+    const handleEnded = () => {
+      const { autoPlayNext, queue, playNext, setIsPlaying } = usePlayerStore.getState();
+      if (autoPlayNext && queue.length > 0) {
+        playNext();
+        return;
+      }
+
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+      }
+      setCurrentTime(0);
+      setIsPlaying(false);
+    };
+
+    audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
+    audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audioRef.current.addEventListener("ended", handleEnded);
+
+    setCurrentTime(audioRef.current.currentTime || 0);
+    setDuration(audioRef.current.duration || 0);
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
+        audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audioRef.current.removeEventListener("ended", handleEnded);
+      }
+    };
+  }, [volume]);
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack?.id) return;

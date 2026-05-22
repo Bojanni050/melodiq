@@ -177,6 +177,7 @@ export async function POST() {
             s3Key,
             duration,
             audioUrl: `/api/tracks/${track.id}/download`,
+            error: null,
           })
           .where(eq(tracks.id, track.id!));
 

@@ -725,3 +725,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 21:48`
   - Updated `sonara-user.md` — user guide versie ververst naar `vr 21:48` en MusicGPT 3000-char limiet gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-22 vr 22:03 (Lyric Studio in-app dialogs + player persistent tussen pagina's)
+
+- Findings: Lyric Studio gebruikte nog browser-popups (`window.confirm`/`window.prompt`) voor belangrijke acties, en playback kon stoppen bij navigatie naar andere routes zoals Lyric Studio.
+- Conclusions: Vervang alle default browser-popups met in-app confirm/save dialogs en notices; maak de player-audio route-onafhankelijk met een gedeeld audio-element zodat afspelen doorloopt bij routewissels.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — replaced browser popups with in-app dialogs for preset replace, studio replace, clear-all, and snapshot naming
+  - Updated `src/app/lyrics-studio/page.tsx` — added in-app notice banners for generation/copy/style errors and save/clear feedback
+  - Updated `src/components/Player.tsx` — introduced module-level shared audio element to keep playback alive across component remounts during navigation
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:03`
+  - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:03` met uitleg over in-app dialogs en persistente playback
+  - Validated with `npm run build`.

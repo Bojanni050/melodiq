@@ -41,6 +41,13 @@ interface LyricStudioSnapshot {
   };
 }
 
+type LyricsStudioNotice = {
+  type: "error" | "success" | "info";
+  message: string;
+};
+
+type ConfirmAction = "replaceBlocks" | "replaceStudio" | "clearAll" | null;
+
 const LYRICS_STUDIO_STORAGE_KEY = "sonara-lyrics-studio";
 const LYRICS_STUDIO_SNAPSHOTS_KEY = "sonara-lyrics-studio-snapshots";
 
@@ -236,6 +243,12 @@ export default function LyricsStudioPage() {
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
+  const [showSaveSnapshotModal, setShowSaveSnapshotModal] = useState(false);
+  const [snapshotNameInput, setSnapshotNameInput] = useState("");
+  const [notice, setNotice] = useState<LyricsStudioNotice | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [pendingPresetName, setPendingPresetName] = useState<string | null>(null);
+  const [pendingStudioPayload, setPendingStudioPayload] = useState<{ lyrics: string; style: string } | null>(null);
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: string; position: "before" | "after" } | null>(null);
   const songGenerationAbortRef = useRef<AbortController | null>(null);
@@ -547,7 +560,11 @@ export default function LyricsStudioPage() {
   }, [blocks, draggedBlockId, dropTarget]);
 
   function applyPreset(name: string) {
-    if (blocks.length > 0 && !window.confirm("Replace current blocks?")) return;
+    if (blocks.length > 0) {
+      setPendingPresetName(name);
+      setConfirmAction("replaceBlocks");
+      return;
+    }
     setActivePreset(name);
     setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
   }
@@ -572,14 +589,21 @@ export default function LyricsStudioPage() {
     };
   }
 
-  function saveLyricsSnapshot() {
-    const defaultName = `Lyrics ${new Date().toLocaleString()}`;
-    const name = window.prompt("Snapshot naam", defaultName)?.trim();
-    if (!name) return;
+  function openSaveSnapshotModal() {
+    setSnapshotNameInput(`Lyrics ${new Date().toLocaleString()}`);
+    setShowSaveSnapshotModal(true);
+  }
+
+  function saveLyricsSnapshot(name: string) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setNotice({ type: "error", message: "Geef een snapshot-naam op." });
+      return;
+    }
 
     const snapshot: LyricStudioSnapshot = {
       id: crypto.randomUUID(),
-      name,
+      name: trimmedName,
       createdAt: new Date().toISOString(),
       payload: buildDraftPayload(),
     };
@@ -587,6 +611,8 @@ export default function LyricsStudioPage() {
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
     setSavedSnapshots(next);
     window.localStorage.setItem(LYRICS_STUDIO_SNAPSHOTS_KEY, JSON.stringify(next));
+    setShowSaveSnapshotModal(false);
+    setNotice({ type: "success", message: "Lyrics snapshot opgeslagen." });
   }
 
   function sanitizeBlocksForLoad(input: LyricBlock[]): LyricBlock[] {
@@ -688,6 +714,10 @@ export default function LyricsStudioPage() {
     } catch (error) {
       console.error(error);
       updateBlock(block.id, { generating: false });
+      setNotice({
+        type: "error",
+        message: error instanceof Error ? error.message : "Kon dit blok niet genereren.",
+      });
     }
   }
 
@@ -810,6 +840,10 @@ export default function LyricsStudioPage() {
           ...block,
           generating: false,
         };
+        setNotice({
+          type: "error",
+          message: error instanceof Error ? error.message : "Fout tijdens songgeneratie.",
+        });
       }
 
       setBlocks([...generatedBlocks]);
@@ -827,9 +861,13 @@ export default function LyricsStudioPage() {
   }
 
   async function copyAllLyrics() {
-    await navigator.clipboard.writeText(combinedLyrics);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(combinedLyrics);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setNotice({ type: "error", message: "Kopieren mislukt. Probeer opnieuw." });
+    }
   }
 
   function useInStudio() {
@@ -850,10 +888,9 @@ export default function LyricsStudioPage() {
       studio.title.trim()
     );
 
-    if (
-      hasExistingStudioData &&
-      !window.confirm("Studio already contains data. Clear Studio and replace with current lyrics + style?")
-    ) {
+    if (hasExistingStudioData) {
+      setPendingStudioPayload({ lyrics: nextLyrics, style: nextStyle });
+      setConfirmAction("replaceStudio");
       return;
     }
 
@@ -880,11 +917,17 @@ export default function LyricsStudioPage() {
         }),
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setNotice({ type: "error", message: data?.error || "Style suggestion genereren is mislukt." });
+        return;
+      }
       const data = await response.json();
       if (data?.suggestion && typeof data.suggestion === "string") {
         setStyleSuggestion(data.suggestion);
       }
+    } catch {
+      setNotice({ type: "error", message: "Style suggestion genereren is mislukt." });
     } finally {
       setGeneratingStyleSuggestion(false);
     }
@@ -892,13 +935,20 @@ export default function LyricsStudioPage() {
 
   async function copyStyleSuggestion() {
     if (!styleSuggestion.trim()) return;
-    await navigator.clipboard.writeText(styleSuggestion);
-    setCopiedStyleSuggestion(true);
-    window.setTimeout(() => setCopiedStyleSuggestion(false), 2000);
+    try {
+      await navigator.clipboard.writeText(styleSuggestion);
+      setCopiedStyleSuggestion(true);
+      window.setTimeout(() => setCopiedStyleSuggestion(false), 2000);
+    } catch {
+      setNotice({ type: "error", message: "Style kopieren mislukt." });
+    }
   }
 
-  function clearAllDraft() {
-    if (!window.confirm("Clear all lyric studio data?")) return;
+  function clearAllDraft(force = false) {
+    if (!force) {
+      setConfirmAction("clearAll");
+      return;
+    }
 
     setTopic("");
     setMood("");
@@ -919,6 +969,40 @@ export default function LyricsStudioPage() {
     setCopiedStyleSuggestion(false);
     setShowLoadSnapshots(false);
     window.localStorage.removeItem(LYRICS_STUDIO_STORAGE_KEY);
+    setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
+  }
+
+  function handleConfirmAction() {
+    if (confirmAction === "replaceBlocks") {
+      if (pendingPresetName) {
+        setActivePreset(pendingPresetName);
+        setBlocks(createPresetBlocks(BLOCK_PRESETS[pendingPresetName], pendingPresetName));
+      }
+      setPendingPresetName(null);
+      setConfirmAction(null);
+      return;
+    }
+
+    if (confirmAction === "replaceStudio") {
+      if (pendingStudioPayload) {
+        const studio = useStudioStore.getState();
+        studio.reset();
+        studio.setLyrics(pendingStudioPayload.lyrics);
+        studio.setSongIdea(pendingStudioPayload.style);
+        router.push("/");
+      }
+      setPendingStudioPayload(null);
+      setConfirmAction(null);
+      return;
+    }
+
+    if (confirmAction === "clearAll") {
+      clearAllDraft(true);
+      setConfirmAction(null);
+      return;
+    }
+
+    setConfirmAction(null);
   }
 
   return (
@@ -934,6 +1018,28 @@ export default function LyricsStudioPage() {
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
+            {notice && (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
+                <div className="flex items-start gap-3">
+                  <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                  </svg>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-red-100">{notice.message}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNotice(null)}
+                    className="text-red-200/70 hover:text-red-100"
+                    aria-label="Sluit melding"
+                    title="Sluiten"
+                  >
+                    x
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
@@ -942,7 +1048,7 @@ export default function LyricsStudioPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={saveLyricsSnapshot}
+                  onClick={openSaveSnapshotModal}
                   className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                   title="Save lyrics snapshot"
                 >
@@ -959,7 +1065,7 @@ export default function LyricsStudioPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={clearAllDraft}
+                  onClick={() => clearAllDraft()}
                   className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20"
                   title="Clear all lyric studio data"
                 >
@@ -1018,6 +1124,82 @@ export default function LyricsStudioPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {showSaveSnapshotModal && (
+              <div className="mb-4 rounded-xl border border-white/10 bg-[#11111a] p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white/80">Save lyrics snapshot</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveSnapshotModal(false)}
+                    className="text-white/40 hover:text-white/70"
+                    title="Close"
+                  >
+                    x
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={snapshotNameInput}
+                  onChange={(event) => setSnapshotNameInput(event.target.value)}
+                  className="input-field text-sm"
+                  placeholder="Snapshot naam"
+                />
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => saveLyricsSnapshot(snapshotNameInput)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveSnapshotModal(false)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {confirmAction && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-[#2b1f10] p-3">
+                <div className="flex items-start gap-3">
+                  <svg className="mt-0.5 h-4 w-4 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                  </svg>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-amber-100">
+                      {confirmAction === "replaceBlocks" && "Huidige blocks vervangen door de gekozen preset?"}
+                      {confirmAction === "replaceStudio" && "Studio bevat al data. Wil je die vervangen met deze lyrics en style?"}
+                      {confirmAction === "clearAll" && "Weet je zeker dat je alle Lyric Studio data wilt wissen?"}
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleConfirmAction}
+                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
+                      >
+                        Bevestigen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmAction(null);
+                          setPendingPresetName(null);
+                          setPendingStudioPayload(null);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                      >
+                        Annuleren
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 21:48**
+**Versie: vr 22:03**
 
 > AI Music Generation Web App
 
@@ -78,6 +78,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Drag blocks directly with the grip handle on both desktop and touch screens to reorder them faster
 - **Copy all lyrics** copies the finished block sequence
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
+- Confirmaties, foutmeldingen en snapshot-opslag gebruiken in-app dialogs/notificaties in plaats van browser popups
 
 ### Vocal Gender
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
@@ -130,6 +131,7 @@ Click a track to open a slide-out panel with:
 - Album art now stays visible in fullscreen playback, including autoplay/next-track transitions
 - Fullscreen background now has a fuzzy ambient glow based on the current artwork
 - Lyrics are rendered in a smaller font for better readability on dense/long songs
+- Playback blijft actief bij navigatie naar andere pagina's zoals Lyric Studio
 
 ---
 
