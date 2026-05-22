@@ -1,13 +1,13 @@
 # Sonara — Walkthrough
 
-## 2026-05-22 vr 13:18 (Lyric blocks draggable op desktop en mobiel)
+## 2026-05-22 vr 13:25 (Lyric blocks draggable op desktop en mobiel)
 
-- Findings: De lyric blokken hadden al reorder helpers, maar het drag startpunt voelde te smal aan voor comfortabel gebruik op touch en in compacte layouts.
-- Conclusions: Laat de kaart zelf ook drag-starten, maar blokkeer interactieve controls zodat invoervelden en knoppen gewoon bruikbaar blijven.
+- Findings: De lyric blokken hadden al reorder helpers, maar het drag startpunt en de affordance waren te subtiel voor comfortabel gebruik op touch en in compacte layouts.
+- Conclusions: Laat de kaart zelf ook drag-starten, maak de drag-handle altijd zichtbaar en blokkeer interactieve controls zodat invoervelden en knoppen gewoon bruikbaar blijven.
 - Actions:
   - Updated `src/app/lyrics-studio/page.tsx` — kaart-level pointer drag start toegevoegd met guard voor inputs, buttons en links
-  - Updated `src/app/lyrics-studio/page.tsx` — drag handle iets groter gemaakt en een kleine “Drag to reorder” hint toegevoegd op grotere schermen
-  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 13:18`
+  - Updated `src/app/lyrics-studio/page.tsx` — drag handle groter gemaakt, de hint altijd zichtbaar gemaakt en de card zelf als grab target gemarkeerd
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 13:25`
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 12:37 (Right sidebar prompt collapsed by default)

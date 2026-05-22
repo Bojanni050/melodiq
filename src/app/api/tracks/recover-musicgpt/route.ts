@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
 import { uploadToS3 } from "@/lib/s3";
@@ -92,7 +92,7 @@ export async function POST() {
       and(
         eq(tracks.userId, userId),
         eq(tracks.provider, "musicgpt"),
-        eq(tracks.status, "generating"),
+        inArray(tracks.status, ["generating", "failed"]),
         isNotNull(tracks.conversionId)
       )
     );
