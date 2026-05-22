@@ -8,6 +8,7 @@ import TrackDetail from "@/components/TrackDetail";
 import { WORKSPACE_FOLDER_GRADIENTS, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
+const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara-studio-workspace-grid-size";
 
 interface Track {
   id: string;
@@ -73,6 +74,7 @@ export default function HomePage() {
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -87,6 +89,25 @@ export default function HomePage() {
     fetchCredits();
     useStudioStore.persist.rehydrate();
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(WORKSPACE_GRID_SIZE_STORAGE_KEY);
+      if (saved === "4" || saved === "8" || saved === "12" || saved === "16") {
+        setWorkspaceGridSize(Number(saved) as 4 | 8 | 12 | 16);
+      }
+    } catch {
+      // ignore localStorage read failures
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
+    } catch {
+      // ignore localStorage write failures
+    }
+  }, [workspaceGridSize]);
 
   useEffect(() => {
     const hasGenerating = tracks.some(
@@ -462,6 +483,7 @@ export default function HomePage() {
   const selectedWorkspaceTracks = selectedWorkspace
     ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
     : [];
+  const visibleWorkspaces = workspaces.slice(0, workspaceGridSize);
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -513,8 +535,27 @@ export default function HomePage() {
                         <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
                         <p className="text-xs text-white/40">Select a folder card to show its tracks below.</p>
                       </div>
-                      {showCreateWorkspace ? (
-                        <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                          {[4, 8, 12, 16].map((size) => (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
+                              className={`rounded-md px-2 py-1 text-[11px] transition ${
+                                workspaceGridSize === size
+                                  ? "bg-primary-500 text-white"
+                                  : "text-white/65 hover:text-white hover:bg-white/10"
+                              }`}
+                              title={`Show ${size} workspace cards`}
+                              aria-label={`Show ${size} workspace cards`}
+                            >
+                              {size}
+                            </button>
+                          ))}
+                        </div>
+                        {showCreateWorkspace ? (
+                        <div className="flex items-center gap-1">
                           <input
                             value={newWorkspaceName}
                             onChange={(event) => setNewWorkspaceName(event.target.value)}
@@ -541,48 +582,55 @@ export default function HomePage() {
                             Cancel
                           </button>
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setShowCreateWorkspace(true)}
-                          className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90 shrink-0"
-                        >
-                          + Create Workspace
-                        </button>
-                      )}
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateWorkspace(true)}
+                            className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
+                          >
+                            + Create Workspace
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mb-3 overflow-y-auto pr-1">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {workspaces.map((workspace) => {
+                        {visibleWorkspaces.map((workspace) => {
                           const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                           const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
                           const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                          const hasSingleCover = coverUrls.length === 1;
 
                           return (
                             <button
                               key={workspace.id}
                               type="button"
                               onClick={() => setSelectedWorkspaceId(workspace.id)}
-                              className={`group rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
+                              className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
                                 selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
                               }`}
                             >
                               <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
-                                <div className="absolute inset-0 bg-black/10" />
+                                <div className="pointer-events-none absolute inset-0 bg-black/10" />
                                 {coverUrls.length > 0 ? (
-                                  <div className="absolute inset-3 grid grid-cols-2 grid-rows-2 gap-1.5 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner">
+                                  <div
+                                    className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
+                                      hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
+                                    }`}
+                                  >
                                     {coverUrls.map((cover, index) => (
                                       <img
                                         key={`${workspace.id}-${index}`}
                                         src={cover}
                                         alt={workspace.name}
-                                        className="h-full w-full object-cover"
+                                        draggable={false}
+                                        className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
                                       />
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                                     <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
                                       <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
@@ -591,7 +639,7 @@ export default function HomePage() {
                                   </div>
                                 )}
 
-                                <div className="absolute inset-x-0 bottom-0 p-4">
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
                                   <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
                                     <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
                                     <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>

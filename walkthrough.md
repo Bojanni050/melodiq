@@ -419,6 +419,18 @@
   - Created `src/instrumentation.ts` — Next.js instrumentation file with `register()` function that runs `initializeDatabase()` on server startup (nodejs runtime only); works in both dev (`next dev`) and production (`next start`); standalone Docker builds include the init logic without needing drizzle-kit at runtime
   - Validated with `npm run build`.
 
+## 2026-05-23 za 00:49 (Studio workspace cards: grid-instelling + clickability + single-cover center)
+
+- Findings: In Studio hadden workspace cards geen gebruikersinstelling voor grid-omvang, een enkele cover werd in een 2x2 collage niet mooi gecentreerd, en mappen voelden op sommige delen van de kaart niet betrouwbaar klikbaar.
+- Conclusions: Voeg een persistente grid-optie toe (4/8/12/16), render single-cover kaarten als gecentreerde hero-cover, en maak de volledige kaart betrouwbaar klikbaar door decoratieve lagen pointer-events uit te zetten.
+- Actions:
+  - Updated `src/app/page.tsx` — added persistente workspace grid setting met localStorage key `sonara-studio-workspace-grid-size` en selectorchips voor 4/8/12/16
+  - Updated `src/app/page.tsx` — workspace cards tonen nu alleen het ingestelde aantal via `visibleWorkspaces`
+  - Updated `src/app/page.tsx` — single-cover layout gecentreerd met flex-variant i.p.v. altijd een 2x2 collage
+  - Updated `src/app/page.tsx` — clickability verbeterd via `cursor-pointer`, `pointer-events-none` op overlays en `draggable={false}` op cover images
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:49`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.
