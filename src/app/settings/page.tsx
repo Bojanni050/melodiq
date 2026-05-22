@@ -184,6 +184,12 @@ export default function SettingsPage() {
     recovered?: number;
     still_processing?: number;
     total?: number;
+    results?: {
+      trackId: string;
+      conversionId: string;
+      outcome: "recovered" | "still_processing" | "failed" | "no_audio";
+      detail?: string;
+    }[];
   } | null>(null);
   const [s3Stats, setS3Stats] = useState<{ totalSize: number; objectCount: number; formattedSize: string } | null>(null);
   const [loadingS3Stats, setLoadingS3Stats] = useState(false);
@@ -384,6 +390,7 @@ export default function SettingsPage() {
           recovered: data.recovered,
           still_processing: data.still_processing,
           total: data.total,
+          results: data.results ?? [],
         });
       } else {
         setMusicgptRecoveryResult({
@@ -917,14 +924,43 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 {musicgptRecoveryResult && (
-                  <div className={`mt-3 text-xs ${musicgptRecoveryResult.success ? "text-green-400" : "text-red-400"}`}>
-                    <p>{musicgptRecoveryResult.message}</p>
+                  <div className="mt-3 space-y-2">
+                    <p className={`text-xs ${musicgptRecoveryResult.success ? "text-green-400" : "text-red-400"}`}>
+                      {musicgptRecoveryResult.message}
+                    </p>
                     {musicgptRecoveryResult.success && musicgptRecoveryResult.total !== undefined && (
-                      <p className="text-white/30 mt-1">
+                      <p className="text-xs text-white/30">
                         {musicgptRecoveryResult.recovered} recovered ·{" "}
                         {musicgptRecoveryResult.still_processing} still processing ·{" "}
                         {musicgptRecoveryResult.total} total
                       </p>
+                    )}
+                    {musicgptRecoveryResult.results && musicgptRecoveryResult.results.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {musicgptRecoveryResult.results.map((r) => {
+                          const outcomeColor =
+                            r.outcome === "recovered" ? "text-green-400" :
+                            r.outcome === "still_processing" ? "text-yellow-400" :
+                            r.outcome === "no_audio" ? "text-orange-400" :
+                            "text-red-400";
+                          const outcomeLabel =
+                            r.outcome === "recovered" ? "✓ Recovered" :
+                            r.outcome === "still_processing" ? "⟳ Still processing" :
+                            r.outcome === "no_audio" ? "⚠ No audio" :
+                            "✗ Failed";
+                          return (
+                            <div key={r.trackId} className="flex items-start gap-2 text-xs bg-white/5 rounded px-2 py-1.5">
+                              <span className={`shrink-0 font-medium ${outcomeColor}`}>{outcomeLabel}</span>
+                              <span className="text-white/30 font-mono truncate">{r.conversionId}</span>
+                              {r.detail && (
+                                <span className="text-white/20 ml-auto shrink-0 truncate max-w-[140px]" title={r.detail}>
+                                  {r.detail}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}
