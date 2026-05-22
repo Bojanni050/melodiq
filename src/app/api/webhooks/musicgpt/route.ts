@@ -6,16 +6,46 @@ import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 import { extractAudioDuration } from "@/lib/audio-duration";
 
+type MusicGptWebhookPayload = Record<string, unknown>;
+
+function isRecord(value: unknown): value is MusicGptWebhookPayload {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getString(body: MusicGptWebhookPayload, keys: string[]) {
+  for (const key of keys) {
+    const value = body[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return undefined;
+}
+
+function getBoolean(body: MusicGptWebhookPayload, key: string) {
+  const value = body[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const secret = searchParams.get("secret");
+  const secret =
+    searchParams.get("secret") ||
+    request.headers.get("x-webhook-secret");
+
   if (!process.env.WEBHOOK_SECRET || secret !== process.env.WEBHOOK_SECRET) {
     return new Response("forbidden", { status: 403 });
   }
 
-  let body: any;
+  let body: MusicGptWebhookPayload;
   try {
-    body = await request.json();
+    const parsed = await request.json();
+    if (!isRecord(parsed)) {
+      return new Response("invalid json", { status: 400 });
+    }
+    body = parsed;
   } catch {
     return new Response("invalid json", { status: 400 });
   }
@@ -23,32 +53,28 @@ export async function POST(request: NextRequest) {
   console.log("[webhook/musicgpt] received:", JSON.stringify(body));
 
   // MusicGPT webhook payload fields (from official docs):
-  // task_id       — shared across both tracks of a generation
-  // conversion_id — unique per track variant (matches conversion_id_1 / conversion_id_2 from generate response)
-  // status        — "COMPLETED" | "FAILED"
-  // audio_url     — direct S3 URL to the mp3
-  // conversion_type — "Music AI" | "Lyrics" | "Image" etc — skip non-audio payloads
+  // task_id - shared across both tracks of a generation
+  // conversion_id - unique per track variant (matches conversion_id_1 / conversion_id_2 from generate response)
+  // status - "COMPLETED" | "FAILED" on generic callbacks, but can be absent for MusicAI
+  // audio_url/conversion_path - direct audio URL to the generated mp3
+  // conversion_type - "Music AI" | "Lyrics" | "Image" etc; skip non-audio payloads
   const taskId: string | undefined =
-    body.task_id ?? body.taskId ?? undefined;
+    getString(body, ["task_id", "taskId"]);
   const conversionId: string | undefined =
-    body.conversion_id ??
-    body.conversionId ??
-    body.conversion_id_1 ??
-    undefined;
+    getString(body, ["conversion_id", "conversionId", "conversion_id_1"]);
   const conversionType: string | undefined =
-    body.conversion_type ??
-    body.conversionType ??
-    body.feature ??
-    undefined;
+    getString(body, ["conversion_type", "conversionType", "feature"]);
   const status: string =
-    ((body.status ?? body.status_msg ?? body.message ?? "") as string).toUpperCase();
+    (getString(body, ["status", "status_msg", "message"]) ?? "").toUpperCase();
+  const success = getBoolean(body, "success");
   const audioUrl: string | undefined =
-    body.audio_url ??
-    body.audioUrl ??
-    body.conversion_path ??
-    body.conversion_path_1 ??
-    body.conversion_path_2 ??
-    undefined;
+    getString(body, [
+      "audio_url",
+      "audioUrl",
+      "conversion_path",
+      "conversion_path_1",
+      "conversion_path_2",
+    ]);
 
   if (!taskId) {
     console.error("[webhook/musicgpt] missing task_id in payload");
@@ -56,15 +82,14 @@ export async function POST(request: NextRequest) {
   }
 
   // MusicGPT sends multiple webhooks per generation:
-  // - 2x Music conversion (one per variant) — these have audio_url
-  // - 2x Lyrics with timestamps — no audio_url, conversion_type contains "Lyrics"
-  // - 1x Album cover image — no audio_url, conversion_type contains "Image"
+  // - 2x Music conversion (one per variant): these have audio_url or conversion_path
+  // - 2x Lyrics with timestamps: no audio_url, conversion_type contains "Lyrics"
+  // - 1x Album cover image: no audio_url, conversion_type contains "Image"
   // Skip non-audio webhooks early to avoid unnecessary DB lookups.
   if (conversionType) {
     const type = conversionType.toUpperCase();
     if (
-      !type.includes("MUSIC") &&
-      !type.includes("AUDIO") &&
+      !audioUrl &&
       (type.includes("LYRIC") || type.includes("IMAGE") || type.includes("COVER") || type.includes("ALBUM"))
     ) {
       console.log(`[webhook/musicgpt] skipping non-audio webhook (type=${conversionType})`);
@@ -89,12 +114,13 @@ export async function POST(request: NextRequest) {
   // in the tracks table as conversionId for track 1 and track 2 respectively.
   // Without this, result[0] would always update the same track and track 2
   // would remain stuck on "generating" indefinitely.
-  const track = conversionId
-    ? (result.find((t) => t.conversionId === conversionId) ?? result[0])
-    : result[0];
+  const conversionMatch = conversionId
+    ? result.find((t) => t.conversionId === conversionId)
+    : undefined;
+  const track = conversionMatch ?? result[0];
 
   const matchedBy = conversionId
-    ? (result.find((t) => t.conversionId === conversionId) ? "conversionId" : "jobId-fallback")
+    ? (conversionMatch ? "conversionId" : "jobId-fallback")
     : "jobId-only";
 
   console.log(
@@ -102,7 +128,12 @@ export async function POST(request: NextRequest) {
     `(conversionId=${conversionId ?? "none"}, taskId=${taskId})`
   );
 
-  if (status === "COMPLETED" && audioUrl) {
+  const failed =
+    success === false ||
+    status === "FAILED" ||
+    status.includes("FAIL");
+
+  if (audioUrl && !failed) {
     try {
       const axios = (await import("axios")).default;
       const { uploadToS3 } = await import("@/lib/s3");
@@ -128,7 +159,7 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(tracks.id, track.id!));
 
-      // Fire-and-forget cover art — only generate if not already present
+      // Fire-and-forget cover art if not already present.
       if (!track.s3KeyCover) {
         generateAndSaveCoverArt({
           id: track.id,
@@ -151,20 +182,24 @@ export async function POST(request: NextRequest) {
 
       console.log(`[webhook/musicgpt] track ${track.id} done (matchedBy=${matchedBy})`);
       return new Response("success", { status: 200 });
-    } catch (error: any) {
-      console.error("[webhook/musicgpt] failed:", error.message);
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      console.error("[webhook/musicgpt] failed:", message);
       await db
         .update(tracks)
-        .set({ status: "failed", error: `Processing failed: ${error.message}` })
+        .set({ status: "failed", error: `Processing failed: ${message}` })
         .where(eq(tracks.id, track.id!));
       return new Response("success", { status: 200 });
     }
   }
 
-  if (status === "FAILED" || status.includes("FAIL")) {
+  if (failed) {
     await db
       .update(tracks)
-      .set({ status: "failed", error: body.status_msg || "Generation failed" })
+      .set({
+        status: "failed",
+        error: getString(body, ["status_msg", "message", "reason"]) || "Generation failed",
+      })
       .where(eq(tracks.id, track.id!));
 
     await logApi({
@@ -180,7 +215,7 @@ export async function POST(request: NextRequest) {
     return new Response("success", { status: 200 });
   }
 
-  // Still processing — just acknowledge
-  console.log(`[webhook/musicgpt] task ${taskId} status=${status}, waiting...`);
+  // Still processing; just acknowledge.
+  console.log(`[webhook/musicgpt] task ${taskId} status=${status || "unknown"}, waiting...`);
   return new Response("success", { status: 200 });
 }

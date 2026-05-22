@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 22:03**
+**Versie: vr 22:39**
 
 > AI Music Generation Web App
 
@@ -51,6 +51,7 @@ Select which AI music service to use. Each provider shows its current credit bal
 - **Lyria** (Google) — synchronous, fast turnaround
 - **PoYo** (Suno) — asynchronous, webhook-based
 - **Tempolor** — asynchronous, webhook-based
+- **MusicGPT** — asynchronous, webhook-based, returns two generated variants
 
 This selector now lives in the **Studio** card on the Create page.
 
@@ -98,7 +99,7 @@ When you click **Generate Track**:
 4. A new track appears in the **Recent Tracks** list
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
 
-Lyria tracks complete in the same request. PoYo and Tempolor tracks may take longer — the app polls for status updates automatically.
+Lyria tracks complete in the same request. PoYo, Tempolor, and MusicGPT tracks may take longer; the app polls for status updates automatically and also processes provider webhooks when results arrive.
 
 For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generation is blocked and the app shows a notification.
 

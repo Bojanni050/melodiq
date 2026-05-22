@@ -14,28 +14,35 @@ export async function getSetting(key: string): Promise<string> {
   return "";
 }
 
+function appendWebhookSecret(url: string): string {
+  const secret = process.env.WEBHOOK_SECRET;
+  if (!secret) return url;
+
+  try {
+    const parsed = new URL(url);
+    if (!parsed.searchParams.has("secret")) {
+      parsed.searchParams.set("secret", secret);
+    }
+    return parsed.toString();
+  } catch {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}secret=${encodeURIComponent(secret)}`;
+  }
+}
 
 export async function getWebhookUrl(provider: string): Promise<string> {
   if (provider.toLowerCase() === "musicgpt") {
     const configured = await getSetting("MUSICGPT_WEBHOOK_URL");
     const explicit = configured || process.env.MUSICGPT_WEBHOOK_URL || "";
     if (explicit) {
-      let normalized = explicit.replace(/\/api\/webhook\//g, "/api/webhooks/");
-      if (!normalized.includes("?secret=")) {
-        const secret = process.env.WEBHOOK_SECRET;
-        if (secret) {
-          normalized = `${normalized}?secret=${encodeURIComponent(secret)}`;
-        }
-      }
-      return normalized;
+      const normalized = explicit.replace(/\/api\/webhook\//g, "/api/webhooks/");
+      return appendWebhookSecret(normalized);
     }
 
-    const appUrl = await getSetting("APP_URL") || process.env.APP_URL;
+    const appUrl = await getSetting("APP_URL") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) {
       const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/musicgpt`;
-      const secret = process.env.WEBHOOK_SECRET;
-      if (secret) return `${base}?secret=${encodeURIComponent(secret)}`;
-      return base;
+      return appendWebhookSecret(base);
     }
 
     throw new Error(
@@ -53,24 +60,17 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   if (url) {
     // Auto-correct the known singular/plural typo
     url = url.replace(/\/api\/webhook\//g, "/api/webhooks/");
-    // If already has ?secret= param, return as-is
-    if (url.includes("?secret=")) return url;
-    // Append secret from env
-    const secret = process.env.WEBHOOK_SECRET;
-    if (secret) return `${url}?secret=${encodeURIComponent(secret)}`;
-    return url;
+    return appendWebhookSecret(url);
   }
 
   // Auto-derive from APP_URL
-  const appUrl = await getSetting("APP_URL");
+  const appUrl = await getSetting("APP_URL") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) {
     const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
-    const secret = process.env.WEBHOOK_SECRET;
-    if (secret) return `${base}?secret=${encodeURIComponent(secret)}`;
-    return base;
+    return appendWebhookSecret(base);
   }
 
-  // Neither explicit URL nor APP_URL is set — this will break generation
+  // Neither explicit URL nor APP_URL is set; this will break generation.
   throw new Error(
     `No webhook URL configured for provider "${provider}". ` +
     `Set ${key} or APP_URL in the Settings page.`

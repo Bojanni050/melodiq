@@ -737,3 +737,14 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:03`
   - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:03` met uitleg over in-app dialogs en persistente playback
   - Validated with `npm run build`.
+
+## 2026-05-22 vr 22:39 (MusicGPT webhook verwerkt MusicAI conversion_path)
+
+- Findings: De MusicGPT `MusicAI` webhook-docs tonen audio-callbacks met `success: true`, `conversion_id` en `conversion_path`, terwijl de generieke webhook-doc ook `status: "COMPLETED"` noemt. Sonara verwerkte alleen exact `COMPLETED`, waardoor geldige MusicGPT audio-webhooks zonder `status` als wachtend konden blijven staan.
+- Conclusions: Behandel een payload met audio-URL (`audio_url` of `conversion_path`) als voltooid zolang MusicGPT niet expliciet een failure meldt, en houd `conversion_id` matching leidend voor de twee trackvarianten.
+- Actions:
+  - Updated `src/app/api/webhooks/musicgpt/route.ts` — added typed payload parsing, header-or-query secret support, non-audio callback skipping, and completion detection based on actual audio URL instead of only `status === "COMPLETED"`
+  - Updated `src/lib/settings.ts` — webhook URL secret appending now uses URL query params safely and falls back to `NEXT_PUBLIC_APP_URL` when deriving webhook URLs from app config
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:39`
+  - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:39` en MusicGPT als webhook-provider verduidelijkt
+  - Validated with `npm run build`.
