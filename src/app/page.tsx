@@ -517,6 +517,7 @@ export default function HomePage() {
   const selectedWorkspaceTracks = selectedWorkspace
     ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
     : [];
+  const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const visibleWorkspaces = workspaces.slice(0, workspaceGridSize);
 
   return (
@@ -567,27 +568,43 @@ export default function HomePage() {
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
-                        <p className="text-xs text-white/40">Select a folder card to show its tracks below.</p>
+                        <p className="text-xs text-white/40">
+                          {isWorkspaceFolderOpen
+                            ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
+                            : "Select a folder card to open it."}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
-                          {[4, 8, 12, 16].map((size) => (
-                            <button
-                              key={size}
-                              type="button"
-                              onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
-                              className={`rounded-md px-2 py-1 text-[11px] transition ${
-                                workspaceGridSize === size
-                                  ? "bg-primary-500 text-white"
-                                  : "text-white/65 hover:text-white hover:bg-white/10"
-                              }`}
-                              title={`Show ${size} workspace cards`}
-                              aria-label={`Show ${size} workspace cards`}
-                            >
-                              {size}
-                            </button>
-                          ))}
-                        </div>
+                        {!isWorkspaceFolderOpen && (
+                          <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                            {[4, 8, 12, 16].map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
+                                className={`rounded-md px-2 py-1 text-[11px] transition ${
+                                  workspaceGridSize === size
+                                    ? "bg-primary-500 text-white"
+                                    : "text-white/65 hover:text-white hover:bg-white/10"
+                                }`}
+                                title={`Show ${size} workspace cards`}
+                                aria-label={`Show ${size} workspace cards`}
+                              >
+                                {size}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {isWorkspaceFolderOpen && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkspaceId(null)}
+                            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
+                            title="Back to workspace overview"
+                          >
+                            ← Back to folders
+                          </button>
+                        )}
                         {showCreateWorkspace ? (
                         <div className="flex items-center gap-1">
                           <input
@@ -628,81 +645,90 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="mb-3 overflow-y-auto pr-1">
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {visibleWorkspaces.map((workspace) => {
-                          const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                          const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
-                          const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
-                          const hasSingleCover = coverUrls.length === 1;
+                    {!isWorkspaceFolderOpen && (
+                      <div className="mb-3 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {visibleWorkspaces.map((workspace) => {
+                            const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
+                            const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
+                            const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                            const hasSingleCover = coverUrls.length === 1;
 
-                          return (
-                            <button
-                              key={workspace.id}
-                              type="button"
-                              onClick={() => setSelectedWorkspaceId(workspace.id)}
-                              className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
-                                selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
-                              }`}
-                            >
-                              <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
-                                <div className="pointer-events-none absolute inset-0 bg-black/10" />
-                                {coverUrls.length > 0 ? (
-                                  <div
-                                    className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
-                                      hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
-                                    }`}
-                                  >
-                                    {coverUrls.map((cover, index) => (
-                                      <img
-                                        key={`${workspace.id}-${index}`}
-                                        src={cover}
-                                        alt={workspace.name}
-                                        draggable={false}
-                                        className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
-                                      />
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                    <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-                                      <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                      </svg>
+                            return (
+                              <button
+                                key={workspace.id}
+                                type="button"
+                                onClick={() => setSelectedWorkspaceId(workspace.id)}
+                                className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
+                                  selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
+                                }`}
+                              >
+                                <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                                  <div className="pointer-events-none absolute inset-0 bg-black/10" />
+                                  {coverUrls.length > 0 ? (
+                                    <div
+                                      className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
+                                        hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
+                                      }`}
+                                    >
+                                      {coverUrls.map((cover, index) => (
+                                        <img
+                                          key={`${workspace.id}-${index}`}
+                                          src={cover}
+                                          alt={workspace.name}
+                                          draggable={false}
+                                          className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
+                                        />
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+                                        <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+                                    <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
+                                      <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
+                                      <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
                                     </div>
                                   </div>
-                                )}
-
-                                <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                                  <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
-                                    <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                                    <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
-                                  </div>
                                 </div>
-                              </div>
-                            </button>
-                          );
-                        })}
+                              </button>
+                            );
+                          })}
 
-                        <button
-                          type="button"
-                          onClick={() => setSelectedWorkspaceId(null)}
-                          className={`rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-left transition-colors hover:bg-white/[0.05] ${
-                            selectedWorkspaceId ? "" : "ring-2 ring-primary-500/40"
-                          }`}
-                        >
-                          <p className="text-sm font-semibold text-white/80">No workspace</p>
-                          <p className="mt-1 text-xs text-white/45">Show only Recent Tracks below.</p>
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkspaceId(null)}
+                            className={`rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-5 text-left transition-colors hover:bg-white/[0.05] ${
+                              selectedWorkspaceId ? "" : "ring-2 ring-primary-500/40"
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-white/80">No workspace</p>
+                            <p className="mt-1 text-xs text-white/45">Show only Recent Tracks below.</p>
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-[11px] text-white/35 mb-1 truncate">
-                          <span className="text-white/60">Workspace</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkspaceId(null)}
+                            className="text-white/60 hover:text-white/80 transition-colors"
+                            title="Back to workspace overview"
+                          >
+                            Workspaces
+                          </button>
                           <span className="mx-1 text-white/20">/</span>
-                          <span className="text-white/70">{selectedWorkspace?.name ?? "None"}</span>
+                          <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
                         </div>
                         <h3 className="text-xs font-semibold text-white/60">Workspace Tracks</h3>
                       </div>

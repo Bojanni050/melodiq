@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: za 00:53**
+**Versie: za 00:56**
 
 > AI Music Generation Web App
 
@@ -126,6 +126,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - New generated songs are assigned to **Default Workspace** when no specific workspace is selected
 - If another workspace is currently open/selected in Studio, newly generated songs are assigned to that selected workspace
 - In Studio, workspace cards now have a user grid setting with quick options **4 / 8 / 12 / 16** (saved locally per browser)
+- Clicking a workspace card in Studio now opens that folder view, hides the other workspace cards, and shows only tracks from that folder
+- In folder view, use the **Back to folders** button or click the **Workspaces** breadcrumb to return to the overview grid
 - If a workspace has exactly one cover image, the card now centers that cover instead of placing it in a corner of a 2x2 collage
 - Workspace folder cards in Studio are now fully clickable across the full card surface
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu

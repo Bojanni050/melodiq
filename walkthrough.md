@@ -445,6 +445,19 @@
   - Updated `sonara-user.md` — gebruikersdocumentatie uitgebreid met default workspace gedrag
   - Validated with `npm run build`.
 
+## 2026-05-23 za 00:56 (Studio workspace: folder-open mode + back/breadcrumb navigatie)
+
+- Findings: In Studio bleven alle workspace-cards zichtbaar na selectie; dat voelde alsof de grid-selector niet reageerde en de folder-open state was onduidelijk.
+- Conclusions: Workspace selectie moet een echte folder-open state tonen: overige cards verbergen, alleen foldertracks tonen, met expliciete terugnavigatie via knop en breadcrumb.
+- Actions:
+  - Updated `src/app/page.tsx` — toegevoegd `isWorkspaceFolderOpen` en conditionele rendering: overview-grid alleen zichtbaar zonder geselecteerde workspace
+  - Updated `src/app/page.tsx` — bij klik op workspace-card opent nu folderweergave; overige workspaces worden verborgen
+  - Updated `src/app/page.tsx` — toegevoegd `Back to folders` knop in de header wanneer een folder open is
+  - Updated `src/app/page.tsx` — breadcrumb `Workspaces / {naam}` gemaakt met klik op `Workspaces` om terug te keren naar overview
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:56`
+  - Updated `sonara-user.md` — user guide aangevuld met folder-open gedrag en terugnavigatie
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
 
 - Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.
