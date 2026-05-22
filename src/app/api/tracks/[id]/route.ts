@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
+import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -13,6 +14,8 @@ import {
   detectFormatFromContentType,
   detectFormatFromUrl,
 } from "@/lib/audio-format";
+import { extractAudioDuration } from "@/lib/audio-duration";
+import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -54,18 +57,6 @@ export async function GET(
       audioUrl,
       audioUrlHd,
     });
-  }
-
-  if (track.createdAt) {
-    const elapsed = Date.now() - new Date(track.createdAt).getTime();
-    if (elapsed > GENERATION_TIMEOUT_MS) {
-      const updated = await db
-        .update(tracks)
-        .set({ status: "failed", error: "Generation timed out. Please try again." })
-        .where(eq(tracks.id, track.id!))
-        .returning();
-      return NextResponse.json(updated[0]);
-    }
   }
 
   if (track.provider === "poyo" && track.jobId) {
@@ -159,6 +150,83 @@ export async function GET(
       return NextResponse.json(track);
     } catch {
       return NextResponse.json(track);
+    }
+  }
+
+  if (track.provider === "musicgpt" && track.conversionId) {
+    try {
+      const conversion = await getMusicGptConversionById(track.conversionId);
+
+      if (conversion) {
+        const status = (conversion.status ?? "").toUpperCase();
+        const audioUrl = conversion.audio_url ?? conversion.conversion_path ?? null;
+
+        if (status === "COMPLETED" && audioUrl) {
+          const audioRes = await axios.get(audioUrl, {
+            responseType: "arraybuffer",
+            timeout: 60000,
+          });
+
+          const audioBuffer = Buffer.from(audioRes.data);
+          const s3Key = `tracks/${track.id}/audio.mp3`;
+          await uploadToS3(s3Key, audioBuffer, "audio/mpeg");
+
+          const duration = await extractAudioDuration(audioBuffer);
+
+          const updated = await db
+            .update(tracks)
+            .set({
+              status: "done",
+              s3Key,
+              format: "mp3",
+              duration,
+              audioUrl: `/api/tracks/${track.id}/download`,
+              error: null,
+            })
+            .where(eq(tracks.id, track.id!))
+            .returning();
+
+          if (!track.s3KeyCover) {
+            generateAndSaveCoverArt({
+              id: track.id,
+              userId: track.userId,
+              title: track.title,
+              prompt: track.prompt,
+              instrumental: track.instrumental,
+            }).catch(() => {});
+          }
+
+          return NextResponse.json(updated[0]);
+        }
+
+        if (status === "FAILED" || status.includes("FAIL")) {
+          const updated = await db
+            .update(tracks)
+            .set({
+              status: "failed",
+              error: conversion.status_msg || "Generation failed",
+            })
+            .where(eq(tracks.id, track.id!))
+            .returning();
+          return NextResponse.json(updated[0]);
+        }
+      }
+
+      return NextResponse.json(track);
+    } catch {
+      return NextResponse.json(track);
+    }
+  }
+
+  if (track.createdAt) {
+    const elapsed = Date.now() - new Date(track.createdAt).getTime();
+    if (elapsed > GENERATION_TIMEOUT_MS) {
+      const updated = await db
+        .update(tracks)
+        .set({ status: "failed", error: "Generation timed out. Please try again." })
+        .where(eq(tracks.id, track.id!))
+        .returning();
+      return NextResponse.json(updated[0]);
     }
   }
 

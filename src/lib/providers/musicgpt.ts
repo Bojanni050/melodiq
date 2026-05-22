@@ -1,6 +1,18 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
+export interface MusicGptConversion {
+  task_id: string;
+  conversion_id: string;
+  status: string;
+  status_msg?: string;
+  audio_url?: string;
+  conversion_path?: string;
+  title?: string;
+  lyrics?: string;
+  music_style?: string;
+}
+
 export interface GenerateMusicGptRequest {
   prompt: string;
   lyrics?: string;
@@ -15,6 +27,38 @@ export interface GenerateMusicGptResponse {
   conversionId1: string;
   conversionId2: string;
   eta: number;
+}
+
+export async function getMusicGptConversionById(
+  conversionId: string
+): Promise<MusicGptConversion | null> {
+  const apiKey = (await getSetting("MUSICGPT_API_KEY")) || process.env.MUSICGPT_API_KEY;
+  if (!apiKey) throw new Error("MUSICGPT_API_KEY not configured");
+
+  try {
+    const response = await axios.get(
+      "https://api.musicgpt.com/api/public/v1/byId",
+      {
+        headers: {
+          Authorization: apiKey,
+          "Content-Type": "application/json",
+        },
+        params: {
+          conversionType: "MUSIC_AI",
+          conversion_id: conversionId,
+        },
+        timeout: 15000,
+      }
+    );
+
+    if (response.data?.success && response.data?.conversion) {
+      return response.data.conversion as MusicGptConversion;
+    }
+
+    return null;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || error.message || "MusicGPT byId lookup failed");
+  }
 }
 
 export async function generateMusicGpt(

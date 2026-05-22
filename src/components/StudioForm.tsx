@@ -246,6 +246,7 @@ export default function StudioForm({
   const [showLyrics, setShowLyrics] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showTags, setShowTags] = useState(false);
+  const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
 
   const promptCharCount = songIdea.length;
   const styleMaxChars = 1000;
@@ -303,6 +304,18 @@ export default function StudioForm({
       setSongIdea(currentStyle + ", " + tag);
     } else if (!currentStyle) {
       setSongIdea(tag);
+    }
+  }
+
+  async function handleCopy(text: string, field: "lyrics" | "style") {
+    if (!text.trim()) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy field:", error);
     }
   }
 
@@ -403,6 +416,26 @@ export default function StudioForm({
             {!instrumental && (
               <button
                 type="button"
+                onClick={() => handleCopy(lyrics, "lyrics")}
+                disabled={!lyrics.trim()}
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Copy lyrics"
+                aria-label="Copy lyrics"
+              >
+                {copiedField === "lyrics" ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            )}
+            {!instrumental && (
+              <button
+                type="button"
                 onClick={() => setLyrics("")}
                 disabled={!lyrics.trim()}
                 className="text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -417,7 +450,7 @@ export default function StudioForm({
             <button
               type="button"
               role="switch"
-              aria-checked={instrumental ? "true" : "false"}
+              aria-checked={instrumental}
               onClick={() => setInstrumental(!instrumental)}
               className={`relative w-12 h-6 rounded-full transition-colors ${
                 instrumental ? "bg-amber-500/20" : "bg-emerald-500/20"
@@ -496,15 +529,35 @@ Your chorus here`}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-white/80">Style & Prompt</h3>
-          <button
-            onClick={() => setSongIdea("")}
-            className="text-white/30 hover:text-white/60 transition-colors"
-            title="Clear"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleCopy(songIdea, "style")}
+              disabled={!songIdea.trim()}
+              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Copy style"
+              aria-label="Copy style"
+            >
+              {copiedField === "style" ? (
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={() => setSongIdea("")}
+              className="text-white/30 hover:text-white/60 transition-colors"
+              title="Clear"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="relative">
