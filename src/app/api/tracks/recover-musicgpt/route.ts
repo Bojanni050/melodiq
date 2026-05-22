@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
 import { uploadToS3 } from "@/lib/s3";
@@ -92,7 +92,10 @@ export async function POST() {
       and(
         eq(tracks.userId, userId),
         eq(tracks.provider, "musicgpt"),
-        inArray(tracks.status, ["generating", "failed"]),
+        or(
+          eq(tracks.status, "generating"),
+          eq(tracks.status, "failed")
+        ),
         isNotNull(tracks.conversionId)
       )
     );
@@ -100,7 +103,7 @@ export async function POST() {
   if (stuckTracks.length === 0) {
     return NextResponse.json({
       success: true,
-      message: "No stuck MusicGPT tracks found",
+      message: "No recoverable MusicGPT tracks found",
       recovered: 0,
       total: 0,
     });
