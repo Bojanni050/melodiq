@@ -236,8 +236,11 @@ export default function LyricsStudioPage() {
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; position: "before" | "after" } | null>(null);
   const songGenerationAbortRef = useRef<AbortController | null>(null);
   const stopSongGenerationRef = useRef(false);
+  const dragStateRef = useRef<{ pointerId: number; blockId: string } | null>(null);
   const {
     language,
     customLanguage,
@@ -438,6 +441,87 @@ export default function LyricsStudioPage() {
       return next;
     });
   }
+
+  function moveBlockToPosition(id: string, insertionIndex: number) {
+    setBlocks((current) => {
+      const fromIndex = current.findIndex((block) => block.id === id);
+      if (fromIndex < 0) return current;
+
+      const boundedInsertionIndex = Math.max(0, Math.min(insertionIndex, current.length));
+      const adjustedInsertionIndex = fromIndex < boundedInsertionIndex
+        ? boundedInsertionIndex - 1
+        : boundedInsertionIndex;
+
+      if (adjustedInsertionIndex === fromIndex) return current;
+
+      const next = [...current];
+      const [block] = next.splice(fromIndex, 1);
+      next.splice(adjustedInsertionIndex, 0, block);
+      return next;
+    });
+  }
+
+  function updateDragTarget(clientX: number, clientY: number, draggingId: string) {
+    const hoveredElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const blockElement = hoveredElement?.closest<HTMLElement>("[data-lyric-block-id]");
+    const targetId = blockElement?.dataset.lyricBlockId;
+
+    if (!targetId || targetId === draggingId) {
+      setDropTarget(null);
+      return;
+    }
+
+    const rect = blockElement.getBoundingClientRect();
+    const position = clientY < rect.top + rect.height / 2 ? "before" : "after";
+    setDropTarget({ id: targetId, position });
+  }
+
+  function startBlockDrag(event: React.PointerEvent<HTMLButtonElement>, blockId: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    dragStateRef.current = { pointerId: event.pointerId, blockId };
+    setDraggedBlockId(blockId);
+    setDropTarget(null);
+  }
+
+  useEffect(() => {
+    if (!draggedBlockId) return;
+
+    function handlePointerMove(event: PointerEvent) {
+      if (!dragStateRef.current || dragStateRef.current.pointerId !== event.pointerId) return;
+      updateDragTarget(event.clientX, event.clientY, dragStateRef.current.blockId);
+    }
+
+    function finishDrag(event: PointerEvent) {
+      if (!dragStateRef.current || dragStateRef.current.pointerId !== event.pointerId) return;
+
+      const activeDrag = dragStateRef.current;
+      if (dropTarget) {
+        const targetIndex = blocks.findIndex((block) => block.id === dropTarget.id);
+        if (targetIndex >= 0) {
+          moveBlockToPosition(
+            activeDrag.blockId,
+            dropTarget.position === "before" ? targetIndex : targetIndex + 1
+          );
+        }
+      }
+
+      dragStateRef.current = null;
+      setDraggedBlockId(null);
+      setDropTarget(null);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", finishDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", finishDrag);
+      window.removeEventListener("pointercancel", finishDrag);
+    };
+  }, [blocks, draggedBlockId, dropTarget]);
 
   function applyPreset(name: string) {
     if (blocks.length > 0 && !window.confirm("Replace current blocks?")) return;
@@ -1219,12 +1303,31 @@ export default function LyricsStudioPage() {
                       className={`grid gap-4 ${lyricCols === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}
                     >
                       {blocks.map((block, index) => (
+                        (() => {
+                          const isDragged = draggedBlockId === block.id;
+                          const showDropBefore = dropTarget?.id === block.id && dropTarget.position === "before";
+                          const showDropAfter = dropTarget?.id === block.id && dropTarget.position === "after";
+
+                          return (
                         <article
                           key={block.id}
-                          className="rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col"
+                          data-lyric-block-id={block.id}
+                          className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                           style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
                         >
+                        {showDropBefore && <div className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary-400" />}
                         <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onPointerDown={(event) => startBlockDrag(event, block.id)}
+                            className="h-9 w-9 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
+                            title="Drag to reorder"
+                            aria-label={`Drag ${block.label || BLOCK_LABELS[block.type]} block`}
+                          >
+                            <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />
+                            </svg>
+                          </button>
                           <span
                             className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
                             style={{ backgroundColor: BLOCK_COLORS[block.type] }}
@@ -1318,8 +1421,11 @@ export default function LyricsStudioPage() {
                           </button>
                           <span className="text-xs text-white/35">{block.content.length} chars</span>
                         </div>
+                        {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
                       </article>
-                    ))}
+                          );
+                        })()
+                      ))}
 
                     </div>
                     {/* Alleen tonen op 1 kolom (mobile/tablet), onderaan blocks */}

@@ -9,6 +9,16 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 12:37` volgens de app-version update conventie
   - Validated with `npm run build`.
 
+## 2026-05-22 vr 13:13 (Lyric Studio blokken draggable op desktop en touch)
+
+- Findings: Lyric Studio kon blokken alleen via up/down-knoppen herschikken, wat traag was bij langere songs en onhandig op zowel groot scherm als mobiel.
+- Conclusions: Voeg pointer-based drag-and-drop toe met een expliciete drag handle per blok, zodat dezelfde reorder-flow werkt met muis en touch zonder de bestaande knoppen weg te nemen.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — added pointer drag state, drop target detection en reorder via insertion position
+  - Updated `src/app/lyrics-studio/page.tsx` — elk lyric block heeft nu een drag handle en visuele drop-indicator boven/onder het targetblok
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 13:13`
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 05:04 (Studio create button sticky)
 
 - Findings: In de Studio create-flow scrollt de `Generate Track` knop buiten beeld bij lange forms, waardoor de primaire actie minder toegankelijk is.

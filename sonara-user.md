@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 12:37**
+**Versie: vr 13:13**
 
 > AI Music Generation Web App
 
@@ -74,6 +74,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Delete old snapshots directly from the load dialog to keep only useful drafts
 - On each Chorus block, use **Unique (do not auto-repeat)** to force a fresh chorus even when Repetitive chorus is enabled
 - Reorder blocks with the up/down controls, duplicate blocks, edit labels and lyrics manually, or delete sections
+- Drag blocks directly with the grip handle on both desktop and touch screens to reorder them faster
 - **Copy all lyrics** copies the finished block sequence
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
 
