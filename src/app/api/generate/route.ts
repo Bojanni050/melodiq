@@ -74,6 +74,9 @@ export async function POST(request: NextRequest) {
   if (lyrics !== undefined && lyrics !== null && (typeof lyrics !== "string" || lyrics.length > 10000)) {
     return NextResponse.json({ error: "lyrics must be 10000 characters or fewer" }, { status: 400 });
   }
+  if (provider === "musicgpt" && typeof lyrics === "string" && lyrics.length > 3000) {
+    return NextResponse.json({ error: "MusicGPT lyrics must be 3000 characters or fewer" }, { status: 400 });
+  }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }

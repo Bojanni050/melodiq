@@ -7,6 +7,8 @@ import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import { useStudioStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
 
+const MUSICGPT_LYRICS_MAX_CHARS = 3000;
+
 interface Track {
   id: string;
   title: string | null;
@@ -266,6 +268,14 @@ export default function HomePage() {
       providerModel,
       instrumental,
     } = useStudioStore.getState();
+
+    if (provider === "musicgpt" && lyrics.length > MUSICGPT_LYRICS_MAX_CHARS) {
+      setNotice({
+        type: "error",
+        message: `MusicGPT lyrics mogen maximaal ${MUSICGPT_LYRICS_MAX_CHARS} karakters zijn.`,
+      });
+      return;
+    }
 
     setGenerating(true);
 

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 14:44**
+**Versie: vr 21:48**
 
 > AI Music Generation Web App
 
@@ -98,6 +98,8 @@ When you click **Generate Track**:
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
 
 Lyria tracks complete in the same request. PoYo and Tempolor tracks may take longer — the app polls for status updates automatically.
+
+For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generation is blocked and the app shows a notification.
 
 ---
 

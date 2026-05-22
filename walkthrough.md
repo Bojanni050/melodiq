@@ -714,3 +714,14 @@
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-18:00`
   - Updated `sonara-user.md` — version updated to `do 18:00` and documented strict generated-lyrics output format
   - Validated with `npm run build`.
+
+## 2026-05-22 vr 21:48 (MusicGPT lyrics max 3000 blokkeren met popup)
+
+- Findings: Bij MusicGPT kon een te lange lyrics-invoer alsnog de generate-flow starten, terwijl de provider een striktere limiet heeft.
+- Conclusions: Voeg een vroege client-check toe met een zichtbare notificatie, en een server-side guard in de generate API zodat ook directe API-calls correct worden geblokkeerd.
+- Actions:
+  - Updated `src/app/page.tsx` — added preflight check in `handleGenerate()` that blocks MusicGPT generation when lyrics exceed 3000 chars and shows an error popup via `setNotice(...)`
+  - Updated `src/app/api/generate/route.ts` — added provider-specific validation returning `400` when `provider === "musicgpt"` and lyrics exceed 3000 chars
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 21:48`
+  - Updated `sonara-user.md` — user guide versie ververst naar `vr 21:48` en MusicGPT 3000-char limiet gedocumenteerd
+  - Validated with `npm run build`.
