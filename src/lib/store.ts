@@ -215,6 +215,13 @@ export interface Playlist {
   createdAt: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  trackIds: string[];
+  createdAt: string;
+}
+
 interface PlaylistState {
   playlists: Playlist[];
   selectedPlaylistId: string | null;
@@ -273,6 +280,78 @@ export const usePlaylistStore = create<PlaylistState>()(
     }),
     {
       name: "sonara-playlists",
+    }
+  )
+);
+
+interface WorkspaceState {
+  workspaces: Workspace[];
+  selectedWorkspaceId: string | null;
+  createWorkspace: (name: string) => string;
+  moveTrackToWorkspace: (workspaceId: string, trackId: string) => void;
+  removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
+  deleteWorkspace: (workspaceId: string) => void;
+  setSelectedWorkspaceId: (workspaceId: string | null) => void;
+}
+
+export const useWorkspaceStore = create<WorkspaceState>()(
+  persist(
+    (set) => ({
+      workspaces: [],
+      selectedWorkspaceId: null,
+      createWorkspace: (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return "";
+        const id =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        set((state) => ({
+          workspaces: [
+            ...state.workspaces,
+            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString() },
+          ],
+        }));
+        return id;
+      },
+      moveTrackToWorkspace: (workspaceId, trackId) =>
+        set((state) => ({
+          workspaces: state.workspaces.map((workspace) => {
+            if (workspace.id === workspaceId) {
+              return {
+                ...workspace,
+                trackIds: workspace.trackIds.includes(trackId)
+                  ? workspace.trackIds
+                  : [...workspace.trackIds.filter((id) => id !== trackId), trackId],
+              };
+            }
+
+            return {
+              ...workspace,
+              trackIds: workspace.trackIds.filter((id) => id !== trackId),
+            };
+          }),
+        })),
+      removeTrackFromWorkspace: (workspaceId, trackId) =>
+        set((state) => ({
+          workspaces: state.workspaces.map((workspace) => {
+            if (workspace.id !== workspaceId) return workspace;
+            return {
+              ...workspace,
+              trackIds: workspace.trackIds.filter((id) => id !== trackId),
+            };
+          }),
+        })),
+      deleteWorkspace: (workspaceId) =>
+        set((state) => ({
+          workspaces: state.workspaces.filter((workspace) => workspace.id !== workspaceId),
+          selectedWorkspaceId:
+            state.selectedWorkspaceId === workspaceId ? null : state.selectedWorkspaceId,
+        })),
+      setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),
+    }),
+    {
+      name: "sonara-workspaces",
     }
   )
 );
