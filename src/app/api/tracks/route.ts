@@ -49,7 +49,7 @@ export async function GET() {
   const timedOutIds: string[] = [];
 
   for (const track of refreshedResult) {
-    if (track.status === "generating" && track.createdAt) {
+    if (track.status === "generating" && track.createdAt && track.provider !== "musicgpt") {
       const elapsed = now - new Date(track.createdAt).getTime();
       if (elapsed > GENERATION_TIMEOUT_MS) {
         timedOutIds.push(track.id!);

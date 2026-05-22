@@ -218,7 +218,7 @@ export async function GET(
     }
   }
 
-  if (track.createdAt) {
+  if (track.createdAt && track.provider !== "musicgpt") {
     const elapsed = Date.now() - new Date(track.createdAt).getTime();
     if (elapsed > GENERATION_TIMEOUT_MS) {
       const updated = await db
