@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 13:25**
+**Versie: vr 13:32**
 
 > AI Music Generation Web App
 
@@ -134,6 +134,7 @@ The Settings page lets you configure each provider independently:
 - LLM Routing for separate prompt and lyrics providers
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
+- MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
 
 ---
 

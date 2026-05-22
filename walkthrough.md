@@ -1,5 +1,15 @@
 # Sonara — Walkthrough
 
+## 2026-05-22 vr 13:32 (MusicGPT timeout skip + failed-track recovery)
+
+- Findings: MusicGPT tracks could still be pushed into generic timeout handling, and the recovery endpoint only retried tracks in `generating`, leaving already-timed-out MusicGPT jobs out of the recovery flow.
+- Conclusions: MusicGPT needs its own timeout exception in the polling routes, and recovery should accept both `generating` and `failed` states as recoverable.
+- Actions:
+  - Updated `src/app/api/tracks/route.ts` — timeout loop now skips tracks with `provider === "musicgpt"`
+  - Updated `src/app/api/tracks/[id]/route.ts` — single-track timeout check now skips MusicGPT tracks
+  - Updated `src/app/api/tracks/recover-musicgpt/route.ts` — recovery query now includes both `generating` and `failed`, and the empty-state message now says “No recoverable MusicGPT tracks found”
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 13:25 (Lyric blocks draggable op desktop en mobiel)
 
 - Findings: De lyric blokken hadden al reorder helpers, maar het drag startpunt en de affordance waren te subtiel voor comfortabel gebruik op touch en in compacte layouts.
