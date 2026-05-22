@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-22 vr 12:37 (Right sidebar prompt collapsed by default)
+
+- Findings: De prompttekst in het TrackDetail-paneel nam veel verticale ruimte in beslag, waardoor de rechterzijbalk onnodig lang werd op grotere schermen.
+- Conclusions: De prompt moet standaard ingeklapt zijn met een duidelijke toggle en copy-actie, zodat de sidebar compact blijft maar de volledige tekst nog steeds direct beschikbaar is.
+- Actions:
+  - Updated `src/components/TrackDetail.tsx` — promptsectie krijgt nu een inklapbare header met toggle en copy-knop; volledige prompt staat standaard dicht
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 12:37` volgens de app-version update conventie
+  - Validated with `npm run build`.
+
 ## 2026-05-21 do 05:04 (Studio create button sticky)
 
 - Findings: In de Studio create-flow scrollt de `Generate Track` knop buiten beeld bij lange forms, waardoor de primaire actie minder toegankelijk is.

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: do 18:00**
+**Versie: vr 12:37**
 
 > AI Music Generation Web App
 
@@ -112,7 +112,7 @@ Lyria tracks complete in the same request. PoYo and Tempolor tracks may take lon
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
 - Track info (provider, model, status, date)
-- Full style prompt
+- Full style prompt, collapsed by default; click Prompt to expand it
 - Full lyrics (if vocal)
 - **Play** — stream the audio inline
 - **Download** — save the MP3 file (HD version if available)

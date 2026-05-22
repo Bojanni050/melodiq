@@ -34,6 +34,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [promptExpanded, setPromptExpanded] = useState(false);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
@@ -204,7 +205,17 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
         {/* Prompt */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Prompt</h4>
+            <button
+              type="button"
+              onClick={() => setPromptExpanded((value) => !value)}
+              className="flex items-center gap-2 text-xs font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+              title={promptExpanded ? "Collapse prompt" : "Expand prompt"}
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform ${promptExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Prompt
+            </button>
             <button
               onClick={() => handleCopy(track.prompt, "prompt")}
               className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
@@ -221,7 +232,13 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
               )}
             </button>
           </div>
-          <p className="text-sm text-white/70 leading-relaxed">{track.prompt}</p>
+          {promptExpanded ? (
+            <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
+          ) : (
+            <p className="text-sm text-white/35 leading-relaxed line-clamp-2">
+              Prompttext ingeklapt. Klik op Prompt om de volledige tekst te zien.
+            </p>
+          )}
         </div>
 
         {/* Lyrics */}
