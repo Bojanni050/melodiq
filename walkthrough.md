@@ -760,3 +760,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:50`
   - Updated `sonara-user.md` — user guide versie ververst naar `vr 22:50` en Studio split-column gedrag gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-22 vr 23:31 (Track sorting in alle tracklijsten)
+
+- Findings: Tracklijsten hadden geen expliciete sorteeroptie, waardoor gebruikers niet snel konden wisselen tussen nieuwste en oudste items.
+- Conclusions: Voeg sortering centraal toe in `TrackList`, zodat Studio (workspace + recent) en Library automatisch dezelfde sort-controls krijgen.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — added sort control with `New to old` and `Old to new`
+  - Updated `src/components/TrackList.tsx` — introduced sorted `displayedTracks` (by `createdAt`) for rendering and selection counts
+  - Updated `src/components/TrackList.tsx` — autoplay play-context now follows the active list sorting order
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 23:31`
+  - Updated `sonara-user.md` — user guide versie ververst naar `vr 23:31` en sorteeropties gedocumenteerd
+  - Validated with `npm run build`.
