@@ -476,7 +476,22 @@ export default function LyricsStudioPage() {
     setDropTarget({ id: targetId, position });
   }
 
+  function shouldIgnoreDragStart(target: EventTarget | null) {
+    const element = target instanceof HTMLElement ? target : null;
+    return Boolean(element?.closest("input, textarea, button, select, option, label, a"));
+  }
+
   function startBlockDrag(event: React.PointerEvent<HTMLButtonElement>, blockId: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    dragStateRef.current = { pointerId: event.pointerId, blockId };
+    setDraggedBlockId(blockId);
+    setDropTarget(null);
+  }
+
+  function startBlockDragFromCard(event: React.PointerEvent<HTMLElement>, blockId: string) {
+    if (shouldIgnoreDragStart(event.target)) return;
     event.preventDefault();
     event.stopPropagation();
 
@@ -1312,15 +1327,16 @@ export default function LyricsStudioPage() {
                         <article
                           key={block.id}
                           data-lyric-block-id={block.id}
-                          className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
+                          onPointerDown={(event) => startBlockDragFromCard(event, block.id)}
+                          className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                           style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
                         >
                         {showDropBefore && <div className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary-400" />}
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <div className="mb-3 flex flex-wrap items-center gap-2 select-none">
                           <button
                             type="button"
                             onPointerDown={(event) => startBlockDrag(event, block.id)}
-                            className="h-9 w-9 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
+                            className="h-10 w-10 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
                             title="Drag to reorder"
                             aria-label={`Drag ${block.label || BLOCK_LABELS[block.type]} block`}
                           >
@@ -1328,6 +1344,9 @@ export default function LyricsStudioPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />
                             </svg>
                           </button>
+                          <div className="hidden sm:block text-[10px] uppercase tracking-[0.18em] text-white/25">
+                            Drag to reorder
+                          </div>
                           <span
                             className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
                             style={{ backgroundColor: BLOCK_COLORS[block.type] }}

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 13:13**
+**Versie: vr 13:18**
 
 > AI Music Generation Web App
 
@@ -63,6 +63,7 @@ The language selector now lives on the **Lyric Studio** page.
 ### Lyric Studio
 Use **Lyric Studio** to build lyrics as separate editable blocks before sending them to the main Studio.
 - Add blocks such as Intro, Verse, Pre-Chorus, Chorus, Bridge, and Outro
+- Reorder blocks by dragging the card or drag handle on both desktop and touch screens; the up/down buttons stay available as fallback
 - Use presets like Pop, ABABCB, AABA, Extended, and EDM/Dance structures to create a full structure quickly
 - **Repetitive chorus** (default ON) in Song Structure: when enabled, AI writes one chorus and repeats it; when disabled, AI generates chorus variations
 - **Creativity** slider (1-10) adjusts LLM temperature from 0.1 to 1.2 with zones: low (1-3), medium (4-7), high (8-10)
