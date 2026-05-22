@@ -41,6 +41,9 @@ export default function HomePage() {
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const setSelectedWorkspaceId = useWorkspaceStore((state) => state.setSelectedWorkspaceId);
+  const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -135,6 +138,24 @@ export default function HomePage() {
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
+  }
+
+  function handleCreateWorkspace() {
+    const id = createWorkspace(newWorkspaceName);
+    if (!id) return;
+    setSelectedWorkspaceId(id);
+    setNewWorkspaceName("");
+    setShowCreateWorkspace(false);
+  }
+
+  function handleCreateWorkspaceKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleCreateWorkspace();
+    } else if (event.key === "Escape") {
+      setShowCreateWorkspace(false);
+      setNewWorkspaceName("");
+    }
   }
 
   async function fetchTracks() {
@@ -461,23 +482,67 @@ export default function HomePage() {
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-[11px] text-white/35 mb-1.5 truncate">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWorkspaceId(null)}
-                            className="hover:text-white/70 transition-colors"
-                          >
-                            Workspaces
-                          </button>
+                          <span className="text-white/60">Workspace</span>
                           <span className="mx-1 text-white/20">/</span>
-                          <span className="text-white/70">
-                            {selectedWorkspace?.name ?? "No workspace selected"}
-                          </span>
+                          <span className="text-white/70">{selectedWorkspace?.name ?? "None"}</span>
                         </div>
                         <h2 className="text-sm font-semibold text-white/70">Workspace Tracks</h2>
                       </div>
-                      <span className="text-xs text-white/30 shrink-0">
-                        {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {showCreateWorkspace ? (
+                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-1.5">
+                            <input
+                              value={newWorkspaceName}
+                              onChange={(event) => setNewWorkspaceName(event.target.value)}
+                              onKeyDown={handleCreateWorkspaceKeyDown}
+                              placeholder="Workspace name"
+                              className="h-8 w-44 rounded-full bg-transparent px-3 text-xs text-white placeholder:text-white/30 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCreateWorkspace}
+                              className="h-8 rounded-full bg-white px-3 text-xs font-medium text-black transition-colors hover:bg-white/90"
+                            >
+                              Create
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCreateWorkspace(false);
+                                setNewWorkspaceName("");
+                              }}
+                              className="h-8 rounded-full bg-white/5 px-3 text-xs text-white/70 hover:bg-white/10"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <select
+                              value={selectedWorkspaceId ?? ""}
+                              onChange={(event) => setSelectedWorkspaceId(event.target.value || null)}
+                              className="h-8 max-w-[220px] rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white/80 outline-none"
+                            >
+                              <option value="">No workspace</option>
+                              {workspaces.map((workspace) => (
+                                <option key={workspace.id} value={workspace.id}>
+                                  {workspace.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setShowCreateWorkspace(true)}
+                              className="h-8 rounded-full border border-white/10 bg-white/5 px-3 text-xs text-white/70 hover:bg-white/10"
+                            >
+                              + Workspace
+                            </button>
+                          </>
+                        )}
+                        <span className="text-xs text-white/30 ml-1">
+                          {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-y-auto pr-1">
@@ -496,7 +561,7 @@ export default function HomePage() {
                       ) : (
                         <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
                           <p className="text-sm text-white/45">
-                            Select a workspace in the Workspaces page to pin its tracks here.
+                            Select or create a workspace above to pin its tracks here.
                           </p>
                         </div>
                       )}
