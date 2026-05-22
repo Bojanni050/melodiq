@@ -168,4 +168,4 @@ export async function POST(request: NextRequest) {
   // Still processing — just acknowledge
   console.log(`[webhook/musicgpt] task ${taskId} status=${status}, waiting...`);
   return new Response("success", { status: 200 });
-}Thank you.
+}

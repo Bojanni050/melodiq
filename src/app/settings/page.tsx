@@ -177,6 +177,14 @@ export default function SettingsPage() {
   const [s3Config, setS3Config] = useState<{ endpoint: string; region: string; bucket: string; forcePathStyle: boolean } | null>(null);
   const [s3Status, setS3Status] = useState<{ connected: boolean; message: string } | null>(null);
   const [testingS3, setTestingS3] = useState(false);
+  const [recoveringMusicgpt, setRecoveringMusicgpt] = useState(false);
+  const [musicgptRecoveryResult, setMusicgptRecoveryResult] = useState<{
+    success: boolean;
+    message: string;
+    recovered?: number;
+    still_processing?: number;
+    total?: number;
+  } | null>(null);
   const [s3Stats, setS3Stats] = useState<{ totalSize: number; objectCount: number; formattedSize: string } | null>(null);
   const [loadingS3Stats, setLoadingS3Stats] = useState(false);
 
@@ -361,6 +369,36 @@ export default function SettingsPage() {
     }
 
     setSaving((prev) => ({ ...prev, webhooks: false }));
+  }
+
+  async function recoverMusicgptTracks() {
+    setRecoveringMusicgpt(true);
+    setMusicgptRecoveryResult(null);
+    try {
+      const res = await fetch("/api/tracks/recover-musicgpt", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setMusicgptRecoveryResult({
+          success: true,
+          message: data.message,
+          recovered: data.recovered,
+          still_processing: data.still_processing,
+          total: data.total,
+        });
+      } else {
+        setMusicgptRecoveryResult({
+          success: false,
+          message: data.error || "Recovery failed",
+        });
+      }
+    } catch {
+      setMusicgptRecoveryResult({
+        success: false,
+        message: "Network error — could not reach recovery endpoint",
+      });
+    } finally {
+      setRecoveringMusicgpt(false);
+    }
   }
 
   async function testProvider(provider: ProviderConfig) {
@@ -861,6 +899,36 @@ export default function SettingsPage() {
               {PROVIDERS.filter((provider) => ["lyria", "poyo", "tempolor", "musicgpt"].includes(provider.id)).map((provider) =>
                 renderProviderSection(provider)
               )}
+
+              {/* MusicGPT Recovery */}
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-1">MusicGPT — Track Recovery</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Haal tracks op die vastzitten op &ldquo;generating&rdquo; door de MusicGPT API
+                  rechtstreeks te pollen op status. Veilig om meerdere keren aan te roepen.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={recoverMusicgptTracks}
+                    disabled={recoveringMusicgpt}
+                    className="btn-secondary text-xs px-3 py-1.5"
+                  >
+                    {recoveringMusicgpt ? "Recovering..." : "Recover Stuck Tracks"}
+                  </button>
+                </div>
+                {musicgptRecoveryResult && (
+                  <div className={`mt-3 text-xs ${musicgptRecoveryResult.success ? "text-green-400" : "text-red-400"}`}>
+                    <p>{musicgptRecoveryResult.message}</p>
+                    {musicgptRecoveryResult.success && musicgptRecoveryResult.total !== undefined && (
+                      <p className="text-white/30 mt-1">
+                        {musicgptRecoveryResult.recovered} recovered ·{" "}
+                        {musicgptRecoveryResult.still_processing} still processing ·{" "}
+                        {musicgptRecoveryResult.total} total
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
 
               {/* Webhooks Section */}
               <section className="section-card">
