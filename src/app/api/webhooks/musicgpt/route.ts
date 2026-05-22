@@ -31,13 +31,22 @@ export async function POST(request: NextRequest) {
   const taskId: string | undefined =
     body.task_id ?? body.taskId ?? undefined;
   const conversionId: string | undefined =
-    body.conversion_id ?? body.conversionId ?? undefined;
+    body.conversion_id ??
+    body.conversionId ??
+    body.conversion_id_1 ??
+    body.conversion_id_2 ??
+    undefined;
   const conversionType: string | undefined =
     body.conversion_type ?? body.conversionType ?? undefined;
   const status: string =
     ((body.status ?? body.status_msg ?? "") as string).toUpperCase();
   const audioUrl: string | undefined =
-    body.audio_url ?? body.audioUrl ?? body.conversion_path ?? undefined;
+    body.audio_url ??
+    body.audioUrl ??
+    body.conversion_path ??
+    body.conversion_path_1 ??
+    body.conversion_path_2 ??
+    undefined;
 
   if (!taskId) {
     console.error("[webhook/musicgpt] missing task_id in payload");
