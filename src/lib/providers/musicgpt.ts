@@ -3,13 +3,24 @@ import { getSetting } from "@/lib/settings";
 
 export interface MusicGptConversion {
   task_id: string;
-  conversion_id: string;
+  conversion_id?: string;
+  conversion_id_1?: string;
+  conversion_id_2?: string;
   status: string;
   status_msg?: string;
+  message?: string;
   audio_url?: string;
   conversion_path?: string;
+  conversion_path_1?: string;
+  conversion_path_2?: string;
+  conversion_path_wav_1?: string;
+  conversion_path_wav_2?: string;
+  album_cover_path?: string;
+  conversion_duration_1?: number;
+  conversion_duration_2?: number;
   title?: string;
   lyrics?: string;
+  lyrics_timestamped_1?: string;
   music_style?: string;
 }
 

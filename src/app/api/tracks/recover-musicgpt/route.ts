@@ -25,12 +25,24 @@ import axios from "axios";
 
 interface MusicGptConversion {
   task_id: string;
-  conversion_id: string;
+  conversion_id?: string;
+  conversion_id_1?: string;
+  conversion_id_2?: string;
   status: string;
   status_msg?: string;
+  message?: string;
   audio_url?: string;
+  conversion_path?: string;
+  conversion_path_1?: string;
+  conversion_path_2?: string;
+  conversion_path_wav_1?: string;
+  conversion_path_wav_2?: string;
+  album_cover_path?: string;
+  conversion_duration_1?: number;
+  conversion_duration_2?: number;
   title?: string;
   lyrics?: string;
+  lyrics_timestamped_1?: string;
   music_style?: string;
 }
 
@@ -136,14 +148,19 @@ export async function POST() {
     }
 
     const status = (conversion.status ?? "").toUpperCase();
+    const audioUrl =
+      conversion.audio_url ??
+      conversion.conversion_path_1 ??
+      conversion.conversion_path ??
+      null;
 
-    if (status === "COMPLETED" && conversion.audio_url) {
+    if (status === "COMPLETED" && audioUrl) {
       try {
         console.log(
-          `[recover-musicgpt] downloading audio for track ${track.id} from ${conversion.audio_url}`
+          `[recover-musicgpt] downloading audio for track ${track.id} from ${audioUrl}`
         );
 
-        const audioRes = await axios.get(conversion.audio_url, {
+        const audioRes = await axios.get(audioUrl, {
           responseType: "arraybuffer",
           timeout: 60000,
         });
@@ -226,7 +243,7 @@ export async function POST() {
         outcome: "failed",
         detail: conversion.status_msg || "FAILED status from API",
       });
-    } else if (!conversion.audio_url && status === "COMPLETED") {
+    } else if (!audioUrl && status === "COMPLETED") {
       // COMPLETED but no audio_url — unusual
       results.push({
         trackId: track.id!,

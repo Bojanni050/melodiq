@@ -159,7 +159,11 @@ export async function GET(
 
       if (conversion) {
         const status = (conversion.status ?? "").toUpperCase();
-        const audioUrl = conversion.audio_url ?? conversion.conversion_path ?? null;
+        const audioUrl =
+          conversion.audio_url ??
+          conversion.conversion_path_1 ??
+          conversion.conversion_path ??
+          null;
 
         if (status === "COMPLETED" && audioUrl) {
           const audioRes = await axios.get(audioUrl, {
