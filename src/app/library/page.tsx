@@ -1,53 +1,209 @@
-              {libraryView === "playlists" && (
-                <div>
-                  {showCreatePlaylist ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        value={newPlaylistName}
-                        onChange={(e) => setNewPlaylistName(e.target.value)}
-                        placeholder="Playlist name"
-                        className="h-8 px-2.5 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                      />
-                      <button
-                        onClick={handleCreatePlaylist}
-                        className="h-8 px-3 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowCreatePlaylist(false);
-                          setNewPlaylistName("");
-                        }}
-                        className="h-8 px-3 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowCreatePlaylist(true)}
-                      className="px-3 py-1.5 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
-                    >
-                      + Create Playlist
-                    </button>
-                  )}
-                </div>
-              )}
+"use client";
 
-              {libraryView === "workspaces" && (
-                <div className="space-y-4">
+import { useEffect, useMemo, useState } from "react";
+import Sidebar from "@/components/Sidebar";
+import TrackList from "@/components/TrackList";
+import {
+  WORKSPACE_FOLDER_GRADIENTS,
+  usePlaylistStore,
+  useWorkspaceStore,
+} from "@/lib/store";
+
+interface LibraryTrack {
+  id: string;
+  title: string | null;
+  provider: string;
+  providerModel: string;
+  prompt: string;
+  lyrics: string | null;
+  status: "pending" | "generating" | "done" | "failed";
+  audioUrl: string | null;
+  audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
+  duration: number | null;
+  createdAt: string;
+  error: string | null;
+  s3KeyHd: string | null;
+  coverUrl: string | null;
+  s3KeyCover: string | null;
+}
+
+type LibraryView = "songs" | "workspaces";
+
+function hashString(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+}
+
+function pickSeededItems<T>(items: T[], seed: string, limit: number) {
+  return [...items]
+    .sort((left, right) => hashString(`${seed}:${String(left)}`) - hashString(`${seed}:${String(right)}`))
+    .slice(0, limit);
+}
+
+function getWorkspaceTracks(workspaceId: string, tracks: LibraryTrack[], workspaces: ReturnType<typeof useWorkspaceStore.getState>["workspaces"]) {
+  const workspace = workspaces.find((item) => item.id === workspaceId);
+  if (!workspace) return [] as LibraryTrack[];
+  return tracks.filter((track) => workspace.trackIds.includes(track.id));
+}
+
+export default function LibraryPage() {
+  const { playlists } = usePlaylistStore();
+  const {
+    workspaces,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
+    createWorkspace,
+    deleteWorkspace,
+  } = useWorkspaceStore();
+  const [tracks, setTracks] = useState<LibraryTrack[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<LibraryView>("songs");
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchTracks() {
+      const response = await fetch("/api/tracks");
+      if (!active) return;
+
+      if (response.ok) {
+        const data = await response.json();
+        setTracks(data.tracks.filter((track: LibraryTrack) => track.status === "done"));
+      }
+
+      setLoading(false);
+    }
+
+    fetchTracks();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedWorkspace = useMemo(() => {
+    if (selectedWorkspaceId === null) return null;
+    return workspaces.find((workspace) => workspace.id === selectedWorkspaceId) || null;
+  }, [selectedWorkspaceId, workspaces]);
+
+  const visibleTracks = useMemo(() => {
+    if (!selectedWorkspace) return tracks;
+    return tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id));
+  }, [selectedWorkspace, tracks]);
+
+  function handleCreateWorkspace() {
+    const id = createWorkspace(newWorkspaceName);
+    if (!id) return;
+
+    setSelectedWorkspaceId(id);
+    setNewWorkspaceName("");
+    setShowCreateWorkspace(false);
+    setView("workspaces");
+  }
+
+  function getWorkspaceCoverImages(workspaceId: string) {
+    const workspaceTracks = getWorkspaceTracks(workspaceId, tracks, workspaces);
+    const coverImages = workspaceTracks.map((track) => track.coverUrl).filter((cover): cover is string => !!cover);
+
+    if (coverImages.length === 0) return [] as string[];
+
+    return pickSeededItems(coverImages, workspaceId, Math.min(4, coverImages.length));
+  }
+
+  function getWorkspaceGradient(workspaceId: string, folderGradient?: string | null) {
+    return (
+      folderGradient ||
+      WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length] ||
+      "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))"
+    );
+  }
+
+  return (
+    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+      <Sidebar credits={null} />
+
+      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex flex-col">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24">
+          <div className="max-w-[1600px] mx-auto space-y-6">
+            <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">Library</p>
+                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Songs and workspace folders</h1>
+                  <p className="max-w-2xl text-sm sm:text-base text-white/60">
+                    Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setView("songs")}
+                    className={`h-10 px-4 rounded-full text-sm transition-colors ${view === "songs" ? "bg-white text-black" : "bg-white/6 text-white/70 hover:text-white hover:bg-white/10"}`}
+                  >
+                    Songs
+                  </button>
+                  <button
+                    onClick={() => setView("workspaces")}
+                    className={`h-10 px-4 rounded-full text-sm transition-colors ${view === "workspaces" ? "bg-white text-black" : "bg-white/6 text-white/70 hover:text-white hover:bg-white/10"}`}
+                  >
+                    Workspaces
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {view === "songs" ? (
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Songs</h2>
+                    <p className="text-sm text-white/55">Use track actions to move songs into workspaces or playlists.</p>
+                  </div>
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                    {visibleTracks.length} tracks
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                ) : (
+                  <TrackList
+                    tracks={visibleTracks}
+                    autoQueueAfterPlay
+                    onSelect={() => undefined}
+                    onAddToPlaylist={() => undefined}
+                    playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                  />
+                )}
+              </section>
+            ) : (
+              <section className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Workspaces</h2>
+                    <p className="text-sm text-white/55">Each workspace keeps its own folder gradient and a seeded collage of covers.</p>
+                  </div>
+
                   {showCreateWorkspace ? (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
                       <input
                         value={newWorkspaceName}
-                        onChange={(e) => setNewWorkspaceName(e.target.value)}
+                        onChange={(event) => setNewWorkspaceName(event.target.value)}
                         placeholder="Workspace name"
-                        className="h-8 px-2.5 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
+                        className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
                       />
                       <button
                         onClick={handleCreateWorkspace}
-                        className="h-8 px-3 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
+                        className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
                       >
                         Add
                       </button>
@@ -56,7 +212,7 @@
                           setShowCreateWorkspace(false);
                           setNewWorkspaceName("");
                         }}
-                        className="h-8 px-3 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
+                        className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white"
                       >
                         Cancel
                       </button>
@@ -64,741 +220,96 @@
                   ) : (
                     <button
                       onClick={() => setShowCreateWorkspace(true)}
-                      className="px-3 py-1.5 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
+                      className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                     >
-                      + Create Workspace
+                      + Create workspace
                     </button>
                   )}
+                </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                {workspaces.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                    No workspaces yet. Create one to start grouping tracks.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {workspaces.map((workspace) => {
-                      const workspaceTracks = getWorkspaceTracks(workspace.id);
+                      const workspaceTracks = getWorkspaceTracks(workspace.id, tracks, workspaces);
                       const coverImages = getWorkspaceCoverImages(workspace.id);
-                      const coverGrid = [...coverImages];
-                      while (coverGrid.length > 0 && coverGrid.length < 4) {
-                        coverGrid.push(coverGrid[coverGrid.length - 1]);
-                      }
+                      const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
 
                       return (
-                        <div key={workspace.id} className="space-y-2">
+                        <article
+                          key={workspace.id}
+                          className="group overflow-hidden rounded-[28px] border border-white/10 bg-[#0f1017] shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+                        >
                           <button
                             onClick={() => {
                               setSelectedWorkspaceId(workspace.id);
-                              setSelectedPlaylistId(null);
-                              setLibraryView("songs");
+                              setView("songs");
                             }}
-                            className="w-full text-left"
+                            className="block w-full text-left"
                           >
-                            <div className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#13131b] relative">
-                              {coverGrid.length === 0 ? (
-                                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-white/5 to-white/2">
-                                  <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                  </svg>
-                                </div>
-                              ) : coverGrid.length === 1 ? (
-                                <img src={coverGrid[0]} alt={workspace.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="grid grid-cols-2 grid-rows-2 h-full w-full gap-px bg-black/40">
-                                  {coverGrid.slice(0, 4).map((cover, index) => (
-                                    <img key={`${workspace.id}-${index}`} src={cover} alt={workspace.name} className="w-full h-full object-cover" />
+                            <div className="relative aspect-[4/3] overflow-hidden" style={{ backgroundImage: gradient }}>
+                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_35%),linear-gradient(180deg,transparent,rgba(0,0,0,0.38))]" />
+
+                              {coverImages.length > 0 ? (
+                                <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
+                                  {coverImages.slice(0, 4).map((coverUrl, index) => (
+                                    <img
+                                      key={`${workspace.id}-${coverUrl}-${index}`}
+                                      src={coverUrl}
+                                      alt={workspace.name}
+                                      className="h-full w-full rounded-2xl object-cover shadow-lg ring-1 ring-white/10"
+                                    />
                                   ))}
                                 </div>
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-3xl text-white/80 backdrop-blur-sm">
+                                    +
+                                  </div>
+                                </div>
                               )}
+
+                              <div className="absolute inset-x-0 bottom-0 p-4">
+                                <div className="flex items-end justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="truncate text-lg font-semibold text-white">{workspace.name}</h3>
+                                    <p className="text-sm text-white/70">{workspaceTracks.length} songs</p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </button>
 
-                          <div className="px-0.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <button
-                                onClick={() => {
-                                  setSelectedWorkspaceId(workspace.id);
-                                  setSelectedPlaylistId(null);
-                                  setLibraryView("songs");
-                                }}
-                                className="text-left min-w-0"
-                              >
-                                <p className="text-white/95 text-sm font-medium truncate">{workspace.name}</p>
-                                <p className="text-white/60 text-xs">{workspaceTracks.length} songs</p>
-                              </button>
-                              <button
-                                onClick={() => deleteWorkspace(workspace.id)}
-                                className="text-white/35 hover:text-red-400 transition-colors text-xs px-1.5 py-1"
-                                title="Delete workspace"
-                              >
-                                x
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-    }
-  }, [tracks]);
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel || !currentTrack) return;
-
-    const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-    if (matchedTrack) {
-      setSelectedTrack(matchedTrack);
-      return;
-    }
-
-    setSelectedTrack({
-      id: currentTrack.id,
-      title: currentTrack.title,
-      provider: currentTrack.provider,
-      providerModel: currentTrack.providerModel,
-      prompt: currentTrack.prompt,
-      lyrics: currentTrack.lyrics,
-      status: currentTrack.status,
-      audioUrl: currentTrack.audioUrl,
-      audioUrlHd: currentTrack.audioUrlHd,
-      format: currentTrack.format ?? null,
-      formatHd: currentTrack.formatHd ?? null,
-      duration: currentTrack.duration ?? null,
-      createdAt: currentTrack.createdAt,
-      error: currentTrack.error,
-      s3KeyHd: currentTrack.s3KeyHd,
-      coverUrl: null,
-      s3KeyCover: null,
-    });
-  }, [showTrackDetailsPanel, currentTrack, tracks]);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
-  }, [rightPanelWidth]);
-
-  function startRightPanelResize(e: React.MouseEvent<HTMLDivElement>) {
-    resizeStartXRef.current = e.clientX;
-    resizeStartWidthRef.current = rightPanelWidth;
-
-    const onMouseMove = (event: MouseEvent) => {
-      const delta = resizeStartXRef.current - event.clientX;
-      setRightPanelWidth(resizeStartWidthRef.current + delta);
-    };
-
-    const onMouseUp = () => {
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  }
-
-  function handleCloseTrackDetails() {
-    setSelectedTrack(null);
-    setShowTrackDetailsPanel(false);
-  }
-
-  async function fetchTracks() {
-    const res = await fetch("/api/tracks");
-    if (res.ok) {
-      const data = await res.json();
-      setTracks(data.tracks.filter((t: Track) => t.status === "done"));
-    }
-    setLoading(false);
-  }
-
-  function handleDeleteTrack(trackId: string) {
-    setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    for (const playlist of playlists) {
-      removeTrackFromPlaylist(playlist.id, trackId);
-    }
-    for (const workspace of workspaces) {
-      removeTrackFromWorkspace(workspace.id, trackId);
-    }
-    if (selectedTrack?.id === trackId) setSelectedTrack(null);
-  }
-
-  function handleTitleUpdate(trackId: string, newTitle: string) {
-    setTracks((prev) =>
-      prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t))
-    );
-    if (selectedTrack?.id === trackId) {
-      setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
-    }
-  }
-
-  function handleAddToQueue(track: Track) {
-    usePlayerStore.getState().enqueueTrack({
-      id: track.id,
-      title: track.title,
-      provider: track.provider,
-      providerModel: track.providerModel,
-      prompt: track.prompt,
-      status: track.status,
-      audioUrl: track.audioUrl,
-      audioUrlHd: track.audioUrlHd,
-      format: track.format,
-      formatHd: track.formatHd,
-      s3Key: null,
-      s3KeyHd: track.s3KeyHd,
-      duration: null,
-      lyrics: track.lyrics,
-      createdAt: track.createdAt,
-      error: track.error,
-      coverUrl: track.coverUrl,
-      s3KeyCover: track.s3KeyCover,
-    });
-  }
-
-  function handleCreatePlaylist() {
-    const id = createPlaylist(newPlaylistName);
-    if (id) {
-      setSelectedPlaylistId(id);
-      setNewPlaylistName("");
-      setShowCreatePlaylist(false);
-    }
-  }
-
-  function handleCreateWorkspace() {
-    const id = createWorkspace(newWorkspaceName);
-    if (id) {
-      setSelectedWorkspaceId(id);
-      setNewWorkspaceName("");
-      setShowCreateWorkspace(false);
-      setLibraryView("songs");
-    }
-  }
-
-  function handleAddToPlaylist(trackId: string, playlistId: string) {
-    addTrackToPlaylist(playlistId, trackId);
-  }
-
-  function handleMoveToWorkspace(trackId: string, workspaceId: string) {
-    moveTrackToWorkspace(workspaceId, trackId);
-  }
-
-  function getPlaylistTracks(playlistId: string) {
-    const playlist = playlists.find((item) => item.id === playlistId);
-    if (!playlist) return [] as Track[];
-    return tracks.filter((track) => playlist.trackIds.includes(track.id));
-  }
-
-  function getPlaylistCoverImages(playlistId: string) {
-    return getPlaylistTracks(playlistId)
-      .map((track) => track.coverUrl)
-      .filter((cover): cover is string => !!cover)
-      .slice(0, 4);
-  }
-
-  const selectedPlaylist =
-    selectedPlaylistId === null
-      ? null
-      : playlists.find((playlist) => playlist.id === selectedPlaylistId) || null;
-
-  const selectedWorkspace =
-    selectedWorkspaceId === null
-      ? null
-      : workspaces.find((workspace) => workspace.id === selectedWorkspaceId) || null;
-
-  const visibleTracks = selectedWorkspace
-    ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
-    : selectedPlaylist
-      ? tracks.filter((track) => selectedPlaylist.trackIds.includes(track.id))
-      : tracks;
-
-  function handlePlayTrack(url: string) {
-    if (selectedTrack) {
-      const player = usePlayerStore.getState();
-
-      const playContext = visibleTracks
-        .filter((t) => t.status === "done")
-        .map((t) => ({
-          id: t.id,
-          title: t.title,
-          provider: t.provider,
-          providerModel: t.providerModel,
-          prompt: t.prompt,
-          status: t.status,
-          audioUrl: t.audioUrl,
-          audioUrlHd: t.audioUrlHd,
-          format: t.format,
-          formatHd: t.formatHd,
-          s3Key: null,
-          s3KeyHd: t.s3KeyHd,
-          duration: null,
-          lyrics: t.lyrics,
-          createdAt: t.createdAt,
-          error: t.error,
-          coverUrl: t.coverUrl,
-          s3KeyCover: t.s3KeyCover,
-        }));
-
-      player.setPlayContext(playContext);
-
-      if (player.autoPlayNext) {
-        const index = playContext.findIndex((t) => t.id === selectedTrack.id);
-        if (index >= 0) {
-          player.setQueue(playContext.slice(index + 1));
-        }
-      }
-
-      player.playTrackFromGesture({
-        id: selectedTrack.id,
-        title: selectedTrack.title,
-        provider: selectedTrack.provider,
-        providerModel: selectedTrack.providerModel,
-        prompt: selectedTrack.prompt,
-        status: selectedTrack.status,
-        audioUrl: url,
-        audioUrlHd: selectedTrack.audioUrlHd,
-        format: selectedTrack.format,
-        formatHd: selectedTrack.formatHd,
-        s3Key: null,
-        s3KeyHd: selectedTrack.s3KeyHd,
-        duration: null,
-        lyrics: selectedTrack.lyrics,
-        createdAt: selectedTrack.createdAt,
-        error: selectedTrack.error,
-        coverUrl: selectedTrack.coverUrl,
-        s3KeyCover: selectedTrack.s3KeyCover,
-      });
-    }
-  }
-
-  function handleDownloadTrack(url: string, hd: boolean) {
-    const a = document.createElement("a");
-    a.href = url;
-    const fmt = hd
-      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
-      : (selectedTrack?.format ?? "mp3");
-    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
-    a.click();
-  }
-
-  function getWorkspaceTracks(workspaceId: string) {
-    const workspace = workspaces.find((item) => item.id === workspaceId);
-    if (!workspace) return [] as Track[];
-    return tracks.filter((track) => workspace.trackIds.includes(track.id));
-  }
-
-  function getWorkspaceCoverImages(workspaceId: string) {
-    return getWorkspaceTracks(workspaceId)
-      .map((track) => track.coverUrl)
-      .filter((cover): cover is string => !!cover)
-      .slice(0, 4);
-  }
-
-  if (loading) {
-    return (
-      <div className="h-screen bg-[#0a0a0f] overflow-hidden">
-        <Sidebar credits={null} />
-        <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
-      <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-            <div className="px-4 py-3 space-y-3">
-              <div>
-                <h1 className="text-lg font-bold">Library</h1>
-                <p className="text-xs text-white/40 mt-0.5">
-                  {libraryView === "songs"
-                    ? `${visibleTracks.length} tracks shown`
-                    : `${playlists.length} playlists`}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setLibraryView("songs")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    libraryView === "songs"
-                      ? "bg-white/10 text-white"
-                      : "text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  Songs
-                </button>
-                <button
-                  onClick={() => setLibraryView("playlists")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    libraryView === "playlists"
-                      ? "bg-white/10 text-white"
-                      : "text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  Playlists
-                </button>
-                <button
-                  onClick={() => setLibraryView("workspaces")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    libraryView === "workspaces"
-                      ? "bg-white/10 text-white"
-                      : "text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  Workspaces
-                </button>
-              </div>
-
-              {libraryView === "songs" && (
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedPlaylistId(null);
-                        setSelectedWorkspaceId(null);
-                      }}
-                      className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                        selectedPlaylistId === null && selectedWorkspaceId === null
-                          ? "bg-primary-500/25 text-primary-200 border border-primary-400/30"
-                          : "bg-white/5 text-white/60 hover:text-white/80"
-                      }`}
-                    >
-                      All tracks
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">Workspaces</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {workspaces.map((workspace) => (
-                        <div key={workspace.id} className="flex items-center rounded-md bg-white/5 border border-white/10">
-                          <button
-                            onClick={() => {
-                              setSelectedWorkspaceId(workspace.id);
-                              setSelectedPlaylistId(null);
-                            }}
-                            className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
-                              selectedWorkspaceId === workspace.id ? "text-white bg-white/10" : "text-white/60 hover:text-white/80"
-                            }`}
-                          >
-                            {workspace.name}
-                          </button>
-                          <button
-                            onClick={() => deleteWorkspace(workspace.id)}
-                            className="px-2 py-1 text-xs text-white/40 hover:text-red-400 transition-colors"
-                            title="Delete workspace"
-                          >
-                            x
-                          </button>
-                        </div>
-                      ))}
-
-                      {showCreateWorkspace ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            value={newWorkspaceName}
-                            onChange={(e) => setNewWorkspaceName(e.target.value)}
-                            placeholder="Workspace name"
-                            className="h-7 px-2 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                          />
-                          <button
-                            onClick={handleCreateWorkspace}
-                            className="h-7 px-2 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
-                          >
-                            Add
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowCreateWorkspace(false);
-                              setNewWorkspaceName("");
-                            }}
-                            className="h-7 px-2 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowCreateWorkspace(true)}
-                          className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
-                        >
-                          + Workspace
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-white/30">Playlists</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {playlists.map((playlist) => (
-                        <div key={playlist.id} className="flex items-center rounded-md bg-white/5 border border-white/10">
-                          <button
-                            onClick={() => {
-                              setSelectedPlaylistId(playlist.id);
-                              setSelectedWorkspaceId(null);
-                            }}
-                            className={`px-2.5 py-1 text-xs rounded-l-md transition-colors ${
-                              selectedPlaylistId === playlist.id ? "text-white bg-white/10" : "text-white/60 hover:text-white/80"
-                            }`}
-                          >
-                            {playlist.name}
-                          </button>
-                          <button
-                            onClick={() => deletePlaylist(playlist.id)}
-                            className="px-2 py-1 text-xs text-white/40 hover:text-red-400 transition-colors"
-                            title="Delete playlist"
-                          >
-                            x
-                          </button>
-                        </div>
-                      ))}
-
-                      {showCreatePlaylist ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            value={newPlaylistName}
-                            onChange={(e) => setNewPlaylistName(e.target.value)}
-                            placeholder="Playlist name"
-                            className="h-7 px-2 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                          />
-                          <button
-                            onClick={handleCreatePlaylist}
-                            className="h-7 px-2 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
-                          >
-                            Add
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowCreatePlaylist(false);
-                              setNewPlaylistName("");
-                            }}
-                            className="h-7 px-2 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowCreatePlaylist(true)}
-                          className="px-2.5 py-1 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
-                        >
-                          + Playlist
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {libraryView === "playlists" && (
-                <div>
-                  {showCreatePlaylist ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        value={newPlaylistName}
-                        onChange={(e) => setNewPlaylistName(e.target.value)}
-                        placeholder="Playlist name"
-                        className="h-8 px-2.5 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                      />
-                      <button
-                        onClick={handleCreatePlaylist}
-
-                  {libraryView === "workspaces" && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                      <button
-                        onClick={() => setShowCreateWorkspace(true)}
-                        className="rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors p-4 min-h-55 flex flex-col items-center justify-center text-center"
-                      >
-                        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-3xl text-white/80 mb-3">+</div>
-                        <p className="text-sm font-medium text-white/90">Create Workspace</p>
-                      </button>
-
-                      {workspaces.map((workspace) => {
-                        const workspaceTracks = getWorkspaceTracks(workspace.id);
-                        const coverImages = getWorkspaceCoverImages(workspace.id);
-                        const coverGrid = [...coverImages];
-                        while (coverGrid.length > 0 && coverGrid.length < 4) {
-                          coverGrid.push(coverGrid[coverGrid.length - 1]);
-                        }
-
-                        return (
-                          <div key={workspace.id} className="space-y-2">
+                          <div className="flex items-center justify-between gap-2 px-4 py-3">
                             <button
                               onClick={() => {
                                 setSelectedWorkspaceId(workspace.id);
-                                setSelectedPlaylistId(null);
-                                setLibraryView("songs");
+                                setView("songs");
                               }}
-                              className="w-full text-left"
+                              className="text-sm text-white/60 transition-colors hover:text-white"
                             >
-                              <div className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#13131b] relative">
-                                {coverGrid.length === 0 ? (
-
-                        {libraryView === "workspaces" && (
-                          <div>
-                            {showCreateWorkspace ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  value={newWorkspaceName}
-                                  onChange={(e) => setNewWorkspaceName(e.target.value)}
-                                  placeholder="Workspace name"
-                                  className="h-8 px-2.5 rounded-md bg-white/5 border border-white/15 text-xs text-white placeholder:text-white/30"
-                                />
-                                <button
-                                  onClick={handleCreateWorkspace}
-                                  className="h-8 px-3 rounded-md bg-primary-500/80 text-white text-xs hover:bg-primary-500"
-                                >
-                                  Add
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setShowCreateWorkspace(false);
-                                    setNewWorkspaceName("");
-                                  }}
-                                  className="h-8 px-3 rounded-md bg-white/5 text-xs text-white/60 hover:text-white/80"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setShowCreateWorkspace(true)}
-                                className="px-3 py-1.5 rounded-md bg-white/5 text-xs text-white/70 hover:text-white/90"
-                              >
-                                + Create Workspace
-                              </button>
-                            )}
+                              Open workspace
+                            </button>
+                            <button
+                              onClick={() => deleteWorkspace(workspace.id)}
+                              className="text-sm text-white/35 transition-colors hover:text-red-400"
+                            >
+                              Delete
+                            </button>
                           </div>
-                        )}
-                autoQueueAfterPlay
-                onSelect={(t) => setSelectedTrack(t)}
-                onDelete={handleDeleteTrack}
-                onAddToQueue={handleAddToQueue}
-                onAddToPlaylist={handleAddToPlaylist}
-                playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-                onTitleUpdate={handleTitleUpdate}
-              />
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                <button
-                  onClick={() => setShowCreatePlaylist(true)}
-                  className="rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors p-4 min-h-55 flex flex-col items-center justify-center text-center"
-                >
-                  <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-3xl text-white/80 mb-3">+</div>
-                  <p className="text-sm font-medium text-white/90">Create Playlist</p>
-                </button>
-
-                {playlists.map((playlist) => {
-                  const playlistTracks = getPlaylistTracks(playlist.id);
-                  const coverImages = getPlaylistCoverImages(playlist.id);
-                  const coverGrid = [...coverImages];
-                  while (coverGrid.length > 0 && coverGrid.length < 4) {
-                    coverGrid.push(coverGrid[coverGrid.length - 1]);
-                  }
-
-                  return (
-                    <div key={playlist.id} className="space-y-2">
-                      <button
-                        onClick={() => {
-                          setSelectedPlaylistId(playlist.id);
-                          setLibraryView("songs");
-                        }}
-                        className="w-full text-left"
-                      >
-                        <div className="aspect-square rounded-2xl overflow-hidden border border-white/10 bg-[#13131b] relative">
-                          {coverGrid.length === 0 ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-white/5 to-white/2">
-                              <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2zm12-3c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2zM9 10l12-3" />
-                              </svg>
-                            </div>
-                          ) : coverGrid.length === 1 ? (
-                            <img src={coverGrid[0]} alt={playlist.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="grid grid-cols-2 grid-rows-2 h-full w-full gap-px bg-black/40">
-                              {coverGrid.slice(0, 4).map((cover, index) => (
-                                <img key={`${playlist.id}-${index}`} src={cover} alt={playlist.name} className="w-full h-full object-cover" />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-
-                      <div className="px-0.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedPlaylistId(playlist.id);
-                              setLibraryView("songs");
-                            }}
-                            className="text-left min-w-0"
-                          >
-                            <p className="text-white/95 text-sm font-medium truncate">{playlist.name}</p>
-                            <p className="text-white/60 text-xs">{playlistTracks.length} songs</p>
-                          </button>
-                          <button
-                            onClick={() => deletePlaylist(playlist.id)}
-                            className="text-white/35 hover:text-red-400 transition-colors text-xs px-1.5 py-1"
-                            title="Delete playlist"
-                          >
-                            x
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             )}
-          </main>
-        </div>
-
-        {showTrackDetailsPanel && (
-          <div
-            className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
-            onMouseDown={startRightPanelResize}
-            title="Resize details panel"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize details panel"
-          />
-        )}
-
-        {showTrackDetailsPanel && (
-          <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
-            <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-              {selectedTrack ? (
-                <TrackDetail
-                  mode="sidebar"
-                  track={selectedTrack}
-                  onClose={handleCloseTrackDetails}
-                  onPlay={handlePlayTrack}
-                  onDownload={handleDownloadTrack}
-                />
-              ) : (
-                <div className="h-full px-5 py-6 text-white/45">
-                  <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                  <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
-                </div>
-              )}
-            </div>
-          </aside>
-        )}
+          </div>
+        </main>
       </div>
-
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            mode="overlay"
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={handlePlayTrack}
-            onDownload={handleDownloadTrack}
-          />
-        </div>
-      )}
     </div>
   );
 }

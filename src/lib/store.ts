@@ -220,7 +220,19 @@ export interface Workspace {
   name: string;
   trackIds: string[];
   createdAt: string;
+  folderGradient?: string;
 }
+
+export const WORKSPACE_FOLDER_GRADIENTS = [
+  "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)",
+  "linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)",
+  "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
+  "linear-gradient(135deg, #14b8a6 0%, #6366f1 100%)",
+  "linear-gradient(135deg, #f59e0b 0%, #ec4899 100%)",
+  "linear-gradient(135deg, #22c55e 0%, #06b6d4 100%)",
+  "linear-gradient(135deg, #8b5cf6 0%, #f97316 100%)",
+  "linear-gradient(135deg, #2563eb 0%, #14b8a6 100%)",
+] as const;
 
 interface PlaylistState {
   playlists: Playlist[];
@@ -306,10 +318,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const folderGradient =
+          WORKSPACE_FOLDER_GRADIENTS[Math.floor(Math.random() * WORKSPACE_FOLDER_GRADIENTS.length)];
         set((state) => ({
           workspaces: [
             ...state.workspaces,
-            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString() },
+            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString(), folderGradient },
           ],
         }));
         return id;

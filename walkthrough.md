@@ -419,6 +419,17 @@
   - Created `src/instrumentation.ts` — Next.js instrumentation file with `register()` function that runs `initializeDatabase()` on server startup (nodejs runtime only); works in both dev (`next dev`) and production (`next start`); standalone Docker builds include the init logic without needing drizzle-kit at runtime
   - Validated with `npm run build`.
 
+## 2026-05-22 vr 14:44 (Workspaces page, folder gradients, and sidebar navigation)
+
+- Findings: Workspace management already existed in the store and track actions, but the UI was split across an unstable library page and no dedicated workspace route existed for browsing folder-style cards.
+- Conclusions: The workspace feature should be surfaced as a first-class page with seeded cover collages and persistent folder gradients, while the library route should stay clean and build-safe.
+- Actions:
+  - Updated `src/app/workspaces/page.tsx` — dedicated workspace page renders folder-gradient cards and seeded cover collages from the tracks inside each workspace
+  - Updated `src/components/Sidebar.tsx` — added a Workspaces navigation item and refreshed the version stamp to `vr 14:44`
+  - Rebuilt `src/app/library/page.tsx` — replaced the broken duplicate workspace block with a clean track browser that reuses `TrackList` and shows workspace cards in a stable layout
+  - Updated `src/app/library/page.tsx` — workspace cards now use gradient-backed covers and seeded collage selection from the tracks in each folder
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Fix Tempolor endpoint + presigned URL storage)
 
 - Findings: Tempolor generate/status/credits used wrong base path (v1 instead of open-apis/v1).

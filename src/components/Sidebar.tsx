@@ -12,12 +12,13 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "vr 13:32";
+  const buildVersion = "vr 14:44";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/library", label: "Library", icon: "library" },
+    { href: "/workspaces", label: "Workspaces", icon: "library" },
     { href: "/account", label: "Account", icon: "account" },
     { href: "/settings", label: "Settings", icon: "settings" },
     { href: "/logs", label: "Logs", icon: "logs" },

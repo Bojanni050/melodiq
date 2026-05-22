@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: vr 13:32**
+**Versie: vr 14:44**
 
 > AI Music Generation Web App
 
@@ -110,6 +110,11 @@ Lyria tracks complete in the same request. PoYo and Tempolor tracks may take lon
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view
+
+### Workspaces
+- **Workspaces** live in the sidebar and open a dedicated page with folder-style cards
+- Workspace cards keep a persistent gradient folder color and a seeded collage of cover art from the songs inside
+- Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
