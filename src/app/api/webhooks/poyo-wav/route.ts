@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       ? "wav"
       : detectFormatFromContentType(headerType || "audio/wav");
 
-    const s3KeyHd = `tracks/${track.id}/audio_hd.${formatHd}`;
+    const s3KeyHd = track.s3KeyHd ?? `tracks/${track.id}/audio_hd.${formatHd}`;
     await uploadToS3(s3KeyHd, audioBuffer, contentTypeForFormat(formatHd));
 
     // Extract duration if not already set

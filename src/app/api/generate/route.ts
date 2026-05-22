@@ -104,6 +104,164 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (provider === "poyo") {
+    const [firstInsertResult, secondInsertResult] = await Promise.all([
+      db
+        .insert(tracks)
+        .values({
+          userId,
+          provider,
+          providerModel,
+          prompt,
+          lyrics: lyrics || null,
+          instrumental: instrumental || false,
+          title: resolvedTitle,
+          status: "pending",
+        })
+        .returning(),
+      db
+        .insert(tracks)
+        .values({
+          userId,
+          provider,
+          providerModel,
+          prompt,
+          lyrics: lyrics || null,
+          instrumental: instrumental || false,
+          title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          status: "pending",
+        })
+        .returning(),
+    ]);
+
+    const track1 = firstInsertResult[0];
+    const track2 = secondInsertResult[0];
+
+    const [reservedTrack1, reservedTrack2] = await Promise.all([
+      db
+        .update(tracks)
+        .set({
+          s3Key: `tracks/${track1.id}/audio.mp3`,
+          s3KeyHd: `tracks/${track1.id}/audio_hd.wav`,
+          format: "mp3",
+          formatHd: "wav",
+          audioUrl: `/api/tracks/${track1.id}/download`,
+          audioUrlHd: `/api/tracks/${track1.id}/download?hd=true`,
+        })
+        .where(eq(tracks.id, track1.id!))
+        .returning(),
+      db
+        .update(tracks)
+        .set({
+          s3Key: `tracks/${track2.id}/audio.mp3`,
+          s3KeyHd: `tracks/${track2.id}/audio_hd.wav`,
+          format: "mp3",
+          formatHd: "wav",
+          audioUrl: `/api/tracks/${track2.id}/download`,
+          audioUrlHd: `/api/tracks/${track2.id}/download?hd=true`,
+        })
+        .where(eq(tracks.id, track2.id!))
+        .returning(),
+    ]);
+
+    try {
+      const genResult = await generatePoYo({
+        prompt,
+        lyrics,
+        instrumental,
+        model: normalizedPoYoModel,
+        title: resolvedTitle || undefined,
+      });
+
+      const jobIds: string[] = genResult.jobIds;
+
+      const [updatedTrack1Result, updatedTrack2Result] = await Promise.all([
+        db
+          .update(tracks)
+          .set({ status: "generating", jobId: jobIds[0] })
+          .where(eq(tracks.id, reservedTrack1[0].id!))
+          .returning(),
+        jobIds[1]
+          ? db
+              .update(tracks)
+              .set({ status: "generating", jobId: jobIds[1], error: null })
+              .where(eq(tracks.id, reservedTrack2[0].id!))
+              .returning()
+          : db
+              .update(tracks)
+              .set({ status: "failed", error: "Provider returned only one variant" })
+              .where(eq(tracks.id, reservedTrack2[0].id!))
+              .returning(),
+      ]);
+
+      const allTracks = [updatedTrack1Result[0], updatedTrack2Result[0]];
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch(() => {});
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "poyo",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ status: "generating", jobIds }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ tracks: allTracks });
+    } catch (error: any) {
+      const isCopyright = error.message === "COPYRIGHT";
+      const errorMessage = isCopyright
+        ? "Copyright detected → click Optimize in Studio to rewrite safely"
+        : error.message || "Generation failed";
+
+      await Promise.all([
+        db
+          .update(tracks)
+          .set({
+            status: "failed",
+            error: errorMessage,
+          })
+          .where(eq(tracks.id, reservedTrack1[0].id!)),
+        db
+          .update(tracks)
+          .set({
+            status: "failed",
+            error: errorMessage,
+          })
+          .where(eq(tracks.id, reservedTrack2[0].id!)),
+      ]);
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider,
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ error: error.message }),
+        statusCode: error.statusCode || 500,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          trackIds: [reservedTrack1[0].id, reservedTrack2[0].id],
+        },
+        { status: isCopyright ? 400 : 500 }
+      );
+    }
+  }
+
   const result = await db
     .insert(tracks)
     .values({
@@ -170,58 +328,6 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json({ track: updated[0] });
-    }
-
-    if (provider === "poyo") {
-      genResult = await generatePoYo({
-        prompt,
-        lyrics,
-        instrumental,
-        model: normalizedPoYoModel,
-        title: resolvedTitle || undefined,
-      });
-
-      const jobIds: string[] = genResult.jobIds;
-
-      const firstUpdated = await db
-        .update(tracks)
-        .set({ status: "generating", jobId: jobIds[0] })
-        .where(eq(tracks.id, track.id!))
-        .returning();
-
-      const extraInserted = await Promise.all(
-        jobIds.slice(1).map((jobId, i) =>
-          db
-            .insert(tracks)
-            .values({
-              userId,
-              provider,
-              providerModel,
-              prompt,
-              lyrics: lyrics || null,
-              instrumental: instrumental || false,
-              title: resolvedTitle ? `${resolvedTitle} (${i + 2})` : null,
-              status: "generating",
-              jobId,
-            })
-            .returning()
-        )
-      );
-
-      const allTracks = [firstUpdated[0], ...extraInserted.map((r) => r[0])];
-
-      await logApi({
-        userId: userId,
-        type: "generation",
-        provider: "poyo",
-        endpoint: "/api/generate",
-        request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "generating", jobIds }),
-        statusCode: 200,
-        duration: Date.now() - startTime,
-      });
-
-      return NextResponse.json({ tracks: allTracks });
     }
 
     if (provider === "tempolor") {

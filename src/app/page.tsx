@@ -5,7 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { WORKSPACE_FOLDER_GRADIENTS, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 
@@ -28,6 +28,22 @@ interface Track {
   coverUrl?: string | null;
   s3KeyCover?: string | null;
   rating?: string | null;
+}
+
+function hashString(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+}
+
+function pickSeededItems<T>(items: T[], seed: string, limit: number) {
+  return [...items]
+    .sort((left, right) => hashString(`${seed}:${String(left)}`) - hashString(`${seed}:${String(right)}`))
+    .slice(0, limit);
 }
 
 export default function HomePage() {

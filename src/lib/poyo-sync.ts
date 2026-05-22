@@ -109,7 +109,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
     const format = /\.wav(\?|$)/i.test(primaryUrl)
       ? detectFormatFromUrl(primaryUrl)
       : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
-    const s3Key = `tracks/${targetTrack.id}/audio.${format}`;
+    const s3Key = targetTrack.s3Key ?? `tracks/${targetTrack.id}/audio.${format}`;
     await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(format));
 
     // Extract duration from audio file
@@ -123,7 +123,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<
       formatHd = /\.wav(\?|$)/i.test(variant.audioUrlHd)
         ? detectFormatFromUrl(variant.audioUrlHd)
         : detectFormatFromContentType(hdHeaderType || "audio/mpeg");
-      s3KeyHd = `tracks/${targetTrack.id}/audio_hd.${formatHd}`;
+      s3KeyHd = targetTrack.s3KeyHd ?? `tracks/${targetTrack.id}/audio_hd.${formatHd}`;
       await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
     }
 
