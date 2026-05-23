@@ -494,6 +494,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:37`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 02:01 (Play-icoon loader tijdens trackgeneratie)
+
+- Findings: In de tracklisting bleef tijdens `pending/generating` een generieke waveform zichtbaar in de play-slot, terwijl de gewenste feedback een duidelijke draaiende loader was.
+- Conclusions: Gebruik in de play-button placeholder een spinner voor `pending` en `generating`, zodat de status direct herkenbaar is als actief proces.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — play-button renderlogica aangepast: voor `track.status === "pending" || "generating"` wordt nu een draaiende cirkel (`animate-spin`) getoond
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 02:01`
+  - Validated with `npm run build`.
+
 ## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
 
 - Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.

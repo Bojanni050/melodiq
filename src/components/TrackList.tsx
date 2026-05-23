@@ -783,7 +783,11 @@ function TrackCard({
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
       >
-        {track.coverUrl ? (
+        {(track.status === "generating" || track.status === "pending") ? (
+          <div className="w-full h-full bg-white/5 flex items-center justify-center">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400/30 border-t-primary-300" />
+          </div>
+        ) : track.coverUrl ? (
           <>
             <img
               src={track.coverUrl}
