@@ -503,6 +503,30 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 02:01`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 02:14 (Move To Workspace verplaatst nu alle geselecteerde tracks)
+
+- Findings: Vanuit Track Actions verplaatste `Move To Workspace` alleen de aangeklikte track, ook wanneer meerdere tracks geselecteerd waren.
+- Conclusions: Als de aangeklikte track deel uitmaakt van de actieve selectie, moet de workspace-actie op alle geselecteerde tracks worden toegepast; bestaande toewijzingen mogen stil worden overgeslagen.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — toegevoegd `handleMoveToWorkspace(sourceTrackId, workspaceId)` op lijstniveau
+  - Updated `src/components/TrackList.tsx` — move scope: geselecteerde set als brontrack geselecteerd is, anders alleen brontrack
+  - Updated `src/components/TrackList.tsx` — `TrackCard` krijgt nieuwe prop `onMoveTracksToWorkspace` en gebruikt die in zowel bestaande workspace-selectie als `Create New Workspace`
+  - Reused bestaande store-logica (`moveTrackToWorkspace`) die duplicates in dezelfde workspace stil overslaat
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 02:14`
+  - Validated with `npm run build`.
+
+## 2026-05-23 za 02:37 (Recent Tracks multi-select move stabiliteit)
+
+- Findings: In de Studio Recent Tracks listing kon de actieve selectie bij snelle interacties verouderen (stale state), waardoor `Move To Workspace` niet altijd de volledige multi-selectie meenam.
+- Conclusions: Selectiebeheer voor batch-move moet gebaseerd zijn op actuele state via refs + functionele setState updates.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — toegevoegd `selectedIdsRef` met sync `useEffect` voor actuele selectie tijdens move-acties
+  - Updated `src/components/TrackList.tsx` — `toggleSelection` omgezet naar functionele `setSelectedIds(current => ...)`
+  - Updated `src/components/TrackList.tsx` — `toggleSelectAll` omgezet naar functionele `setSelectedIds(current => ...)`
+  - Updated `src/components/TrackList.tsx` — `handleMoveToWorkspace` gebruikt nu `selectedIdsRef.current` voor betrouwbare batch-scope
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 02:37`
+  - Validated with `npm run build`.
+
 ## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
 
 - Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.

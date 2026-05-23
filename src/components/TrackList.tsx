@@ -114,10 +114,16 @@ export default function TrackList({
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
+  const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectedIdsRef = useRef<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
+
+  useEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
 
   const displayedTracks = useMemo(() => {
     const list = [...tracks];
@@ -135,21 +141,24 @@ export default function TrackList({
   }, [sortOrder, tracks]);
 
   function toggleSelection(trackId: string) {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(trackId)) {
-      newSelected.delete(trackId);
-    } else {
-      newSelected.add(trackId);
-    }
-    setSelectedIds(newSelected);
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(trackId)) {
+        next.delete(trackId);
+      } else {
+        next.add(trackId);
+      }
+      return next;
+    });
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === displayedTracks.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(displayedTracks.map((t) => t.id)));
-    }
+    setSelectedIds((current) => {
+      if (current.size === displayedTracks.length) {
+        return new Set();
+      }
+      return new Set(displayedTracks.map((t) => t.id));
+    });
   }
 
   const allSelected = displayedTracks.length > 0 && selectedIds.size === displayedTracks.length;
@@ -172,6 +181,22 @@ export default function TrackList({
       // silently fail — individual track errors are handled at the API level
     } finally {
       setDeleting(false);
+    }
+  }
+
+  function handleMoveToWorkspace(sourceTrackId: string, workspaceId: string) {
+    const activeSelection = selectedIdsRef.current;
+    const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
+      ? Array.from(activeSelection)
+      : [sourceTrackId];
+
+    moveIds.forEach((trackId) => {
+      moveTrackToWorkspace(workspaceId, trackId);
+      onMoveToWorkspace?.(trackId, workspaceId);
+    });
+
+    if (moveIds.length > 1) {
+      setSelectedIds(new Set());
     }
   }
 
@@ -332,6 +357,7 @@ export default function TrackList({
           onAddToQueue={onAddToQueue}
           onAddToPlaylist={onAddToPlaylist}
           onMoveToWorkspace={onMoveToWorkspace}
+          onMoveTracksToWorkspace={handleMoveToWorkspace}
           playlists={playlists}
           isSelected={selectedIds.has(track.id)}
           onToggleSelect={toggleSelection}
@@ -383,6 +409,7 @@ function TrackCard({
   onAddToQueue,
   onAddToPlaylist,
   onMoveToWorkspace,
+  onMoveTracksToWorkspace,
   playlists,
   isSelected,
   onToggleSelect,
@@ -396,6 +423,7 @@ function TrackCard({
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
+  onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
@@ -582,7 +610,12 @@ function TrackCard({
 
     const workspaceId = createWorkspace(trimmed);
     if (workspaceId) {
-      moveTrackToWorkspace(workspaceId, track.id);
+      if (onMoveTracksToWorkspace) {
+        onMoveTracksToWorkspace(track.id, workspaceId);
+      } else {
+        moveTrackToWorkspace(workspaceId, track.id);
+        onMoveToWorkspace?.(track.id, workspaceId);
+      }
     }
 
     setNewWorkspaceName("");
@@ -1023,8 +1056,12 @@ function TrackCard({
                             key={workspace.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              moveTrackToWorkspace(workspace.id, track.id);
-                              onMoveToWorkspace?.(track.id, workspace.id);
+                              if (onMoveTracksToWorkspace) {
+                                onMoveTracksToWorkspace(track.id, workspace.id);
+                              } else {
+                                moveTrackToWorkspace(workspace.id, track.id);
+                                onMoveToWorkspace?.(track.id, workspace.id);
+                              }
                               setWorkspaceMenuOpen(false);
                               setMenuOpen(false);
                             }}
