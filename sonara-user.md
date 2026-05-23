@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: za 02:37**
+**Versie: za 17:50**
 
 > AI Music Generation Web App
 
@@ -78,6 +78,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Reorder blocks with the up/down controls, duplicate blocks, edit labels and lyrics manually, or delete sections
 - Drag blocks directly with the grip handle on both desktop and touch screens to reorder them faster
 - **Copy all lyrics** copies the finished block sequence
+- In the collapsible **Volledige lyrics** sidebar, a dedicated **Copy** button now copies the full combined lyrics directly
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
 - Confirmaties, foutmeldingen en snapshot-opslag gebruiken in-app dialogs/notificaties in plaats van browser popups
 

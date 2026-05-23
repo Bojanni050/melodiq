@@ -538,6 +538,17 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 03:02`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 17:50 (Lyric Studio sidebar copy button)
+
+- Findings: In de inklapbare `Volledige lyrics` sidebar op Lyric Studio ontbrak een directe copy-actie; users moesten naar de onderkant van de pagina voor `Copy all lyrics`.
+- Conclusions: Voeg een compacte copy-knop toe in de sidebar-header, gekoppeld aan dezelfde copy-flow als de bestaande globale knop.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — sidebar header omgezet naar row layout met nieuwe `Copy` knop rechts
+  - Updated `src/app/lyrics-studio/page.tsx` — knop gebruikt bestaande `copyAllLyrics()` en `copied` feedback (`Copied!`)
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 17:50`
+  - Updated `sonara-user.md` — user guide uitgebreid met nieuwe sidebar copy-knop
+  - Validated with `npm run build`.
+
 ## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
 
 - Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.

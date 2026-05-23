@@ -1011,7 +1011,17 @@ export default function LyricsStudioPage() {
 
       {/* Collapsible lyrics sidebar */}
       <CollapsibleSidebar open={showLyricsSidebar} onClose={() => setShowLyricsSidebar(false)}>
-        <h2 className="text-xl font-bold mb-4">Volledige lyrics</h2>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-xl font-bold">Volledige lyrics</h2>
+          <button
+            type="button"
+            onClick={copyAllLyrics}
+            disabled={!combinedLyrics}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
         <pre className="whitespace-pre-wrap text-white/90 text-base font-mono">{combinedLyrics || "(nog geen lyrics)"}</pre>
       </CollapsibleSidebar>
 
