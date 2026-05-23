@@ -527,6 +527,17 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 02:37`
   - Validated with `npm run build`.
 
+## 2026-05-23 za 03:02 (Studio default provider naar PoYo)
+
+- Findings: De Studio state startte standaard op Lyria, terwijl de gewenste default provider PoYo is.
+- Conclusions: Zet provider/default model in de Studio store init en reset naar PoYo, zodat nieuwe sessies en reset-flow consistent starten op PoYo.
+- Actions:
+  - Updated `src/lib/store.ts` — `provider` default gewijzigd van `lyria` naar `poyo`
+  - Updated `src/lib/store.ts` — `providerModel` default gewijzigd van `lyria-3` naar `v5.5`
+  - Updated `src/lib/store.ts` — `reset()` defaults aangepast naar `provider: "poyo"`, `providerModel: "v5.5"`
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 03:02`
+  - Validated with `npm run build`.
+
 ## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
 
 - Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.
