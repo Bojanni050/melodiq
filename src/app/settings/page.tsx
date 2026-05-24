@@ -247,19 +247,6 @@ export default function SettingsPage() {
         }
       }
 
-          setValues((prev) => {
-            const next = { ...prev, [key]: value };
-
-            if (key === "APP_URL" && value.trim()) {
-              for (const { key: webhookKey, path } of WEBHOOK_DEFAULTS) {
-                if (!next[webhookKey]) {
-                  next[webhookKey] = buildWebhookUrl(value, path);
-                }
-              }
-            }
-
-            return next;
-          });
       if (s3Res.ok) {
         setS3Config(await s3Res.json());
       }
@@ -268,7 +255,19 @@ export default function SettingsPage() {
   }, []);
 
   function updateField(key: string, value: string) {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    setValues((prev) => {
+      const next = { ...prev, [key]: value };
+
+      if (key === "APP_URL" && value.trim()) {
+        for (const { key: webhookKey, path } of WEBHOOK_DEFAULTS) {
+          if (!next[webhookKey]) {
+            next[webhookKey] = buildWebhookUrl(value, path);
+          }
+        }
+      }
+
+      return next;
+    });
   }
 
   async function getOpenRouterModels() {
