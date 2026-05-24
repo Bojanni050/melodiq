@@ -247,6 +247,7 @@ export default function SettingsPage() {
         }
       }
 
+      const s3Res = await fetch("/api/settings/s3");
       if (s3Res.ok) {
         setS3Config(await s3Res.json());
       }
