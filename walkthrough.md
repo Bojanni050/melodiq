@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-24 zo 20:55 (Webhook fields auto-fill from App URL)
+
+- Findings: The Settings page showed empty webhook inputs even when `APP_URL` was already known, so users still had to copy the derived URLs manually.
+- Conclusions: Webhook fields should be populated in the settings UI from `APP_URL` when they are empty, and the same defaults should be applied when saving.
+- Actions:
+  - Updated `src/app/settings/page.tsx` — empty webhook fields now auto-fill from `APP_URL` on load, and empty webhook values are derived again on save when `APP_URL` is present
+  - Updated `src/components/Sidebar.tsx` — build version text refreshed to `zo 20:55`
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 13:32 (MusicGPT timeout skip + failed-track recovery)
 
 - Findings: MusicGPT tracks could still be pushed into generic timeout handling, and the recovery endpoint only retried tracks in `generating`, leaving already-timed-out MusicGPT jobs out of the recovery flow.

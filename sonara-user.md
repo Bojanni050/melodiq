@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: za 21:34**
+**Versie: zo 20:55**
 
 > AI Music Generation Web App
 
@@ -166,6 +166,7 @@ The Settings page lets you configure each provider independently:
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
 - MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
+- Webhook fields now auto-fill from `APP_URL` when they are empty, so you do not need to copy each derived URL manually
 
 ---
 

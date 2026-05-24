@@ -159,6 +159,32 @@ function createModelPlaceholder(id: string): LLMModel {
   };
 }
 
+const WEBHOOK_DEFAULTS = [
+  { key: "POYO_WEBHOOK_URL", path: "/api/webhooks/poyo" },
+  { key: "POYO_WAV_WEBHOOK_URL", path: "/api/webhooks/poyo-wav" },
+  { key: "TEMPOLOR_WEBHOOK_URL", path: "/api/webhooks/tempolor" },
+  { key: "MUSICGPT_WEBHOOK_URL", path: "/api/webhooks/musicgpt" },
+  { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
+] as const;
+
+function buildWebhookUrl(appUrl: string, path: string): string {
+  return `${appUrl.replace(/\/$/, "")}${path}`;
+}
+
+function applyWebhookDefaults(settings: Record<string, string>): Record<string, string> {
+  const appUrl = settings.APP_URL?.trim();
+  if (!appUrl) return settings;
+
+  const next = { ...settings };
+  for (const { key, path } of WEBHOOK_DEFAULTS) {
+    if (!next[key]) {
+      next[key] = buildWebhookUrl(appUrl, path);
+    }
+  }
+
+  return next;
+}
+
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
@@ -209,7 +235,7 @@ export default function SettingsPage() {
           OPENAI_LYRICS_MODEL: data.OPENAI_LYRICS_MODEL || data.OPENAI_MODEL || "gpt-4o",
         };
 
-        setValues(settings);
+        setValues(applyWebhookDefaults(settings));
         if (settings.OPENROUTER_PROMPT_MODEL) {
           setSelectedPromptModel(createModelPlaceholder(settings.OPENROUTER_PROMPT_MODEL));
         }
@@ -221,7 +247,19 @@ export default function SettingsPage() {
         }
       }
 
-      const s3Res = await fetch("/api/settings/s3");
+          setValues((prev) => {
+            const next = { ...prev, [key]: value };
+
+            if (key === "APP_URL" && value.trim()) {
+              for (const { key: webhookKey, path } of WEBHOOK_DEFAULTS) {
+                if (!next[webhookKey]) {
+                  next[webhookKey] = buildWebhookUrl(value, path);
+                }
+              }
+            }
+
+            return next;
+          });
       if (s3Res.ok) {
         setS3Config(await s3Res.json());
       }
@@ -357,6 +395,8 @@ export default function SettingsPage() {
   async function saveWebhooks() {
     setSaving((prev) => ({ ...prev, webhooks: true }));
 
+    const appUrl = values.APP_URL?.trim();
+
     const webhookFields = [
       "APP_URL",
       "POYO_WEBHOOK_URL",
@@ -367,10 +407,15 @@ export default function SettingsPage() {
     ];
 
     for (const key of webhookFields) {
+      const value =
+        key === "APP_URL" || !appUrl
+          ? values[key] || ""
+          : values[key] || buildWebhookUrl(appUrl, WEBHOOK_DEFAULTS.find((field) => field.key === key)?.path || "");
+
       await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value: values[key] || "" }),
+        body: JSON.stringify({ key, value }),
       });
     }
 
