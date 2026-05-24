@@ -278,7 +278,9 @@ export default function WorkspacesPage() {
                     autoQueueAfterPlay
                     onSelect={() => undefined}
                     onDelete={handleDeleteTrack}
-                    onAddToPlaylist={(trackId, playlistId) => addTrackToPlaylist(playlistId, trackId)}
+                    onAddToPlaylist={(trackId, playlistId, options) =>
+                      addTrackToPlaylist(playlistId, trackId, options)
+                    }
                     playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                   />
                 ) : (

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: za 17:50**
+**Versie: za 21:34**
 
 > AI Music Generation Web App
 
@@ -111,12 +111,14 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - **Recent Tracks** — shown in the lower half of the right Studio column. Click any track to open the detail panel.
 - **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`). Workspace selection in Studio now uses the same folder cards (gradient + cover collage) as the dedicated Workspaces page.
 - All track lists now include sorting controls: **New to old** and **Old to new**.
+- All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view
+- If you add a song to a playlist where it already exists, Sonara now asks: “Song is already on the playlist. Do you want to add it again?” with **Yes / No**
 
 ### Workspaces
 - **Workspaces** live in the sidebar and open a dedicated page with folder-style cards

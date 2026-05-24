@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
               prompt,
               lyrics: lyrics || null,
               instrumental: instrumental || false,
-              title: resolvedTitle ? `${resolvedTitle} (${i + 2})` : null,
+              title: resolvedTitle,
               status: "generating",
               jobId,
             })
@@ -426,7 +426,7 @@ export async function POST(request: NextRequest) {
           prompt,
           lyrics: lyrics || null,
           instrumental: instrumental || false,
-          title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          title: resolvedTitle,
           status: "generating",
           jobId: genResult.taskId,
           conversionId: genResult.conversionId2,

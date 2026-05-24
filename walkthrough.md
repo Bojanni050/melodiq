@@ -549,6 +549,20 @@
   - Updated `sonara-user.md` — user guide uitgebreid met nieuwe sidebar copy-knop
   - Validated with `npm run build`.
 
+## 2026-05-23 za 18:31 (Playlist duplicate prompt met Yes/No)
+
+- Findings: Bij “Add to playlist” werd een al bestaande track stil genegeerd; er was geen keuze om bewust een duplicate toe te voegen.
+- Conclusions: Voeg een expliciete confirm-popup toe wanneer een track al in de playlist staat: `Song is already on the playlist. Do you want to add it again? Yes / No`.
+- Actions:
+  - Updated `src/lib/store.ts` — `addTrackToPlaylist` accepteert nu optionele `options.allowDuplicate`
+  - Updated `src/lib/store.ts` — standaard gedrag blijft dedupe; bij `allowDuplicate: true` wordt track opnieuw toegevoegd
+  - Updated `src/components/TrackList.tsx` — added duplicate-check tegen volledige playlist state en nieuwe confirm modal met `Yes`/`No`
+  - Updated `src/components/TrackList.tsx` — bij `Yes` wordt add uitgevoerd met `allowDuplicate: true`; bij `No` wordt actie geannuleerd
+  - Updated `src/components/TrackList.tsx` — fallback toegevoegd zodat add-to-playlist ook zonder parent callback de store direct gebruikt
+  - Updated `src/app/page.tsx` en `src/app/workspaces/page.tsx` — callback signatures aangepast voor optionele playlist-add options
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 18:31`
+  - Validated with `npm run build`.
+
 ## 2026-05-23 za 01:54 (Move-to-workspace robuust + workspace-label in tracklisting)
 
 - Findings: Vanuit Recent Tracks werd de doel-workspace wel geopend maar niet altijd zichtbaar toegevoegd; daarnaast ontbrak in de tracklisting context over in welke workspace een track staat.
@@ -936,4 +950,16 @@
   - Updated `src/app/api/webhooks/poyo/route.ts`, `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` — webhook en fallback-polling vragen WAV-conversie per gesyncte variant aan met de originele task-id
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:27`
   - Updated `sonara-user.md` — user guide versie ververst naar `za 00:27` en PoYo HD/WAV per variant verduidelijkt
+  - Validated with `npm run build`.
+
+## 2026-05-23 za 21:34 (Zoekbalken in alle tracklistings)
+
+- Findings: Tracklijsten hadden al sortering, maar geen snelle tekstzoekfunctie; hierdoor werd het lastig om specifieke songs te vinden in lange lijsten op Studio, Library en Workspaces.
+- Conclusions: Omdat alle listings dezelfde `TrackList`-component gebruiken, is een centrale zoekbalk in die component de meest consistente aanpak zonder duplicatie.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — zoekveld toegevoegd in de list-controls met live filtering op titel, prompt, provider, model en lyrics
+  - Updated `src/components/TrackList.tsx` — selectie-logica verbeterd voor gefilterde resultaten (select all werkt nu op zichtbare items)
+  - Updated `src/components/TrackList.tsx` — empty-state boodschap uitgebreid met “No tracks match your search” bij geen zoekmatches
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
+  - Updated `sonara-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
   - Validated with `npm run build`.

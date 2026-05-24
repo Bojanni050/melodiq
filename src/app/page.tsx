@@ -262,8 +262,12 @@ export default function HomePage() {
     });
   }
 
-  function handleAddToPlaylist(trackId: string, playlistId: string) {
-    addTrackToPlaylist(playlistId, trackId);
+  function handleAddToPlaylist(
+    trackId: string,
+    playlistId: string,
+    options?: { allowDuplicate?: boolean }
+  ) {
+    addTrackToPlaylist(playlistId, trackId, options);
   }
 
   async function fetchCredits() {

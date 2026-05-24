@@ -242,7 +242,11 @@ interface PlaylistState {
   playlists: Playlist[];
   selectedPlaylistId: string | null;
   createPlaylist: (name: string) => string;
-  addTrackToPlaylist: (playlistId: string, trackId: string) => void;
+  addTrackToPlaylist: (
+    playlistId: string,
+    trackId: string,
+    options?: { allowDuplicate?: boolean }
+  ) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   deletePlaylist: (playlistId: string) => void;
   setSelectedPlaylistId: (playlistId: string | null) => void;
@@ -268,11 +272,11 @@ export const usePlaylistStore = create<PlaylistState>()(
         }));
         return id;
       },
-      addTrackToPlaylist: (playlistId, trackId) =>
+      addTrackToPlaylist: (playlistId, trackId, options) =>
         set((state) => ({
           playlists: state.playlists.map((playlist) => {
             if (playlist.id !== playlistId) return playlist;
-            if (playlist.trackIds.includes(trackId)) return playlist;
+            if (playlist.trackIds.includes(trackId) && !options?.allowDuplicate) return playlist;
             return { ...playlist, trackIds: [...playlist.trackIds, trackId] };
           }),
         })),

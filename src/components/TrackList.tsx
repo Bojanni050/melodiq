@@ -108,7 +108,11 @@ export default function TrackList({
   onDelete?: (trackId: string) => void;
   onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
-  onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  onAddToPlaylist?: (
+    trackId: string,
+    playlistId: string,
+    options?: { allowDuplicate?: boolean }
+  ) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
@@ -118,6 +122,7 @@ export default function TrackList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
@@ -137,8 +142,31 @@ export default function TrackList({
       return rightTime - leftTime;
     });
 
-    return list;
-  }, [sortOrder, tracks]);
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return list;
+    }
+
+    return list.filter((track) => {
+      const searchValues = [
+        track.title ?? "",
+        track.prompt,
+        track.provider,
+        track.providerModel,
+        track.lyrics ?? "",
+      ];
+
+      return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
+    });
+  }, [sortOrder, tracks, searchQuery]);
+
+  useEffect(() => {
+    const availableIds = new Set(tracks.map((track) => track.id));
+    setSelectedIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [tracks]);
 
   function toggleSelection(trackId: string) {
     setSelectedIds((current) => {
@@ -154,14 +182,27 @@ export default function TrackList({
 
   function toggleSelectAll() {
     setSelectedIds((current) => {
-      if (current.size === displayedTracks.length) {
-        return new Set();
+      const visibleIds = displayedTracks.map((track) => track.id);
+      const hasAllVisible = visibleIds.length > 0 && visibleIds.every((id) => current.has(id));
+
+      if (hasAllVisible) {
+        const next = new Set(current);
+        visibleIds.forEach((id) => next.delete(id));
+        return next;
       }
-      return new Set(displayedTracks.map((t) => t.id));
+
+      const next = new Set(current);
+      visibleIds.forEach((id) => next.add(id));
+      return next;
     });
   }
 
-  const allSelected = displayedTracks.length > 0 && selectedIds.size === displayedTracks.length;
+  const visibleSelectedCount = useMemo(
+    () => displayedTracks.reduce((count, track) => (selectedIds.has(track.id) ? count + 1 : count), 0),
+    [displayedTracks, selectedIds],
+  );
+
+  const allSelected = displayedTracks.length > 0 && visibleSelectedCount === displayedTracks.length;
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
@@ -261,17 +302,6 @@ export default function TrackList({
     });
   }
 
-  if (displayedTracks.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-        </svg>
-        <p className="text-white/30 text-sm">No tracks yet</p>
-      </div>
-    );
-  }
-
   return (
     <>
       {confirmMassDelete && (
@@ -305,8 +335,31 @@ export default function TrackList({
             <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
           )}
         </button>
-        <span className="text-xs text-white/30">{selectedIds.size > 0 ? `${selectedIds.size} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}</span>
+        <span className="text-xs text-white/30">{visibleSelectedCount > 0 ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}</span>
         <div className="ml-auto flex items-center gap-2">
+          <div className="relative">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search tracks"
+              className="h-7 w-44 rounded-md border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
+              aria-label="Search tracks"
+            />
+            {searchQuery.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white/75"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
           <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
           <select
             id="track-sort"
@@ -320,9 +373,9 @@ export default function TrackList({
           </select>
         </div>
       </div>
-      {selectedIds.size > 0 && (
+      {visibleSelectedCount > 0 && (
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
-          <span className="text-sm text-blue-300">{selectedIds.size} selected</span>
+          <span className="text-sm text-blue-300">{visibleSelectedCount} selected</span>
           <button
             onClick={() => setSelectedIds(new Set())}
             className="ml-auto text-xs text-white/40 hover:text-white/70 transition-colors"
@@ -346,24 +399,35 @@ export default function TrackList({
         </div>
       )}
       {isGenerating && <GeneratingRow />}
-      {displayedTracks.map((track) => (
-        <TrackCard
-          key={track.id}
-          track={track}
-          onPlay={handlePlay}
-          onSelect={onSelect}
-          onDelete={onDelete}
-          onReusePrompt={onReusePrompt}
-          onAddToQueue={onAddToQueue}
-          onAddToPlaylist={onAddToPlaylist}
-          onMoveToWorkspace={onMoveToWorkspace}
-          onMoveTracksToWorkspace={handleMoveToWorkspace}
-          playlists={playlists}
-          isSelected={selectedIds.has(track.id)}
-          onToggleSelect={toggleSelection}
-          onTitleUpdate={onTitleUpdate}
-        />
-      ))}
+      {displayedTracks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
+          <p className="text-white/30 text-sm">
+            {tracks.length > 0 && searchQuery.trim().length > 0 ? "No tracks match your search" : "No tracks yet"}
+          </p>
+        </div>
+      ) : (
+        displayedTracks.map((track) => (
+          <TrackCard
+            key={track.id}
+            track={track}
+            onPlay={handlePlay}
+            onSelect={onSelect}
+            onDelete={onDelete}
+            onReusePrompt={onReusePrompt}
+            onAddToQueue={onAddToQueue}
+            onAddToPlaylist={onAddToPlaylist}
+            onMoveToWorkspace={onMoveToWorkspace}
+            onMoveTracksToWorkspace={handleMoveToWorkspace}
+            playlists={playlists}
+            isSelected={selectedIds.has(track.id)}
+            onToggleSelect={toggleSelection}
+            onTitleUpdate={onTitleUpdate}
+          />
+        ))
+      )}
     </div>
     </>
   );
@@ -421,7 +485,11 @@ function TrackCard({
   onDelete?: (trackId: string) => void;
   onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
-  onAddToPlaylist?: (trackId: string, playlistId: string) => void;
+  onAddToPlaylist?: (
+    trackId: string,
+    playlistId: string,
+    options?: { allowDuplicate?: boolean }
+  ) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
@@ -445,6 +513,8 @@ function TrackCard({
   const [ratingLoading, setRatingLoading] = useState(false);
   const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
   const [showCreateWorkspaceDialog, setShowCreateWorkspaceDialog] = useState(false);
+  const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
+  const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -453,6 +523,7 @@ function TrackCard({
   const workspaceInputRef = useRef<HTMLInputElement | null>(null);
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
+  const allPlaylists = usePlaylistStore((state) => state.playlists);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
@@ -602,6 +673,22 @@ function TrackCard({
     setNewPlaylistName("");
     setShowCreatePlaylistDialog(false);
     setMenuOpen(false);
+  }
+
+  function executeAddToPlaylist(playlistId: string, options?: { allowDuplicate?: boolean }) {
+    if (onAddToPlaylist) {
+      onAddToPlaylist(track.id, playlistId, options);
+      return;
+    }
+
+    addTrackToPlaylist(playlistId, track.id, options);
+  }
+
+  function confirmDuplicatePlaylistAdd() {
+    if (!pendingPlaylistAdd) return;
+    executeAddToPlaylist(pendingPlaylistAdd.id, { allowDuplicate: true });
+    setPendingPlaylistAdd(null);
+    setShowDuplicatePlaylistDialog(false);
   }
 
   function handleCreateWorkspace() {
@@ -760,6 +847,42 @@ function TrackCard({
                 className="px-4 py-1.5 rounded-lg text-sm bg-primary-500/80 hover:bg-primary-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create & Move
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDuplicatePlaylistDialog && pendingPlaylistAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setShowDuplicatePlaylistDialog(false);
+              setPendingPlaylistAdd(null);
+            }}
+          />
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[420px] max-w-[90vw] flex flex-col gap-4">
+            <h3 className="text-base font-semibold text-white">Song is already on the playlist</h3>
+            <p className="text-sm text-white/65">
+              This song is already in <span className="text-white/90">{pendingPlaylistAdd.name}</span>. Do you want to add it again?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDuplicatePlaylistDialog(false);
+                  setPendingPlaylistAdd(null);
+                }}
+                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={confirmDuplicatePlaylistAdd}
+                className="rounded-lg bg-primary-500/80 px-4 py-1.5 text-sm text-white hover:bg-primary-500 transition-colors"
+              >
+                Yes
               </button>
             </div>
           </div>
@@ -1122,7 +1245,16 @@ function TrackCard({
                         onClick={(e) => {
                           e.stopPropagation();
                           setMenuOpen(false);
-                          onAddToPlaylist?.(track.id, playlist.id);
+                          const fullPlaylist = allPlaylists.find((entry) => entry.id === playlist.id);
+                          const isDuplicate = Boolean(fullPlaylist?.trackIds.includes(track.id));
+
+                          if (isDuplicate) {
+                            setPendingPlaylistAdd({ id: playlist.id, name: playlist.name });
+                            setShowDuplicatePlaylistDialog(true);
+                            return;
+                          }
+
+                          executeAddToPlaylist(playlist.id);
                         }}
                         className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
                       >
