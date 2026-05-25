@@ -2,6 +2,7 @@ import axios from "axios";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 
 const POYO_VALID_MODELS = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
+const MINIMAX_MUSIC_26 = "minimax-music-2.6";
 
 function normalizePoYoModel(model?: string): string {
   if (!model) return "V5_5";
@@ -167,6 +168,74 @@ export function extractPoYoVariants(payload: any): Array<{ audioId?: string; aud
   }
 
   return variants;
+}
+
+export async function generateMinimaxMusic26({
+  prompt,
+  lyrics,
+  instrumental,
+}: {
+  prompt: string;
+  lyrics?: string;
+  instrumental?: boolean;
+}) {
+  const API_KEY = await getSetting("POYO_API_KEY");
+  const WEBHOOK_URL = await getWebhookUrl("poyo");
+  const startTime = Date.now();
+
+  const isInstrumental = instrumental ?? false;
+  const hasLyrics = !isInstrumental && lyrics && lyrics.length > 0;
+
+  try {
+    const response = await axios.post(
+      "https://api.poyo.ai/api/generate/submit",
+      {
+        model: MINIMAX_MUSIC_26,
+        callback_url: WEBHOOK_URL,
+        input: {
+          prompt,
+          ...(hasLyrics ? { lyrics } : {}),
+          ...(isInstrumental ? { is_instrumental: true } : {}),
+          ...(!hasLyrics && !isInstrumental ? { lyrics_optimizer: true } : {}),
+          audio_setting: {
+            sample_rate: 44100,
+            bitrate: 256000,
+            format: "mp3",
+          },
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const taskId = response.data?.data?.task_id ?? response.data?.task_id;
+    if (!taskId) {
+      console.error("[poyo/minimax] Unexpected response structure:", JSON.stringify(response.data));
+      throw {
+        message: `Minimax Music 2.6 returned no task_id. Response: ${JSON.stringify(response.data)}`,
+        duration: Date.now() - startTime,
+        statusCode: 500,
+      };
+    }
+    return {
+      jobIds: [taskId],
+      duration: Date.now() - startTime,
+    };
+  } catch (error: any) {
+    const isCopyright =
+      error.response?.status === 400 &&
+      /copyright|policy/i.test(error.response?.data?.message || "");
+    throw {
+      message: isCopyright ? "COPYRIGHT" : error.response?.data?.message || error.message,
+      duration: Date.now() - startTime,
+      statusCode: error.response?.status,
+    };
+  }
 }
 
 export async function getPoYoCredits() {

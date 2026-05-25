@@ -348,6 +348,54 @@ export default function StudioForm({
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
 
+      {/* Provider Dropdown */}
+      <section className="section-card">
+        <h3 className="text-sm font-semibold text-white/80 mb-3">Provider & Model</h3>
+        <div className="flex gap-2">
+          <select
+            value={Object.keys(selectedProviders)[0] || ""}
+            onChange={(e) => {
+              const key = e.target.value;
+              if (key) {
+                toggleProvider(key, PROVIDERS[key as keyof typeof PROVIDERS].models[0]);
+              }
+            }}
+            aria-label="Select provider"
+            className="select-field text-sm flex-1"
+          >
+            <option value="" className="bg-gray-900">Select provider...</option>
+            {Object.entries(PROVIDERS).map(([key, val]) => (
+              <option key={key} value={key} className="bg-gray-900">
+                {val.fullName}
+              </option>
+            ))}
+          </select>
+          {Object.keys(selectedProviders).length > 0 && (
+            <select
+              value={selectedProviders[Object.keys(selectedProviders)[0]]}
+              onChange={(e) => setProviderModel(Object.keys(selectedProviders)[0], e.target.value)}
+              aria-label="Select model"
+              className="select-field text-sm flex-1"
+            >
+              {PROVIDERS[Object.keys(selectedProviders)[0] as keyof typeof PROVIDERS]?.models.map((model) => (
+                <option key={model} value={model} className="bg-gray-900">
+                  {model}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        {Object.keys(selectedProviders).length > 0 && (
+          <div className="mt-2 text-xs text-white/30">
+            {(() => {
+              const key = Object.keys(selectedProviders)[0];
+              const currentCredits = credits[key as keyof typeof credits];
+              return key === "lyria" ? "Pay-per-use" : currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured";
+            })()}
+          </div>
+        )}
+      </section>
+
       {/* Lyrics Section */}
 
       <section className="section-card">
