@@ -16,22 +16,22 @@ export async function generateLyria({
   const startTime = Date.now();
   try {
     const modelId = model || "lyria-3-clip-preview";
-    const textParts: Array<{ type: string; text: string }> = [];
+    const parts: Array<{ text: string }> = [];
 
     if (instrumental) {
-      textParts.push({ type: "text", text: `Instrumental. ${prompt}` });
+      parts.push({ text: `Instrumental. ${prompt}` });
     } else {
-      textParts.push({ type: "text", text: prompt });
+      parts.push({ text: prompt });
     }
 
     if (lyrics) {
-      textParts.push({ type: "text", text: `Lyrics:\n${lyrics}` });
+      parts.push({ text: `Lyrics:\n${lyrics}` });
     }
 
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
       {
-        contents: [{ parts: textParts }],
+        contents: [{ role: "user", parts }],
         generationConfig: {
           responseModalities: ["AUDIO"],
         },
