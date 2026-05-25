@@ -131,19 +131,28 @@ export function getPoYoStatusValue(payload: any): string {
 }
 
 export function extractPoYoVariants(payload: any): Array<{ audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }> {
-  const rawFiles: any[] = payload?.files || payload?.data?.files || payload?.result?.files || [];
+  // Check multiple possible locations for files array
+  const rawFiles: any[] =
+    payload?.files ||
+    payload?.data?.files ||
+    payload?.data?.output?.files ||
+    payload?.data?.result?.files ||
+    payload?.result?.files ||
+    payload?.output?.files ||
+    [];
+
   const grouped = new Map<string, { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }>();
 
   rawFiles.forEach((file, index) => {
-    // Skip non-audio files (Minimax returns file_type for each file)
-    const fileType = file?.file_type || file?.fileType || file?.type;
-    if (fileType && fileType !== "audio") return;
+    // Lenient file_type check — only skip if explicitly non-audio
+    const fileType = String(file?.file_type || file?.fileType || file?.type || "").toLowerCase();
+    if (fileType && !["audio", "mp3", "wav", "music"].some(t => fileType.includes(t))) return;
 
     const key = inferVariantKey(file, index);
     const existing = grouped.get(key) || {};
 
-    const mp3Url = file?.audio_url || file?.mp3_url || file?.url || file?.download_url;
-    const wavUrl = file?.audio_url_hd || file?.wav_url || file?.url_hd;
+    const mp3Url = file?.audio_url || file?.mp3_url || file?.url || file?.download_url || file?.file_url;
+    const wavUrl = file?.audio_url_hd || file?.wav_url || file?.url_hd || file?.download_url_hd;
     const fallbackUrl = mp3Url || wavUrl;
 
     const next = {
@@ -166,8 +175,21 @@ export function extractPoYoVariants(payload: any): Array<{ audioId?: string; aud
   const variants = Array.from(grouped.values()).filter((v) => v.audioUrl || v.audioUrlHd);
 
   if (variants.length === 0) {
-    const fallbackAudio = payload?.audio_url || payload?.data?.audio_url || payload?.result?.audio_url;
-    const fallbackAudioHd = payload?.audio_url_hd || payload?.data?.audio_url_hd || payload?.result?.audio_url_hd;
+    // Check multiple possible locations for direct audio URL
+    const fallbackAudio =
+      payload?.audio_url ||
+      payload?.data?.audio_url ||
+      payload?.data?.output?.audio_url ||
+      payload?.data?.result?.audio_url ||
+      payload?.result?.audio_url ||
+      payload?.output?.audio_url;
+    const fallbackAudioHd =
+      payload?.audio_url_hd ||
+      payload?.data?.audio_url_hd ||
+      payload?.data?.output?.audio_url_hd ||
+      payload?.data?.result?.audio_url_hd ||
+      payload?.result?.audio_url_hd ||
+      payload?.output?.audio_url_hd;
     if (fallbackAudio || fallbackAudioHd) {
       return [{ audioUrl: fallbackAudio || fallbackAudioHd, audioUrlHd: fallbackAudioHd }];
     }
@@ -250,7 +272,11 @@ export async function getPoYoCredits() {
     const response = await axios.get("https://api.poyo.ai/api/user/balance", {
       headers: { Authorization: `Bearer ${API_KEY}` },
     });
-    return response.data.data?.credits_amount;
+    const raw = response.data.data?.credits_amount;
+    if (raw === null || raw === undefined) return null;
+    // PoYo returns credits as decimal (e.g. 9.08), multiply by 100 for whole credits
+    const num = typeof raw === "string" ? parseFloat(raw) : Number(raw);
+    return num < 100 ? Math.round(num * 100) : Math.round(num);
   } catch (error: any) {
     console.warn("[poyo] Failed to fetch credits:", error.message);
     return null;
