@@ -235,6 +235,7 @@ export default function StudioForm({
     setLyrics,
     setLyricsContext,
     setTitle,
+    setProvider,
     toggleProvider,
     setProviderModel,
     setInstrumental,
@@ -362,7 +363,7 @@ export default function StudioForm({
             onChange={(e) => {
               const key = e.target.value;
               if (key) {
-                toggleProvider(key, PROVIDERS[key as keyof typeof PROVIDERS].models[0]);
+                setProvider(key, PROVIDERS[key as keyof typeof PROVIDERS].models[0]);
               }
             }}
             aria-label="Select provider"

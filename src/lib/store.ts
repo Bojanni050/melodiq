@@ -481,6 +481,7 @@ interface StudioState {
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
   setTitle: (title: string) => void;
+  setProvider: (key: string, model: string) => void;
   toggleProvider: (key: string, defaultModel: string) => void;
   setProviderModel: (key: string, model: string) => void;
   setLanguage: (lang: string) => void;
@@ -514,6 +515,7 @@ export const useStudioStore = create<StudioState>()(
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
       setTitle: (title) => set({ title }),
+      setProvider: (key, model) => set({ selectedProviders: { [key]: model } }),
       toggleProvider: (key, defaultModel) =>
         set((state) => {
           const next = { ...state.selectedProviders };
