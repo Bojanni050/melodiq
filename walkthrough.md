@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Lyria response format fix + corrupted line in page.tsx)
+
+- Findings: Lyria generation was failing — the Google AI API response uses camelCase field names (`inlineData`, `mimeType`) but the code only looked for snake_case (`inline_data`, `mime_type`). Also discovered a corrupted line with garbage text in `src/app/page.tsx`.
+- Conclusions: The response parsing needs to handle both camelCase (raw REST API) and snake_case (some SDK versions). The corrupted line was likely a paste/keyboard accident and blocked the build.
+- Actions:
+  - Updated `src/lib/providers/lyria.ts` — response parsing now checks both `p.inlineData?.mimeType` and `p.inline_data?.mime_type` formats, extracting audio buffer correctly regardless of casing
+  - Fixed corrupted line 14 in `src/app/page.tsx` — removed garbage text after `id: string;`
+  - Validated with `npm run build`.
+
 ## 2026-05-24 zo 20:55 (Webhook fields auto-fill from App URL)
 
 - Findings: The Settings page showed empty webhook inputs even when `APP_URL` was already known, so users still had to copy the derived URLs manually.

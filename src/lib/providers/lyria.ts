@@ -45,18 +45,26 @@ export async function generateLyria({
     );
 
     const audioPart = response.data.candidates?.[0]?.content?.parts?.find(
-      (p: any) => p.inline_data?.mime_type?.startsWith("audio/")
+      (p: any) => {
+        const inlineData = p.inlineData || p.inline_data;
+        const mimeType = inlineData?.mimeType || inlineData?.mime_type;
+        return mimeType?.startsWith("audio/");
+      }
     );
 
-    if (!audioPart?.inline_data?.data) {
+    const inlineData = audioPart?.inlineData || audioPart?.inline_data;
+    const mimeType = inlineData?.mimeType || inlineData?.mime_type;
+    const data = inlineData?.data;
+
+    if (!data) {
       throw new Error("No audio data in response");
     }
 
-    const audioBuffer = Buffer.from(audioPart.inline_data.data, "base64");
+    const audioBuffer = Buffer.from(data, "base64");
     const duration = Date.now() - startTime;
     return {
       audioBuffer,
-      mimeType: audioPart.inline_data.mime_type,
+      mimeType,
       duration,
       jobId: null,
     };
