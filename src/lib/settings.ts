@@ -93,8 +93,14 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
     const key = await getSetting("MUSICGPT_API_KEY");
     if (!key) missing.push("MUSICGPT_API_KEY");
   } else if (provider === "minimax") {
-    const key = await getSetting("MINIMAX_API_KEY");
-    if (!key) missing.push("MINIMAX_API_KEY");
+    const usePoYo = await getSetting("MINIMAX_USE_POYO");
+    if (usePoYo === "true") {
+      const key = await getSetting("POYO_API_KEY");
+      if (!key) missing.push("POYO_API_KEY");
+    } else {
+      const key = await getSetting("MINIMAX_API_KEY");
+      if (!key) missing.push("MINIMAX_API_KEY");
+    }
   }
 
   // Check S3 keys (required for uploads)
