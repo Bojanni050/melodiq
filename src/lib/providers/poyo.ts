@@ -113,10 +113,12 @@ function inferVariantKey(file: any, index: number): string {
     file?.songId ||
     file?.id ||
     file?.clip_id ||
-    file?.track_id;
+    file?.track_id ||
+    file?.file_id ||
+    file?.fileId;
   if (explicit) return String(explicit);
 
-  const url = file?.audio_url || file?.audio_url_hd || file?.wav_url || file?.mp3_url || "";
+  const url = file?.audio_url || file?.audio_url_hd || file?.wav_url || file?.mp3_url || file?.url || "";
   if (!url) return `variant-${index + 1}`;
 
   const clean = stripQuery(String(url));
@@ -129,19 +131,23 @@ export function getPoYoStatusValue(payload: any): string {
 }
 
 export function extractPoYoVariants(payload: any): Array<{ audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }> {
-  const rawFiles: any[] = payload?.files || payload?.data?.files || [];
+  const rawFiles: any[] = payload?.files || payload?.data?.files || payload?.result?.files || [];
   const grouped = new Map<string, { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }>();
 
   rawFiles.forEach((file, index) => {
+    // Skip non-audio files (Minimax returns file_type for each file)
+    const fileType = file?.file_type || file?.fileType || file?.type;
+    if (fileType && fileType !== "audio") return;
+
     const key = inferVariantKey(file, index);
     const existing = grouped.get(key) || {};
 
-    const mp3Url = file?.audio_url || file?.mp3_url || file?.url;
-    const wavUrl = file?.audio_url_hd || file?.wav_url;
+    const mp3Url = file?.audio_url || file?.mp3_url || file?.url || file?.download_url;
+    const wavUrl = file?.audio_url_hd || file?.wav_url || file?.url_hd;
     const fallbackUrl = mp3Url || wavUrl;
 
     const next = {
-      audioId: existing.audioId || file?.audio_id || file?.audioId,
+      audioId: existing.audioId || file?.audio_id || file?.audioId || file?.file_id || file?.fileId,
       title: file?.title || file?.name || existing.title,
       audioUrl: existing.audioUrl || mp3Url || (fallbackUrl && /\.mp3(\?|$)/i.test(fallbackUrl) ? fallbackUrl : undefined),
       audioUrlHd:
@@ -160,8 +166,8 @@ export function extractPoYoVariants(payload: any): Array<{ audioId?: string; aud
   const variants = Array.from(grouped.values()).filter((v) => v.audioUrl || v.audioUrlHd);
 
   if (variants.length === 0) {
-    const fallbackAudio = payload?.audio_url || payload?.data?.audio_url;
-    const fallbackAudioHd = payload?.audio_url_hd || payload?.data?.audio_url_hd;
+    const fallbackAudio = payload?.audio_url || payload?.data?.audio_url || payload?.result?.audio_url;
+    const fallbackAudioHd = payload?.audio_url_hd || payload?.data?.audio_url_hd || payload?.result?.audio_url_hd;
     if (fallbackAudio || fallbackAudioHd) {
       return [{ audioUrl: fallbackAudio || fallbackAudioHd, audioUrlHd: fallbackAudioHd }];
     }
