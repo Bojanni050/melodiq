@@ -225,15 +225,14 @@ export default function StudioForm({
     lyrics,
     lyricsContext,
     title,
-    provider,
-    providerModel,
+    selectedProviders,
     instrumental,
     vocalGender,
     setSongIdea,
     setLyrics,
     setLyricsContext,
     setTitle,
-    setProvider,
+    toggleProvider,
     setProviderModel,
     setInstrumental,
     setVocalGender,
@@ -244,7 +243,6 @@ export default function StudioForm({
   const [generatingLyrics, setGeneratingLyrics] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
-  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showTags, setShowTags] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
 
@@ -254,14 +252,14 @@ export default function StudioForm({
   const lyricsMaxChars = 3000;
   const titleCharCount = title.length;
   const titleMaxChars = 120;
-  const currentProvider = PROVIDERS[provider as keyof typeof PROVIDERS];
 
   // Generate button logic:
+  // - At least one provider must be selected
   // - If instrumental OFF: needs lyrics AND style/prompt
   // - If instrumental ON: needs title (prompt is optional since no vocals)
-  const canGenerate = instrumental
-    ? !!title.trim()
-    : !!lyrics.trim() && !!songIdea.trim();
+  const canGenerate =
+    Object.keys(selectedProviders).length > 0 &&
+    (instrumental ? !!title.trim() : !!lyrics.trim() && !!songIdea.trim());
 
   async function handleOptimize() {
     if (!songIdea) return;
@@ -336,74 +334,63 @@ export default function StudioForm({
 
         <div className="mt-3">
           <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40 mb-2">Provider</h4>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowProviderDropdown(!showProviderDropdown)}
-              className="w-full input-field text-left text-sm flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                  {currentProvider?.icon}
-                </span>
-                <span>{currentProvider?.fullName || "Select..."}</span>
-              </div>
-              <svg className={`w-4 h-4 transition-transform ${showProviderDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showProviderDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-                {Object.entries(PROVIDERS).map(([key, val]) => {
-                  const currentCredits = credits[key as keyof typeof credits];
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => {
-                        setProvider(key);
-                        setProviderModel(val.models[0]);
-                        setShowProviderDropdown(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                        provider === key
-                          ? "bg-primary-500/10 text-white"
-                          : "text-white/60 hover:bg-white/5"
-                      }`}
+          <div className="space-y-1.5">
+            {Object.entries(PROVIDERS).map(([key, val]) => {
+              const isSelected = !!selectedProviders[key];
+              const currentCredits = credits[key as keyof typeof credits];
+              return (
+                <div key={key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleProvider(key, val.models[0])}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors ${
+                      isSelected
+                        ? "bg-primary-500/10 border-primary-500/30 text-white"
+                        : "border-white/10 text-white/50 hover:bg-white/5 hover:text-white/70"
+                    }`}
+                  >
+                    <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {val.icon}
+                    </span>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm">{val.fullName}</p>
+                      <p className="text-xs text-white/30">
+                        {key === "lyria" ? "Pay-per-use" : currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured"}
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isSelected ? "bg-primary-500 border-primary-500" : "border-white/20"
+                    }`}>
+                      {isSelected && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                  {isSelected && (
+                    <select
+                      value={selectedProviders[key]}
+                      onChange={(e) => setProviderModel(key, e.target.value)}
+                      aria-label={`${val.name} model`}
+                      className="select-field text-sm mt-1"
                     >
-                      <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold">
-                        {val.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm">{val.fullName}</p>
-                        <p className="text-xs text-white/30">
-                          {key === "lyria" ? "Pay-per-use" : currentCredits !== null ? `${currentCredits} credits` : "Not configured"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                      {val.models.map((model) => (
+                        <option key={model} value={model} className="bg-gray-900">
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
           </div>
-
-          <select
-            value={providerModel}
-            onChange={(e) => setProviderModel(e.target.value)}
-            aria-label="Provider model"
-            className="select-field text-sm mt-2"
-          >
-            {currentProvider?.models.map((model) => (
-              <option key={model} value={model} className="bg-gray-900">
-                {model}
-              </option>
-            ))}
-          </select>
         </div>
       </section>
 
       {/* Lyrics Section */}
+
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -726,7 +713,9 @@ Your chorus here`}
         {/* Validation hint when button is disabled */}
         {!canGenerate && (
           <p className="text-center text-xs text-red-400/60">
-            {instrumental
+            {Object.keys(selectedProviders).length === 0
+              ? "Select at least one provider"
+              : instrumental
               ? "Set a title to generate"
               : !lyrics.trim()
               ? "Write or generate lyrics to continue"

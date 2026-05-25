@@ -283,7 +283,8 @@ export default function HomePage() {
   }
 
   async function handleOptimize() {
-    const { songIdea, provider, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
+    const { songIdea, selectedProviders, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
+    const provider = Object.keys(selectedProviders)[0] || "poyo";
     const res = await fetch("/api/llm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -351,12 +352,18 @@ export default function HomePage() {
       songIdea,
       lyrics,
       title,
-      provider,
-      providerModel,
+      selectedProviders,
       instrumental,
     } = useStudioStore.getState();
 
-    if (provider === "musicgpt" && lyrics.length > MUSICGPT_LYRICS_MAX_CHARS) {
+    const providerEntries = Object.entries(selectedProviders);
+
+    if (providerEntries.length === 0) {
+      setNotice({ type: "error", message: "Selecteer minimaal één provider." });
+      return;
+    }
+
+    if (selectedProviders.musicgpt && lyrics.length > MUSICGPT_LYRICS_MAX_CHARS) {
       setNotice({
         type: "error",
         message: `MusicGPT lyrics mogen maximaal ${MUSICGPT_LYRICS_MAX_CHARS} karakters zijn.`,
@@ -380,46 +387,55 @@ export default function HomePage() {
         }
       }
 
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: songIdea,
-          lyrics,
-          title: finalTitle,
-          provider,
-          providerModel,
-          language: getEffectiveLanguage(),
-          instrumental,
-        }),
-      });
+      const results = await Promise.allSettled(
+        providerEntries.map(([provider, providerModel]) =>
+          fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: songIdea,
+              lyrics,
+              title: finalTitle,
+              provider,
+              providerModel,
+              language: getEffectiveLanguage(),
+              instrumental,
+            }),
+          }).then(async (res) => {
+            const data = await res.json();
+            return { ok: res.ok, data, provider };
+          })
+        )
+      );
 
-      const data = await res.json();
+      const allTrackIds: string[] = [];
+      const errors: string[] = [];
 
-      const generatedTrack = data.tracks?.[0] ?? data.track;
-
-      if (!res.ok) {
-        setNotice({ type: "error", message: data.error || "Generation failed" });
-        return;
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          const { ok, data, provider } = result.value;
+          if (ok) {
+            const ids: string[] = Array.isArray(data.tracks)
+              ? data.tracks.map((t: Track) => t.id).filter(Boolean)
+              : data.track?.id
+                ? [data.track.id]
+                : [];
+            allTrackIds.push(...ids);
+          } else {
+            errors.push(`${provider}: ${data.error || "failed"}`);
+          }
+        } else {
+          errors.push("Generation request failed");
+        }
       }
 
-      if (!generatedTrack && provider !== "lyria") {
-        setNotice({ type: "error", message: "Generation started but no track payload returned" });
-      }
-
-      const generatedTrackIds = Array.isArray(data.tracks)
-        ? data.tracks.map((track: Track) => track.id).filter(Boolean)
-        : data.track?.id
-          ? [data.track.id]
-          : [];
-
-      generatedTrackIds.forEach((trackId: string) => {
+      allTrackIds.forEach((trackId) => {
         moveTrackToWorkspace(targetWorkspaceId, trackId);
       });
 
       const latestTracks = await fetchTracks();
 
-      if (generatedTrackIds.length === 0 && targetWorkspaceId !== DEFAULT_WORKSPACE_ID) {
+      if (allTrackIds.length === 0 && targetWorkspaceId !== DEFAULT_WORKSPACE_ID) {
         const discoveredTrackIds = latestTracks
           .map((track) => track.id)
           .filter((trackId) => !existingTrackIds.has(trackId));
@@ -429,7 +445,11 @@ export default function HomePage() {
         });
       }
 
-      setNotice(null);
+      if (errors.length > 0) {
+        setNotice({ type: "error", message: errors.join(" | ") });
+      } else {
+        setNotice(null);
+      }
     } catch {
       setNotice({ type: "error", message: "Failed to generate track" });
     } finally {

@@ -468,8 +468,7 @@ interface StudioState {
   lyrics: string;
   lyricsContext: string;
   title: string;
-  provider: string;
-  providerModel: string;
+  selectedProviders: Record<string, string>;
   language: string;
   customLanguage: string;
   instrumental: boolean;
@@ -480,8 +479,8 @@ interface StudioState {
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
   setTitle: (title: string) => void;
-  setProvider: (provider: string) => void;
-  setProviderModel: (model: string) => void;
+  toggleProvider: (key: string, defaultModel: string) => void;
+  setProviderModel: (key: string, model: string) => void;
   setLanguage: (lang: string) => void;
   setCustomLanguage: (lang: string) => void;
   setInstrumental: (val: boolean) => void;
@@ -498,8 +497,7 @@ export const useStudioStore = create<StudioState>()(
       lyrics: "",
       lyricsContext: "",
       title: "",
-      provider: "poyo",
-      providerModel: "v5.5",
+      selectedProviders: { poyo: "v5.5" },
       language: "English",
       customLanguage: "",
       instrumental: false,
@@ -510,8 +508,20 @@ export const useStudioStore = create<StudioState>()(
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
       setTitle: (title) => set({ title }),
-      setProvider: (provider) => set({ provider }),
-      setProviderModel: (model) => set({ providerModel: model }),
+      toggleProvider: (key, defaultModel) =>
+        set((state) => {
+          const next = { ...state.selectedProviders };
+          if (next[key]) {
+            delete next[key];
+          } else {
+            next[key] = defaultModel;
+          }
+          return { selectedProviders: next };
+        }),
+      setProviderModel: (key, model) =>
+        set((state) => ({
+          selectedProviders: { ...state.selectedProviders, [key]: model },
+        })),
       setLanguage: (lang) => set({ language: lang }),
       setCustomLanguage: (lang) => set({ customLanguage: lang }),
       setInstrumental: (val) => set({ instrumental: val }),
@@ -524,8 +534,7 @@ export const useStudioStore = create<StudioState>()(
           lyrics: "",
           lyricsContext: "",
           title: "",
-          provider: "poyo",
-          providerModel: "v5.5",
+          selectedProviders: { poyo: "v5.5" },
           language: "English",
           customLanguage: "",
           instrumental: false,
@@ -534,7 +543,19 @@ export const useStudioStore = create<StudioState>()(
           customStructure: "",
         }),
     }),
-    { name: "sonara-studio", skipHydration: true }
+    {
+      name: "sonara-studio",
+      skipHydration: true,
+      merge: (persistedState: any, currentState) => {
+        const merged = { ...currentState, ...persistedState };
+        if (!merged.selectedProviders) {
+          merged.selectedProviders = merged.provider
+            ? { [merged.provider]: merged.providerModel || "v5.5" }
+            : { poyo: "v5.5" };
+        }
+        return merged;
+      },
+    }
   )
 );
 
