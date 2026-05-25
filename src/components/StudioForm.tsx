@@ -634,6 +634,90 @@ Your chorus here`}
             {optimizing ? "Generating..." : "Generate Style"}
           </button>
         </div>
+
+        {/* PoYo Sliders — only for PoYo provider */}
+        {Object.keys(selectedProviders).length > 0 && Object.keys(selectedProviders)[0] === "poyo" && (
+          <>
+            <div className="my-4 h-px bg-white/10" />
+
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Sliders</h4>
+              <button
+                type="button"
+                onClick={() => setShowProTips(!showProTips)}
+                className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                <svg className={`w-3 h-3 transition-transform duration-200 ${showProTips ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                Pro Tips
+              </button>
+            </div>
+
+            {showProTips && (
+              <div className="mb-4 p-3 rounded-lg bg-primary-500/5 border border-primary-500/20 space-y-2">
+                <p className="text-xs text-primary-300 font-medium">Pro Tips for Best Results</p>
+                <ul className="text-xs text-white/40 space-y-1.5 list-disc list-inside">
+                  <li><span className="text-white/60">Tweak One at a Time:</span> Altering all sliders at once makes it hard to trace what caused a specific output.</li>
+                  <li><span className="text-white/60">Detailed Prompts Need Lower Weirdness:</span> Keep Weirdness below 40% with hyper-specific prompts to avoid the AI tripping over itself.</li>
+                  <li><span className="text-white/60">Vocal Glitches:</span> If your singer stumbles or hallucinates lyrics, drop Weirdness and Style Influence down to correct the flow.</li>
+                </ul>
+              </div>
+            )}
+
+            {/* Weirdness Slider */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-white/60">Weirdness</label>
+                <span className="text-xs text-white/40 font-mono">{weirdness}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">Safe</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={weirdness}
+                  onChange={(e) => setWeirdness(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${weirdness}%, rgba(255,255,255,0.1) ${weirdness}%)`,
+                  }}
+                />
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">Chaos</span>
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">
+                {weirdness <= 20 ? "Highly predictable, clean, radio-friendly" : weirdness <= 60 ? "Balanced — standard sounds with interesting choices" : "Experimental — wild instruments, strange effects, spontaneous moments"}
+              </p>
+            </div>
+
+            {/* Style Influence Slider */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-white/60">Style Influence</label>
+                <span className="text-xs text-white/40 font-mono">{styleInfluence}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">Loose</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={styleInfluence}
+                  onChange={(e) => setStyleInfluence(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${styleInfluence}%, rgba(255,255,255,0.1) ${styleInfluence}%)`,
+                  }}
+                />
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">Strong</span>
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">
+                {styleInfluence <= 40 ? "Model has freedom to invent melodies and deviate from genre" : styleInfluence <= 70 ? "Moderate — respects your tags but adds creative variation" : "Strict — forces the model to rigidly obey your style tags"}
+              </p>
+            </div>
+          </>
+        )}
       </section>
 
       {!instrumental && (
