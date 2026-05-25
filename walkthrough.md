@@ -1,5 +1,13 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Studio provider section — collapsible with localStorage persistence)
+
+- Findings: The provider selection box at the bottom of the Studio form took up significant vertical space, requiring scrolling to see other sections when providers weren't actively being changed.
+- Conclusions: Making the provider section collapsible saves screen space while keeping selected providers visible as compact badges when collapsed. Persisting the state in localStorage remembers the user's preference.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — added `providersCollapsed` state with localStorage key `sonara-providers-collapsed`; added chevron toggle button in section header that rotates 180° when expanded; when collapsed, shows selected providers as compact badge pills (icon + name + model); "Clear All" button remains always visible in header
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Move to Workspace — popup dialog instead of submenu)
 
 - Findings: The "Move To Workspace" action in the track context menu opened a flyout submenu, which was easy to dismiss accidentally and felt cluttered.

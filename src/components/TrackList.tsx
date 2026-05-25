@@ -606,13 +606,18 @@ function TrackCard({
     }
   }
 
+  function cancelTitle() {
+    setIsEditingTitle(false);
+    setEditTitle(track.title || "");
+  }
+
   function handleTitleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
       saveTitle();
     } else if (e.key === "Escape") {
-      setIsEditingTitle(false);
-      setEditTitle(track.title || "");
+      e.preventDefault();
+      cancelTitle();
     }
   }
 
@@ -1063,18 +1068,46 @@ function TrackCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              onBlur={saveTitle}
-              onClick={(e) => e.stopPropagation()}
-              disabled={isSavingTitle}
-              className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
-              maxLength={200}
-            />
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                disabled={isSavingTitle}
+                className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 min-w-0"
+                maxLength={200}
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveTitle();
+                }}
+                disabled={isSavingTitle}
+                className="shrink-0 p-0.5 rounded text-green-400 hover:bg-green-400/20 transition-colors disabled:opacity-40"
+                title="Save title"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cancelTitle();
+                }}
+                className="shrink-0 p-0.5 rounded text-red-400 hover:bg-red-400/20 transition-colors"
+                title="Cancel"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           ) : (
             <h3
               className={`text-sm font-medium truncate cursor-text ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
