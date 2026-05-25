@@ -1,5 +1,14 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Lyria model ID fix — "lyria-3" → valid API model IDs)
+
+- Findings: Frontend sent `providerModel: "lyria-3"` which is not a valid Google API model ID. The API returned "models/lyria-3 is not found for API version v1beta". Valid model IDs are `lyria-3-clip-preview` and `lyria-3-pro-preview`.
+- Conclusions: The frontend model list must use exact API model IDs. The backend should also normalize legacy/friendly model names as a safety net.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — Lyria models changed from `["lyria-3"]` to `["lyria-3-clip-preview", "lyria-3-pro-preview"]` so the dropdown sends valid API model IDs
+  - Updated `src/lib/providers/lyria.ts` — added `MODEL_MAP` that normalizes friendly model names (`lyria-3`, `lyria-3-clip`, `lyria-3-pro`) to their full API equivalents; defaults to `lyria-3-clip-preview`
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Lyria response format fix + corrupted line in page.tsx)
 
 - Findings: Lyria generation was failing — the Google AI API response uses camelCase field names (`inlineData`, `mimeType`) but the code only looked for snake_case (`inline_data`, `mime_type`). Also discovered a corrupted line with garbage text in `src/app/page.tsx`.

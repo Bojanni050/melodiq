@@ -15,7 +15,14 @@ export async function generateLyria({
   const API_KEY = await getSetting("LYRIA_API_KEY");
   const startTime = Date.now();
   try {
-    const modelId = model || "lyria-3-clip-preview";
+    // Normalize model ID to valid API model ID
+    const MODEL_MAP: Record<string, string> = {
+      "lyria-3": "lyria-3-clip-preview",
+      "lyria-3-clip": "lyria-3-clip-preview",
+      "lyria-3-pro": "lyria-3-pro-preview",
+    };
+    const rawModel = model || "lyria-3-clip-preview";
+    const modelId = MODEL_MAP[rawModel] || rawModel;
     const promptText = instrumental ? `Instrumental. ${prompt}` : prompt;
 
     // Build request body as explicit plain object — no extra fields
