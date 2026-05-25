@@ -12,7 +12,7 @@ import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
-import { getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
+import { getSetting, getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
 import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 
@@ -470,50 +470,144 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "minimax") {
-      genResult = await generateMinimax({
-        prompt,
-        lyrics,
-        instrumental,
-      });
+      const usePoYo = await getSetting("MINIMAX_USE_POYO");
 
-      const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
-      const s3Key = `tracks/${track.id}/audio.${format}`;
-      await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
+      if (usePoYo === "true") {
+        // Route via PoYo API — async with webhook
+        const reservedTrack = await db
+          .update(tracks)
+          .set({
+            s3Key: `tracks/${track.id}/audio.mp3`,
+            s3KeyHd: `tracks/${track.id}/audio_hd.wav`,
+            format: "mp3",
+            formatHd: "wav",
+            audioUrl: `/api/tracks/${track.id}/download`,
+            audioUrlHd: `/api/tracks/${track.id}/download?hd=true`,
+          })
+          .where(eq(tracks.id, track.id!))
+          .returning();
 
-      const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+        try {
+          const genResult = await generateMinimaxMusic26({
+            prompt,
+            lyrics,
+            instrumental,
+          });
 
-      const updated = await db
-        .update(tracks)
-        .set({
-          status: "done",
-          s3Key,
-          format,
-          audioUrl: `/api/tracks/${track.id}/download`,
-          duration: audioDuration,
-        })
-        .where(eq(tracks.id, track.id!))
-        .returning();
+          const jobIds: string[] = genResult.jobIds;
+          const [baseJobId] = jobIds;
+          if (!baseJobId) {
+            throw {
+              message: "Minimax via PoYo returned no task ID",
+              duration: Date.now() - startTime,
+              statusCode: 500,
+            };
+          }
 
-      generateAndSaveCoverArt({
-        id: track.id,
-        userId: track.userId,
-        title: resolvedTitle,
-        prompt,
-        instrumental: instrumental || false,
-      }).catch(() => {});
+          const updatedTrack = await db
+            .update(tracks)
+            .set({ status: "generating", jobId: baseJobId, error: null, provider: "poyo", providerModel: "minimax-music-2.6" })
+            .where(eq(tracks.id, reservedTrack[0].id!))
+            .returning();
 
-      await logApi({
-        userId: userId,
-        type: "generation",
-        provider: "minimax",
-        endpoint: "/api/generate",
-        request: JSON.stringify({ provider, providerModel, prompt }),
-        response: JSON.stringify({ status: "done", trackId: updated[0].id }),
-        statusCode: 200,
-        duration: Date.now() - startTime,
-      });
+          const allTracks = [updatedTrack[0]];
 
-      return NextResponse.json({ track: updated[0] });
+          generateAndSaveCoverArtForBatch({
+            tracks: allTracks.map((t) => ({
+              id: t.id!,
+              userId: t.userId,
+              prompt: t.prompt,
+              title: resolvedTitle,
+              instrumental: t.instrumental,
+            })),
+          }).catch(() => {});
+
+          await logApi({
+            userId,
+            type: "generation",
+            provider: "minimax",
+            endpoint: "/api/generate",
+            request: JSON.stringify({ provider, providerModel, prompt }),
+            response: JSON.stringify({ status: "generating", jobIds }),
+            statusCode: 200,
+            duration: Date.now() - startTime,
+          });
+
+          return NextResponse.json({ tracks: allTracks });
+        } catch (error: any) {
+          const isCopyright = error.message === "COPYRIGHT";
+          const errorMessage = isCopyright
+            ? "Copyright detected → click Optimize in Studio to rewrite safely"
+            : error.message || "Generation failed";
+
+          await db
+            .update(tracks)
+            .set({ status: "failed", error: errorMessage })
+            .where(eq(tracks.id, reservedTrack[0].id!));
+
+          await logApi({
+            userId,
+            type: "generation",
+            provider: "minimax",
+            endpoint: "/api/generate",
+            request: JSON.stringify({ provider, providerModel, prompt }),
+            response: JSON.stringify({ error: error.message }),
+            statusCode: error.statusCode || 500,
+            duration: Date.now() - startTime,
+          });
+
+          return NextResponse.json(
+            { error: errorMessage, trackId: reservedTrack[0].id },
+            { status: isCopyright ? 400 : 500 }
+          );
+        }
+      } else {
+        // Direct Minimax API — synchronous
+        genResult = await generateMinimax({
+          prompt,
+          lyrics,
+          instrumental,
+        });
+
+        const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
+        const s3Key = `tracks/${track.id}/audio.${format}`;
+        await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
+
+        const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+
+        const updated = await db
+          .update(tracks)
+          .set({
+            status: "done",
+            s3Key,
+            format,
+            audioUrl: `/api/tracks/${track.id}/download`,
+            duration: audioDuration,
+          })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+
+        generateAndSaveCoverArt({
+          id: track.id,
+          userId: track.userId,
+          title: resolvedTitle,
+          prompt,
+          instrumental: instrumental || false,
+        }).catch(() => {});
+
+        await logApi({
+          userId: userId,
+          type: "generation",
+          provider: "minimax",
+          endpoint: "/api/generate",
+          request: JSON.stringify({ provider, providerModel, prompt }),
+          response: JSON.stringify({ status: "done", trackId: updated[0].id }),
+          statusCode: 200,
+          duration: Date.now() - startTime,
+        });
+
+        return NextResponse.json({ track: updated[0] });
+      }
     }
 
     if (provider === "tempolor") {
