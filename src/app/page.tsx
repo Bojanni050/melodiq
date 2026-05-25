@@ -534,6 +534,8 @@ export default function HomePage() {
     a.click();
   }
 
+  const [studioTab, setStudioTab] = useState<"workspaces" | "recent">("workspaces");
+
   const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
   const selectedWorkspace = selectedWorkspaceId
     ? workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null
@@ -599,214 +601,244 @@ export default function HomePage() {
 
               {/* Track list column */}
               <div className="xl:col-span-2 xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
-                <div className="grid h-full min-h-0 grid-rows-2 gap-4">
-                  <section className="section-card min-h-0 overflow-hidden flex flex-col">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
-                        <p className="text-xs text-white/40">
-                          {isWorkspaceFolderOpen
-                            ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
-                            : `Max ${workspaceGridSize} folders per row.`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {!isWorkspaceFolderOpen && (
-                          <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
-                            {[4, 8, 12, 16].map((size) => (
-                              <button
-                                key={size}
-                                type="button"
-                                onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
-                                className={`rounded-md px-2 py-1 text-[11px] transition ${
-                                  workspaceGridSize === size
-                                    ? "bg-primary-500 text-white"
-                                    : "text-white/65 hover:text-white hover:bg-white/10"
-                                }`}
-                                title={`Show ${size} workspace cards`}
-                                aria-label={`Show ${size} workspace cards`}
-                              >
-                                {size}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {isWorkspaceFolderOpen && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWorkspaceId(null)}
-                            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
-                            title="Back to workspace overview"
-                          >
-                            ← Back to folders
-                          </button>
-                        )}
-                        {showCreateWorkspace ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            value={newWorkspaceName}
-                            onChange={(event) => setNewWorkspaceName(event.target.value)}
-                            onKeyDown={handleCreateWorkspaceKeyDown}
-                            placeholder="Workspace name"
-                            className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
-                            aria-label="Workspace name"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleCreateWorkspace}
-                            className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
-                          >
-                            Add
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCreateWorkspace(false);
-                              setNewWorkspaceName("");
-                            }}
-                            className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
-                          >
-                            Cancel
-                          </button>
+                <div className="flex flex-col h-full min-h-0">
+                  {/* Tabs */}
+                  <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
+                    <button
+                      type="button"
+                      onClick={() => setStudioTab("workspaces")}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                        studioTab === "workspaces"
+                          ? "bg-primary-500 text-white"
+                          : "text-white/65 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      Workspaces
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStudioTab("recent")}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                        studioTab === "recent"
+                          ? "bg-primary-500 text-white"
+                          : "text-white/65 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      Recent Tracks
+                    </button>
+                  </div>
+
+                  {studioTab === "workspaces" && (
+                    <section className="section-card min-h-0 flex-1 overflow-hidden flex flex-col">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
+                          <p className="text-xs text-white/40">
+                            {isWorkspaceFolderOpen
+                              ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
+                              : `Max ${workspaceGridSize} folders per row.`}
+                          </p>
                         </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setShowCreateWorkspace(true)}
-                            className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
-                          >
-                            + Create Workspace
-                          </button>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!isWorkspaceFolderOpen && (
+                            <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                              {[4, 8, 12, 16].map((size) => (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
+                                  className={`rounded-md px-2 py-1 text-[11px] transition ${
+                                    workspaceGridSize === size
+                                      ? "bg-primary-500 text-white"
+                                      : "text-white/65 hover:text-white hover:bg-white/10"
+                                  }`}
+                                  title={`Show ${size} workspace cards`}
+                                  aria-label={`Show ${size} workspace cards`}
+                                >
+                                  {size}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {isWorkspaceFolderOpen && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWorkspaceId(null)}
+                              className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
+                              title="Back to workspace overview"
+                            >
+                              ← Back to folders
+                            </button>
+                          )}
+                          {showCreateWorkspace ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              value={newWorkspaceName}
+                              onChange={(event) => setNewWorkspaceName(event.target.value)}
+                              onKeyDown={handleCreateWorkspaceKeyDown}
+                              placeholder="Workspace name"
+                              className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
+                              aria-label="Workspace name"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCreateWorkspace}
+                              className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowCreateWorkspace(false);
+                                setNewWorkspaceName("");
+                              }}
+                              className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setShowCreateWorkspace(true)}
+                              className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
+                            >
+                              + Create Workspace
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {!isWorkspaceFolderOpen && (
-                      <div className="mb-3 overflow-y-auto pr-1">
-                        <div className={`grid gap-3 ${workspaceGridClass}`}>
-                          {workspaces.map((workspace) => {
-                            const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                            const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
-                            const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
-                            const hasSingleCover = coverUrls.length === 1;
+                      {!isWorkspaceFolderOpen && (
+                        <div className="mb-3 overflow-y-auto pr-1">
+                          <div className={`grid gap-3 ${workspaceGridClass}`}>
+                            {workspaces.map((workspace) => {
+                              const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
+                              const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
+                              const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                              const hasSingleCover = coverUrls.length === 1;
 
-                            return (
-                              <button
-                                key={workspace.id}
-                                type="button"
-                                onClick={() => setSelectedWorkspaceId(workspace.id)}
-                                className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
-                                  selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
-                                }`}
-                              >
-                                <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
-                                  <div className="pointer-events-none absolute inset-0 bg-black/10" />
-                                  {coverUrls.length > 0 ? (
-                                    <div
-                                      className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
-                                        hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
-                                      }`}
-                                    >
-                                      {coverUrls.map((cover, index) => (
-                                        <img
-                                          key={`${workspace.id}-${index}`}
-                                          src={cover}
-                                          alt={workspace.name}
-                                          draggable={false}
-                                          className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
-                                        />
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-                                        <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                        </svg>
+                              return (
+                                <button
+                                  key={workspace.id}
+                                  type="button"
+                                  onClick={() => setSelectedWorkspaceId(workspace.id)}
+                                  className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
+                                    selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
+                                  }`}
+                                >
+                                  <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                                    <div className="pointer-events-none absolute inset-0 bg-black/10" />
+                                    {coverUrls.length > 0 ? (
+                                      <div
+                                        className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
+                                          hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
+                                        }`}
+                                      >
+                                        {coverUrls.map((cover, index) => (
+                                          <img
+                                            key={`${workspace.id}-${index}`}
+                                            src={cover}
+                                            alt={workspace.name}
+                                            draggable={false}
+                                            className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
+                                          />
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                        <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+                                          <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+                                      <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
+                                        <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
+                                        <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
                                       </div>
                                     </div>
-                                  )}
-
-                                  <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                                    <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
-                                      <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                                      <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
-                                    </div>
                                   </div>
-                                </div>
-                              </button>
-                            );
-                          })}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-[11px] text-white/35 mb-1 truncate">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedWorkspaceId(null)}
-                            className="text-white/60 hover:text-white/80 transition-colors"
-                            title="Back to workspace overview"
-                          >
-                            Workspaces
-                          </button>
-                          <span className="mx-1 text-white/20">/</span>
-                          <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[11px] text-white/35 mb-1 truncate">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWorkspaceId(null)}
+                              className="text-white/60 hover:text-white/80 transition-colors"
+                              title="Back to workspace overview"
+                            >
+                              Workspaces
+                            </button>
+                            <span className="mx-1 text-white/20">/</span>
+                            <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
+                          </div>
+                          <h3 className="text-xs font-semibold text-white/60">Workspace Tracks</h3>
                         </div>
-                        <h3 className="text-xs font-semibold text-white/60">Workspace Tracks</h3>
+                        <span className="text-xs text-white/30 shrink-0">
+                          {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
+                        </span>
                       </div>
-                      <span className="text-xs text-white/30 shrink-0">
-                        {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
-                      </span>
-                    </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                      {selectedWorkspace ? (
+                      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                        {selectedWorkspace ? (
+                          <TrackList
+                            tracks={selectedWorkspaceTracks}
+                            autoQueueAfterPlay
+                            onSelect={(t) => setSelectedTrack(t)}
+                            onDelete={handleDeleteTrack}
+                            onReusePrompt={handleReusePrompt}
+                            onAddToQueue={handleAddToQueue}
+                            onAddToPlaylist={handleAddToPlaylist}
+                            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                            onTitleUpdate={handleTitleUpdate}
+                          />
+                        ) : (
+                          <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
+                            <p className="text-sm text-white/45">
+                              Select or create a workspace above to pin its tracks here.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
+
+                  {studioTab === "recent" && (
+                    <section className="section-card min-h-0 flex-1 overflow-hidden flex flex-col">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
+                        <span className="text-xs text-white/30">{tracks.length} tracks</span>
+                      </div>
+
+                      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                         <TrackList
-                          tracks={selectedWorkspaceTracks}
+                          tracks={tracks}
                           autoQueueAfterPlay
+                          isGenerating={generating}
                           onSelect={(t) => setSelectedTrack(t)}
                           onDelete={handleDeleteTrack}
                           onReusePrompt={handleReusePrompt}
                           onAddToQueue={handleAddToQueue}
                           onAddToPlaylist={handleAddToPlaylist}
+                          onMoveToWorkspace={handleMoveTrackToWorkspace}
                           playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                           onTitleUpdate={handleTitleUpdate}
                         />
-                      ) : (
-                        <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
-                          <p className="text-sm text-white/45">
-                            Select or create a workspace above to pin its tracks here.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  <section className="section-card min-h-0 overflow-hidden flex flex-col">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
-                      <span className="text-xs text-white/30">{tracks.length} tracks</span>
-                    </div>
-
-                    <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                      <TrackList
-                        tracks={tracks}
-                        autoQueueAfterPlay
-                        isGenerating={generating}
-                        onSelect={(t) => setSelectedTrack(t)}
-                        onDelete={handleDeleteTrack}
-                        onReusePrompt={handleReusePrompt}
-                        onAddToQueue={handleAddToQueue}
-                        onAddToPlaylist={handleAddToPlaylist}
-                        onMoveToWorkspace={handleMoveTrackToWorkspace}
-                        playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-                        onTitleUpdate={handleTitleUpdate}
-                      />
-                    </div>
-                  </section>
+                      </div>
+                    </section>
+                  )}
                 </div>
               </div>
             </div>

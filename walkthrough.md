@@ -1,5 +1,16 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Studio page middle column — tabs for Workspaces / Recent Tracks)
+
+- Findings: The middle column of the studio page had two vertically stacked sections (workspace folders/tracks + recent tracks), requiring scrolling to see both.
+- Conclusions: Converting to a tabbed interface gives full vertical space to whichever view is active, reducing scroll and improving focus.
+- Actions:
+  - Added `studioTab` state (`"workspaces"` | `"recent"`) to `src/app/page.tsx`
+  - Replaced the `grid-rows-2` layout with a tab bar (pill-style toggle) and conditional rendering of the two sections
+  - "Workspaces" tab shows workspace folder grid, create form, and workspace tracks list
+  - "Recent Tracks" tab shows the full recent tracks list with all actions
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Lyria model ID fix — "lyria-3" → valid API model IDs)
 
 - Findings: Frontend sent `providerModel: "lyria-3"` which is not a valid Google API model ID. The API returned "models/lyria-3 is not found for API version v1beta". Valid model IDs are `lyria-3-clip-preview` and `lyria-3-pro-preview`.
