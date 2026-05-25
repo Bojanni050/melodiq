@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
-import { generatePoYo } from "@/lib/providers/poyo";
+import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { generateMinimax } from "@/lib/providers/minimax";
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
   const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
+  const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
 
   if (!prompt || typeof prompt !== "string") {
@@ -81,6 +82,9 @@ export async function POST(request: NextRequest) {
   if (provider === "minimax" && typeof lyrics === "string" && lyrics.length > 3000) {
     return NextResponse.json({ error: "Minimax lyrics must be 3000 characters or fewer" }, { status: 400 });
   }
+  if (isMinimaxViaPoYo && typeof lyrics === "string" && lyrics.length > 3500) {
+    return NextResponse.json({ error: "Minimax via PoYo lyrics must be 3500 characters or fewer" }, { status: 400 });
+  }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
   if (!allowedProviders.includes(provider)) {
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
   }
-  if (provider === "poyo" && !poyoValidModels.includes(normalizedPoYoModel)) {
+  if (provider === "poyo" && !isMinimaxViaPoYo && !poyoValidModels.includes(normalizedPoYoModel)) {
     return NextResponse.json(
       { error: `Invalid PoYo model. Supported: ${poyoValidModels.join(", ")}` },
       { status: 400 }
@@ -106,6 +110,118 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 }
     );
+  }
+
+  if (isMinimaxViaPoYo) {
+    const insertResult = await db
+      .insert(tracks)
+      .values({
+        userId,
+        provider,
+        providerModel,
+        prompt,
+        lyrics: lyrics || null,
+        instrumental: instrumental || false,
+        title: resolvedTitle,
+        status: "pending",
+      })
+      .returning();
+
+    const track = insertResult[0];
+
+    const reservedTrack = await db
+      .update(tracks)
+      .set({
+        s3Key: `tracks/${track.id}/audio.mp3`,
+        s3KeyHd: `tracks/${track.id}/audio_hd.wav`,
+        format: "mp3",
+        formatHd: "wav",
+        audioUrl: `/api/tracks/${track.id}/download`,
+        audioUrlHd: `/api/tracks/${track.id}/download?hd=true`,
+      })
+      .where(eq(tracks.id, track.id!))
+      .returning();
+
+    try {
+      const genResult = await generateMinimaxMusic26({
+        prompt,
+        lyrics,
+        instrumental,
+      });
+
+      const jobIds: string[] = genResult.jobIds;
+      const [baseJobId] = jobIds;
+      if (!baseJobId) {
+        throw {
+          message: "Minimax via PoYo returned no task ID",
+          duration: Date.now() - startTime,
+          statusCode: 500,
+        };
+      }
+
+      const updatedTrack = await db
+        .update(tracks)
+        .set({ status: "generating", jobId: baseJobId, error: null })
+        .where(eq(tracks.id, reservedTrack[0].id!))
+        .returning();
+
+      const allTracks = [updatedTrack[0]];
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch(() => {});
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "poyo",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel: "minimax-music-2.6", prompt }),
+        response: JSON.stringify({ status: "generating", jobIds }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ tracks: allTracks });
+    } catch (error: any) {
+      const isCopyright = error.message === "COPYRIGHT";
+      const errorMessage = isCopyright
+        ? "Copyright detected → click Optimize in Studio to rewrite safely"
+        : error.message || "Generation failed";
+
+      await db
+        .update(tracks)
+        .set({
+          status: "failed",
+          error: errorMessage,
+        })
+        .where(eq(tracks.id, reservedTrack[0].id!));
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "poyo",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel: "minimax-music-2.6", prompt }),
+        response: JSON.stringify({ error: error.message }),
+        statusCode: error.statusCode || 500,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json(
+        {
+          error: errorMessage,
+          trackId: reservedTrack[0].id,
+        },
+        { status: isCopyright ? 400 : 500 }
+      );
+    }
   }
 
   if (provider === "poyo") {

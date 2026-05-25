@@ -5,7 +5,7 @@ import { useStudioStore } from "@/lib/store";
 
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3-pro-preview", "lyria-3-clip-preview"], icon: "G" },
-  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4"], icon: "P" },
+  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4", "minimax-music-2.6"], icon: "P" },
   tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["TemPolor v4.6", "TemPolor v3.5", "TemPolor v3", "TemPolor i3.5", "TemPolor i3"], icon: "T" },
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
   minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
@@ -706,98 +706,6 @@ Your chorus here`}
         )}
       </section>
       </div>
-
-      {/* Provider Selection */}
-      <section className="section-card">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white/80">Studio</h3>
-          <button
-            type="button"
-            onClick={() => setProvidersCollapsed(!providersCollapsed)}
-            className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-            title={providersCollapsed ? "Expand providers" : "Collapse providers"}
-          >
-            <svg className={`w-4 h-4 transition-transform duration-200 ${providersCollapsed ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-
-        {!providersCollapsed && (
-          <div className="mt-3">
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40 mb-2">Provider</h4>
-            <div className="space-y-1.5">
-              {Object.entries(PROVIDERS).map(([key, val]) => {
-                const isSelected = !!selectedProviders[key];
-                const currentCredits = credits[key as keyof typeof credits];
-                return (
-                  <div key={key}>
-                    <button
-                      type="button"
-                      onClick={() => toggleProvider(key, val.models[0])}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors ${
-                        isSelected
-                          ? "bg-primary-500/10 border-primary-500/30 text-white"
-                          : "border-white/10 text-white/50 hover:bg-white/5 hover:text-white/70"
-                      }`}
-                    >
-                      <span className="w-6 h-6 rounded bg-white/10 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {val.icon}
-                      </span>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="text-sm">{val.fullName}</p>
-                        <p className="text-xs text-white/30">
-                          {key === "lyria" ? "Pay-per-use" : currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured"}
-                        </p>
-                      </div>
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSelected ? "bg-primary-500 border-primary-500" : "border-white/20"
-                      }`}>
-                        {isSelected && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                    </button>
-                    {isSelected && (
-                      <select
-                        value={selectedProviders[key]}
-                        onChange={(e) => setProviderModel(key, e.target.value)}
-                        aria-label={`${val.name} model`}
-                        className="select-field text-sm mt-1"
-                      >
-                        {val.models.map((model) => (
-                          <option key={model} value={model} className="bg-gray-900">
-                            {model}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {providersCollapsed && Object.keys(selectedProviders).length > 0 && (
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            {Object.entries(selectedProviders).map(([key, model]) => {
-              const provider = PROVIDERS[key as keyof typeof PROVIDERS];
-              if (!provider) return null;
-              return (
-                <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-500/10 border border-primary-500/20 text-xs text-white/70">
-                  <span className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold">
-                    {provider.icon}
-                  </span>
-                  {provider.name} · {model}
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </section>
 
       {/* Generate Button */}
       <div className="space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
