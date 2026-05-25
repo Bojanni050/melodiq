@@ -1,5 +1,21 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Move "Clear All" button to top of StudioForm)
+
+- Findings: The "Clear All" button was buried in the collapsible provider section at the bottom of the form, making it hard to find when users wanted to reset.
+- Conclusions: Moving it to the top of the form makes it immediately visible and accessible.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — moved "Clear All" button from the provider section header to a dedicated row at the very top of the form, above the Lyrics section; provider section header now only contains the "Studio" title and collapse toggle
+  - Validated with `npm run build`.
+
+## 2026-05-25 (Remove "Workspace Tracks" heading + breadcrumb separator)
+
+- Findings: The "Workspace Tracks" heading was redundant below the breadcrumb navigation.
+- Conclusions: Removing the heading simplifies the layout. Changed breadcrumb separator from `/` to `>` for consistency.
+- Actions:
+  - Updated `src/app/page.tsx` — removed `<h3>Workspace Tracks</h3>` heading; changed separator from `/` to `>`
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Studio provider section — collapsible with localStorage persistence)
 
 - Findings: The provider selection box at the bottom of the Studio form took up significant vertical space, requiring scrolling to see other sections when providers weren't actively being changed.

@@ -334,6 +334,17 @@ export default function StudioForm({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
+      {/* Clear All button at top */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={reset}
+          className="btn-secondary text-xs px-3 py-1.5"
+        >
+          Clear All
+        </button>
+      </div>
+
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
 
       {/* Lyrics Section */}
@@ -651,25 +662,16 @@ Your chorus here`}
       <section className="section-card">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white/80">Studio</h3>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setProvidersCollapsed(!providersCollapsed)}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-              title={providersCollapsed ? "Expand providers" : "Collapse providers"}
-            >
-              <svg className={`w-4 h-4 transition-transform duration-200 ${providersCollapsed ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={reset}
-              className="btn-secondary text-xs px-3 py-1.5"
-            >
-              Clear All
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setProvidersCollapsed(!providersCollapsed)}
+            className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+            title={providersCollapsed ? "Expand providers" : "Collapse providers"}
+          >
+            <svg className={`w-4 h-4 transition-transform duration-200 ${providersCollapsed ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
         </div>
 
         {!providersCollapsed && (
