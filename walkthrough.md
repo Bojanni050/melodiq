@@ -1,5 +1,13 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Move to Workspace — popup dialog instead of submenu)
+
+- Findings: The "Move To Workspace" action in the track context menu opened a flyout submenu, which was easy to dismiss accidentally and felt cluttered.
+- Conclusions: Replacing the submenu with a centered popup modal gives a clearer, more stable interaction. Placing "Add Workspace" at the top makes creating new workspaces discoverable.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — replaced `workspaceMenuOpen` state and flyout submenu with `showMoveToWorkspaceDialog` state and a centered modal; the modal shows "Add Workspace" (dashed button) at the top, followed by a scrollable list of all workspaces with track counts; clicking a workspace moves the track and closes the dialog; "Add Workspace" transitions to the existing create workspace form
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Lyria 3 Pro — generate both MP3 and WAV in parallel)
 
 - Findings: Lyria 3 Pro only generated MP3 by default. Users wanted both MP3 (for streaming/preview) and WAV (for high-quality download/mastering).
