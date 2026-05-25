@@ -16,26 +16,24 @@ export async function generateLyria({
   const startTime = Date.now();
   try {
     const modelId = model || "lyria-3-clip-preview";
-    const parts: Array<{ text: string }> = [];
+    const promptText = instrumental ? `Instrumental. ${prompt}` : prompt;
 
-    if (instrumental) {
-      parts.push({ text: `Instrumental. ${prompt}` });
-    } else {
-      parts.push({ text: prompt });
-    }
-
-    if (lyrics) {
-      parts.push({ text: `Lyrics:\n${lyrics}` });
-    }
+    // Build request body as explicit plain object — no extra fields
+    const requestBody = {
+      contents: [{
+        parts: [
+          { text: promptText },
+          ...(lyrics ? [{ text: `Lyrics:\n${lyrics}` }] : []),
+        ],
+      }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+      },
+    };
 
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`,
-      {
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-        },
-      },
+      requestBody,
       {
         headers: {
           "x-goog-api-key": API_KEY,
