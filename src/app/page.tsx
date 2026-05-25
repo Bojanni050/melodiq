@@ -869,10 +869,9 @@ export default function HomePage() {
                             >
                               Workspaces
                             </button>
-                            <span className="mx-1 text-white/20">/</span>
+                            <span className="mx-1 text-white/20">&gt;</span>
                             <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
                           </div>
-                          <h3 className="text-xs font-semibold text-white/60">Workspace Tracks</h3>
                         </div>
                         <span className="text-xs text-white/30 shrink-0">
                           {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
