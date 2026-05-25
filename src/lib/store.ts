@@ -475,6 +475,8 @@ interface StudioState {
   vocalGender: "female" | "male" | "auto";
   structure: string;
   customStructure: string;
+  weirdness: number;
+  styleInfluence: number;
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
@@ -487,6 +489,8 @@ interface StudioState {
   setVocalGender: (val: "female" | "male" | "auto") => void;
   setStructure: (val: string) => void;
   setCustomStructure: (val: string) => void;
+  setWeirdness: (val: number) => void;
+  setStyleInfluence: (val: number) => void;
   reset: () => void;
 }
 
@@ -504,6 +508,8 @@ export const useStudioStore = create<StudioState>()(
       vocalGender: "auto",
       structure: "",
       customStructure: "",
+      weirdness: 0,
+      styleInfluence: 0,
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
@@ -528,6 +534,8 @@ export const useStudioStore = create<StudioState>()(
       setVocalGender: (val) => set({ vocalGender: val }),
       setStructure: (val) => set({ structure: val }),
       setCustomStructure: (val) => set({ customStructure: val }),
+      setWeirdness: (val) => set({ weirdness: val }),
+      setStyleInfluence: (val) => set({ styleInfluence: val }),
       reset: () =>
         set({
           songIdea: "",
@@ -541,6 +549,8 @@ export const useStudioStore = create<StudioState>()(
           vocalGender: "auto",
           structure: "",
           customStructure: "",
+          weirdness: 0,
+          styleInfluence: 0,
         }),
     }),
     {
