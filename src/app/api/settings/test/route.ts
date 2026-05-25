@@ -25,6 +25,11 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "POST",
   },
+  minimax: {
+    url: "https://api.minimax.io/v1/user_balance",
+    keyPrefix: "",
+    method: "GET",
+  },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
     keyPrefix: "",
@@ -75,6 +80,8 @@ export async function POST(request: Request) {
       info = `Connected — ${response.data.data?.balance ?? "unknown"} credits`;
     } else if (provider === "musicgpt") {
       info = `Connected — MusicGPT API is active`;
+    } else if (provider === "minimax") {
+      info = `Connected — MiniMax API is active`;
     } else if (provider === "openrouter") {
       info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {

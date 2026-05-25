@@ -90,6 +90,20 @@ const PROVIDERS: ProviderConfig[] = [
     testEndpoint: "musicgpt",
   },
   {
+    id: "minimax",
+    name: "MiniMax Music 2.6",
+    description: "Synchronous music generation with lyrics support",
+    fields: [
+      {
+        key: "MINIMAX_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "minimax_...",
+      },
+    ],
+    testEndpoint: "minimax",
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     description: "Primary LLM provider for prompt optimization and lyrics",
@@ -948,7 +962,7 @@ export default function SettingsPage() {
                 </div>
               </section>
 
-              {PROVIDERS.filter((provider) => ["lyria", "poyo", "tempolor", "musicgpt"].includes(provider.id)).map((provider) =>
+              {PROVIDERS.filter((provider) => ["lyria", "poyo", "tempolor", "musicgpt", "minimax"].includes(provider.id)).map((provider) =>
                 renderProviderSection(provider)
               )}
 

@@ -7,6 +7,7 @@ import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
+import { generateMinimax } from "@/lib/providers/minimax";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
   const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
-  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
 
@@ -76,6 +77,9 @@ export async function POST(request: NextRequest) {
   }
   if (provider === "musicgpt" && typeof lyrics === "string" && lyrics.length > 3000) {
     return NextResponse.json({ error: "MusicGPT lyrics must be 3000 characters or fewer" }, { status: 400 });
+  }
+  if (provider === "minimax" && typeof lyrics === "string" && lyrics.length > 3000) {
+    return NextResponse.json({ error: "Minimax lyrics must be 3000 characters or fewer" }, { status: 400 });
   }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
@@ -339,6 +343,53 @@ export async function POST(request: NextRequest) {
         userId: userId,
         type: "generation",
         provider: "lyria",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ status: "done", trackId: updated[0].id }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ track: updated[0] });
+    }
+
+    if (provider === "minimax") {
+      genResult = await generateMinimax({
+        prompt,
+        lyrics,
+        instrumental,
+      });
+
+      const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
+      const s3Key = `tracks/${track.id}/audio.${format}`;
+      await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
+
+      const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+
+      const updated = await db
+        .update(tracks)
+        .set({
+          status: "done",
+          s3Key,
+          format,
+          audioUrl: `/api/tracks/${track.id}/download`,
+          duration: audioDuration,
+        })
+        .where(eq(tracks.id, track.id!))
+        .returning();
+
+      generateAndSaveCoverArt({
+        id: track.id,
+        userId: track.userId,
+        title: resolvedTitle,
+        prompt,
+        instrumental: instrumental || false,
+      }).catch(() => {});
+
+      await logApi({
+        userId: userId,
+        type: "generation",
+        provider: "minimax",
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
         response: JSON.stringify({ status: "done", trackId: updated[0].id }),

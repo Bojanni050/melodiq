@@ -92,6 +92,9 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
   } else if (provider === "musicgpt") {
     const key = await getSetting("MUSICGPT_API_KEY");
     if (!key) missing.push("MUSICGPT_API_KEY");
+  } else if (provider === "minimax") {
+    const key = await getSetting("MINIMAX_API_KEY");
+    if (!key) missing.push("MINIMAX_API_KEY");
   }
 
   // Check S3 keys (required for uploads)

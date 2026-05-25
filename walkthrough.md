@@ -1,5 +1,20 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Add MiniMax Music 2.6 as provider)
+
+- Findings: Users wanted an additional music generation provider option alongside Lyria, PoYo, Tempolor, and MusicGPT.
+- Conclusions: MiniMax Music 2.6 offers synchronous generation with lyrics support, fitting well as a Lyria-like synchronous provider.
+- Actions:
+  - Created `src/lib/providers/minimax.ts` — synchronous generation via `https://api.minimax.io/v1/music_generation` with `music-2.6` model; returns audio URL which is downloaded and buffered; includes `getMinimaxCredits()` for balance checking; handles copyright/rate-limit/balance error codes
+  - Updated `src/components/StudioForm.tsx` — added `minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" }` to PROVIDERS
+  - Updated `src/app/api/generate/route.ts` — added `minimax` to allowed providers, lyrics validation (3000 char max), and synchronous generation handler (same pattern as Lyria: upload to S3, update track to `"done"`)
+  - Updated `src/lib/settings.ts` — added `minimax` API key validation (`MINIMAX_API_KEY`)
+  - Updated `src/app/api/credits/route.ts` — added `minimax` credits fetching
+  - Updated `src/app/settings/page.tsx` — added MiniMax provider config with API key field and test endpoint; updated filter to include `minimax`
+  - Updated `src/app/api/settings/test/route.ts` — added minimax test endpoint config and response handling
+  - Updated `src/app/page.tsx` — added `minimax: null` to credits state
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Move "Clear All" button to top of StudioForm)
 
 - Findings: The "Clear All" button was buried in the collapsible provider section at the bottom of the form, making it hard to find when users wanted to reset.
