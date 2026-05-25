@@ -77,6 +77,8 @@ export default function HomePage() {
   const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const WORKSPACE_VIEW_MODE_STORAGE_KEY = "sonara-studio-workspace-view-mode";
+  const [workspaceViewMode, setWorkspaceViewMode] = useState<"grid" | "list">("list");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -100,6 +102,10 @@ export default function HomePage() {
       if (saved === "4" || saved === "8" || saved === "12" || saved === "16") {
         setWorkspaceGridSize(Number(saved) as 4 | 8 | 12 | 16);
       }
+      const savedView = window.localStorage.getItem(WORKSPACE_VIEW_MODE_STORAGE_KEY);
+      if (savedView === "grid" || savedView === "list") {
+        setWorkspaceViewMode(savedView);
+      }
     } catch {
       // ignore localStorage read failures
     }
@@ -112,6 +118,14 @@ export default function HomePage() {
       // ignore localStorage write failures
     }
   }, [workspaceGridSize]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(WORKSPACE_VIEW_MODE_STORAGE_KEY, workspaceViewMode);
+    } catch {
+      // ignore localStorage write failures
+    }
+  }, [workspaceViewMode]);
 
   useEffect(() => {
     const hasGenerating = tracks.some(
@@ -636,11 +650,47 @@ export default function HomePage() {
                           <p className="text-xs text-white/40">
                             {isWorkspaceFolderOpen
                               ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
-                              : `Max ${workspaceGridSize} folders per row.`}
+                              : workspaceViewMode === "grid"
+                              ? `${workspaceGridSize} columns per row.`
+                              : `${workspaces.length} workspaces.`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {!isWorkspaceFolderOpen && (
+                            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                              <button
+                                type="button"
+                                onClick={() => setWorkspaceViewMode("list")}
+                                className={`rounded-md p-1.5 transition ${
+                                  workspaceViewMode === "list"
+                                    ? "bg-primary-500 text-white"
+                                    : "text-white/65 hover:text-white hover:bg-white/10"
+                                }`}
+                                title="List view"
+                                aria-label="List view"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setWorkspaceViewMode("grid")}
+                                className={`rounded-md p-1.5 transition ${
+                                  workspaceViewMode === "grid"
+                                    ? "bg-primary-500 text-white"
+                                    : "text-white/65 hover:text-white hover:bg-white/10"
+                                }`}
+                                title="Grid view"
+                                aria-label="Grid view"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                          {!isWorkspaceFolderOpen && workspaceViewMode === "grid" && (
                             <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
                               {[4, 8, 12, 16].map((size) => (
                                 <button
@@ -712,61 +762,99 @@ export default function HomePage() {
 
                       {!isWorkspaceFolderOpen && (
                         <div className="mb-3 overflow-y-auto pr-1">
-                          <div className={`grid gap-3 ${workspaceGridClass}`}>
-                            {workspaces.map((workspace) => {
-                              const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                              const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
-                              const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
-                              const hasSingleCover = coverUrls.length === 1;
+                          {workspaceViewMode === "grid" ? (
+                            <div className={`grid gap-3 ${workspaceGridClass}`}>
+                              {workspaces.map((workspace) => {
+                                const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
+                                const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
+                                const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                                const hasSingleCover = coverUrls.length === 1;
 
-                              return (
-                                <button
-                                  key={workspace.id}
-                                  type="button"
-                                  onClick={() => setSelectedWorkspaceId(workspace.id)}
-                                  className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
-                                    selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
-                                  }`}
-                                >
-                                  <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
-                                    <div className="pointer-events-none absolute inset-0 bg-black/10" />
-                                    {coverUrls.length > 0 ? (
-                                      <div
-                                        className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
-                                          hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
-                                        }`}
-                                      >
-                                        {coverUrls.map((cover, index) => (
-                                          <img
-                                            key={`${workspace.id}-${index}`}
-                                            src={cover}
-                                            alt={workspace.name}
-                                            draggable={false}
-                                            className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
-                                          />
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                        <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-                                          <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                          </svg>
+                                return (
+                                  <button
+                                    key={workspace.id}
+                                    type="button"
+                                    onClick={() => setSelectedWorkspaceId(workspace.id)}
+                                    className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${
+                                      selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""
+                                    }`}
+                                  >
+                                    <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                                      <div className="pointer-events-none absolute inset-0 bg-black/10" />
+                                      {coverUrls.length > 0 ? (
+                                        <div
+                                          className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${
+                                            hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"
+                                          }`}
+                                        >
+                                          {coverUrls.map((cover, index) => (
+                                            <img
+                                              key={`${workspace.id}-${index}`}
+                                              src={cover}
+                                              alt={workspace.name}
+                                              draggable={false}
+                                              className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
+                                            />
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                          <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+                                            <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                            </svg>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+                                        <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
+                                          <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
+                                          <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
                                         </div>
                                       </div>
-                                    )}
-
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                                      <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
-                                        <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                                        <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
-                                      </div>
                                     </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {workspaces.map((workspace) => {
+                                const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
+                                const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+
+                                return (
+                                  <button
+                                    key={workspace.id}
+                                    type="button"
+                                    onClick={() => setSelectedWorkspaceId(workspace.id)}
+                                    className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-left transition hover:bg-white/5 ${
+                                      selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40 bg-white/5" : ""
+                                    }`}
+                                  >
+                                    <div
+                                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border border-white/10"
+                                      style={{ backgroundImage: gradient }}
+                                    >
+                                      <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-white truncate">{workspace.name}</p>
+                                    </div>
+                                    <span className="text-xs text-white/40 flex-shrink-0">
+                                      {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
+                                    </span>
+                                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 

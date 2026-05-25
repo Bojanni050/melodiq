@@ -1,5 +1,23 @@
 # Sonara — Walkthrough
 
+## 2026-05-25 (Lyria 3 Pro — generate both MP3 and WAV in parallel)
+
+- Findings: Lyria 3 Pro only generated MP3 by default. Users wanted both MP3 (for streaming/preview) and WAV (for high-quality download/mastering).
+- Conclusions: Lyria 3 Pro supports `responseFormat: { mimeType: { audioType: "audio/wav" } }` to request WAV output. Making two parallel API calls gives both formats simultaneously.
+- Actions:
+  - Updated `src/lib/providers/lyria.ts` — extracted audio fetching into `fetchLyriaAudio()` helper; `generateLyria()` now accepts `returnBothFormats` option and makes two parallel calls when using Lyria 3 Pro (one for MP3, one for WAV); returns `audioBuffer`, `audioBufferHd`, `mimeType`, `mimeTypeHd`
+  - Updated `src/app/api/generate/route.ts` — Lyria generation now passes `returnBothFormats: true`, uploads both MP3 to `s3Key` and WAV to `s3KeyHd`, and sets `formatHd` and `audioUrlHd` on the track record
+  - WAV upload is only attempted when the model supports it (model ID contains `-pro-`); Lyria 3 Clip still gets MP3 only
+  - Validated with `npm run build`.
+
+## 2026-05-25 (Move provider selection to bottom of StudioForm)
+
+- Findings: Provider selection was at the top of the form, above lyrics and style inputs where users spend most of their time.
+- Conclusions: Moving provider to the bottom keeps the creative workflow focused (lyrics → style → title) and puts provider as the final step before generating.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — moved the provider section from the top of the scrollable area to just above the Generate button, outside the scroll container
+  - Validated with `npm run build`.
+
 ## 2026-05-25 (Studio page middle column — tabs for Workspaces / Recent Tracks)
 
 - Findings: The middle column of the studio page had two vertically stacked sections (workspace folders/tracks + recent tracks), requiring scrolling to see both.
