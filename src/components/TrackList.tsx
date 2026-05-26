@@ -118,7 +118,7 @@ interface PlaylistOption {
   name: string;
 }
 
-type SortOrder = "newest" | "oldest";
+type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 
 export default function TrackList({
   tracks,
@@ -166,6 +166,24 @@ export default function TrackList({
     const list = [...tracks];
 
     list.sort((left, right) => {
+      if (sortOrder === "title-asc" || sortOrder === "title-desc") {
+        const leftTitle = (left.title ?? left.prompt ?? "").trim();
+        const rightTitle = (right.title ?? right.prompt ?? "").trim();
+        const titleComparison = leftTitle.localeCompare(rightTitle, undefined, {
+          sensitivity: "base",
+          numeric: true,
+        });
+
+        if (titleComparison !== 0) {
+          return sortOrder === "title-asc" ? titleComparison : -titleComparison;
+        }
+
+        const leftTime = Number(new Date(left.createdAt));
+        const rightTime = Number(new Date(right.createdAt));
+        if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
+        return rightTime - leftTime;
+      }
+
       const leftTime = Number(new Date(left.createdAt));
       const rightTime = Number(new Date(right.createdAt));
 
@@ -402,6 +420,8 @@ export default function TrackList({
           >
             <option value="newest" className="bg-[#161621]">New to old</option>
             <option value="oldest" className="bg-[#161621]">Old to new</option>
+            <option value="title-asc" className="bg-[#161621]">A-Z</option>
+            <option value="title-desc" className="bg-[#161621]">Z-A</option>
           </select>
         </div>
       </div>

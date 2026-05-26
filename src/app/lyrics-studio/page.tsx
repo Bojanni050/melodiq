@@ -69,6 +69,23 @@ const LANGUAGES = [
   "Other...",
 ];
 
+const TRANSLATION_LANGUAGES = [
+  { value: "nl", label: "Nederlands (nl)" },
+  { value: "en", label: "English (en)" },
+  { value: "fr", label: "French (fr)" },
+  { value: "de", label: "German (de)" },
+  { value: "es", label: "Spanish (es)" },
+  { value: "it", label: "Italian (it)" },
+  { value: "pt", label: "Portuguese (pt)" },
+  { value: "pl", label: "Polish (pl)" },
+  { value: "sr", label: "Serbian (sr)" },
+  { value: "ja", label: "Japanese (ja)" },
+  { value: "ko", label: "Korean (ko)" },
+  { value: "hi", label: "Hindi (hi)" },
+  { value: "zh", label: "Mandarin (zh)" },
+  { value: "other", label: "Other..." },
+];
+
 const STRUCTURES = [
   { label: "Eenvoudige pop-variaties", group: true },
   { value: "abab", label: "ABAB", desc: "Vers - Refrein - Vers - Refrein. Simpel, radio-vriendelijk." },
@@ -243,6 +260,9 @@ export default function LyricsStudioPage() {
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState("nl");
+  const [customTranslationLanguage, setCustomTranslationLanguage] = useState("");
+  const [translatingLyrics, setTranslatingLyrics] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
   const [showSaveSnapshotModal, setShowSaveSnapshotModal] = useState(false);
@@ -410,6 +430,10 @@ export default function LyricsStudioPage() {
   const contextZone = contextLevel <= 3 ? "Smal" : contextLevel <= 7 ? "Gebalanceerd" : "Breed";
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
+  const effectiveTranslationLanguage =
+    translationLanguage === "other"
+      ? customTranslationLanguage.trim()
+      : TRANSLATION_LANGUAGES.find((item) => item.value === translationLanguage)?.label || "Nederlands (nl)";
 
   function addBlock(type: BlockType) {
     const existingCount = blocks.filter((block) => block.type === type).length;
@@ -869,6 +893,58 @@ export default function LyricsStudioPage() {
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setNotice({ type: "error", message: "Kopieren mislukt. Probeer opnieuw." });
+    }
+  }
+
+  async function translateAllLyrics() {
+    if (!combinedLyrics.trim() || translatingLyrics) return;
+    if (!effectiveTranslationLanguage.trim()) {
+      setNotice({ type: "error", message: "Kies eerst een doeltaal." });
+      return;
+    }
+
+    setTranslatingLyrics(true);
+    try {
+      const response = await fetch("/api/lyric-studio/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetLanguage: effectiveTranslationLanguage,
+          blocks: blocks.map(({ id, type, label, content }) => ({ id, type, label, content })),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setNotice({ type: "error", message: data?.error || "Vertalen is mislukt." });
+        return;
+      }
+
+      if (!Array.isArray(data?.blocks)) {
+        setNotice({ type: "error", message: "Vertaling gaf een ongeldig antwoord." });
+        return;
+      }
+
+      const translatedById = new Map<string, string>();
+      for (const item of data.blocks) {
+        if (typeof item?.id === "string" && typeof item?.content === "string") {
+          translatedById.set(item.id, item.content);
+        }
+      }
+
+      setBlocks((current) =>
+        current.map((block) => ({
+          ...block,
+          content: translatedById.get(block.id) ?? block.content,
+          generating: false,
+        }))
+      );
+
+      setNotice({ type: "success", message: `Lyrics vertaald naar ${effectiveTranslationLanguage}.` });
+    } catch {
+      setNotice({ type: "error", message: "Vertalen is mislukt." });
+    } finally {
+      setTranslatingLyrics(false);
     }
   }
 
@@ -1670,6 +1746,38 @@ export default function LyricsStudioPage() {
                 )}
 
                 <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+                  <div className="flex flex-1 flex-col gap-2 sm:max-w-[280px]">
+                    <select
+                      value={translationLanguage}
+                      onChange={(event) => setTranslationLanguage(event.target.value)}
+                      aria-label="Doeltaal voor vertaling"
+                      className="select-field w-full text-sm"
+                    >
+                      {TRANSLATION_LANGUAGES.map((item) => (
+                        <option key={item.value} value={item.value} className="bg-gray-900">
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                    {translationLanguage === "other" && (
+                      <input
+                        type="text"
+                        value={customTranslationLanguage}
+                        onChange={(event) => setCustomTranslationLanguage(event.target.value)}
+                        placeholder="Doeltaal, bv. Swedish"
+                        className="input-field text-sm"
+                      />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={translateAllLyrics}
+                    disabled={!combinedLyrics.trim() || translatingLyrics || (translationLanguage === "other" && !customTranslationLanguage.trim())}
+                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    title="Vertaal alle lyric blokken naar de gekozen taal"
+                  >
+                    {translatingLyrics ? "Vertalen..." : "Translate lyrics"}
+                  </button>
                   <button
                     type="button"
                     onClick={copyAllLyrics}

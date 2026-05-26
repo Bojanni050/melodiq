@@ -572,6 +572,28 @@
 ## 2026-05-21 (Provider naar Studio card, taal naar Lyric Studio)
 
 - Findings: Provider-keuze stond in een losse settings-rij in de Create-form, terwijl de language-selector op dezelfde plek stond en niet in de context van Lyric Studio.
+
+## 2026-05-26 (Lyric Studio vertaalfunctie met taaldropdown)
+
+- Findings: In Lyric Studio ontbrak een directe manier om bestaande lyric-blokken naar een andere taal om te zetten.
+- Conclusions: Een inline vertaalflow met doeltaal-dropdown en een dedicated API-route houdt de workflow snel en block-based zonder export/import.
+- Actions:
+  - Added `src/app/api/lyric-studio/translate/route.ts` — authenticated LLM translate-endpoint dat block-content vertaalt op basis van gekozen doeltaal en de block-id mapping bewaart
+  - Updated `src/app/lyrics-studio/page.tsx` — toegevoegd: doeltaal dropdown (nl/en/fr + extra talen), optioneel custom doeltaalveld, en `Translate lyrics` knop met loading/validatie
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 16:32`
+  - Updated `sonara-user.md` — gebruikersdocumentatie uitgebreid met vertaalflow in Lyric Studio
+  - Validated with `npm run build`.
+
+## 2026-05-26 (Track listings alfabetisch sorteren)
+
+- Findings: Tracklijsten hadden alleen datum-sortering (new to old / old to new), maar geen alfabetische weergave.
+- Conclusions: Alfabetische sortering hoort in de gedeelde `TrackList` component zodat alle listings automatisch A-Z en Z-A ondersteunen.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — sorttype uitgebreid met `title-asc` en `title-desc`
+  - Updated `src/components/TrackList.tsx` — sorteerlogica toegevoegd op basis van tracktitel (fallback: prompt), met stabiele datum-tiebreaker
+  - Updated `src/components/TrackList.tsx` — dropdownopties toegevoegd: `A-Z` en `Z-A`
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 16:40`
+  - Validated with `npm run build`.
 - Conclusions: Provider hoort dicht bij de primaire Studio-controls op de Create-pagina; language hoort bij lyric- en structuurinstellingen op de Lyric Studio-pagina.
 - Actions:
   - Updated `src/components/StudioForm.tsx` — provider dropdown + model-select verplaatst naar de `Studio` card; language-selector verwijderd uit de Create-pagina; `Vocal Gender` als losse card behouden voor vocal mode

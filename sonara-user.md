@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 15:19**
+**Versie: di 16:40**
 
 > AI Music Generation Web App
 
@@ -73,6 +73,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Generate one block at a time with the song topic, mood, language, style, and existing blocks as context
 - Generate a complete song from the selected structure; each section is placed in its own block
 - While full-song generation is running, use **Stop generating** to cancel remaining AI block generation
+- Vertaal alle huidige lyric-blokken met **Translate lyrics** via een doeltaal-dropdown (bijv. nl, en, french, etc.)
 - Save your current Lyric Studio setup as a named snapshot and load it later from **Load saved lyrics**
 - Delete old snapshots directly from the load dialog to keep only useful drafts
 - On each Chorus block, use **Unique (do not auto-repeat)** to force a fresh chorus even when Repetitive chorus is enabled
@@ -112,7 +113,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 - **Recent Tracks** — shown in the lower half of the right Studio column. Click any track to open the detail panel.
 - **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`). Workspace selection in Studio now uses the same folder cards (gradient + cover collage) as the dedicated Workspaces page.
-- All track lists now include sorting controls: **New to old** and **Old to new**.
+- All track lists now include sorting controls: **New to old**, **Old to new**, **A-Z**, and **Z-A**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
