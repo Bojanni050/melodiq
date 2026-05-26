@@ -1,5 +1,16 @@
 # Sonara — Walkthrough
 
+## 2026-05-26 (Lyric Studio meldingen als popups + player blijft doorlopen bij navigatie)
+
+- Findings: Lyric Studio toonde notices en bevestigingen inline in de pagina, en playback kon wegvallen bij navigatie naar de Lyric Studio route.
+- Conclusions: Meldingen horen als popup overlays te verschijnen voor een duidelijkere flow, en de speler moet zijn audio-element op `window` bewaren zodat routewissels de playback niet onderbreken.
+- Actions:
+  - Updated `src/app/lyrics-studio/page.tsx` — notice, load/save snapshot dialogs en confirmactie zijn nu popup overlays met backdrop in plaats van inline blocks
+  - Updated `src/components/Player.tsx` — shared audio element verplaatst naar een `window`-gebonden singleton om playback over route changes heen te behouden
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 02:39`
+  - Validated with `npm run build`.
+
+
 ## 2026-05-25 (Add MiniMax Music 2.6 as provider)
 
 - Findings: Users wanted an additional music generation provider option alongside Lyria, PoYo, Tempolor, and MusicGPT.

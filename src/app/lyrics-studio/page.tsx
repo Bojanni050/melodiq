@@ -1031,9 +1031,9 @@ export default function LyricsStudioPage() {
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
             {notice && (
-              <div className="mb-4 rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
+              <div className="fixed right-4 top-4 z-[90] w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-2xl">
                 <div className="flex items-start gap-3">
-                  <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
                   </svg>
                   <div className="min-w-0 flex-1">
@@ -1098,117 +1098,127 @@ export default function LyricsStudioPage() {
             </div>
 
             {showLoadSnapshots && (
-              <div className="mb-4 rounded-xl border border-white/10 bg-[#11111a] p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-white/80">Load saved lyrics</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowLoadSnapshots(false)}
-                    className="text-white/40 hover:text-white/70"
-                    title="Close"
-                  >
-                    x
-                  </button>
-                </div>
-                {savedSnapshots.length === 0 ? (
-                  <p className="text-xs text-white/45">No saved snapshots yet.</p>
-                ) : (
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {savedSnapshots.map((snapshot) => (
-                      <div key={snapshot.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                        <button
-                          type="button"
-                          onClick={() => loadLyricsSnapshot(snapshot)}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <p className="truncate text-sm text-white/85">{snapshot.name}</p>
-                          <p className="text-xs text-white/45">{new Date(snapshot.createdAt).toLocaleString()}</p>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteLyricsSnapshot(snapshot.id)}
-                          className="px-2 py-1 text-xs text-red-300/80 hover:text-red-200"
-                          title="Delete snapshot"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
+              <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => setShowLoadSnapshots(false)}>
+                <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#11111a] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-white/80">Load saved lyrics</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowLoadSnapshots(false)}
+                      className="text-white/40 hover:text-white/70"
+                      title="Close"
+                    >
+                      x
+                    </button>
                   </div>
-                )}
+                  {savedSnapshots.length === 0 ? (
+                    <p className="text-xs text-white/45">No saved snapshots yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                      {savedSnapshots.map((snapshot) => (
+                        <div key={snapshot.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => loadLyricsSnapshot(snapshot)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <p className="truncate text-sm text-white/85">{snapshot.name}</p>
+                            <p className="text-xs text-white/45">{new Date(snapshot.createdAt).toLocaleString()}</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteLyricsSnapshot(snapshot.id)}
+                            className="px-2 py-1 text-xs text-red-300/80 hover:text-red-200"
+                            title="Delete snapshot"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {showSaveSnapshotModal && (
-              <div className="mb-4 rounded-xl border border-white/10 bg-[#11111a] p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-white/80">Save lyrics snapshot</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowSaveSnapshotModal(false)}
-                    className="text-white/40 hover:text-white/70"
-                    title="Close"
-                  >
-                    x
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={snapshotNameInput}
-                  onChange={(event) => setSnapshotNameInput(event.target.value)}
-                  className="input-field text-sm"
-                  placeholder="Snapshot naam"
-                />
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => saveLyricsSnapshot(snapshotNameInput)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSaveSnapshotModal(false)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
-                  >
-                    Cancel
-                  </button>
+              <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => setShowSaveSnapshotModal(false)}>
+                <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#11111a] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-white/80">Save lyrics snapshot</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowSaveSnapshotModal(false)}
+                      className="text-white/40 hover:text-white/70"
+                      title="Close"
+                    >
+                      x
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={snapshotNameInput}
+                    onChange={(event) => setSnapshotNameInput(event.target.value)}
+                    className="input-field text-sm"
+                    placeholder="Snapshot naam"
+                  />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => saveLyricsSnapshot(snapshotNameInput)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSaveSnapshotModal(false)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {confirmAction && (
-              <div className="mb-4 rounded-xl border border-amber-500/30 bg-[#2b1f10] p-3">
-                <div className="flex items-start gap-3">
-                  <svg className="mt-0.5 h-4 w-4 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-amber-100">
-                      {confirmAction === "replaceBlocks" && "Huidige blocks vervangen door de gekozen preset?"}
-                      {confirmAction === "replaceStudio" && "Studio bevat al data. Wil je die vervangen met deze lyrics en style?"}
-                      {confirmAction === "clearAll" && "Weet je zeker dat je alle Lyric Studio data wilt wissen?"}
-                    </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleConfirmAction}
-                        className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
-                      >
-                        Bevestigen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConfirmAction(null);
-                          setPendingPresetName(null);
-                          setPendingStudioPayload(null);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
-                      >
-                        Annuleren
-                      </button>
+              <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => {
+                setConfirmAction(null);
+                setPendingPresetName(null);
+                setPendingStudioPayload(null);
+              }}>
+                <div className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                  <div className="flex items-start gap-3">
+                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                    </svg>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-amber-100">
+                        {confirmAction === "replaceBlocks" && "Huidige blocks vervangen door de gekozen preset?"}
+                        {confirmAction === "replaceStudio" && "Studio bevat al data. Wil je die vervangen met deze lyrics en style?"}
+                        {confirmAction === "clearAll" && "Weet je zeker dat je alle Lyric Studio data wilt wissen?"}
+                      </p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleConfirmAction}
+                          className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
+                        >
+                          Bevestigen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmAction(null);
+                            setPendingPresetName(null);
+                            setPendingStudioPayload(null);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                        >
+                          Annuleren
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

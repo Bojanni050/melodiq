@@ -4,7 +4,19 @@ import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
-let sharedAudioElement: HTMLAudioElement | null = null;
+declare global {
+  interface Window {
+    __sonaraSharedAudioElement?: HTMLAudioElement;
+  }
+}
+
+function getSharedAudioElement() {
+  if (typeof window === "undefined") return null;
+  if (!window.__sonaraSharedAudioElement) {
+    window.__sonaraSharedAudioElement = new Audio();
+  }
+  return window.__sonaraSharedAudioElement;
+}
 
 function FullscreenPlayer() {
   const {
@@ -354,9 +366,8 @@ export default function Player() {
   }, []);
 
   useEffect(() => {
-    if (!sharedAudioElement) {
-      sharedAudioElement = new Audio();
-    }
+    const sharedAudioElement = getSharedAudioElement();
+    if (!sharedAudioElement) return;
 
     audioRef.current = sharedAudioElement;
     audioRef.current.volume = volume;
