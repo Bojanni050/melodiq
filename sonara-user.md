@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 22:44**
+**Versie: di 22:47**
 
 > AI Music Generation Web App
 
@@ -116,6 +116,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 ### Library Views
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
+- In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view
 - If you add a song to a playlist where it already exists, Sonara now asks: “Song is already on the playlist. Do you want to add it again?” with **Yes / No**

@@ -63,3 +63,9 @@
 - Findings: De dedicated Workspaces-pagina week qua layout en gedrag af van het Workspaces-gedeelte op de Library-pagina.
 - Conclusions: Eén consistente workspace-ervaring (zelfde headerstijl, view-toggle, create-flow, cards/list en open-workspace gedrag) verlaagt cognitieve load en maakt beheer voorspelbaarder.
 - Actions: `src/app/workspaces/page.tsx` volledig herwerkt naar dezelfde structuur als Library-workspaces: hero-header, grid/list toggle, create-workspace pill, workspace cards/list met open/delete actions en een songs-sectie met back-actie en `TrackList`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Library rechter detail-sidebar toegevoegd)
+
+- Findings: De Library had nog geen rechter detailpaneel zoals de homepage, waardoor trackdetails minder snel beschikbaar waren.
+- Conclusions: De bestaande `TrackDetail` + `ResizablePanel` hergebruiken op Library houdt UX consistent tussen pagina's en voorkomt dubbele componentlogica.
+- Actions: `src/app/library/page.tsx` uitgebreid met trackselectie-state, `usePlayerStore` panel-state, desktop `ResizablePanel`, mobiele `TrackDetail` overlay, en play/download handlers op basis van de zichtbare trackcontext; typefout op optional covervelden bij selectie opgelost; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
