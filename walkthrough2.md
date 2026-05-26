@@ -21,3 +21,9 @@
 - Findings: De linker configuratiekolom in de Lyrics Studio pagina bleef een groot inline JSX-blok en hield de page-component onnodig lang.
 - Conclusions: Extractie naar een dedicated control-panel component houdt state/orchestratie in de pagina en verplaatst presentatielogica naar een herbruikbare module zonder gedrag te wijzigen.
 - Actions: Toegevoegd `src/components/lyrics-studio/LyricsControlPanel.tsx` met metadata-, structuur-, preset-, slider- en toolbar-secties; `src/app/lyrics-studio/page.tsx` opgeschoond en gekoppeld aan `LyricsControlPanel`; a11y verbeterd met labels op range-inputs; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Lyrics Studio rechterkolom verder uitgedund)
+
+- Findings: De pagina bevatte nog een grote inline rechterkolom voor Song Flow en Style Suggestion, wat de page-component onnodig groot hield.
+- Conclusions: De bestaande `LyricsStudioSidePanel` component in de pagina gebruiken verlaagt de JSX-omvang en houdt dezelfde UX-flow intact.
+- Actions: `src/app/lyrics-studio/page.tsx` aangepast om de inline rechterkolom te vervangen door `LyricsStudioSidePanel`-props; tijdelijke import-regressie (`Flowchart`) gecorrigeerd; build opnieuw uitgevoerd met `npm run build` en volledig geslaagd, validated.

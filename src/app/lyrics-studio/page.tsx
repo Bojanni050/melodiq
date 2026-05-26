@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import Flowchart from "@/components/Flowchart";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
 import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
 import LyricsConfirmModal from "@/components/lyrics-studio/LyricsConfirmModal";
