@@ -263,6 +263,7 @@ export default function LyricsStudioPage() {
   const [translationLanguage, setTranslationLanguage] = useState("nl");
   const [customTranslationLanguage, setCustomTranslationLanguage] = useState("");
   const [translatingLyrics, setTranslatingLyrics] = useState(false);
+  const [translatingBlockId, setTranslatingBlockId] = useState<string | null>(null);
   const [translatedBlocks, setTranslatedBlocks] = useState<Map<string, string>>(new Map());
   const [showTranslationView, setShowTranslationView] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
@@ -966,6 +967,49 @@ export default function LyricsStudioPage() {
     }
   }
 
+  async function translateBlock(blockId: string) {
+    if (translatingBlockId) return;
+    
+    const block = blocks.find((b) => b.id === blockId);
+    if (!block || !block.content.trim()) return;
+    
+    if (!effectiveTranslationLanguage.trim()) {
+      setNotice({ type: "error", message: "Kies eerst een doeltaal." });
+      return;
+    }
+
+    setTranslatingBlockId(blockId);
+    try {
+      const response = await fetch("/api/lyric-studio/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetLanguage: effectiveTranslationLanguage,
+          blocks: [{ id: block.id, type: block.type, label: block.label, content: block.content }],
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setNotice({ type: "error", message: data?.error || "Vertalen is mislukt." });
+        return;
+      }
+
+      if (!Array.isArray(data?.blocks) || !data.blocks[0]) {
+        setNotice({ type: "error", message: "Vertaling gaf een ongeldig antwoord." });
+        return;
+      }
+
+      const translatedContent = data.blocks[0].content;
+      setTranslatedBlocks(new Map([[blockId, translatedContent]]));
+      setShowTranslationView(true);
+    } catch {
+      setNotice({ type: "error", message: "Vertalen is mislukt." });
+    } finally {
+      setTranslatingBlockId(null);
+    }
+  }
+
   function useInStudio() {
     useStudioStore.getState().setLyrics(combinedLyrics);
     router.push("/");
@@ -1646,7 +1690,7 @@ export default function LyricsStudioPage() {
                               <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{translated}</p>
                             </div>
                           </div>
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex gap-2 flex-wrap">
                             <button
                               type="button"
                               onClick={() => {
@@ -1661,7 +1705,7 @@ export default function LyricsStudioPage() {
                               }}
                               className="text-xs rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
                             >
-                              ✓ Accept translation
+                              ✓ Use translation
                             </button>
                             <button
                               type="button"
@@ -1670,9 +1714,27 @@ export default function LyricsStudioPage() {
                                 next.delete(block.id);
                                 setTranslatedBlocks(next);
                               }}
-                              className="text-xs rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/60 hover:bg-white/10 transition-colors"
+                              className="text-xs rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-blue-200 hover:bg-blue-500/20 transition-colors"
                             >
-                              Skip
+                              ✓ Keep original
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBlocks((current) =>
+                                  current.map((b) =>
+                                    b.id === block.id 
+                                      ? { ...b, content: `${block.content}\n\n---\n\n${translated}` } 
+                                      : b
+                                  )
+                                );
+                                const next = new Map(translatedBlocks);
+                                next.delete(block.id);
+                                setTranslatedBlocks(next);
+                              }}
+                              className="text-xs rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-purple-200 hover:bg-purple-500/20 transition-colors"
+                            >
+                              ✓ Keep both
                             </button>
                           </div>
                         </div>
@@ -1802,19 +1864,34 @@ export default function LyricsStudioPage() {
                         />
 
                         <div className="mt-3 flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => generateBlock(block)}
-                            disabled={block.generating || !canGenerateBlocks}
-                            title={canGenerateBlocks ? "Generate block" : "Add topic and mood first"}
-                            className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
-                          >
-                            {block.generating ? (
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            ) : (
-                              "✨ Generate"
-                            )}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => generateBlock(block)}
+                              disabled={block.generating || !canGenerateBlocks}
+                              title={canGenerateBlocks ? "Generate block" : "Add topic and mood first"}
+                              className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
+                            >
+                              {block.generating ? (
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                              ) : (
+                                "✨ Generate"
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => translateBlock(block.id)}
+                              disabled={translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
+                              title={block.content.trim() ? "Translate this block" : "Add content to translate"}
+                              className="inline-flex items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {translatingBlockId === block.id ? (
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200/30 border-t-blue-200" />
+                              ) : (
+                                "🌐"
+                              )}
+                            </button>
+                          </div>
                           <span className="text-xs text-white/35">{block.content.length} chars</span>
                         </div>
                         {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
