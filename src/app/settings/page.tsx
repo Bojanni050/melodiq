@@ -2,151 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import ModelDetailModal from "@/components/settings/ModelDetailModal";
 import ModelSelector from "@/components/settings/ModelSelector";
 import ProviderCard from "@/components/settings/ProviderCard";
 import WebhookRow from "@/components/settings/WebhookRow";
+import { PROVIDERS, ProviderConfig, WEBHOOK_DEFAULTS } from "@/lib/settings-constants";
 import {
   applyWebhookDefaults,
   buildWebhookUrl,
   createModelPlaceholder,
-  formatPrice,
   LLMModel,
-  truncateDescription,
 } from "@/lib/settings-utils";
-
-interface ProviderConfig {
-  id: string;
-  name: string;
-  description: string;
-  fields: Array<{
-    key: string;
-    label: string;
-    type: "password" | "text";
-    placeholder: string;
-  }>;
-  testEndpoint: string;
-}
-
-const PROVIDERS: ProviderConfig[] = [
-  {
-    id: "lyria",
-    name: "Google Lyria 3",
-    description: "Synchronous music generation provider",
-    fields: [
-      {
-        key: "LYRIA_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "lyria_...",
-      },
-    ],
-    testEndpoint: "lyria",
-  },
-  {
-    id: "poyo",
-    name: "PoYo (Suno)",
-    description: "Async music generation with webhook support",
-    fields: [
-      {
-        key: "POYO_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "poyo_...",
-      },
-    ],
-    testEndpoint: "poyo",
-  },
-  {
-    id: "tempolor",
-    name: "Tempolor",
-    description: "Async music generation with HD output",
-    fields: [
-      {
-        key: "TEMPOLOR_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "tempolor_...",
-      },
-    ],
-    testEndpoint: "tempolor",
-  },
-  {
-    id: "musicgpt",
-    name: "MusicGPT",
-    description: "Async music generation with AI voice models",
-    fields: [
-      {
-        key: "MUSICGPT_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "musicgpt_...",
-      },
-    ],
-    testEndpoint: "musicgpt",
-  },
-  {
-    id: "minimax",
-    name: "MiniMax Music 2.6",
-    description: "Synchronous music generation with lyrics support",
-    fields: [
-      {
-        key: "MINIMAX_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "minimax_...",
-      },
-    ],
-    testEndpoint: "minimax",
-  },
-  {
-    id: "openrouter",
-    name: "OpenRouter",
-    description: "Primary LLM provider for prompt optimization and lyrics",
-    fields: [
-      {
-        key: "OPENROUTER_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "sk-or-...",
-      },
-    ],
-    testEndpoint: "openrouter",
-  },
-  {
-    id: "openai",
-    name: "OpenAI",
-    description: "Fallback LLM provider",
-    fields: [
-      {
-        key: "OPENAI_API_KEY",
-        label: "API Key",
-        type: "password",
-        placeholder: "sk-...",
-      },
-      {
-        key: "OPENAI_PROMPT_MODEL",
-        label: "Prompt Model",
-        type: "text",
-        placeholder: "gpt-4o",
-      },
-      {
-        key: "OPENAI_LYRICS_MODEL",
-        label: "Lyrics Model",
-        type: "text",
-        placeholder: "gpt-4o",
-      },
-    ],
-    testEndpoint: "openai",
-  },
-];
-
-const WEBHOOK_DEFAULTS = [
-  { key: "POYO_WEBHOOK_URL", path: "/api/webhooks/poyo" },
-  { key: "POYO_WAV_WEBHOOK_URL", path: "/api/webhooks/poyo-wav" },
-  { key: "TEMPOLOR_WEBHOOK_URL", path: "/api/webhooks/tempolor" },
-  { key: "MUSICGPT_WEBHOOK_URL", path: "/api/webhooks/musicgpt" },
-  { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
-] as const;
 
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -1190,78 +1056,7 @@ export default function SettingsPage() {
         </main>
       </div>
 
-      {modelDetail && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setModelDetail(null)}
-        >
-          <div
-            className="bg-[#1a1a24] border border-white/10 rounded-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-bold">{modelDetail.name}</h3>
-                <button
-                  onClick={() => setModelDetail(null)}
-                  className="text-white/50 hover:text-white text-2xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-xs font-medium text-white/40 mb-1">ID</h4>
-                  <p className="font-mono text-sm">{modelDetail.id}</p>
-                </div>
-
-                {modelDetail.description && (
-                  <div>
-                    <h4 className="text-xs font-medium text-white/40 mb-1">Description</h4>
-                    <p className="text-sm leading-relaxed text-white/70">{modelDetail.description}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-xs font-medium text-white/40 mb-1">Prompt Price</h4>
-                    <p className="text-sm text-white/60">{formatPrice(modelDetail.pricing.prompt)}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-medium text-white/40 mb-1">Completion Price</h4>
-                    <p className="text-sm text-white/60">{formatPrice(modelDetail.pricing.completion)}</p>
-                  </div>
-                  {modelDetail.context_length && (
-                    <div>
-                      <h4 className="text-xs font-medium text-white/40 mb-1">Context Length</h4>
-                      <p className="text-sm text-white/60">{modelDetail.context_length.toLocaleString()} tokens</p>
-                    </div>
-                  )}
-                  {modelDetail.architecture?.modality && (
-                    <div>
-                      <h4 className="text-xs font-medium text-white/40 mb-1">Modality</h4>
-                      <p className="text-sm text-white/60">{modelDetail.architecture.modality}</p>
-                    </div>
-                  )}
-                  {modelDetail.architecture?.tokenizer && (
-                    <div>
-                      <h4 className="text-xs font-medium text-white/40 mb-1">Tokenizer</h4>
-                      <p className="text-sm text-white/60">{modelDetail.architecture.tokenizer}</p>
-                    </div>
-                  )}
-                  {modelDetail.architecture?.instruct_type && (
-                    <div>
-                      <h4 className="text-xs font-medium text-white/40 mb-1">Instruct Type</h4>
-                      <p className="text-sm text-white/60">{modelDetail.architecture.instruct_type}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ModelDetailModal modelDetail={modelDetail} onClose={() => setModelDetail(null)} />
     </div>
   );
 }
