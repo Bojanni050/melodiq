@@ -57,3 +57,9 @@
 - Findings: Het vorige Move To Workspace submenu was compact en nested, maar sloot visueel/functioneel niet aan op de gewenste grote overlay met lijstweergave.
 - Conclusions: Een dedicated modal-overlay met duidelijke titel, scrollbare workspace-rijen en inline create-acties onderaan geeft dezelfde interactie als het gewenste referentie-ontwerp en werkt beter voor lange workspace-lijsten.
 - Actions: `src/components/tracks/TrackCard.tsx` aangepast: nested submenu vervangen door gecentreerde overlay “Move to Workspace”, lijst met workspace-rows + clip-count, onderaan input met teller en `Create Workspace` knop; bestaande move/create-logica behouden; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Workspaces pagina aligned met Library workspace UX)
+
+- Findings: De dedicated Workspaces-pagina week qua layout en gedrag af van het Workspaces-gedeelte op de Library-pagina.
+- Conclusions: Eén consistente workspace-ervaring (zelfde headerstijl, view-toggle, create-flow, cards/list en open-workspace gedrag) verlaagt cognitieve load en maakt beheer voorspelbaarder.
+- Actions: `src/app/workspaces/page.tsx` volledig herwerkt naar dezelfde structuur als Library-workspaces: hero-header, grid/list toggle, create-workspace pill, workspace cards/list met open/delete actions en een songs-sectie met back-actie en `TrackList`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.

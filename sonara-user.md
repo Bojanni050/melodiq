@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 22:42**
+**Versie: di 22:44**
 
 > AI Music Generation Web App
 
@@ -122,6 +122,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 ### Workspaces
 - **Workspaces** live in the sidebar and open a dedicated page with folder-style cards
+- The dedicated **Workspaces** page now uses the same layout and interaction model as the Library workspace section (same card/list views, create flow, and open behavior)
 - Workspace cards keep a persistent gradient folder color and a seeded collage of cover art from the songs inside
 - Studio now uses the same folder-card interaction (including create flow and active selection state) to choose which workspace is pinned in the Workspace Tracks panel
 - Sonara now has a built-in **Default Workspace** that cannot be deleted
