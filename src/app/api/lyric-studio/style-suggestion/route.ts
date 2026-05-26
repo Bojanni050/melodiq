@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
 import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { buildStyleSuggestionSystemPrompt, buildStyleSuggestionUserPrompt, sanitizeStyleSuggestionResponse } from "@/lib/lyrics-style-suggestion";
 import { requireAuth } from "@/lib/require-auth";
 
 function getErrorMessage(error: unknown) {
@@ -46,43 +47,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "styleHint must be a string" }, { status: 400 });
   }
 
-  const trimmedLyrics = lyrics.trim().slice(0, 6000);
-  const trimmedHint = typeof styleHint === "string" ? styleHint.trim().slice(0, 500) : "";
-
-  const systemPrompt = `You are a professional music prompt engineer.
-
-Generate one elaborate style direction for AI music generation based on topic, mood, and existing lyrics.
-
-Output rules:
-- Return plain text only (no markdown).
-- Use 4 short sections in this exact order with labels:
-  1) Genre & Feel:
-  2) Instrumentation:
-  3) Production & Mix:
-  4) Vocal Direction:
-- Keep each section to 1-2 sentences.
-- Follow a fixed mini-template inside each section:
-  1) Genre & Feel: genre/subgenre, mood, BPM range, groove, arrangement density.
-  2) Instrumentation: core instruments, drums, bass, synths/acoustic elements, signature textures.
-  3) Production & Mix: mix chain ideas, compression/saturation, stereo image, room/reverb/delay, polish level.
-  4) Vocal Direction: only if vocals fit; describe tone, phrasing, harmony stack, ad-libs or FX. If instrumental, say "Instrumental focus" and describe the lead motif or hook.
-- Be specific and production-usable.
-- Keep total output around 90-150 words.
-- Do not include artist names, song titles, or quotes.
-- Do not include any explanation before or after the suggestion.`;
-
-  const userPrompt = `Topic: ${topic.trim()}
-Mood: ${mood.trim()}
-Language: ${language.trim()}
-${trimmedHint ? `Current style hint: ${trimmedHint}` : ""}
-
-Lyrics context:
-${trimmedLyrics}`;
+  const systemPrompt = buildStyleSuggestionSystemPrompt();
+  const userPrompt = buildStyleSuggestionUserPrompt({
+    topic: topic.trim(),
+    mood: mood.trim(),
+    language: language.trim(),
+    lyrics: typeof lyrics === "string" ? lyrics : "",
+    styleHint: typeof styleHint === "string" ? styleHint : undefined,
+  });
 
   try {
     const llmProvider = await getLLMProviderForPurpose("prompt");
     const result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt" });
-    const suggestion = result.trim();
+    const suggestion = sanitizeStyleSuggestionResponse(result);
 
     await logApi({
       userId: auth.userId,
