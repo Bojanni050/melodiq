@@ -239,7 +239,7 @@ export default function LyricsStudioPage() {
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const [repetitiveChorus, setRepetitiveChorus] = useState(true);
   const [creativityLevel, setCreativityLevel] = useState(5);
-  const [contextLevel, setContextLevel] = useState(7);
+  const [contextLevel, setContextLevel] = useState(5);
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
@@ -964,7 +964,7 @@ export default function LyricsStudioPage() {
     setCustomStructure("");
     setRepetitiveChorus(true);
     setCreativityLevel(5);
-    setContextLevel(7);
+    setContextLevel(5);
     setLanguage("English");
     setCustomLanguage("");
     setStyleSuggestion("");
