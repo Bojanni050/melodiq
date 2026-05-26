@@ -263,6 +263,8 @@ export default function LyricsStudioPage() {
   const [translationLanguage, setTranslationLanguage] = useState("nl");
   const [customTranslationLanguage, setCustomTranslationLanguage] = useState("");
   const [translatingLyrics, setTranslatingLyrics] = useState(false);
+  const [translatedBlocks, setTranslatedBlocks] = useState<Map<string, string>>(new Map());
+  const [showTranslationView, setShowTranslationView] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
   const [showSaveSnapshotModal, setShowSaveSnapshotModal] = useState(false);
@@ -276,6 +278,7 @@ export default function LyricsStudioPage() {
   const songGenerationAbortRef = useRef<AbortController | null>(null);
   const stopSongGenerationRef = useRef(false);
   const dragStateRef = useRef<{ pointerId: number; blockId: string } | null>(null);
+  const dropTargetRef = useRef<{ id: string; position: "before" | "after" } | null>(null);
   const {
     language,
     customLanguage,
@@ -481,37 +484,38 @@ export default function LyricsStudioPage() {
     });
   }
 
-  function moveBlockToPosition(id: string, insertionIndex: number) {
-    setBlocks((current) => {
-      const fromIndex = current.findIndex((block) => block.id === id);
-      if (fromIndex < 0) return current;
-
-      const boundedInsertionIndex = Math.max(0, Math.min(insertionIndex, current.length));
-      const adjustedInsertionIndex = fromIndex < boundedInsertionIndex
-        ? boundedInsertionIndex - 1
-        : boundedInsertionIndex;
-
-      if (adjustedInsertionIndex === fromIndex) return current;
-
-      const next = [...current];
-      const [block] = next.splice(fromIndex, 1);
-      next.splice(adjustedInsertionIndex, 0, block);
-      return next;
-    });
-  }
-
   function updateDragTarget(clientX: number, clientY: number, draggingId: string) {
-    const hoveredElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-    const blockElement = hoveredElement?.closest<HTMLElement>("[data-lyric-block-id]");
-    const targetId = blockElement?.dataset.lyricBlockId;
+    // Try elementFromPoint first - works in most cases
+    let blockElement: HTMLElement | null = null;
+    try {
+      const hoveredElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+      blockElement = hoveredElement?.closest<HTMLElement>("[data-lyric-block-id]") ?? null;
+    } catch {
+      // elementFromPoint may fail during pointer capture, try alternative approach
+    }
 
+    // If elementFromPoint didn't work, scan visible blocks
+    if (!blockElement) {
+      const allBlocks = Array.from(document.querySelectorAll("[data-lyric-block-id]")) as HTMLElement[];
+      for (const block of allBlocks) {
+        const rect = block.getBoundingClientRect();
+        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+          blockElement = block;
+          break;
+        }
+      }
+    }
+
+    const targetId = blockElement?.dataset.lyricBlockId;
     if (!targetId || targetId === draggingId) {
+      dropTargetRef.current = null;
       setDropTarget(null);
       return;
     }
 
     const rect = blockElement.getBoundingClientRect();
     const position = clientY < rect.top + rect.height / 2 ? "before" : "after";
+    dropTargetRef.current = { id: targetId, position };
     setDropTarget({ id: targetId, position });
   }
 
@@ -538,8 +542,9 @@ export default function LyricsStudioPage() {
     event.preventDefault();
     event.stopPropagation();
 
+    const element = event.currentTarget;
     try {
-      event.currentTarget.setPointerCapture(event.pointerId);
+      element.setPointerCapture(event.pointerId);
     } catch {}
 
     dragStateRef.current = { pointerId: event.pointerId, blockId };
@@ -559,17 +564,36 @@ export default function LyricsStudioPage() {
       if (!dragStateRef.current || dragStateRef.current.pointerId !== event.pointerId) return;
 
       const activeDrag = dragStateRef.current;
-      if (dropTarget) {
-        const targetIndex = blocks.findIndex((block) => block.id === dropTarget.id);
-        if (targetIndex >= 0) {
-          moveBlockToPosition(
-            activeDrag.blockId,
-            dropTarget.position === "before" ? targetIndex : targetIndex + 1
-          );
-        }
+      const currentDropTarget = dropTargetRef.current;
+
+      if (currentDropTarget) {
+        setBlocks((currentBlocks) => {
+          const targetIndex = currentBlocks.findIndex((block) => block.id === currentDropTarget.id);
+          if (targetIndex >= 0) {
+            const fromIndex = currentBlocks.findIndex((block) => block.id === activeDrag.blockId);
+            if (fromIndex >= 0) {
+              const boundedInsertionIndex = Math.max(0, Math.min(
+                currentDropTarget.position === "before" ? targetIndex : targetIndex + 1,
+                currentBlocks.length
+              ));
+              const adjustedInsertionIndex = fromIndex < boundedInsertionIndex
+                ? boundedInsertionIndex - 1
+                : boundedInsertionIndex;
+
+              if (adjustedInsertionIndex !== fromIndex) {
+                const next = [...currentBlocks];
+                const [block] = next.splice(fromIndex, 1);
+                next.splice(adjustedInsertionIndex, 0, block);
+                return next;
+              }
+            }
+          }
+          return currentBlocks;
+        });
       }
 
       dragStateRef.current = null;
+      dropTargetRef.current = null;
       setDraggedBlockId(null);
       setDropTarget(null);
     }
@@ -583,7 +607,7 @@ export default function LyricsStudioPage() {
       window.removeEventListener("pointerup", finishDrag);
       window.removeEventListener("pointercancel", finishDrag);
     };
-  }, [blocks, draggedBlockId, dropTarget]);
+  }, [draggedBlockId]);
 
   function applyPreset(name: string) {
     if (blocks.length > 0) {
@@ -932,14 +956,8 @@ export default function LyricsStudioPage() {
         }
       }
 
-      setBlocks((current) =>
-        current.map((block) => ({
-          ...block,
-          content: translatedById.get(block.id) ?? block.content,
-          generating: false,
-        }))
-      );
-
+      setTranslatedBlocks(translatedById);
+      setShowTranslationView(true);
       setNotice({ type: "success", message: `Lyrics vertaald naar ${effectiveTranslationLanguage}.` });
     } catch {
       setNotice({ type: "error", message: "Vertalen is mislukt." });
@@ -1599,6 +1617,74 @@ export default function LyricsStudioPage() {
                 {blocks.length === 0 ? (
                   <div className="flex min-h-[460px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
                     <p className="text-sm text-white/40">Add your first block to get started</p>
+                  </div>
+                ) : showTranslationView ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-white/80">Translation Review</h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowTranslationView(false)}
+                        className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                      >
+                        ← Back to editor
+                      </button>
+                    </div>
+                    {blocks.map((block) => {
+                      const translated = translatedBlocks.get(block.id);
+                      if (!block.content.trim() || !translated?.trim()) return null;
+                      return (
+                        <div key={block.id} className="rounded-xl border border-white/10 bg-[#15151f] p-4">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-3">{block.label}</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-[11px] font-semibold text-white/40 mb-2">Original</p>
+                              <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{block.content}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-semibold text-white/40 mb-2">{effectiveTranslationLanguage}</p>
+                              <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{translated}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBlocks((current) =>
+                                  current.map((b) =>
+                                    b.id === block.id ? { ...b, content: translated } : b
+                                  )
+                                );
+                                const next = new Map(translatedBlocks);
+                                next.delete(block.id);
+                                setTranslatedBlocks(next);
+                              }}
+                              className="text-xs rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
+                            >
+                              ✓ Accept translation
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = new Map(translatedBlocks);
+                                next.delete(block.id);
+                                setTranslatedBlocks(next);
+                              }}
+                              className="text-xs rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/60 hover:bg-white/10 transition-colors"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setShowTranslationView(false)}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:bg-white/10 transition-colors"
+                    >
+                      Done reviewing translations
+                    </button>
                   </div>
                 ) : (
                   <>
