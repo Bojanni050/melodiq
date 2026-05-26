@@ -59,12 +59,12 @@ export default function LyricsStudioSidePanel({
           <textarea
             value={styleSuggestion}
             onChange={(event) => onStyleSuggestionChange(event.target.value)}
-            placeholder="AI style suggestion will appear here"
-            className="min-h-[120px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-xs leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
+            placeholder="AI style direction verschijnt hier met genre, instrumentation, production/mix en vocal direction"
+            className="min-h-[180px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-xs leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
           />
 
           <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-[11px] text-white/35">Based on topic, mood and current lyrics.</p>
+            <p className="text-[11px] text-white/35">Expanded advice based on topic, mood, language and current lyrics.</p>
             <button
               type="button"
               onClick={onCopyStyleSuggestion}

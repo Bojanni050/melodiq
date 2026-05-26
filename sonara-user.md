@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 22:47**
+**Versie: di 22:50**
 
 > AI Music Generation Web App
 
@@ -80,6 +80,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Copy all lyrics** copies the finished block sequence
 - In the collapsible **Volledige lyrics** sidebar, a dedicated **Copy** button now copies the full combined lyrics directly
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
+- **Style Suggestion (AI Fill)** now returns a more elaborate style direction with concrete guidance for genre/feel, instrumentation, production/mix, and vocal direction
 - Confirmaties, foutmeldingen en snapshot-opslag gebruiken in-app dialogs/notificaties in plaats van browser popups
 
 ### Vocal Gender

@@ -69,3 +69,9 @@
 - Findings: De Library had nog geen rechter detailpaneel zoals de homepage, waardoor trackdetails minder snel beschikbaar waren.
 - Conclusions: De bestaande `TrackDetail` + `ResizablePanel` hergebruiken op Library houdt UX consistent tussen pagina's en voorkomt dubbele componentlogica.
 - Actions: `src/app/library/page.tsx` uitgebreid met trackselectie-state, `usePlayerStore` panel-state, desktop `ResizablePanel`, mobiele `TrackDetail` overlay, en play/download handlers op basis van de zichtbare trackcontext; typefout op optional covervelden bij selectie opgelost; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Lyric Studio AI style advice uitgebreider gemaakt)
+
+- Findings: De AI style suggestion op Lyric Studio was te kort en te algemeen, waardoor de output minder bruikbaar was als directe productierichting.
+- Conclusions: Een gestructureerd outputformat met expliciete secties (genre/feel, instrumentation, production/mix, vocal direction) levert concreter en direct toepasbaar style-advies op.
+- Actions: `src/app/api/lyric-studio/style-suggestion/route.ts` promptregels aangepast voor uitgebreidere output (80-140 woorden, 4 secties) en whitespace-collapsing verwijderd om structuur te behouden; `src/components/lyrics-studio/LyricsStudioSidePanel.tsx` placeholder, helpertekst en textarea-hoogte aangepast voor langere adviezen; build uitgevoerd met `npm run build` en volledig geslaagd, validated.

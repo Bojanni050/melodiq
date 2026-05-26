@@ -51,14 +51,19 @@ export async function POST(request: NextRequest) {
 
   const systemPrompt = `You are a professional music prompt engineer.
 
-Generate one concise style suggestion for AI music generation based on topic, mood, and existing lyrics.
+Generate one elaborate style direction for AI music generation based on topic, mood, and existing lyrics.
 
 Output rules:
-- Return one single line only.
-- Use comma-separated tags and short phrases.
-- Include genre/subgenre, instrumentation, production texture, vocal tone, and energy.
-- Keep it 12-28 words.
-- Do not include artist names, song titles, quotes, or section labels.
+- Return plain text only (no markdown).
+- Use 4 short sections in this exact order with labels:
+  1) Genre & Feel:
+  2) Instrumentation:
+  3) Production & Mix:
+  4) Vocal Direction:
+- Keep each section to 1 sentence.
+- Be specific and production-usable: mention tempo range, groove, arrangement density, sonic texture, and vocal delivery.
+- Keep total output around 80-140 words.
+- Do not include artist names, song titles, or quotes.
 - Do not include any explanation before or after the suggestion.`;
 
   const userPrompt = `Topic: ${topic.trim()}
@@ -72,7 +77,7 @@ ${trimmedLyrics}`;
   try {
     const llmProvider = await getLLMProviderForPurpose("prompt");
     const result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt" });
-    const suggestion = result.trim().replace(/\s+/g, " ");
+    const suggestion = result.trim();
 
     await logApi({
       userId: auth.userId,
