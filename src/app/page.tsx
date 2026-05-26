@@ -60,6 +60,15 @@ function getWorkspaceGradient(workspaceId: string, gradient?: string) {
   return WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length];
 }
 
+function deriveWorkspaceNameFromTitle(rawTitle: string): string {
+  const cleaned = rawTitle
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleaned.slice(0, 100);
+}
+
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -368,6 +377,7 @@ export default function HomePage() {
       title,
       selectedProviders,
       instrumental,
+      autoCreateWorkspaceFromGeneratedTitle,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -423,17 +433,24 @@ export default function HomePage() {
       );
 
       const allTrackIds: string[] = [];
+      const generatedTitles: string[] = [];
       const errors: string[] = [];
 
       for (const result of results) {
         if (result.status === "fulfilled") {
           const { ok, data, provider } = result.value;
           if (ok) {
-            const ids: string[] = Array.isArray(data.tracks)
-              ? data.tracks.map((t: Track) => t.id).filter(Boolean)
-              : data.track?.id
-                ? [data.track.id]
+            const returnedTracks: Track[] = Array.isArray(data.tracks)
+              ? data.tracks
+              : data.track
+                ? [data.track]
                 : [];
+            const ids: string[] = returnedTracks.map((t: Track) => t.id).filter(Boolean);
+            const titles = returnedTracks
+              .map((t: Track) => (typeof t.title === "string" ? t.title.trim() : ""))
+              .filter(Boolean);
+
+            generatedTitles.push(...titles);
             allTrackIds.push(...ids);
           } else {
             errors.push(`${provider}: ${data.error || "failed"}`);
@@ -443,19 +460,32 @@ export default function HomePage() {
         }
       }
 
+      let finalWorkspaceId = targetWorkspaceId;
+      if (autoCreateWorkspaceFromGeneratedTitle && allTrackIds.length > 0) {
+        const preferredTitle = finalTitle.trim() || generatedTitles[0] || "";
+        const workspaceName = deriveWorkspaceNameFromTitle(preferredTitle);
+        if (workspaceName) {
+          const createdWorkspaceId = createWorkspace(workspaceName);
+          if (createdWorkspaceId) {
+            finalWorkspaceId = createdWorkspaceId;
+            setSelectedWorkspaceId(createdWorkspaceId);
+          }
+        }
+      }
+
       allTrackIds.forEach((trackId) => {
-        moveTrackToWorkspace(targetWorkspaceId, trackId);
+        moveTrackToWorkspace(finalWorkspaceId, trackId);
       });
 
       const latestTracks = await fetchTracks();
 
-      if (allTrackIds.length === 0 && targetWorkspaceId !== DEFAULT_WORKSPACE_ID) {
+      if (allTrackIds.length === 0 && finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
         const discoveredTrackIds = latestTracks
           .map((track) => track.id)
           .filter((trackId) => !existingTrackIds.has(trackId));
 
         discoveredTrackIds.forEach((trackId) => {
-          moveTrackToWorkspace(targetWorkspaceId, trackId);
+          moveTrackToWorkspace(finalWorkspaceId, trackId);
         });
       }
 

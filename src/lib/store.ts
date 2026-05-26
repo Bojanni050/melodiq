@@ -468,6 +468,7 @@ interface StudioState {
   lyrics: string;
   lyricsContext: string;
   title: string;
+  autoCreateWorkspaceFromGeneratedTitle: boolean;
   selectedProviders: Record<string, string>;
   language: string;
   customLanguage: string;
@@ -481,6 +482,7 @@ interface StudioState {
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
   setTitle: (title: string) => void;
+  setAutoCreateWorkspaceFromGeneratedTitle: (enabled: boolean) => void;
   setProvider: (key: string, model: string) => void;
   toggleProvider: (key: string, defaultModel: string) => void;
   setProviderModel: (key: string, model: string) => void;
@@ -502,6 +504,7 @@ export const useStudioStore = create<StudioState>()(
       lyrics: "",
       lyricsContext: "",
       title: "",
+      autoCreateWorkspaceFromGeneratedTitle: false,
       selectedProviders: { poyo: "v5.5" },
       language: "English",
       customLanguage: "",
@@ -515,6 +518,8 @@ export const useStudioStore = create<StudioState>()(
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
       setTitle: (title) => set({ title }),
+      setAutoCreateWorkspaceFromGeneratedTitle: (enabled) =>
+        set({ autoCreateWorkspaceFromGeneratedTitle: enabled }),
       setProvider: (key, model) => set({ selectedProviders: { [key]: model } }),
       toggleProvider: (key, defaultModel) =>
         set((state) => {
@@ -544,6 +549,7 @@ export const useStudioStore = create<StudioState>()(
           lyrics: "",
           lyricsContext: "",
           title: "",
+          autoCreateWorkspaceFromGeneratedTitle: false,
           selectedProviders: { poyo: "v5.5" },
           language: "English",
           customLanguage: "",

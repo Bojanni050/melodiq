@@ -301,6 +301,18 @@
   - Updated `sonara-user.md` — titelgedrag voor instrumental tracks verduidelijkt
   - Validated with `npm run build`.
 
+## 2026-05-26 (Auto-workspace op basis van gegenereerde titel)
+
+- Findings: Nieuwe tracks gingen standaard naar geselecteerde/default workspace, zonder optionele flow om automatisch een eigen workspace per generatie aan te maken.
+- Conclusions: Voeg een Studio-checkbox toe die na succesvolle generatie een workspace aanmaakt op basis van de gegenereerde titel, de nieuwe tracks daarin plaatst en die workspace meteen opent.
+- Actions:
+  - Updated `src/lib/store.ts` — nieuwe persisted Studio-state `autoCreateWorkspaceFromGeneratedTitle` + setter toegevoegd
+  - Updated `src/components/StudioForm.tsx` — checkbox toegevoegd boven de Generate-knop om auto-workspace flow te togglen
+  - Updated `src/app/page.tsx` — generate-flow uitgebreid: workspace-naam afgeleid uit gegenereerde titel, workspace aangemaakt, geselecteerd en nieuwe tracks daarin geplaatst
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 15:19`
+  - Updated `sonara-user.md` — user-doc aangevuld met de nieuwe checkbox-flow
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.
