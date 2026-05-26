@@ -491,6 +491,9 @@ export default function HomePage() {
 
       if (errors.length > 0) {
         setNotice({ type: "error", message: errors.join(" | ") });
+        if (allTrackIds.length === 0) {
+          window.alert(errors.join(" | "));
+        }
       } else {
         setNotice(null);
       }

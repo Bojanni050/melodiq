@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
@@ -262,13 +262,20 @@ export async function POST(request: NextRequest) {
         ? "Copyright detected → click Optimize in Studio to rewrite safely"
         : error.message || "Generation failed";
 
-      await db
-        .update(tracks)
-        .set({
-          status: "failed",
-          error: errorMessage,
-        })
-        .where(eq(tracks.id, reservedTrack[0].id!));
+      const deletedPending = await db
+        .delete(tracks)
+        .where(and(eq(tracks.id, reservedTrack[0].id!), eq(tracks.status, "pending")))
+        .returning({ id: tracks.id });
+
+      if (deletedPending.length === 0) {
+        await db
+          .update(tracks)
+          .set({
+            status: "failed",
+            error: errorMessage,
+          })
+          .where(eq(tracks.id, reservedTrack[0].id!));
+      }
 
       await logApi({
         userId,
@@ -284,7 +291,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: errorMessage,
-          trackId: reservedTrack[0].id,
         },
         { status: isCopyright ? 400 : 500 }
       );
@@ -414,21 +420,36 @@ export async function POST(request: NextRequest) {
         ? "Copyright detected → click Optimize in Studio to rewrite safely"
         : error.message || "Generation failed";
 
+      const [deletedPending1, deletedPending2] = await Promise.all([
+        db
+          .delete(tracks)
+          .where(and(eq(tracks.id, reservedTrack1[0].id!), eq(tracks.status, "pending")))
+          .returning({ id: tracks.id }),
+        db
+          .delete(tracks)
+          .where(and(eq(tracks.id, reservedTrack2[0].id!), eq(tracks.status, "pending")))
+          .returning({ id: tracks.id }),
+      ]);
+
       await Promise.all([
-        db
-          .update(tracks)
-          .set({
-            status: "failed",
-            error: errorMessage,
-          })
-          .where(eq(tracks.id, reservedTrack1[0].id!)),
-        db
-          .update(tracks)
-          .set({
-            status: "failed",
-            error: errorMessage,
-          })
-          .where(eq(tracks.id, reservedTrack2[0].id!)),
+        deletedPending1.length === 0
+          ? db
+              .update(tracks)
+              .set({
+                status: "failed",
+                error: errorMessage,
+              })
+              .where(eq(tracks.id, reservedTrack1[0].id!))
+          : Promise.resolve(),
+        deletedPending2.length === 0
+          ? db
+              .update(tracks)
+              .set({
+                status: "failed",
+                error: errorMessage,
+              })
+              .where(eq(tracks.id, reservedTrack2[0].id!))
+          : Promise.resolve(),
       ]);
 
       await logApi({
@@ -445,7 +466,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: errorMessage,
-          trackIds: [reservedTrack1[0].id, reservedTrack2[0].id],
         },
         { status: isCopyright ? 400 : 500 }
       );
@@ -607,10 +627,17 @@ export async function POST(request: NextRequest) {
             ? "Copyright detected → click Optimize in Studio to rewrite safely"
             : error.message || "Generation failed";
 
-          await db
-            .update(tracks)
-            .set({ status: "failed", error: errorMessage })
-            .where(eq(tracks.id, reservedTrack[0].id!));
+          const deletedPending = await db
+            .delete(tracks)
+            .where(and(eq(tracks.id, reservedTrack[0].id!), eq(tracks.status, "pending")))
+            .returning({ id: tracks.id });
+
+          if (deletedPending.length === 0) {
+            await db
+              .update(tracks)
+              .set({ status: "failed", error: errorMessage })
+              .where(eq(tracks.id, reservedTrack[0].id!));
+          }
 
           await logApi({
             userId,
@@ -624,7 +651,7 @@ export async function POST(request: NextRequest) {
           });
 
           return NextResponse.json(
-            { error: errorMessage, trackId: reservedTrack[0].id },
+            { error: errorMessage },
             { status: isCopyright ? 400 : 500 }
           );
         }
@@ -806,16 +833,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
   } catch (error: any) {
     const isCopyright = error.message === "COPYRIGHT";
+    const errorMessage = isCopyright
+      ? "Copyright detected → click Optimize in Studio to rewrite safely"
+      : error.message || "Generation failed";
 
-    await db
-      .update(tracks)
-      .set({
-        status: "failed",
-        error: isCopyright
-          ? "Copyright detected → click Optimize in Studio to rewrite safely"
-          : error.message || "Generation failed",
-      })
-      .where(eq(tracks.id, track.id!));
+    const deletedPending = await db
+      .delete(tracks)
+      .where(and(eq(tracks.id, track.id!), eq(tracks.status, "pending")))
+      .returning({ id: tracks.id });
+
+    if (deletedPending.length === 0) {
+      await db
+        .update(tracks)
+        .set({
+          status: "failed",
+          error: errorMessage,
+        })
+        .where(eq(tracks.id, track.id!));
+    }
 
     await logApi({
       userId: userId,
@@ -830,10 +865,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: isCopyright
-          ? "Copyright detected → click Optimize in Studio to rewrite safely"
-          : error.message || "Generation failed",
-        trackId: track.id,
+        error: errorMessage,
       },
       { status: isCopyright ? 400 : 500 }
     );
