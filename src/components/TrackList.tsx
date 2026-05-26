@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { WORKSPACE_FOLDER_GRADIENTS, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const WAVE_DELAYS = ["[animation-delay:0ms]", "[animation-delay:55ms]", "[animation-delay:110ms]", "[animation-delay:165ms]", "[animation-delay:220ms]"];
 const WAVE_DURATIONS = ["[animation-duration:700ms]", "[animation-duration:790ms]", "[animation-duration:880ms]", "[animation-duration:970ms]", "[animation-duration:1060ms]"];
@@ -18,38 +18,6 @@ function WaveformBars({ count = 5, className = "" }: { count?: number; className
       ))}
     </div>
   );
-}
-
-function hashString(input: string) {
-  let hash = 0;
-  for (let index = 0; index < input.length; index += 1) {
-    hash = (hash << 5) - hash + input.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
-function pickRandomItems<T>(items: T[], seed: string, limit: number) {
-  const next = [...items];
-  next.sort((left, right) => {
-    const leftScore = hashString(`${seed}:${String(left)}`);
-    const rightScore = hashString(`${seed}:${String(right)}`);
-    return leftScore - rightScore;
-  });
-  return next.slice(0, limit);
-}
-
-function getWorkspaceCoverCollage(workspaceId: string, workspaceTracks: TrackItem[]) {
-  const coverUrls = workspaceTracks
-    .filter((track) => !!track.coverUrl)
-    .map((track) => track.coverUrl as string);
-
-  return pickRandomItems(coverUrls, workspaceId, 4);
-}
-
-function getWorkspaceGradient(workspaceId: string, gradient?: string) {
-  if (gradient) return gradient;
-  return WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length];
 }
 
 function ConfirmDialog({
@@ -118,7 +86,7 @@ interface PlaylistOption {
   name: string;
 }
 
-type SortOrder = "manual" | "newest" | "oldest" | "title-asc" | "title-desc";
+type SortOrder = "newest" | "oldest";
 
 export default function TrackList({
   tracks,
@@ -155,10 +123,6 @@ export default function TrackList({
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
-  const [manualOrder, setManualOrder] = useState<string[]>([]);
-  const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
-  const [dragOverTrackId, setDragOverTrackId] = useState<string | null>(null);
-  const [dragOverPosition, setDragOverPosition] = useState<"before" | "after">("after");
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
@@ -166,52 +130,10 @@ export default function TrackList({
     selectedIdsRef.current = selectedIds;
   }, [selectedIds]);
 
-  useEffect(() => {
-    setManualOrder((current) => {
-      const trackIds = tracks.map((track) => track.id);
-      const existingIds = current.filter((id) => trackIds.includes(id));
-      const missingIds = trackIds.filter((id) => !existingIds.includes(id));
-      return [...existingIds, ...missingIds];
-    });
-  }, [tracks]);
-
-  const orderedTracks = useMemo(() => {
+  const displayedTracks = useMemo(() => {
     const list = [...tracks];
 
-    if (sortOrder === "manual") {
-      const rankById = new Map(manualOrder.map((id, index) => [id, index]));
-      list.sort((left, right) => {
-        const leftRank = rankById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
-        const rightRank = rankById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
-        if (leftRank !== rightRank) return leftRank - rightRank;
-
-        const leftTime = Number(new Date(left.createdAt));
-        const rightTime = Number(new Date(right.createdAt));
-        if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
-        return rightTime - leftTime;
-      });
-      return list;
-    }
-
     list.sort((left, right) => {
-      if (sortOrder === "title-asc" || sortOrder === "title-desc") {
-        const leftTitle = (left.title ?? left.prompt ?? "").trim();
-        const rightTitle = (right.title ?? right.prompt ?? "").trim();
-        const titleComparison = leftTitle.localeCompare(rightTitle, undefined, {
-          sensitivity: "base",
-          numeric: true,
-        });
-
-        if (titleComparison !== 0) {
-          return sortOrder === "title-asc" ? titleComparison : -titleComparison;
-        }
-
-        const leftTime = Number(new Date(left.createdAt));
-        const rightTime = Number(new Date(right.createdAt));
-        if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
-        return rightTime - leftTime;
-      }
-
       const leftTime = Number(new Date(left.createdAt));
       const rightTime = Number(new Date(right.createdAt));
 
@@ -219,12 +141,6 @@ export default function TrackList({
       if (sortOrder === "oldest") return leftTime - rightTime;
       return rightTime - leftTime;
     });
-
-    return list;
-  }, [manualOrder, sortOrder, tracks]);
-
-  const displayedTracks = useMemo(() => {
-    const list = [...orderedTracks];
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -242,7 +158,7 @@ export default function TrackList({
 
       return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
     });
-  }, [orderedTracks, searchQuery]);
+  }, [sortOrder, tracks, searchQuery]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
@@ -323,67 +239,6 @@ export default function TrackList({
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
-  }
-
-  function moveTrackInManualOrder(sourceId: string, targetId: string, position: "before" | "after") {
-    setManualOrder((current) => {
-      const baseOrder = current.length > 0 ? [...current] : orderedTracks.map((track) => track.id);
-      const sourceIndex = baseOrder.indexOf(sourceId);
-      const targetIndex = baseOrder.indexOf(targetId);
-
-      if (sourceIndex < 0 || targetIndex < 0 || sourceId === targetId) {
-        return current;
-      }
-
-      const next = [...baseOrder];
-      next.splice(sourceIndex, 1);
-
-      const adjustedTargetIndex = next.indexOf(targetId);
-      const insertIndex = position === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
-      next.splice(insertIndex, 0, sourceId);
-
-      return next;
-    });
-  }
-
-  const canDragReorder = searchQuery.trim().length === 0 && displayedTracks.length > 1;
-
-  function handleTrackDragStart(trackId: string) {
-    if (!canDragReorder) return;
-    setDraggedTrackId(trackId);
-    setSortOrder("manual");
-  }
-
-  function handleTrackDragOver(event: React.DragEvent<HTMLDivElement>, trackId: string) {
-    if (!canDragReorder || !draggedTrackId || draggedTrackId === trackId) return;
-    event.preventDefault();
-
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const midpoint = bounds.top + bounds.height / 2;
-    const position: "before" | "after" = event.clientY < midpoint ? "before" : "after";
-
-    if (dragOverTrackId !== trackId || dragOverPosition !== position) {
-      setDragOverTrackId(trackId);
-      setDragOverPosition(position);
-    }
-  }
-
-  function handleTrackDrop(trackId: string) {
-    if (!canDragReorder || !draggedTrackId || draggedTrackId === trackId) {
-      setDraggedTrackId(null);
-      setDragOverTrackId(null);
-      return;
-    }
-
-    moveTrackInManualOrder(draggedTrackId, trackId, dragOverPosition);
-    setSortOrder("manual");
-    setDraggedTrackId(null);
-    setDragOverTrackId(null);
-  }
-
-  function handleTrackDragEnd() {
-    setDraggedTrackId(null);
-    setDragOverTrackId(null);
   }
 
   function handlePlay(track: TrackItem) {
@@ -513,11 +368,8 @@ export default function TrackList({
             className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/75 outline-none hover:border-white/20"
             aria-label="Sort tracks"
           >
-            <option value="manual" className="bg-[#161621]">Play order</option>
             <option value="newest" className="bg-[#161621]">New to old</option>
             <option value="oldest" className="bg-[#161621]">Old to new</option>
-            <option value="title-asc" className="bg-[#161621]">A-Z</option>
-            <option value="title-desc" className="bg-[#161621]">Z-A</option>
           </select>
         </div>
       </div>
@@ -546,11 +398,6 @@ export default function TrackList({
           </button>
         </div>
       )}
-      {sortOrder === "manual" && (
-        <div className="px-3 pb-1 text-[11px] text-white/35">
-          Drag tracks to change play order.
-        </div>
-      )}
       {isGenerating && <GeneratingRow />}
       {displayedTracks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -566,7 +413,6 @@ export default function TrackList({
           <TrackCard
             key={track.id}
             track={track}
-            allTracks={tracks}
             onPlay={handlePlay}
             onSelect={onSelect}
             onDelete={onDelete}
@@ -579,17 +425,6 @@ export default function TrackList({
             isSelected={selectedIds.has(track.id)}
             onToggleSelect={toggleSelection}
             onTitleUpdate={onTitleUpdate}
-            draggable={canDragReorder}
-            isDragActive={draggedTrackId === track.id}
-            showDropBefore={dragOverTrackId === track.id && dragOverPosition === "before"}
-            showDropAfter={dragOverTrackId === track.id && dragOverPosition === "after"}
-            onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = "move";
-              handleTrackDragStart(track.id);
-            }}
-            onDragOver={(event) => handleTrackDragOver(event, track.id)}
-            onDrop={() => handleTrackDrop(track.id)}
-            onDragEnd={handleTrackDragEnd}
           />
         ))
       )}
@@ -631,7 +466,6 @@ function GeneratingRow() {
 
 function TrackCard({
   track,
-  allTracks,
   onPlay,
   onSelect,
   onDelete,
@@ -644,17 +478,8 @@ function TrackCard({
   isSelected,
   onToggleSelect,
   onTitleUpdate,
-  draggable,
-  isDragActive,
-  showDropBefore,
-  showDropAfter,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
 }: {
   track: TrackItem;
-  allTracks: TrackItem[];
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -671,14 +496,6 @@ function TrackCard({
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
-  draggable?: boolean;
-  isDragActive?: boolean;
-  showDropBefore?: boolean;
-  showDropAfter?: boolean;
-  onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDrop?: () => void;
-  onDragEnd?: () => void;
 }) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -688,7 +505,7 @@ function TrackCard({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showMoveToWorkspaceDialog, setShowMoveToWorkspaceDialog] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(track.title || "");
   const [isSavingTitle, setIsSavingTitle] = useState(false);
@@ -710,19 +527,6 @@ function TrackCard({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
-  const tracksById = useMemo(() => {
-    return new Map(allTracks.map((item) => [item.id, item]));
-  }, [allTracks]);
-  const workspaceCoverById = useMemo(() => {
-    return new Map(
-      workspaces.map((workspace) => {
-        const workspaceTracks = workspace.trackIds
-          .map((trackId) => tracksById.get(trackId))
-          .filter((item): item is TrackItem => !!item);
-        return [workspace.id, getWorkspaceCoverCollage(workspace.id, workspaceTracks)];
-      })
-    );
-  }, [tracksById, workspaces]);
   const assignedWorkspaceName = useMemo(() => {
     const assignedWorkspace = workspaces.find((workspace) => workspace.trackIds.includes(track.id));
     return assignedWorkspace?.name || null;
@@ -758,6 +562,12 @@ function TrackCard({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setWorkspaceMenuOpen(false);
+    }
   }, [menuOpen]);
 
   async function executeDelete() {
@@ -802,18 +612,13 @@ function TrackCard({
     }
   }
 
-  function cancelTitle() {
-    setIsEditingTitle(false);
-    setEditTitle(track.title || "");
-  }
-
   function handleTitleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter") {
       e.preventDefault();
       saveTitle();
     } else if (e.key === "Escape") {
-      e.preventDefault();
-      cancelTitle();
+      setIsEditingTitle(false);
+      setEditTitle(track.title || "");
     }
   }
 
@@ -902,6 +707,7 @@ function TrackCard({
 
     setNewWorkspaceName("");
     setShowCreateWorkspaceDialog(false);
+    setWorkspaceMenuOpen(false);
     setMenuOpen(false);
   }
 
@@ -1046,90 +852,6 @@ function TrackCard({
           </div>
         </div>
       )}
-      {showMoveToWorkspaceDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMoveToWorkspaceDialog(false)} />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[min(92vw,860px)] max-h-[84vh] flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-medium text-white">Move to Workspace</h3>
-              <button
-                onClick={() => setShowMoveToWorkspaceDialog(false)}
-                className="text-white/40 hover:text-white/70 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <button
-              onClick={() => {
-                setShowMoveToWorkspaceDialog(false);
-                setShowCreateWorkspaceDialog(true);
-              }}
-              className="w-full flex items-center gap-2.5 px-3 py-3 rounded-lg border border-dashed border-white/15 text-sm text-primary-300 hover:bg-primary-500/10 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Workspace
-            </button>
-            <div className="my-1 h-px bg-white/10" />
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {workspaces.length > 0 ? (
-                workspaces.map((workspace) => (
-                  <button
-                    key={workspace.id}
-                    onClick={() => {
-                      if (onMoveTracksToWorkspace) {
-                        onMoveTracksToWorkspace(track.id, workspace.id);
-                      } else {
-                        moveTrackToWorkspace(workspace.id, track.id);
-                        onMoveToWorkspace?.(track.id, workspace.id);
-                      }
-                      setShowMoveToWorkspaceDialog(false);
-                      setMenuOpen(false);
-                    }}
-                    className="group relative h-36 w-full overflow-hidden rounded-2xl border border-white/10 text-left transition-transform hover:-translate-y-0.5"
-                    style={{ backgroundImage: getWorkspaceGradient(workspace.id, workspace.folderGradient) }}
-                  >
-                    <div className="absolute inset-0 bg-black/15" />
-
-                    {(workspaceCoverById.get(workspace.id) || []).length > 0 ? (
-                      <div className="absolute inset-2 grid grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-xl border border-white/10 bg-black/20">
-                        {(workspaceCoverById.get(workspace.id) || []).map((cover, index) => (
-                          <img
-                            key={`${workspace.id}-${index}`}
-                            src={cover}
-                            alt={workspace.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm">
-                          <svg className="w-8 h-8 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-x-0 bottom-0 p-2.5">
-                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/35 px-2.5 py-2 backdrop-blur-sm">
-                        <span className="flex-1 truncate text-xs font-medium text-white">{workspace.name}</span>
-                        <span className="text-[11px] text-white/70">{workspace.trackIds.length}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <p className="px-3 py-4 text-xs text-white/40 text-center italic sm:col-span-2">No workspaces yet. Create one above.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {showDuplicatePlaylistDialog && pendingPlaylistAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -1173,15 +895,10 @@ function TrackCard({
             : track.status === "generating" || track.status === "pending"
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
-              } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""} ${isDragActive ? "opacity-50" : ""} ${showDropBefore ? "ring-2 ring-inset ring-primary-400" : ""} ${showDropAfter ? "ring-2 ring-inset ring-primary-300/60" : ""}`}
+        } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={() => onSelect(track)}
-              draggable={draggable}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              onDragEnd={onDragEnd}
       >
       {/* Selection dot */}
       <button
@@ -1292,46 +1009,18 @@ function TrackCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           {isEditingTitle ? (
-            <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <input
-                ref={titleInputRef}
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-                onClick={(e) => e.stopPropagation()}
-                disabled={isSavingTitle}
-                className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 min-w-0"
-                maxLength={200}
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  saveTitle();
-                }}
-                disabled={isSavingTitle}
-                className="shrink-0 p-0.5 rounded text-green-400 hover:bg-green-400/20 transition-colors disabled:opacity-40"
-                title="Save title"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  cancelTitle();
-                }}
-                className="shrink-0 p-0.5 rounded text-red-400 hover:bg-red-400/20 transition-colors"
-                title="Cancel"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              onBlur={saveTitle}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isSavingTitle}
+              className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
+              maxLength={200}
+            />
           ) : (
             <h3
               className={`text-sm font-medium truncate cursor-text ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
@@ -1471,16 +1160,58 @@ function TrackCard({
                 >
                   Reuse Prompt
                 </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    setShowMoveToWorkspaceDialog(true);
-                  }}
-                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-                >
-                  Move To Workspace
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setWorkspaceMenuOpen((open) => !open);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                  >
+                    <span>Move To Workspace</span>
+                    <span className="text-white/30">›</span>
+                  </button>
+                  {workspaceMenuOpen && (
+                    <div className="absolute right-full top-0 mr-1 z-30 min-w-56 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5 max-h-72 overflow-y-auto">
+                      {workspaces.length > 0 ? (
+                        workspaces.map((workspace) => (
+                          <button
+                            key={workspace.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onMoveTracksToWorkspace) {
+                                onMoveTracksToWorkspace(track.id, workspace.id);
+                              } else {
+                                moveTrackToWorkspace(workspace.id, track.id);
+                                onMoveToWorkspace?.(track.id, workspace.id);
+                              }
+                              setWorkspaceMenuOpen(false);
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                          >
+                            {workspace.name}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-2.5 py-1 text-xs text-white/40 italic">No workspaces yet</p>
+                      )}
+                      <div className="my-1 h-px bg-white/10" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCreateWorkspaceDialog(true);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-primary-300 hover:bg-primary-500/10 flex items-center gap-2"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Create new workspace
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

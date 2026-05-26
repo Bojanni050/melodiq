@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 18:26**
+**Versie: za 21:34**
 
 > AI Music Generation Web App
 
@@ -17,7 +17,7 @@ Sonara is a web app that lets you create music using AI providers. You describe 
 2. **Describe your song** — use the Style & Prompt textarea to describe genre, mood, instrumentation, tempo
 3. **Set lyrics** — either write your own or use the AI lyrics generator (see below)
 4. **Pick a provider** — choose from Lyria, PoYo (Suno), or Tempolor
-5. **Give it a title (optional)** — you can leave it empty; for vocal tracks Sonara can auto-generate one from lyrics
+5. **Give it a title** — required for instrumental tracks; auto-generated for vocal tracks if left empty
 6. **Hit Generate** — the app sends everything to the chosen provider and saves the result
 
 ---
@@ -39,7 +39,7 @@ Toggle between **VOCAL** and **INSTRUMENTAL** mode.
 - Generated lyrics output is strict format: section tags + lyric lines only (no intro text, notes, or extra commentary)
 
 **Instrumental mode:**
-- No lyrics needed. Focus on the style prompt; title is optional.
+- No lyrics needed. Focus on the style prompt and give the track a descriptive title.
 
 ### Style & Prompt
 Describe the musical style — genre, mood, instrumentation, production aesthetic.
@@ -52,7 +52,6 @@ Select which AI music service to use. Each provider shows its current credit bal
 - **PoYo** (Suno) — asynchronous, webhook-based; generated variants request their own HD/WAV conversion
 - **Tempolor** — asynchronous, webhook-based
 - **MusicGPT** — asynchronous, webhook-based, returns two generated variants
-- The Studio form now shows a clear **Studio** heading above the Provider & Model card.
 
 This selector now lives in the **Studio** card on the Create page.
 
@@ -73,7 +72,6 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Generate one block at a time with the song topic, mood, language, style, and existing blocks as context
 - Generate a complete song from the selected structure; each section is placed in its own block
 - While full-song generation is running, use **Stop generating** to cancel remaining AI block generation
-- Vertaal alle huidige lyric-blokken met **Translate lyrics** via een doeltaal-dropdown (bijv. nl, en, french, etc.)
 - Save your current Lyric Studio setup as a named snapshot and load it later from **Load saved lyrics**
 - Delete old snapshots directly from the load dialog to keep only useful drafts
 - On each Chorus block, use **Unique (do not auto-repeat)** to force a fresh chorus even when Repetitive chorus is enabled
@@ -88,16 +86,15 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
 
 ### Song Title
-- **All tracks** — title is optional
-- **Vocal tracks** — if left empty, the AI can automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
-- **Instrumental tracks** — if left empty, Sonara asks AI to generate a title from your style prompt (with fallback derivation if needed)
+- **Instrumental tracks** — title is **required**
+- **Vocal tracks** — if left empty, the AI will automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
 
 ---
 
 ## Generating a Track
 
 When you click **Generate Track**:
-1. The app validates required fields (style prompt for instrumental, lyrics + style prompt for vocal)
+1. The app validates required fields (title for instrumental, lyrics + prompt for vocal)
 2. If vocal and no title is set, AI auto-generates one from your lyrics
 3. Your prompt, lyrics, and settings are sent to the selected provider
 4. A new track appears in the **Recent Tracks** list
@@ -113,7 +110,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 - **Recent Tracks** — shown in the lower half of the right Studio column. Click any track to open the detail panel.
 - **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`). Workspace selection in Studio now uses the same folder cards (gradient + cover collage) as the dedicated Workspaces page.
-- All track lists now include sorting controls: **New to old**, **Old to new**, **A-Z**, and **Z-A**.
+- All track lists now include sorting controls: **New to old** and **Old to new**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
@@ -143,8 +140,6 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Moving a track to a workspace that already contains it is now silently skipped (no duplicate assignment)
 - Track listings now show which workspace each track belongs to
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
-- The **Move To Workspace** popup is now taller and wider and shows visual workspace folder cards with cover-art collages
-- In Studio, a checkbox above **Generate Track** can auto-create a workspace from the generated title, move new songs into it, and open that workspace automatically
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
@@ -171,7 +166,6 @@ The Settings page lets you configure each provider independently:
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
 - MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
-- Webhook fields now auto-fill from `APP_URL` when they are empty, so you do not need to copy each derived URL manually
 
 ---
 
