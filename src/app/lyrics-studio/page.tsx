@@ -21,6 +21,11 @@ import {
   TRANSLATION_LANGUAGES,
 } from "@/lib/lyrics-studio-constants";
 import {
+  buildLyricsStudioDraftPayload,
+  parseSavedLyricsSnapshots,
+  sanitizeLyricBlocksForLoad,
+} from "@/lib/lyrics-studio-draft";
+import {
   type ConfirmAction,
   type LyricsStudioNotice,
   type LyricStudioSnapshot,
@@ -165,29 +170,14 @@ export default function LyricsStudioPage() {
   }, [setCustomLanguage, setCustomStructure, setLanguage, setStructure]);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(LYRICS_STUDIO_SNAPSHOTS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      const validSnapshots = parsed.filter((item) => {
-        return (
-          item &&
-          typeof item.id === "string" &&
-          typeof item.name === "string" &&
-          typeof item.createdAt === "string" &&
-          item.payload &&
-          typeof item.payload === "object"
-        );
-      }) as LyricStudioSnapshot[];
-      setSavedSnapshots(validSnapshots);
-    } catch {}
+    const raw = window.localStorage.getItem(LYRICS_STUDIO_SNAPSHOTS_KEY);
+    setSavedSnapshots(parseSavedLyricsSnapshots(raw));
   }, []);
 
   useEffect(() => {
     if (!hasRestoredDraft) return;
 
-    const payload = {
+    const payload = buildLyricsStudioDraftPayload({
       topic,
       mood,
       style,
@@ -203,7 +193,7 @@ export default function LyricsStudioPage() {
       creativityLevel,
       contextLevel,
       styleSuggestion,
-    };
+    });
 
     window.localStorage.setItem(LYRICS_STUDIO_STORAGE_KEY, JSON.stringify(payload));
   }, [
@@ -420,26 +410,6 @@ export default function LyricsStudioPage() {
     setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
   }
 
-  function buildDraftPayload() {
-    return {
-      topic,
-      mood,
-      style,
-      blocks,
-      activePreset,
-      lyricCols,
-      showLyricsSidebar,
-      structure,
-      customStructure,
-      language,
-      customLanguage,
-      repetitiveChorus,
-      creativityLevel,
-      contextLevel,
-      styleSuggestion,
-    };
-  }
-
   function openSaveSnapshotModal() {
     setSnapshotNameInput(`Lyrics ${new Date().toLocaleString()}`);
     setShowSaveSnapshotModal(true);
@@ -456,7 +426,23 @@ export default function LyricsStudioPage() {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: new Date().toISOString(),
-      payload: buildDraftPayload(),
+      payload: buildLyricsStudioDraftPayload({
+        topic,
+        mood,
+        style,
+        blocks,
+        activePreset,
+        lyricCols,
+        showLyricsSidebar,
+        structure,
+        customStructure,
+        language,
+        customLanguage,
+        repetitiveChorus,
+        creativityLevel,
+        contextLevel,
+        styleSuggestion,
+      }),
     };
 
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
@@ -466,29 +452,12 @@ export default function LyricsStudioPage() {
     setNotice({ type: "success", message: "Lyrics snapshot opgeslagen." });
   }
 
-  function sanitizeBlocksForLoad(input: LyricBlock[]): LyricBlock[] {
-    const validTypes = new Set<BlockType>(BLOCK_TYPES);
-    return (input || [])
-      .filter((block) => !!block && validTypes.has(block.type))
-      .map((block, index) => ({
-        id: typeof block.id === "string" && block.id.trim() ? block.id : `loaded-${index}-${crypto.randomUUID()}`,
-        type: block.type,
-        label: typeof block.label === "string" && block.label.trim() ? block.label : BLOCK_LABELS[block.type],
-        content: typeof block.content === "string" ? block.content : "",
-        generating: false,
-        uniqueChorusOverride:
-          block.type === "chorus" && typeof block.uniqueChorusOverride === "boolean"
-            ? block.uniqueChorusOverride
-            : false,
-      }));
-  }
-
   function loadLyricsSnapshot(snapshot: LyricStudioSnapshot) {
     const payload = snapshot.payload;
     setTopic(payload.topic || "");
     setMood(payload.mood || "");
     setStyle(payload.style || "");
-    setBlocks(sanitizeBlocksForLoad(payload.blocks || []));
+    setBlocks(sanitizeLyricBlocksForLoad(payload.blocks || [], BLOCK_TYPES, BLOCK_LABELS));
     setActivePreset(payload.activePreset || "");
     setLyricCols(payload.lyricCols === 1 ? 1 : 2);
     setShowLyricsSidebar(Boolean(payload.showLyricsSidebar));
