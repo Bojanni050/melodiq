@@ -507,7 +507,7 @@ export default function LyricsStudioPage() {
     }
 
     const targetId = blockElement?.dataset.lyricBlockId;
-    if (!targetId || targetId === draggingId) {
+    if (!targetId || targetId === draggingId || !blockElement) {
       dropTargetRef.current = null;
       setDropTarget(null);
       return;
