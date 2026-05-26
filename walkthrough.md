@@ -258,6 +258,17 @@
   - Confirmed `src/app/page.tsx` bleef ongewijzigd zoals gevraagd.
   - Validated with `npm run build` na elke fase (1 t/m 4).
 
+## 2026-05-26 (Song title niet langer verplicht in instrumental mode)
+
+- Findings: Op de Studio-pagina werd bij instrumental generation nog steeds afgedwongen dat `Song Title` verplicht was, terwijl dit functioneel niet nodig is.
+- Conclusions: Validatie moet title als optioneel behandelen in zowel frontend als backend; instrumental moet alleen een style/prompt vereisen.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — `canGenerate` aangepast zodat instrumental `songIdea` vereist i.p.v. `title`; verplichte title-waarschuwingen verwijderd; disabled hinttekst aangepast
+  - Updated `src/app/api/generate/route.ts` — server-side check verwijderd die title verplicht maakte voor instrumental tracks; prompt-normalisatie toegevoegd om fallback-title veilig te berekenen
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 14:02`
+  - Updated `sonara-user.md` — gebruikersdocumentatie bijgewerkt zodat song title overal als optioneel beschreven staat
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.
@@ -598,7 +609,7 @@
   - Updated `src/app/page.tsx` — Recent Tracks `TrackList` gebruikt nu `onMoveToWorkspace` en opent direct de gekozen workspace
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 01:25`
   - Validated with `npm run build`.
-
+ 
 ## 2026-05-23 za 01:37 (Exacte 4/8/12/16 folders per rij)
 
 - Findings: De selector moest exact het aantal folders per rij bepalen; responsive profielen konden op sommige schermen minder kolommen tonen dan geselecteerd.

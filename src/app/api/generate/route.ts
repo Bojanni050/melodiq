@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
-  const resolvedTitle = title?.trim() || (provider === "poyo" ? prompt.trim().slice(0, 80) : null);
+  const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
+  const resolvedTitle = title?.trim() || (provider === "poyo" ? normalizedPrompt.slice(0, 80) : null);
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
@@ -87,9 +88,6 @@ export async function POST(request: NextRequest) {
   }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
-  }
-  if (instrumental && (!resolvedTitle || !resolvedTitle.trim())) {
-    return NextResponse.json({ error: "title is required for instrumental tracks" }, { status: 400 });
   }
   if (!allowedProviders.includes(provider)) {
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });

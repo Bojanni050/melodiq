@@ -278,10 +278,10 @@ export default function StudioForm({
   // Generate button logic:
   // - At least one provider must be selected
   // - If instrumental OFF: needs lyrics AND style/prompt
-  // - If instrumental ON: needs title (prompt is optional since no vocals)
+  // - If instrumental ON: needs style/prompt (title is optional)
   const canGenerate =
     Object.keys(selectedProviders).length > 0 &&
-    (instrumental ? !!title.trim() : !!lyrics.trim() && !!songIdea.trim());
+    (instrumental ? !!songIdea.trim() : !!lyrics.trim() && !!songIdea.trim());
 
   async function handleOptimize() {
     if (!songIdea) return;
@@ -784,14 +784,9 @@ Your chorus here`}
             {titleCharCount}/{titleMaxChars}
           </span>
         </div>
-        {!instrumental && !title.trim() && (
-          <p className="text-xs text-red-400/60 mt-1">
-            ⚠ Title is required for vocal tracks
-          </p>
-        )}
-        {instrumental && !title.trim() && (
-          <p className="text-xs text-red-400/60 mt-1">
-            ⚠ Title is required for instrumental tracks
+        {!title.trim() && (
+          <p className="text-xs text-white/40 mt-1">
+            Title is optional. Leave empty if you want.
           </p>
         )}
       </section>
@@ -813,7 +808,7 @@ Your chorus here`}
             {Object.keys(selectedProviders).length === 0
               ? "Select at least one provider"
               : instrumental
-              ? "Set a title to generate"
+              ? "Describe a style or prompt to continue"
               : !lyrics.trim()
               ? "Write or generate lyrics to continue"
               : "Describe a style or prompt to continue"}

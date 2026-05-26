@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 02:39**
+**Versie: di 14:02**
 
 > AI Music Generation Web App
 
@@ -17,7 +17,7 @@ Sonara is a web app that lets you create music using AI providers. You describe 
 2. **Describe your song** — use the Style & Prompt textarea to describe genre, mood, instrumentation, tempo
 3. **Set lyrics** — either write your own or use the AI lyrics generator (see below)
 4. **Pick a provider** — choose from Lyria, PoYo (Suno), or Tempolor
-5. **Give it a title** — required for instrumental tracks; auto-generated for vocal tracks if left empty
+5. **Give it a title (optional)** — you can leave it empty; for vocal tracks Sonara can auto-generate one from lyrics
 6. **Hit Generate** — the app sends everything to the chosen provider and saves the result
 
 ---
@@ -39,7 +39,7 @@ Toggle between **VOCAL** and **INSTRUMENTAL** mode.
 - Generated lyrics output is strict format: section tags + lyric lines only (no intro text, notes, or extra commentary)
 
 **Instrumental mode:**
-- No lyrics needed. Focus on the style prompt and give the track a descriptive title.
+- No lyrics needed. Focus on the style prompt; title is optional.
 
 ### Style & Prompt
 Describe the musical style — genre, mood, instrumentation, production aesthetic.
@@ -86,15 +86,16 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
 
 ### Song Title
-- **Instrumental tracks** — title is **required**
-- **Vocal tracks** — if left empty, the AI will automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
+- **All tracks** — title is optional
+- **Vocal tracks** — if left empty, the AI can automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
+- **Instrumental tracks** — if left empty, Sonara still generates the track
 
 ---
 
 ## Generating a Track
 
 When you click **Generate Track**:
-1. The app validates required fields (title for instrumental, lyrics + prompt for vocal)
+1. The app validates required fields (style prompt for instrumental, lyrics + style prompt for vocal)
 2. If vocal and no title is set, AI auto-generates one from your lyrics
 3. Your prompt, lyrics, and settings are sent to the selected provider
 4. A new track appears in the **Recent Tracks** list
