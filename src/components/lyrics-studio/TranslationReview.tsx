@@ -28,7 +28,7 @@ export default function TranslationReview({
           onClick={onDone}
           className="text-xs text-white/40 hover:text-white/70 transition-colors"
         >
-          <- Back to editor
+          {"<- Back to editor"}
         </button>
       </div>
       {blocks.map((block) => {

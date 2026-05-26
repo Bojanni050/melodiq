@@ -7,7 +7,25 @@ import Flowchart from "@/components/Flowchart";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
 import BlockToolbar from "@/components/lyrics-studio/BlockToolbar";
 import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
+import LyricsConfirmModal from "@/components/lyrics-studio/LyricsConfirmModal";
+import LyricsNotice from "@/components/lyrics-studio/LyricsNotice";
+import LyricsSnapshotModals from "@/components/lyrics-studio/LyricsSnapshotModals";
 import PresetSelector from "@/components/lyrics-studio/PresetSelector";
+import TranslationReview from "@/components/lyrics-studio/TranslationReview";
+import {
+  BLOCK_COLORS,
+  BLOCK_PRESETS,
+  BLOCK_TYPES,
+  LANGUAGES,
+  STRUCTURES,
+  STRUCTURE_PRESET_MAP,
+  TRANSLATION_LANGUAGES,
+} from "@/lib/lyrics-studio-constants";
+import {
+  type ConfirmAction,
+  type LyricsStudioNotice,
+  type LyricStudioSnapshot,
+} from "@/lib/lyrics-studio-types";
 import {
   autoGrowTextarea,
   BLOCK_LABELS,
@@ -20,146 +38,8 @@ import {
 } from "@/lib/lyrics-utils";
 import { useStudioStore } from "@/lib/store";
 
-interface LyricStudioSnapshot {
-  id: string;
-  name: string;
-  createdAt: string;
-  payload: {
-    topic: string;
-    mood: string;
-    style: string;
-    blocks: LyricBlock[];
-    activePreset: string;
-    lyricCols: number;
-    showLyricsSidebar: boolean;
-    structure: string;
-    customStructure: string;
-    language: string;
-    customLanguage: string;
-    repetitiveChorus: boolean;
-    creativityLevel: number;
-    contextLevel: number;
-    styleSuggestion: string;
-  };
-}
-
-type LyricsStudioNotice = {
-  type: "error" | "success" | "info";
-  message: string;
-};
-
-type ConfirmAction = "replaceBlocks" | "replaceStudio" | "clearAll" | null;
-
 const LYRICS_STUDIO_STORAGE_KEY = "sonara-lyrics-studio";
 const LYRICS_STUDIO_SNAPSHOTS_KEY = "sonara-lyrics-studio-snapshots";
-
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "French",
-  "Frisian",
-  "German",
-  "Polish",
-  "Serbian",
-  "Japanese",
-  "Korean",
-  "Hindi",
-  "Portuguese",
-  "Italian",
-  "Mandarin",
-  "Dutch",
-  "Other...",
-];
-
-const TRANSLATION_LANGUAGES = [
-  { value: "nl", label: "Nederlands (nl)" },
-  { value: "en", label: "English (en)" },
-  { value: "fr", label: "French (fr)" },
-  { value: "de", label: "German (de)" },
-  { value: "es", label: "Spanish (es)" },
-  { value: "it", label: "Italian (it)" },
-  { value: "pt", label: "Portuguese (pt)" },
-  { value: "pl", label: "Polish (pl)" },
-  { value: "sr", label: "Serbian (sr)" },
-  { value: "ja", label: "Japanese (ja)" },
-  { value: "ko", label: "Korean (ko)" },
-  { value: "hi", label: "Hindi (hi)" },
-  { value: "zh", label: "Mandarin (zh)" },
-  { value: "other", label: "Other..." },
-];
-
-const STRUCTURES = [
-  { label: "Eenvoudige pop-variaties", group: true },
-  { value: "abab", label: "ABAB", desc: "Vers - Refrein - Vers - Refrein. Simpel, radio-vriendelijk." },
-  { value: "ababc", label: "ABABC", desc: "Vers - Refrein - Vers - Refrein - Brug/Outro. Extra ruimte voor finale." },
-  { value: "ababcbc", label: "ABABCBC", desc: "Extra herhaling van B/C voor dramatische build-up. Festival-stijl." },
-  { value: "aaa", label: "AAA (alleen couplet)", desc: "Alles is tekst-vers, muziek herhaalt zich. Volksliedjes, ballads." },
-  { value: "aaba", label: "AABA (klassieke 32-bar)", desc: "A-vers - A-vers - B-brug - A-vers. Jazz, ballads, cine-muziek." },
-  { label: "Dance / TCH-stijl", group: true },
-  { value: "dance-2drops", label: "Intro -> Verse -> Build -> Drop -> Verse -> Build -> Drop -> Outro", desc: "Klassieke 2-drops-structuur. House/techno." },
-  { value: "dance-breaks", label: "Intro -> Break -> Build -> Drop -> Break -> Build -> Drop -> Outro", desc: "Twee break-build-drop-blokken. Ideaal voor clubs." },
-  { value: "dance-earlydrop", label: "Intro -> Verse -> Drop -> Verse -> Break -> Build -> Drop -> Outro", desc: "Direct in de drop. Festival/peak-hour." },
-  { value: "one-drop", label: "One-drop / minimal", desc: "Intro -> Break -> Build -> Drop -> Outro. Focus op textuur." },
-  { label: "Singer-songwriter pop", group: true },
-  { value: "pop-classic", label: "Intro -> Verse -> Chorus -> Verse -> Chorus -> Bridge -> Chorus -> Outro", desc: "Klassieke pop-structuur (ABABCB). Radio-ready." },
-  { value: "pop-default", label: "Intro -> Verse -> Pre-Chorus -> Chorus -> Verse -> Pre-Chorus -> Chorus -> Bridge -> Chorus", desc: "Standaard pop-structuur met pre-chorus builds." },
-  { value: "pop-finallift", label: "Intro -> Verse -> Chorus -> Bridge -> Chorus -> Final lift", desc: "Extra brug + lift (strip-down + build-up)." },
-  { value: "pop-prechorus", label: "Intro -> Verse -> Chorus -> Pre-Chorus -> Chorus -> Bridge -> Outro", desc: "Pre-chorus voegt spanning toe. Dramatische pop." },
-  { value: "pop-triplechorus", label: "Intro -> Verse -> Chorus -> Verse -> Chorus -> Chorus -> Outro", desc: "Drie keer refrein voor sticky effect." },
-  { value: "pop-instrumental", label: "Intro -> Verse -> Chorus -> Bridge -> Instrumental -> Chorus -> Outro", desc: "Instrumentale highlight na de brug. Solo/pads." },
-  { value: "ai-choose", label: "Kies jij maar", desc: "AI kiest de beste structuur." },
-  { value: "manual", label: "Handmatig", desc: "Typ je eigen structuur." },
-];
-
-const BLOCK_TYPES: BlockType[] = [
-  "intro",
-  "verse",
-  "pre-chorus",
-  "chorus",
-  "post-chorus",
-  "bridge",
-  "outro",
-];
-
-const BLOCK_PRESETS: Record<string, BlockType[]> = {
-  "Pop": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus"],
-  "ABABCB": ["verse", "chorus", "verse", "chorus", "bridge", "chorus"],
-  "AABA": ["verse", "verse", "bridge", "verse"],
-  "Extended": ["intro", "verse", "chorus", "verse", "chorus", "bridge", "chorus", "chorus", "outro"],
-  "EDM — 2 Drops": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "outro"],
-  "EDM — Build & Drop": ["intro", "verse", "chorus", "bridge", "chorus", "outro"],
-  "Dance — Early Drop": ["intro", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus", "outro"],
-  "Minimal / One Drop": ["intro", "verse", "chorus", "outro"],
-};
-
-const BLOCK_COLORS: Record<BlockType, string> = {
-  intro: "rgba(255,255,255,0.15)",
-  verse: "#3b82f6",
-  "pre-chorus": "#eab308",
-  chorus: "#ff530c",
-  "post-chorus": "#22c55e",
-  bridge: "#a855f7",
-  outro: "rgba(255,255,255,0.15)",
-};
-
-
-const STRUCTURE_PRESET_MAP: Record<string, string> = {
-  abab: "ABABCB",
-  ababc: "ABABCB",
-  ababcbc: "Extended",
-  aaa: "AABA",
-  aaba: "AABA",
-  "dance-2drops": "EDM — 2 Drops",
-  "dance-breaks": "EDM — Build & Drop",
-  "dance-earlydrop": "Dance — Early Drop",
-  "one-drop": "Minimal / One Drop",
-  "pop-classic": "Pop",
-  "pop-default": "Pop",
-  "pop-finallift": "Extended",
-  "pop-prechorus": "Pop",
-  "pop-triplechorus": "Extended",
-  "pop-instrumental": "Extended",
-};
 
 export default function LyricsStudioPage() {
   const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
@@ -1089,27 +969,7 @@ export default function LyricsStudioPage() {
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
-            {notice && (
-              <div className="fixed right-4 top-4 z-[90] w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-2xl">
-                <div className="flex items-start gap-3">
-                  <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-red-100">{notice.message}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setNotice(null)}
-                    className="text-red-200/70 hover:text-red-100"
-                    aria-label="Sluit melding"
-                    title="Sluiten"
-                  >
-                    x
-                  </button>
-                </div>
-              </div>
-            )}
+            <LyricsNotice notice={notice} onClose={() => setNotice(null)} />
 
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
@@ -1156,133 +1016,28 @@ export default function LyricsStudioPage() {
               </div>
             </div>
 
-            {showLoadSnapshots && (
-              <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => setShowLoadSnapshots(false)}>
-                <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#11111a] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-white/80">Load saved lyrics</h3>
-                    <button
-                      type="button"
-                      onClick={() => setShowLoadSnapshots(false)}
-                      className="text-white/40 hover:text-white/70"
-                      title="Close"
-                    >
-                      x
-                    </button>
-                  </div>
-                  {savedSnapshots.length === 0 ? (
-                    <p className="text-xs text-white/45">No saved snapshots yet.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-                      {savedSnapshots.map((snapshot) => (
-                        <div key={snapshot.id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                          <button
-                            type="button"
-                            onClick={() => loadLyricsSnapshot(snapshot)}
-                            className="min-w-0 flex-1 text-left"
-                          >
-                            <p className="truncate text-sm text-white/85">{snapshot.name}</p>
-                            <p className="text-xs text-white/45">{new Date(snapshot.createdAt).toLocaleString()}</p>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteLyricsSnapshot(snapshot.id)}
-                            className="px-2 py-1 text-xs text-red-300/80 hover:text-red-200"
-                            title="Delete snapshot"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <LyricsSnapshotModals
+              showLoadSnapshots={showLoadSnapshots}
+              showSaveSnapshotModal={showSaveSnapshotModal}
+              savedSnapshots={savedSnapshots}
+              snapshotNameInput={snapshotNameInput}
+              onCloseLoad={() => setShowLoadSnapshots(false)}
+              onCloseSave={() => setShowSaveSnapshotModal(false)}
+              onSnapshotNameChange={setSnapshotNameInput}
+              onLoadSnapshot={loadLyricsSnapshot}
+              onDeleteSnapshot={deleteLyricsSnapshot}
+              onSaveSnapshot={() => saveLyricsSnapshot(snapshotNameInput)}
+            />
 
-            {showSaveSnapshotModal && (
-              <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => setShowSaveSnapshotModal(false)}>
-                <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#11111a] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-white/80">Save lyrics snapshot</h3>
-                    <button
-                      type="button"
-                      onClick={() => setShowSaveSnapshotModal(false)}
-                      className="text-white/40 hover:text-white/70"
-                      title="Close"
-                    >
-                      x
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={snapshotNameInput}
-                    onChange={(event) => setSnapshotNameInput(event.target.value)}
-                    className="input-field text-sm"
-                    placeholder="Snapshot naam"
-                  />
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => saveLyricsSnapshot(snapshotNameInput)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowSaveSnapshotModal(false)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {confirmAction && (
-              <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={() => {
+            <LyricsConfirmModal
+              confirmAction={confirmAction}
+              onConfirm={handleConfirmAction}
+              onCancel={() => {
                 setConfirmAction(null);
                 setPendingPresetName(null);
                 setPendingStudioPayload(null);
-              }}>
-                <div className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-                  <div className="flex items-start gap-3">
-                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-                    </svg>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-amber-100">
-                        {confirmAction === "replaceBlocks" && "Huidige blocks vervangen door de gekozen preset?"}
-                        {confirmAction === "replaceStudio" && "Studio bevat al data. Wil je die vervangen met deze lyrics en style?"}
-                        {confirmAction === "clearAll" && "Weet je zeker dat je alle Lyric Studio data wilt wissen?"}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleConfirmAction}
-                          className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
-                        >
-                          Bevestigen
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConfirmAction(null);
-                            setPendingPresetName(null);
-                            setPendingStudioPayload(null);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
-                        >
-                          Annuleren
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+              }}
+            />
 
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
               <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
@@ -1534,91 +1289,35 @@ export default function LyricsStudioPage() {
 
               <section className="min-h-[620px] rounded-2xl border border-white/10 bg-[#101018]/80 p-4 lg:p-5">
                 {showTranslationView ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-white/80">Translation Review</h3>
-                      <button
-                        type="button"
-                        onClick={() => setShowTranslationView(false)}
-                        className="text-xs text-white/40 hover:text-white/70 transition-colors"
-                      >
-                        ← Back to editor
-                      </button>
-                    </div>
-                    {blocks.map((block) => {
-                      const translated = translatedBlocks.get(block.id);
-                      if (!block.content.trim() || !translated?.trim()) return null;
-                      return (
-                        <div key={block.id} className="rounded-xl border border-white/10 bg-[#15151f] p-4">
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-3">{block.label}</h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-[11px] font-semibold text-white/40 mb-2">Original</p>
-                              <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{block.content}</p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] font-semibold text-white/40 mb-2">{effectiveTranslationLanguage}</p>
-                              <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{translated}</p>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBlocks((current) =>
-                                  current.map((b) =>
-                                    b.id === block.id ? { ...b, content: translated } : b
-                                  )
-                                );
-                                const next = new Map(translatedBlocks);
-                                next.delete(block.id);
-                                setTranslatedBlocks(next);
-                              }}
-                              className="text-xs rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
-                            >
-                              ✓ Use translation
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = new Map(translatedBlocks);
-                                next.delete(block.id);
-                                setTranslatedBlocks(next);
-                              }}
-                              className="text-xs rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-blue-200 hover:bg-blue-500/20 transition-colors"
-                            >
-                              ✓ Keep original
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBlocks((current) =>
-                                  current.map((b) =>
-                                    b.id === block.id 
-                                      ? { ...b, content: `${block.content}\n\n---\n\n${translated}` } 
-                                      : b
-                                  )
-                                );
-                                const next = new Map(translatedBlocks);
-                                next.delete(block.id);
-                                setTranslatedBlocks(next);
-                              }}
-                              className="text-xs rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-purple-200 hover:bg-purple-500/20 transition-colors"
-                            >
-                              ✓ Keep both
-                            </button>
-                          </div>
-                        </div>
+                  <TranslationReview
+                    blocks={blocks}
+                    translatedBlocks={translatedBlocks}
+                    effectiveTranslationLanguage={effectiveTranslationLanguage}
+                    onUseTranslation={(blockId, translated) => {
+                      setBlocks((current) =>
+                        current.map((b) => (b.id === blockId ? { ...b, content: translated } : b))
                       );
-                    })}
-                    <button
-                      type="button"
-                      onClick={() => setShowTranslationView(false)}
-                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:bg-white/10 transition-colors"
-                    >
-                      Done reviewing translations
-                    </button>
-                  </div>
+                      const next = new Map(translatedBlocks);
+                      next.delete(blockId);
+                      setTranslatedBlocks(next);
+                    }}
+                    onKeepOriginal={(blockId) => {
+                      const next = new Map(translatedBlocks);
+                      next.delete(blockId);
+                      setTranslatedBlocks(next);
+                    }}
+                    onKeepBoth={(blockId, original, translated) => {
+                      setBlocks((current) =>
+                        current.map((b) =>
+                          b.id === blockId ? { ...b, content: `${original}\n\n---\n\n${translated}` } : b
+                        )
+                      );
+                      const next = new Map(translatedBlocks);
+                      next.delete(blockId);
+                      setTranslatedBlocks(next);
+                    }}
+                    onDone={() => setShowTranslationView(false)}
+                  />
                 ) : (
                   <>
                     <LyricBlockEditor
