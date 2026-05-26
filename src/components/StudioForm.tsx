@@ -279,11 +279,11 @@ export default function StudioForm({
 
   // Generate button logic:
   // - At least one provider must be selected
-  // - If instrumental OFF: needs lyrics AND style/prompt
-  // - If instrumental ON: needs style/prompt (title is optional)
+  // - Style/prompt is always required
+  // - Lyrics are optional (providers can generate vocal output without explicit lyrics)
   const canGenerate =
     Object.keys(selectedProviders).length > 0 &&
-    (instrumental ? !!songIdea.trim() : !!lyrics.trim() && !!songIdea.trim());
+    !!songIdea.trim();
 
   async function handleOptimize() {
     if (!songIdea) return;
@@ -822,10 +822,6 @@ Your chorus here`}
           <p className="text-center text-xs text-red-400/60">
             {Object.keys(selectedProviders).length === 0
               ? "Select at least one provider"
-              : instrumental
-              ? "Describe a style or prompt to continue"
-              : !lyrics.trim()
-              ? "Write or generate lyrics to continue"
               : "Describe a style or prompt to continue"}
           </p>
         )}
