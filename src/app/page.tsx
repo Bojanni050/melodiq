@@ -560,7 +560,7 @@ export default function HomePage() {
       <Sidebar credits={creditValue} />
 
       {/* Main content area */}
-      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg-ml-60">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
