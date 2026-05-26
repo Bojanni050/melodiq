@@ -51,3 +51,9 @@
 - Findings: Op de homepage scrollde de linker Studio-kolom niet meer en de generate-sectie verdween uit beeld; sticky-positionering werkte niet betrouwbaar.
 - Conclusions: Ongeldige Tailwind arbitrary value syntaxis in `top`/`h-[calc(...)]` classes brak de hoogte- en sticky-layout. Door deze classes te corrigeren en de generate-sectie sticky onderin te maken blijft de knop zichtbaar boven de player.
 - Actions: `src/app/page.tsx` aangepast met geldige `top-[var(--studio-top-offset)]` en correcte `h-[calc(...)]` sluiting voor beide kolommen; `src/components/StudioForm.tsx` generate-paneel aangepast naar `sticky bottom-0 z-10`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Move To Workspace menu als dedicated overlay)
+
+- Findings: Het vorige Move To Workspace submenu was compact en nested, maar sloot visueel/functioneel niet aan op de gewenste grote overlay met lijstweergave.
+- Conclusions: Een dedicated modal-overlay met duidelijke titel, scrollbare workspace-rijen en inline create-acties onderaan geeft dezelfde interactie als het gewenste referentie-ontwerp en werkt beter voor lange workspace-lijsten.
+- Actions: `src/components/tracks/TrackCard.tsx` aangepast: nested submenu vervangen door gecentreerde overlay “Move to Workspace”, lijst met workspace-rows + clip-count, onderaan input met teller en `Create Workspace` knop; bestaande move/create-logica behouden; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
