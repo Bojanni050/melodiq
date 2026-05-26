@@ -4,7 +4,7 @@ import { getSetting, getWebhookUrl } from "@/lib/settings";
 const POYO_VALID_MODELS = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
 const MINIMAX_MUSIC_26 = "minimax-music-2.6";
 
-function normalizePoYoModel(model?: string): string {
+export function normalizePoYoModel(model?: string): string {
   if (!model) return "V5_5";
   const normalized = model.toUpperCase().replace(/\./g, "_");
   if (!POYO_VALID_MODELS.includes(normalized)) {
@@ -105,7 +105,7 @@ function stripQuery(url: string): string {
   return url.split("?")[0];
 }
 
-function inferVariantKey(file: any, index: number): string {
+export function inferVariantKey(file: any, index: number): string {
   const explicit =
     file?.audio_id ||
     file?.audioId ||
