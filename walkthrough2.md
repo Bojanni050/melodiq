@@ -75,3 +75,9 @@
 - Findings: De AI style suggestion op Lyric Studio was te kort en te algemeen, waardoor de output minder bruikbaar was als directe productierichting.
 - Conclusions: Een gestructureerd outputformat met expliciete secties (genre/feel, instrumentation, production/mix, vocal direction) levert concreter en direct toepasbaar style-advies op.
 - Actions: `src/app/api/lyric-studio/style-suggestion/route.ts` promptregels aangepast voor uitgebreidere output (80-140 woorden, 4 secties) en whitespace-collapsing verwijderd om structuur te behouden; `src/components/lyrics-studio/LyricsStudioSidePanel.tsx` placeholder, helpertekst en textarea-hoogte aangepast voor langere adviezen; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Lyria WAV response format payload gefixt)
+
+- Findings: Lyria gaf een payload error op `generation_config_response_format` omdat de request een ongeldige nested vorm gebruikte (`mimeType`/`audioType`).
+- Conclusions: De Gemini/Lyria REST payload verwacht een audio response-format object met `audio.mime_type`, dus alleen die nested keys moesten worden aangepast.
+- Actions: `src/lib/providers/lyria.ts` bijgewerkt zodat WAV requests `responseFormat: { audio: { mime_type: "audio/wav" } }` sturen; bijbehorende typehint aangepast; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
