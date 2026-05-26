@@ -83,6 +83,7 @@ const STRUCTURES = [
   { value: "one-drop", label: "One-drop / minimal", desc: "Intro -> Break -> Build -> Drop -> Outro. Focus op textuur." },
   { label: "Singer-songwriter pop", group: true },
   { value: "pop-classic", label: "Intro -> Verse -> Chorus -> Verse -> Chorus -> Bridge -> Chorus -> Outro", desc: "Klassieke pop-structuur (ABABCB). Radio-ready." },
+  { value: "pop-default", label: "Intro -> Verse -> Pre-Chorus -> Chorus -> Verse -> Pre-Chorus -> Chorus -> Bridge -> Chorus", desc: "Standaard pop-structuur met pre-chorus builds." },
   { value: "pop-finallift", label: "Intro -> Verse -> Chorus -> Bridge -> Chorus -> Final lift", desc: "Extra brug + lift (strip-down + build-up)." },
   { value: "pop-prechorus", label: "Intro -> Verse -> Chorus -> Pre-Chorus -> Chorus -> Bridge -> Outro", desc: "Pre-chorus voegt spanning toe. Dramatische pop." },
   { value: "pop-triplechorus", label: "Intro -> Verse -> Chorus -> Verse -> Chorus -> Chorus -> Outro", desc: "Drie keer refrein voor sticky effect." },
@@ -102,7 +103,7 @@ const BLOCK_TYPES: BlockType[] = [
 ];
 
 const BLOCK_PRESETS: Record<string, BlockType[]> = {
-  "Pop": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus", "outro"],
+  "Pop": ["intro", "verse", "pre-chorus", "chorus", "verse", "pre-chorus", "chorus", "bridge", "chorus"],
   "ABABCB": ["verse", "chorus", "verse", "chorus", "bridge", "chorus"],
   "AABA": ["verse", "verse", "bridge", "verse"],
   "Extended": ["intro", "verse", "chorus", "verse", "chorus", "bridge", "chorus", "chorus", "outro"],
