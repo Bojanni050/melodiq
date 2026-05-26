@@ -1,6 +1,6 @@
 # ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
-# Fecha: 2026-05-20 02:26:41
+# Fecha: 2026-05-26 16:40:35
 # No editar directamente - los cambios se sobrescribirán
 # 
 # Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
@@ -61,6 +61,15 @@ Bo gebruikt een **drielaags systeem** van memory en documentatie-raadpleging. Be
 - Disposition: Skepticism 2/5, Literalism 2/5, Empathy 4/5
 - Mental Models: Technical stack & preferences, Active projects, Personal profile, Working method & patterns
 
+## Memory Protocol
+
+Before answering, always recall relevant context using the hindsight MCP tool.
+Query: current topic, project name, or user preferences.
+
+After important decisions or changes, store a summary using hindsight retain.
+
+For task/goal tracking, use the stash MCP tools.
+
 ### Stash — Gestructureerde kennisopslag
 | Eigenschap | Waarde |
 |---|---|
@@ -68,6 +77,8 @@ Bo gebruikt een **drielaags systeem** van memory en documentatie-raadpleging. Be
 | Container | `stash-stash-1` op `localhost:8080` |
 | Verbinding | `mcp-remote` via npx |
 | Gebruik | Stabiele referentie — specs, projectdefinities, lange-termijn facts |
+
+
 
 ### Context7 — Actuele library-documentatie
 | Eigenschap | Waarde |
@@ -120,7 +131,7 @@ Gebruik deze stack als er geen projectspecifieke instructies zijn:
 
 ## 📋 Walkthrough-protocol
 
-Na elke significante wijziging wordt `walkthrough.md` bijgewerkt. Dit is verplicht.
+Na elke significante wijziging wordt `walkthrough.md` bijgewerkt. Dit is verplicht. Maak na 1000 regels een nieuw walkthrough2.md aan, daarna eventueel walkthrough3.md enz.
 
 ### Format (oudste → nieuwste volgorde):
 
