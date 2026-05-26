@@ -222,6 +222,7 @@ export interface Workspace {
   createdAt: string;
   folderGradient?: string;
   isDefault?: boolean;
+  parentWorkspaceId?: string | null;
 }
 
 export const DEFAULT_WORKSPACE_ID = "workspace-default";
@@ -308,6 +309,7 @@ interface WorkspaceState {
   workspaces: Workspace[];
   selectedWorkspaceId: string | null;
   createWorkspace: (name: string) => string;
+  createWorkspaceFolder: (parentWorkspaceId: string, name: string) => string;
   moveTrackToWorkspace: (workspaceId: string, trackId: string) => void;
   removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
@@ -324,6 +326,7 @@ function createDefaultWorkspace(): Workspace {
     createdAt: new Date().toISOString(),
     folderGradient: WORKSPACE_FOLDER_GRADIENTS[0],
     isDefault: true,
+    parentWorkspaceId: null,
   };
 }
 
@@ -335,11 +338,20 @@ function withDefaultWorkspace(workspaces: Workspace[]) {
     name: DEFAULT_WORKSPACE_NAME,
     isDefault: true,
     folderGradient: defaultWorkspace?.folderGradient || WORKSPACE_FOLDER_GRADIENTS[0],
+    parentWorkspaceId: null,
   };
 
   const otherWorkspaces = workspaces
     .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
-    .map((workspace) => ({ ...workspace, isDefault: false }));
+    .map((workspace) => ({
+      ...workspace,
+      isDefault: false,
+      parentWorkspaceId: workspace.parentWorkspaceId || null,
+    }))
+    .filter((workspace) => {
+      if (!workspace.parentWorkspaceId) return true;
+      return workspaces.some((candidate) => candidate.id === workspace.parentWorkspaceId);
+    });
 
   return [normalizedDefault, ...otherWorkspaces];
 }
@@ -361,9 +373,51 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set((state) => ({
           workspaces: [
             ...state.workspaces,
-            { id, name: trimmed, trackIds: [], createdAt: new Date().toISOString(), folderGradient, isDefault: false },
+            {
+              id,
+              name: trimmed,
+              trackIds: [],
+              createdAt: new Date().toISOString(),
+              folderGradient,
+              isDefault: false,
+              parentWorkspaceId: null,
+            },
           ],
         }));
+        return id;
+      },
+      createWorkspaceFolder: (parentWorkspaceId, name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return "";
+
+        const parent = get().workspaces.find((workspace) => workspace.id === parentWorkspaceId);
+        if (!parent) return "";
+
+        // Keep hierarchy one-level deep: only root workspaces can have child folders.
+        if (parent.parentWorkspaceId) return "";
+
+        const id =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const folderGradient =
+          WORKSPACE_FOLDER_GRADIENTS[Math.floor(Math.random() * WORKSPACE_FOLDER_GRADIENTS.length)];
+
+        set((state) => ({
+          workspaces: [
+            ...state.workspaces,
+            {
+              id,
+              name: trimmed,
+              trackIds: [],
+              createdAt: new Date().toISOString(),
+              folderGradient,
+              isDefault: false,
+              parentWorkspaceId,
+            },
+          ],
+        }));
+
         return id;
       },
       moveTrackToWorkspace: (workspaceId, trackId) =>
@@ -402,10 +456,17 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         })),
       deleteWorkspace: (workspaceId) => {
         if (workspaceId === DEFAULT_WORKSPACE_ID) return;
+        const directChildren = get().workspaces
+          .filter((workspace) => workspace.parentWorkspaceId === workspaceId)
+          .map((workspace) => workspace.id);
+        const idsToDelete = new Set([workspaceId, ...directChildren]);
+
         set((state) => ({
-          workspaces: state.workspaces.filter((workspace) => workspace.id !== workspaceId),
+          workspaces: state.workspaces.filter((workspace) => !idsToDelete.has(workspace.id)),
           selectedWorkspaceId:
-            state.selectedWorkspaceId === workspaceId ? null : state.selectedWorkspaceId,
+            state.selectedWorkspaceId && idsToDelete.has(state.selectedWorkspaceId)
+              ? null
+              : state.selectedWorkspaceId,
         }));
       },
       setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),

@@ -72,10 +72,51 @@ export default function TrackCard({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const workspaceById = useMemo(
+    () => new Map(workspaces.map((workspace) => [workspace.id, workspace])),
+    [workspaces]
+  );
+  const orderedWorkspaceOptions = useMemo(() => {
+    const roots = workspaces.filter((workspace) => !workspace.parentWorkspaceId);
+    const childrenByParent = new Map<string, typeof workspaces>();
+
+    workspaces
+      .filter((workspace) => Boolean(workspace.parentWorkspaceId))
+      .forEach((workspace) => {
+        const parentId = workspace.parentWorkspaceId as string;
+        const list = childrenByParent.get(parentId) ?? [];
+        childrenByParent.set(parentId, [...list, workspace]);
+      });
+
+    return roots.flatMap((root) => {
+      const children = childrenByParent.get(root.id) ?? [];
+      return [{ workspace: root, depth: 0 }, ...children.map((child) => ({ workspace: child, depth: 1 }))];
+    });
+  }, [workspaces]);
+
+  const workspaceDisplayNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    workspaces.forEach((workspace) => {
+      if (!workspace.parentWorkspaceId) {
+        map.set(workspace.id, workspace.name);
+        return;
+      }
+
+      const parentName = workspaceById.get(workspace.parentWorkspaceId)?.name;
+      map.set(
+        workspace.id,
+        parentName ? `${parentName} / ${workspace.name}` : workspace.name
+      );
+    });
+
+    return map;
+  }, [workspaceById, workspaces]);
+
   const assignedWorkspaceName = useMemo(() => {
     const assignedWorkspace = workspaces.find((workspace) => workspace.trackIds.includes(track.id));
-    return assignedWorkspace?.name || null;
-  }, [track.id, workspaces]);
+    if (!assignedWorkspace) return null;
+    return workspaceDisplayNameById.get(assignedWorkspace.id) ?? assignedWorkspace.name;
+  }, [track.id, workspaces, workspaceDisplayNameById]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -404,7 +445,7 @@ export default function TrackCard({
 
             <div className="max-h-[380px] overflow-y-auto px-3 pb-2">
               <div className="space-y-1">
-                {workspaces.map((workspace, index) => (
+                {orderedWorkspaceOptions.map(({ workspace, depth }, index) => (
                   <button
                     key={workspace.id}
                     onClick={(e) => {
@@ -419,6 +460,7 @@ export default function TrackCard({
                     }}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 transition-colors hover:bg-white/10"
                   >
+                    {depth === 1 ? <span className="ml-2 text-[10px] text-white/30">-</span> : null}
                     <div className={`h-11 w-11 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`}>
                       {workspaceCoverById.get(workspace.id) ? (
                         <img
@@ -428,7 +470,11 @@ export default function TrackCard({
                         />
                       ) : null}
                     </div>
-                    <span className="min-w-0 flex-1 truncate text-base leading-tight font-medium">{workspace.name}</span>
+                    <span
+                      className={`min-w-0 flex-1 truncate leading-tight font-medium ${depth === 1 ? "text-[13px] text-white/75" : "text-base"}`}
+                    >
+                      {workspaceDisplayNameById.get(workspace.id) ?? workspace.name}
+                    </span>
                     <span className="shrink-0 text-xs text-white/60">{workspace.trackIds.length} clips</span>
                   </button>
                 ))}

@@ -81,3 +81,9 @@
 - Findings: Lyria gaf een payload error op `generation_config_response_format` omdat de request een ongeldige nested vorm gebruikte (`mimeType`/`audioType`).
 - Conclusions: De Gemini/Lyria REST payload verwacht een audio response-format object met `audio.mime_type`, dus alleen die nested keys moesten worden aangepast.
 - Actions: `src/lib/providers/lyria.ts` bijgewerkt zodat WAV requests `responseFormat: { audio: { mime_type: "audio/wav" } }` sturen; bijbehorende typehint aangepast; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Workspace subfolders tot 1 niveau diep)
+
+- Findings: Workspace-organisatie was volledig vlak, terwijl gewenst gedrag is: hoofdfolder met eigen tracks plus optionele subfolders met eigen tracks.
+- Conclusions: Met een parent-link op workspaces en een harde 1-level guard in de store blijft de datastructuur eenvoudig en voorspelbaar zonder recursieve UI-complexiteit.
+- Actions: `src/lib/store.ts` uitgebreid met `parentWorkspaceId` en `createWorkspaceFolder(parentWorkspaceId, name)` plus cascade-delete van directe subfolders; `src/app/workspaces/page.tsx` aangepast naar root-overzicht + subfolder-sectie en subfolder-create in geopende hoofdfolder; `src/components/tracks/TrackCard.tsx` Move To Workspace dialog hiërarchisch gemaakt (hoofdfolder/subfolder labels en toewijzing); build uitgevoerd met `npm run build` en volledig geslaagd, validated.

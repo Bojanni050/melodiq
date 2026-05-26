@@ -53,13 +53,22 @@ function getWorkspaceSwatchClass(workspaceId: string) {
 
 export default function WorkspacesPage() {
   const { playlists, addTrackToPlaylist } = usePlaylistStore();
-  const { workspaces, selectedWorkspaceId, setSelectedWorkspaceId, createWorkspace, deleteWorkspace } = useWorkspaceStore();
+  const {
+    workspaces,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
+    createWorkspace,
+    createWorkspaceFolder,
+    deleteWorkspace,
+  } = useWorkspaceStore();
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -88,6 +97,35 @@ export default function WorkspacesPage() {
     [selectedWorkspaceId, workspaces],
   );
 
+  const rootWorkspaces = useMemo(
+    () => workspaces.filter((workspace) => !workspace.parentWorkspaceId),
+    [workspaces],
+  );
+
+  const childWorkspacesByParent = useMemo(() => {
+    const grouped = new Map<string, typeof workspaces>();
+    workspaces
+      .filter((workspace) => Boolean(workspace.parentWorkspaceId))
+      .forEach((workspace) => {
+        const parentId = workspace.parentWorkspaceId as string;
+        const list = grouped.get(parentId) ?? [];
+        grouped.set(parentId, [...list, workspace]);
+      });
+    return grouped;
+  }, [workspaces]);
+
+  const selectedWorkspaceChildren = useMemo(() => {
+    if (!selectedWorkspace) return [];
+    return childWorkspacesByParent.get(selectedWorkspace.id) ?? [];
+  }, [childWorkspacesByParent, selectedWorkspace]);
+
+  const selectedWorkspaceParent = useMemo(() => {
+    if (!selectedWorkspace?.parentWorkspaceId) return null;
+    return (
+      workspaces.find((workspace) => workspace.id === selectedWorkspace.parentWorkspaceId) ?? null
+    );
+  }, [selectedWorkspace, workspaces]);
+
   const selectedWorkspaceTracks = useMemo(
     () => (selectedWorkspace ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id)) : []),
     [selectedWorkspace, tracks],
@@ -101,6 +139,14 @@ export default function WorkspacesPage() {
     setSelectedWorkspaceId(null);
   }
 
+  function backFromChildWorkspace() {
+    if (!selectedWorkspaceParent) {
+      setSelectedWorkspaceId(null);
+      return;
+    }
+    setSelectedWorkspaceId(selectedWorkspaceParent.id);
+  }
+
   function handleCreateWorkspace() {
     const trimmed = newWorkspaceName.trim();
     if (!trimmed) return;
@@ -111,6 +157,19 @@ export default function WorkspacesPage() {
     setSelectedWorkspaceId(workspaceId);
     setNewWorkspaceName("");
     setShowCreateWorkspace(false);
+  }
+
+  function handleCreateFolder() {
+    if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return;
+    const trimmed = newFolderName.trim();
+    if (!trimmed) return;
+
+    const folderId = createWorkspaceFolder(selectedWorkspace.id, trimmed);
+    if (!folderId) return;
+
+    setSelectedWorkspaceId(folderId);
+    setNewFolderName("");
+    setShowCreateFolder(false);
   }
 
   function handleDeleteTrack(trackId: string) {
@@ -213,16 +272,17 @@ export default function WorkspacesPage() {
 
               {loading ? (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading workspaces...</div>
-              ) : workspaces.length === 0 ? (
+              ) : rootWorkspaces.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
                   No workspaces yet. Create one to start grouping tracks.
                 </div>
               ) : workspaceDisplayMode === "grid" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {workspaces.map((workspace) => {
+                  {rootWorkspaces.map((workspace) => {
                     const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                     const coverImages = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
                     const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                    const childCount = (childWorkspacesByParent.get(workspace.id) ?? []).length;
 
                     return (
                       <article
@@ -254,7 +314,9 @@ export default function WorkspacesPage() {
                             )}
                             <div className="absolute inset-x-0 bottom-0 p-4">
                               <h3 className="truncate text-lg font-semibold text-white">{workspace.name}</h3>
-                              <p className="text-sm text-white/70">{workspaceTracks.length} songs</p>
+                              <p className="text-sm text-white/70">
+                                {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
+                              </p>
                             </div>
                           </div>
                         </button>
@@ -285,9 +347,10 @@ export default function WorkspacesPage() {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  {workspaces.map((workspace) => {
+                  {rootWorkspaces.map((workspace) => {
                     const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                     const coverImages = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
+                    const childCount = (childWorkspacesByParent.get(workspace.id) ?? []).length;
 
                     return (
                       <div
@@ -308,7 +371,10 @@ export default function WorkspacesPage() {
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-white">{workspace.name}</p>
-                          <p className="text-xs text-white/45">{workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}</p>
+                          <p className="text-xs text-white/45">
+                            {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
+                            {childCount > 0 ? ` • ${childCount} folders` : ""}
+                          </p>
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
@@ -345,35 +411,128 @@ export default function WorkspacesPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <button
-                        type="button"
-                        onClick={backToWorkspaces}
-                        className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Workspaces
-                      </button>
+                      {selectedWorkspace.parentWorkspaceId ? (
+                        <button
+                          type="button"
+                          onClick={backFromChildWorkspace}
+                          className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          {selectedWorkspaceParent ? selectedWorkspaceParent.name : "Workspaces"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={backToWorkspaces}
+                          className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          Workspaces
+                        </button>
+                      )}
                     </div>
                     <h2 className="text-lg font-semibold truncate">{selectedWorkspace.name}</h2>
                     <p className="text-sm text-white/55">{selectedWorkspaceTracks.length} songs in this workspace.</p>
                   </div>
-                  {selectedWorkspace.id === DEFAULT_WORKSPACE_ID ? (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/45">Default workspace</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        deleteWorkspace(selectedWorkspace.id);
-                        setSelectedWorkspaceId(null);
-                      }}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-red-500/10 hover:text-red-200"
-                    >
-                      Delete workspace
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {!selectedWorkspace.parentWorkspaceId && (
+                      showCreateFolder ? (
+                        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                          <input
+                            value={newFolderName}
+                            onChange={(event) => setNewFolderName(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") handleCreateFolder();
+                              if (event.key === "Escape") {
+                                setShowCreateFolder(false);
+                                setNewFolderName("");
+                              }
+                            }}
+                            placeholder="Subfolder name"
+                            className="h-9 w-44 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCreateFolder}
+                            className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCreateFolder(false);
+                              setNewFolderName("");
+                            }}
+                            className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateFolder(true)}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          + Add subfolder
+                        </button>
+                      )
+                    )}
+                    {selectedWorkspace.id === DEFAULT_WORKSPACE_ID ? (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/45">Default workspace</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteWorkspace(selectedWorkspace.id);
+                          setSelectedWorkspaceId(null);
+                        }}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-red-500/10 hover:text-red-200"
+                      >
+                        Delete workspace
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {!selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/35">Subfolders</p>
+                    <div className="space-y-1.5">
+                      {selectedWorkspaceChildren.map((childWorkspace) => {
+                        const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
+                        const childCover = getWorkspaceCoverCollage(childWorkspace.id, childTracks)[0];
+                        return (
+                          <button
+                            key={childWorkspace.id}
+                            type="button"
+                            onClick={() => openWorkspace(childWorkspace.id)}
+                            className="group flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#0f1017] px-3 py-2 text-left transition-colors hover:bg-white/4"
+                          >
+                            <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
+                              {childCover ? (
+                                <img src={childCover} alt={childWorkspace.name} className="h-full w-full object-cover" />
+                              ) : null}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
+                            </div>
+                            <span className="text-xs text-white/45">{childTracks.length} songs</span>
+                            <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {selectedWorkspaceTracks.length > 0 ? (
                   <TrackList

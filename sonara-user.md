@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 23:00**
+**Versie: wo 00:26**
 
 > AI Music Generation Web App
 
@@ -144,6 +144,9 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Track listings now show which workspace each track belongs to
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
 - **Move To Workspace** now opens a large overlay dialog with a scrollable workspace list, per-workspace clip counts, and an inline create field/button at the bottom
+- Workspaces ondersteunen nu subfolders tot 1 niveau diep: **hoofdfolder -> tracks + subfolder -> tracks**
+- In de Workspaces-pagina zie je in het overzicht alleen hoofdfolders; open een hoofdfolder om subfolders te zien en daar direct een subfolder toe te voegen
+- In **Move To Workspace** worden hoofdfolders en subfolders hiërarchisch weergegeven zodat je tracks direct naar de juiste subfolder kunt verplaatsen
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:
