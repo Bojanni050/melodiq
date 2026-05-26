@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 14:08**
+**Versie: di 14:24**
 
 > AI Music Generation Web App
 
@@ -142,6 +142,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Moving a track to a workspace that already contains it is now silently skipped (no duplicate assignment)
 - Track listings now show which workspace each track belongs to
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
+- The **Move To Workspace** popup is now taller and wider and shows visual workspace folder cards with cover-art collages
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:

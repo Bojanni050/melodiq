@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { WORKSPACE_FOLDER_GRADIENTS, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const WAVE_DELAYS = ["[animation-delay:0ms]", "[animation-delay:55ms]", "[animation-delay:110ms]", "[animation-delay:165ms]", "[animation-delay:220ms]"];
 const WAVE_DURATIONS = ["[animation-duration:700ms]", "[animation-duration:790ms]", "[animation-duration:880ms]", "[animation-duration:970ms]", "[animation-duration:1060ms]"];
@@ -18,6 +18,38 @@ function WaveformBars({ count = 5, className = "" }: { count?: number; className
       ))}
     </div>
   );
+}
+
+function hashString(input: string) {
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function pickRandomItems<T>(items: T[], seed: string, limit: number) {
+  const next = [...items];
+  next.sort((left, right) => {
+    const leftScore = hashString(`${seed}:${String(left)}`);
+    const rightScore = hashString(`${seed}:${String(right)}`);
+    return leftScore - rightScore;
+  });
+  return next.slice(0, limit);
+}
+
+function getWorkspaceCoverCollage(workspaceId: string, workspaceTracks: TrackItem[]) {
+  const coverUrls = workspaceTracks
+    .filter((track) => !!track.coverUrl)
+    .map((track) => track.coverUrl as string);
+
+  return pickRandomItems(coverUrls, workspaceId, 4);
+}
+
+function getWorkspaceGradient(workspaceId: string, gradient?: string) {
+  if (gradient) return gradient;
+  return WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length];
 }
 
 function ConfirmDialog({
@@ -413,6 +445,7 @@ export default function TrackList({
           <TrackCard
             key={track.id}
             track={track}
+            allTracks={tracks}
             onPlay={handlePlay}
             onSelect={onSelect}
             onDelete={onDelete}
@@ -466,6 +499,7 @@ function GeneratingRow() {
 
 function TrackCard({
   track,
+  allTracks,
   onPlay,
   onSelect,
   onDelete,
@@ -480,6 +514,7 @@ function TrackCard({
   onTitleUpdate,
 }: {
   track: TrackItem;
+  allTracks: TrackItem[];
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -527,6 +562,19 @@ function TrackCard({
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const tracksById = useMemo(() => {
+    return new Map(allTracks.map((item) => [item.id, item]));
+  }, [allTracks]);
+  const workspaceCoverById = useMemo(() => {
+    return new Map(
+      workspaces.map((workspace) => {
+        const workspaceTracks = workspace.trackIds
+          .map((trackId) => tracksById.get(trackId))
+          .filter((item): item is TrackItem => !!item);
+        return [workspace.id, getWorkspaceCoverCollage(workspace.id, workspaceTracks)];
+      })
+    );
+  }, [tracksById, workspaces]);
   const assignedWorkspaceName = useMemo(() => {
     const assignedWorkspace = workspaces.find((workspace) => workspace.trackIds.includes(track.id));
     return assignedWorkspace?.name || null;
@@ -853,7 +901,7 @@ function TrackCard({
       {showMoveToWorkspaceDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMoveToWorkspaceDialog(false)} />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-5 w-96 flex flex-col gap-3">
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[min(92vw,860px)] max-h-[84vh] flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium text-white">Move to Workspace</h3>
               <button
@@ -870,7 +918,7 @@ function TrackCard({
                 setShowMoveToWorkspaceDialog(false);
                 setShowCreateWorkspaceDialog(true);
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-dashed border-white/15 text-sm text-primary-300 hover:bg-primary-500/10 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-3 rounded-lg border border-dashed border-white/15 text-sm text-primary-300 hover:bg-primary-500/10 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -878,7 +926,7 @@ function TrackCard({
               Add Workspace
             </button>
             <div className="my-1 h-px bg-white/10" />
-            <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {workspaces.length > 0 ? (
                 workspaces.map((workspace) => (
                   <button
@@ -893,19 +941,42 @@ function TrackCard({
                       setShowMoveToWorkspaceDialog(false);
                       setMenuOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/80 hover:bg-white/5 transition-colors"
+                    className="group relative h-36 w-full overflow-hidden rounded-2xl border border-white/10 text-left transition-transform hover:-translate-y-0.5"
+                    style={{ backgroundImage: getWorkspaceGradient(workspace.id, workspace.folderGradient) }}
                   >
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 bg-white/10 border border-white/10">
-                      <svg className="w-3.5 h-3.5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                      </svg>
+                    <div className="absolute inset-0 bg-black/15" />
+
+                    {(workspaceCoverById.get(workspace.id) || []).length > 0 ? (
+                      <div className="absolute inset-2 grid grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                        {(workspaceCoverById.get(workspace.id) || []).map((cover, index) => (
+                          <img
+                            key={`${workspace.id}-${index}`}
+                            src={cover}
+                            alt={workspace.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm">
+                          <svg className="w-8 h-8 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="absolute inset-x-0 bottom-0 p-2.5">
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/35 px-2.5 py-2 backdrop-blur-sm">
+                        <span className="flex-1 truncate text-xs font-medium text-white">{workspace.name}</span>
+                        <span className="text-[11px] text-white/70">{workspace.trackIds.length}</span>
+                      </div>
                     </div>
-                    <span className="flex-1 text-left truncate">{workspace.name}</span>
-                    <span className="text-xs text-white/30">{workspace.trackIds.length}</span>
                   </button>
                 ))
               ) : (
-                <p className="px-3 py-4 text-xs text-white/40 text-center italic">No workspaces yet. Create one above.</p>
+                <p className="px-3 py-4 text-xs text-white/40 text-center italic sm:col-span-2">No workspaces yet. Create one above.</p>
               )}
             </div>
           </div>

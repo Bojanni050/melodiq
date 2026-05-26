@@ -279,6 +279,17 @@
   - Updated `sonara-user.md` — gebruikersdocumentatie en versie bijgewerkt
   - Validated with `npm run build`.
 
+## 2026-05-26 (Workspace move-popup groter + folder coverart zichtbaar)
+
+- Findings: De “Move to Workspace” popup was compact en toonde alleen een tekstlijst, waardoor workspace-selectie weinig visuele context had.
+- Conclusions: Een grotere popup met folder-kaarten en cover-collages maakt workspace-keuze sneller en duidelijker.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — move-popup vergroot (breder en hoger), workspace-lijst omgezet naar kaartgrid
+  - Updated `src/components/TrackList.tsx` — per workspace kaart een gradient-achtergrond + cover-collage (tot 4 covers), met folder-icon fallback wanneer geen cover aanwezig is
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 14:24`
+  - Updated `sonara-user.md` — gebruikersnotitie toegevoegd over de vernieuwde workspace-popup
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.
