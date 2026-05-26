@@ -12,7 +12,7 @@ async function fetchLyriaAudio({
   lyrics?: string;
   modelId: string;
   apiKey: string;
-  responseFormat?: { mimeType: { audioType: string } };
+  responseFormat?: { audio: { mime_type: string } };
 }) {
   const generationConfig: Record<string, unknown> = {
     responseModalities: ["AUDIO"],
@@ -103,7 +103,7 @@ export async function generateLyria({
           lyrics,
           modelId,
           apiKey: API_KEY,
-          responseFormat: { mimeType: { audioType: "audio/wav" } },
+            responseFormat: { audio: { mime_type: "audio/wav" } },
         }),
       ]);
 
