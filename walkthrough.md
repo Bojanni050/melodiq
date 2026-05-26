@@ -290,6 +290,17 @@
   - Updated `sonara-user.md` — gebruikersnotitie toegevoegd over de vernieuwde workspace-popup
   - Validated with `npm run build`.
 
+## 2026-05-26 (Instrumental titel afleiden uit style prompt)
+
+- Findings: Bij instrumental generatie zonder ingevulde titel werd niet voor alle providers automatisch een bruikbare titel gezet.
+- Conclusions: De generate-route moet bij instrumental + lege titel een titel afleiden uit de style prompt, zodat tracknamen consistent gevuld zijn.
+- Actions:
+  - Updated `src/app/api/generate/route.ts` — helper toegevoegd om een compacte titel uit de style prompt af te leiden (clean + eerste segment + max woorden/length)
+  - Updated `src/app/api/generate/route.ts` — `resolvedTitle` logica aangepast met prioriteit: expliciete titel -> afgeleide instrumental titel -> bestaande PoYo fallback
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 14:53`
+  - Updated `sonara-user.md` — titelgedrag voor instrumental tracks verduidelijkt
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.

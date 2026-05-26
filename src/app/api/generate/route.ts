@@ -49,6 +49,27 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
+function deriveInstrumentalTitleFromPrompt(prompt: string): string | null {
+  const cleanedPrompt = prompt
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/["'`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleanedPrompt) return null;
+
+  const primarySegment = cleanedPrompt
+    .split(/[\n,;|]/)
+    .map((segment) => segment.trim())
+    .find(Boolean) || cleanedPrompt;
+
+  const limitedWords = primarySegment.split(/\s+/).slice(0, 8).join(" ").trim();
+  if (!limitedWords) return null;
+
+  const capped = limitedWords.slice(0, 80).trim();
+  return capped ? capped[0].toUpperCase() + capped.slice(1) : null;
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const auth = await requireAuth();
@@ -62,7 +83,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
-  const resolvedTitle = title?.trim() || (provider === "poyo" ? normalizedPrompt.slice(0, 80) : null);
+  const normalizedTitle = typeof title === "string" ? title.trim() : "";
+  const derivedInstrumentalTitle = instrumental ? deriveInstrumentalTitleFromPrompt(normalizedPrompt) : null;
+  const resolvedTitle =
+    normalizedTitle ||
+    derivedInstrumentalTitle ||
+    (provider === "poyo" && normalizedPrompt ? normalizedPrompt.slice(0, 80) : null);
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
