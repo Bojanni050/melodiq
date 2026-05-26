@@ -144,6 +144,7 @@ const STRUCTURE_PRESET_MAP: Record<string, string> = {
   "dance-earlydrop": "Dance — Early Drop",
   "one-drop": "Minimal / One Drop",
   "pop-classic": "Pop",
+  "pop-default": "Pop",
   "pop-finallift": "Extended",
   "pop-prechorus": "Pop",
   "pop-triplechorus": "Extended",

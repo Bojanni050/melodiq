@@ -64,48 +64,114 @@ export async function callLLM(
     "gpt-4o";
 
   if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
-    const res = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: OPENROUTER_MODEL,
-        temperature: normalizedOptions.temperature,
-        top_p: normalizedOptions.topP,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENROUTER_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    let res;
+    try {
+      res = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: OPENROUTER_MODEL,
+          temperature: normalizedOptions.temperature,
+          top_p: normalizedOptions.topP,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
         },
+        {
+          headers: {
+            Authorization: `Bearer ${OPENROUTER_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          },
+          timeout: 60_000,
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const looksLikeHtml =
+        typeof data === "string" && data.trimStart().startsWith("<");
+      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+
+      if (looksLikeHtml || isParseError) {
+        throw new Error(
+          `OpenRouter (${OPENROUTER_MODEL}) returned a non-JSON response` +
+          (status ? ` (HTTP ${status})` : "") +
+          `. The model is likely overloaded or unavailable — try again or switch model.`
+        );
       }
-    );
-    return res.data.choices[0].message.content;
+
+      const apiMessage =
+        (typeof data === "object" && data?.error?.message) ||
+        err?.message ||
+        "OpenRouter request failed";
+      throw new Error(
+        `OpenRouter request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+      );
+    }
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        `OpenRouter response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    return content;
   }
 
   if (requestedProvider === "openai" && OPENAI_KEY) {
-    const res = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: OPENAI_MODEL,
-        temperature: normalizedOptions.temperature,
-        top_p: normalizedOptions.topP,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json",
+    let res;
+    try {
+      res = await axios.post(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          model: OPENAI_MODEL,
+          temperature: normalizedOptions.temperature,
+          top_p: normalizedOptions.topP,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
         },
+        {
+          headers: {
+            Authorization: `Bearer ${OPENAI_KEY}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 60_000,
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const looksLikeHtml =
+        typeof data === "string" && data.trimStart().startsWith("<");
+      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+
+      if (looksLikeHtml || isParseError) {
+        throw new Error(
+          `OpenAI (${OPENAI_MODEL}) returned a non-JSON response` +
+          (status ? ` (HTTP ${status})` : "") +
+          `. The service is likely overloaded or unavailable — try again or switch model.`
+        );
       }
-    );
-    return res.data.choices[0].message.content;
+
+      const apiMessage =
+        (typeof data === "object" && data?.error?.message) ||
+        err?.message ||
+        "OpenAI request failed";
+      throw new Error(
+        `OpenAI request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+      );
+    }
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        `OpenAI response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    return content;
   }
 
   throw new Error(`No ${requestedProvider} LLM provider configured. Check the selected provider and API key in Settings.`);
