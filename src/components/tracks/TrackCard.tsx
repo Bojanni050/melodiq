@@ -9,6 +9,7 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 export default function TrackCard({
   track,
+  allTracks,
   onPlay,
   onSelect,
   onDelete,
@@ -23,6 +24,7 @@ export default function TrackCard({
   onTitleUpdate,
 }: {
   track: TrackItem;
+  allTracks: TrackItem[];
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -290,6 +292,20 @@ export default function TrackCard({
     "bg-gradient-to-br from-fuchsia-300 via-violet-500 to-blue-700",
   ];
 
+  const workspaceCoverById = useMemo(() => {
+    const coverMap = new Map<string, string | null>();
+
+    workspaces.forEach((workspace) => {
+      const firstCover = workspace.trackIds
+        .map((trackId) => allTracks.find((item) => item.id === trackId)?.coverUrl ?? null)
+        .find((url): url is string => Boolean(url));
+
+      coverMap.set(workspace.id, firstCover ?? null);
+    });
+
+    return coverMap;
+  }, [allTracks, workspaces]);
+
   const statusConfig = {
     pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },
     generating: { color: "bg-blue-500/20 text-blue-300", label: "Creating" },
@@ -373,7 +389,7 @@ export default function TrackCard({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pb-3 pt-5">
-              <h3 className="text-[34px] leading-none font-light text-white/90">Move to Workspace</h3>
+              <h3 className="text-xl leading-none font-medium text-white/90">Move to Workspace</h3>
               <button
                 type="button"
                 onClick={() => setWorkspaceMenuOpen(false)}
@@ -403,9 +419,17 @@ export default function TrackCard({
                     }}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 transition-colors hover:bg-white/10"
                   >
-                    <div className={`h-12 w-12 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`} />
-                    <span className="min-w-0 flex-1 truncate text-[31px] leading-tight font-light">{workspace.name}</span>
-                    <span className="shrink-0 text-[14px] text-white/60">{workspace.trackIds.length} clips</span>
+                    <div className={`h-11 w-11 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`}>
+                      {workspaceCoverById.get(workspace.id) ? (
+                        <img
+                          src={workspaceCoverById.get(workspace.id) || ""}
+                          alt={workspace.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <span className="min-w-0 flex-1 truncate text-base leading-tight font-medium">{workspace.name}</span>
+                    <span className="shrink-0 text-xs text-white/60">{workspace.trackIds.length} clips</span>
                   </button>
                 ))}
               </div>
@@ -422,7 +446,7 @@ export default function TrackCard({
                     onChange={(e) => setNewWorkspaceName(e.target.value)}
                     onKeyDown={handleWorkspaceKeyDown}
                     placeholder="Workspace name"
-                    className="h-12 w-full rounded-lg border border-white/70 bg-transparent px-3 pr-16 text-[31px] font-light text-white placeholder:text-white/45 focus:outline-none focus:border-white"
+                    className="h-12 w-full rounded-lg border border-white/70 bg-transparent px-3 pr-16 text-sm font-medium text-white placeholder:text-white/45 focus:outline-none focus:border-white"
                     maxLength={100}
                     aria-label="Workspace name"
                   />
@@ -432,7 +456,7 @@ export default function TrackCard({
                   type="button"
                   onClick={handleCreateWorkspace}
                   disabled={!newWorkspaceName.trim()}
-                  className="h-12 rounded-lg bg-white/8 px-5 text-lg font-medium text-white/90 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-12 rounded-lg bg-white/8 px-5 text-sm font-medium text-white/90 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Create Workspace
                 </button>

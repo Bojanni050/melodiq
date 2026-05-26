@@ -335,6 +335,7 @@ export default function TrackList({
             <TrackCard
               key={track.id}
               track={track}
+              allTracks={tracks}
               onPlay={handlePlay}
               onSelect={onSelect}
               onDelete={onDelete}
