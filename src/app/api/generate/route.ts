@@ -13,6 +13,7 @@ import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
 import { getSetting, getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
+import { callLLM } from "@/lib/providers/llm";
 import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 
@@ -49,7 +50,7 @@ function checkRateLimit(userId: string): boolean {
   return true;
 }
 
-function deriveInstrumentalTitleFromPrompt(prompt: string): string | null {
+function deriveInstrumentalTitleFallbackFromPrompt(prompt: string): string | null {
   const cleanedPrompt = prompt
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/["'`]/g, "")
@@ -70,6 +71,40 @@ function deriveInstrumentalTitleFromPrompt(prompt: string): string | null {
   return capped ? capped[0].toUpperCase() + capped.slice(1) : null;
 }
 
+function normalizeAiTitle(raw: string): string | null {
+  const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) || "";
+  const cleaned = firstLine
+    .replace(/^["'`\s]+|["'`\s]+$/g, "")
+    .replace(/[\[\]{}]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return null;
+  return cleaned.slice(0, 80).trim();
+}
+
+async function generateInstrumentalTitleFromPrompt(prompt: string): Promise<string | null> {
+  const trimmedPrompt = prompt.trim();
+  if (!trimmedPrompt) return null;
+
+  const systemPrompt = `You generate concise song titles for instrumental tracks.
+
+Rules:
+- Return only the title
+- No quotes, no punctuation at the end, no explanation
+- Maximum 6 words
+- Keep it evocative and based on the style prompt`;
+
+  const userPrompt = `Create one instrumental track title from this style prompt:\n\n${trimmedPrompt}`;
+
+  try {
+    const rawTitle = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", temperature: 0.4 });
+    return normalizeAiTitle(rawTitle);
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const auth = await requireAuth();
@@ -84,11 +119,6 @@ export async function POST(request: NextRequest) {
   const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
-  const derivedInstrumentalTitle = instrumental ? deriveInstrumentalTitleFromPrompt(normalizedPrompt) : null;
-  const resolvedTitle =
-    normalizedTitle ||
-    derivedInstrumentalTitle ||
-    (provider === "poyo" && normalizedPrompt ? normalizedPrompt.slice(0, 80) : null);
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
@@ -124,6 +154,19 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  const aiInstrumentalTitle =
+    !normalizedTitle && instrumental
+      ? await generateInstrumentalTitleFromPrompt(normalizedPrompt)
+      : null;
+  const derivedInstrumentalTitle = instrumental
+    ? deriveInstrumentalTitleFallbackFromPrompt(normalizedPrompt)
+    : null;
+  const resolvedTitle =
+    normalizedTitle ||
+    aiInstrumentalTitle ||
+    derivedInstrumentalTitle ||
+    (provider === "poyo" && normalizedPrompt ? normalizedPrompt.slice(0, 80) : null);
 
   // Validate that required API keys are configured
   const validation = await validateProviderApiKeys(provider);
