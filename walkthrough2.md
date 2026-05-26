@@ -27,3 +27,21 @@
 - Findings: De pagina bevatte nog een grote inline rechterkolom voor Song Flow en Style Suggestion, wat de page-component onnodig groot hield.
 - Conclusions: De bestaande `LyricsStudioSidePanel` component in de pagina gebruiken verlaagt de JSX-omvang en houdt dezelfde UX-flow intact.
 - Actions: `src/app/lyrics-studio/page.tsx` aangepast om de inline rechterkolom te vervangen door `LyricsStudioSidePanel`-props; tijdelijke import-regressie (`Flowchart`) gecorrigeerd; build opnieuw uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Settings constants en model-modal geëxtraheerd)
+
+- Findings: `src/app/settings/page.tsx` bevatte nog veel statische provider/webhook-configuratie en een grote inline model-detail modal, waardoor het bestand onnodig lang bleef.
+- Conclusions: Statische configuratie verplaatsen naar een dedicated constants-module en de modal naar een losse component verlaagt complexiteit en houdt de pagina meer op orchestratie.
+- Actions: Toegevoegd `src/lib/settings-constants.ts` met `ProviderConfig`, `PROVIDERS` en `WEBHOOK_DEFAULTS`; toegevoegd `src/components/settings/ModelDetailModal.tsx`; `src/app/settings/page.tsx` gerefactord naar imports uit deze modules en inline modal vervangen door `ModelDetailModal`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Settings API logging kaart uitgepakt)
+
+- Findings: De API logging-sectie stond nog inline in `src/app/settings/page.tsx`, wat de pagina verder ophoogde en hergebruik van de toggle/save UI lastig maakte.
+- Conclusions: Een dedicated component voor API logging houdt `settings/page` compacter en maakt deze sectie makkelijker los te beheren en te testen.
+- Actions: Toegevoegd `src/components/settings/ApiLoggingCard.tsx`; `src/app/settings/page.tsx` aangepast om `ApiLoggingCard` te gebruiken met bestaande `values`, `saving` en handlers; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Homepage opgedeeld met bestaande studio componenten)
+
+- Findings: `src/app/page.tsx` had nog inline notificatie-, workspace-create- en resizable panel-UI plus dubbele workspace-helperfuncties.
+- Conclusions: Bestaande studio-componenten (`NoticeBar`, `CreateWorkspaceDialog`, `ResizablePanel`) direct gebruiken en helper-duplicatie vervangen door `track-utils` houdt de pagina slanker en consistenter.
+- Actions: `src/app/page.tsx` gerefactord om `NoticeBar`, `CreateWorkspaceDialog` en `ResizablePanel` te gebruiken; lokale `hash/pick/getCover/getGradient` helpers verwijderd en vervangen door `getWorkspaceCoverCollage` en `getWorkspaceGradient` uit `src/lib/track-utils.ts`; workspace list className-bug met `$selectedWorkspaceId` gecorrigeerd; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
