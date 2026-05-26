@@ -2,6 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import ModelSelector from "@/components/settings/ModelSelector";
+import ProviderCard from "@/components/settings/ProviderCard";
+import WebhookRow from "@/components/settings/WebhookRow";
+import {
+  applyWebhookDefaults,
+  buildWebhookUrl,
+  createModelPlaceholder,
+  formatPrice,
+  LLMModel,
+  truncateDescription,
+} from "@/lib/settings-utils";
 
 interface ProviderConfig {
   id: string;
@@ -14,22 +25,6 @@ interface ProviderConfig {
     placeholder: string;
   }>;
   testEndpoint: string;
-}
-
-interface LLMModel {
-  id: string;
-  name: string;
-  description: string;
-  pricing: {
-    prompt: string | number;
-    completion: string | number;
-  };
-  context_length: number;
-  architecture: {
-    modality: string;
-    tokenizer: string;
-    instruct_type: string;
-  };
 }
 
 const PROVIDERS: ProviderConfig[] = [
@@ -145,34 +140,6 @@ const PROVIDERS: ProviderConfig[] = [
   },
 ];
 
-function formatPrice(price: string | number): string {
-  const num = typeof price === "string" ? parseFloat(price) : price;
-  if (!num || num === 0) return "Free";
-  if (num >= 1) return `$${num.toFixed(2)}/1M tokens`;
-  return `$${(num * 1_000_000).toFixed(2)}/1M tokens`;
-}
-
-function truncateDescription(text: string, maxLines: number = 3): { text: string; truncated: boolean } {
-  if (!text) return { text: "", truncated: false };
-  const words = text.split(" ");
-  const maxWords = maxLines * 12;
-  if (words.length <= maxWords) {
-    return { text, truncated: false };
-  }
-  return { text: words.slice(0, maxWords).join(" ") + "...", truncated: true };
-}
-
-function createModelPlaceholder(id: string): LLMModel {
-  return {
-    id,
-    name: id,
-    description: "",
-    pricing: { prompt: "0", completion: "0" },
-    context_length: 0,
-    architecture: { modality: "", tokenizer: "", instruct_type: "" },
-  };
-}
-
 const WEBHOOK_DEFAULTS = [
   { key: "POYO_WEBHOOK_URL", path: "/api/webhooks/poyo" },
   { key: "POYO_WAV_WEBHOOK_URL", path: "/api/webhooks/poyo-wav" },
@@ -180,24 +147,6 @@ const WEBHOOK_DEFAULTS = [
   { key: "MUSICGPT_WEBHOOK_URL", path: "/api/webhooks/musicgpt" },
   { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
 ] as const;
-
-function buildWebhookUrl(appUrl: string, path: string): string {
-  return `${appUrl.replace(/\/$/, "")}${path}`;
-}
-
-function applyWebhookDefaults(settings: Record<string, string>): Record<string, string> {
-  const appUrl = settings.APP_URL?.trim();
-  if (!appUrl) return settings;
-
-  const next = { ...settings };
-  for (const { key, path } of WEBHOOK_DEFAULTS) {
-    if (!next[key]) {
-      next[key] = buildWebhookUrl(appUrl, path);
-    }
-  }
-
-  return next;
-}
 
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
@@ -628,69 +577,16 @@ export default function SettingsPage() {
         )}
 
         {open && filteredModels.length > 0 && (
-          <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
-            <div className="p-2">
-              <input
-                type="text"
-                placeholder="Search models..."
-                value={modelSearchQuery}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                onChange={(e) => setModelSearchQuery(e.target.value)}
-              />
-            </div>
-            {filteredModels.map((model) => {
-              const { text, truncated } = truncateDescription(model.description, 3);
-              const isSelected = selected?.id === model.id;
-              return (
-                <div
-                  key={model.id}
-                  className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
-                    isSelected ? "bg-primary-500/10" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">{model.name}</p>
-                      <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
-                        {text}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
-                        <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
-                        <span>Completion: {formatPrice(model.pricing.completion)}</span>
-                        {model.context_length && (
-                          <span>Context: {model.context_length.toLocaleString()}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {truncated && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModelDetail(model);
-                          }}
-                          className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
-                        >
-                          Read more
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => onSelect(model)}
-                        className={`text-xs px-2 py-1 rounded ${
-                          isSelected
-                            ? "bg-primary-500 text-white"
-                            : "bg-white/10 text-white/50 hover:bg-white/20"
-                        }`}
-                      >
-                        {isSelected ? "Selected" : "Select"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-[#1a1a24] p-2 shadow-xl">
+            <ModelSelector
+              label={`${label} options`}
+              selected={selected}
+              options={filteredModels}
+              searchQuery={modelSearchQuery}
+              onSearchQueryChange={setModelSearchQuery}
+              onSelect={onSelect}
+              onReadMore={setModelDetail}
+            />
           </div>
         )}
       </div>
@@ -699,271 +595,99 @@ export default function SettingsPage() {
 
   function renderProviderSection(provider: ProviderConfig) {
     return (
-      <section key={provider.id} className="section-card">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold">{provider.name}</h2>
-          <p className="text-xs text-white/30">{provider.description}</p>
-        </div>
+      <ProviderCard key={provider.id} title={provider.name} description={provider.description}>
+        {provider.fields.map((field) => (
+          <div key={field.key}>
+            <label className="block text-xs font-medium text-white/50 mb-1">
+              {field.label}
+            </label>
+            <input
+              type={field.type}
+              value={values[field.key] || ""}
+              onChange={(e) => updateField(field.key, e.target.value)}
+              className="input-field font-mono text-sm"
+              placeholder={field.placeholder}
+            />
+          </div>
+        ))}
 
-        <div className="space-y-3">
-          {provider.fields.map((field) => (
-            <div key={field.key}>
-              <label className="block text-xs font-medium text-white/50 mb-1">
-                {field.label}
-              </label>
-              <input
-                type={field.type}
-                value={values[field.key] || ""}
-                onChange={(e) => updateField(field.key, e.target.value)}
-                className="input-field font-mono text-sm"
-                placeholder={field.placeholder}
-              />
-            </div>
-          ))}
+        {provider.id === "openrouter" &&
+          renderOpenRouterModelSelect({
+            label: "Prompt Model",
+            selected: selectedPromptModel,
+            open: showPromptModelDropdown,
+            onToggle: () => {
+              setShowPromptModelDropdown(!showPromptModelDropdown);
+              setShowImageModelDropdown(false);
+              setShowLyricsModelDropdown(false);
+            },
+            onSelect: selectPromptModel,
+          })}
 
+        {provider.id === "openrouter" &&
+          renderOpenRouterModelSelect({
+            label: "Lyrics Model",
+            selected: selectedLyricsModel,
+            open: showLyricsModelDropdown,
+            onToggle: () => {
+              setShowLyricsModelDropdown(!showLyricsModelDropdown);
+              setShowPromptModelDropdown(false);
+              setShowImageModelDropdown(false);
+            },
+            onSelect: selectLyricsModel,
+          })}
+
+        {provider.id === "openrouter" &&
+          renderOpenRouterModelSelect({
+            label: "Image Prompt Model",
+            selected: selectedImageModel,
+            open: showImageModelDropdown,
+            onToggle: () => {
+              setShowImageModelDropdown(!showImageModelDropdown);
+              setShowPromptModelDropdown(false);
+              setShowLyricsModelDropdown(false);
+            },
+            onSelect: selectImageModel,
+          })}
+
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={() => saveProvider(provider)}
+            disabled={saving[provider.id]}
+            className="btn-primary text-xs px-3 py-1.5"
+          >
+            {saving[provider.id] ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={() => testProvider(provider)}
+            disabled={testing[provider.id]}
+            className="btn-secondary text-xs px-3 py-1.5"
+          >
+            {testing[provider.id] ? "Testing..." : "Test Connection"}
+          </button>
           {provider.id === "openrouter" && (
-            <div className="relative">
-              <label className="block text-xs font-medium text-white/50 mb-1">Prompt Model</label>
-              {allModels.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPromptModelDropdown(!showPromptModelDropdown);
-                    setShowImageModelDropdown(false);
-                    setShowLyricsModelDropdown(false);
-                  }}
-                  className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
-                >
-                  <span className="truncate">
-                    {selectedPromptModel ? selectedPromptModel.name : "Select a model..."}
-                  </span>
-                  <svg className={`w-4 h-4 transition-transform ${showPromptModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              ) : (
-                <div className="input-field font-mono text-sm text-white/60">
-                  {selectedPromptModel ? selectedPromptModel.name : "Retrieve models to select"}
-                </div>
-              )}
-
-              {showPromptModelDropdown && filteredModels.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
-                  <div className="p-2">
-                    <input
-                      type="text"
-                      placeholder="Search models..."
-                      value={modelSearchQuery}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                      onChange={(e) => setModelSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  {filteredModels.map((model) => {
-                    const { text, truncated } = truncateDescription(model.description, 3);
-                    const isSelected = selectedPromptModel?.id === model.id;
-                    return (
-                      <div
-                        key={model.id}
-                        className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
-                          isSelected ? "bg-primary-500/10" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white">{model.name}</p>
-                            <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
-                              {text}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
-                              <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
-                              <span>Completion: {formatPrice(model.pricing.completion)}</span>
-                              {model.context_length && (
-                                <span>Context: {model.context_length.toLocaleString()}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {truncated && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setModelDetail(model);
-                                }}
-                                className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
-                              >
-                                Read more
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => selectPromptModel(model)}
-                              className={`text-xs px-2 py-1 rounded ${
-                                isSelected
-                                  ? "bg-primary-500 text-white"
-                                  : "bg-white/10 text-white/50 hover:bg-white/20"
-                              }`}
-                            >
-                              {isSelected ? "Selected" : "Select"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {provider.id === "openrouter" && (
-            renderOpenRouterModelSelect({
-              label: "Lyrics Model",
-              selected: selectedLyricsModel,
-              open: showLyricsModelDropdown,
-              onToggle: () => {
-                setShowLyricsModelDropdown(!showLyricsModelDropdown);
-                setShowPromptModelDropdown(false);
-                setShowImageModelDropdown(false);
-              },
-              onSelect: selectLyricsModel,
-            })
-          )}
-
-          {provider.id === "openrouter" && (
-            <div className="relative">
-              <label className="block text-xs font-medium text-white/50 mb-1">Image Prompt Model</label>
-              {allModels.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowImageModelDropdown(!showImageModelDropdown);
-                    setShowPromptModelDropdown(false);
-                    setShowLyricsModelDropdown(false);
-                  }}
-                  className="w-full input-field font-mono text-sm text-left flex items-center justify-between"
-                >
-                  <span className="truncate">
-                    {selectedImageModel ? selectedImageModel.name : "Select a model..."}
-                  </span>
-                  <svg className={`w-4 h-4 transition-transform ${showImageModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              ) : (
-                <div className="input-field font-mono text-sm text-white/60">
-                  {selectedImageModel ? selectedImageModel.name : "Retrieve models to select"}
-                </div>
-              )}
-
-              {showImageModelDropdown && filteredModels.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full max-h-96 overflow-y-auto bg-[#1a1a24] border border-white/10 rounded-lg shadow-xl">
-                  <div className="p-2">
-                    <input
-                      type="text"
-                      placeholder="Search models..."
-                      value={modelSearchQuery}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
-                      onChange={(e) => setModelSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  {filteredModels.map((model) => {
-                    const { text, truncated } = truncateDescription(model.description, 3);
-                    const isSelected = selectedImageModel?.id === model.id;
-                    return (
-                      <div
-                        key={model.id}
-                        className={`px-4 py-3 border-b border-white/5 last:border-b-0 hover:bg-white/5 cursor-pointer ${
-                          isSelected ? "bg-primary-500/10" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white">{model.name}</p>
-                            <p className="text-xs text-white/40 line-clamp-3 mt-0.5">
-                              {text}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-white/30">
-                              <span>Prompt: {formatPrice(model.pricing.prompt)}</span>
-                              <span>Completion: {formatPrice(model.pricing.completion)}</span>
-                              {model.context_length && (
-                                <span>Context: {model.context_length.toLocaleString()}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {truncated && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setModelDetail(model);
-                                }}
-                                className="text-xs text-primary-400 hover:text-primary-300 whitespace-nowrap"
-                              >
-                                Read more
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => selectImageModel(model)}
-                              className={`text-xs px-2 py-1 rounded ${
-                                isSelected
-                                  ? "bg-primary-500 text-white"
-                                  : "bg-white/10 text-white/50 hover:bg-white/20"
-                              }`}
-                            >
-                              {isSelected ? "Selected" : "Select"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 pt-1">
             <button
-              onClick={() => saveProvider(provider)}
-              disabled={saving[provider.id]}
-              className="btn-primary text-xs px-3 py-1.5"
-            >
-              {saving[provider.id] ? "Saving..." : "Save"}
-            </button>
-            <button
-              onClick={() => testProvider(provider)}
-              disabled={testing[provider.id]}
+              onClick={() => getOpenRouterModels()}
+              disabled={testing.openrouterModels}
               className="btn-secondary text-xs px-3 py-1.5"
             >
-              {testing[provider.id] ? "Testing..." : "Test Connection"}
+              {testing.openrouterModels ? "Loading Models..." : "Retrieve Models"}
             </button>
-            {provider.id === "openrouter" && (
-              <button
-                onClick={() => getOpenRouterModels()}
-                disabled={testing.openrouterModels}
-                className="btn-secondary text-xs px-3 py-1.5"
-              >
-                {testing.openrouterModels ? "Loading Models..." : "Retrieve Models"}
-              </button>
-            )}
-          </div>
-
-          {testResults[provider.id] && (
-            <p
-              className={`text-xs ${
-                testResults[provider.id].success
-                  ? "text-green-400"
-                  : "text-red-400"
-              }`}
-            >
-              {testResults[provider.id].message}
-            </p>
           )}
         </div>
-      </section>
+
+        {testResults[provider.id] && (
+          <p
+            className={`text-xs ${
+              testResults[provider.id].success
+                ? "text-green-400"
+                : "text-red-400"
+            }`}
+          >
+            {testResults[provider.id].message}
+          </p>
+        )}
+      </ProviderCard>
     );
   }
 
@@ -1000,13 +724,10 @@ export default function SettingsPage() {
               )}
 
               {/* Minimax — with Use PoYo toggle */}
-              <section className="section-card">
-                <div className="mb-4">
-                  <h2 className="text-sm font-semibold">MiniMax Music 2.6</h2>
-                  <p className="text-xs text-white/30">Synchronous music generation with lyrics support</p>
-                </div>
-
-                <div className="space-y-3">
+              <ProviderCard
+                title="MiniMax Music 2.6"
+                description="Synchronous music generation with lyrics support"
+              >
                   {/* Use PoYo toggle */}
                   <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
                     <div>
@@ -1075,8 +796,7 @@ export default function SettingsPage() {
                       {testResults.minimax.message}
                     </p>
                   )}
-                </div>
-              </section>
+              </ProviderCard>
 
               {/* MusicGPT Recovery */}
               <section className="section-card">
@@ -1155,56 +875,36 @@ export default function SettingsPage() {
                     />
                     <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-white/50 mb-1">PoYo Webhook URL</label>
-                    <input
-                      type="text"
-                      value={values.POYO_WEBHOOK_URL || ""}
-                      onChange={(e) => updateField("POYO_WEBHOOK_URL", e.target.value)}
-                      className="input-field font-mono text-sm"
-                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-white/50 mb-1">PoYo WAV Webhook URL</label>
-                    <input
-                      type="text"
-                      value={values.POYO_WAV_WEBHOOK_URL || ""}
-                      onChange={(e) => updateField("POYO_WAV_WEBHOOK_URL", e.target.value)}
-                      className="input-field font-mono text-sm"
-                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo-wav` : "Leave empty to auto-derive"}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-white/50 mb-1">Tempolor Webhook URL</label>
-                    <input
-                      type="text"
-                      value={values.TEMPOLOR_WEBHOOK_URL || ""}
-                      onChange={(e) => updateField("TEMPOLOR_WEBHOOK_URL", e.target.value)}
-                      className="input-field font-mono text-sm"
-                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/tempolor` : "Leave empty to auto-derive"}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-white/50 mb-1">MusicGPT Webhook URL</label>
-                    <input
-                      type="text"
-                      value={values.MUSICGPT_WEBHOOK_URL || ""}
-                      onChange={(e) => updateField("MUSICGPT_WEBHOOK_URL", e.target.value)}
-                      className="input-field font-mono text-sm"
-                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/musicgpt` : "Leave empty to auto-derive"}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-white/50 mb-1">MiniMax Webhook URL</label>
-                    <input
-                      type="text"
-                      value={values.MINIMAX_WEBHOOK_URL || ""}
-                      onChange={(e) => updateField("MINIMAX_WEBHOOK_URL", e.target.value)}
-                      className="input-field font-mono text-sm"
-                      placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
-                    />
-                  </div>
+                  <WebhookRow
+                    label="PoYo Webhook URL"
+                    value={values.POYO_WEBHOOK_URL || ""}
+                    onChange={(value) => updateField("POYO_WEBHOOK_URL", value)}
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo` : "Leave empty to auto-derive"}
+                  />
+                  <WebhookRow
+                    label="PoYo WAV Webhook URL"
+                    value={values.POYO_WAV_WEBHOOK_URL || ""}
+                    onChange={(value) => updateField("POYO_WAV_WEBHOOK_URL", value)}
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/poyo-wav` : "Leave empty to auto-derive"}
+                  />
+                  <WebhookRow
+                    label="Tempolor Webhook URL"
+                    value={values.TEMPOLOR_WEBHOOK_URL || ""}
+                    onChange={(value) => updateField("TEMPOLOR_WEBHOOK_URL", value)}
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/tempolor` : "Leave empty to auto-derive"}
+                  />
+                  <WebhookRow
+                    label="MusicGPT Webhook URL"
+                    value={values.MUSICGPT_WEBHOOK_URL || ""}
+                    onChange={(value) => updateField("MUSICGPT_WEBHOOK_URL", value)}
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/musicgpt` : "Leave empty to auto-derive"}
+                  />
+                  <WebhookRow
+                    label="MiniMax Webhook URL"
+                    value={values.MINIMAX_WEBHOOK_URL || ""}
+                    onChange={(value) => updateField("MINIMAX_WEBHOOK_URL", value)}
+                    placeholder={values.APP_URL ? `${values.APP_URL.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
+                  />
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => saveWebhooks()}

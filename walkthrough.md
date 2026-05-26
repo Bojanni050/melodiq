@@ -1175,3 +1175,15 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
   - Updated `sonara-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-26 di 20:41 (Play order drag-and-drop + settings modulair herstel)
+
+- Findings: Na reset waren de eerder aangemaakte settings hulpfiles/componenten verdwenen terwijl `settings/page.tsx` ze nog importeerde; daarnaast was er behoefte om track-afspeelvolgorde handmatig te kunnen herschikken.
+- Conclusions: Herstel eerst ontbrekende settings modules om compile errors op te lossen, en voeg daarna een expliciete `Play order` sort-mode met drag-and-drop toe zodat de player queue dezelfde handmatige volgorde volgt.
+- Actions:
+  - Added `src/lib/settings-utils.ts` — `LLMModel` type en helpers `formatPrice`, `truncateDescription`, `createModelPlaceholder`, `buildWebhookUrl`, `applyWebhookDefaults`
+  - Added `src/components/settings/ProviderCard.tsx`, `src/components/settings/ModelSelector.tsx`, `src/components/settings/WebhookRow.tsx` — herbruikbare settings bouwblokken
+  - Updated `src/app/settings/page.tsx` — herstelde imports naar nieuwe modules, `renderProviderSection` migreert naar `ProviderCard`, OpenRouter selectors lopen via `ModelSelector`, webhook inputs gebruiken `WebhookRow`, MiniMax sectie gebruikt `ProviderCard`
+  - Updated `src/components/TrackList.tsx` — toegevoegd: `manual` sort-order, drag-start/over/drop handlers, persistente handmatige volgorde (`manualOrder`) en play-context/queue blijven gebaseerd op de actuele zichtbare volgorde
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `di 20:41`
+  - Validated with `npm run build` up to compile/typecheck; build stopt daarna op bestaande environment issue (`ERR_INVALID_URL` met ongeldige `postgres://...` waarde) tijdens page data collection.

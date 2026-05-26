@@ -118,7 +118,7 @@ interface PlaylistOption {
   name: string;
 }
 
-type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
+type SortOrder = "manual" | "newest" | "oldest" | "title-asc" | "title-desc";
 
 export default function TrackList({
   tracks,
@@ -155,6 +155,10 @@ export default function TrackList({
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [manualOrder, setManualOrder] = useState<string[]>([]);
+  const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
+  const [dragOverTrackId, setDragOverTrackId] = useState<string | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<"before" | "after">("after");
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
@@ -162,8 +166,32 @@ export default function TrackList({
     selectedIdsRef.current = selectedIds;
   }, [selectedIds]);
 
-  const displayedTracks = useMemo(() => {
+  useEffect(() => {
+    setManualOrder((current) => {
+      const trackIds = tracks.map((track) => track.id);
+      const existingIds = current.filter((id) => trackIds.includes(id));
+      const missingIds = trackIds.filter((id) => !existingIds.includes(id));
+      return [...existingIds, ...missingIds];
+    });
+  }, [tracks]);
+
+  const orderedTracks = useMemo(() => {
     const list = [...tracks];
+
+    if (sortOrder === "manual") {
+      const rankById = new Map(manualOrder.map((id, index) => [id, index]));
+      list.sort((left, right) => {
+        const leftRank = rankById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+        const rightRank = rankById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+        if (leftRank !== rightRank) return leftRank - rightRank;
+
+        const leftTime = Number(new Date(left.createdAt));
+        const rightTime = Number(new Date(right.createdAt));
+        if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
+        return rightTime - leftTime;
+      });
+      return list;
+    }
 
     list.sort((left, right) => {
       if (sortOrder === "title-asc" || sortOrder === "title-desc") {
@@ -192,6 +220,12 @@ export default function TrackList({
       return rightTime - leftTime;
     });
 
+    return list;
+  }, [manualOrder, sortOrder, tracks]);
+
+  const displayedTracks = useMemo(() => {
+    const list = [...orderedTracks];
+
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
       return list;
@@ -208,7 +242,7 @@ export default function TrackList({
 
       return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
     });
-  }, [sortOrder, tracks, searchQuery]);
+  }, [orderedTracks, searchQuery]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
@@ -289,6 +323,67 @@ export default function TrackList({
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
+  }
+
+  function moveTrackInManualOrder(sourceId: string, targetId: string, position: "before" | "after") {
+    setManualOrder((current) => {
+      const baseOrder = current.length > 0 ? [...current] : orderedTracks.map((track) => track.id);
+      const sourceIndex = baseOrder.indexOf(sourceId);
+      const targetIndex = baseOrder.indexOf(targetId);
+
+      if (sourceIndex < 0 || targetIndex < 0 || sourceId === targetId) {
+        return current;
+      }
+
+      const next = [...baseOrder];
+      next.splice(sourceIndex, 1);
+
+      const adjustedTargetIndex = next.indexOf(targetId);
+      const insertIndex = position === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
+      next.splice(insertIndex, 0, sourceId);
+
+      return next;
+    });
+  }
+
+  const canDragReorder = searchQuery.trim().length === 0 && displayedTracks.length > 1;
+
+  function handleTrackDragStart(trackId: string) {
+    if (!canDragReorder) return;
+    setDraggedTrackId(trackId);
+    setSortOrder("manual");
+  }
+
+  function handleTrackDragOver(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    if (!canDragReorder || !draggedTrackId || draggedTrackId === trackId) return;
+    event.preventDefault();
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const midpoint = bounds.top + bounds.height / 2;
+    const position: "before" | "after" = event.clientY < midpoint ? "before" : "after";
+
+    if (dragOverTrackId !== trackId || dragOverPosition !== position) {
+      setDragOverTrackId(trackId);
+      setDragOverPosition(position);
+    }
+  }
+
+  function handleTrackDrop(trackId: string) {
+    if (!canDragReorder || !draggedTrackId || draggedTrackId === trackId) {
+      setDraggedTrackId(null);
+      setDragOverTrackId(null);
+      return;
+    }
+
+    moveTrackInManualOrder(draggedTrackId, trackId, dragOverPosition);
+    setSortOrder("manual");
+    setDraggedTrackId(null);
+    setDragOverTrackId(null);
+  }
+
+  function handleTrackDragEnd() {
+    setDraggedTrackId(null);
+    setDragOverTrackId(null);
   }
 
   function handlePlay(track: TrackItem) {
@@ -418,6 +513,7 @@ export default function TrackList({
             className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/75 outline-none hover:border-white/20"
             aria-label="Sort tracks"
           >
+            <option value="manual" className="bg-[#161621]">Play order</option>
             <option value="newest" className="bg-[#161621]">New to old</option>
             <option value="oldest" className="bg-[#161621]">Old to new</option>
             <option value="title-asc" className="bg-[#161621]">A-Z</option>
@@ -450,6 +546,11 @@ export default function TrackList({
           </button>
         </div>
       )}
+      {sortOrder === "manual" && (
+        <div className="px-3 pb-1 text-[11px] text-white/35">
+          Drag tracks to change play order.
+        </div>
+      )}
       {isGenerating && <GeneratingRow />}
       {displayedTracks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -478,6 +579,17 @@ export default function TrackList({
             isSelected={selectedIds.has(track.id)}
             onToggleSelect={toggleSelection}
             onTitleUpdate={onTitleUpdate}
+            draggable={canDragReorder}
+            isDragActive={draggedTrackId === track.id}
+            showDropBefore={dragOverTrackId === track.id && dragOverPosition === "before"}
+            showDropAfter={dragOverTrackId === track.id && dragOverPosition === "after"}
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "move";
+              handleTrackDragStart(track.id);
+            }}
+            onDragOver={(event) => handleTrackDragOver(event, track.id)}
+            onDrop={() => handleTrackDrop(track.id)}
+            onDragEnd={handleTrackDragEnd}
           />
         ))
       )}
@@ -532,6 +644,14 @@ function TrackCard({
   isSelected,
   onToggleSelect,
   onTitleUpdate,
+  draggable,
+  isDragActive,
+  showDropBefore,
+  showDropAfter,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   track: TrackItem;
   allTracks: TrackItem[];
@@ -551,6 +671,14 @@ function TrackCard({
   isSelected?: boolean;
   onToggleSelect?: (trackId: string) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
+  draggable?: boolean;
+  isDragActive?: boolean;
+  showDropBefore?: boolean;
+  showDropAfter?: boolean;
+  onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDrop?: () => void;
+  onDragEnd?: () => void;
 }) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -1045,10 +1173,15 @@ function TrackCard({
             : track.status === "generating" || track.status === "pending"
               ? "bg-primary-600/5 border border-primary-600/20"
               : "hover:bg-white/5"
-        } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
+              } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""} ${isDragActive ? "opacity-50" : ""} ${showDropBefore ? "ring-2 ring-inset ring-primary-400" : ""} ${showDropAfter ? "ring-2 ring-inset ring-primary-300/60" : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={() => onSelect(track)}
+              draggable={draggable}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onDragEnd={onDragEnd}
       >
       {/* Selection dot */}
       <button
