@@ -60,9 +60,14 @@ Output rules:
   2) Instrumentation:
   3) Production & Mix:
   4) Vocal Direction:
-- Keep each section to 1 sentence.
-- Be specific and production-usable: mention tempo range, groove, arrangement density, sonic texture, and vocal delivery.
-- Keep total output around 80-140 words.
+- Keep each section to 1-2 sentences.
+- Follow a fixed mini-template inside each section:
+  1) Genre & Feel: genre/subgenre, mood, BPM range, groove, arrangement density.
+  2) Instrumentation: core instruments, drums, bass, synths/acoustic elements, signature textures.
+  3) Production & Mix: mix chain ideas, compression/saturation, stereo image, room/reverb/delay, polish level.
+  4) Vocal Direction: only if vocals fit; describe tone, phrasing, harmony stack, ad-libs or FX. If instrumental, say "Instrumental focus" and describe the lead motif or hook.
+- Be specific and production-usable.
+- Keep total output around 90-150 words.
 - Do not include artist names, song titles, or quotes.
 - Do not include any explanation before or after the suggestion.`;
 
