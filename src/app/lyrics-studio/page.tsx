@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import Flowchart from "@/components/Flowchart";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
 import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
 import LyricsConfirmModal from "@/components/lyrics-studio/LyricsConfirmModal";
 import LyricsControlPanel from "@/components/lyrics-studio/LyricsControlPanel";
 import LyricsNotice from "@/components/lyrics-studio/LyricsNotice";
 import LyricsSnapshotModals from "@/components/lyrics-studio/LyricsSnapshotModals";
+import LyricsStudioSidePanel from "@/components/lyrics-studio/LyricsStudioSidePanel";
 import TranslationReview from "@/components/lyrics-studio/TranslationReview";
 import {
   BLOCK_COLORS,
@@ -1201,61 +1201,20 @@ export default function LyricsStudioPage() {
                 </div>
               </section>
 
-              {/* Derde kolom rechts van lyric blocks */}
-              <aside className="hidden lg:block">
-                <div className="h-full rounded-2xl border border-white/10 bg-[#181820]/80 p-4 flex flex-col gap-4">
-                  <div className="min-h-[220px] rounded-xl border border-white/10 bg-[#11111a] p-3">
-                    <h3 className="text-white/60 text-sm font-semibold mb-3">Song Flow</h3>
-                    <div className="h-[calc(100%-1.75rem)] overflow-auto">
-                      <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-[#11111a] p-3">
-                    <div className="mb-3 flex items-center justify-between gap-2">
-                      <h3 className="text-white/70 text-sm font-semibold">Style Suggestion</h3>
-                      <button
-                        type="button"
-                        onClick={generateStyleSuggestion}
-                        disabled={!topic.trim() || !mood.trim() || !combinedLyrics.trim() || generatingStyleSuggestion}
-                        className="inline-flex items-center justify-center rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
-                        title="Generate style suggestion from topic, mood and lyrics"
-                      >
-                        {generatingStyleSuggestion ? "Generating..." : "AI Fill"}
-                      </button>
-                    </div>
-
-                    <textarea
-                      value={styleSuggestion}
-                      onChange={(event) => setStyleSuggestion(event.target.value)}
-                      placeholder="AI style suggestion will appear here"
-                      className="min-h-[120px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-xs leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
-                    />
-
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <p className="text-[11px] text-white/35">Based on topic, mood and current lyrics.</p>
-                      <button
-                        type="button"
-                        onClick={copyStyleSuggestion}
-                        disabled={!styleSuggestion.trim()}
-                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                      >
-                        {copiedStyleSuggestion ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={useLyricsAndStyleInStudio}
-                      disabled={!combinedLyrics.trim() || !(styleSuggestion.trim() || style.trim())}
-                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
-                      title="Copy lyrics and style to Studio"
-                    >
-                      Use lyrics + style in Studio
-                    </button>
-                  </div>
-                </div>
-              </aside>
+              <LyricsStudioSidePanel
+                blocks={blocks}
+                topic={topic}
+                mood={mood}
+                style={style}
+                combinedLyrics={combinedLyrics}
+                styleSuggestion={styleSuggestion}
+                generatingStyleSuggestion={generatingStyleSuggestion}
+                copiedStyleSuggestion={copiedStyleSuggestion}
+                onGenerateStyleSuggestion={generateStyleSuggestion}
+                onStyleSuggestionChange={setStyleSuggestion}
+                onCopyStyleSuggestion={copyStyleSuggestion}
+                onUseLyricsAndStyleInStudio={useLyricsAndStyleInStudio}
+              />
             </div>
           </div>
         </div>

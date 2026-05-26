@@ -6,7 +6,9 @@
 	],
 	"settings": {
 		"chat.tools.terminal.autoApprove": {
-			"Set-Content": true
+			"Set-Content": true,
+			"git rev-parse": true,
+			"Test-Path": true
 		}
 	}
 }
