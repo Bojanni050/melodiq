@@ -45,3 +45,9 @@
 - Findings: `src/app/page.tsx` had nog inline notificatie-, workspace-create- en resizable panel-UI plus dubbele workspace-helperfuncties.
 - Conclusions: Bestaande studio-componenten (`NoticeBar`, `CreateWorkspaceDialog`, `ResizablePanel`) direct gebruiken en helper-duplicatie vervangen door `track-utils` houdt de pagina slanker en consistenter.
 - Actions: `src/app/page.tsx` gerefactord om `NoticeBar`, `CreateWorkspaceDialog` en `ResizablePanel` te gebruiken; lokale `hash/pick/getCover/getGradient` helpers verwijderd en vervangen door `getWorkspaceCoverCollage` en `getWorkspaceGradient` uit `src/lib/track-utils.ts`; workspace list className-bug met `$selectedWorkspaceId` gecorrigeerd; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-26 (Studio kolom scroll + sticky generate hersteld)
+
+- Findings: Op de homepage scrollde de linker Studio-kolom niet meer en de generate-sectie verdween uit beeld; sticky-positionering werkte niet betrouwbaar.
+- Conclusions: Ongeldige Tailwind arbitrary value syntaxis in `top`/`h-[calc(...)]` classes brak de hoogte- en sticky-layout. Door deze classes te corrigeren en de generate-sectie sticky onderin te maken blijft de knop zichtbaar boven de player.
+- Actions: `src/app/page.tsx` aangepast met geldige `top-[var(--studio-top-offset)]` en correcte `h-[calc(...)]` sluiting voor beide kolommen; `src/components/StudioForm.tsx` generate-paneel aangepast naar `sticky bottom-0 z-10`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.

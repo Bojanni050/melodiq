@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: za 21:34**
+**Versie: di 22:11**
 
 > AI Music Generation Web App
 
@@ -181,3 +181,4 @@ The Settings page lets you configure each provider independently:
 ## Tips
 
 - On desktop Studio Create page, **Generate Track** stays anchored at the bottom of the Studio column while the form content above it scrolls
+- Als de Studio-kolom lang is, kun je door de velden scrollen terwijl de generate-sectie onderaan zichtbaar blijft, net boven de player

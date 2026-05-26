@@ -799,7 +799,7 @@ Your chorus here`}
       </div>
 
       {/* Generate Button */}
-      <div className="space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-10 space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
         <label className="flex items-start gap-2.5 text-xs text-white/70">
           <input
             type="checkbox"

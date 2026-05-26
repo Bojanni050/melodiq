@@ -567,7 +567,7 @@ export default function HomePage() {
           <main className="p-4">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Form column */}
-              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap)]">
+              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-[var(--studio-top-offset)] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <StudioForm
                   credits={credits}
                   isGenerating={generating}
@@ -579,7 +579,7 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="xl:col-span-2 self-start sticky top-(--studio-top-offset) h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap)]">
+              <div className="xl:col-span-2 self-start sticky top-[var(--studio-top-offset)] h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <div className="flex flex-col h-full min-h-0">
                   {/* Tabs */}
                   <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
