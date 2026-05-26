@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 14:02**
+**Versie: di 14:08**
 
 > AI Music Generation Web App
 
@@ -52,6 +52,7 @@ Select which AI music service to use. Each provider shows its current credit bal
 - **PoYo** (Suno) — asynchronous, webhook-based; generated variants request their own HD/WAV conversion
 - **Tempolor** — asynchronous, webhook-based
 - **MusicGPT** — asynchronous, webhook-based, returns two generated variants
+- The Studio form now shows a clear **Studio** heading above the Provider & Model card.
 
 This selector now lives in the **Studio** card on the Create page.
 

@@ -355,6 +355,7 @@ export default function StudioForm({
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
 
       {/* Provider Dropdown */}
+      <h2 className="text-base font-semibold text-white/90">Studio</h2>
       <section className="section-card">
         <h3 className="text-sm font-semibold text-white/80 mb-3">Provider & Model</h3>
         <div className="flex gap-2">
