@@ -258,6 +258,16 @@
   - Confirmed `src/app/page.tsx` bleef ongewijzigd zoals gevraagd.
   - Validated with `npm run build` na elke fase (1 t/m 4).
 
+## 2026-05-26 (Generate Track knop weer bruikbaar zonder verplichte lyrics)
+
+- Findings: In de Studio-flow werd de `Generate Track` knop onterecht geblokkeerd wanneer lyrics leeg waren, ook al ondersteunen providers generation op basis van alleen style/prompt.
+- Conclusions: Frontend-validatie moet aansluiten op backend-capabilities: provider + style/prompt is voldoende; lyrics blijven optioneel.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — `canGenerate` vereenvoudigd naar `selectedProviders > 0 && songIdea.trim().length > 0`
+  - Updated `src/components/StudioForm.tsx` — disabled-hinttekst opgeschoond zodat lyrics niet langer als harde vereiste wordt getoond
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 16:08`
+  - Validated with `npm run build`.
+
 ## 2026-05-26 (Song title niet langer verplicht in instrumental mode)
 
 - Findings: Op de Studio-pagina werd bij instrumental generation nog steeds afgedwongen dat `Song Title` verplicht was, terwijl dit functioneel niet nodig is.
