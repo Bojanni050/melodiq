@@ -81,7 +81,6 @@ export default function LyricBlockEditor({
               <article
                 key={block.id}
                 data-lyric-block-id={block.id}
-                aria-grabbed={isDragged}
                 onPointerDown={(event) => onStartBlockDragFromCard(event, block.id)}
                 className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none cursor-grab active:cursor-grabbing select-none ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                 style={{ borderLeft: `4px solid ${blockColors[block.type]}` }}
@@ -92,7 +91,6 @@ export default function LyricBlockEditor({
                   <button
                     type="button"
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
-                    aria-grabbed={isDragged}
                     className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
                     title="Drag to reorder"
                     aria-label={`Drag ${block.label || blockLabels[block.type]} block`}

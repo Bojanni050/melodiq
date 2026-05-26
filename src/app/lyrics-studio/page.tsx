@@ -5,18 +5,20 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Flowchart from "@/components/Flowchart";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
+import BlockToolbar from "@/components/lyrics-studio/BlockToolbar";
+import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
+import PresetSelector from "@/components/lyrics-studio/PresetSelector";
+import {
+  autoGrowTextarea,
+  BLOCK_LABELS,
+  combineLyrics,
+  createBlock,
+  createPresetBlocks,
+  parseStructureText,
+  type BlockType,
+  type LyricBlock,
+} from "@/lib/lyrics-utils";
 import { useStudioStore } from "@/lib/store";
-
-type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
-
-interface LyricBlock {
-  id: string;
-  type: BlockType;
-  label: string;
-  content: string;
-  generating: boolean;
-  uniqueChorusOverride: boolean;
-}
 
 interface LyricStudioSnapshot {
   id: string;
@@ -140,15 +142,6 @@ const BLOCK_COLORS: Record<BlockType, string> = {
   outro: "rgba(255,255,255,0.15)",
 };
 
-const BLOCK_LABELS: Record<BlockType, string> = {
-  intro: "Intro",
-  verse: "Verse",
-  "pre-chorus": "Pre-Chorus",
-  chorus: "Chorus",
-  "post-chorus": "Post-Chorus",
-  bridge: "Bridge",
-  outro: "Outro",
-};
 
 const STRUCTURE_PRESET_MAP: Record<string, string> = {
   abab: "ABABCB",
@@ -167,78 +160,6 @@ const STRUCTURE_PRESET_MAP: Record<string, string> = {
   "pop-triplechorus": "Extended",
   "pop-instrumental": "Extended",
 };
-
-function isDancePreset(presetName?: string) {
-  return Boolean(
-    presetName?.startsWith("EDM") ||
-      presetName?.startsWith("Dance") ||
-      presetName?.startsWith("Minimal")
-  );
-}
-
-function getPresetBlockLabel(type: BlockType, presetName?: string) {
-  if (!isDancePreset(presetName)) return BLOCK_LABELS[type];
-  if (type === "chorus") return "Drop";
-  if (type === "bridge") return "Breakdown";
-  if (type === "pre-chorus") return "Build-up";
-  return BLOCK_LABELS[type];
-}
-
-function parseStructureText(text: string): BlockType[] {
-  const normalized = text.toLowerCase();
-  const matches = normalized.match(/pre[-\s]?chorus|post[-\s]?chorus|build[-\s]?up|breakdown|intro|verse|chorus|bridge|outro|drop|build|break/g);
-  if (!matches) return [];
-
-  return matches.map((match) => {
-    if (match.includes("pre") || match.includes("build")) return "pre-chorus";
-    if (match.includes("post")) return "post-chorus";
-    if (match.includes("drop") || match.includes("chorus")) return "chorus";
-    if (match.includes("break") || match.includes("bridge")) return "bridge";
-    if (match.includes("intro")) return "intro";
-    if (match.includes("outro")) return "outro";
-    return "verse";
-  });
-}
-
-function createBlock(type: BlockType, label?: string): LyricBlock {
-  return {
-    id: crypto.randomUUID(),
-    type,
-    label: label || BLOCK_LABELS[type],
-    content: "",
-    generating: false,
-    uniqueChorusOverride: false,
-  };
-}
-
-function createPresetBlocks(types: BlockType[], presetName?: string): LyricBlock[] {
-  const totalByLabel = types.reduce<Record<string, number>>((counts, type) => {
-    const label = getPresetBlockLabel(type, presetName);
-    counts[label] = (counts[label] || 0) + 1;
-    return counts;
-  }, {});
-
-  const seenByLabel: Record<string, number> = {};
-
-  return types.map((type) => {
-    const baseLabel = getPresetBlockLabel(type, presetName);
-    seenByLabel[baseLabel] = (seenByLabel[baseLabel] || 0) + 1;
-    const label = totalByLabel[baseLabel] > 1 ? `${baseLabel} ${seenByLabel[baseLabel]}` : baseLabel;
-    return createBlock(type, label);
-  });
-}
-
-function combineLyrics(blocks: LyricBlock[]) {
-  return blocks
-    .filter((block) => block.content.trim())
-    .map((block) => `[${block.label.trim() || BLOCK_LABELS[block.type]}]\n${block.content.trim()}`)
-    .join("\n\n");
-}
-
-function autoGrowTextarea(element: HTMLTextAreaElement) {
-  element.style.height = "auto";
-  element.style.height = `${element.scrollHeight}px`;
-}
 
 export default function LyricsStudioPage() {
   const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
@@ -1513,27 +1434,11 @@ export default function LyricsStudioPage() {
                     </p>
                   )}
 
-                  <div className="mt-4">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-white/30">
-                      Presets
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.keys(BLOCK_PRESETS).map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => applyPreset(name)}
-                          className={`rounded-lg border px-3 py-2 text-sm transition hover:border-primary-500/50 hover:bg-primary-500/10 hover:text-white ${
-                            activePreset === name
-                              ? "border-primary-500/50 bg-primary-500/10 text-white"
-                              : "border-white/10 bg-white/5 text-white/70"
-                          }`}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <PresetSelector
+                    presets={BLOCK_PRESETS}
+                    activePreset={activePreset}
+                    onApplyPreset={applyPreset}
+                  />
 
                   <label className="mt-4 flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
                     <input
@@ -1615,54 +1520,20 @@ export default function LyricsStudioPage() {
                   )}
                 </section>
 
-                <section className="section-card">
-                  <h3 className="mb-3 text-sm font-semibold text-white/80">Add Block</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {BLOCK_TYPES.map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => addBlock(type)}
-                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white/70 transition hover:border-primary-500/50 hover:bg-primary-500/10 hover:text-white"
-                      >
-                        <span
-                          className="mr-2 inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: BLOCK_COLORS[type] }}
-                        />
-                        {BLOCK_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
-                </section>
+                <BlockToolbar
+                  blockTypes={BLOCK_TYPES}
+                  blockLabels={BLOCK_LABELS}
+                  blockColors={BLOCK_COLORS}
+                  onAddBlock={addBlock}
+                  onClearAll={() => clearAllDraft()}
+                  onCopyAll={copyAllLyrics}
+                  combinedLyrics={combinedLyrics}
+                  copied={copied}
+                />
               </aside>
 
               <section className="min-h-[620px] rounded-2xl border border-white/10 bg-[#101018]/80 p-4 lg:p-5">
-                {/* Kolom-toggles */}
-                <div className="flex justify-end mb-2">
-                  <label className="flex items-center gap-2 text-xs text-white/50 select-none">
-                    <input
-                      type="radio"
-                      name="lyric-cols"
-                      checked={lyricCols === 1}
-                      onChange={() => setLyricCols(1)}
-                    />
-                    1 kolom
-                  </label>
-                  <label className="flex items-center gap-2 ml-4 text-xs text-white/50 select-none">
-                    <input
-                      type="radio"
-                      name="lyric-cols"
-                      checked={lyricCols === 2}
-                      onChange={() => setLyricCols(2)}
-                    />
-                    2 kolommen
-                  </label>
-                </div>
-                {blocks.length === 0 ? (
-                  <div className="flex min-h-[460px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
-                    <p className="text-sm text-white/40">Add your first block to get started</p>
-                  </div>
-                ) : showTranslationView ? (
+                {showTranslationView ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-white/80">Translation Review</h3>
@@ -1750,160 +1621,29 @@ export default function LyricsStudioPage() {
                   </div>
                 ) : (
                   <>
-                    <div
-                      className={`grid gap-4 ${lyricCols === 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}
-                    >
-                      {blocks.map((block, index) => (
-                        (() => {
-                          const isDragged = draggedBlockId === block.id;
-                          const showDropBefore = dropTarget?.id === block.id && dropTarget.position === "before";
-                          const showDropAfter = dropTarget?.id === block.id && dropTarget.position === "after";
-
-                          return (
-                        <article
-                          key={block.id}
-                          data-lyric-block-id={block.id}
-                          aria-grabbed={isDragged}
-                          onPointerDown={(event) => startBlockDragFromCard(event, block.id)}
-                          className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none cursor-grab active:cursor-grabbing select-none ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
-                          style={{ borderLeft: `4px solid ${BLOCK_COLORS[block.type]}` }}
-                          title="Drag to reorder"
-                        >
-                        {showDropBefore && <div className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary-400" />}
-                        <div className="mb-3 flex flex-wrap items-center gap-2 select-none">
-                          <button
-                            type="button"
-                            onPointerDown={(event) => startBlockDrag(event, block.id)}
-                            aria-grabbed={isDragged}
-                            className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
-                            title="Drag to reorder"
-                            aria-label={`Drag ${block.label || BLOCK_LABELS[block.type]} block`}
-                          >
-                            <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />
-                            </svg>
-                          </button>
-                          <div className="text-[10px] uppercase tracking-[0.18em] text-white/25">
-                            Drag to reorder
-                          </div>
-                          <span
-                            className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
-                            style={{ backgroundColor: BLOCK_COLORS[block.type] }}
-                          >
-                            {BLOCK_LABELS[block.type]}
-                          </span>
-                          <input
-                            type="text"
-                            value={block.label}
-                            onChange={(event) => updateBlock(block.id, { label: event.target.value })}
-                            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-primary-500/60"
-                            aria-label={`${BLOCK_LABELS[block.type]} label`}
-                          />
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => moveBlock(block.id, -1)}
-                              disabled={index === 0}
-                              className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                              title="Move up"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveBlock(block.id, 1)}
-                              disabled={index === blocks.length - 1}
-                              className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                              title="Move down"
-                            >
-                              ↓
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => duplicateBlock(block.id)}
-                              className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white"
-                              title="Duplicate block"
-                            >
-                              <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteBlock(block.id)}
-                              className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-200"
-                              title="Delete block"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </div>
-
-                        {block.type === "chorus" && (
-                          <label className="mb-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75">
-                            <input
-                              type="checkbox"
-                              checked={block.uniqueChorusOverride}
-                              onChange={(event) =>
-                                updateBlock(block.id, { uniqueChorusOverride: event.target.checked })
-                              }
-                            />
-                            Unique chorus override
-                          </label>
-                        )}
-
-                        <textarea
-                          value={block.content}
-                          disabled={block.generating}
-                          onInput={(event) => autoGrowTextarea(event.currentTarget)}
-                          onChange={(event) => updateBlock(block.id, { content: event.target.value })}
-                          placeholder="Lyrics will appear here..."
-                          rows={4}
-                          className="min-h-[112px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
-                          style={{overflow: 'auto'}}
-                        />
-
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => generateBlock(block)}
-                              disabled={block.generating || !canGenerateBlocks}
-                              title={canGenerateBlocks ? "Generate block" : "Add topic and mood first"}
-                              className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
-                            >
-                              {block.generating ? (
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                              ) : (
-                                "✨ Generate"
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => translateBlock(block.id)}
-                              disabled={translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
-                              title={block.content.trim() ? "Translate this block" : "Add content to translate"}
-                              className="inline-flex items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {translatingBlockId === block.id ? (
-                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200/30 border-t-blue-200" />
-                              ) : (
-                                "🌐"
-                              )}
-                            </button>
-                          </div>
-                          <span className="text-xs text-white/35">{block.content.length} chars</span>
-                        </div>
-                        {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
-                      </article>
-                          );
-                        })()
-                      ))}
-
-                    </div>
-                    {/* Alleen tonen op 1 kolom (mobile/tablet), onderaan blocks */}
+                    <LyricBlockEditor
+                      blocks={blocks}
+                      lyricCols={lyricCols}
+                      setLyricCols={setLyricCols}
+                      blockColors={BLOCK_COLORS}
+                      blockLabels={BLOCK_LABELS}
+                      draggedBlockId={draggedBlockId}
+                      dropTarget={dropTarget}
+                      canGenerateBlocks={canGenerateBlocks}
+                      translatingBlockId={translatingBlockId}
+                      effectiveTranslationLanguage={effectiveTranslationLanguage}
+                      onStartBlockDrag={startBlockDrag}
+                      onStartBlockDragFromCard={startBlockDragFromCard}
+                      onMoveBlock={moveBlock}
+                      onDuplicateBlock={duplicateBlock}
+                      onDeleteBlock={deleteBlock}
+                      onUpdateBlock={updateBlock}
+                      onGenerateBlock={generateBlock}
+                      onTranslateBlock={translateBlock}
+                      autoGrowTextarea={autoGrowTextarea}
+                    />
                     <div className="block xl:hidden">
-                      <Flowchart blocks={blocks.map(b => ({ label: b.label, type: b.type }))} />
+                      <Flowchart blocks={blocks.map((b) => ({ label: b.label, type: b.type }))} />
                     </div>
                   </>
                 )}

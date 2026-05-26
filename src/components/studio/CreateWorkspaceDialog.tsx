@@ -3,6 +3,7 @@
 export default function CreateWorkspaceDialog({
   open,
   value,
+  onOpen,
   onChange,
   onSubmit,
   onCancel,
@@ -10,6 +11,7 @@ export default function CreateWorkspaceDialog({
 }: {
   open: boolean;
   value: string;
+  onOpen: () => void;
   onChange: (value: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -19,7 +21,7 @@ export default function CreateWorkspaceDialog({
     return (
       <button
         type="button"
-        onClick={onSubmit}
+        onClick={onOpen}
         className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
       >
         + Create Workspace

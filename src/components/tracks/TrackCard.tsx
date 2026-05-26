@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
+import WaveformBars from "@/components/tracks/WaveformBars";
 import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
+
 export default function TrackCard({
   track,
   onPlay,
@@ -559,6 +561,8 @@ export default function TrackCard({
               onBlur={saveTitle}
               onClick={(e) => e.stopPropagation()}
               disabled={isSavingTitle}
+              aria-label="Edit track title"
+              placeholder="Track title"
               className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
               maxLength={200}
             />

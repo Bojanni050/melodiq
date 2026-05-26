@@ -1,64 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import { DEFAULT_WORKSPACE_ID, WORKSPACE_FOLDER_GRADIENTS, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import CreateWorkspaceDialog from "@/components/studio/CreateWorkspaceDialog";
+import NoticeBar from "@/components/studio/NoticeBar";
+import ResizablePanel from "@/components/studio/ResizablePanel";
+import type { TrackItem } from "@/components/tracks/types";
+import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
+import { DEFAULT_WORKSPACE_ID, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara-studio-workspace-grid-size";
-
-interface Track {
-  id: string;
-  title: string | null;
-  provider: string;
-  providerModel: string;
-  prompt: string;
-  lyrics: string | null;
-  status: "pending" | "generating" | "done" | "failed";
-  audioUrl: string | null;
-  audioUrlHd: string | null;
-  format: string | null;
-  formatHd: string | null;
-  duration: number | null;
-  createdAt: string;
-  error: string | null;
-  s3KeyHd: string | null;
-  coverUrl?: string | null;
-  s3KeyCover?: string | null;
-  rating?: string | null;
-}
-
-function hashString(value: string) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function pickSeededItems<T>(items: T[], seed: string, limit: number) {
-  return [...items]
-    .sort((left, right) => hashString(`${seed}:${String(left)}`) - hashString(`${seed}:${String(right)}`))
-    .slice(0, limit);
-}
-
-function getCoverCollage(workspaceId: string, tracks: Track[]) {
-  const coverUrls = tracks
-    .filter((track) => !!track.coverUrl)
-    .map((track) => track.coverUrl as string);
-
-  return pickSeededItems(coverUrls, workspaceId, 4);
-}
-
-function getWorkspaceGradient(workspaceId: string, gradient?: string) {
-  if (gradient) return gradient;
-  return WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length];
-}
 
 function deriveWorkspaceNameFromTitle(rawTitle: string): string {
   const cleaned = rawTitle
@@ -70,7 +25,7 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
 }
 
 export default function HomePage() {
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null, minimax: null as number | null });
@@ -89,14 +44,12 @@ export default function HomePage() {
   const WORKSPACE_VIEW_MODE_STORAGE_KEY = "sonara-studio-workspace-view-mode";
   const [workspaceViewMode, setWorkspaceViewMode] = useState<"grid" | "list">("list");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
-  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const resizeStartXRef = useRef(0);
-  const resizeStartWidthRef = useRef(0);
 
   useEffect(() => {
     ensureDefaultWorkspace();
@@ -190,28 +143,6 @@ export default function HomePage() {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
-  function startRightPanelResize(e: React.MouseEvent<HTMLDivElement>) {
-    resizeStartXRef.current = e.clientX;
-    resizeStartWidthRef.current = rightPanelWidth;
-
-    const onMouseMove = (event: MouseEvent) => {
-      const delta = resizeStartXRef.current - event.clientX;
-      setRightPanelWidth(resizeStartWidthRef.current + delta);
-    };
-
-    const onMouseUp = () => {
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  }
-
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
@@ -240,12 +171,12 @@ export default function HomePage() {
     if (res.ok) {
       const data = await res.json();
       setTracks(data.tracks);
-      const knownTrackIds = (data.tracks || []).map((track: Track) => track.id);
+      const knownTrackIds = (data.tracks || []).map((track: TrackItem) => track.id);
       syncTracksToDefaultWorkspace(knownTrackIds);
-      return data.tracks as Track[];
+      return data.tracks as TrackItem[];
     }
 
-    return [] as Track[];
+    return [] as TrackItem[];
   }
 
   function handleDeleteTrack(trackId: string) {
@@ -262,7 +193,7 @@ export default function HomePage() {
     }
   }
 
-  function handleAddToQueue(track: Track) {
+  function handleAddToQueue(track: TrackItem) {
     usePlayerStore.getState().enqueueTrack({
       id: track.id,
       title: track.title,
@@ -440,14 +371,14 @@ export default function HomePage() {
         if (result.status === "fulfilled") {
           const { ok, data, provider } = result.value;
           if (ok) {
-            const returnedTracks: Track[] = Array.isArray(data.tracks)
+            const returnedTracks: TrackItem[] = Array.isArray(data.tracks)
               ? data.tracks
               : data.track
                 ? [data.track]
                 : [];
-            const ids: string[] = returnedTracks.map((t: Track) => t.id).filter(Boolean);
+            const ids: string[] = returnedTracks.map((t: TrackItem) => t.id).filter(Boolean);
             const titles = returnedTracks
-              .map((t: Track) => (typeof t.title === "string" ? t.title.trim() : ""))
+              .map((t: TrackItem) => (typeof t.title === "string" ? t.title.trim() : ""))
               .filter(Boolean);
 
             generatedTitles.push(...titles);
@@ -504,7 +435,7 @@ export default function HomePage() {
     }
   }
 
-  function handleReusePrompt(track: Track) {
+  function handleReusePrompt(track: TrackItem) {
     const studio = useStudioStore.getState();
 
     // Clear current fields first, then apply values from selected track.
@@ -612,26 +543,7 @@ export default function HomePage() {
       {/* Main content area */}
       <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          {notice && (
-            <div className="fixed top-4 right-4 z-50 max-w-sm rounded-xl border border-red-500/30 bg-[#201215] px-4 py-3 shadow-xl">
-              <div className="flex items-start gap-3">
-                <svg className="mt-0.5 h-4 w-4 text-red-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-                </svg>
-                <div className="min-w-0">
-                  <p className="text-sm text-red-100">{notice.message}</p>
-                </div>
-                <button
-                  onClick={() => setNotice(null)}
-                  className="text-red-200/70 hover:text-red-100"
-                  aria-label="Close notification"
-                  title="Close"
-                >
-                  x
-                </button>
-              </div>
-            </div>
-          )}
+          <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
           <main className="p-4">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -753,43 +665,18 @@ export default function HomePage() {
                               ← Back to folders
                             </button>
                           )}
-                          {showCreateWorkspace ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              value={newWorkspaceName}
-                              onChange={(event) => setNewWorkspaceName(event.target.value)}
-                              onKeyDown={handleCreateWorkspaceKeyDown}
-                              placeholder="Workspace name"
-                              className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
-                              aria-label="Workspace name"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleCreateWorkspace}
-                              className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
-                            >
-                              Add
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowCreateWorkspace(false);
-                                setNewWorkspaceName("");
-                              }}
-                              className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setShowCreateWorkspace(true)}
-                              className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
-                            >
-                              + Create Workspace
-                            </button>
-                          )}
+                          <CreateWorkspaceDialog
+                            open={showCreateWorkspace}
+                            value={newWorkspaceName}
+                            onOpen={() => setShowCreateWorkspace(true)}
+                            onChange={setNewWorkspaceName}
+                            onSubmit={handleCreateWorkspace}
+                            onCancel={() => {
+                              setShowCreateWorkspace(false);
+                              setNewWorkspaceName("");
+                            }}
+                            onKeyDown={handleCreateWorkspaceKeyDown}
+                          />
                         </div>
                       </div>
 
@@ -799,7 +686,7 @@ export default function HomePage() {
                             <div className={`grid gap-3 ${workspaceGridClass}`}>
                               {workspaces.map((workspace) => {
                                 const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                                const coverUrls = getCoverCollage(workspace.id, workspaceTracks);
+                                const coverUrls = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
                                 const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
                                 const hasSingleCover = coverUrls.length === 1;
 
@@ -965,37 +852,28 @@ export default function HomePage() {
           </main>
         </div>
 
-        {showTrackDetailsPanel && (
-          <div
-            className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
-            onMouseDown={startRightPanelResize}
-            title="Resize details panel"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize details panel"
-          />
-        )}
-
-        {showTrackDetailsPanel && (
-          <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
-            <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-              {selectedTrack ? (
-                <TrackDetail
-                  mode="sidebar"
-                  track={selectedTrack}
-                  onClose={handleCloseTrackDetails}
-                  onPlay={handlePlayTrack}
-                  onDownload={handleDownloadTrack}
-                />
-              ) : (
-                <div className="h-full px-5 py-6 text-white/45">
-                  <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                  <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
-                </div>
-              )}
-            </div>
-          </aside>
-        )}
+        <ResizablePanel
+          show={showTrackDetailsPanel}
+          width={rightPanelWidth}
+          setWidth={setRightPanelWidth}
+        >
+          <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={handleCloseTrackDetails}
+                onPlay={handlePlayTrack}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
 
       {/* Lyrics generation overlay */}
