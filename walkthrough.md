@@ -594,6 +594,17 @@
   - Updated `src/components/TrackList.tsx` — dropdownopties toegevoegd: `A-Z` en `Z-A`
   - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 16:40`
   - Validated with `npm run build`.
+
+## 2026-05-26 (Instrumental titel via AI bij lege titel)
+
+- Findings: Voor instrumentale tracks zonder ingevulde titel werd alleen een directe prompt-afleiding gebruikt, zonder AI-title pass.
+- Conclusions: Bij lege titel en instrumental modus moet de generate-route eerst AI laten voorstellen op basis van de style prompt, met bestaande prompt-afleiding als fallback.
+- Actions:
+  - Updated `src/app/api/generate/route.ts` — toegevoegd: `generateInstrumentalTitleFromPrompt()` via LLM (`purpose: prompt`) en `normalizeAiTitle()` sanitizing
+  - Updated `src/app/api/generate/route.ts` — `resolvedTitle` prioriteit aangepast naar: handmatige titel -> AI instrumental titel -> fallback prompt-afleiding -> PoYo prompt fallback
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 18:26`
+  - Updated `sonara-user.md` — instrumentale titelgedrag geactualiseerd voor eindgebruikers
+  - Validated with `npm run build`.
 - Conclusions: Provider hoort dicht bij de primaire Studio-controls op de Create-pagina; language hoort bij lyric- en structuurinstellingen op de Lyric Studio-pagina.
 - Actions:
   - Updated `src/components/StudioForm.tsx` — provider dropdown + model-select verplaatst naar de `Studio` card; language-selector verwijderd uit de Create-pagina; `Vocal Gender` als losse card behouden voor vocal mode

@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: di 16:40**
+**Versie: di 18:26**
 
 > AI Music Generation Web App
 
@@ -90,7 +90,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 ### Song Title
 - **All tracks** — title is optional
 - **Vocal tracks** — if left empty, the AI can automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
-- **Instrumental tracks** — if left empty, Sonara derives a title from your style prompt automatically
+- **Instrumental tracks** — if left empty, Sonara asks AI to generate a title from your style prompt (with fallback derivation if needed)
 
 ---
 
