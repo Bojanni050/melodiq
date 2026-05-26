@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import GenerateButton from "@/components/studio/GenerateButton";
 import { useStudioStore } from "@/lib/store";
 
 const PROVIDERS = {
@@ -210,12 +211,14 @@ const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
 
 export default function StudioForm({
   credits,
+  isGenerating,
   onGenerate,
   onOptimize,
   onGenerateLyrics,
   onGenerateTitle,
 }: {
   credits: { lyria: string | number; poyo: number | null; tempolor: number | null };
+  isGenerating: boolean;
   onGenerate: () => void;
   onOptimize: () => void;
   onGenerateLyrics: () => void;
@@ -809,13 +812,14 @@ Your chorus here`}
           </span>
         </label>
 
-        <button
+        <GenerateButton
           onClick={onGenerate}
+          loading={isGenerating}
           disabled={!canGenerate}
-          className="w-full btn-primary py-3 text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          🎶 Generate Track
-        </button>
+          label="🎶 Generate Track"
+          loadingLabel="Generating..."
+          className="w-full py-3 text-sm tracking-wide"
+        />
 
         {/* Validation hint when button is disabled */}
         {!canGenerate && (

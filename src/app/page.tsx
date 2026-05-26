@@ -551,6 +551,7 @@ export default function HomePage() {
               <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <StudioForm
                   credits={credits}
+                  isGenerating={generating}
                   onGenerate={handleGenerate}
                   onOptimize={handleOptimize}
                   onGenerateLyrics={handleGenerateLyrics}

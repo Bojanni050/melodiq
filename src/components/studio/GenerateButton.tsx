@@ -4,12 +4,14 @@ export default function GenerateButton({
   loading,
   onClick,
   disabled,
+  className,
   label = "Generate",
   loadingLabel = "Generating...",
 }: {
   loading: boolean;
   onClick: () => void;
   disabled?: boolean;
+  className?: string;
   label?: string;
   loadingLabel?: string;
 }) {
@@ -18,7 +20,7 @@ export default function GenerateButton({
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      className="inline-flex items-center justify-center rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
+      className={`inline-flex items-center justify-center rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45 ${className ?? ""}`}
     >
       {loading ? (
         <span className="inline-flex items-center gap-2">
