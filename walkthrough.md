@@ -269,6 +269,16 @@
   - Updated `sonara-user.md` — gebruikersdocumentatie bijgewerkt zodat song title overal als optioneel beschreven staat
   - Validated with `npm run build`.
 
+## 2026-05-26 (Studio titel boven Provider & Model kaart)
+
+- Findings: Op de Studio-pagina stond de Provider & Model kaart zonder expliciete sectietitel erboven.
+- Conclusions: Een duidelijke kop "Studio" boven de kaart maakt de sectie sneller scanbaar en visueel consistenter.
+- Actions:
+  - Updated `src/components/StudioForm.tsx` — heading `Studio` toegevoegd boven de Provider & Model kaart
+  - Updated `src/components/Sidebar.tsx` — build version ververst naar `di 14:08`
+  - Updated `sonara-user.md` — gebruikersdocumentatie en versie bijgewerkt
+  - Validated with `npm run build`.
+
 ## 2026-05-18 (Cover art fase 11 — env template)
 
 - Findings: The example env file had no Pixazo key entry.
