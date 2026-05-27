@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
+import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
 import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -164,6 +165,25 @@ export async function POST(request: NextRequest) {
       try {
         const trackId = crypto.randomUUID();
         const audioBuffer = Buffer.from(await file.arrayBuffer());
+        const uploadHash = createHash("sha256").update(audioBuffer).digest("hex");
+
+        const duplicateTrack = await db
+          .select({ id: tracks.id })
+          .from(tracks)
+          .where(
+            and(
+              eq(tracks.userId, userId),
+              eq(tracks.provider, "upload"),
+              eq(tracks.audioId, uploadHash)
+            )
+          )
+          .limit(1);
+
+        if (duplicateTrack.length > 0) {
+          rejected.push({ filename: file.name, reason: "Duplicate upload detected." });
+          continue;
+        }
+
         const s3Key = `tracks/${trackId}/audio.${format}`;
         const duration = await extractAudioDuration(audioBuffer);
 
@@ -182,6 +202,7 @@ export async function POST(request: NextRequest) {
             s3Key,
             format,
             duration,
+            audioId: uploadHash,
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: false,
             creditsUsed: 0,

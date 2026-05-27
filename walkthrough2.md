@@ -111,3 +111,9 @@
 - Findings: De Workspaces-pagina toonde na folderselectie de tracklisting onder hetzelfde folderoverzicht, waardoor de focus op één folder minder duidelijk was.
 - Conclusions: Splits de flow in overzicht en detailroute, zodat folderklikken naar een dedicated pagina met tracklisting gaat en terugnavigatie expliciet wordt.
 - Actions: `src/app/workspaces/page.tsx` omgezet naar puur folderoverzicht met kliknavigatie naar `/workspaces/{id}`; nieuwe route toegevoegd in `src/app/workspaces/[workspaceId]/page.tsx` met folder-specifieke tracklisting, subfoldernavigatie en `Back to folders` knop; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:24`; `sonara-user.md` bijgewerkt met nieuwe navigatie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Duplicate upload preventie via unieke audio-hash)
+
+- Findings: Het uploaden van hetzelfde MP3/WAV-bestand meerdere keren maakte dubbele tracks aan in de library.
+- Conclusions: Gebruik een content-gebaseerde SHA-256 hash per upload en weiger uploads waarvan dezelfde hash al bestaat voor dezelfde gebruiker.
+- Actions: `src/app/api/tracks/route.ts` uitgebreid met `createHash("sha256")` op de audiobuffer, duplicate-check op bestaande `provider="upload"` tracks met dezelfde hash (`audioId`) en opslag van de hash op nieuwe uploadrecords; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:27`; `sonara-user.md` bijgewerkt met dedupe-gedrag; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
