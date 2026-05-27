@@ -15,6 +15,10 @@ export default function LyricBlockEditor({
   effectiveTranslationLanguage,
   onStartBlockDrag,
   onStartBlockDragFromCard,
+  onStartBlockMouseDrag,
+  onBlockMouseDragOver,
+  onBlockMouseDrop,
+  onBlockMouseDragEnd,
   onMoveBlock,
   onDuplicateBlock,
   onDeleteBlock,
@@ -35,6 +39,10 @@ export default function LyricBlockEditor({
   effectiveTranslationLanguage: string;
   onStartBlockDrag: (event: React.PointerEvent<HTMLButtonElement>, blockId: string) => void;
   onStartBlockDragFromCard: (event: React.PointerEvent<HTMLElement>, blockId: string) => void;
+  onStartBlockMouseDrag: (event: React.DragEvent<HTMLElement>, blockId: string) => void;
+  onBlockMouseDragOver: (event: React.DragEvent<HTMLElement>, blockId: string) => void;
+  onBlockMouseDrop: (event: React.DragEvent<HTMLElement>, blockId: string) => void;
+  onBlockMouseDragEnd: () => void;
   onMoveBlock: (id: string, direction: -1 | 1) => void;
   onDuplicateBlock: (id: string) => void;
   onDeleteBlock: (id: string) => void;
@@ -81,7 +89,13 @@ export default function LyricBlockEditor({
               <article
                 key={block.id}
                 data-lyric-block-id={block.id}
+                aria-grabbed={draggedBlockId === block.id}
                 onPointerDown={(event) => onStartBlockDragFromCard(event, block.id)}
+                draggable
+                onDragStart={(event) => onStartBlockMouseDrag(event, block.id)}
+                onDragOver={(event) => onBlockMouseDragOver(event, block.id)}
+                onDrop={(event) => onBlockMouseDrop(event, block.id)}
+                onDragEnd={onBlockMouseDragEnd}
                 className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none cursor-grab active:cursor-grabbing select-none ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                 style={{ borderLeft: `4px solid ${blockColors[block.type]}` }}
                 title="Drag to reorder"
@@ -91,9 +105,11 @@ export default function LyricBlockEditor({
                   <button
                     type="button"
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
+                    draggable
+                    aria-label={`Drag ${block.label || blockLabels[block.type]} block`}
+                    onDragStart={(event) => onStartBlockMouseDrag(event, block.id)}
                     className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
                     title="Drag to reorder"
-                    aria-label={`Drag ${block.label || blockLabels[block.type]} block`}
                   >
                     <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />

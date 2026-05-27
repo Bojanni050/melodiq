@@ -1,5 +1,15 @@
 # Sonara — Walkthrough
 
+## 2026-05-27 wo 02:31 (Lyric Studio drag werkt nu ook met muis)
+
+- Findings: De bestaande Lyric Studio reorder-flow werkte niet betrouwbaar met de muis; touch-pointer support was aanwezig, maar desktop users konden de blokvolgorde niet consistent verslepen.
+- Conclusions: Voeg een native mouse drag-and-drop pad toe naast de pointer-based touch flow, zodat desktop mouse dragging en mobiele touch dragging allebei expliciet ondersteund worden.
+- Actions:
+  - Updated `src/lib/hooks/useLyricBlockDrag.ts` — added native mouse drag handling and a shared finalize path for pointer and mouse reorder events
+  - Updated `src/components/lyrics-studio/LyricBlockEditor.tsx` — lyric block cards and drag handles now emit HTML drag events for mouse users
+  - Updated `src/app/lyrics-studio/page.tsx` — wired the new mouse drag handlers into the page component
+  - Validated with `npm run build`.
+
 ## 2026-05-27 do 16:55 (Drag-and-drop play order op track listings)
 
 - Findings: Buiten de Recent Tracks-weergave was er geen directe manier om de afspeelvolgorde in tracklijsten handmatig te bepalen; de volgorde hing alleen af van sortering.

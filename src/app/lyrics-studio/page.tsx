@@ -75,7 +75,16 @@ export default function LyricsStudioPage() {
   const songGenerationAbortRef = useRef<AbortController | null>(null);
   const stopSongGenerationRef = useRef(false);
 
-  const { draggedBlockId, dropTarget, startBlockDrag, startBlockDragFromCard } = useLyricBlockDrag(setBlocks);
+  const {
+    draggedBlockId,
+    dropTarget,
+    startBlockDrag,
+    startBlockDragFromCard,
+    startBlockMouseDrag,
+    handleBlockMouseDragOver,
+    handleBlockMouseDrop,
+    handleBlockMouseDragEnd,
+  } = useLyricBlockDrag(setBlocks);
 
   const isCustomLanguage = language === "Other...";
   const selectedLanguage = isCustomLanguage ? "Other..." : language;
@@ -559,6 +568,10 @@ export default function LyricsStudioPage() {
                     effectiveTranslationLanguage={effectiveTranslationLanguage}
                     onStartBlockDrag={startBlockDrag}
                     onStartBlockDragFromCard={startBlockDragFromCard}
+                    onStartBlockMouseDrag={startBlockMouseDrag}
+                    onBlockMouseDragOver={handleBlockMouseDragOver}
+                    onBlockMouseDrop={handleBlockMouseDrop}
+                    onBlockMouseDragEnd={handleBlockMouseDragEnd}
                     onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock}
                     onDeleteBlock={deleteBlock} onUpdateBlock={updateBlock}
                     onGenerateBlock={generateBlock} onTranslateBlock={translateBlock}
