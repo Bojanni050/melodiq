@@ -77,6 +77,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - On each Chorus block, use **Unique (do not auto-repeat)** to force a fresh chorus even when Repetitive chorus is enabled
 - Reorder blocks with the up/down controls, duplicate blocks, edit labels and lyrics manually, or delete sections
 - Drag blocks directly with the grip handle on both desktop and touch screens to reorder them faster
+- Drag blocks over the list to jump over multiple positions in one move; you do not need to stop on every neighboring block
 - **Copy all lyrics** copies the finished block sequence
 - In the collapsible **Volledige lyrics** sidebar, a dedicated **Copy** button now copies the full combined lyrics directly
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field

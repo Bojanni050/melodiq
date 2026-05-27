@@ -10,32 +10,38 @@ export function useLyricBlockDrag(setBlocks: React.Dispatch<React.SetStateAction
   const dropTargetRef = useRef<{ id: string; position: "before" | "after" } | null>(null);
 
   function updateDragTarget(clientX: number, clientY: number, draggingId: string) {
-    let blockElement: HTMLElement | null = null;
-    try {
-      const hovered = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-      blockElement = hovered?.closest<HTMLElement>("[data-lyric-block-id]") ?? null;
-    } catch {}
+    const all = Array.from(document.querySelectorAll("[data-lyric-block-id]")) as HTMLElement[];
+    const candidates = all
+      .filter((element) => element.dataset.lyricBlockId && element.dataset.lyricBlockId !== draggingId)
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          element,
+          rect,
+          midpoint: rect.top + rect.height / 2,
+        };
+      })
+      .sort((left, right) => left.rect.top - right.rect.top || left.rect.left - right.rect.left);
 
-    if (!blockElement) {
-      const all = Array.from(document.querySelectorAll("[data-lyric-block-id]")) as HTMLElement[];
-      for (const el of all) {
-        const rect = el.getBoundingClientRect();
-        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-          blockElement = el;
-          break;
-        }
-      }
-    }
-
-    const targetId = blockElement?.dataset.lyricBlockId;
-    if (!targetId || targetId === draggingId || !blockElement) {
+    if (candidates.length === 0) {
       dropTargetRef.current = null;
       setDropTarget(null);
       return;
     }
 
-    const rect = blockElement.getBoundingClientRect();
-    const position = clientY < rect.top + rect.height / 2 ? "before" : "after";
+    const hovered = candidates.find(({ rect }) =>
+      clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom,
+    );
+
+    const targetCandidate = hovered ?? candidates.find(({ midpoint }) => clientY < midpoint) ?? candidates[candidates.length - 1];
+    const targetId = targetCandidate.element.dataset.lyricBlockId;
+    if (!targetId) {
+      dropTargetRef.current = null;
+      setDropTarget(null);
+      return;
+    }
+
+    const position = clientY < targetCandidate.midpoint ? "before" : "after";
     dropTargetRef.current = { id: targetId, position };
     setDropTarget({ id: targetId, position });
   }

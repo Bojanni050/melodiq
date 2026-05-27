@@ -1,5 +1,13 @@
 # Sonara — Walkthrough
 
+## 2026-05-27 wo 02:31 (Lyric Studio drag kan nu meerdere posities overslaan)
+
+- Findings: De Lyric Studio drop-target berekening voelde nog te lokaal aan, waardoor het verplaatsen over grotere afstanden niet altijd betrouwbaar was wanneer je door lege ruimte tussen blokken slepte.
+- Conclusions: De target moet op basis van de verticale positie over alle blokken worden bepaald, zodat je een block ook in één keer verderop kunt neerzetten.
+- Actions:
+  - Updated `src/lib/hooks/useLyricBlockDrag.ts` — drop-target selectie gebruikt nu een verticale insertion scan over alle blokken, inclusief lege ruimte tussen items
+  - Validated with `npm run build`.
+
 ## 2026-05-27 wo 02:31 (Lyric Studio drag werkt nu ook met muis)
 
 - Findings: De bestaande Lyric Studio reorder-flow werkte niet betrouwbaar met de muis; touch-pointer support was aanwezig, maar desktop users konden de blokvolgorde niet consistent verslepen.
