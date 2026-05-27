@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 03:21**
+**Versie: wo 03:24**
 
 > AI Music Generation Web App
 
@@ -153,6 +153,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - In de Workspaces-pagina zie je in het overzicht alleen hoofdfolders; open een hoofdfolder om subfolders te zien en daar direct een subfolder toe te voegen
 - In Studio kun je nu ook direct in een geopende hoofdfolder een subfolder aanmaken via **+ Add Subfolder**; in subfolders verschijnt deze optie bewust niet
 - In **Move To Workspace** worden hoofdfolders en subfolders hiërarchisch weergegeven zodat je tracks direct naar de juiste subfolder kunt verplaatsen
+- In de Workspaces-pagina opent een klik op een folder nu een aparte folderpagina (`/workspaces/{id}`) met alleen die tracklisting in beeld
+- Op die folderpagina staat een **Back to folders** knop om terug te gaan naar het folderoverzicht
 
 ### Track Detail Panel
 Click a track to open a slide-out panel with:

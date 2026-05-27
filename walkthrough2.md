@@ -105,3 +105,9 @@
 - Findings: Na toevoegen van Library upload was niet direct zichtbaar welke tracks lokaal geupload zijn versus AI-gegenereerd.
 - Conclusions: Toon een expliciete visuele indicator op lijst- en detailniveau voor tracks met `provider=upload`, zodat herkomst direct duidelijk is.
 - Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload • Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `sonara-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Workspace folder opent nu op eigen detailpagina)
+
+- Findings: De Workspaces-pagina toonde na folderselectie de tracklisting onder hetzelfde folderoverzicht, waardoor de focus op één folder minder duidelijk was.
+- Conclusions: Splits de flow in overzicht en detailroute, zodat folderklikken naar een dedicated pagina met tracklisting gaat en terugnavigatie expliciet wordt.
+- Actions: `src/app/workspaces/page.tsx` omgezet naar puur folderoverzicht met kliknavigatie naar `/workspaces/{id}`; nieuwe route toegevoegd in `src/app/workspaces/[workspaceId]/page.tsx` met folder-specifieke tracklisting, subfoldernavigatie en `Back to folders` knop; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:24`; `sonara-user.md` bijgewerkt met nieuwe navigatie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
