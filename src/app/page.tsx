@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
@@ -56,11 +56,14 @@ export default function HomePage() {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const setSelectedWorkspaceId = useWorkspaceStore((state) => state.setSelectedWorkspaceId);
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
+  const createWorkspaceFolder = useWorkspaceStore((state) => state.createWorkspaceFolder);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
   const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
   const WORKSPACE_VIEW_MODE_STORAGE_KEY = "sonara-studio-workspace-view-mode";
   const [workspaceViewMode, setWorkspaceViewMode] = useState<"grid" | "list">("list");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
@@ -183,6 +186,25 @@ export default function HomePage() {
     } else if (event.key === "Escape") {
       setShowCreateWorkspace(false);
       setNewWorkspaceName("");
+    }
+  }
+
+  function handleCreateFolder() {
+    if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return;
+    const id = createWorkspaceFolder(selectedWorkspace.id, newFolderName);
+    if (!id) return;
+    setSelectedWorkspaceId(id);
+    setNewFolderName("");
+    setShowCreateFolder(false);
+  }
+
+  function handleCreateFolderKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleCreateFolder();
+    } else if (event.key === "Escape") {
+      setShowCreateFolder(false);
+      setNewFolderName("");
     }
   }
 
@@ -537,6 +559,18 @@ export default function HomePage() {
   const selectedWorkspace = selectedWorkspaceId
     ? workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null
     : null;
+  const rootWorkspaces = useMemo(
+    () => workspaces.filter((workspace) => !workspace.parentWorkspaceId),
+    [workspaces],
+  );
+  const selectedWorkspaceParent = useMemo(() => {
+    if (!selectedWorkspace?.parentWorkspaceId) return null;
+    return workspaces.find((workspace) => workspace.id === selectedWorkspace.parentWorkspaceId) ?? null;
+  }, [selectedWorkspace, workspaces]);
+  const selectedWorkspaceChildren = useMemo(() => {
+    if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return [];
+    return workspaces.filter((workspace) => workspace.parentWorkspaceId === selectedWorkspace.id);
+  }, [selectedWorkspace, workspaces]);
   const selectedWorkspaceTracks = selectedWorkspace
     ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
     : [];
@@ -605,7 +639,11 @@ export default function HomePage() {
                         <div className="min-w-0">
                           <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
                           <p className="text-xs text-white/40">
-                            {isWorkspaceFolderOpen ? "Folder geopend. Alleen tracks uit deze workspace worden getoond." : workspaceViewMode === "grid" ? `${workspaceGridSize} columns per row.` : `${workspaces.length} workspaces.`}
+                            {isWorkspaceFolderOpen
+                              ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
+                              : workspaceViewMode === "grid"
+                                ? `${workspaceGridSize} columns per row.`
+                                : `${rootWorkspaces.length} workspaces.`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -654,11 +692,17 @@ export default function HomePage() {
                           {isWorkspaceFolderOpen && (
                             <button
                               type="button"
-                              onClick={() => setSelectedWorkspaceId(null)}
+                              onClick={() => {
+                                if (selectedWorkspace?.parentWorkspaceId) {
+                                  setSelectedWorkspaceId(selectedWorkspace.parentWorkspaceId);
+                                  return;
+                                }
+                                setSelectedWorkspaceId(null);
+                              }}
                               className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
                               title="Back to workspace overview"
                             >
-                              ← Back to folders
+                              {selectedWorkspace?.parentWorkspaceId ? "← Back to parent" : "← Back to folders"}
                             </button>
                           )}
                           <CreateWorkspaceDialog
@@ -670,9 +714,50 @@ export default function HomePage() {
                             onCancel={() => {
                               setShowCreateWorkspace(false);
                               setNewWorkspaceName("");
+                              setShowCreateFolder(false);
+                              setNewFolderName("");
                             }}
                             onKeyDown={handleCreateWorkspaceKeyDown}
                           />
+                          {isWorkspaceFolderOpen && !selectedWorkspace?.parentWorkspaceId && (
+                            showCreateFolder ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  value={newFolderName}
+                                  onChange={(event) => setNewFolderName(event.target.value)}
+                                  onKeyDown={handleCreateFolderKeyDown}
+                                  placeholder="Subfolder name"
+                                  className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
+                                  aria-label="Subfolder name"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleCreateFolder}
+                                  className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
+                                >
+                                  Add
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowCreateFolder(false);
+                                    setNewFolderName("");
+                                  }}
+                                  className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setShowCreateFolder(true)}
+                                className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
+                              >
+                                + Add Subfolder
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
 
@@ -680,10 +765,11 @@ export default function HomePage() {
                         <div className="mb-3 overflow-y-auto pr-1">
                           {workspaceViewMode === "grid" ? (
                             <div className={`grid gap-3 ${workspaceGridClass}`}>
-                              {workspaces.map((workspace) => {
+                              {rootWorkspaces.map((workspace) => {
                                 const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                                 const coverUrls = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
                                 const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                                const childCount = workspaces.filter((child) => child.parentWorkspaceId === workspace.id).length;
                                 const hasSingleCover = coverUrls.length === 1;
 
                                 return (
@@ -722,7 +808,9 @@ export default function HomePage() {
                                       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
                                         <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
                                           <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                                          <p className="text-xs text-white/65">{workspaceTracks.length} songs</p>
+                                          <p className="text-xs text-white/65">
+                                            {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
+                                          </p>
                                         </div>
                                       </div>
                                     </div>
@@ -732,9 +820,10 @@ export default function HomePage() {
                             </div>
                           ) : (
                             <div className="space-y-1.5">
-                              {workspaces.map((workspace) => {
+                              {rootWorkspaces.map((workspace) => {
                                 const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                                 const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                                const childCount = workspaces.filter((child) => child.parentWorkspaceId === workspace.id).length;
 
                                 return (
                                   <button
@@ -756,6 +845,7 @@ export default function HomePage() {
                                     </div>
                                     <span className="text-xs text-white/40 flex-shrink-0">
                                       {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
+                                      {childCount > 0 ? ` • ${childCount} folders` : ""}
                                     </span>
                                     <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -773,11 +863,17 @@ export default function HomePage() {
                           <div className="text-[11px] text-white/35 mb-1 truncate">
                             <button
                               type="button"
-                              onClick={() => setSelectedWorkspaceId(null)}
+                              onClick={() => {
+                                if (selectedWorkspace?.parentWorkspaceId) {
+                                  setSelectedWorkspaceId(selectedWorkspace.parentWorkspaceId);
+                                  return;
+                                }
+                                setSelectedWorkspaceId(null);
+                              }}
                               className="text-white/60 hover:text-white/80 transition-colors"
                               title="Back to workspace overview"
                             >
-                              Workspaces
+                              {selectedWorkspace?.parentWorkspaceId ? selectedWorkspaceParent?.name ?? "Workspaces" : "Workspaces"}
                             </button>
                             <span className="mx-1 text-white/20">&gt;</span>
                             <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
@@ -787,6 +883,48 @@ export default function HomePage() {
                           {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
                         </span>
                       </div>
+
+                      {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
+                        <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
+                          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Subfolders</p>
+                          <div className="space-y-1.5">
+                            {selectedWorkspaceChildren.map((childWorkspace) => {
+                              const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
+                              const childCover = getWorkspaceCoverCollage(childWorkspace.id, childTracks)[0];
+
+                              return (
+                                <button
+                                  key={childWorkspace.id}
+                                  type="button"
+                                  onClick={() => setSelectedWorkspaceId(childWorkspace.id)}
+                                  className="group flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
+                                >
+                                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-white/10 bg-[#11131f]">
+                                    {childCover ? (
+                                      <img src={childCover} alt={childWorkspace.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center">
+                                        <svg className="h-4 w-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
+                                  </div>
+                                  <span className="text-[11px] text-white/45">
+                                    {childTracks.length} {childTracks.length === 1 ? "song" : "songs"}
+                                  </span>
+                                  <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                         {selectedWorkspace ? (

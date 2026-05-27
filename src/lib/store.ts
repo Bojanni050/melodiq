@@ -341,13 +341,26 @@ function withDefaultWorkspace(workspaces: Workspace[]) {
     parentWorkspaceId: null,
   };
 
+  const parentWorkspaceById = new Map<string, Workspace>();
+  workspaces.forEach((workspace) => {
+    parentWorkspaceById.set(workspace.id, workspace);
+  });
+
   const otherWorkspaces = workspaces
     .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
-    .map((workspace) => ({
-      ...workspace,
-      isDefault: false,
-      parentWorkspaceId: workspace.parentWorkspaceId || null,
-    }))
+    .map((workspace) => {
+      const parentWorkspaceId = workspace.parentWorkspaceId || null;
+      const parentWorkspace = parentWorkspaceId ? parentWorkspaceById.get(parentWorkspaceId) : null;
+
+      // Enforce a single folder depth: root workspace -> folder.
+      const normalizedParentId = parentWorkspace && !parentWorkspace.parentWorkspaceId ? parentWorkspaceId : null;
+
+      return {
+        ...workspace,
+        isDefault: false,
+        parentWorkspaceId: normalizedParentId,
+      };
+    })
     .filter((workspace) => {
       if (!workspace.parentWorkspaceId) return true;
       return workspaces.some((candidate) => candidate.id === workspace.parentWorkspaceId);
