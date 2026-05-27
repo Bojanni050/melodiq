@@ -72,6 +72,8 @@ export const BLOCK_TYPES: BlockType[] = [
   "chorus",
   "post-chorus",
   "bridge",
+  "intrumental",
+  "instrumetal-drop",
   "outro",
 ];
 
@@ -93,6 +95,8 @@ export const BLOCK_COLORS: Record<BlockType, string> = {
   chorus: "#ff530c",
   "post-chorus": "#22c55e",
   bridge: "#a855f7",
+  intrumental: "#06b6d4",
+  "instrumetal-drop": "#0ea5a4",
   outro: "rgba(255,255,255,0.15)",
 };
 

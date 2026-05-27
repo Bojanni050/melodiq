@@ -1,4 +1,13 @@
-export type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
+export type BlockType =
+  | "intro"
+  | "verse"
+  | "pre-chorus"
+  | "chorus"
+  | "post-chorus"
+  | "bridge"
+  | "intrumental"
+  | "instrumetal-drop"
+  | "outro";
 
 export interface LyricBlock {
   id: string;
@@ -16,8 +25,14 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   chorus: "Chorus",
   "post-chorus": "Post-Chorus",
   bridge: "Bridge",
+  intrumental: "intrumental",
+  "instrumetal-drop": "instrumetal drop",
   outro: "Outro",
 };
+
+export function isEmptyLyricBlockType(type: BlockType): boolean {
+  return type === "intrumental" || type === "instrumetal-drop";
+}
 
 export function isDancePreset(presetName?: string): boolean {
   return Boolean(
@@ -37,10 +52,14 @@ export function getPresetBlockLabel(type: BlockType, presetName?: string): strin
 
 export function parseStructureText(text: string): BlockType[] {
   const normalized = text.toLowerCase();
-  const matches = normalized.match(/pre[-\s]?chorus|post[-\s]?chorus|build[-\s]?up|breakdown|intro|verse|chorus|bridge|outro|drop|build|break/g);
+  const matches = normalized.match(/pre[-\s]?chorus|post[-\s]?chorus|build[-\s]?up|instrumental[-\s]?drop|instrumetal[-\s]?drop|intro|verse|chorus|bridge|outro|drop|build|break|instrumental|intrumental/g);
   if (!matches) return [];
 
   return matches.map((match) => {
+    if (match.includes("instrumental") || match.includes("intrumental")) {
+      if (match.includes("drop")) return "instrumetal-drop";
+      return "intrumental";
+    }
     if (match.includes("pre") || match.includes("build")) return "pre-chorus";
     if (match.includes("post")) return "post-chorus";
     if (match.includes("drop") || match.includes("chorus")) return "chorus";
@@ -81,8 +100,12 @@ export function createPresetBlocks(types: BlockType[], presetName?: string): Lyr
 
 export function combineLyrics(blocks: LyricBlock[]): string {
   return blocks
-    .filter((block) => block.content.trim())
-    .map((block) => `[${block.label.trim() || BLOCK_LABELS[block.type]}]\n${block.content.trim()}`)
+    .filter((block) => isEmptyLyricBlockType(block.type) || block.content.trim())
+    .map((block) => {
+      const label = block.label.trim() || BLOCK_LABELS[block.type];
+      if (isEmptyLyricBlockType(block.type)) return `[${label}]`;
+      return `[${label}]\n${block.content.trim()}`;
+    })
     .join("\n\n");
 }
 

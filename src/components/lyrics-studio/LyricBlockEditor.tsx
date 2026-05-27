@@ -1,6 +1,6 @@
 "use client";
 
-import type { BlockType, LyricBlock } from "@/lib/lyrics-utils";
+import { isEmptyLyricBlockType, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
 
 export default function LyricBlockEditor({
   blocks,
@@ -84,6 +84,7 @@ export default function LyricBlockEditor({
             const isDragged = draggedBlockId === block.id;
             const showDropBefore = dropTarget?.id === block.id && dropTarget.position === "before";
             const showDropAfter = dropTarget?.id === block.id && dropTarget.position === "after";
+            const isEmptyLyricBlock = isEmptyLyricBlockType(block.type);
 
             return (
               <article
@@ -181,11 +182,13 @@ export default function LyricBlockEditor({
                 )}
 
                 <textarea
-                  value={block.content}
-                  disabled={block.generating}
+                  value={isEmptyLyricBlock ? "" : block.content}
+                  disabled={block.generating || isEmptyLyricBlock}
                   onInput={(event) => autoGrowTextarea(event.currentTarget)}
-                  onChange={(event) => onUpdateBlock(block.id, { content: event.target.value })}
-                  placeholder="Lyrics will appear here..."
+                  onChange={(event) => {
+                    if (!isEmptyLyricBlock) onUpdateBlock(block.id, { content: event.target.value });
+                  }}
+                  placeholder={isEmptyLyricBlock ? "This section intentionally has no lyrics." : "Lyrics will appear here..."}
                   rows={4}
                   className="min-h-[112px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
                   style={{ overflow: "auto" }}
@@ -196,8 +199,14 @@ export default function LyricBlockEditor({
                     <button
                       type="button"
                       onClick={() => onGenerateBlock(block)}
-                      disabled={block.generating || !canGenerateBlocks}
-                      title={canGenerateBlocks ? "Generate block" : "Add topic and mood first"}
+                      disabled={isEmptyLyricBlock || block.generating || !canGenerateBlocks}
+                      title={
+                        isEmptyLyricBlock
+                          ? "This marker block has no lyrics"
+                          : canGenerateBlocks
+                            ? "Generate block"
+                            : "Add topic and mood first"
+                      }
                       className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
                     >
                       {block.generating ? (
@@ -209,8 +218,14 @@ export default function LyricBlockEditor({
                     <button
                       type="button"
                       onClick={() => onTranslateBlock(block.id)}
-                      disabled={translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
-                      title={block.content.trim() ? "Translate this block" : "Add content to translate"}
+                      disabled={isEmptyLyricBlock || translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
+                      title={
+                        isEmptyLyricBlock
+                          ? "This marker block has no lyrics"
+                          : block.content.trim()
+                            ? "Translate this block"
+                            : "Add content to translate"
+                      }
                       className="inline-flex items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {translatingBlockId === block.id ? (
@@ -220,7 +235,7 @@ export default function LyricBlockEditor({
                       )}
                     </button>
                   </div>
-                  <span className="text-xs text-white/35">{block.content.length} chars</span>
+                  <span className="text-xs text-white/35">{isEmptyLyricBlock ? "marker" : `${block.content.length} chars`}</span>
                 </div>
                 {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
               </article>
