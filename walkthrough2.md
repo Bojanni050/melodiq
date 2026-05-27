@@ -160,6 +160,12 @@
 - Conclusions: De `Player` component gebruikte `setVolume` in `handleVolume`, maar haalde de action niet uit de Zustand store-destructuring; toevoeging van de ontbrekende action herstelt compile.
 - Actions: `src/components/Player.tsx` bijgewerkt door `setVolume` toe te voegen aan `usePlayerStore()` destructuring in de `Player` component; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:17`; `sonara-user.md` versie bijgewerkt naar `wo 15:17`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
 
+## 2026-05-27 (Herstel: tracks verdwenen door workspace-schema mismatch)
+
+- Findings: Na introductie van DB-workspaces konden track-overzichten leeg lijken wanneer `tracks.workspace_id`/`workspaces` nog niet in de database aanwezig waren op runtime.
+- Conclusions: Voeg een runtime schema-guard + fallback toe zodat track-API nooit hard faalt op ontbrekende migratie en de bestaande tracks direct zichtbaar blijven.
+- Actions: `src/lib/workspaces.ts` uitgebreid met `ensureWorkspaceSchema()` (idempotente `ALTER TABLE`/`CREATE TABLE IF NOT EXISTS`) en fallback payload; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` laten schema-guard eerst draaien; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:05`; `sonara-user.md` versie bijgewerkt naar `wo 16:05`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
 ## 2026-05-27 (Lyric Studio style suggestion max 1000 chars)
 
 - Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.
