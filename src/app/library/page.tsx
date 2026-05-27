@@ -62,6 +62,27 @@ function getWorkspaceTracks(
   return tracks.filter((t) => workspace.trackIds.includes(t.id));
 }
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function readApiPayload(response: Response): Promise<unknown> {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.toLowerCase().includes("application/json")) {
+    return response.json().catch(() => null);
+  }
+
+  const rawText = await response.text().catch(() => "");
+  if (!rawText) return null;
+
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    return { __rawText: rawText };
+  }
+}
+
 export default function LibraryPage() {
   const { playlists } = usePlaylistStore();
   const {
@@ -253,13 +274,29 @@ export default function LibraryPage() {
         body: formData,
       });
 
-      const payload = await response.json();
+      const payload = await readApiPayload(response);
 
       if (!response.ok) {
-        throw new Error(payload?.error || "Upload failed.");
+        if (response.status === 413) {
+          throw new Error("Upload is too large. Try fewer files or smaller files.");
+        }
+
+        const apiError = isObjectRecord(payload) && typeof payload.error === "string"
+          ? payload.error
+          : null;
+
+        if (apiError) {
+          throw new Error(apiError);
+        }
+
+        throw new Error(`Upload failed (HTTP ${response.status}).`);
       }
 
-      const uploadedTracks: LibraryTrack[] = (payload?.tracks || []).filter(
+      if (!isObjectRecord(payload)) {
+        throw new Error("Upload failed: invalid server response.");
+      }
+
+      const uploadedTracks: LibraryTrack[] = (Array.isArray(payload.tracks) ? payload.tracks : []).filter(
         (track: LibraryTrack) => track.status === "done",
       );
 
@@ -277,7 +314,7 @@ export default function LibraryPage() {
         });
       }
 
-      const rejectedCount = Array.isArray(payload?.rejected) ? payload.rejected.length : 0;
+      const rejectedCount = Array.isArray(payload.rejected) ? payload.rejected.length : 0;
       setUploadNotice(
         rejectedCount > 0
           ? `Uploaded ${uploadedTracks.length} file(s), ${rejectedCount} skipped.`
