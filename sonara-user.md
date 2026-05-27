@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 03:41**
+**Versie: wo 03:45**
 
 > AI Music Generation Web App
 
@@ -123,7 +123,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Voor upload kies je eerst de doelworkspace in de workspace dropdown; alle succesvol geuploade tracks worden direct aan die workspace toegewezen
 - Geuploade tracks tonen nu een duidelijke **Uploaded** badge in de tracklijst en **Uploaded file** label in Track Details
 - Sonara berekent nu per upload een unieke audio-hash (SHA-256) en blokkeert dubbele uploads van exact hetzelfde audiobestand
-- Sonara houdt nu per track bij hoe vaak je die afspeelt; het aantal plays staat onder de trackbeschrijving in de lijst
+- Sonara houdt nu per track bij hoe vaak je die afspeelt; een play telt pas mee na 10 seconden actieve playback, en het aantal plays staat onder de trackbeschrijving in de lijst
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile

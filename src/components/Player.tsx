@@ -301,7 +301,9 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
-  const lastTrackedPlayIdRef = useRef<string | null>(null);
+  const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePlayTrackIdRef = useRef<string | null>(null);
+  const hasCountedPlayForActiveTrackRef = useRef(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -384,6 +386,13 @@ export default function Player() {
 
     const handleEnded = () => {
       const { autoPlayNext, queue, playNext, setIsPlaying } = usePlayerStore.getState();
+
+      if (playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+      hasCountedPlayForActiveTrackRef.current = false;
+
       if (autoPlayNext && queue.length > 0) {
         playNext();
         return;
@@ -413,22 +422,58 @@ export default function Player() {
   }, [volume]);
 
   useEffect(() => {
-    if (!currentTrack?.id || !isPlaying) return;
-    if (lastTrackedPlayIdRef.current === currentTrack.id) return;
+    const trackId = currentTrack?.id ?? null;
+    if (activePlayTrackIdRef.current !== trackId) {
+      activePlayTrackIdRef.current = trackId;
+      hasCountedPlayForActiveTrackRef.current = false;
 
-    lastTrackedPlayIdRef.current = currentTrack.id;
-    void fetch(`/api/tracks/${currentTrack.id}/play`, { method: "POST" })
-      .then((response) => {
-        if (!response.ok) return;
-        window.dispatchEvent(
-          new CustomEvent("sonara:track-played", {
-            detail: { trackId: currentTrack.id },
-          })
-        );
-      })
-      .catch(() => {
-        // Ignore analytics tracking failures to avoid interrupting playback UX.
-      });
+      if (playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+    }
+  }, [currentTrack?.id, isPlaying]);
+
+  useEffect(() => {
+    const trackId = currentTrack?.id;
+    if (!trackId || !isPlaying || hasCountedPlayForActiveTrackRef.current) {
+      if (!isPlaying && playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (playCountTimerRef.current) return;
+
+    playCountTimerRef.current = setTimeout(() => {
+      playCountTimerRef.current = null;
+
+      const state = usePlayerStore.getState();
+      if (!state.isPlaying || state.currentTrack?.id !== trackId) return;
+      if (hasCountedPlayForActiveTrackRef.current) return;
+
+      hasCountedPlayForActiveTrackRef.current = true;
+      void fetch(`/api/tracks/${trackId}/play`, { method: "POST" })
+        .then((response) => {
+          if (!response.ok) return;
+          window.dispatchEvent(
+            new CustomEvent("sonara:track-played", {
+              detail: { trackId },
+            })
+          );
+        })
+        .catch(() => {
+          // Ignore analytics tracking failures to avoid interrupting playback UX.
+        });
+    }, 10_000);
+
+    return () => {
+      if (playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+    };
   }, [currentTrack?.id, isPlaying]);
 
   useEffect(() => {
