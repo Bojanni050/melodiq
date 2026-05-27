@@ -304,6 +304,7 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
+  const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -440,7 +441,8 @@ export default function Player() {
         setAudioSource(detectedSource);
       }
 
-      const resumeTime = audioEl.currentTime || 0;
+      const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
+      const resumeTime = shouldResumeTime ? audioEl.currentTime || 0 : 0;
       const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
 
       audioEl.pause();
@@ -464,6 +466,8 @@ export default function Player() {
       if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
         return;
       }
+
+      lastLoadedTrackIdRef.current = trackId;
 
       if (resumeTime > 0) {
         try {
@@ -503,6 +507,7 @@ export default function Player() {
     if (!currentTrack) {
       setCurrentTime(0);
       setDuration(0);
+      lastLoadedTrackIdRef.current = null;
     }
   }, [currentTrack]);
 

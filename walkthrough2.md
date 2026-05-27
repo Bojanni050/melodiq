@@ -172,6 +172,12 @@
 - Conclusions: Voeg een robuuste fallback toe: als cache-stream faalt, stream direct vanaf S3 (met Range-header doorgezet) zodat playback blijft werken.
 - Actions: `src/app/api/tracks/[id]/stream/route.ts` uitgebreid met fallback pad naar `getPresignedUrl` + `fetch` proxy inclusief Range/Content-Range handling; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:11`; `sonara-user.md` versie bijgewerkt naar `wo 16:11`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
+## 2026-05-27 (Autoplay fix: next track startte op eindpositie)
+
+- Findings: Bij automatisch door afspelen naar de volgende track nam de player soms de oude `currentTime` mee, waardoor de nieuwe track in de laatste seconden begon.
+- Conclusions: Playback-positie alleen hervatten als exact dezelfde track opnieuw geladen wordt; bij trackwissel altijd vanaf 0 starten.
+- Actions: `src/components/Player.tsx` uitgebreid met `lastLoadedTrackIdRef` en conditionele resume-logica zodat `resumeTime` alleen geldt voor dezelfde track-id; reset toegevoegd bij `!currentTrack`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:33`; `sonara-user.md` versie bijgewerkt naar `wo 16:33`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
 ## 2026-05-27 (Lyric Studio style suggestion max 1000 chars)
 
 - Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.
