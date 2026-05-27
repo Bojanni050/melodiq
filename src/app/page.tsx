@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackList from "@/components/TrackList";
@@ -13,6 +14,19 @@ import { DEFAULT_WORKSPACE_ID, useStudioStore, usePlayerStore, usePlaylistStore,
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara-studio-workspace-grid-size";
+const WORKSPACE_GRID_CLASS_BY_SIZE: Record<4 | 8 | 12 | 16, string> = {
+  4: "grid-cols-[repeat(4,minmax(0,1fr))]",
+  8: "grid-cols-[repeat(8,minmax(0,1fr))]",
+  12: "grid-cols-[repeat(12,minmax(0,1fr))]",
+  16: "grid-cols-[repeat(16,minmax(0,1fr))]",
+};
+
+const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-xs font-medium transition";
+const SEGMENTED_ICON_BUTTON_BASE = "rounded-md p-1.5 transition";
+const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition";
+const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
+const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
+const STUDIO_SECTION_CLASS = "section-card flex min-h-0 flex-1 flex-col overflow-hidden";
 
 interface Track {
   id: string;
@@ -554,7 +568,7 @@ export default function HomePage() {
     a.click();
   }
 
-  const [studioTab, setStudioTab] = useState<"workspaces" | "recent">("workspaces");
+  const [studioTab, setStudioTab] = useState<"workspaces" | "recent">("recent");
   const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
   const selectedWorkspace = selectedWorkspaceId
     ? workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null
@@ -575,14 +589,7 @@ export default function HomePage() {
     ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
     : [];
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
-  const workspaceGridClass =
-    workspaceGridSize === 4
-      ? "grid-cols-[repeat(4,minmax(0,1fr))]"
-      : workspaceGridSize === 8
-        ? "grid-cols-[repeat(8,minmax(0,1fr))]"
-        : workspaceGridSize === 12
-          ? "grid-cols-[repeat(12,minmax(0,1fr))]"
-          : "grid-cols-[repeat(16,minmax(0,1fr))]";
+  const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
   function handleMoveTrackToWorkspace(trackId: string, workspaceId: string) {
     moveTrackToWorkspace(workspaceId, trackId);
@@ -601,7 +608,7 @@ export default function HomePage() {
           <main className="p-4">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Form column */}
-              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-[var(--studio-top-offset)] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-(--studio-top-offset) xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <StudioForm
                   credits={credits}
                   isGenerating={generating}
@@ -613,28 +620,34 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="xl:col-span-2 self-start sticky top-[var(--studio-top-offset)] h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+              <div className="xl:col-span-2 self-start sticky top-(--studio-top-offset) h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <div className="flex flex-col h-full min-h-0">
                   {/* Tabs */}
                   <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
                     <button
                       type="button"
                       onClick={() => setStudioTab("workspaces")}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${studioTab === "workspaces" ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                      className={clsx(
+                        SEGMENTED_BUTTON_BASE,
+                        studioTab === "workspaces" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
+                      )}
                     >
                       Workspaces
                     </button>
                     <button
                       type="button"
                       onClick={() => setStudioTab("recent")}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${studioTab === "recent" ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                      className={clsx(
+                        SEGMENTED_BUTTON_BASE,
+                        studioTab === "recent" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
+                      )}
                     >
                       Recent Tracks
                     </button>
                   </div>
 
                   {studioTab === "workspaces" && (
-                    <section className="section-card min-h-0 flex-1 overflow-hidden flex flex-col">
+                    <section className={STUDIO_SECTION_CLASS}>
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
@@ -652,7 +665,10 @@ export default function HomePage() {
                               <button
                                 type="button"
                                 onClick={() => setWorkspaceViewMode("list")}
-                                className={`rounded-md p-1.5 transition ${workspaceViewMode === "list" ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                                className={clsx(
+                                  SEGMENTED_ICON_BUTTON_BASE,
+                                  workspaceViewMode === "list" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
+                                )}
                                 title="List view"
                                 aria-label="List view"
                               >
@@ -663,7 +679,10 @@ export default function HomePage() {
                               <button
                                 type="button"
                                 onClick={() => setWorkspaceViewMode("grid")}
-                                className={`rounded-md p-1.5 transition ${workspaceViewMode === "grid" ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                                className={clsx(
+                                  SEGMENTED_ICON_BUTTON_BASE,
+                                  workspaceViewMode === "grid" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
+                                )}
                                 title="Grid view"
                                 aria-label="Grid view"
                               >
@@ -680,7 +699,10 @@ export default function HomePage() {
                                   key={size}
                                   type="button"
                                   onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
-                                  className={`rounded-md px-2 py-1 text-[11px] transition ${workspaceGridSize === size ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                                  className={clsx(
+                                    SEGMENTED_SIZE_BUTTON_BASE,
+                                    workspaceGridSize === size ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
+                                  )}
                                   title={`Show ${size} workspace cards`}
                                   aria-label={`Show ${size} workspace cards`}
                                 >
@@ -833,7 +855,7 @@ export default function HomePage() {
                                     className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-left transition hover:bg-white/5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40 bg-white/5" : ""}`}
                                   >
                                     <div
-                                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border border-white/10"
+                                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-white/10"
                                       style={{ backgroundImage: gradient }}
                                     >
                                       <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -843,11 +865,11 @@ export default function HomePage() {
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-white truncate">{workspace.name}</p>
                                     </div>
-                                    <span className="text-xs text-white/40 flex-shrink-0">
+                                    <span className="text-xs text-white/40 shrink-0">
                                       {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
                                       {childCount > 0 ? ` • ${childCount} folders` : ""}
                                     </span>
-                                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
                                   </button>
@@ -951,7 +973,7 @@ export default function HomePage() {
                   )}
 
                   {studioTab === "recent" && (
-                    <section className="section-card min-h-0 flex-1 overflow-hidden flex flex-col">
+                    <section className={STUDIO_SECTION_CLASS}>
                       <div className="mb-3 flex items-center justify-between">
                         <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
                         <span className="text-xs text-white/30">{tracks.length} tracks</span>
