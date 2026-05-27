@@ -117,3 +117,9 @@
 - Findings: Het uploaden van hetzelfde MP3/WAV-bestand meerdere keren maakte dubbele tracks aan in de library.
 - Conclusions: Gebruik een content-gebaseerde SHA-256 hash per upload en weiger uploads waarvan dezelfde hash al bestaat voor dezelfde gebruiker.
 - Actions: `src/app/api/tracks/route.ts` uitgebreid met `createHash("sha256")` op de audiobuffer, duplicate-check op bestaande `provider="upload"` tracks met dezelfde hash (`audioId`) en opslag van de hash op nieuwe uploadrecords; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:27`; `sonara-user.md` bijgewerkt met dedupe-gedrag; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Play-count tracking + new-dot indicator)
+
+- Findings: Tracks hadden nog geen afspeelstatistiek en er was geen visuele markering voor nieuwe, nog niet afgespeelde songs.
+- Conclusions: Een persistente `play_count` in de database, een dedicated play increment endpoint en een directe UI-event zorgen voor zowel betrouwbare telling als onmiddellijke feedback in de lijst.
+- Actions: `src/db/schema.ts` uitgebreid met `play_count`; `src/db/init.ts` bijgewerkt voor create/alter compatibiliteit; toegevoegd `src/app/api/tracks/[id]/play/route.ts` voor auth-safe increment; `src/components/Player.tsx` laat nu bij start playback een increment-call lopen en dispatcht `sonara:track-played`; `src/components/tracks/TrackCard.tsx` toont play count onder beschrijving, rendert een gele glow-dot bij ongespeelde tracks en verwijdert die direct na play via event-listener; `src/components/tracks/types.ts` en `src/lib/store.ts` tracktypes uitgebreid met `playCount`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:35`; `sonara-user.md` bijgewerkt met play-count gedrag; validated.

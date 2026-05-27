@@ -62,6 +62,7 @@ export default function TrackCard({
   const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const playlistInputRef = useRef<HTMLInputElement | null>(null);
@@ -149,6 +150,21 @@ export default function TrackCard({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
+
+  useEffect(() => {
+    setOptimisticPlayCount(track.playCount ?? 0);
+  }, [track.playCount]);
+
+  useEffect(() => {
+    function handleTrackPlayed(event: Event) {
+      const customEvent = event as CustomEvent<{ trackId?: string }>;
+      if (customEvent.detail?.trackId !== track.id) return;
+      setOptimisticPlayCount((count) => Math.max(1, count));
+    }
+
+    window.addEventListener("sonara:track-played", handleTrackPlayed);
+    return () => window.removeEventListener("sonara:track-played", handleTrackPlayed);
+  }, [track.id]);
 
   async function executeDelete() {
     setConfirmDelete(false);
@@ -364,7 +380,8 @@ export default function TrackCard({
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = track.title || track.prompt.substring(0, 50);
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
-  const playCount = track.playCount ?? 0;
+  const playCount = optimisticPlayCount;
+  const isNewUnplayed = track.status === "done" && playCount === 0;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
@@ -669,6 +686,13 @@ export default function TrackCard({
       {/* Track info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
+          {isNewUnplayed && (
+            <span
+              className="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-[0_0_0_2px_rgba(253,224,71,0.25),0_0_10px_rgba(253,224,71,0.85)]"
+              title="New track"
+              aria-label="New unplayed track"
+            />
+          )}
           {isEditingTitle ? (
             <input
               ref={titleInputRef}

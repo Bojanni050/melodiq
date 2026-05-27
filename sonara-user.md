@@ -124,6 +124,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Geuploade tracks tonen nu een duidelijke **Uploaded** badge in de tracklijst en **Uploaded file** label in Track Details
 - Sonara berekent nu per upload een unieke audio-hash (SHA-256) en blokkeert dubbele uploads van exact hetzelfde audiobestand
 - Sonara houdt nu per track bij hoe vaak je die afspeelt; het aantal plays staat onder de trackbeschrijving in de lijst
+- Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view

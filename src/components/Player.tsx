@@ -417,9 +417,18 @@ export default function Player() {
     if (lastTrackedPlayIdRef.current === currentTrack.id) return;
 
     lastTrackedPlayIdRef.current = currentTrack.id;
-    void fetch(`/api/tracks/${currentTrack.id}/play`, { method: "POST" }).catch(() => {
-      // Ignore analytics tracking failures to avoid interrupting playback UX.
-    });
+    void fetch(`/api/tracks/${currentTrack.id}/play`, { method: "POST" })
+      .then((response) => {
+        if (!response.ok) return;
+        window.dispatchEvent(
+          new CustomEvent("sonara:track-played", {
+            detail: { trackId: currentTrack.id },
+          })
+        );
+      })
+      .catch(() => {
+        // Ignore analytics tracking failures to avoid interrupting playback UX.
+      });
   }, [currentTrack?.id, isPlaying]);
 
   useEffect(() => {
