@@ -36,6 +36,7 @@ interface LibraryTrack {
 
 type LibraryView = "songs" | "workspaces";
 type WorkspaceDisplayMode = "grid" | "list";
+const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara.workspace-grid-size";
 
 function hashString(value: string) {
   let hash = 0;
@@ -82,6 +83,7 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<LibraryView>("songs");
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
+  const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
@@ -161,6 +163,19 @@ export default function LibraryPage() {
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(WORKSPACE_GRID_SIZE_STORAGE_KEY);
+    if (saved === "4" || saved === "8" || saved === "12" || saved === "16") {
+      setWorkspaceGridSize(Number(saved) as 4 | 8 | 12 | 16);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
+  }, [workspaceGridSize]);
 
   const selectedWorkspace = useMemo(
     () => (selectedWorkspaceId ? workspaces.find((w) => w.id === selectedWorkspaceId) ?? null : null),
@@ -380,6 +395,15 @@ export default function LibraryPage() {
     return SWATCH_COLORS[hashString(workspaceId) % SWATCH_COLORS.length];
   }
 
+  const workspaceGridClass =
+    workspaceGridSize === 4
+      ? "grid-cols-[repeat(4,minmax(0,1fr))]"
+      : workspaceGridSize === 8
+        ? "grid-cols-[repeat(8,minmax(0,1fr))]"
+        : workspaceGridSize === 12
+          ? "grid-cols-[repeat(12,minmax(0,1fr))]"
+          : "grid-cols-[repeat(16,minmax(0,1fr))]";
+
   return (
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
@@ -555,6 +579,23 @@ export default function LibraryPage() {
                       </button>
                     </div>
 
+                    {workspaceDisplayMode === "grid" && (
+                      <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+                        {[4, 8, 12, 16].map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
+                            className={`rounded-full px-2.5 py-1 text-xs transition ${workspaceGridSize === size ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                            title={`Show ${size} workspace cards per row`}
+                            aria-label={`Show ${size} workspace cards per row`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Create workspace */}
                     {showCreateWorkspace ? (
                       <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
@@ -590,7 +631,7 @@ export default function LibraryPage() {
                     No workspaces yet. Create one to start grouping tracks.
                   </div>
                 ) : workspaceDisplayMode === "grid" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className={`grid gap-4 ${workspaceGridClass}`}>
                     {workspaces.map((workspace) => {
                       const wTracks = getWorkspaceTracks(workspace.id, tracks, workspaces);
                       const coverImages = getWorkspaceCoverImages(workspace.id);

@@ -27,6 +27,7 @@ type Track = {
 };
 
 type WorkspaceDisplayMode = "grid" | "list";
+const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara.workspace-grid-size";
 
 function hashString(value: string) {
   let hash = 0;
@@ -63,6 +64,7 @@ export default function WorkspacesPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
+  const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
@@ -88,6 +90,19 @@ export default function WorkspacesPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(WORKSPACE_GRID_SIZE_STORAGE_KEY);
+    if (saved === "4" || saved === "8" || saved === "12" || saved === "16") {
+      setWorkspaceGridSize(Number(saved) as 4 | 8 | 12 | 16);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
+  }, [workspaceGridSize]);
+
   const rootWorkspaces = useMemo(
     () => workspaces.filter((workspace) => !workspace.parentWorkspaceId),
     [workspaces],
@@ -104,6 +119,15 @@ export default function WorkspacesPage() {
       });
     return grouped;
   }, [workspaces]);
+
+  const workspaceGridClass =
+    workspaceGridSize === 4
+      ? "grid-cols-[repeat(4,minmax(0,1fr))]"
+      : workspaceGridSize === 8
+        ? "grid-cols-[repeat(8,minmax(0,1fr))]"
+        : workspaceGridSize === 12
+          ? "grid-cols-[repeat(12,minmax(0,1fr))]"
+          : "grid-cols-[repeat(16,minmax(0,1fr))]";
 
   function openWorkspace(workspaceId: string) {
     setSelectedWorkspaceId(workspaceId);
@@ -170,6 +194,23 @@ export default function WorkspacesPage() {
                     </button>
                   </div>
 
+                  {workspaceDisplayMode === "grid" && (
+                    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+                      {[4, 8, 12, 16].map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
+                          className={`rounded-full px-2.5 py-1 text-xs transition ${workspaceGridSize === size ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                          title={`Show ${size} workspace cards per row`}
+                          aria-label={`Show ${size} workspace cards per row`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {showCreateWorkspace ? (
                     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
                       <input
@@ -223,7 +264,7 @@ export default function WorkspacesPage() {
                   No workspaces yet. Create one to start grouping tracks.
                 </div>
               ) : workspaceDisplayMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className={`grid gap-4 ${workspaceGridClass}`}>
                   {rootWorkspaces.map((workspace) => {
                     const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
                     const coverImages = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
