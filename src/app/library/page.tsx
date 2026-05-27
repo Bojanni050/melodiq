@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
@@ -63,12 +63,21 @@ function getWorkspaceTracks(
 
 export default function LibraryPage() {
   const { playlists } = usePlaylistStore();
-  const { workspaces, selectedWorkspaceId, setSelectedWorkspaceId, createWorkspace, deleteWorkspace } = useWorkspaceStore();
+  const {
+    workspaces,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
+    createWorkspace,
+    deleteWorkspace,
+    moveTrackToWorkspace,
+    ensureDefaultWorkspace,
+  } = useWorkspaceStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<LibraryView>("songs");
@@ -76,21 +85,47 @@ export default function LibraryPage() {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
+  const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+
+  const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
+    const res = await fetch("/api/tracks");
+    if (activeCheck && !activeCheck()) return;
+    if (res.ok) {
+      const data = await res.json();
+      setTracks(data.tracks.filter((t: LibraryTrack) => t.status === "done"));
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     let active = true;
-    async function fetchTracks() {
-      const res = await fetch("/api/tracks");
-      if (!active) return;
-      if (res.ok) {
-        const data = await res.json();
-        setTracks(data.tracks.filter((t: LibraryTrack) => t.status === "done"));
-      }
-      setLoading(false);
+    fetchTracks(() => active);
+    return () => {
+      active = false;
+    };
+  }, [fetchTracks]);
+
+  useEffect(() => {
+    ensureDefaultWorkspace();
+  }, [ensureDefaultWorkspace]);
+
+  useEffect(() => {
+    if (selectedWorkspaceId && workspaces.some((workspace) => workspace.id === selectedWorkspaceId)) {
+      setUploadWorkspaceId((current) => {
+        if (current && workspaces.some((workspace) => workspace.id === current)) return current;
+        return selectedWorkspaceId;
+      });
+      return;
     }
-    fetchTracks();
-    return () => { active = false; };
-  }, []);
+
+    setUploadWorkspaceId((current) => {
+      if (current && workspaces.some((workspace) => workspace.id === current)) return current;
+      return DEFAULT_WORKSPACE_ID;
+    });
+  }, [selectedWorkspaceId, workspaces]);
 
   useEffect(() => {
     if (!showTrackDetailsPanel || !currentTrack) return;
@@ -137,6 +172,26 @@ export default function LibraryPage() {
     [selectedWorkspace, tracks],
   );
 
+  const parentWorkspaceNameById = useMemo(
+    () =>
+      workspaces.reduce<Record<string, string>>((acc, workspace) => {
+        acc[workspace.id] = workspace.name;
+        return acc;
+      }, {}),
+    [workspaces],
+  );
+
+  const uploadWorkspaceOptions = useMemo(
+    () =>
+      workspaces.map((workspace) => ({
+        id: workspace.id,
+        label: workspace.parentWorkspaceId
+          ? `${parentWorkspaceNameById[workspace.parentWorkspaceId] || "Workspace"} / ${workspace.name}`
+          : workspace.name,
+      })),
+    [parentWorkspaceNameById, workspaces],
+  );
+
   function openWorkspace(id: string) {
     setSelectedWorkspaceId(id);
     setView("songs");
@@ -159,6 +214,71 @@ export default function LibraryPage() {
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
+  }
+
+  async function handleUploadSelection(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    const targetWorkspaceId = workspaces.some((workspace) => workspace.id === uploadWorkspaceId)
+      ? uploadWorkspaceId
+      : DEFAULT_WORKSPACE_ID;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadNotice(null);
+
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const response = await fetch("/api/tracks", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Upload failed.");
+      }
+
+      const uploadedTracks: LibraryTrack[] = (payload?.tracks || []).filter(
+        (track: LibraryTrack) => track.status === "done",
+      );
+
+      if (uploadedTracks.length > 0) {
+        setTracks((current) => {
+          const byId = new Map(current.map((track) => [track.id, track]));
+          uploadedTracks.forEach((track) => byId.set(track.id, track));
+          return Array.from(byId.values()).sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+        });
+
+        uploadedTracks.forEach((track) => {
+          moveTrackToWorkspace(targetWorkspaceId, track.id);
+        });
+      }
+
+      const rejectedCount = Array.isArray(payload?.rejected) ? payload.rejected.length : 0;
+      setUploadNotice(
+        rejectedCount > 0
+          ? `Uploaded ${uploadedTracks.length} file(s), ${rejectedCount} skipped.`
+          : `Uploaded ${uploadedTracks.length} file(s) successfully.`,
+      );
+
+      await fetchTracks();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed.";
+      setUploadError(message);
+    } finally {
+      setUploading(false);
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+    }
   }
 
   function handlePlayTrack(url: string) {
@@ -300,6 +420,52 @@ export default function LibraryPage() {
             {/* Songs view */}
             {view === "songs" && (
               <section className="space-y-4">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-white">Upload MP3/WAV to Library</p>
+                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace.</p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <label className="text-xs text-white/60" htmlFor="upload-workspace-select">Workspace</label>
+                      <select
+                        id="upload-workspace-select"
+                        value={uploadWorkspaceId}
+                        onChange={(event) => setUploadWorkspaceId(event.target.value)}
+                        className="h-10 min-w-[220px] rounded-full border border-white/12 bg-[#11121a] px-4 text-sm text-white outline-none focus:border-white/25"
+                        disabled={uploading}
+                      >
+                        {uploadWorkspaceOptions.map((workspace) => (
+                          <option key={workspace.id} value={workspace.id}>
+                            {workspace.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      <input
+                        ref={uploadInputRef}
+                        type="file"
+                        multiple
+                        accept=".mp3,.wav,audio/mpeg,audio/wav"
+                        className="hidden"
+                        onChange={(event) => handleUploadSelection(event.target.files)}
+                      />
+
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => uploadInputRef.current?.click()}
+                        className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+                      >
+                        {uploading ? "Uploading..." : "Select MP3/WAV Files"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {uploadError && <p className="mt-3 text-sm text-red-300">{uploadError}</p>}
+                  {uploadNotice && <p className="mt-3 text-sm text-emerald-300">{uploadNotice}</p>}
+                </div>
+
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     {selectedWorkspace ? (
