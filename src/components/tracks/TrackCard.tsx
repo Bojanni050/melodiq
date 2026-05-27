@@ -364,6 +364,7 @@ export default function TrackCard({
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = track.title || track.prompt.substring(0, 50);
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
+  const playCount = track.playCount ?? 0;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
@@ -711,7 +712,12 @@ export default function TrackCard({
             <WaveformBars count={32} className="h-2 w-full" />
           </div>
         ) : (
-          <p className="text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+          <>
+            <p className="text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+            <p className="text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
+              {playCount} {playCount === 1 ? "play" : "plays"}
+            </p>
+          </>
         )}
         {track.error && (
           <p className="text-xs text-red-400 mt-0.5">{track.error}</p>
