@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 15:51**
+**Versie: wo 16:11**
 
 > AI Music Generation Web App
 
