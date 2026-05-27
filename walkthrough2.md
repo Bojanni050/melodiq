@@ -87,3 +87,9 @@
 - Findings: Workspace-organisatie was volledig vlak, terwijl gewenst gedrag is: hoofdfolder met eigen tracks plus optionele subfolders met eigen tracks.
 - Conclusions: Met een parent-link op workspaces en een harde 1-level guard in de store blijft de datastructuur eenvoudig en voorspelbaar zonder recursieve UI-complexiteit.
 - Actions: `src/lib/store.ts` uitgebreid met `parentWorkspaceId` en `createWorkspaceFolder(parentWorkspaceId, name)` plus cascade-delete van directe subfolders; `src/app/workspaces/page.tsx` aangepast naar root-overzicht + subfolder-sectie en subfolder-create in geopende hoofdfolder; `src/components/tracks/TrackCard.tsx` Move To Workspace dialog hiërarchisch gemaakt (hoofdfolder/subfolder labels en toewijzing); build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Studio workspace-subfolders + harde 1-level normalisatie)
+
+- Findings: In Studio was subfolder-aanmaak nog niet beschikbaar in de workspace panel-flow, terwijl de gewenste structuur expliciet `workspace -> folder` is zonder extra nesting.
+- Conclusions: Subfolder-creatie moet ook in Studio kunnen op geopende hoofdfolders, en de persisted workspace-data moet defensief genormaliseerd worden zodat oude of handmatig ingevoerde nested data automatisch naar maximaal 1 niveau wordt teruggebracht.
+- Actions: `src/app/page.tsx` aangepast met subfolder create-flow (`+ Add Subfolder`) alleen voor geopende hoofdfolders, root-only workspace-overzicht, parent-terugknop bij child-weergave en subfolderlijst in de geopende hoofdfolder; `src/lib/store.ts` normalisatie in `withDefaultWorkspace` aangescherpt zodat alleen kinderen van root-workspaces een `parentWorkspaceId` behouden; `sonara-user.md` bijgewerkt met Studio-subfolder gedrag en versie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
