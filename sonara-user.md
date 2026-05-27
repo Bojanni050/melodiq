@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 03:07**
+**Versie: wo 03:18**
 
 > AI Music Generation Web App
 
@@ -119,6 +119,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 ### Library Views
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
+- In Library Songs view, use **Select MP3/WAV Files** to upload one or meerdere audiofiles tegelijk; Sonara ondersteunt batch-upload van MP3 en WAV
+- Voor upload kies je eerst de doelworkspace in de workspace dropdown; alle succesvol geuploade tracks worden direct aan die workspace toegewezen
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view
