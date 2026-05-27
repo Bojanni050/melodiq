@@ -13,7 +13,7 @@
 ## 2026-05-26 (GenerateButton gekoppeld in StudioForm)
 
 - Findings: De nieuwe component `GenerateButton` bestond al, maar de hoofdactieknop in de studio gebruikte nog een inline knopimplementatie.
-- Conclusions: De knop centraliseren via `GenerateButton` houdt de UI-consistentie en loading-state op één plek beheersbaar.
+- Conclusions: De knop centraliseren via `GenerateButton` houdt de UI-consistentie en loading-state op Ã©Ã©n plek beheersbaar.
 - Actions: `src/components/studio/GenerateButton.tsx` uitgebreid met optionele `className`; `src/components/StudioForm.tsx` aangepast om `GenerateButton` te gebruiken en `isGenerating` als prop te accepteren; `src/app/page.tsx` aangepast om `generating` door te geven aan `StudioForm`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-26 (Lyrics Studio linkerpanelen opgesplitst)
@@ -28,7 +28,7 @@
 - Conclusions: De bestaande `LyricsStudioSidePanel` component in de pagina gebruiken verlaagt de JSX-omvang en houdt dezelfde UX-flow intact.
 - Actions: `src/app/lyrics-studio/page.tsx` aangepast om de inline rechterkolom te vervangen door `LyricsStudioSidePanel`-props; tijdelijke import-regressie (`Flowchart`) gecorrigeerd; build opnieuw uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
-## 2026-05-26 (Settings constants en model-modal geëxtraheerd)
+## 2026-05-26 (Settings constants en model-modal geÃ«xtraheerd)
 
 - Findings: `src/app/settings/page.tsx` bevatte nog veel statische provider/webhook-configuratie en een grote inline model-detail modal, waardoor het bestand onnodig lang bleef.
 - Conclusions: Statische configuratie verplaatsen naar een dedicated constants-module en de modal naar een losse component verlaagt complexiteit en houdt de pagina meer op orchestratie.
@@ -56,12 +56,12 @@
 
 - Findings: Het vorige Move To Workspace submenu was compact en nested, maar sloot visueel/functioneel niet aan op de gewenste grote overlay met lijstweergave.
 - Conclusions: Een dedicated modal-overlay met duidelijke titel, scrollbare workspace-rijen en inline create-acties onderaan geeft dezelfde interactie als het gewenste referentie-ontwerp en werkt beter voor lange workspace-lijsten.
-- Actions: `src/components/tracks/TrackCard.tsx` aangepast: nested submenu vervangen door gecentreerde overlay “Move to Workspace”, lijst met workspace-rows + clip-count, onderaan input met teller en `Create Workspace` knop; bestaande move/create-logica behouden; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/tracks/TrackCard.tsx` aangepast: nested submenu vervangen door gecentreerde overlay â€œMove to Workspaceâ€, lijst met workspace-rows + clip-count, onderaan input met teller en `Create Workspace` knop; bestaande move/create-logica behouden; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-26 (Workspaces pagina aligned met Library workspace UX)
 
 - Findings: De dedicated Workspaces-pagina week qua layout en gedrag af van het Workspaces-gedeelte op de Library-pagina.
-- Conclusions: Eén consistente workspace-ervaring (zelfde headerstijl, view-toggle, create-flow, cards/list en open-workspace gedrag) verlaagt cognitieve load en maakt beheer voorspelbaarder.
+- Conclusions: EÃ©n consistente workspace-ervaring (zelfde headerstijl, view-toggle, create-flow, cards/list en open-workspace gedrag) verlaagt cognitieve load en maakt beheer voorspelbaarder.
 - Actions: `src/app/workspaces/page.tsx` volledig herwerkt naar dezelfde structuur als Library-workspaces: hero-header, grid/list toggle, create-workspace pill, workspace cards/list met open/delete actions en een songs-sectie met back-actie en `TrackList`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-26 (Library rechter detail-sidebar toegevoegd)
@@ -86,7 +86,7 @@
 
 - Findings: Workspace-organisatie was volledig vlak, terwijl gewenst gedrag is: hoofdfolder met eigen tracks plus optionele subfolders met eigen tracks.
 - Conclusions: Met een parent-link op workspaces en een harde 1-level guard in de store blijft de datastructuur eenvoudig en voorspelbaar zonder recursieve UI-complexiteit.
-- Actions: `src/lib/store.ts` uitgebreid met `parentWorkspaceId` en `createWorkspaceFolder(parentWorkspaceId, name)` plus cascade-delete van directe subfolders; `src/app/workspaces/page.tsx` aangepast naar root-overzicht + subfolder-sectie en subfolder-create in geopende hoofdfolder; `src/components/tracks/TrackCard.tsx` Move To Workspace dialog hiërarchisch gemaakt (hoofdfolder/subfolder labels en toewijzing); build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/lib/store.ts` uitgebreid met `parentWorkspaceId` en `createWorkspaceFolder(parentWorkspaceId, name)` plus cascade-delete van directe subfolders; `src/app/workspaces/page.tsx` aangepast naar root-overzicht + subfolder-sectie en subfolder-create in geopende hoofdfolder; `src/components/tracks/TrackCard.tsx` Move To Workspace dialog hiÃ«rarchisch gemaakt (hoofdfolder/subfolder labels en toewijzing); build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Studio workspace-subfolders + harde 1-level normalisatie)
 
@@ -97,18 +97,18 @@
 ## 2026-05-27 (Library upload van MP3/WAV met workspace-keuze en batch)
 
 - Findings: De Library had nog geen directe importflow voor bestaande audiobestanden, waardoor users losse uploads extern moesten regelen en tracks daarna handmatig organiseren.
-- Conclusions: Voeg een dedicated uploadflow toe op Library Songs view met multi-file support en workspace-selectie, plus een backend endpoint dat meerdere MP3/WAV-bestanden in één request accepteert.
+- Conclusions: Voeg een dedicated uploadflow toe op Library Songs view met multi-file support en workspace-selectie, plus een backend endpoint dat meerdere MP3/WAV-bestanden in Ã©Ã©n request accepteert.
 - Actions: `src/app/api/tracks/route.ts` uitgebreid met `POST` multipart upload voor maximaal 20 bestanden tegelijk (MP3/WAV-validatie, S3-upload, track insert met `provider=upload`); `src/app/library/page.tsx` uitgebreid met uploadkaart (`Select MP3/WAV Files`), workspace-dropdown, upload statusmelding en directe workspace-toewijzing van nieuwe track IDs via store; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:18`; `sonara-user.md` bijgewerkt met uploadgebruik; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Uploaded-bestanden expliciet gemarkeerd in UI)
 
 - Findings: Na toevoegen van Library upload was niet direct zichtbaar welke tracks lokaal geupload zijn versus AI-gegenereerd.
 - Conclusions: Toon een expliciete visuele indicator op lijst- en detailniveau voor tracks met `provider=upload`, zodat herkomst direct duidelijk is.
-- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload • Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `sonara-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload â€¢ Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `sonara-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Workspace folder opent nu op eigen detailpagina)
 
-- Findings: De Workspaces-pagina toonde na folderselectie de tracklisting onder hetzelfde folderoverzicht, waardoor de focus op één folder minder duidelijk was.
+- Findings: De Workspaces-pagina toonde na folderselectie de tracklisting onder hetzelfde folderoverzicht, waardoor de focus op Ã©Ã©n folder minder duidelijk was.
 - Conclusions: Splits de flow in overzicht en detailroute, zodat folderklikken naar een dedicated pagina met tracklisting gaat en terugnavigatie expliciet wordt.
 - Actions: `src/app/workspaces/page.tsx` omgezet naar puur folderoverzicht met kliknavigatie naar `/workspaces/{id}`; nieuwe route toegevoegd in `src/app/workspaces/[workspaceId]/page.tsx` met folder-specifieke tracklisting, subfoldernavigatie en `Back to folders` knop; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:24`; `sonara-user.md` bijgewerkt met nieuwe navigatie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 

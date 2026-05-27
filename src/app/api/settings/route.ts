@@ -30,7 +30,7 @@ async function getDirectorySizeBytes(dirPath: string): Promise<number> {
 }
 
 async function getDiskCacheSizeBytes(): Promise<number> {
-  const cachePath = join(process.cwd(), ".next", "cache");
+  const cachePath = "/data/audio-cache";
 
   try {
     await access(cachePath);
