@@ -822,6 +822,7 @@ export default function HomePage() {
                       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                         <TrackList
                           tracks={tracks}
+                          enableDragReorder={false}
                           autoQueueAfterPlay
                           isGenerating={generating}
                           onSelect={(t) => setSelectedTrack(t)}

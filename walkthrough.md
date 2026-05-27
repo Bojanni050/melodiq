@@ -1,5 +1,15 @@
 # Sonara — Walkthrough
 
+## 2026-05-27 do 16:55 (Drag-and-drop play order op track listings)
+
+- Findings: Buiten de Recent Tracks-weergave was er geen directe manier om de afspeelvolgorde in tracklijsten handmatig te bepalen; de volgorde hing alleen af van sortering.
+- Conclusions: Voeg drag-and-drop reordering toe in de gedeelde `TrackList` zodat dezelfde interactie werkt in Library, Workspaces en Workspace Tracks, en sluit `Recent Tracks` expliciet uit.
+- Actions:
+  - Updated `src/components/TrackList.tsx` — added optionele `enableDragReorder` prop (default `true`) met drag state, drop handling en handmatige lijstvolgorde die gebruikt wordt voor play context
+  - Updated `src/app/page.tsx` — `Recent Tracks` `TrackList` call now sets `enableDragReorder={false}`
+  - Updated `sonara-user.md` — gebruikersdocumentatie aangevuld met drag-and-drop play-order gedrag en de uitzondering voor Recent Tracks
+  - Validated with `npm run build`.
+
 ## 2026-05-22 vr 13:32 (MusicGPT timeout skip + failed-track recovery)
 
 - Findings: MusicGPT tracks could still be pushed into generic timeout handling, and the recovery endpoint only retried tracks in `generating`, leaving already-timed-out MusicGPT jobs out of the recovery flow.

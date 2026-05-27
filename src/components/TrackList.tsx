@@ -13,6 +13,7 @@ export default function TrackList({
   tracks,
   isGenerating,
   autoQueueAfterPlay,
+  enableDragReorder = true,
   onSelect,
   onDelete,
   onReusePrompt,
@@ -25,6 +26,7 @@ export default function TrackList({
   tracks: TrackItem[];
   isGenerating?: boolean;
   autoQueueAfterPlay?: boolean;
+  enableDragReorder?: boolean;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
   onReusePrompt?: (track: TrackItem) => void;
@@ -44,14 +46,13 @@ export default function TrackList({
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
+  const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
+  const [dragOverTrackId, setDragOverTrackId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
-  useEffect(() => {
-    selectedIdsRef.current = selectedIds;
-  }, [selectedIds]);
-
-  const displayedTracks = useMemo(() => {
+  const sortedTracks = useMemo(() => {
     const list = [...tracks];
 
     list.sort((left, right) => {
@@ -62,6 +63,50 @@ export default function TrackList({
       if (sortOrder === "oldest") return leftTime - rightTime;
       return rightTime - leftTime;
     });
+
+    return list;
+  }, [sortOrder, tracks]);
+
+  const orderedTracks = useMemo(() => {
+    if (!enableDragReorder || !manualOrderIds) {
+      return sortedTracks;
+    }
+
+    const trackMap = new Map(sortedTracks.map((track) => [track.id, track]));
+    return manualOrderIds
+      .map((id) => trackMap.get(id))
+      .filter((track): track is TrackItem => Boolean(track));
+  }, [enableDragReorder, manualOrderIds, sortedTracks]);
+
+  useEffect(() => {
+    if (!enableDragReorder) {
+      setManualOrderIds(null);
+      return;
+    }
+
+    const sortedIds = sortedTracks.map((track) => track.id);
+    setManualOrderIds((current) => {
+      if (!current) return sortedIds;
+
+      const sortedIdSet = new Set(sortedIds);
+      const retainedIds = current.filter((id) => sortedIdSet.has(id));
+      const newIds = sortedIds.filter((id) => !retainedIds.includes(id));
+      const next = [...retainedIds, ...newIds];
+
+      if (next.length === current.length && next.every((id, index) => id === current[index])) {
+        return current;
+      }
+
+      return next;
+    });
+  }, [enableDragReorder, sortedTracks]);
+
+  useEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
+
+  const displayedTracks = useMemo(() => {
+    const list = [...orderedTracks];
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -79,7 +124,7 @@ export default function TrackList({
 
       return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
     });
-  }, [sortOrder, tracks, searchQuery]);
+  }, [orderedTracks, searchQuery]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
@@ -222,6 +267,55 @@ export default function TrackList({
     });
   }
 
+  function moveTrackInManualOrder(sourceId: string, targetId: string) {
+    setManualOrderIds((current) => {
+      const source = current ?? sortedTracks.map((track) => track.id);
+      const fromIndex = source.indexOf(sourceId);
+      const toIndex = source.indexOf(targetId);
+
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) {
+        return current;
+      }
+
+      const next = [...source];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
+  function handleTrackDragStart(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", trackId);
+    setDraggedTrackId(trackId);
+    setDragOverTrackId(trackId);
+  }
+
+  function handleTrackDragOver(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (dragOverTrackId !== trackId) {
+      setDragOverTrackId(trackId);
+    }
+  }
+
+  function handleTrackDrop(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    event.preventDefault();
+    const sourceId = draggedTrackId ?? event.dataTransfer.getData("text/plain");
+    if (sourceId && sourceId !== trackId) {
+      moveTrackInManualOrder(sourceId, trackId);
+    }
+    setDraggedTrackId(null);
+    setDragOverTrackId(null);
+  }
+
+  function handleTrackDragEnd() {
+    setDraggedTrackId(null);
+    setDragOverTrackId(null);
+  }
+
+  const canDragReorder = enableDragReorder && searchQuery.trim().length === 0;
+
   return (
     <>
       {confirmMassDelete && (
@@ -255,6 +349,9 @@ export default function TrackList({
             )}
           </button>
           <span className="text-xs text-white/30">{visibleSelectedCount > 0 ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}</span>
+          {enableDragReorder && (
+            <span className="text-[11px] text-white/25">Drag to reorder play order</span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <input
@@ -331,25 +428,38 @@ export default function TrackList({
             </p>
           </div>
         ) : (
-          displayedTracks.map((track) => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              allTracks={tracks}
-              onPlay={handlePlay}
-              onSelect={onSelect}
-              onDelete={onDelete}
-              onReusePrompt={onReusePrompt}
-              onAddToQueue={onAddToQueue}
-              onAddToPlaylist={onAddToPlaylist}
-              onMoveToWorkspace={onMoveToWorkspace}
-              onMoveTracksToWorkspace={handleMoveToWorkspace}
-              playlists={playlists}
-              isSelected={selectedIds.has(track.id)}
-              onToggleSelect={toggleSelection}
-              onTitleUpdate={onTitleUpdate}
-            />
-          ))
+          displayedTracks.map((track) => {
+            const isDragActive = canDragReorder && dragOverTrackId === track.id && draggedTrackId !== track.id;
+
+            return (
+              <div
+                key={track.id}
+                draggable={canDragReorder}
+                onDragStart={(event) => handleTrackDragStart(event, track.id)}
+                onDragOver={(event) => handleTrackDragOver(event, track.id)}
+                onDrop={(event) => handleTrackDrop(event, track.id)}
+                onDragEnd={handleTrackDragEnd}
+                className={canDragReorder ? `rounded-xl transition-colors ${isDragActive ? "ring-1 ring-blue-400/60 bg-blue-500/5" : ""}` : undefined}
+              >
+                <TrackCard
+                  track={track}
+                  allTracks={tracks}
+                  onPlay={handlePlay}
+                  onSelect={onSelect}
+                  onDelete={onDelete}
+                  onReusePrompt={onReusePrompt}
+                  onAddToQueue={onAddToQueue}
+                  onAddToPlaylist={onAddToPlaylist}
+                  onMoveToWorkspace={onMoveToWorkspace}
+                  onMoveTracksToWorkspace={handleMoveToWorkspace}
+                  playlists={playlists}
+                  isSelected={selectedIds.has(track.id)}
+                  onToggleSelect={toggleSelection}
+                  onTitleUpdate={onTitleUpdate}
+                />
+              </div>
+            );
+          })
         )}
       </div>
     </>
