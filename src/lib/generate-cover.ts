@@ -15,12 +15,15 @@ export async function generateAndSaveCoverArt(track: {
   title: string | null;
   prompt: string;
   instrumental: boolean;
-}): Promise<void> {
+}, options?: { forceNew?: boolean }): Promise<void> {
   try {
-    const existing = await findExistingCover({
-      userId: track.userId,
-      prompt: track.prompt,
-    });
+    const shouldReuse = !options?.forceNew;
+    const existing = shouldReuse
+      ? await findExistingCover({
+          userId: track.userId,
+          prompt: track.prompt,
+        })
+      : null;
 
     if (existing?.s3KeyCover) {
       await db

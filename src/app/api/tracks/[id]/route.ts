@@ -271,10 +271,31 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { title } = body;
+    const { title, regenerateCoverArt } = body;
 
-    if (title === undefined) {
+    if (title === undefined && regenerateCoverArt !== true) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
+    }
+
+    if (regenerateCoverArt === true) {
+      const track = result[0];
+      await generateAndSaveCoverArt(
+        {
+          id: track.id,
+          userId: track.userId,
+          title: track.title,
+          prompt: track.prompt,
+          instrumental: track.instrumental,
+        },
+        { forceNew: true }
+      );
+
+      const refreshed = await db
+        .select()
+        .from(tracks)
+        .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
+
+      return NextResponse.json(refreshed[0]);
     }
 
     const updated = await db

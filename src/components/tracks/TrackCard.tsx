@@ -54,6 +54,8 @@ export default function TrackCard({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(track.title || "");
   const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
+  const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
@@ -183,6 +185,29 @@ export default function TrackCard({
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
     setConfirmDelete(true);
+  }
+
+  async function handleRegenerateCover(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isRegeneratingCover) return;
+
+    setIsRegeneratingCover(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateCoverArt: true }),
+      });
+
+      if (res.ok) {
+        setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsRegeneratingCover(false);
+      setMenuOpen(false);
+    }
   }
 
   async function saveTitle() {
@@ -385,6 +410,7 @@ export default function TrackCard({
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
+  const effectiveCoverUrl = coverOverrideUrl ?? track.coverUrl ?? null;
 
   return (
     <>
@@ -621,10 +647,10 @@ export default function TrackCard({
           <div className="w-full h-full bg-white/5 flex items-center justify-center">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400/30 border-t-primary-300" />
           </div>
-        ) : track.coverUrl ? (
+        ) : effectiveCoverUrl ? (
           <>
             <img
-              src={track.coverUrl}
+              src={effectiveCoverUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -856,6 +882,13 @@ export default function TrackCard({
                   className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
                 >
                   Reuse Prompt
+                </button>
+                <button
+                  onClick={handleRegenerateCover}
+                  disabled={isRegeneratingCover}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
                 </button>
                 <div className="relative">
                   <button

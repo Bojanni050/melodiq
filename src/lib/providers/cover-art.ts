@@ -122,9 +122,9 @@ async function buildImagePrompt({
   }
 
   return (
-    `Album cover art for a ${type} music track. ` +
+    `Create an expressive, artsy album cover for a ${type} music track. ` +
     `${visualSummary} ` +
-    `Square format, no text, no letters, no words, ` +
-    `cinematic lighting, high quality illustration or photorealistic render.`
+    `Visual direction: editorial art photography mixed with painterly textures, dramatic composition, bold contrast, atmospheric color grading, tactile grain, and layered depth. ` +
+    `Square format, no text, no letters, no logos, no watermarks.`
   );
 }
