@@ -8,6 +8,7 @@ import {
   getContentType,
 } from "@/lib/audio-cache";
 import fs from "fs";
+import { getPresignedUrl } from "@/lib/s3";
 
 export async function GET(
   request: NextRequest,
@@ -94,7 +95,38 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Audio cache error:", error);
-    return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
+    console.error("Audio cache error, falling back to direct S3 stream:", error);
+
+    try {
+      const presignedUrl = await getPresignedUrl(s3Key);
+      const s3Response = await fetch(presignedUrl, {
+        headers: request.headers.get("range")
+          ? { Range: request.headers.get("range") as string }
+          : undefined,
+      });
+
+      if (!s3Response.ok || !s3Response.body) {
+        return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
+      }
+
+      const fallbackContentType = s3Response.headers.get("content-type") || getContentType(fmt);
+      const fallbackContentLength = s3Response.headers.get("content-length");
+      const fallbackContentRange = s3Response.headers.get("content-range");
+      const fallbackStatus = s3Response.status === 206 ? 206 : 200;
+
+      return new NextResponse(s3Response.body, {
+        status: fallbackStatus,
+        headers: {
+          "Content-Type": fallbackContentType,
+          ...(fallbackContentLength ? { "Content-Length": fallbackContentLength } : {}),
+          ...(fallbackContentRange ? { "Content-Range": fallbackContentRange } : {}),
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=300",
+        },
+      });
+    } catch (fallbackError) {
+      console.error("Direct S3 stream fallback failed:", fallbackError);
+      return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
+    }
   }
 }

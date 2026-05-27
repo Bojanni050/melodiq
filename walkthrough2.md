@@ -166,6 +166,12 @@
 - Conclusions: Voeg een runtime schema-guard + fallback toe zodat track-API nooit hard faalt op ontbrekende migratie en de bestaande tracks direct zichtbaar blijven.
 - Actions: `src/lib/workspaces.ts` uitgebreid met `ensureWorkspaceSchema()` (idempotente `ALTER TABLE`/`CREATE TABLE IF NOT EXISTS`) en fallback payload; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` laten schema-guard eerst draaien; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:05`; `sonara-user.md` versie bijgewerkt naar `wo 16:05`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
+## 2026-05-27 (Playback fix: /stream 502 fallback naar direct S3)
+
+- Findings: Sommige tracks speelden niet af doordat `/api/tracks/[id]/stream` met 502 kon falen wanneer de disk-cache laag een fout gaf (bijv. cache write/read of cache path issues).
+- Conclusions: Voeg een robuuste fallback toe: als cache-stream faalt, stream direct vanaf S3 (met Range-header doorgezet) zodat playback blijft werken.
+- Actions: `src/app/api/tracks/[id]/stream/route.ts` uitgebreid met fallback pad naar `getPresignedUrl` + `fetch` proxy inclusief Range/Content-Range handling; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:11`; `sonara-user.md` versie bijgewerkt naar `wo 16:11`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
 ## 2026-05-27 (Lyric Studio style suggestion max 1000 chars)
 
 - Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.

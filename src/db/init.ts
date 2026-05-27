@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "s3_key_cover" TEXT,
   "conversion_id" VARCHAR(255),
   "audio_id" VARCHAR(255),
+  "wav_job_id" VARCHAR(255),
   "rating" VARCHAR(10),
   "play_count" integer NOT NULL DEFAULT 0,
   "created_at" timestamp NOT NULL DEFAULT now(),
@@ -104,7 +105,11 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS play_count integer NOT NULL DEFAULT 
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
-DO $$ BEGIN
+`;
+
+const tracksWorkspaceFkSql = `
+DO $$
+BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM pg_constraint
@@ -115,8 +120,20 @@ DO $$ BEGIN
       FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
       ON DELETE SET NULL;
   END IF;
-END $$;
+END
+$$;
 `;
+
+async function executeSqlStatements(client: postgres.Sql, sqlBlob: string) {
+  const statements = sqlBlob
+    .split(";")
+    .map((statement) => statement.trim())
+    .filter((statement) => statement.length > 0);
+
+  for (const statement of statements) {
+    await client.unsafe(`${statement};`);
+  }
+}
 
 export async function initializeDatabase(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -154,37 +171,13 @@ export async function initializeDatabase(): Promise<void> {
   const targetClient = postgres(databaseUrl);
 
   try {
-    await targetClient`SELECT 1 FROM "users" LIMIT 1`;
-    console.log("Tables already exist, skipping creation");
-  } catch {
-    console.log("Tables do not exist, creating...");
-    try {
-      const statements = createTablesSql
-        .split(";")
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
-
-      for (const statement of statements) {
-        await targetClient.unsafe(statement + ";");
-      }
-      console.log("Tables created successfully");
-    } catch (error) {
-      console.error("Error creating tables:", error);
-    }
+    await executeSqlStatements(targetClient, createTablesSql);
+    await executeSqlStatements(targetClient, alterTracksSql);
+    await targetClient.unsafe(tracksWorkspaceFkSql);
+    console.log("Database schema ensured (tables, indexes, columns, constraints)");
+  } catch (error) {
+    console.error("Error ensuring database schema:", error);
   } finally {
-    try {
-      const alterStatements = alterTracksSql
-        .split(";")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
-      for (const statement of alterStatements) {
-        await targetClient.unsafe(statement + ";");
-      }
-    } catch (error) {
-      console.error("Error applying tracks alter statements:", error);
-    }
-
     await targetClient.end();
   }
 }
