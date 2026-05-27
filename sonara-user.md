@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 15:17**
+**Versie: wo 15:51**
 
 > AI Music Generation Web App
 
@@ -58,6 +58,7 @@ This selector now lives in the **Studio** card on the Create page.
 ### Language (Lyric Studio)
 - **Language** — sets the language for AI-generated lyrics (English, Dutch, Spanish, etc.)
 - **Other...** — lets you define a custom language or dialect
+- **AI Style Suggestion** output is now capped at maximaal 1000 characters
 
 The language selector now lives on the **Lyric Studio** page.
 

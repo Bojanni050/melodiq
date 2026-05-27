@@ -159,3 +159,9 @@
 - Findings: De Docker/Next build faalde met TypeScript-fout `Cannot find name 'setVolume'` in de player volume-handler.
 - Conclusions: De `Player` component gebruikte `setVolume` in `handleVolume`, maar haalde de action niet uit de Zustand store-destructuring; toevoeging van de ontbrekende action herstelt compile.
 - Actions: `src/components/Player.tsx` bijgewerkt door `setVolume` toe te voegen aan `usePlayerStore()` destructuring in de `Player` component; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:17`; `sonara-user.md` versie bijgewerkt naar `wo 15:17`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
+
+## 2026-05-27 (Lyric Studio style suggestion max 1000 chars)
+
+- Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.
+- Conclusions: Een server-side cap op sanitize-niveau voorkomt te lange output ongeacht providergedrag en houdt de UI-respons consistent.
+- Actions: `src/lib/lyrics-style-suggestion.ts` aangepast met expliciete promptregel `maximum 1000 characters` en harde truncatie naar 1000 tekens in `sanitizeStyleSuggestionResponse`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:51`; `sonara-user.md` bijgewerkt met de 1000-char limiet; build uitgevoerd met `npm run build` en volledig geslaagd, validated.

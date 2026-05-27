@@ -18,6 +18,7 @@ Output rules:
   4) Vocal Direction: only if vocals fit; describe tone, phrasing, harmony stack, ad-libs or FX. If instrumental, say "Instrumental focus" and describe the lead motif or hook.
 - Be specific and production-usable.
 - Keep total output around 90-150 words.
+- Hard limit: maximum 1000 characters.
 - Do not include artist names, song titles, or quotes.
 - Do not include any explanation before or after the suggestion.`;
 }
@@ -52,5 +53,5 @@ export function sanitizeStyleSuggestionResponse(raw: string): string {
     .replace(/\s*```$/g, "")
     .trim();
 
-  return cleaned;
+  return cleaned.length > 1000 ? cleaned.slice(0, 1000).trimEnd() : cleaned;
 }
