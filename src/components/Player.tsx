@@ -4,6 +4,28 @@ import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
+type AudioSource = "cache" | "s3" | "unknown";
+
+function AudioSourceBadge({ source }: { source: AudioSource }) {
+  if (source === "unknown") return null;
+
+  const isCache = source === "cache";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] ${
+        isCache
+          ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
+          : "border-sky-400/35 bg-sky-500/10 text-sky-200"
+      }`}
+      title={isCache ? "Playing from disk cache" : "Playing directly from S3"}
+    >
+      <span className="text-[11px] leading-none">{isCache ? "⚡" : "☁"}</span>
+      {isCache ? "Cache" : "S3"}
+    </span>
+  );
+}
+
 declare global {
   interface Window {
     __sonaraSharedAudioElement?: HTMLAudioElement;
@@ -18,7 +40,7 @@ function getSharedAudioElement() {
   return window.__sonaraSharedAudioElement;
 }
 
-function FullscreenPlayer() {
+function FullscreenPlayer({ audioSource }: { audioSource: AudioSource }) {
   const {
     currentTrack,
     isPlaying,
@@ -141,6 +163,9 @@ function FullscreenPlayer() {
               <p className="text-sm text-white/60 capitalize">
                 {currentTrack ? `${currentTrack.provider} • ${currentTrack.providerModel}` : ""}
               </p>
+              <div className="mt-2">
+                <AudioSourceBadge source={audioSource} />
+              </div>
             </div>
           </div>
         </div>
@@ -282,6 +307,26 @@ export default function Player() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
+  const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
+
+  const detectAudioSource = useCallback(async (streamUrl: string): Promise<AudioSource> => {
+    try {
+      const response = await fetch(streamUrl, {
+        headers: {
+          Range: "bytes=0-0",
+        },
+      });
+
+      if (!response.ok) return "unknown";
+
+      const sourceHeader = (response.headers.get("x-sonara-audio-source") || "").toLowerCase();
+      if (sourceHeader === "cache") return "cache";
+      if (sourceHeader === "s3") return "s3";
+      return "unknown";
+    } catch {
+      return "unknown";
+    }
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia("(max-width: 1023px)").matches) {
@@ -388,6 +433,12 @@ export default function Player() {
       const streamUrl = `/api/tracks/${trackId}/stream${wantsHd ? "?hd=true" : ""}`;
 
       setResolvingUrl(true);
+      setAudioSource("unknown");
+
+      const detectedSource = await detectAudioSource(streamUrl);
+      if (!cancelled && requestId === requestIdRef.current) {
+        setAudioSource(detectedSource);
+      }
 
       const resumeTime = audioEl.currentTime || 0;
       const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
@@ -430,7 +481,7 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, getAudioUrl, tryPlay]);
+  }, [currentTrack?.id, currentTrack?.audioUrl, detectAudioSource, getAudioUrl, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -512,7 +563,7 @@ export default function Player() {
   }
 
   if (isFullscreen && currentTrack) {
-    return <FullscreenPlayer />;
+    return <FullscreenPlayer audioSource={audioSource} />;
   }
 
   const isNowPlaying = currentTrack !== null;
@@ -557,6 +608,9 @@ export default function Player() {
                   {currentTrack.provider}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
+                <div className="mt-1">
+                  <AudioSourceBadge source={audioSource} />
+                </div>
               </div>
             </div>
           ) : (

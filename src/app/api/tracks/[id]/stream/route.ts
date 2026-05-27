@@ -72,6 +72,7 @@ export async function GET(
           "Content-Range": `bytes ${start}-${end}/${fileSize}`,
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=31536000, immutable",
+          "X-Sonara-Audio-Source": "cache",
         },
       });
     }
@@ -92,6 +93,7 @@ export async function GET(
         "Content-Length": String(fileSize),
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Sonara-Audio-Source": "cache",
       },
     });
   } catch (error) {
@@ -122,6 +124,7 @@ export async function GET(
           ...(fallbackContentRange ? { "Content-Range": fallbackContentRange } : {}),
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=300",
+          "X-Sonara-Audio-Source": "s3",
         },
       });
     } catch (fallbackError) {
