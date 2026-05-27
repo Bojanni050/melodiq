@@ -77,6 +77,9 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const title = track.title || track.prompt.substring(0, 60);
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
+  const isUploadedTrack = track.provider === "upload";
+  const providerLabel = isUploadedTrack ? "Upload" : track.provider;
+  const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
 
   function formatDuration(seconds: number | null): string {
     if (!seconds || seconds <= 0) return "";
@@ -119,11 +122,16 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
         <div>
           <h2 className="text-xl font-bold">{title}</h2>
           <p className="text-sm text-white/40 mt-1">
-            {track.provider} • {track.providerModel}
+            {providerLabel} • {providerModelLabel}
             {track.duration && (
               <span className="ml-2 text-white/30">• {formatDuration(track.duration)}</span>
             )}
           </p>
+          {isUploadedTrack && (
+            <span className="mt-2 inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-200">
+              Uploaded file
+            </span>
+          )}
         </div>
 
         {/* Actions */}

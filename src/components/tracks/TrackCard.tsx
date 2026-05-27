@@ -366,6 +366,7 @@ export default function TrackCard({
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
+  const isUploadedTrack = track.provider === "upload";
 
   return (
     <>
@@ -694,6 +695,11 @@ export default function TrackCard({
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
             {status.label}
           </span>
+          {isUploadedTrack && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200">
+              Uploaded
+            </span>
+          )}
           {assignedWorkspaceName && (
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px]" title={assignedWorkspaceName}>
               {assignedWorkspaceName}

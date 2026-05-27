@@ -99,3 +99,9 @@
 - Findings: De Library had nog geen directe importflow voor bestaande audiobestanden, waardoor users losse uploads extern moesten regelen en tracks daarna handmatig organiseren.
 - Conclusions: Voeg een dedicated uploadflow toe op Library Songs view met multi-file support en workspace-selectie, plus een backend endpoint dat meerdere MP3/WAV-bestanden in één request accepteert.
 - Actions: `src/app/api/tracks/route.ts` uitgebreid met `POST` multipart upload voor maximaal 20 bestanden tegelijk (MP3/WAV-validatie, S3-upload, track insert met `provider=upload`); `src/app/library/page.tsx` uitgebreid met uploadkaart (`Select MP3/WAV Files`), workspace-dropdown, upload statusmelding en directe workspace-toewijzing van nieuwe track IDs via store; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:18`; `sonara-user.md` bijgewerkt met uploadgebruik; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-27 (Uploaded-bestanden expliciet gemarkeerd in UI)
+
+- Findings: Na toevoegen van Library upload was niet direct zichtbaar welke tracks lokaal geupload zijn versus AI-gegenereerd.
+- Conclusions: Toon een expliciete visuele indicator op lijst- en detailniveau voor tracks met `provider=upload`, zodat herkomst direct duidelijk is.
+- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload • Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `sonara-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
