@@ -147,3 +147,9 @@
 - Findings: Bij uploadfouten met HTML-responses (zoals te grote request) kon de frontend falen met `Unexpected token '<'` en was voor users onduidelijk wat de limiet was.
 - Conclusions: Maak upload-response parsing tolerant voor non-JSON en toon in de UI expliciet de uploadlimiet en foutverwachting.
 - Actions: `src/app/library/page.tsx` uitgebreid met veilige `readApiPayload` parser, duidelijke fallback foutmelding bij non-JSON responses en specifieke 413 melding; uploadkaart helpertekst aangevuld met limiet van 20 bestanden per upload; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 14:48`; `sonara-user.md` bijgewerkt met limiet/foutmelding; validated.
+
+## 2026-05-27 (Library upload workspace-dropdown gevuld met bestaande workspaces)
+
+- Findings: In Library upload liet de workspace-dropdown soms alleen `Default Workspace` zien, ondanks bestaande workspaces in persistente state.
+- Conclusions: Forceer eerst workspace-store rehydratie en voer daarna pas de default-workspace normalisatie uit; zo blijven bestaande persisted workspaces zichtbaar in de dropdown.
+- Actions: `src/app/library/page.tsx` aangepast met expliciete `useWorkspaceStore.persist.rehydrate()` en `onFinishHydration`-flow vóór `ensureDefaultWorkspace`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:10`; `sonara-user.md` bijgewerkt met workspace-dropdown gedrag; validated.

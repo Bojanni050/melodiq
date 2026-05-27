@@ -132,7 +132,22 @@ export default function LibraryPage() {
   }, [fetchTracks]);
 
   useEffect(() => {
-    ensureDefaultWorkspace();
+    useWorkspaceStore.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
+    if (useWorkspaceStore.persist.hasHydrated()) {
+      ensureDefaultWorkspace();
+      return;
+    }
+
+    const unsubscribe = useWorkspaceStore.persist.onFinishHydration(() => {
+      ensureDefaultWorkspace();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [ensureDefaultWorkspace]);
 
   useEffect(() => {
