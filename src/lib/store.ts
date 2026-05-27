@@ -317,6 +317,46 @@ interface WorkspaceState {
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
   ensureDefaultWorkspace: () => string;
   syncTracksToDefaultWorkspace: (trackIds: string[]) => void;
+  hydrateWorkspacesFromServer: (workspaces: Workspace[]) => void;
+}
+
+function persistWorkspaceCreate(input: {
+  id: string;
+  name: string;
+  parentWorkspaceId: string | null;
+  folderGradient?: string;
+}) {
+  if (typeof window === "undefined") return;
+
+  void fetch("/api/workspaces", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).catch(() => {
+    // Keep local fallback state when persistence fails.
+  });
+}
+
+function persistWorkspaceDelete(workspaceId: string) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/workspaces/${workspaceId}`, {
+    method: "DELETE",
+  }).catch(() => {
+    // Keep local fallback state when persistence fails.
+  });
+}
+
+function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/tracks/${trackId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspaceId }),
+  }).catch(() => {
+    // Keep local fallback state when persistence fails.
+  });
 }
 
 function createDefaultWorkspace(): Workspace {
@@ -332,10 +372,12 @@ function createDefaultWorkspace(): Workspace {
 }
 
 function withDefaultWorkspace(workspaces: Workspace[]) {
-  const defaultWorkspace = workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
+  const defaultWorkspace =
+    workspaces.find((workspace) => workspace.isDefault) ||
+    workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
   const normalizedDefault = {
     ...(defaultWorkspace || createDefaultWorkspace()),
-    id: DEFAULT_WORKSPACE_ID,
+    id: defaultWorkspace?.id || DEFAULT_WORKSPACE_ID,
     name: DEFAULT_WORKSPACE_NAME,
     isDefault: true,
     folderGradient: defaultWorkspace?.folderGradient || WORKSPACE_FOLDER_GRADIENTS[0],
@@ -348,7 +390,7 @@ function withDefaultWorkspace(workspaces: Workspace[]) {
   });
 
   const otherWorkspaces = workspaces
-    .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+    .filter((workspace) => workspace.id !== normalizedDefault.id)
     .map((workspace) => {
       const parentWorkspaceId = workspace.parentWorkspaceId || null;
       const parentWorkspace = parentWorkspaceId ? parentWorkspaceById.get(parentWorkspaceId) : null;
@@ -398,6 +440,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             },
           ],
         }));
+
+        persistWorkspaceCreate({ id, name: trimmed, parentWorkspaceId: null, folderGradient });
         return id;
       },
       createWorkspaceFolder: (parentWorkspaceId, name) => {
@@ -431,6 +475,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             },
           ],
         }));
+
+        persistWorkspaceCreate({ id, name: trimmed, parentWorkspaceId, folderGradient });
 
         return id;
       },
@@ -469,7 +515,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           }),
         })),
       deleteWorkspace: (workspaceId) => {
-        if (workspaceId === DEFAULT_WORKSPACE_ID) return;
+        const target = get().workspaces.find((workspace) => workspace.id === workspaceId);
+        if (!target || target.isDefault) return;
         const directChildren = get().workspaces
           .filter((workspace) => workspace.parentWorkspaceId === workspaceId)
           .map((workspace) => workspace.id);
@@ -482,15 +529,15 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               ? null
               : state.selectedWorkspaceId,
         }));
+
+        persistWorkspaceDelete(workspaceId);
       },
       setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),
       ensureDefaultWorkspace: () => {
         let defaultId = DEFAULT_WORKSPACE_ID;
         set((state) => ({ workspaces: withDefaultWorkspace(state.workspaces) }));
-        const existing = get().workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
-        if (!existing) {
-          defaultId = DEFAULT_WORKSPACE_ID;
-        }
+        const existing = get().workspaces.find((workspace) => workspace.isDefault);
+        if (existing) defaultId = existing.id;
         return defaultId;
       },
       syncTracksToDefaultWorkspace: (trackIds) =>
@@ -519,6 +566,20 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             ),
           };
         }),
+      hydrateWorkspacesFromServer: (incomingWorkspaces) =>
+        set((state) => {
+          const normalizedIncoming = withDefaultWorkspace(incomingWorkspaces || []);
+          const selectedWorkspaceId =
+            state.selectedWorkspaceId &&
+            normalizedIncoming.some((workspace) => workspace.id === state.selectedWorkspaceId)
+              ? state.selectedWorkspaceId
+              : null;
+
+          return {
+            workspaces: normalizedIncoming,
+            selectedWorkspaceId,
+          };
+        }),
     }),
     {
       name: "sonara-workspaces",
@@ -537,6 +598,28 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }
   )
 );
+
+useWorkspaceStore.subscribe((state, prevState) => {
+  if (state.workspaces === prevState.workspaces) return;
+
+  const addedTrackAssignment = new Map<string, string>();
+  const prevWorkspaceById = new Map(prevState.workspaces.map((workspace) => [workspace.id, workspace]));
+
+  state.workspaces.forEach((workspace) => {
+    const previous = prevWorkspaceById.get(workspace.id);
+    if (!previous) return;
+
+    workspace.trackIds.forEach((trackId) => {
+      if (!previous.trackIds.includes(trackId)) {
+        addedTrackAssignment.set(trackId, workspace.id);
+      }
+    });
+  });
+
+  addedTrackAssignment.forEach((workspaceId, trackId) => {
+    persistTrackWorkspaceAssignment(trackId, workspaceId);
+  });
+});
 
 interface StudioState {
   songIdea: string;

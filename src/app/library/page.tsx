@@ -93,6 +93,7 @@ export default function LibraryPage() {
     deleteWorkspace,
     moveTrackToWorkspace,
     ensureDefaultWorkspace,
+    hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -119,6 +120,9 @@ export default function LibraryPage() {
     if (res.ok) {
       const data = await res.json();
       setTracks(data.tracks.filter((t: LibraryTrack) => t.status === "done"));
+      if (Array.isArray(data.workspaces)) {
+        hydrateWorkspacesFromServer(data.workspaces);
+      }
     }
     setLoading(false);
   }, []);
@@ -283,6 +287,7 @@ export default function LibraryPage() {
       Array.from(files).forEach((file) => {
         formData.append("files", file);
       });
+      formData.append("workspaceId", targetWorkspaceId);
 
       const response = await fetch("/api/tracks", {
         method: "POST",
@@ -324,9 +329,6 @@ export default function LibraryPage() {
           );
         });
 
-        uploadedTracks.forEach((track) => {
-          moveTrackToWorkspace(targetWorkspaceId, track.id);
-        });
       }
 
       const rejectedCount = Array.isArray(payload.rejected) ? payload.rejected.length : 0;

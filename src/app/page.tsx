@@ -74,6 +74,7 @@ export default function HomePage() {
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
   const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
+  const hydrateWorkspacesFromServer = useWorkspaceStore((state) => state.hydrateWorkspacesFromServer);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -227,6 +228,9 @@ export default function HomePage() {
     if (res.ok) {
       const data = await res.json();
       setTracks(data.tracks);
+      if (Array.isArray(data.workspaces)) {
+        hydrateWorkspacesFromServer(data.workspaces);
+      }
       const knownTrackIds = (data.tracks || []).map((track: Track) => track.id);
       syncTracksToDefaultWorkspace(knownTrackIds);
       return data.tracks as Track[];

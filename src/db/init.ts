@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 CREATE TABLE IF NOT EXISTS "tracks" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id"),
+  "workspace_id" uuid,
   "title" varchar(255),
   "provider" varchar(50) NOT NULL,
   "provider_model" varchar(50) NOT NULL,
@@ -52,6 +53,21 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS "workspaces" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "name" varchar(255) NOT NULL,
+  "parent_workspace_id" uuid REFERENCES "workspaces"("id") ON DELETE CASCADE,
+  "folder_gradient" text,
+  "is_default" boolean NOT NULL DEFAULT false,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "workspaces_user_idx" ON "workspaces"("user_id");
+CREATE INDEX IF NOT EXISTS "workspaces_parent_idx" ON "workspaces"("parent_workspace_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "workspaces_single_default_per_user_idx" ON "workspaces"("user_id") WHERE "is_default" = true;
 
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,6 +103,19 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS rating VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS play_count integer NOT NULL DEFAULT 0;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'tracks_workspace_id_workspaces_id_fk'
+  ) THEN
+    ALTER TABLE tracks
+      ADD CONSTRAINT tracks_workspace_id_workspaces_id_fk
+      FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;
 `;
 
 export async function initializeDatabase(): Promise<void> {

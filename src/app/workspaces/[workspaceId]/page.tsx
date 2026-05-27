@@ -61,6 +61,7 @@ export default function WorkspaceDetailPage() {
     setSelectedWorkspaceId,
     createWorkspaceFolder,
     deleteWorkspace,
+    hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
 
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -84,6 +85,9 @@ export default function WorkspaceDetailPage() {
       if (res.ok) {
         const data = await res.json();
         setTracks((data.tracks || []).filter((track: Track) => track.status === "done"));
+        if (Array.isArray(data.workspaces)) {
+          hydrateWorkspacesFromServer(data.workspaces);
+        }
       }
 
       setLoading(false);

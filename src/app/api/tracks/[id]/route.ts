@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks } from "@/db/schema";
+import { tracks, workspaces } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
@@ -271,9 +271,9 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { title, regenerateCoverArt } = body;
+    const { title, regenerateCoverArt, workspaceId } = body;
 
-    if (title === undefined && regenerateCoverArt !== true) {
+    if (title === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -298,9 +298,35 @@ export async function PATCH(
       return NextResponse.json(refreshed[0]);
     }
 
+    const updates: Partial<typeof tracks.$inferInsert> = {};
+
+    if (title !== undefined) {
+      updates.title = title;
+    }
+
+    if (workspaceId !== undefined) {
+      if (workspaceId === null) {
+        updates.workspaceId = null;
+      } else if (typeof workspaceId === "string" && workspaceId.trim()) {
+        const targetWorkspace = await db
+          .select({ id: workspaces.id })
+          .from(workspaces)
+          .where(and(eq(workspaces.id, workspaceId.trim()), eq(workspaces.userId, userId)))
+          .limit(1);
+
+        if (!targetWorkspace[0]) {
+          return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+        }
+
+        updates.workspaceId = targetWorkspace[0].id;
+      } else {
+        return NextResponse.json({ error: "Invalid workspaceId" }, { status: 400 });
+      }
+    }
+
     const updated = await db
       .update(tracks)
-      .set({ title })
+      .set(updates)
       .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
       .returning();
 

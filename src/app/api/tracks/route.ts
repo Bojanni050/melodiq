@@ -10,6 +10,8 @@ import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/reques
 import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { workspaces } from "@/db/schema";
+import { ensureDefaultWorkspaceForUser, getUserWorkspacesWithTrackIds } from "@/lib/workspaces";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -108,22 +110,27 @@ export async function GET() {
     }
   }
 
+  let finalTracks = refreshedResult;
+
   if (timedOutIds.length > 0) {
     await db
       .update(tracks)
       .set({ status: "failed", error: "Generation timed out. Please try again." })
       .where(inArray(tracks.id, timedOutIds));
 
-    const refreshed = await db
+    finalTracks = await db
       .select()
       .from(tracks)
       .where(eq(tracks.userId, userId))
       .orderBy(desc(tracks.createdAt));
-
-    return NextResponse.json({ tracks: refreshed });
   }
 
-  return NextResponse.json({ tracks: refreshedResult });
+  const workspacePayload = await getUserWorkspacesWithTrackIds(
+    userId,
+    finalTracks.map((track) => ({ id: track.id, workspaceId: track.workspaceId ?? null }))
+  );
+
+  return NextResponse.json({ tracks: finalTracks, workspaces: workspacePayload });
 }
 
 export async function POST(request: NextRequest) {
@@ -145,6 +152,27 @@ export async function POST(request: NextRequest) {
         { error: `You can upload up to ${MAX_FILES_PER_UPLOAD} files at once.` },
         { status: 400 }
       );
+    }
+
+    const requestedWorkspaceIdRaw = formData.get("workspaceId");
+    const requestedWorkspaceId =
+      typeof requestedWorkspaceIdRaw === "string" && requestedWorkspaceIdRaw.trim()
+        ? requestedWorkspaceIdRaw.trim()
+        : null;
+
+    const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
+    let targetWorkspaceId = defaultWorkspace.id;
+
+    if (requestedWorkspaceId) {
+      const workspaceResult = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(and(eq(workspaces.id, requestedWorkspaceId), eq(workspaces.userId, userId)))
+        .limit(1);
+
+      if (workspaceResult[0]) {
+        targetWorkspaceId = workspaceResult[0].id;
+      }
     }
 
     const uploadedTracks: Array<typeof tracks.$inferSelect> = [];
@@ -203,6 +231,7 @@ export async function POST(request: NextRequest) {
             format,
             duration,
             audioId: uploadHash,
+            workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: false,
             creditsUsed: 0,

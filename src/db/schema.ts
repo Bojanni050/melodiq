@@ -26,6 +26,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const tracks = pgTable("tracks", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
+  workspaceId: uuid("workspace_id"),
   title: varchar("title", { length: 255 }),
   provider: varchar("provider", { length: 50 }).notNull(),
   providerModel: varchar("provider_model", { length: 50 }).notNull(),
@@ -55,10 +56,37 @@ export const tracks = pgTable("tracks", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  parentWorkspaceId: uuid("parent_workspace_id"),
+  folderGradient: text("folder_gradient"),
+  isDefault: boolean("is_default").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
+  user: one(users, {
+    fields: [workspaces.userId],
+    references: [users.id],
+  }),
+  parentWorkspace: one(workspaces, {
+    fields: [workspaces.parentWorkspaceId],
+    references: [workspaces.id],
+  }),
+  tracks: many(tracks),
+}));
+
 export const tracksRelations = relations(tracks, ({ one }) => ({
   user: one(users, {
     fields: [tracks.userId],
     references: [users.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [tracks.workspaceId],
+    references: [workspaces.id],
   }),
 }));
 
