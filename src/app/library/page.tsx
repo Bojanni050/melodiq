@@ -485,7 +485,7 @@ export default function LibraryPage() {
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-white">Upload MP3/WAV to Library</p>
-                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace.</p>
+                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace. Max 20 files per upload; oversized uploads show a clear error.</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <label className="text-xs text-white/60" htmlFor="upload-workspace-select">Workspace</label>

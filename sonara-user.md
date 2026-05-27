@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 14:31**
+**Versie: wo 14:48**
 
 > AI Music Generation Web App
 
@@ -123,6 +123,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 ### Library Views
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
 - In Library Songs view, use **Select MP3/WAV Files** to upload one or meerdere audiofiles tegelijk; Sonara ondersteunt batch-upload van MP3 en WAV
+- Library upload ondersteunt maximaal 20 bestanden per keer; bij een te grote upload toont Sonara nu een duidelijke foutmelding in plaats van een technische JSON-parse fout
 - Voor upload kies je eerst de doelworkspace in de workspace dropdown; alle succesvol geuploade tracks worden direct aan die workspace toegewezen
 - Geuploade tracks tonen nu een duidelijke **Uploaded** badge in de tracklijst en **Uploaded file** label in Track Details
 - Sonara berekent nu per upload een unieke audio-hash (SHA-256) en blokkeert dubbele uploads van exact hetzelfde audiobestand
