@@ -153,3 +153,9 @@
 - Findings: In Library upload liet de workspace-dropdown soms alleen `Default Workspace` zien, ondanks bestaande workspaces in persistente state.
 - Conclusions: Forceer eerst workspace-store rehydratie en voer daarna pas de default-workspace normalisatie uit; zo blijven bestaande persisted workspaces zichtbaar in de dropdown.
 - Actions: `src/app/library/page.tsx` aangepast met expliciete `useWorkspaceStore.persist.rehydrate()` en `onFinishHydration`-flow vóór `ensureDefaultWorkspace`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:10`; `sonara-user.md` bijgewerkt met workspace-dropdown gedrag; validated.
+
+## 2026-05-27 (Docker build-fix: ontbrekende setVolume in Player)
+
+- Findings: De Docker/Next build faalde met TypeScript-fout `Cannot find name 'setVolume'` in de player volume-handler.
+- Conclusions: De `Player` component gebruikte `setVolume` in `handleVolume`, maar haalde de action niet uit de Zustand store-destructuring; toevoeging van de ontbrekende action herstelt compile.
+- Actions: `src/components/Player.tsx` bijgewerkt door `setVolume` toe te voegen aan `usePlayerStore()` destructuring in de `Player` component; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:17`; `sonara-user.md` versie bijgewerkt naar `wo 15:17`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.

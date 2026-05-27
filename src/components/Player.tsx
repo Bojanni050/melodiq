@@ -274,6 +274,7 @@ export default function Player() {
     setAutoPlayNext,
     setShowTrackDetailsPanel,
     setIsFullscreen,
+    setVolume,
   } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
