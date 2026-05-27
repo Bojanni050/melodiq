@@ -5,7 +5,16 @@ import { logApi } from "@/lib/logger";
 import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
-type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
+type BlockType =
+  | "intro"
+  | "verse"
+  | "pre-chorus"
+  | "chorus"
+  | "post-chorus"
+  | "bridge"
+  | "intrumental"
+  | "instrumetal-drop"
+  | "outro";
 
 interface TranslateBlock {
   id: string;
@@ -27,6 +36,8 @@ function isBlockType(value: unknown): value is BlockType {
     value === "chorus" ||
     value === "post-chorus" ||
     value === "bridge" ||
+    value === "intrumental" ||
+    value === "instrumetal-drop" ||
     value === "outro"
   );
 }

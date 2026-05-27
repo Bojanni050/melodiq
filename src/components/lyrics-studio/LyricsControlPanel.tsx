@@ -13,6 +13,9 @@ type LyricsControlPanelProps = {
   topic: string;
   mood: string;
   style: string;
+  titleValue: string;
+  generatingTitle: boolean;
+  canGenerateTitle: boolean;
   selectedLanguage: string;
   isCustomLanguage: boolean;
   customLanguage: string;
@@ -38,6 +41,8 @@ type LyricsControlPanelProps = {
   onTopicChange: (value: string) => void;
   onMoodChange: (value: string) => void;
   onStyleChange: (value: string) => void;
+  onTitleChange: (value: string) => void;
+  onGenerateTitle: () => void;
   onLanguageChange: (value: string) => void;
   onCustomLanguageChange: (value: string) => void;
   onStructureChange: (value: string) => void;
@@ -60,6 +65,9 @@ export default function LyricsControlPanel({
   topic,
   mood,
   style,
+  titleValue,
+  generatingTitle,
+  canGenerateTitle,
   selectedLanguage,
   isCustomLanguage,
   customLanguage,
@@ -85,6 +93,8 @@ export default function LyricsControlPanel({
   onTopicChange,
   onMoodChange,
   onStyleChange,
+  onTitleChange,
+  onGenerateTitle,
   onLanguageChange,
   onCustomLanguageChange,
   onStructureChange,
@@ -160,6 +170,25 @@ export default function LyricsControlPanel({
             placeholder="Genre / style hints (optional)"
             className="input-field text-sm"
           />
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <input
+              type="text"
+              value={titleValue}
+              onChange={(event) => onTitleChange(event.target.value)}
+              placeholder="Song title"
+              className="input-field text-sm"
+            />
+            <button
+              type="button"
+              onClick={onGenerateTitle}
+              disabled={generatingTitle || !canGenerateTitle}
+              title={canGenerateTitle ? "Generate title from current lyrics" : "Add more lyrics first"}
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {generatingTitle ? "Generating..." : "Generate title"}
+            </button>
+          </div>
         </div>
       </section>
 

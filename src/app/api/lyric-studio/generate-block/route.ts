@@ -5,7 +5,16 @@ import { logApi } from "@/lib/logger";
 import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
-type BlockType = "intro" | "verse" | "pre-chorus" | "chorus" | "post-chorus" | "bridge" | "outro";
+type BlockType =
+  | "intro"
+  | "verse"
+  | "pre-chorus"
+  | "chorus"
+  | "post-chorus"
+  | "bridge"
+  | "intrumental"
+  | "instrumetal-drop"
+  | "outro";
 
 interface ExistingBlock {
   type: BlockType;
@@ -40,6 +49,8 @@ const BLOCK_TYPES: BlockType[] = [
   "chorus",
   "post-chorus",
   "bridge",
+  "intrumental",
+  "instrumetal-drop",
   "outro",
 ];
 

@@ -50,13 +50,14 @@ export default function LyricsStudioPage() {
     savedSnapshots, setSavedSnapshots,
   } = draft;
 
-  const { language, customLanguage, structure, customStructure, setLanguage, setCustomLanguage, setStructure, setCustomStructure } = useStudioStore();
+  const { title, setTitle, language, customLanguage, structure, customStructure, setLanguage, setCustomLanguage, setStructure, setCustomStructure } = useStudioStore();
 
   const [credits] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
   const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
+  const [generatingTitle, setGeneratingTitle] = useState(false);
   const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
   const [translationLanguage, setTranslationLanguage] = useState("nl");
   const [customTranslationLanguage, setCustomTranslationLanguage] = useState("");
@@ -95,6 +96,7 @@ export default function LyricsStudioPage() {
   const contextZone = contextLevel <= 3 ? "Smal" : contextLevel <= 7 ? "Gebalanceerd" : "Breed";
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
+  const canGenerateTitle = combinedLyrics.trim().length >= 20;
   const effectiveTranslationLanguage =
     translationLanguage === "other"
       ? customTranslationLanguage.trim()
@@ -365,6 +367,7 @@ export default function LyricsStudioPage() {
   function useLyricsAndStyleInStudio() {
     const nextLyrics = combinedLyrics.trim();
     const nextStyle = (styleSuggestion.trim() || style.trim()).trim();
+    const nextTitle = title.trim();
     if (!nextLyrics || !nextStyle) return;
     const studio = useStudioStore.getState();
     const hasExisting = Boolean(studio.songIdea.trim() || studio.lyrics.trim() || studio.lyricsContext.trim() || studio.title.trim());
@@ -376,6 +379,7 @@ export default function LyricsStudioPage() {
     studio.reset();
     studio.setLyrics(nextLyrics);
     studio.setSongIdea(nextStyle);
+    studio.setTitle(nextTitle);
     router.push("/");
   }
 
@@ -409,11 +413,42 @@ export default function LyricsStudioPage() {
     }
   }
 
+  async function generateTitleFromLyrics() {
+    if (!canGenerateTitle || generatingTitle) return;
+    setGeneratingTitle(true);
+    try {
+      const res = await fetch("/api/generate-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lyrics: combinedLyrics }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNotice({ type: "error", message: data?.error || "Titel genereren is mislukt." });
+        return;
+      }
+
+      const nextTitle = typeof data?.title === "string" ? data.title.trim() : "";
+      if (!nextTitle) {
+        setNotice({ type: "error", message: "AI gaf geen geldige titel terug." });
+        return;
+      }
+
+      setTitle(nextTitle);
+      setNotice({ type: "success", message: "Titel gegenereerd." });
+    } catch {
+      setNotice({ type: "error", message: "Titel genereren is mislukt." });
+    } finally {
+      setGeneratingTitle(false);
+    }
+  }
+
   function clearAllDraft(force = false) {
     if (!force) { setConfirmAction("clearAll"); return; }
     setTopic(""); setMood(""); setStyle(""); setBlocks([]); setActivePreset("");
     setLyricCols(2); setShowLyricsSidebar(false); setShowStructureDropdown(false);
     setStructure(""); setCustomStructure(""); setRepetitiveChorus(true);
+    setTitle("");
     setCreativityLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
     window.localStorage.removeItem("sonara-lyrics-studio");
@@ -430,6 +465,7 @@ export default function LyricsStudioPage() {
       studio.reset();
       studio.setLyrics(pendingStudioPayload.lyrics);
       studio.setSongIdea(pendingStudioPayload.style);
+      studio.setTitle(title.trim());
       router.push("/");
       setPendingStudioPayload(null);
     } else if (confirmAction === "clearAll") {
@@ -508,6 +544,9 @@ export default function LyricsStudioPage() {
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
               <LyricsControlPanel
                 topic={topic} mood={mood} style={style}
+                titleValue={title}
+                generatingTitle={generatingTitle}
+                canGenerateTitle={canGenerateTitle}
                 selectedLanguage={selectedLanguage} isCustomLanguage={isCustomLanguage}
                 customLanguage={customLanguage} structure={structure} customStructure={customStructure}
                 showStructureDropdown={showStructureDropdown} activePreset={activePreset}
@@ -518,6 +557,8 @@ export default function LyricsStudioPage() {
                 blockTypes={BLOCK_TYPES} blockLabels={BLOCK_LABELS} blockColors={BLOCK_COLORS}
                 presets={BLOCK_PRESETS} combinedLyrics={combinedLyrics} copied={copied}
                 onTopicChange={setTopic} onMoodChange={setMood} onStyleChange={setStyle}
+                onTitleChange={setTitle}
+                onGenerateTitle={generateTitleFromLyrics}
                 onLanguageChange={setLanguage} onCustomLanguageChange={setCustomLanguage}
                 onStructureChange={setStructure} onCustomStructureChange={setCustomStructure}
                 onToggleStructureDropdown={() => setShowStructureDropdown((v) => !v)}
