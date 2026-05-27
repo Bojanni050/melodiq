@@ -11,7 +11,11 @@ import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { workspaces } from "@/db/schema";
-import { ensureDefaultWorkspaceForUser, getUserWorkspacesWithTrackIds } from "@/lib/workspaces";
+import {
+  ensureDefaultWorkspaceForUser,
+  ensureWorkspaceSchema,
+  getUserWorkspacesWithTrackIds,
+} from "@/lib/workspaces";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -49,6 +53,8 @@ export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
+
+  await ensureWorkspaceSchema();
 
   const result = await db
     .select()
@@ -137,6 +143,8 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
+
+  await ensureWorkspaceSchema();
 
   try {
     const formData = await request.formData();

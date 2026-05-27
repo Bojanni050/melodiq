@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { tracks, workspaces } from "@/db/schema";
@@ -16,7 +16,34 @@ export type WorkspaceWithTrackIds = {
   parentWorkspaceId?: string | null;
 };
 
+export async function ensureWorkspaceSchema(): Promise<void> {
+  try {
+    await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid`);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name varchar(255) NOT NULL,
+        parent_workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
+        folder_gradient text,
+        is_default boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      )
+    `);
+
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS workspaces_user_idx ON workspaces(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS workspaces_parent_idx ON workspaces(parent_workspace_id)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS workspaces_single_default_per_user_idx ON workspaces(user_id) WHERE is_default = true`);
+  } catch {
+    // If schema updates are blocked by DB permissions, we keep read-path fallbacks active.
+  }
+}
+
 export async function ensureDefaultWorkspaceForUser(userId: string) {
+  await ensureWorkspaceSchema();
+
   const existing = await db
     .select()
     .from(workspaces)
@@ -45,51 +72,69 @@ export async function getUserWorkspacesWithTrackIds(
   userId: string,
   knownTracks?: Array<{ id: string; workspaceId: string | null }>
 ): Promise<WorkspaceWithTrackIds[]> {
-  const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
+  await ensureWorkspaceSchema();
 
-  const workspaceRows = await db
-    .select()
-    .from(workspaces)
-    .where(eq(workspaces.userId, userId))
-    .orderBy(asc(workspaces.createdAt));
+  const fallbackTracks = knownTracks || [];
 
-  const normalizedWorkspaces = workspaceRows.length > 0 ? workspaceRows : [defaultWorkspace];
-  const workspaceIds = new Set(normalizedWorkspaces.map((workspace) => workspace.id));
+  try {
+    const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
 
-  const trackRows =
-    knownTracks ||
-    (await db
-      .select({ id: tracks.id, workspaceId: tracks.workspaceId })
-      .from(tracks)
-      .where(eq(tracks.userId, userId)));
+    const workspaceRows = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.userId, userId))
+      .orderBy(asc(workspaces.createdAt));
 
-  const trackIdsByWorkspace = new Map<string, string[]>();
+    const normalizedWorkspaces = workspaceRows.length > 0 ? workspaceRows : [defaultWorkspace];
+    const workspaceIds = new Set(normalizedWorkspaces.map((workspace) => workspace.id));
 
-  normalizedWorkspaces.forEach((workspace) => {
-    trackIdsByWorkspace.set(workspace.id, []);
-  });
+    const trackRows =
+      knownTracks ||
+      (await db
+        .select({ id: tracks.id, workspaceId: tracks.workspaceId })
+        .from(tracks)
+        .where(eq(tracks.userId, userId)));
 
-  trackRows.forEach((track) => {
-    const targetWorkspaceId =
-      track.workspaceId && workspaceIds.has(track.workspaceId)
-        ? track.workspaceId
-        : defaultWorkspace.id;
+    const trackIdsByWorkspace = new Map<string, string[]>();
 
-    const workspaceTrackIds = trackIdsByWorkspace.get(targetWorkspaceId);
-    if (workspaceTrackIds) {
-      workspaceTrackIds.push(track.id);
-    } else {
-      trackIdsByWorkspace.set(targetWorkspaceId, [track.id]);
-    }
-  });
+    normalizedWorkspaces.forEach((workspace) => {
+      trackIdsByWorkspace.set(workspace.id, []);
+    });
 
-  return normalizedWorkspaces.map((workspace) => ({
-    id: workspace.id,
-    name: workspace.name,
-    trackIds: trackIdsByWorkspace.get(workspace.id) || [],
-    createdAt: workspace.createdAt.toISOString(),
-    folderGradient: workspace.folderGradient || undefined,
-    isDefault: workspace.isDefault,
-    parentWorkspaceId: workspace.parentWorkspaceId,
-  }));
+    trackRows.forEach((track) => {
+      const targetWorkspaceId =
+        track.workspaceId && workspaceIds.has(track.workspaceId)
+          ? track.workspaceId
+          : defaultWorkspace.id;
+
+      const workspaceTrackIds = trackIdsByWorkspace.get(targetWorkspaceId);
+      if (workspaceTrackIds) {
+        workspaceTrackIds.push(track.id);
+      } else {
+        trackIdsByWorkspace.set(targetWorkspaceId, [track.id]);
+      }
+    });
+
+    return normalizedWorkspaces.map((workspace) => ({
+      id: workspace.id,
+      name: workspace.name,
+      trackIds: trackIdsByWorkspace.get(workspace.id) || [],
+      createdAt: workspace.createdAt.toISOString(),
+      folderGradient: workspace.folderGradient || undefined,
+      isDefault: workspace.isDefault,
+      parentWorkspaceId: workspace.parentWorkspaceId,
+    }));
+  } catch {
+    // Hard fallback so track listing keeps working even before DB migration catches up.
+    return [
+      {
+        id: "workspace-default",
+        name: DEFAULT_WORKSPACE_NAME,
+        trackIds: fallbackTracks.map((track) => track.id),
+        createdAt: new Date().toISOString(),
+        isDefault: true,
+        parentWorkspaceId: null,
+      },
+    ];
+  }
 }

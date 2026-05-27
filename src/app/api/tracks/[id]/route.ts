@@ -19,6 +19,7 @@ import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
+import { ensureWorkspaceSchema } from "@/lib/workspaces";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -27,6 +28,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  await ensureWorkspaceSchema();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
@@ -256,6 +258,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  await ensureWorkspaceSchema();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
@@ -342,6 +345,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  await ensureWorkspaceSchema();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
