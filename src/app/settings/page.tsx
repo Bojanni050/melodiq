@@ -14,6 +14,16 @@ import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS } from "@/lib/settings-constants";
 import { applyWebhookDefaults, createModelPlaceholder, LLMModel } from "@/lib/settings-utils";
 
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, index);
+  const precision = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(precision)} ${units[index]}`;
+}
+
 export default function SettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
@@ -118,6 +128,7 @@ export default function SettingsPage() {
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
+  const diskCacheSizeBytes = Number(values.DISK_CACHE_SIZE_BYTES || "0");
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -203,6 +214,16 @@ export default function SettingsPage() {
               </section>
 
               <S3Section values={values} onFieldChange={updateField} />
+
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">Disk Cache</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Current size of the local Next.js disk cache folder.
+                </p>
+                <p className="text-base font-semibold text-white/90">
+                  {formatBytes(diskCacheSizeBytes)}
+                </p>
+              </section>
 
               <ApiLoggingCard
                 enabled={values.ENABLE_API_LOGGING === "true"}

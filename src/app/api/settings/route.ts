@@ -3,8 +3,42 @@ import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
+import { access, readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
 
 export const dynamic = "force-dynamic";
+
+async function getDirectorySizeBytes(dirPath: string): Promise<number> {
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true });
+    let total = 0;
+
+    for (const entry of entries) {
+      const entryPath = join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        total += await getDirectorySizeBytes(entryPath);
+      } else if (entry.isFile()) {
+        const info = await stat(entryPath);
+        total += info.size;
+      }
+    }
+
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+async function getDiskCacheSizeBytes(): Promise<number> {
+  const cachePath = join(process.cwd(), ".next", "cache");
+
+  try {
+    await access(cachePath);
+    return await getDirectorySizeBytes(cachePath);
+  } catch {
+    return 0;
+  }
+}
 
 export async function GET() {
   const auth = await requireAuth();
@@ -24,6 +58,8 @@ export async function GET() {
   if (!settingsMap.POYO_WAV_WEBHOOK_URL && process.env.POYO_WAV_WEBHOOK_URL) {
     settingsMap.POYO_WAV_WEBHOOK_URL = process.env.POYO_WAV_WEBHOOK_URL;
   }
+
+  settingsMap.DISK_CACHE_SIZE_BYTES = String(await getDiskCacheSizeBytes());
 
   return NextResponse.json(settingsMap);
 }
