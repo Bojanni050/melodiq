@@ -447,6 +447,8 @@ export default function LibraryPage() {
                         type="file"
                         multiple
                         accept=".mp3,.wav,audio/mpeg,audio/wav"
+                        aria-label="Upload MP3 or WAV files"
+                        title="Upload MP3 or WAV files"
                         className="hidden"
                         onChange={(event) => handleUploadSelection(event.target.files)}
                       />
