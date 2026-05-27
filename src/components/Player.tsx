@@ -301,6 +301,7 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
+  const lastTrackedPlayIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -410,6 +411,16 @@ export default function Player() {
       }
     };
   }, [volume]);
+
+  useEffect(() => {
+    if (!currentTrack?.id || !isPlaying) return;
+    if (lastTrackedPlayIdRef.current === currentTrack.id) return;
+
+    lastTrackedPlayIdRef.current = currentTrack.id;
+    void fetch(`/api/tracks/${currentTrack.id}/play`, { method: "POST" }).catch(() => {
+      // Ignore analytics tracking failures to avoid interrupting playback UX.
+    });
+  }, [currentTrack?.id, isPlaying]);
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack?.id) return;

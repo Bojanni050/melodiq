@@ -21,6 +21,7 @@ export interface Track {
   rating?: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
+  playCount?: number | null;
 }
 
 interface PlayerState {

@@ -17,6 +17,7 @@ export interface TrackItem {
   coverUrl?: string | null;
   s3KeyCover?: string | null;
   rating?: string | null;
+  playCount?: number | null;
 }
 
 export interface PlaylistOption {
