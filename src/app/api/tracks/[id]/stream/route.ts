@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getPresignedUrl } from "@/lib/s3";
 import { requireAuth } from "@/lib/require-auth";
+import {
+  getCachedAudioStream,
+  getContentType,
+} from "@/lib/audio-cache";
+import fs from "fs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const { searchParams } = new URL(request.url);
@@ -32,18 +36,65 @@ export async function GET(
   }
 
   const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
-  const fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
+  const fmt = hd && track.formatHd ? track.formatHd : track.format ?? "mp3";
 
-  // Presigned URL valid for 5 minutes.
-  const url = await getPresignedUrl(s3Key, 300);
+  try {
+    // Get audio from cache (downloads from S3 on first request)
+    const { filePath, stream } = await getCachedAudioStream(s3Key, fmt);
+    const stats = fs.statSync(filePath);
+    const contentType = getContentType(fmt);
 
-  return NextResponse.json(
-    { url, format: fmt },
-    {
-      headers: {
-        // Cache this response for 4 minutes so the same URL can be reused.
-        "Cache-Control": "private, max-age=240",
-      },
+    // Handle range requests for seeking support
+    const rangeHeader = request.headers.get("range");
+    const fileSize = stats.size;
+
+    if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
+
+      const readStream = fs.createReadStream(filePath, { start, end });
+      const readable = new ReadableStream({
+        start(controller) {
+          readStream.on("data", (chunk) => controller.enqueue(chunk));
+          readStream.on("end", () => controller.close());
+          readStream.on("error", (err) => controller.error(err));
+        },
+      });
+
+      return new NextResponse(readable, {
+        status: 206,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": String(chunkSize),
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
     }
-  );
+
+    // Full file response
+    const readable = new ReadableStream({
+      start(controller) {
+        stream.on("data", (chunk) => controller.enqueue(chunk));
+        stream.on("end", () => controller.close());
+        stream.on("error", (err) => controller.error(err));
+      },
+    });
+
+    return new NextResponse(readable, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": String(fileSize),
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  } catch (error) {
+    console.error("Audio cache error:", error);
+    return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
+  }
 }

@@ -7,9 +7,13 @@ services:
       - "3000:3000"
     env_file:
       - .env.production
+    environment:
+      - CACHE_DIR=/data/audio-cache
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - audio_cache:/data/audio-cache
     networks:
       - sonara_net
 
@@ -33,6 +37,7 @@ services:
 
 volumes:
   postgres_data:
+  audio_cache:
 
 networks:
   sonara_net:
