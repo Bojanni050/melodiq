@@ -1,5 +1,5 @@
 # Sonara — User Guide
-**Versie: wo 03:35**
+**Versie: wo 03:41**
 
 > AI Music Generation Web App
 
@@ -125,6 +125,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Sonara berekent nu per upload een unieke audio-hash (SHA-256) en blokkeert dubbele uploads van exact hetzelfde audiobestand
 - Sonara houdt nu per track bij hoe vaak je die afspeelt; het aantal plays staat onder de trackbeschrijving in de lijst
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
+- Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
 - **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
 - Clicking a playlist card opens that playlist in Songs view
@@ -140,6 +141,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - New generated songs are assigned to **Default Workspace** when no specific workspace is selected
 - If another workspace is currently open/selected in Studio, newly generated songs are assigned to that selected workspace
 - In Studio, workspace cards now have a user grid setting with quick options **4 / 8 / 12 / 16** (saved locally per browser) as the exact number of folders per row
+- In Library Workspaces en op de dedicated Workspaces-pagina kun je in grid mode nu ook **4 / 8 / 12 / 16** kiezen (wordt lokaal opgeslagen)
 - The Studio workspace selector now keeps all folders visible and forces the selected row count exactly
 - Clicking a workspace card in Studio now opens that folder view, hides the other workspace cards, and shows only tracks from that folder
 - In folder view, use the **Back to folders** button or click the **Workspaces** breadcrumb to return to the overview grid
