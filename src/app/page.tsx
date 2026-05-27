@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
