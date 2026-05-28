@@ -8,6 +8,7 @@ interface User {
   id: string;
   email: string;
   name: string | null;
+  artistAlias: string | null;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [artistAlias, setArtistAlias] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,6 +33,7 @@ export default function AccountPage() {
         const data = await res.json();
         setUser(data.user);
         setName(data.user?.name || "");
+        setArtistAlias(data.user?.artistAlias || "");
       } else {
         router.push("/login");
       }
@@ -45,7 +48,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, artistAlias }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -125,6 +128,18 @@ export default function AccountPage() {
                     className="input-field font-mono text-sm"
                     placeholder="Your name"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">Artist alias</label>
+                  <input
+                    type="text"
+                    value={artistAlias}
+                    onChange={(e) => setArtistAlias(e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder="Shown in track view (optional)"
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-white/25 mt-1">If empty, your name is used.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-white/50 mb-1">Email</label>

@@ -14,6 +14,7 @@ export async function GET() {
       id: users.id,
       email: users.email,
       name: users.name,
+      artistAlias: users.artistAlias,
       createdAt: users.createdAt,
     })
     .from(users)

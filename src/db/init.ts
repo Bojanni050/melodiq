@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "email" varchar(255) NOT NULL UNIQUE,
   "password" text NOT NULL,
   "name" varchar(255),
+  "artist_alias" varchar(255),
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -107,6 +108,10 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 `;
 
+const alterUsersSql = `
+ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
+`;
+
 const tracksWorkspaceFkSql = `
 DO $$
 BEGIN
@@ -172,6 +177,7 @@ export async function initializeDatabase(): Promise<void> {
 
   try {
     await executeSqlStatements(targetClient, createTablesSql);
+    await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
