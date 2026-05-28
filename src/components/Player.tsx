@@ -564,7 +564,7 @@ export default function Player() {
 
     const displayTitle = currentTrack.title || currentTrack.prompt.substring(0, 50);
     const suffix = displayTitle ? ` • ${displayTitle}` : "";
-    return `Sonara Player${suffix}`;
+    return `MelodIQ Player${suffix}`;
   }
 
   if (isFullscreen && currentTrack) {

@@ -12,7 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "wo 16:33";
+  const buildVersion = "do 13:17";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -86,7 +86,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             {!collapsed && (
               <div className="flex flex-col leading-tight">
                 <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
-                  Sonara
+                  MelodIQ
                 </span>
                 {buildVersion && (
                   <span className="text-[11px] text-white/35">
@@ -148,7 +148,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             </svg>
             <div className="flex flex-col leading-tight">
               <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
-                Sonara
+                MelodIQ
               </span>
               {buildVersion && (
                 <span className="text-[11px] text-white/35">

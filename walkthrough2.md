@@ -183,3 +183,9 @@
 - Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.
 - Conclusions: Een server-side cap op sanitize-niveau voorkomt te lange output ongeacht providergedrag en houdt de UI-respons consistent.
 - Actions: `src/lib/lyrics-style-suggestion.ts` aangepast met expliciete promptregel `maximum 1000 characters` en harde truncatie naar 1000 tekens in `sanitizeStyleSuggestionResponse`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:51`; `sonara-user.md` bijgewerkt met de 1000-char limiet; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-28 (App-naam hernoemd naar MelodIQ)
+
+- Findings: De app-branding stond op meerdere plekken nog hardcoded als `Sonara` (UI labels, metadata, player status, settings placeholders en documentatie), waardoor de naamswijziging niet consistent was.
+- Conclusions: Een gerichte hernoeming van zichtbare branding en package metadata naar `MelodIQ` geeft een consistente gebruikerservaring zonder technische storage-keys of eventnamen te migreren.
+- Actions: `src/app/layout.tsx`, `src/app/manifest.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/app/login/page.tsx`, `src/components/Player.tsx`, `src/components/settings/WebhooksSection.tsx`, `src/components/settings/S3Section.tsx`, `package.json`, `package-lock.json`, `README.md` en `sonara-user.md` bijgewerkt met `MelodIQ` naming; versiestempel bijgewerkt naar `do 13:17` in `src/components/Sidebar.tsx` en `sonara-user.md`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack NFT-warning), validated.

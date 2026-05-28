@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Sonara',
-    short_name: 'Sonara',
+    name: 'MelodIQ',
+    short_name: 'MelodIQ',
     description: 'AI Music Generation Studio',
     start_url: '/',
     display: 'standalone',

@@ -66,7 +66,7 @@ export default function S3Section({
         </div>
         <div>
           <label className="block text-xs font-medium text-white/50 mb-1">Bucket Name</label>
-          <input type="text" value={values.S3_BUCKET || ""} onChange={(e) => onFieldChange("S3_BUCKET", e.target.value)} className="input-field font-mono text-sm" placeholder="sonara-tracks" />
+          <input type="text" value={values.S3_BUCKET || ""} onChange={(e) => onFieldChange("S3_BUCKET", e.target.value)} className="input-field font-mono text-sm" placeholder="melodiq-tracks" />
         </div>
         <div className="flex items-center gap-2 pt-1">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">

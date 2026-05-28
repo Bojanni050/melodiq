@@ -50,7 +50,7 @@ export default function WebhooksSection({
             value={appUrl}
             onChange={(e) => onFieldChange("APP_URL", e.target.value)}
             className="input-field font-mono text-sm"
-            placeholder="https://sonara.yourdomain.com"
+            placeholder="https://melodiq.yourdomain.com"
           />
           <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
         </div>

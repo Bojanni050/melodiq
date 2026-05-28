@@ -1,6 +1,6 @@
-# Sonara — AI Music Studio
+# MelodIQ — AI Music Studio
 
-Sonara is a **multi-provider AI music generation studio** built with Next.js. Generate songs across multiple AI music engines, manage tracks with workspaces and playlists, and stream high-quality audio — all from one interface.
+MelodIQ is a **multi-provider AI music generation studio** built with Next.js. Generate songs across multiple AI music engines, manage tracks with workspaces and playlists, and stream high-quality audio — all from one interface.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-blue)
@@ -52,8 +52,8 @@ Sonara is a **multi-provider AI music generation studio** built with Next.js. Ge
 
 ```bash
 # Clone the repo
-git clone https://github.com/bojanni050/sonara.git
-cd sonara
+git clone https://github.com/bojanni050/melodiq.git
+cd melodiq
 
 # Install dependencies
 npm install
@@ -92,7 +92,7 @@ npm run dev
 
 ## Music Providers
 
-Sonara supports multiple AI music generation providers:
+MelodIQ supports multiple AI music generation providers:
 
 | Provider | Models | Features |
 |----------|--------|----------|
@@ -127,7 +127,7 @@ The repo includes an automated deploy workflow (`.github/workflows/deploy to vps
 ## Project Structure
 
 ```
-sonara/
+melodiq/
 ├── src/
 │   ├── app/               # Next.js App Router pages & API routes
 │   │   ├── api/           # REST API endpoints

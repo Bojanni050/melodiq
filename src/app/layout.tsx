@@ -3,7 +3,7 @@ import "./globals.css";
 import Player from "@/components/Player";
 
 export const metadata: Metadata = {
-  title: "Sonara — AI Music Studio",
+  title: "MelodIQ — AI Music Studio",
   description: "One prompt. One library. The best AI music models.",
 };
 
