@@ -168,9 +168,14 @@ export default function TrackCard({
 
   useEffect(() => {
     function handleTrackPlayed(event: Event) {
-      const customEvent = event as CustomEvent<{ trackId?: string }>;
+      const customEvent = event as CustomEvent<{ trackId?: string; playCount?: number }>;
       if (customEvent.detail?.trackId !== track.id) return;
-      setOptimisticPlayCount((count) => Math.max(1, count));
+      const nextCount = customEvent.detail?.playCount;
+      if (typeof nextCount === "number" && Number.isFinite(nextCount)) {
+        setOptimisticPlayCount(nextCount);
+        return;
+      }
+      setOptimisticPlayCount((count) => Math.max(1, count + 1));
     }
 
     window.addEventListener("sonara:track-played", handleTrackPlayed);

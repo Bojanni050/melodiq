@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore, useUserStore } from "@/lib/store";
+import type { Track } from "@/lib/store";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
@@ -389,6 +390,8 @@ export default function Player() {
   const { user, loadUser } = useUserStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playToggleCooldownRef = useRef(0);
+  const currentTrackRef = useRef<Track | null>(null);
+  const playCountedTrackIdRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -434,6 +437,10 @@ export default function Player() {
     void loadUser();
   }, [loadUser]);
 
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
+
   const tryPlay = useCallback(async () => {
     if (!audioRef.current) return;
     for (let i = 0; i < 3; i += 1) {
@@ -467,6 +474,41 @@ export default function Player() {
     audioRef.current.volume = volume;
     usePlayerStore.getState().setAudioElement(audioRef.current);
 
+    const countPlayIfNeeded = () => {
+      const trackId = currentTrackRef.current?.id;
+      if (!trackId) return;
+      if (playCountedTrackIdRef.current === trackId) return;
+      playCountedTrackIdRef.current = trackId;
+
+      void (async () => {
+        try {
+          const res = await fetch(`/api/tracks/${trackId}/play`, { method: "POST" });
+          if (!res.ok) return;
+          const data: unknown = await res.json().catch(() => null);
+          const playCount =
+            data && typeof data === "object" && "playCount" in data && typeof (data as { playCount?: unknown }).playCount === "number"
+              ? (data as { playCount: number }).playCount
+              : null;
+
+          if (typeof playCount === "number") {
+            usePlayerStore.setState((state) =>
+              state.currentTrack?.id === trackId
+                ? { currentTrack: { ...state.currentTrack, playCount } }
+                : {}
+            );
+          }
+
+          window.dispatchEvent(
+            new CustomEvent("sonara:track-played", {
+              detail: { trackId, ...(typeof playCount === "number" ? { playCount } : {}) },
+            })
+          );
+        } catch (error) {
+          console.error("Failed to record play:", error);
+        }
+      })();
+    };
+
     const handleTimeUpdate = () => {
       const time = audioRef.current?.currentTime || 0;
       setCurrentTime(time);
@@ -495,6 +537,7 @@ export default function Player() {
     audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
     audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
     audioRef.current.addEventListener("ended", handleEnded);
+    audioRef.current.addEventListener("playing", countPlayIfNeeded);
 
     setCurrentTime(audioRef.current.currentTime || 0);
     setDuration(audioRef.current.duration || 0);
@@ -504,6 +547,7 @@ export default function Player() {
         audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
         audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
         audioRef.current.removeEventListener("ended", handleEnded);
+        audioRef.current.removeEventListener("playing", countPlayIfNeeded);
       }
     };
   }, [volume]);
