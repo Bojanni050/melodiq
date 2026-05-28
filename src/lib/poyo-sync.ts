@@ -28,7 +28,7 @@ function buildVariantTitle(baseTitle: string | null, index: number, variantTitle
   return `${title} (Version ${index + 1})`;
 }
 
-export async function syncPoYoTaskResult(taskId: string, payload: any): Promise<SyncPoYoTaskResult> {
+export async function syncPoYoTaskResult(taskId: string, payload: unknown): Promise<SyncPoYoTaskResult> {
   const existingTracks = await db
     .select()
     .from(tracks)

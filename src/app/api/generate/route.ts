@@ -489,10 +489,8 @@ export async function POST(request: NextRequest) {
   const track = result[0];
 
   try {
-    let genResult: any;
-
     if (provider === "lyria") {
-      genResult = await generateLyria({
+      const genResult = await generateLyria({
         prompt,
         lyrics,
         instrumental,
@@ -657,7 +655,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Direct Minimax API — synchronous
-        genResult = await generateMinimax({
+        const genResult = await generateMinimax({
           prompt,
           lyrics,
           instrumental,
@@ -705,7 +703,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "tempolor") {
-      genResult = await generateTempolor({
+      const genResult = await generateTempolor({
         prompt,
         lyrics,
         instrumental,
@@ -770,7 +768,7 @@ export async function POST(request: NextRequest) {
     if (provider === "musicgpt") {
       const webhookUrl = await getWebhookUrl("musicgpt");
       
-      genResult = await generateMusicGpt({
+      const genResult = await generateMusicGpt({
         prompt,
         lyrics,
         instrumental,

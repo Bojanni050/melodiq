@@ -8,6 +8,21 @@ import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+type PoYoWebhookFile = { audio_url?: string; audio_id?: string | null };
+
+function parsePoYoWebhookFile(value: unknown): PoYoWebhookFile | null {
+  if (!isJsonObject(value)) return null;
+  const audioUrl = typeof value.audio_url === "string" ? value.audio_url : undefined;
+  const audioId = value.audio_id === null || typeof value.audio_id === "string" ? value.audio_id : undefined;
+  return audioUrl || audioId ? { audio_url: audioUrl, audio_id: audioId } : null;
+}
+
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get("secret");
@@ -15,7 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -24,11 +39,14 @@ export async function POST(request: NextRequest) {
 
   console.log("[webhook/poyo] received:", JSON.stringify(body));
 
-  const taskId = body.task_id;
+  if (!isJsonObject(body)) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const taskId = typeof body.task_id === "string" ? body.task_id : undefined;
   const status = getPoYoStatusValue(body);
-  const files = Array.isArray(body.files)
-    ? (body.files as Array<{ audio_url?: string; audio_id?: string | null }>)
-    : [];
+  const filesRaw = Array.isArray(body.files) ? body.files : [];
+  const files = filesRaw.map(parsePoYoWebhookFile).filter((file): file is PoYoWebhookFile => Boolean(file));
 
   if (!taskId) {
     return NextResponse.json({ error: "Missing task_id" }, { status: 400 });
@@ -123,7 +141,7 @@ export async function POST(request: NextRequest) {
   if (status === "failed" || status === "error") {
     await db.update(tracks).set({
       status: "failed",
-      error: body.error_message || "Generation failed",
+      error: typeof body.error_message === "string" ? body.error_message : "Generation failed",
     }).where(eq(tracks.id, track.id!));
     return NextResponse.json({ success: true });
   }

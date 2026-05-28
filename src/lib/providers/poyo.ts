@@ -4,6 +4,38 @@ import { getSetting, getWebhookUrl } from "@/lib/settings";
 const POYO_VALID_MODELS = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
 const MINIMAX_MUSIC_26 = "minimax-music-2.6";
 
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getFromPath(value: unknown, path: string[]): unknown {
+  let current: unknown = value;
+  for (const key of path) {
+    if (!isJsonObject(current)) return undefined;
+    current = current[key];
+  }
+  return current;
+}
+
+function getFirstArray(value: unknown, paths: string[][]): unknown[] {
+  for (const path of paths) {
+    const candidate = getFromPath(value, path);
+    if (Array.isArray(candidate)) return candidate;
+  }
+  return [];
+}
+
+function getStringField(obj: JsonObject, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return undefined;
+}
+
 export function normalizePoYoModel(model?: string): string {
   if (!model) return "V5_5";
   const normalized = model.toUpperCase().replace(/\./g, "_");
@@ -31,8 +63,13 @@ export async function generatePoYo({
   const WEBHOOK_URL = await getWebhookUrl("poyo");
   const startTime = Date.now();
 
+  type PoYoSubmitResponse = {
+    task_id?: string;
+    data?: { task_id?: string };
+  };
+
   try {
-    const response = await axios.post(
+    const response = await axios.post<PoYoSubmitResponse>(
       "https://api.poyo.ai/api/generate/submit",
       {
         model: "generate-music",
@@ -86,10 +123,10 @@ export async function generatePoYo({
   }
 }
 
-export async function getPoYoStatus(jobId: string) {
+export async function getPoYoStatus(jobId: string): Promise<unknown> {
   const API_KEY = await getSetting("POYO_API_KEY");
   try {
-    const response = await axios.get(
+    const response = await axios.get<unknown>(
       `https://api.poyo.ai/api/generate/status/${jobId}`,
       {
         headers: { Authorization: `Bearer ${API_KEY}` },
@@ -105,59 +142,70 @@ function stripQuery(url: string): string {
   return url.split("?")[0];
 }
 
-export function inferVariantKey(file: any, index: number): string {
-  const explicit =
-    file?.audio_id ||
-    file?.audioId ||
-    file?.song_id ||
-    file?.songId ||
-    file?.id ||
-    file?.clip_id ||
-    file?.track_id ||
-    file?.file_id ||
-    file?.fileId;
-  if (explicit) return String(explicit);
+export function inferVariantKey(file: unknown, index: number): string {
+  const obj = isJsonObject(file) ? file : {};
 
-  const url = file?.audio_url || file?.audio_url_hd || file?.wav_url || file?.mp3_url || file?.url || "";
+  const explicit = getStringField(obj, [
+    "audio_id",
+    "audioId",
+    "song_id",
+    "songId",
+    "id",
+    "clip_id",
+    "track_id",
+    "file_id",
+    "fileId",
+  ]);
+  if (explicit) return explicit;
+
+  const url =
+    getStringField(obj, ["audio_url", "audio_url_hd", "wav_url", "mp3_url", "url"]) || "";
   if (!url) return `variant-${index + 1}`;
 
-  const clean = stripQuery(String(url));
+  const clean = stripQuery(url);
   const withoutExt = clean.replace(/\.(mp3|wav)$/i, "");
   return withoutExt.replace(/_(mp3|wav|hd)$/i, "");
 }
 
-export function getPoYoStatusValue(payload: any): string {
-  return String(payload?.status || payload?.data?.status || "").toLowerCase();
+export function getPoYoStatusValue(payload: unknown): string {
+  const status =
+    getStringField(isJsonObject(payload) ? payload : {}, ["status"]) ||
+    getStringField(isJsonObject(getFromPath(payload, ["data"])) ? (getFromPath(payload, ["data"]) as JsonObject) : {}, ["status"]) ||
+    "";
+  return status.toLowerCase();
 }
 
-export function extractPoYoVariants(payload: any): Array<{ audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }> {
-  // Check multiple possible locations for files array
-  const rawFiles: any[] =
-    payload?.files ||
-    payload?.data?.files ||
-    payload?.data?.output?.files ||
-    payload?.data?.result?.files ||
-    payload?.result?.files ||
-    payload?.output?.files ||
-    [];
+export type PoYoVariant = { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string };
 
-  const grouped = new Map<string, { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string }>();
+export function extractPoYoVariants(payload: unknown): PoYoVariant[] {
+  const rawFiles = getFirstArray(payload, [
+    ["files"],
+    ["data", "files"],
+    ["data", "output", "files"],
+    ["data", "result", "files"],
+    ["result", "files"],
+    ["output", "files"],
+  ]);
+
+  const grouped = new Map<string, PoYoVariant>();
 
   rawFiles.forEach((file, index) => {
+    if (!isJsonObject(file)) return;
+
     // Lenient file_type check — only skip if explicitly non-audio
-    const fileType = String(file?.file_type || file?.fileType || file?.type || "").toLowerCase();
-    if (fileType && !["audio", "mp3", "wav", "music"].some(t => fileType.includes(t))) return;
+    const fileType = (getStringField(file, ["file_type", "fileType", "type"]) || "").toLowerCase();
+    if (fileType && !["audio", "mp3", "wav", "music"].some((t) => fileType.includes(t))) return;
 
     const key = inferVariantKey(file, index);
     const existing = grouped.get(key) || {};
 
-    const mp3Url = file?.audio_url || file?.mp3_url || file?.url || file?.download_url || file?.file_url;
-    const wavUrl = file?.audio_url_hd || file?.wav_url || file?.url_hd || file?.download_url_hd;
+    const mp3Url = getStringField(file, ["audio_url", "mp3_url", "url", "download_url", "file_url"]);
+    const wavUrl = getStringField(file, ["audio_url_hd", "wav_url", "url_hd", "download_url_hd"]);
     const fallbackUrl = mp3Url || wavUrl;
 
     const next = {
-      audioId: existing.audioId || file?.audio_id || file?.audioId || file?.file_id || file?.fileId,
-      title: file?.title || file?.name || existing.title,
+      audioId: existing.audioId || getStringField(file, ["audio_id", "audioId", "file_id", "fileId"]),
+      title: getStringField(file, ["title", "name"]) || existing.title,
       audioUrl: existing.audioUrl || mp3Url || (fallbackUrl && /\.mp3(\?|$)/i.test(fallbackUrl) ? fallbackUrl : undefined),
       audioUrlHd:
         existing.audioUrlHd ||
@@ -176,20 +224,25 @@ export function extractPoYoVariants(payload: any): Array<{ audioId?: string; aud
 
   if (variants.length === 0) {
     // Check multiple possible locations for direct audio URL
-    const fallbackAudio =
-      payload?.audio_url ||
-      payload?.data?.audio_url ||
-      payload?.data?.output?.audio_url ||
-      payload?.data?.result?.audio_url ||
-      payload?.result?.audio_url ||
-      payload?.output?.audio_url;
-    const fallbackAudioHd =
-      payload?.audio_url_hd ||
-      payload?.data?.audio_url_hd ||
-      payload?.data?.output?.audio_url_hd ||
-      payload?.data?.result?.audio_url_hd ||
-      payload?.result?.audio_url_hd ||
-      payload?.output?.audio_url_hd;
+    const fallbackAudioCandidate = [
+      getFromPath(payload, ["audio_url"]),
+      getFromPath(payload, ["data", "audio_url"]),
+      getFromPath(payload, ["data", "output", "audio_url"]),
+      getFromPath(payload, ["data", "result", "audio_url"]),
+      getFromPath(payload, ["result", "audio_url"]),
+      getFromPath(payload, ["output", "audio_url"]),
+    ].find((value) => typeof value === "string" && value.trim());
+    const fallbackAudioHdCandidate = [
+      getFromPath(payload, ["audio_url_hd"]),
+      getFromPath(payload, ["data", "audio_url_hd"]),
+      getFromPath(payload, ["data", "output", "audio_url_hd"]),
+      getFromPath(payload, ["data", "result", "audio_url_hd"]),
+      getFromPath(payload, ["result", "audio_url_hd"]),
+      getFromPath(payload, ["output", "audio_url_hd"]),
+    ].find((value) => typeof value === "string" && value.trim());
+
+    const fallbackAudio = typeof fallbackAudioCandidate === "string" ? fallbackAudioCandidate : undefined;
+    const fallbackAudioHd = typeof fallbackAudioHdCandidate === "string" ? fallbackAudioHdCandidate : undefined;
     if (fallbackAudio || fallbackAudioHd) {
       return [{ audioUrl: fallbackAudio || fallbackAudioHd, audioUrlHd: fallbackAudioHd }];
     }
@@ -214,8 +267,13 @@ export async function generateMinimaxMusic26({
   const isInstrumental = instrumental ?? false;
   const hasLyrics = !isInstrumental && lyrics && lyrics.length > 0;
 
+  type PoYoSubmitResponse = {
+    task_id?: string;
+    data?: { task_id?: string };
+  };
+
   try {
-    const response = await axios.post(
+    const response = await axios.post<PoYoSubmitResponse>(
       "https://api.poyo.ai/api/generate/submit",
       {
         model: MINIMAX_MUSIC_26,
