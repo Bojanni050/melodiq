@@ -53,6 +53,8 @@ export async function generatePoYo({
   model,
   title,
   gender,
+  weirdness,
+  styleInfluence,
 }: {
   prompt: string;
   lyrics?: string;
@@ -82,7 +84,9 @@ export async function generatePoYo({
           custom_mode: !!lyrics,
           instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
-          ...(gender ? { gender } : {}),
+          ...(gender ? { vocal_gender: gender === "male" ? "m" : "f" } : {}),
+          ...(weirdness !== undefined ? { weirdness_constraint: weirdness } : {}),
+          ...(styleInfluence !== undefined ? { style_weight: styleInfluence } : {}),
           ...(lyrics
             ? {
                 prompt: lyrics,   // PoYo sings whatever is in `prompt` in custom mode
