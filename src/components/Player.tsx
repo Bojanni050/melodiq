@@ -59,6 +59,15 @@ function formatProviderLabel(provider: string) {
   return provider[0].toUpperCase() + provider.slice(1);
 }
 
+type ActionTimestampRef = { current: number };
+
+function allowWithDelay(ref: ActionTimestampRef, delayMs: number) {
+  const now = Date.now();
+  if (now - ref.current < delayMs) return false;
+  ref.current = now;
+  return true;
+}
+
 function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: AudioSource; audioSourceState: AudioSourceState }) {
   const {
     currentTrack,
@@ -72,6 +81,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioElement = usePlayerStore((state) => state.audioElement);
+  const playToggleCooldownRef = useRef(0);
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
 
   useEffect(() => {
@@ -125,6 +135,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   );
 
   const togglePlay = useCallback(() => {
+    if (!allowWithDelay(playToggleCooldownRef, 350)) return;
     if (!currentTrack) return;
     const nextPlaying = !isPlaying;
     usePlayerStore.getState().setIsPlaying(nextPlaying);
@@ -377,6 +388,7 @@ export default function Player() {
   );
   const { user, loadUser } = useUserStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playToggleCooldownRef = useRef(0);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -598,6 +610,7 @@ export default function Player() {
   }, [currentTrack]);
 
   const togglePlay = useCallback(() => {
+    if (!allowWithDelay(playToggleCooldownRef, 350)) return;
     if (!currentTrack && queue.length > 0) {
       usePlayerStore.getState().playNext();
       return;

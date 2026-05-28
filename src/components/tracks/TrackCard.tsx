@@ -72,6 +72,7 @@ export default function TrackCard({
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const playClickCooldownRef = useRef(0);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const playlistInputRef = useRef<HTMLInputElement | null>(null);
   const workspaceInputRef = useRef<HTMLInputElement | null>(null);
@@ -746,6 +747,9 @@ export default function TrackCard({
         onClick={(e) => {
           e.stopPropagation();
           if (track.status !== "done") return;
+          const now = Date.now();
+          if (now - playClickCooldownRef.current < 350) return;
+          playClickCooldownRef.current = now;
           if (isCurrentlyPlaying) {
             setIsPlaying(!isPlaying);
           } else {
