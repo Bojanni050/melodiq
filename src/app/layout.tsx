@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Player from "@/components/Player";
+import ClientLayout from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "MelodIQ — AI Music Studio",
@@ -20,8 +20,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="antialiased">
-        {children}
-        <Player />
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
