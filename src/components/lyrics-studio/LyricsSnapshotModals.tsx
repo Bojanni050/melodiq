@@ -7,6 +7,9 @@ export default function LyricsSnapshotModals({
   showSaveSnapshotModal,
   savedSnapshots,
   snapshotNameInput,
+  titleMode = false,
+  generatingTitle = false,
+  onGenerateTitle,
   onCloseLoad,
   onCloseSave,
   onSnapshotNameChange,
@@ -18,6 +21,9 @@ export default function LyricsSnapshotModals({
   showSaveSnapshotModal: boolean;
   savedSnapshots: LyricStudioSnapshot[];
   snapshotNameInput: string;
+  titleMode?: boolean;
+  generatingTitle?: boolean;
+  onGenerateTitle?: () => void;
   onCloseLoad: () => void;
   onCloseSave: () => void;
   onSnapshotNameChange: (value: string) => void;
@@ -75,7 +81,7 @@ export default function LyricsSnapshotModals({
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm" onClick={onCloseSave}>
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#11111a] p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white/80">Save lyrics snapshot</h3>
+              <h3 className="text-sm font-semibold text-white/80">{titleMode ? "Save lyrics" : "Save lyrics snapshot"}</h3>
               <button
                 type="button"
                 onClick={onCloseSave}
@@ -85,20 +91,35 @@ export default function LyricsSnapshotModals({
                 x
               </button>
             </div>
+            {titleMode ? (
+              <p className="mb-3 text-xs text-white/45">
+                No title set yet. Generate one from the current lyrics, or enter a title manually.
+              </p>
+            ) : null}
             <input
               type="text"
               value={snapshotNameInput}
               onChange={(event) => onSnapshotNameChange(event.target.value)}
               className="input-field text-sm"
-              placeholder="Snapshot naam"
+              placeholder={titleMode ? "Song title" : "Snapshot naam"}
             />
             <div className="mt-3 flex items-center gap-2">
+              {titleMode && onGenerateTitle ? (
+                <button
+                  type="button"
+                  onClick={onGenerateTitle}
+                  disabled={generatingTitle}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {generatingTitle ? "Generating..." : "Generate title"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={onSaveSnapshot}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
               >
-                Save
+                {titleMode ? "Save lyrics" : "Save"}
               </button>
               <button
                 type="button"

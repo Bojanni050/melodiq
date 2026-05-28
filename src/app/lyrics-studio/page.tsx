@@ -68,6 +68,7 @@ export default function LyricsStudioPage() {
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
   const [showSaveSnapshotModal, setShowSaveSnapshotModal] = useState(false);
   const [snapshotNameInput, setSnapshotNameInput] = useState("");
+  const [saveTitleMode, setSaveTitleMode] = useState(false);
   const [notice, setNotice] = useState<LyricsStudioNotice | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [pendingPresetName, setPendingPresetName] = useState<string | null>(null);
@@ -149,8 +150,32 @@ export default function LyricsStudioPage() {
     setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
   }
 
-  function openSaveSnapshotModal() {
-    setSnapshotNameInput(`Lyrics ${new Date().toLocaleString()}`);
+  function formatSnapshotTimestamp(date: Date) {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+  }
+
+  function toFileSafeNamePart(value: string) {
+    return value
+      .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function buildSnapshotNameFromTitle(value: string) {
+    const base = toFileSafeNamePart(value) || "Untitled";
+    return `${base} - ${formatSnapshotTimestamp(new Date())}`;
+  }
+
+  function handleSaveLyrics() {
+    const trimmedTitle = title.trim();
+    if (trimmedTitle) {
+      saveLyricsSnapshot(buildSnapshotNameFromTitle(trimmedTitle));
+      return;
+    }
+
+    setSaveTitleMode(true);
+    setSnapshotNameInput("");
     setShowSaveSnapshotModal(true);
   }
 
@@ -170,6 +195,7 @@ export default function LyricsStudioPage() {
     setSavedSnapshots(next);
     saveSnapshotsToStorage(next);
     setShowSaveSnapshotModal(false);
+    setSaveTitleMode(false);
     setNotice({ type: "success", message: "Lyrics snapshot opgeslagen." });
   }
 
@@ -433,11 +459,32 @@ export default function LyricsStudioPage() {
 
       setTitle(nextTitle);
       setNotice({ type: "success", message: "Titel gegenereerd." });
+      return nextTitle;
     } catch {
       setNotice({ type: "error", message: "Titel genereren is mislukt." });
     } finally {
       setGeneratingTitle(false);
     }
+  }
+
+  async function generateTitleAndSaveLyrics() {
+    if (!canGenerateTitle) {
+      setNotice({ type: "error", message: "Voeg eerst wat meer lyrics toe om een titel te genereren." });
+      return;
+    }
+    const nextTitle = await generateTitleFromLyrics();
+    if (!nextTitle) return;
+    saveLyricsSnapshot(buildSnapshotNameFromTitle(nextTitle));
+  }
+
+  function saveLyricsWithManualTitleInput() {
+    const nextTitle = snapshotNameInput.trim();
+    if (!nextTitle) {
+      setNotice({ type: "error", message: "Geef eerst een titel op." });
+      return;
+    }
+    setTitle(nextTitle);
+    saveLyricsSnapshot(buildSnapshotNameFromTitle(nextTitle));
   }
 
   function clearAllDraft(force = false) {
@@ -497,7 +544,7 @@ export default function LyricsStudioPage() {
                 <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={openSaveSnapshotModal} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
+                <button type="button" onClick={handleSaveLyrics} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
                   Save lyrics
                 </button>
                 <button type="button" onClick={() => setShowLoadSnapshots(true)} disabled={savedSnapshots.length === 0} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
@@ -521,11 +568,14 @@ export default function LyricsStudioPage() {
               savedSnapshots={savedSnapshots}
               snapshotNameInput={snapshotNameInput}
               onCloseLoad={() => setShowLoadSnapshots(false)}
-              onCloseSave={() => setShowSaveSnapshotModal(false)}
+              onCloseSave={() => { setShowSaveSnapshotModal(false); setSaveTitleMode(false); }}
               onSnapshotNameChange={setSnapshotNameInput}
               onLoadSnapshot={loadLyricsSnapshot}
               onDeleteSnapshot={deleteLyricsSnapshot}
-              onSaveSnapshot={() => saveLyricsSnapshot(snapshotNameInput)}
+              titleMode={saveTitleMode}
+              generatingTitle={generatingTitle}
+              onGenerateTitle={generateTitleAndSaveLyrics}
+              onSaveSnapshot={saveTitleMode ? saveLyricsWithManualTitleInput : () => saveLyricsSnapshot(snapshotNameInput)}
             />
 
             <LyricsConfirmModal
