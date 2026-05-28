@@ -44,6 +44,7 @@ export default function TrackList({
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectedIdsRef = useRef<Set<string>>(new Set());
+  const selectionAnchorIdRef = useRef<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
@@ -132,9 +133,39 @@ export default function TrackList({
       const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));
       return next.size === current.size ? current : next;
     });
+    if (selectionAnchorIdRef.current && !availableIds.has(selectionAnchorIdRef.current)) {
+      selectionAnchorIdRef.current = null;
+    }
   }, [tracks]);
 
-  function toggleSelection(trackId: string) {
+  function toggleSelection(trackId: string, options?: { mode?: "toggle" | "range" }) {
+    const mode = options?.mode ?? "toggle";
+
+    if (mode === "range") {
+      const anchorId = selectionAnchorIdRef.current;
+      const visibleIds = displayedTracks.map((track) => track.id);
+      const anchorIndex = anchorId ? visibleIds.indexOf(anchorId) : -1;
+      const targetIndex = visibleIds.indexOf(trackId);
+
+      setSelectedIds((current) => {
+        if (targetIndex < 0) return current;
+        if (anchorIndex < 0) {
+          const next = new Set(current);
+          next.add(trackId);
+          return next;
+        }
+
+        const start = Math.min(anchorIndex, targetIndex);
+        const end = Math.max(anchorIndex, targetIndex);
+        const next = new Set(current);
+        visibleIds.slice(start, end + 1).forEach((id) => next.add(id));
+        return next;
+      });
+
+      selectionAnchorIdRef.current = trackId;
+      return;
+    }
+
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(trackId)) {
@@ -144,6 +175,8 @@ export default function TrackList({
       }
       return next;
     });
+
+    selectionAnchorIdRef.current = trackId;
   }
 
   function toggleSelectAll() {

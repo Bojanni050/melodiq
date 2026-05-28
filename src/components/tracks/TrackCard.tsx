@@ -39,7 +39,7 @@ export default function TrackCard({
   onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   isSelected?: boolean;
-  onToggleSelect?: (trackId: string) => void;
+  onToggleSelect?: (trackId: string, options?: { mode?: "toggle" | "range" }) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -670,13 +670,19 @@ export default function TrackCard({
         } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
-        onClick={() => onSelect(track)}
+        onClick={(e) => {
+          if (e.shiftKey) {
+            onToggleSelect?.(track.id, { mode: "range" });
+            return;
+          }
+          onSelect(track);
+        }}
       >
       {/* Selection dot */}
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onToggleSelect?.(track.id);
+          onToggleSelect?.(track.id, { mode: e.shiftKey ? "range" : "toggle" });
         }}
         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
         title="Select track"
