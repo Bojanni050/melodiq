@@ -49,77 +49,86 @@ function titleFromFilename(filename: string) {
   return withoutExtension || "Untitled Upload";
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
 
   await ensureWorkspaceSchema();
 
+  const statusFilter = new URL(request.url).searchParams.get("status");
+  const baseWhere = statusFilter
+    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter))
+    : eq(tracks.userId, userId);
+
   const result = await db
     .select()
     .from(tracks)
-    .where(eq(tracks.userId, userId))
+    .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
 
-  const generatingPoYoTracks = Array.from(
-    new Map(
-      result
-        .filter((track) => track.provider === "poyo" && track.status === "generating" && !!track.jobId)
-        .map((track) => [getOriginalPoYoTaskId(track.jobId!), track])
-    ).values()
-  ).slice(0, 5);
+  // PoYo polling and timeout updates only make sense when fetching all statuses.
+  // Skip both when a status filter is active (e.g. ?status=done from the library page).
+  if (!statusFilter) {
+    const generatingPoYoTracks = Array.from(
+      new Map(
+        result
+          .filter((track) => track.provider === "poyo" && track.status === "generating" && !!track.jobId)
+          .map((track) => [getOriginalPoYoTaskId(track.jobId!), track])
+      ).values()
+    ).slice(0, 5);
 
-  const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
+    const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
 
-  // Run PoYo polling and timeout update in parallel — both are independent of each other
-  await Promise.allSettled([
-    generatingPoYoTracks.length > 0
-      ? Promise.allSettled(
-          generatingPoYoTracks.map(async (track) => {
-            try {
-              const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
-              const statusPayload = await getPoYoStatus(sourceJobId);
-              const statusValue = getPoYoStatusValue(statusPayload);
-              if (statusValue === "completed" || statusValue === "finished") {
-                const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
-                const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
-                if (syncedTrackIds.length > 0) {
-                  const syncedTracks = await db
-                    .select()
-                    .from(tracks)
-                    .where(inArray(tracks.id, syncedTrackIds));
+    await Promise.allSettled([
+      generatingPoYoTracks.length > 0
+        ? Promise.allSettled(
+            generatingPoYoTracks.map(async (track) => {
+              try {
+                const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
+                const statusPayload = await getPoYoStatus(sourceJobId);
+                const statusValue = getPoYoStatusValue(statusPayload);
+                if (statusValue === "completed" || statusValue === "finished") {
+                  const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
+                  const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+                  if (syncedTrackIds.length > 0) {
+                    const syncedTracks = await db
+                      .select()
+                      .from(tracks)
+                      .where(inArray(tracks.id, syncedTrackIds));
 
-                  await Promise.allSettled(
-                    syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
-                  );
+                    await Promise.allSettled(
+                      syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
+                    );
+                  }
                 }
+              } catch {
+                // Best-effort fallback polling for missed webhooks.
               }
-            } catch {
-              // Best-effort fallback polling for missed webhooks.
-            }
-          })
-        )
-      : Promise.resolve(),
+            })
+          )
+        : Promise.resolve(),
 
-    // Push timeout detection to SQL — no in-memory loop, no extra round-trip
-    db.update(tracks)
-      .set({ status: "failed", error: "Generation timed out. Please try again." })
-      .where(
-        and(
-          eq(tracks.userId, userId),
-          eq(tracks.status, "generating"),
-          ne(tracks.provider, "musicgpt"),
-          lt(tracks.createdAt, timeoutCutoff)
-        )
-      ),
-  ]);
+      db.update(tracks)
+        .set({ status: "failed", error: "Generation timed out. Please try again." })
+        .where(
+          and(
+            eq(tracks.userId, userId),
+            eq(tracks.status, "generating"),
+            ne(tracks.provider, "musicgpt"),
+            lt(tracks.createdAt, timeoutCutoff)
+          )
+        ),
+    ]);
+  }
 
-  const finalTracks = await db
-    .select()
-    .from(tracks)
-    .where(eq(tracks.userId, userId))
-    .orderBy(desc(tracks.createdAt));
+  const finalTracks = statusFilter
+    ? result
+    : await db
+        .select()
+        .from(tracks)
+        .where(eq(tracks.userId, userId))
+        .orderBy(desc(tracks.createdAt));
 
   const workspacePayload = await getUserWorkspacesWithTrackIds(
     userId,

@@ -115,11 +115,11 @@ export default function LibraryPage() {
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
-    const res = await fetch("/api/tracks");
+    const res = await fetch("/api/tracks?status=done");
     if (activeCheck && !activeCheck()) return;
     if (res.ok) {
       const data = await res.json();
-      setTracks(data.tracks.filter((t: LibraryTrack) => t.status === "done"));
+      setTracks(data.tracks);
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
       }

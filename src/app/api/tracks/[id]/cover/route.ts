@@ -29,5 +29,10 @@ export async function GET(
   }
 
   const url = await getPresignedUrl(track.s3KeyCover);
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, {
+    headers: {
+      // Presigned URL expires in 3600s — cache the redirect for the same duration
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
 }
