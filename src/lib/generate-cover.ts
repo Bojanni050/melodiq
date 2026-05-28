@@ -76,18 +76,20 @@ export async function generateAndSaveCoverArtForBatch(batch: {
     title: string | null;
     instrumental: boolean;
   }>;
-}): Promise<void> {
+}, options?: { forceNew?: boolean }): Promise<void> {
   if (batch.tracks.length === 0) return;
 
   const primary = batch.tracks[0];
 
   try {
-    const existing = await findExistingCover({
-      userId: primary.userId,
-      prompt: primary.prompt,
-    });
-
     let s3KeyCover: string;
+
+    const existing = options?.forceNew
+      ? null
+      : await findExistingCover({
+          userId: primary.userId,
+          prompt: primary.prompt,
+        });
 
     if (existing?.s3KeyCover) {
       s3KeyCover = existing.s3KeyCover;
