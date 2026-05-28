@@ -308,7 +308,6 @@ export default function Player() {
     setVolume,
   } = usePlayerStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const urlCacheRef = useRef<Map<string, string>>(new Map());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -372,16 +371,6 @@ export default function Player() {
         await new Promise((resolve) => setTimeout(resolve, 120));
       }
     }
-  }, []);
-
-  const getAudioUrl = useCallback(async (trackId: string, hd = false): Promise<string> => {
-    const cacheKey = hd ? `${trackId}:hd` : trackId;
-    const cached = urlCacheRef.current.get(cacheKey);
-    if (cached) return cached;
-
-    const streamUrl = `/api/tracks/${trackId}/stream${hd ? "?hd=true" : ""}`;
-    urlCacheRef.current.set(cacheKey, streamUrl);
-    return streamUrl;
   }, []);
 
   useEffect(() => {
@@ -501,7 +490,7 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, detectAudioSource, getAudioUrl, tryPlay]);
+  }, [currentTrack?.id, currentTrack?.audioUrl, detectAudioSource, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {

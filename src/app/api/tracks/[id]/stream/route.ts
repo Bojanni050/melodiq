@@ -51,6 +51,8 @@ export async function GET(
     const fileSize = stats.size;
 
     if (rangeHeader) {
+      stream.destroy(); // not needed for range requests — close the full-file stream
+
       const parts = rangeHeader.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
