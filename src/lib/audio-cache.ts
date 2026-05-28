@@ -52,11 +52,12 @@ export function isCached(s3Key: string, format: string): boolean {
 export async function getCachedAudioStream(
   s3Key: string,
   format: string,
-): Promise<{ filePath: string; stream: fs.ReadStream }> {
+): Promise<{ filePath: string; stream: fs.ReadStream; cached: boolean }> {
   ensureCacheDir();
   const dest = cachePath(s3Key, format);
+  const cached = isCached(s3Key, format);
 
-  if (!isCached(s3Key, format)) {
+  if (!cached) {
     // Download from S3 and cache locally
     const presignedUrl = await getPresignedUrl(s3Key);
     const response = await fetch(presignedUrl);
@@ -78,7 +79,7 @@ export async function getCachedAudioStream(
   const stat = fs.statSync(dest);
   const stream = fs.createReadStream(dest);
 
-  return { filePath: dest, stream };
+  return { filePath: dest, stream, cached };
 }
 
 /**

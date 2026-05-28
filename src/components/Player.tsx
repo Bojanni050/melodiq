@@ -5,11 +5,17 @@ import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
 
 type AudioSource = "cache" | "s3" | "unknown";
+type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
-function AudioSourceBadge({ source }: { source: AudioSource }) {
+function AudioSourceBadge({ source, state }: { source: AudioSource; state: AudioSourceState }) {
   if (source === "unknown") return null;
 
   const isCache = source === "cache";
+  const stateLabel =
+    state === "hit" ? "cache hit" :
+    state === "miss" ? "cache warmup" :
+    state === "fallback" ? "S3 fallback" :
+    "unknown state";
 
   return (
     <span
@@ -18,7 +24,7 @@ function AudioSourceBadge({ source }: { source: AudioSource }) {
           ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
           : "border-sky-400/35 bg-sky-500/10 text-sky-200"
       }`}
-      title={isCache ? "Playing from disk cache" : "Playing directly from S3"}
+      title={isCache ? `Playing from disk cache (${stateLabel})` : `Playing directly from S3 (${stateLabel})`}
     >
       <span className="text-[11px] leading-none">{isCache ? "⚡" : "☁"}</span>
       {isCache ? "Cache" : "S3"}
@@ -40,7 +46,7 @@ function getSharedAudioElement() {
   return window.__sonaraSharedAudioElement;
 }
 
-function FullscreenPlayer({ audioSource }: { audioSource: AudioSource }) {
+function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: AudioSource; audioSourceState: AudioSourceState }) {
   const {
     currentTrack,
     isPlaying,
@@ -164,7 +170,7 @@ function FullscreenPlayer({ audioSource }: { audioSource: AudioSource }) {
                 {currentTrack ? `${currentTrack.provider} • ${currentTrack.providerModel}` : ""}
               </p>
               <div className="mt-2">
-                <AudioSourceBadge source={audioSource} />
+                <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
             </div>
           </div>
@@ -309,8 +315,9 @@ export default function Player() {
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
+  const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
 
-  const detectAudioSource = useCallback(async (streamUrl: string): Promise<AudioSource> => {
+  const detectAudioSource = useCallback(async (streamUrl: string): Promise<{ source: AudioSource; state: AudioSourceState }> => {
     try {
       const response = await fetch(streamUrl, {
         headers: {
@@ -318,14 +325,21 @@ export default function Player() {
         },
       });
 
-      if (!response.ok) return "unknown";
+      if (!response.ok) return { source: "unknown", state: "unknown" };
 
+      const cacheStateHeader = (response.headers.get("x-sonara-audio-cache-state") || "").toLowerCase();
       const sourceHeader = (response.headers.get("x-sonara-audio-source") || "").toLowerCase();
-      if (sourceHeader === "cache") return "cache";
-      if (sourceHeader === "s3") return "s3";
-      return "unknown";
+      if (sourceHeader === "cache") {
+        return { source: "cache", state: cacheStateHeader === "miss" ? "miss" : "hit" };
+      }
+      if (sourceHeader === "s3") {
+        return { source: "s3", state: cacheStateHeader === "fallback" ? "fallback" : "unknown" };
+      }
+      if (cacheStateHeader === "miss") return { source: "cache", state: "miss" };
+      if (cacheStateHeader === "fallback") return { source: "s3", state: "fallback" };
+      return { source: "unknown", state: "unknown" };
     } catch {
-      return "unknown";
+      return { source: "unknown", state: "unknown" };
     }
   }, []);
 
@@ -435,10 +449,12 @@ export default function Player() {
 
       setResolvingUrl(true);
       setAudioSource("unknown");
+      setAudioSourceState("unknown");
 
       const detectedSource = await detectAudioSource(streamUrl);
       if (!cancelled && requestId === requestIdRef.current) {
-        setAudioSource(detectedSource);
+        setAudioSource(detectedSource.source);
+        setAudioSourceState(detectedSource.state);
       }
 
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
@@ -568,7 +584,7 @@ export default function Player() {
   }
 
   if (isFullscreen && currentTrack) {
-    return <FullscreenPlayer audioSource={audioSource} />;
+    return <FullscreenPlayer audioSource={audioSource} audioSourceState={audioSourceState} />;
   }
 
   const isNowPlaying = currentTrack !== null;
@@ -614,7 +630,7 @@ export default function Player() {
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
                 <div className="mt-1">
-                  <AudioSourceBadge source={audioSource} />
+                  <AudioSourceBadge source={audioSource} state={audioSourceState} />
                 </div>
               </div>
             </div>

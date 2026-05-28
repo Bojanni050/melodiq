@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: do 13:17**
+**Versie: do 17:27**
 
 > AI Music Generation Web App
 
@@ -178,6 +178,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Track listings now show which workspace each track belongs to
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
 - **Move To Workspace** now opens a large overlay dialog with a scrollable workspace list, per-workspace clip counts, and an inline create field/button at the bottom
+- Workspace names are now unique (case-insensitive); creating a workspace with an existing name will merge into that workspace instead of creating a duplicate, with a confirmation popup in Move To Workspace
 - Workspaces ondersteunen nu subfolders tot 1 niveau diep: **hoofdfolder -> tracks + subfolder -> tracks**
 - In de Workspaces-pagina zie je in het overzicht alleen hoofdfolders; open een hoofdfolder om subfolders te zien en daar direct een subfolder toe te voegen
 - In Studio kun je nu ook direct in een geopende hoofdfolder een subfolder aanmaken via **+ Add Subfolder**; in subfolders verschijnt deze optie bewust niet
@@ -200,6 +201,7 @@ Click a track to open a slide-out panel with:
 - Album art now stays visible in fullscreen playback, including autoplay/next-track transitions
 - Fullscreen background now has a fuzzy ambient glow based on the current artwork
 - Lyrics are rendered in a smaller font for better readability on dense/long songs
+- The player badge now shows whether audio came from a cache hit, cache warmup, or S3 fallback
 - Playback blijft actief bij navigatie naar andere pagina's zoals Lyric Studio
 
 ---

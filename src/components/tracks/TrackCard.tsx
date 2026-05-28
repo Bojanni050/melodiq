@@ -62,6 +62,8 @@ export default function TrackCard({
   const [workspaceDraftOpen, setWorkspaceDraftOpen] = useState(false);
   const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
   const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
+  const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
+  const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
@@ -312,9 +314,38 @@ export default function TrackCard({
     setShowDuplicatePlaylistDialog(false);
   }
 
+  function confirmWorkspaceMerge() {
+    if (!pendingWorkspaceMerge) return;
+
+    if (onMoveTracksToWorkspace) {
+      onMoveTracksToWorkspace(track.id, pendingWorkspaceMerge.id);
+    } else {
+      moveTrackToWorkspace(pendingWorkspaceMerge.id, track.id);
+      onMoveToWorkspace?.(track.id, pendingWorkspaceMerge.id);
+    }
+
+    setPendingWorkspaceMerge(null);
+    setShowMergeWorkspaceDialog(false);
+    setNewWorkspaceName("");
+    setWorkspaceDraftOpen(false);
+    setWorkspaceMenuOpen(false);
+    setMenuOpen(false);
+  }
+
   function handleCreateWorkspace() {
     const trimmed = newWorkspaceName.trim();
     if (!trimmed) return;
+
+    const normalizedName = trimmed.toLowerCase();
+    const existingWorkspace = workspaces.find(
+      (workspace) => workspace.name.trim().toLowerCase() === normalizedName
+    );
+
+    if (existingWorkspace) {
+      setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
+      setShowMergeWorkspaceDialog(true);
+      return;
+    }
 
     const workspaceId = createWorkspace(trimmed);
     if (workspaceId) {
@@ -587,6 +618,43 @@ export default function TrackCard({
                 className="rounded-lg bg-primary-500/80 px-4 py-1.5 text-sm text-white hover:bg-primary-500 transition-colors"
               >
                 Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showMergeWorkspaceDialog && pendingWorkspaceMerge && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              setShowMergeWorkspaceDialog(false);
+              setPendingWorkspaceMerge(null);
+            }}
+          />
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[440px] max-w-[90vw] flex flex-col gap-4">
+            <h3 className="text-base font-semibold text-white">Workspace name bestaat al</h3>
+            <p className="text-sm text-white/65">
+              Er bestaat al een workspace met deze naam: <span className="text-white/90">{pendingWorkspaceMerge.name}</span>.
+              Wil je de track(s) daaraan toevoegen en de workspaces samenvoegen?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMergeWorkspaceDialog(false);
+                  setPendingWorkspaceMerge(null);
+                }}
+                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+              >
+                Nee
+              </button>
+              <button
+                type="button"
+                onClick={confirmWorkspaceMerge}
+                className="rounded-lg bg-primary-500/80 px-4 py-1.5 text-sm text-white hover:bg-primary-500 transition-colors"
+              >
+                Ja, samenvoegen
               </button>
             </div>
           </div>

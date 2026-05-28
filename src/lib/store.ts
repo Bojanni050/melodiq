@@ -371,6 +371,20 @@ function createDefaultWorkspace(): Workspace {
   };
 }
 
+function normalizeWorkspaceName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function findWorkspaceByName(workspaces: Workspace[], name: string): Workspace | null {
+  const normalized = normalizeWorkspaceName(name);
+  if (!normalized) return null;
+
+  return (
+    workspaces.find((workspace) => normalizeWorkspaceName(workspace.name) === normalized) ||
+    null
+  );
+}
+
 function withDefaultWorkspace(workspaces: Workspace[]) {
   const defaultWorkspace =
     workspaces.find((workspace) => workspace.isDefault) ||
@@ -420,6 +434,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       createWorkspace: (name) => {
         const trimmed = name.trim();
         if (!trimmed) return "";
+
+        const existing = findWorkspaceByName(get().workspaces, trimmed);
+        if (existing) {
+          return existing.id;
+        }
+
         const id =
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
@@ -447,6 +467,11 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       createWorkspaceFolder: (parentWorkspaceId, name) => {
         const trimmed = name.trim();
         if (!trimmed) return "";
+
+        const existing = findWorkspaceByName(get().workspaces, trimmed);
+        if (existing) {
+          return existing.id;
+        }
 
         const parent = get().workspaces.find((workspace) => workspace.id === parentWorkspaceId);
         if (!parent) return "";

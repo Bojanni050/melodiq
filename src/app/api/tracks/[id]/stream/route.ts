@@ -41,9 +41,10 @@ export async function GET(
 
   try {
     // Get audio from cache (downloads from S3 on first request)
-    const { filePath, stream } = await getCachedAudioStream(s3Key, fmt);
+    const { filePath, stream, cached } = await getCachedAudioStream(s3Key, fmt);
     const stats = fs.statSync(filePath);
     const contentType = getContentType(fmt);
+    const cacheState = cached ? "hit" : "miss";
 
     // Handle range requests for seeking support
     const rangeHeader = request.headers.get("range");
@@ -73,6 +74,7 @@ export async function GET(
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=31536000, immutable",
           "X-Sonara-Audio-Source": "cache",
+          "X-Sonara-Audio-Cache-State": cacheState,
         },
       });
     }
@@ -94,6 +96,7 @@ export async function GET(
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=31536000, immutable",
         "X-Sonara-Audio-Source": "cache",
+        "X-Sonara-Audio-Cache-State": cacheState,
       },
     });
   } catch (error) {
@@ -125,6 +128,7 @@ export async function GET(
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=300",
           "X-Sonara-Audio-Source": "s3",
+          "X-Sonara-Audio-Cache-State": "fallback",
         },
       });
     } catch (fallbackError) {

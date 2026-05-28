@@ -23,9 +23,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const rawName = typeof body?.name === "string" ? body.name : "";
     const name = rawName.trim();
+    const normalizedName = name.toLowerCase();
 
     if (!name) {
       return NextResponse.json({ error: "Workspace name is required" }, { status: 400 });
+    }
+
+    const existingWorkspaces = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.userId, auth.userId));
+
+    const existingByName = existingWorkspaces.find(
+      (workspace) => workspace.name.trim().toLowerCase() === normalizedName
+    );
+
+    if (existingByName) {
+      return NextResponse.json({
+        workspace: {
+          id: existingByName.id,
+          name: existingByName.name,
+          trackIds: [],
+          createdAt: existingByName.createdAt.toISOString(),
+          folderGradient: existingByName.folderGradient || undefined,
+          isDefault: existingByName.isDefault,
+          parentWorkspaceId: existingByName.parentWorkspaceId,
+        },
+        merged: true,
+      });
     }
 
     const parentWorkspaceId =
