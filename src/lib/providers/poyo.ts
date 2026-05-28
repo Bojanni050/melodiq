@@ -52,12 +52,16 @@ export async function generatePoYo({
   instrumental,
   model,
   title,
+  gender,
 }: {
   prompt: string;
   lyrics?: string;
   instrumental?: boolean;
   model?: string;
   title?: string;
+  gender?: string;
+  weirdness?: number;
+  styleInfluence?: number;
 }) {
   const API_KEY = await getSetting("POYO_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("poyo");
@@ -78,6 +82,7 @@ export async function generatePoYo({
           custom_mode: !!lyrics,
           instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
+          ...(gender ? { gender } : {}),
           ...(lyrics
             ? {
                 prompt: lyrics,   // PoYo sings whatever is in `prompt` in custom mode

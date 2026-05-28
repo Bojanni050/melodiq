@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { provider, providerModel, prompt, lyrics, instrumental, title } = body;
+  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
@@ -364,6 +364,9 @@ export async function POST(request: NextRequest) {
         instrumental,
         model: normalizedPoYoModel,
         title: resolvedTitle || undefined,
+        gender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined,
+        weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined,
+        styleInfluence: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined,
       });
 
       const jobIds: string[] = genResult.jobIds;

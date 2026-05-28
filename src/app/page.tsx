@@ -383,6 +383,9 @@ export default function HomePage() {
       selectedProviders,
       instrumental,
       autoCreateWorkspaceFromGeneratedTitle,
+      vocalGender,
+      weirdness,
+      styleInfluence,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -429,6 +432,9 @@ export default function HomePage() {
               providerModel,
               language: getEffectiveLanguage(),
               instrumental,
+              vocalGender,
+              weirdness,
+              styleInfluence,
             }),
           }).then(async (res) => {
             const data = await res.json();
