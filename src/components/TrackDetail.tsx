@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useUserStore } from "@/lib/store";
 
 interface TrackDetailProps {
   track: {
@@ -35,6 +36,11 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
+  const { user, loadUser } = useUserStore();
+
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
@@ -78,7 +84,18 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
-  const providerLabel = isUploadedTrack ? "Upload" : track.provider;
+  const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+  const providerLabelBase = isUploadedTrack ? "Upload" : track.provider;
+  const providerLabel = (() => {
+    const normalized = providerLabelBase.toLowerCase();
+    if (normalized === "poyo") return "PoYo";
+    if (normalized === "tempolor") return "Tempolor";
+    if (normalized === "musicgpt") return "MusicGPT";
+    if (normalized === "lyria") return "Lyria";
+    if (normalized === "minimax") return "MiniMax";
+    if (!providerLabelBase) return "";
+    return providerLabelBase[0].toUpperCase() + providerLabelBase.slice(1);
+  })();
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
 
   function formatDuration(seconds: number | null): string {
@@ -122,7 +139,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
         <div>
           <h2 className="text-xl font-bold">{title}</h2>
           <p className="text-sm text-white/40 mt-1">
-            {providerLabel} • {providerModelLabel}
+            {artistLabel ? `${artistLabel} - ` : ""}{providerLabel} • {providerModelLabel}
             {track.duration && (
               <span className="ml-2 text-white/30">• {formatDuration(track.duration)}</span>
             )}

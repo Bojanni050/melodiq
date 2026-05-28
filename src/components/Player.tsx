@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, useUserStore } from "@/lib/store";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
@@ -47,6 +47,17 @@ function getSharedAudioElement() {
   return window.__sonaraSharedAudioElement;
 }
 
+function formatProviderLabel(provider: string) {
+  const normalized = (provider || "").toLowerCase();
+  if (normalized === "poyo") return "PoYo";
+  if (normalized === "tempolor") return "Tempolor";
+  if (normalized === "musicgpt") return "MusicGPT";
+  if (normalized === "lyria") return "Lyria";
+  if (normalized === "minimax") return "MiniMax";
+  if (!provider) return "";
+  return provider[0].toUpperCase() + provider.slice(1);
+}
+
 function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: AudioSource; audioSourceState: AudioSourceState }) {
   const {
     currentTrack,
@@ -55,10 +66,16 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
     setIsFullscreen,
     setVolume,
   } = usePlayerStore();
+  const { user, loadUser } = useUserStore();
   
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioElement = usePlayerStore((state) => state.audioElement);
+  const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
 
   useEffect(() => {
     if (!audioElement) return;
@@ -168,7 +185,9 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                 {currentTrack?.title || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
               <p className="text-sm text-white/60 capitalize">
-                {currentTrack ? `${currentTrack.provider} • ${currentTrack.providerModel}` : ""}
+                {currentTrack
+                  ? `${artistLabel ? `${artistLabel} - ` : ""}${formatProviderLabel(currentTrack.provider)} • ${currentTrack.providerModel}`
+                  : ""}
               </p>
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
@@ -325,6 +344,7 @@ export default function Player() {
       setVolume: s.setVolume,
     }))
   );
+  const { user, loadUser } = useUserStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
@@ -333,6 +353,7 @@ export default function Player() {
   const [resolvingUrl, setResolvingUrl] = useState(false);
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
+  const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
 
   const detectAudioSource = useCallback(async (streamUrl: string): Promise<{ source: AudioSource; state: AudioSourceState }> => {
     try {
@@ -365,6 +386,10 @@ export default function Player() {
       setShowTrackDetailsPanel(false);
     }
   }, [setShowTrackDetailsPanel]);
+
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
 
   const tryPlay = useCallback(async () => {
     if (!audioRef.current) return;
@@ -633,10 +658,10 @@ export default function Player() {
                   {currentTrack.title || currentTrack.prompt.substring(0, 50)}
                 </button>
                 <p className="text-xs text-white/40 truncate">
-                  {currentTrack.provider}
+                  {artistLabel ? `${artistLabel} - ` : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
-                <div className="mt-1">
+                <div className="mt-0.5 -translate-y-0.5">
                   <AudioSourceBadge source={audioSource} state={audioSourceState} />
                 </div>
               </div>
