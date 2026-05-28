@@ -8,6 +8,13 @@
       "when": 1779242346446,
       "tag": "0000_common_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780007769045,
+      "tag": "0001_familiar_mandroid",
+      "breakpoints": true
     }
   ]
 }
