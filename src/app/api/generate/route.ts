@@ -498,21 +498,25 @@ export async function POST(request: NextRequest) {
         returnBothFormats: true,
       });
 
-      // Upload MP3 version
+      // Upload MP3 version (and WAV if available) in parallel
       const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
       const s3Key = `tracks/${track.id}/audio.${format}`;
-      await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
 
-      // Upload WAV version if available (Lyria 3 Pro only)
       let s3KeyHd: string | null = null;
       let formatHd: "mp3" | "wav" | null = null;
       let audioUrlHd: string | null = null;
       if (genResult.audioBufferHd && genResult.mimeTypeHd) {
         formatHd = detectFormatFromContentType(genResult.mimeTypeHd);
         s3KeyHd = `tracks/${track.id}/audio_hd.${formatHd}`;
-        await uploadToS3(s3KeyHd, genResult.audioBufferHd, contentTypeForFormat(formatHd));
         audioUrlHd = `/api/tracks/${track.id}/download?hd=true`;
       }
+
+      await Promise.all([
+        uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format)),
+        ...(s3KeyHd && formatHd && genResult.audioBufferHd
+          ? [uploadToS3(s3KeyHd, genResult.audioBufferHd, contentTypeForFormat(formatHd))]
+          : []),
+      ]);
 
       // Extract actual audio duration
       const audioDuration = await extractAudioDuration(genResult.audioBuffer);

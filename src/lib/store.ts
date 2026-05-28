@@ -332,9 +332,7 @@ function persistWorkspaceCreate(input: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-  }).catch(() => {
-    // Keep local fallback state when persistence fails.
-  });
+  }).catch((error) => console.error("[store] persistWorkspaceCreate failed", error));
 }
 
 function persistWorkspaceDelete(workspaceId: string) {
@@ -342,9 +340,7 @@ function persistWorkspaceDelete(workspaceId: string) {
 
   void fetch(`/api/workspaces/${workspaceId}`, {
     method: "DELETE",
-  }).catch(() => {
-    // Keep local fallback state when persistence fails.
-  });
+  }).catch((error) => console.error("[store] persistWorkspaceDelete failed", error));
 }
 
 function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string) {
@@ -354,9 +350,7 @@ function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string) {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ workspaceId }),
-  }).catch(() => {
-    // Keep local fallback state when persistence fails.
-  });
+  }).catch((error) => console.error("[store] persistTrackWorkspaceAssignment failed", error));
 }
 
 function createDefaultWorkspace(): Workspace {

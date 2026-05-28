@@ -77,10 +77,12 @@ export async function POST(request: NextRequest) {
       // Extract duration from primary audio
       const duration = await extractAudioDuration(mp3Buffer);
 
-      await uploadToS3(s3Key, mp3Buffer, contentTypeForFormat(format));
-      if (hdRes && s3KeyHd && formatHd) {
-        await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
-      }
+      await Promise.all([
+        uploadToS3(s3Key, mp3Buffer, contentTypeForFormat(format)),
+        ...(hdRes && s3KeyHd && formatHd
+          ? [uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd))]
+          : []),
+      ]);
 
       await db.update(tracks).set({
         status: "done",

@@ -150,10 +150,12 @@ export async function GET(
           ? `tracks/${track.id}/audio_hd.${formatHd}`
           : null;
 
-        await uploadToS3(s3Key, Buffer.from(mp3Res.data), contentTypeForFormat(format));
-        if (hdRes && s3KeyHd) {
-          await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd!));
-        }
+        await Promise.all([
+          uploadToS3(s3Key, Buffer.from(mp3Res.data), contentTypeForFormat(format)),
+          ...(hdRes && s3KeyHd
+            ? [uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd!))]
+            : []),
+        ]);
 
         const updated = await db
           .update(tracks)

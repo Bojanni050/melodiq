@@ -81,25 +81,26 @@ export async function POST(request: NextRequest) {
           .from(tracks)
           .where(inArray(tracks.id, allSyncedIds));
 
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const trackId = syncResult.variantIndexToTrackId[i];
-          if (!file.audio_id || !trackId) continue;
+        await Promise.allSettled(
+          files.map(async (file, i) => {
+            const trackId = syncResult.variantIndexToTrackId[i];
+            if (!file.audio_id || !trackId) return;
 
-          await db
-            .update(tracks)
-            .set({ audioId: file.audio_id })
-            .where(eq(tracks.id, trackId));
+            await db
+              .update(tracks)
+              .set({ audioId: file.audio_id })
+              .where(eq(tracks.id, trackId));
 
-          const trackForFile = syncedTracks.find((t) => t.id === trackId);
-          if (trackForFile) {
-            await requestMissingWavConversion({
-              ...trackForFile,
-              jobId: taskId,
-              audioId: file.audio_id,
-            });
-          }
-        }
+            const trackForFile = syncedTracks.find((t) => t.id === trackId);
+            if (trackForFile) {
+              await requestMissingWavConversion({
+                ...trackForFile,
+                jobId: taskId,
+                audioId: file.audio_id,
+              });
+            }
+          })
+        );
 
         // Fire cover art for all synced tracks as one batch
         if (syncedTracks.length > 0) {
