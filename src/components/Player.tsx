@@ -660,7 +660,7 @@ export default function Player() {
         {getStatusString()}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-40 overflow-hidden relative">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-40 overflow-hidden">
         {playerCoverUrl ? (
           <div aria-hidden="true" className="absolute inset-0">
             <img

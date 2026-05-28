@@ -977,7 +977,7 @@ export default function HomePage() {
                           <TrackList
                             tracks={selectedWorkspaceTracks}
                             autoQueueAfterPlay
-                            onSelect={(t) => setSelectedTrack(t)}
+                            onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
                             onDelete={handleDeleteTrack}
                             onReusePrompt={handleReusePrompt}
                             onAddToQueue={handleAddToQueue}
@@ -1009,7 +1009,7 @@ export default function HomePage() {
                           enableDragReorder={false}
                           autoQueueAfterPlay
                           isGenerating={generating}
-                          onSelect={(t) => setSelectedTrack(t)}
+                          onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
                           onDelete={handleDeleteTrack}
                           onReusePrompt={handleReusePrompt}
                           onAddToQueue={handleAddToQueue}
