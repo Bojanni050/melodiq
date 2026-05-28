@@ -29,6 +29,8 @@ COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/src/db ./src/db
 COPY --from=builder /app/node_modules ./node_modules
 
+RUN mkdir -p /data/audio-cache && chown nextjs:nodejs /data/audio-cache
+
 USER nextjs
 
 EXPOSE 3000
