@@ -15,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="https://www.melodiq.nl/favicon.png" />
         <meta name="theme-color" content="#0d0d12" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
