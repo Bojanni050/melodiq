@@ -487,6 +487,7 @@ export default function TrackList({
                   onMoveTracksToWorkspace={handleMoveToWorkspace}
                   playlists={playlists}
                   isSelected={selectedIds.has(track.id)}
+                  selectedTrackIds={Array.from(selectedIds)}
                   onToggleSelect={toggleSelection}
                   onTitleUpdate={onTitleUpdate}
                 />

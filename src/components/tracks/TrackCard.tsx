@@ -20,6 +20,7 @@ export default function TrackCard({
   onMoveTracksToWorkspace,
   playlists,
   isSelected,
+  selectedTrackIds,
   onToggleSelect,
   onTitleUpdate,
 }: {
@@ -39,6 +40,7 @@ export default function TrackCard({
   onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   isSelected?: boolean;
+  selectedTrackIds?: string[];
   onToggleSelect?: (trackId: string, options?: { mode?: "toggle" | "range" }) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
@@ -170,6 +172,19 @@ export default function TrackCard({
     return () => window.removeEventListener("sonara:track-played", handleTrackPlayed);
   }, [track.id]);
 
+  useEffect(() => {
+    function handleCoverRegenerated(event: Event) {
+      const customEvent = event as CustomEvent<{ trackIds?: string[]; ts?: number }>;
+      const ids = customEvent.detail?.trackIds;
+      if (!Array.isArray(ids) || !ids.includes(track.id)) return;
+      const ts = typeof customEvent.detail?.ts === "number" ? customEvent.detail.ts : Date.now();
+      setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${ts}`);
+    }
+
+    window.addEventListener("sonara:cover-regenerated", handleCoverRegenerated);
+    return () => window.removeEventListener("sonara:cover-regenerated", handleCoverRegenerated);
+  }, [track.id]);
+
   async function executeDelete() {
     setConfirmDelete(false);
     setDeleting(true);
@@ -195,14 +210,31 @@ export default function TrackCard({
 
     setIsRegeneratingCover(true);
     try {
-      const res = await fetch(`/api/tracks/${track.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ regenerateCoverArt: true }),
-      });
+      const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
+      const shouldBatch = selection.length > 1 && selection.includes(track.id);
 
-      if (res.ok) {
-        setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+      if (shouldBatch) {
+        const trackIds = [track.id, ...selection.filter((id) => id !== track.id)];
+        const res = await fetch("/api/tracks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ regenerateCoverArt: true, trackIds }),
+        });
+
+        if (res.ok) {
+          const ts = Date.now();
+          window.dispatchEvent(new CustomEvent("sonara:cover-regenerated", { detail: { trackIds, ts } }));
+        }
+      } else {
+        const res = await fetch(`/api/tracks/${track.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ regenerateCoverArt: true }),
+        });
+
+        if (res.ok) {
+          setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+        }
       }
     } catch {
       // silently fail
