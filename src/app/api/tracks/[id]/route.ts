@@ -23,6 +23,23 @@ import { ensureWorkspaceSchema } from "@/lib/workspaces";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getPoYoErrorMessage(payload: unknown): string | null {
+  if (!isJsonObject(payload)) return null;
+  const direct = payload.error;
+  if (typeof direct === "string" && direct.trim()) return direct;
+  const data = payload.data;
+  if (!isJsonObject(data)) return null;
+  const nested = data.error;
+  if (typeof nested === "string" && nested.trim()) return nested;
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -93,9 +110,10 @@ export async function GET(
       }
 
       if (statusValue === "failed" || statusValue === "error") {
+        const errorMessage = getPoYoErrorMessage(status) || "Generation failed";
         const updated = await db
           .update(tracks)
-          .set({ status: "failed", error: status.error || status?.data?.error || "Generation failed" })
+          .set({ status: "failed", error: errorMessage })
           .where(eq(tracks.id, track.id!))
           .returning();
         return NextResponse.json(updated[0]);
@@ -273,8 +291,14 @@ export async function PATCH(
   }
 
   try {
-    const body = await request.json();
-    const { title, regenerateCoverArt, workspaceId } = body;
+    const body: unknown = await request.json();
+    if (!isJsonObject(body)) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    const title = body.title;
+    const regenerateCoverArt = body.regenerateCoverArt;
+    const workspaceId = body.workspaceId;
 
     if (title === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
@@ -304,7 +328,17 @@ export async function PATCH(
     const updates: Partial<typeof tracks.$inferInsert> = {};
 
     if (title !== undefined) {
-      updates.title = title;
+      if (title === null) {
+        updates.title = null;
+      } else if (typeof title === "string") {
+        const trimmed = title.trim();
+        if (trimmed.length > 255) {
+          return NextResponse.json({ error: "Title too long (max 255 characters)" }, { status: 400 });
+        }
+        updates.title = trimmed ? trimmed : null;
+      } else {
+        return NextResponse.json({ error: "Invalid title" }, { status: 400 });
+      }
     }
 
     if (workspaceId !== undefined) {
@@ -324,6 +358,12 @@ export async function PATCH(
         updates.workspaceId = targetWorkspace[0].id;
       } else {
         return NextResponse.json({ error: "Invalid workspaceId" }, { status: 400 });
+      }
+    }
+
+    if (regenerateCoverArt !== undefined && regenerateCoverArt !== true) {
+      if (typeof regenerateCoverArt !== "boolean") {
+        return NextResponse.json({ error: "Invalid regenerateCoverArt" }, { status: 400 });
       }
     }
 
