@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -55,6 +55,7 @@ export default function WorkspaceDetailPage() {
   const router = useRouter();
   const workspaceId = params?.workspaceId;
 
+  const { currentTrack } = usePlayerStore();
   const { playlists, addTrackToPlaylist } = usePlaylistStore();
   const {
     workspaces,
@@ -134,6 +135,30 @@ export default function WorkspaceDetailPage() {
     [selectedWorkspace, tracks],
   );
 
+  const defaultSortedWorkspaceTracks = useMemo(() => {
+    const list = [...selectedWorkspaceTracks];
+    list.sort((left, right) => {
+      const leftTime = Number(new Date(left.createdAt));
+      const rightTime = Number(new Date(right.createdAt));
+      if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
+      return rightTime - leftTime;
+    });
+    return list;
+  }, [selectedWorkspaceTracks]);
+
+  const headerCoverUrl = useMemo(() => {
+    const coverUrlForTrack = (track: { id: string; coverUrl?: string | null; s3KeyCover?: string | null } | null) =>
+      track?.coverUrl || (track?.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
+
+    const firstTrack = defaultSortedWorkspaceTracks[0] ?? null;
+
+    if (currentTrack && selectedWorkspace?.trackIds.includes(currentTrack.id)) {
+      return coverUrlForTrack(currentTrack);
+    }
+
+    return coverUrlForTrack(firstTrack);
+  }, [currentTrack, defaultSortedWorkspaceTracks, selectedWorkspace?.trackIds]);
+
   function backToFolderView() {
     if (selectedWorkspaceParent) {
       router.push(`/workspaces/${selectedWorkspaceParent.id}`);
@@ -192,8 +217,20 @@ export default function WorkspaceDetailPage() {
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex flex-col">
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24">
           <div className="max-w-[1600px] mx-auto space-y-6">
-            <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+            <section className="relative overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+              {headerCoverUrl ? (
+                <div aria-hidden="true" className="absolute inset-0">
+                  <img
+                    src={headerCoverUrl}
+                    alt=""
+                    className="h-full w-full object-cover scale-125 blur-2xl opacity-55"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_45%),linear-gradient(135deg,rgba(9,9,13,0.35)_0%,rgba(9,9,13,0.86)_70%,rgba(9,9,13,0.98)_100%)]" />
+                </div>
+              ) : null}
+
+              <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <button
                     type="button"
