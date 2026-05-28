@@ -16,10 +16,18 @@ import {
   ensureWorkspaceSchema,
   getUserWorkspacesWithTrackIds,
 } from "@/lib/workspaces";
+import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 const MAX_FILES_PER_UPLOAD = 20;
+const MAX_TRACKS_PER_COVER_REGEN = 50;
+
+type JsonObject = Record<string, unknown>;
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function detectUploadFormat(file: File): "mp3" | "wav" | null {
   const type = file.type.toLowerCase();
@@ -136,6 +144,79 @@ export async function GET(request: NextRequest) {
   );
 
   return NextResponse.json({ tracks: finalTracks, workspaces: workspacePayload });
+}
+
+export async function PATCH(request: NextRequest) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
+
+  const body: unknown = await request.json();
+  if (!isJsonObject(body)) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const regenerateCoverArt = body.regenerateCoverArt;
+  const trackIds = body.trackIds;
+
+  if (regenerateCoverArt !== true || !Array.isArray(trackIds)) {
+    return NextResponse.json({ error: "Unsupported operation" }, { status: 400 });
+  }
+
+  const normalizedIds = Array.from(
+    new Set(
+      trackIds
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  );
+
+  if (normalizedIds.length === 0) {
+    return NextResponse.json({ error: "No trackIds provided" }, { status: 400 });
+  }
+
+  if (normalizedIds.length > MAX_TRACKS_PER_COVER_REGEN) {
+    return NextResponse.json(
+      { error: `Too many tracks selected (max ${MAX_TRACKS_PER_COVER_REGEN})` },
+      { status: 400 }
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: tracks.id,
+      userId: tracks.userId,
+      title: tracks.title,
+      prompt: tracks.prompt,
+      instrumental: tracks.instrumental,
+    })
+    .from(tracks)
+    .where(and(eq(tracks.userId, userId), inArray(tracks.id, normalizedIds)));
+
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "Tracks not found" }, { status: 404 });
+  }
+
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  const ordered = normalizedIds
+    .map((id) => rowById.get(id))
+    .filter((row): row is (typeof rows)[number] => Boolean(row));
+
+  await generateAndSaveCoverArtForBatch(
+    {
+      tracks: ordered.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        prompt: t.prompt,
+        title: t.title ?? null,
+        instrumental: t.instrumental,
+      })),
+    },
+    { forceNew: true }
+  );
+
+  return NextResponse.json({ success: true, trackIds: ordered.map((t) => t.id) });
 }
 
 export async function POST(request: NextRequest) {
