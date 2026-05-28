@@ -7,7 +7,7 @@ import TrackCard from "@/components/tracks/TrackCard";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore } from "@/lib/store";
 
-type SortOrder = "newest" | "oldest";
+type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 
 export default function TrackList({
   tracks,
@@ -59,6 +59,13 @@ export default function TrackList({
     const list = [...tracks];
 
     list.sort((left, right) => {
+      if (sortOrder === "title-asc" || sortOrder === "title-desc") {
+        const leftTitle = (left.title || left.prompt || "").trim();
+        const rightTitle = (right.title || right.prompt || "").trim();
+        const titleComparison = leftTitle.localeCompare(rightTitle, undefined, { sensitivity: "base" });
+        if (titleComparison !== 0) return sortOrder === "title-asc" ? titleComparison : -titleComparison;
+      }
+
       const leftTime = Number(new Date(left.createdAt));
       const rightTime = Number(new Date(right.createdAt));
 
@@ -255,8 +262,10 @@ export default function TrackList({
 
     moveIds.forEach((trackId) => {
       moveTrackToWorkspace(workspaceId, trackId);
-      onMoveToWorkspace?.(trackId, workspaceId);
     });
+
+    // Call once for navigation / server-side workspace selection
+    onMoveToWorkspace?.(sourceTrackId, workspaceId);
 
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
@@ -442,6 +451,8 @@ export default function TrackList({
             >
               <option value="newest" className="bg-[#161621]">New to old</option>
               <option value="oldest" className="bg-[#161621]">Old to new</option>
+              <option value="title-asc" className="bg-[#161621]">A to Z</option>
+              <option value="title-desc" className="bg-[#161621]">Z to A</option>
             </select>
           </div>
         </div>

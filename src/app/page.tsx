@@ -982,6 +982,7 @@ export default function HomePage() {
                             onReusePrompt={handleReusePrompt}
                             onAddToQueue={handleAddToQueue}
                             onAddToPlaylist={handleAddToPlaylist}
+                            onMoveToWorkspace={handleMoveTrackToWorkspace}
                             playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                             onTitleUpdate={handleTitleUpdate}
                           />
