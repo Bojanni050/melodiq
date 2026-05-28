@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, ne, lt } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
 import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
@@ -70,66 +70,56 @@ export async function GET() {
     ).values()
   ).slice(0, 5);
 
-  if (generatingPoYoTracks.length > 0) {
-    await Promise.allSettled(
-      generatingPoYoTracks.map(async (track) => {
-        try {
-          const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
-          const statusPayload = await getPoYoStatus(sourceJobId);
-          const statusValue = getPoYoStatusValue(statusPayload);
-          if (statusValue === "completed" || statusValue === "finished") {
-            const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
-            const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
-            if (syncedTrackIds.length > 0) {
-              const syncedTracks = await db
-                .select()
-                .from(tracks)
-                .where(inArray(tracks.id, syncedTrackIds));
+  const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
 
-              await Promise.allSettled(
-                syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
-              );
+  // Run PoYo polling and timeout update in parallel — both are independent of each other
+  await Promise.allSettled([
+    generatingPoYoTracks.length > 0
+      ? Promise.allSettled(
+          generatingPoYoTracks.map(async (track) => {
+            try {
+              const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
+              const statusPayload = await getPoYoStatus(sourceJobId);
+              const statusValue = getPoYoStatusValue(statusPayload);
+              if (statusValue === "completed" || statusValue === "finished") {
+                const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
+                const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+                if (syncedTrackIds.length > 0) {
+                  const syncedTracks = await db
+                    .select()
+                    .from(tracks)
+                    .where(inArray(tracks.id, syncedTrackIds));
+
+                  await Promise.allSettled(
+                    syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
+                  );
+                }
+              }
+            } catch {
+              // Best-effort fallback polling for missed webhooks.
             }
-          }
-        } catch {
-          // Best-effort fallback polling for missed webhooks.
-        }
-      })
-    );
-  }
+          })
+        )
+      : Promise.resolve(),
 
-  const refreshedResult = await db
+    // Push timeout detection to SQL — no in-memory loop, no extra round-trip
+    db.update(tracks)
+      .set({ status: "failed", error: "Generation timed out. Please try again." })
+      .where(
+        and(
+          eq(tracks.userId, userId),
+          eq(tracks.status, "generating"),
+          ne(tracks.provider, "musicgpt"),
+          lt(tracks.createdAt, timeoutCutoff)
+        )
+      ),
+  ]);
+
+  const finalTracks = await db
     .select()
     .from(tracks)
     .where(eq(tracks.userId, userId))
     .orderBy(desc(tracks.createdAt));
-
-  const now = Date.now();
-  const timedOutIds: string[] = [];
-
-  for (const track of refreshedResult) {
-    if (track.status === "generating" && track.createdAt && track.provider !== "musicgpt") {
-      const elapsed = now - new Date(track.createdAt).getTime();
-      if (elapsed > GENERATION_TIMEOUT_MS) {
-        timedOutIds.push(track.id!);
-      }
-    }
-  }
-
-  let finalTracks = refreshedResult;
-
-  if (timedOutIds.length > 0) {
-    await db
-      .update(tracks)
-      .set({ status: "failed", error: "Generation timed out. Please try again." })
-      .where(inArray(tracks.id, timedOutIds));
-
-    finalTracks = await db
-      .select()
-      .from(tracks)
-      .where(eq(tracks.userId, userId))
-      .orderBy(desc(tracks.createdAt));
-  }
 
   const workspacePayload = await getUserWorkspacesWithTrackIds(
     userId,

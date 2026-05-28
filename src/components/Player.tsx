@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { usePlayerStore } from "@/lib/store";
 import { useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 type AudioSource = "cache" | "s3" | "unknown";
 type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -306,7 +307,24 @@ export default function Player() {
     setShowTrackDetailsPanel,
     setIsFullscreen,
     setVolume,
-  } = usePlayerStore();
+  } = usePlayerStore(
+    useShallow((s) => ({
+      currentTrack: s.currentTrack,
+      queue: s.queue,
+      history: s.history,
+      isPlaying: s.isPlaying,
+      volume: s.volume,
+      autoPlayNext: s.autoPlayNext,
+      showTrackDetailsPanel: s.showTrackDetailsPanel,
+      isFullscreen: s.isFullscreen,
+      playNext: s.playNext,
+      playPrevious: s.playPrevious,
+      setAutoPlayNext: s.setAutoPlayNext,
+      setShowTrackDetailsPanel: s.setShowTrackDetailsPanel,
+      setIsFullscreen: s.setIsFullscreen,
+      setVolume: s.setVolume,
+    }))
+  );
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);

@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -54,7 +55,11 @@ export const tracks = pgTable("tracks", {
   playCount: integer("play_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("tracks_user_id_idx").on(table.userId),
+  index("tracks_user_id_status_idx").on(table.userId, table.status),
+  index("tracks_status_idx").on(table.status),
+]);
 
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -65,7 +70,9 @@ export const workspaces = pgTable("workspaces", {
   isDefault: boolean("is_default").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("workspaces_user_id_idx").on(table.userId),
+]);
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   user: one(users, {

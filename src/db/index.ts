@@ -18,5 +18,9 @@ function getConnectionString(): string {
 	}
 }
 
-const client = postgres(getConnectionString());
+const client = postgres(getConnectionString(), {
+  max: 20,
+  idle_timeout: 30,
+  connect_timeout: 10,
+});
 export const db = drizzle(client, { schema });
