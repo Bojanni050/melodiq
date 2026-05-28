@@ -41,8 +41,10 @@ export default function TrackList({
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const hasScrolledToRestoredTrack = useRef(false);
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const selectionAnchorIdRef = useRef<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
@@ -126,6 +128,22 @@ export default function TrackList({
       return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
     });
   }, [orderedTracks, searchQuery]);
+
+  useEffect(() => {
+    if (hasScrolledToRestoredTrack.current) return;
+    if (!currentTrack) return;
+    if (!tracks.some((t) => t.id === currentTrack.id)) return;
+
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        hasScrolledToRestoredTrack.current = true;
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentTrack, tracks]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
@@ -467,6 +485,7 @@ export default function TrackList({
             return (
               <div
                 key={track.id}
+                data-track-id={track.id}
                 draggable={canDragReorder}
                 onDragStart={(event) => handleTrackDragStart(event, track.id)}
                 onDragOver={(event) => handleTrackDragOver(event, track.id)}
