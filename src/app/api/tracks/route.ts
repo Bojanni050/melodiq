@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
 
   // PoYo polling and timeout updates only make sense when fetching all statuses.
   // Skip both when a status filter is active (e.g. ?status=done from the library page).
+  let hadGeneratingPoYo = false;
   if (!statusFilter) {
     const generatingPoYoTracks = Array.from(
       new Map(
@@ -88,8 +89,9 @@ export async function GET(request: NextRequest) {
 
     const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
 
+    hadGeneratingPoYo = generatingPoYoTracks.length > 0;
     await Promise.allSettled([
-      generatingPoYoTracks.length > 0
+      hadGeneratingPoYo
         ? Promise.allSettled(
             generatingPoYoTracks.map(async (track) => {
               try {
@@ -130,13 +132,10 @@ export async function GET(request: NextRequest) {
     ]);
   }
 
-  const finalTracks = statusFilter
-    ? result
-    : await db
-        .select()
-        .from(tracks)
-        .where(eq(tracks.userId, userId))
-        .orderBy(desc(tracks.createdAt));
+  // Re-fetch only when PoYo syncing may have mutated rows; otherwise reuse the initial query result.
+  const finalTracks = hadGeneratingPoYo
+    ? await db.select().from(tracks).where(eq(tracks.userId, userId)).orderBy(desc(tracks.createdAt))
+    : result;
 
   const workspacePayload = await getUserWorkspacesWithTrackIds(
     userId,

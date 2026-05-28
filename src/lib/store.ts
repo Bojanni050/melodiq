@@ -385,6 +385,7 @@ interface WorkspaceState {
   createWorkspace: (name: string) => string;
   createWorkspaceFolder: (parentWorkspaceId: string, name: string) => string;
   moveTrackToWorkspace: (workspaceId: string, trackId: string) => void;
+  moveTracksToWorkspace: (workspaceId: string, trackIds: string[]) => void;
   removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
@@ -593,6 +594,22 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 ...workspace,
                 trackIds: workspace.trackIds.filter((id) => id !== trackId),
               };
+            }),
+          };
+        }),
+      moveTracksToWorkspace: (workspaceId, trackIds) =>
+        set((state) => {
+          const targetWorkspace = state.workspaces.find((w) => w.id === workspaceId);
+          if (!targetWorkspace) return state;
+          const trackIdSet = new Set(trackIds);
+          return {
+            workspaces: state.workspaces.map((workspace) => {
+              if (workspace.id === workspaceId) {
+                const existing = new Set(workspace.trackIds);
+                const toAdd = trackIds.filter((id) => !existing.has(id));
+                return { ...workspace, trackIds: [...workspace.trackIds, ...toAdd] };
+              }
+              return { ...workspace, trackIds: workspace.trackIds.filter((id) => !trackIdSet.has(id)) };
             }),
           };
         }),

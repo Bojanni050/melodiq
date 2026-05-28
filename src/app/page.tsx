@@ -72,6 +72,7 @@ export default function HomePage() {
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const createWorkspaceFolder = useWorkspaceStore((state) => state.createWorkspaceFolder);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const moveTracksToWorkspace = useWorkspaceStore((state) => state.moveTracksToWorkspace);
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
   const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
   const hydrateWorkspacesFromServer = useWorkspaceStore((state) => state.hydrateWorkspacesFromServer);
@@ -154,11 +155,11 @@ export default function HomePage() {
 
     const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
 
-    const timer = setInterval(() => {
+    const timer = setTimeout(() => {
       fetchTracks();
     }, interval);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [tracks]);
 
   useEffect(() => {
@@ -410,16 +411,11 @@ export default function HomePage() {
       : ensureDefaultWorkspace();
 
     try {
-      let finalTitle = title;
+      const needsTitle = !instrumental && !title.trim() && lyrics.trim();
+      const titlePromise = needsTitle ? handleGenerateTitle(lyrics) : Promise.resolve(null);
 
-      if (!instrumental && !title.trim() && lyrics.trim()) {
-        finalTitle = await handleGenerateTitle(lyrics) || "";
-        if (finalTitle) {
-          useStudioStore.getState().setTitle(finalTitle);
-        }
-      }
-
-      const results = await Promise.allSettled(
+      const effectiveLanguage = getEffectiveLanguage();
+      const providerResults = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
           fetch("/api/generate", {
             method: "POST",
@@ -427,10 +423,10 @@ export default function HomePage() {
             body: JSON.stringify({
               prompt: songIdea,
               lyrics,
-              title: finalTitle,
+              title,
               provider,
               providerModel,
-              language: getEffectiveLanguage(),
+              language: effectiveLanguage,
               instrumental,
               vocalGender,
               weirdness,
@@ -442,6 +438,15 @@ export default function HomePage() {
           })
         )
       );
+
+      const generatedTitle = await titlePromise;
+      let finalTitle = title;
+      if (generatedTitle) {
+        finalTitle = generatedTitle;
+        useStudioStore.getState().setTitle(finalTitle);
+      }
+
+      const results = providerResults;
 
       const allTrackIds: string[] = [];
       const generatedTitles: string[] = [];
@@ -484,20 +489,19 @@ export default function HomePage() {
         }
       }
 
-      allTrackIds.forEach((trackId) => {
-        moveTrackToWorkspace(finalWorkspaceId, trackId);
-      });
-
-      const latestTracks = await fetchTracks();
-
-      if (allTrackIds.length === 0 && finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
-        const discoveredTrackIds = latestTracks
-          .map((track) => track.id)
-          .filter((trackId) => !existingTrackIds.has(trackId));
-
-        discoveredTrackIds.forEach((trackId) => {
-          moveTrackToWorkspace(finalWorkspaceId, trackId);
-        });
+      if (allTrackIds.length > 0) {
+        moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
+        void fetchTracks();
+      } else {
+        const latestTracks = await fetchTracks();
+        if (finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
+          const discoveredTrackIds = latestTracks
+            .map((track) => track.id)
+            .filter((trackId) => !existingTrackIds.has(trackId));
+          if (discoveredTrackIds.length > 0) {
+            moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
+          }
+        }
       }
 
       if (errors.length > 0) {
@@ -609,9 +613,11 @@ export default function HomePage() {
     if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return [];
     return workspaces.filter((workspace) => workspace.parentWorkspaceId === selectedWorkspace.id);
   }, [selectedWorkspace, workspaces]);
-  const selectedWorkspaceTracks = selectedWorkspace
-    ? tracks.filter((track) => selectedWorkspace.trackIds.includes(track.id))
-    : [];
+  const selectedWorkspaceTracks = useMemo(() => {
+    if (!selectedWorkspace) return [];
+    const idSet = new Set(selectedWorkspace.trackIds);
+    return tracks.filter((track) => idSet.has(track.id));
+  }, [selectedWorkspace, tracks]);
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 

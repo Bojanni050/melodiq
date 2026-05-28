@@ -56,9 +56,9 @@ export default function TrackList({
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
   const sortedTracks = useMemo(() => {
-    const list = [...tracks];
+    const withTime = tracks.map((t) => ({ t, time: Number(new Date(t.createdAt)) }));
 
-    list.sort((left, right) => {
+    withTime.sort(({ t: left, time: leftTime }, { t: right, time: rightTime }) => {
       if (sortOrder === "title-asc" || sortOrder === "title-desc") {
         const leftTitle = (left.title || left.prompt || "").trim();
         const rightTitle = (right.title || right.prompt || "").trim();
@@ -66,15 +66,12 @@ export default function TrackList({
         if (titleComparison !== 0) return sortOrder === "title-asc" ? titleComparison : -titleComparison;
       }
 
-      const leftTime = Number(new Date(left.createdAt));
-      const rightTime = Number(new Date(right.createdAt));
-
       if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0;
       if (sortOrder === "oldest") return leftTime - rightTime;
       return rightTime - leftTime;
     });
 
-    return list;
+    return withTime.map(({ t }) => t);
   }, [sortOrder, tracks]);
 
   const orderedTracks = useMemo(() => {
@@ -100,7 +97,8 @@ export default function TrackList({
 
       const sortedIdSet = new Set(sortedIds);
       const retainedIds = current.filter((id) => sortedIdSet.has(id));
-      const newIds = sortedIds.filter((id) => !retainedIds.includes(id));
+      const retainedIdSet = new Set(retainedIds);
+      const newIds = sortedIds.filter((id) => !retainedIdSet.has(id));
       const next = [...retainedIds, ...newIds];
 
       if (next.length === current.length && next.every((id, index) => id === current[index])) {

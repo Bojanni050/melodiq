@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import WaveformBars from "@/components/tracks/WaveformBars";
 import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
 import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
@@ -79,9 +80,9 @@ export default function TrackCard({
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
-  const workspaces = useWorkspaceStore((state) => state.workspaces);
-  const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
-  const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const { workspaces, createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
+    useShallow((s) => ({ workspaces: s.workspaces, createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
+  );
   const workspaceById = useMemo(
     () => new Map(workspaces.map((workspace) => [workspace.id, workspace])),
     [workspaces]
@@ -123,10 +124,10 @@ export default function TrackCard({
   }, [workspaceById, workspaces]);
 
   const assignedWorkspaceName = useMemo(() => {
-    const assignedWorkspace = workspaces.find((workspace) => workspace.trackIds.includes(track.id));
+    const assignedWorkspace = workspaces.find((workspace) => workspaceById.get(workspace.id)?.trackIds.includes(track.id));
     if (!assignedWorkspace) return null;
     return workspaceDisplayNameById.get(assignedWorkspace.id) ?? assignedWorkspace.name;
-  }, [track.id, workspaces, workspaceDisplayNameById]);
+  }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -441,16 +442,12 @@ export default function TrackCard({
   ];
 
   const workspaceCoverById = useMemo(() => {
+    const coverByTrackId = new Map(allTracks.map((t) => [t.id, t.coverUrl ?? null]));
     const coverMap = new Map<string, string | null>();
-
     workspaces.forEach((workspace) => {
-      const firstCover = workspace.trackIds
-        .map((trackId) => allTracks.find((item) => item.id === trackId)?.coverUrl ?? null)
-        .find((url): url is string => Boolean(url));
-
-      coverMap.set(workspace.id, firstCover ?? null);
+      const firstCover = workspace.trackIds.find((id) => coverByTrackId.get(id)) ?? null;
+      coverMap.set(workspace.id, firstCover ? (coverByTrackId.get(firstCover) ?? null) : null);
     });
-
     return coverMap;
   }, [allTracks, workspaces]);
 
