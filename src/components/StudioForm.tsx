@@ -732,7 +732,7 @@ Your chorus here`}
           <div className="flex rounded-lg overflow-hidden border border-white/10">
             <button
               type="button"
-              onClick={() => setVocalGender("female")}
+              onClick={() => setVocalGender(vocalGender === "female" ? "auto" : "female")}
               className={`flex-1 py-2 text-xs font-medium transition-colors ${
                 vocalGender === "female"
                   ? "bg-pink-500/30 text-pink-300"
@@ -743,7 +743,7 @@ Your chorus here`}
             </button>
             <button
               type="button"
-              onClick={() => setVocalGender("male")}
+              onClick={() => setVocalGender(vocalGender === "male" ? "auto" : "male")}
               className={`flex-1 py-2 text-xs font-medium transition-colors ${
                 vocalGender === "male"
                   ? "bg-blue-500/30 text-blue-300"

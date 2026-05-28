@@ -779,7 +779,7 @@ export async function POST(request: NextRequest) {
         prompt,
         lyrics,
         instrumental,
-        gender: body.gender || "",
+        gender: vocalGender && vocalGender !== "auto" ? vocalGender : "",
         webhookUrl,
       });
 
