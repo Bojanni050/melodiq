@@ -55,7 +55,6 @@ export default function TrackCard({
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(track.title || "");
-  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
   const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
@@ -244,27 +243,21 @@ export default function TrackCard({
     }
   }
 
-  async function saveTitle() {
+  function discardTitle() {
+    setIsEditingTitle(false);
+    setEditTitle(track.title || "");
+  }
+
+  function saveTitle() {
     const trimmedTitle = editTitle.trim();
-    if (!trimmedTitle || trimmedTitle === track.title || isSavingTitle) return;
-
-    setIsSavingTitle(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmedTitle }),
-      });
-
-      if (res.ok) {
-        onTitleUpdate?.(track.id, trimmedTitle);
-        setIsEditingTitle(false);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setIsSavingTitle(false);
-    }
+    setIsEditingTitle(false);
+    if (!trimmedTitle || trimmedTitle === track.title) return;
+    onTitleUpdate?.(track.id, trimmedTitle);
+    fetch(`/api/tracks/${track.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: trimmedTitle }),
+    }).catch(() => {});
   }
 
   function handleTitleKeyDown(e: React.KeyboardEvent) {
@@ -272,8 +265,7 @@ export default function TrackCard({
       e.preventDefault();
       saveTitle();
     } else if (e.key === "Escape") {
-      setIsEditingTitle(false);
-      setEditTitle(track.title || "");
+      discardTitle();
     }
   }
 
@@ -826,20 +818,40 @@ export default function TrackCard({
             />
           )}
           {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              onBlur={saveTitle}
-              onClick={(e) => e.stopPropagation()}
-              disabled={isSavingTitle}
-              aria-label="Edit track title"
-              placeholder="Track title"
-              className="flex-1 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
-              maxLength={200}
-            />
+            <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+              <input
+                ref={titleInputRef}
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={discardTitle}
+                aria-label="Edit track title"
+                placeholder="Track title"
+                className="flex-1 min-w-0 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
+                maxLength={200}
+              />
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); saveTitle(); }}
+                className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors"
+                title="Save title (Enter)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); discardTitle(); }}
+                className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors"
+                title="Discard changes (Esc)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           ) : (
             <h3
               className={`text-sm font-medium truncate cursor-text ${isCurrentlyPlaying ? "text-primary-200" : ""}`}

@@ -8,27 +8,28 @@ import { useShallow } from "zustand/react/shallow";
 type AudioSource = "cache" | "s3" | "unknown";
 type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
-function AudioSourceBadge({ source, state }: { source: AudioSource; state: AudioSourceState }) {
+function AudioSourceBadge({ source }: { source: AudioSource; state: AudioSourceState }) {
   if (source === "unknown") return null;
 
-  const isCache = source === "cache";
-  const stateLabel =
-    state === "hit" ? "cache hit" :
-    state === "miss" ? "cache warmup" :
-    state === "fallback" ? "S3 fallback" :
-    "unknown state";
+  if (source === "cache") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-emerald-200"
+        title="Playing from disk cache"
+      >
+        <span className="text-[11px] leading-none">⚡</span>
+        Cached
+      </span>
+    );
+  }
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] ${
-        isCache
-          ? "border-emerald-400/35 bg-emerald-500/10 text-emerald-200"
-          : "border-sky-400/35 bg-sky-500/10 text-sky-200"
-      }`}
-      title={isCache ? `Playing from disk cache (${stateLabel})` : `Playing directly from S3 (${stateLabel})`}
+      className="inline-flex items-center gap-1 rounded-full border border-sky-400/35 bg-sky-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-sky-200"
+      title="Streaming from S3"
     >
-      <span className="text-[11px] leading-none">{isCache ? "⚡" : "☁"}</span>
-      {isCache ? "Cache" : "S3"}
+      <span className="text-[11px] leading-none">☁</span>
+      S3
     </span>
   );
 }

@@ -365,6 +365,9 @@ export default function WorkspaceDetailPage() {
                   onDelete={handleDeleteTrack}
                   onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
                   playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                  onTitleUpdate={(trackId, newTitle) =>
+                    setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
+                  }
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">

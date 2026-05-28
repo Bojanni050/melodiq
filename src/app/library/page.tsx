@@ -594,6 +594,9 @@ export default function LibraryPage() {
                     }}
                     onAddToPlaylist={() => undefined}
                     playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
+                    onTitleUpdate={(trackId, newTitle) =>
+                      setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
+                    }
                   />
                 )}
               </section>
