@@ -236,6 +236,7 @@ export const usePlayerStore = create<PlayerState>()(
         showTrackDetailsPanel: state.showTrackDetailsPanel,
         rightPanelWidth: state.rightPanelWidth,
         isFullscreen: state.isFullscreen,
+        progress: state.progress,
       }),
     }
   )

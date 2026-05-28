@@ -455,7 +455,9 @@ export default function Player() {
     usePlayerStore.getState().setAudioElement(audioRef.current);
 
     const handleTimeUpdate = () => {
-      setCurrentTime(audioRef.current?.currentTime || 0);
+      const time = audioRef.current?.currentTime || 0;
+      setCurrentTime(time);
+      usePlayerStore.getState().setProgress(time);
     };
 
     const handleLoadedMetadata = () => {
@@ -463,7 +465,7 @@ export default function Player() {
     };
 
     const handleEnded = () => {
-      const { autoPlayNext, queue, playNext, setIsPlaying } = usePlayerStore.getState();
+      const { autoPlayNext, queue, playNext, setIsPlaying, setProgress } = usePlayerStore.getState();
       if (autoPlayNext && queue.length > 0) {
         playNext();
         return;
@@ -473,6 +475,7 @@ export default function Player() {
         audioRef.current.currentTime = 0;
       }
       setCurrentTime(0);
+      setProgress(0);
       setIsPlaying(false);
     };
 
@@ -519,8 +522,12 @@ export default function Player() {
         setAudioSourceState(detectedSource.state);
       }
 
+      const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
-      const resumeTime = shouldResumeTime ? audioEl.currentTime || 0 : 0;
+      const storedProgress = usePlayerStore.getState().progress;
+      const resumeTime = shouldResumeTime
+        ? (audioEl.currentTime || 0)
+        : (isInitialLoad && storedProgress > 0 ? storedProgress : 0);
       const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
 
       audioEl.pause();
