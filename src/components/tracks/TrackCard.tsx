@@ -13,6 +13,7 @@ export default function TrackCard({
   onPlay,
   onSelect,
   onDelete,
+  onDeleteTracks,
   onReusePrompt,
   onAddToQueue,
   onAddToPlaylist,
@@ -29,6 +30,7 @@ export default function TrackCard({
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
+  onDeleteTracks?: (trackIds: string[]) => Promise<void> | void;
   onReusePrompt?: (track: TrackItem) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (
@@ -51,6 +53,7 @@ export default function TrackCard({
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -188,18 +191,25 @@ export default function TrackCard({
     setConfirmDelete(false);
     setDeleting(true);
     try {
-      const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
-      if (res.ok) {
-        onDelete?.(track.id);
+      const ids = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds : [track.id];
+
+      if (onDeleteTracks) {
+        await onDeleteTracks(ids);
+      } else {
+        const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
+        if (res.ok) onDelete?.(track.id);
       }
     } catch {
       // silently fail
     }
     setDeleting(false);
+    setPendingDeleteIds(null);
   }
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
+    const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
+    setPendingDeleteIds(selection.length > 0 ? selection : [track.id]);
     setConfirmDelete(true);
   }
 
@@ -466,12 +476,17 @@ export default function TrackCard({
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
   const effectiveCoverUrl = coverOverrideUrl ?? track.coverUrl ?? null;
+  const deleteCount = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds.length : 1;
+  const deleteMessage =
+    deleteCount === 1
+      ? "Delete this song? This cannot be undone."
+      : `Delete ${deleteCount} selected songs? This cannot be undone.`;
 
   return (
     <>
       {confirmDelete && (
         <ConfirmDialog
-          message="Delete this track? This cannot be undone."
+          message={deleteMessage}
           onConfirm={executeDelete}
           onCancel={() => setConfirmDelete(false)}
         />

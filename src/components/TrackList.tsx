@@ -221,16 +221,11 @@ export default function TrackList({
 
   const allSelected = displayedTracks.length > 0 && visibleSelectedCount === displayedTracks.length;
 
-  async function handleMassDelete() {
-    if (selectedIds.size === 0) return;
-    setConfirmMassDelete(true);
-  }
-
-  async function executeMassDelete() {
-    setConfirmMassDelete(false);
+  async function deleteTrackIds(trackIds: string[]) {
+    if (trackIds.length === 0) return;
     setDeleting(true);
     try {
-      for (const id of selectedIds) {
+      for (const id of trackIds) {
         const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
         if (res.ok) onDelete?.(id);
       }
@@ -240,6 +235,16 @@ export default function TrackList({
     } finally {
       setDeleting(false);
     }
+  }
+
+  async function handleMassDelete() {
+    if (selectedIds.size === 0) return;
+    setConfirmMassDelete(true);
+  }
+
+  async function executeMassDelete() {
+    setConfirmMassDelete(false);
+    await deleteTrackIds(Array.from(selectedIds));
   }
 
   function handleMoveToWorkspace(sourceTrackId: string, workspaceId: string) {
@@ -377,7 +382,7 @@ export default function TrackList({
         />
       )}
       <div className="space-y-1">
-        <div className="flex items-center gap-3 px-3 py-1.5">
+        <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-[#0a0a0f] border-b border-white/6 mb-1">
           <button
             onClick={toggleSelectAll}
             className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
@@ -499,6 +504,7 @@ export default function TrackList({
                   onPlay={handlePlay}
                   onSelect={onSelect}
                   onDelete={onDelete}
+                  onDeleteTracks={deleteTrackIds}
                   onReusePrompt={onReusePrompt}
                   onAddToQueue={onAddToQueue}
                   onAddToPlaylist={onAddToPlaylist}
