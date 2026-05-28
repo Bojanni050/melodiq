@@ -43,6 +43,35 @@ export default function TrackList({
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
+  const workspaces = useWorkspaceStore((state) => state.workspaces);
+
+  const workspaceById = useMemo(
+    () => new Map(workspaces.map((w) => [w.id, w])),
+    [workspaces]
+  );
+  const orderedWorkspaceOptions = useMemo(() => {
+    const roots = workspaces.filter((w) => !w.parentWorkspaceId);
+    const childrenByParent = new Map<string, typeof workspaces>();
+    workspaces
+      .filter((w) => Boolean(w.parentWorkspaceId))
+      .forEach((w) => {
+        const list = childrenByParent.get(w.parentWorkspaceId!) ?? [];
+        childrenByParent.set(w.parentWorkspaceId!, [...list, w]);
+      });
+    return roots.flatMap((root) => {
+      const children = childrenByParent.get(root.id) ?? [];
+      return [{ workspace: root, depth: 0 }, ...children.map((child) => ({ workspace: child, depth: 1 }))];
+    });
+  }, [workspaces]);
+  const workspaceDisplayNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    workspaces.forEach((w) => {
+      if (!w.parentWorkspaceId) { map.set(w.id, w.name); return; }
+      const parentName = workspaceById.get(w.parentWorkspaceId)?.name;
+      map.set(w.id, parentName ? `${parentName} / ${w.name}` : w.name);
+    });
+    return map;
+  }, [workspaces, workspaceById]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const hasScrolledToRestoredTrack = useRef(false);
   const selectedIdsRef = useRef<Set<string>>(new Set());
@@ -524,6 +553,9 @@ export default function TrackList({
                   selectedTrackIds={Array.from(selectedIds)}
                   onToggleSelect={toggleSelection}
                   onTitleUpdate={onTitleUpdate}
+                  workspaceById={workspaceById}
+                  orderedWorkspaceOptions={orderedWorkspaceOptions}
+                  workspaceDisplayNameById={workspaceDisplayNameById}
                 />
               </div>
             );

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import WaveformBars from "@/components/tracks/WaveformBars";
-import { usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useWorkspaceStore, type Workspace } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
@@ -25,6 +25,9 @@ export default function TrackCard({
   selectedTrackIds,
   onToggleSelect,
   onTitleUpdate,
+  workspaceById: workspaceByIdProp,
+  orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
+  workspaceDisplayNameById: workspaceDisplayNameByIdProp,
 }: {
   track: TrackItem;
   allTracks: TrackItem[];
@@ -46,6 +49,9 @@ export default function TrackCard({
   selectedTrackIds?: string[];
   onToggleSelect?: (trackId: string, options?: { mode?: "toggle" | "range" }) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
+  workspaceById?: Map<string, Workspace>;
+  orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
+  workspaceDisplayNameById?: Map<string, string>;
 }) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -84,13 +90,13 @@ export default function TrackCard({
     useShallow((s) => ({ workspaces: s.workspaces, createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
   );
   const workspaceById = useMemo(
-    () => new Map(workspaces.map((workspace) => [workspace.id, workspace])),
-    [workspaces]
+    () => workspaceByIdProp ?? new Map(workspaces.map((workspace) => [workspace.id, workspace])),
+    [workspaceByIdProp, workspaces]
   );
   const orderedWorkspaceOptions = useMemo(() => {
+    if (orderedWorkspaceOptionsProp) return orderedWorkspaceOptionsProp;
     const roots = workspaces.filter((workspace) => !workspace.parentWorkspaceId);
     const childrenByParent = new Map<string, typeof workspaces>();
-
     workspaces
       .filter((workspace) => Boolean(workspace.parentWorkspaceId))
       .forEach((workspace) => {
@@ -98,30 +104,25 @@ export default function TrackCard({
         const list = childrenByParent.get(parentId) ?? [];
         childrenByParent.set(parentId, [...list, workspace]);
       });
-
     return roots.flatMap((root) => {
       const children = childrenByParent.get(root.id) ?? [];
       return [{ workspace: root, depth: 0 }, ...children.map((child) => ({ workspace: child, depth: 1 }))];
     });
-  }, [workspaces]);
+  }, [orderedWorkspaceOptionsProp, workspaces]);
 
   const workspaceDisplayNameById = useMemo(() => {
+    if (workspaceDisplayNameByIdProp) return workspaceDisplayNameByIdProp;
     const map = new Map<string, string>();
     workspaces.forEach((workspace) => {
       if (!workspace.parentWorkspaceId) {
         map.set(workspace.id, workspace.name);
         return;
       }
-
       const parentName = workspaceById.get(workspace.parentWorkspaceId)?.name;
-      map.set(
-        workspace.id,
-        parentName ? `${parentName} / ${workspace.name}` : workspace.name
-      );
+      map.set(workspace.id, parentName ? `${parentName} / ${workspace.name}` : workspace.name);
     });
-
     return map;
-  }, [workspaceById, workspaces]);
+  }, [workspaceDisplayNameByIdProp, workspaceById, workspaces]);
 
   const assignedWorkspaceName = useMemo(() => {
     const assignedWorkspace = workspaces.find((workspace) => workspaceById.get(workspace.id)?.trackIds.includes(track.id));
