@@ -78,6 +78,16 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   }, [loadUser]);
 
   useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setIsFullscreen]);
+
+  useEffect(() => {
     if (!audioElement) return;
 
     const handleTimeUpdate = () => {
@@ -142,6 +152,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
   const lyrics = currentTrack?.lyrics || "";
   const lyricsLines = lyrics.split("\n").filter((line) => line.trim());
+  const showLyrics = lyricsLines.length > 0;
   
   const getColumnCount = () => {
     if (lyricsLines.length <= 20) return 1;
@@ -196,41 +207,60 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
           </div>
         </div>
         <div className="flex-1 flex items-center gap-12 px-12 pb-32 overflow-hidden">
-          <div className="flex-1 flex items-center justify-center">
-            {lyrics ? (
-              <div className={`grid gap-12 max-w-6xl w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-                {columns.map((column, colIndex) => (
-                  <div key={colIndex} className="space-y-2">
-                    {column.map((line, lineIndex) => (
-                      <p
-                        key={lineIndex}
-                        className="text-white/80 text-sm md:text-base leading-relaxed"
-                      >
-                        {line}
-                      </p>
-                    ))}
+          {showLyrics ? (
+            <>
+              <div className="flex-1 flex items-center justify-center">
+                <div className={`grid gap-12 max-w-6xl w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                  {columns.map((column, colIndex) => (
+                    <div key={colIndex} className="space-y-2">
+                      {column.map((line, lineIndex) => (
+                        <p
+                          key={lineIndex}
+                          className="text-white/80 text-sm md:text-base leading-relaxed"
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="w-96 shrink-0">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt="Album art"
+                    className="w-full aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover"
+                  />
+                ) : (
+                  <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
+                    <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
                   </div>
-                ))}
+                )}
               </div>
-            ) : (
-              <p className="text-white/40 text-lg">No lyrics available</p>
-            )}
-          </div>
-          <div className="w-96 shrink-0">
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt="Album art"
-                className="w-full aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover"
-              />
-            ) : (
-              <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-              </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+              {coverUrl ? (
+                <img
+                  src={coverUrl}
+                  alt="Album art"
+                  className="w-[420px] max-w-[78vw] aspect-square rounded-3xl shadow-2xl shadow-black/60 object-cover animate-[pulse_4s_ease-in-out_infinite]"
+                />
+              ) : (
+                <div className="w-[420px] max-w-[78vw] aspect-square rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10 animate-[pulse_4s_ease-in-out_infinite]">
+                  <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+              )}
+              <h3 className="mt-6 text-2xl md:text-3xl font-semibold text-white/90 animate-[pulse_4s_ease-in-out_infinite]">
+                {currentTrack?.title || currentTrack?.prompt.substring(0, 50) || "No track"}
+              </h3>
+            </div>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10">
           <div className="px-8 py-6">
@@ -621,6 +651,7 @@ export default function Player() {
 
   const isNowPlaying = currentTrack !== null;
   const nowPlayingQueue = currentTrack ? [currentTrack, ...queue] : queue;
+  const playerCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
 
   return (
     <>
@@ -629,8 +660,20 @@ export default function Player() {
         {getStatusString()}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-40">
-        <div className="max-w-screen-2xl mx-auto h-full px-4 flex items-center gap-3">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-40 overflow-hidden relative">
+        {playerCoverUrl ? (
+          <div aria-hidden="true" className="absolute inset-0">
+            <img
+              src={playerCoverUrl}
+              alt=""
+              className="h-full w-full object-cover scale-125 blur-2xl opacity-45"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),linear-gradient(135deg,rgba(22,22,33,0.65)_0%,rgba(22,22,33,0.92)_70%,rgba(22,22,33,0.98)_100%)]" />
+          </div>
+        ) : null}
+
+        <div className="relative max-w-screen-2xl mx-auto h-full px-4 flex items-center gap-3">
           {/* Now Playing Info */}
           {currentTrack ? (
             <div className="flex items-center gap-2.5 min-w-0 flex-shrink-0" style={{ width: "240px" }}>
