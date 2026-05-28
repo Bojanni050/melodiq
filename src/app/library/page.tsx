@@ -707,7 +707,7 @@ export default function LibraryPage() {
                               {coverImages.length > 0 ? (
                                 <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
                                   {coverImages.slice(0, 4).map((coverUrl, i) => (
-                                    <img key={`${workspace.id}-${i}`} src={coverUrl} alt={workspace.name} className="h-full w-full rounded-2xl object-cover shadow-lg ring-1 ring-white/10" />
+                                    <img key={`${workspace.id}-${i}`} src={coverUrl} alt={workspace.name} loading="lazy" className="h-full w-full rounded-2xl object-cover shadow-lg ring-1 ring-white/10" />
                                   ))}
                                 </div>
                               ) : (
@@ -750,7 +750,7 @@ export default function LibraryPage() {
                           {/* Solid color swatch — avoids inline style for dynamic gradient */}
                           <div className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ${getWorkspaceSwatchClass(workspace.id)}`}>
                             {coverImages[0] ? (
-                              <img src={coverImages[0]} alt={workspace.name} className="h-full w-full object-cover" />
+                              <img src={coverImages[0]} alt={workspace.name} loading="lazy" className="h-full w-full object-cover" />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">
                                 <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">

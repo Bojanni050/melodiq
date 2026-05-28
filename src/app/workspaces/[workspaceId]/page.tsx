@@ -330,7 +330,7 @@ export default function WorkspaceDetailPage() {
                           >
                             <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
                               {childCover ? (
-                                <img src={childCover} alt={childWorkspace.name} className="h-full w-full object-cover" />
+                                <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
                               ) : null}
                             </div>
                             <div className="min-w-0 flex-1">

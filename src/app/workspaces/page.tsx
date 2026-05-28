@@ -350,7 +350,7 @@ export default function WorkspacesPage() {
                       >
                         <div className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ${getWorkspaceSwatchClass(workspace.id)}`}>
                           {coverImages[0] ? (
-                            <img src={coverImages[0]} alt={workspace.name} className="h-full w-full object-cover" />
+                            <img src={coverImages[0]} alt={workspace.name} loading="lazy" className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
                               <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">

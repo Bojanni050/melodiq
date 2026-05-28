@@ -615,7 +615,7 @@ export default function Player() {
                 title="Go fullscreen"
               >
                 {currentTrack.coverUrl ? (
-                  <img src={currentTrack.coverUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={currentTrack.coverUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

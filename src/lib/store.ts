@@ -1,5 +1,36 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
+
+function createDebouncedStorage<T>(delayMs: number): PersistStorage<T> {
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  return {
+    getItem: (name) => {
+      if (typeof window === "undefined") return null;
+      const str = localStorage.getItem(name);
+      if (!str) return null;
+      return JSON.parse(str) as StorageValue<T>;
+    },
+    setItem: (name, value) => {
+      if (typeof window === "undefined") return;
+      const existing = timers.get(name);
+      if (existing) clearTimeout(existing);
+      timers.set(
+        name,
+        setTimeout(() => {
+          localStorage.setItem(name, JSON.stringify(value));
+          timers.delete(name);
+        }, delayMs)
+      );
+    },
+    removeItem: (name) => {
+      if (typeof window === "undefined") return;
+      const existing = timers.get(name);
+      if (existing) clearTimeout(existing);
+      timers.delete(name);
+      localStorage.removeItem(name);
+    },
+  };
+}
 
 export interface Track {
   id: string;
@@ -196,6 +227,7 @@ export const usePlayerStore = create<PlayerState>()(
     }),
     {
       name: "sonara-player",
+      storage: createDebouncedStorage(300),
       partialize: (state) => ({
         volume: state.volume,
         queue: state.queue,
@@ -740,6 +772,7 @@ export const useStudioStore = create<StudioState>()(
     }),
     {
       name: "sonara-studio",
+      storage: createDebouncedStorage(500),
       skipHydration: true,
       merge: (persistedState: any, currentState) => {
         const merged = { ...currentState, ...persistedState };
