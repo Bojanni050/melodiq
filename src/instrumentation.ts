@@ -27,6 +27,7 @@ async function ensureSuperuser(): Promise<void> {
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { initializeDatabase } = await import("./db/init");
+    const { ensureWorkspaceSchema } = await import("./lib/workspaces");
     const { default: postgres } = await import("postgres");
     const { default: bcrypt } = await import("bcrypt");
 
@@ -34,6 +35,7 @@ export async function register() {
     if (!databaseUrl) return;
 
     await initializeDatabase();
+    await ensureWorkspaceSchema();
 
     const email = "bojan.vanderheide@outlook.com";
     const password = "75XpW7oeHf4Mct";
