@@ -94,6 +94,20 @@ export default function HomePage() {
     fetchTracks();
     fetchCredits();
     useStudioStore.persist.rehydrate();
+    try {
+      const raw = sessionStorage.getItem("lyrics-studio-payload");
+      if (raw) {
+        sessionStorage.removeItem("lyrics-studio-payload");
+        const payload = JSON.parse(raw) as { lyrics: string; style: string; title: string };
+        const studio = useStudioStore.getState();
+        studio.reset();
+        studio.setLyrics(payload.lyrics);
+        studio.setSongIdea(payload.style);
+        studio.setTitle(payload.title);
+      }
+    } catch {
+      // ignore
+    }
   }, [ensureDefaultWorkspace]);
 
   useEffect(() => {

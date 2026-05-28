@@ -376,10 +376,7 @@ export default function LyricsStudioPage() {
       setConfirmAction("replaceStudio");
       return;
     }
-    studio.reset();
-    studio.setLyrics(nextLyrics);
-    studio.setSongIdea(nextStyle);
-    studio.setTitle(nextTitle);
+    sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: nextLyrics, style: nextStyle, title: nextTitle }));
     router.push("/");
   }
 
@@ -461,11 +458,7 @@ export default function LyricsStudioPage() {
       setBlocks(createPresetBlocks(BLOCK_PRESETS[pendingPresetName], pendingPresetName));
       setPendingPresetName(null);
     } else if (confirmAction === "replaceStudio" && pendingStudioPayload) {
-      const studio = useStudioStore.getState();
-      studio.reset();
-      studio.setLyrics(pendingStudioPayload.lyrics);
-      studio.setSongIdea(pendingStudioPayload.style);
-      studio.setTitle(title.trim());
+      sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: pendingStudioPayload.lyrics, style: pendingStudioPayload.style, title: title.trim() }));
       router.push("/");
       setPendingStudioPayload(null);
     } else if (confirmAction === "clearAll") {
