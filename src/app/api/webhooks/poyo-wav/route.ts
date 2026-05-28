@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         title: track.title ?? null,
         prompt: track.prompt,
         instrumental: track.instrumental,
-      }).catch(() => {});
+      }).catch((error) => console.error("[webhook/poyo-wav] cover art generation failed", error));
     }
 
     console.log(

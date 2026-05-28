@@ -213,7 +213,7 @@ export async function GET(
               title: track.title,
               prompt: track.prompt,
               instrumental: track.instrumental,
-            }).catch(() => {});
+            }).catch((error) => console.error("[tracks/[id]] cover art generation failed", error));
           }
 
           return NextResponse.json(updated[0]);

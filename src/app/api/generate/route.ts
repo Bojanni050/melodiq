@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
           title: resolvedTitle,
           instrumental: t.instrumental,
         })),
-      }).catch(() => {});
+      }).catch((error) => console.error("[generate] cover art batch failed (minimax via poyo)", error));
 
       await logApi({
         userId,
@@ -400,7 +400,7 @@ export async function POST(request: NextRequest) {
           title: resolvedTitle,
           instrumental: t.instrumental,
         })),
-      }).catch(() => {});
+      }).catch((error) => console.error("[generate] cover art batch failed (poyo)", error));
 
       await logApi({
         userId,
@@ -540,7 +540,7 @@ export async function POST(request: NextRequest) {
         title: resolvedTitle,
         prompt,
         instrumental: instrumental || false,
-      }).catch(() => {});
+      }).catch((error) => console.error("[generate] cover art generation failed (lyria)", error));
 
       await logApi({
         userId: userId,
@@ -607,7 +607,7 @@ export async function POST(request: NextRequest) {
               title: resolvedTitle,
               instrumental: t.instrumental,
             })),
-          }).catch(() => {});
+          }).catch((error) => console.error("[generate] cover art batch failed (minimax via poyo)", error));
 
           await logApi({
             userId,
@@ -687,7 +687,7 @@ export async function POST(request: NextRequest) {
           title: resolvedTitle,
           prompt,
           instrumental: instrumental || false,
-        }).catch(() => {});
+        }).catch((error) => console.error("[generate] cover art generation failed (minimax)", error));
 
         await logApi({
           userId: userId,
@@ -751,7 +751,7 @@ export async function POST(request: NextRequest) {
           title: resolvedTitle,
           instrumental: t.instrumental,
         })),
-      }).catch(() => {});
+      }).catch((error) => console.error("[generate] cover art batch failed (tempolor)", error));
 
       await logApi({
         userId: userId,
@@ -814,7 +814,7 @@ export async function POST(request: NextRequest) {
           title: resolvedTitle,
           instrumental: t.instrumental,
         })),
-      }).catch(() => {});
+      }).catch((error) => console.error("[generate] cover art batch failed (musicgpt)", error));
 
       await logApi({
         userId: userId,

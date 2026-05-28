@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
               title: t.title ?? null,
               instrumental: t.instrumental,
             })),
-          }).catch(() => {});
+          }).catch((error) => console.error("[webhook/poyo] cover art batch failed", error));
         }
       }
 

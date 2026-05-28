@@ -189,7 +189,7 @@ export async function POST() {
             title: track.title,
             prompt: track.prompt,
             instrumental: track.instrumental,
-          }).catch(() => {});
+          }).catch((error) => console.error("[recover-musicgpt] cover art generation failed", error));
         }
 
         await logApi({

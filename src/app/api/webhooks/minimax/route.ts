@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         title: track.title,
         prompt: track.prompt,
         instrumental: track.instrumental,
-      }).catch(() => {});
+      }).catch((error) => console.error("[webhook/minimax] cover art generation failed", error));
 
       await logApi({
         userId: track.userId,
