@@ -153,8 +153,21 @@ export async function POST(request: NextRequest) {
     const dirNote = `If there are musical or vocal directions (e.g. "solo violin", "whispered", "close-mic"), include them inside the same brackets after a hyphen, e.g. [female - restrained, solo violin] or [male - powerful, full band].`;
 
     if (vocalistTagValue === "duet") {
-      return `This is a duet. Prefix every non-empty lyric line with exactly one tag: [male], [female], or [together] (for harmonised/unison lines).
+      return `This is a duet. Place a tag at the start of each group of lines that belongs to the same vocalist — you do NOT need a tag on every line, only when the vocalist changes or at the start of a new section.
+Use [male], [female], or [together] (for harmonised/unison lines). A tag applies to all following lines until the next tag appears.
 Infer the gender combination (male/female, female/female, or male/male) from the topic, mood, pronouns, and existing sections. Be consistent throughout.
+Example structure:
+[female]
+Line one
+Line two
+
+[male]
+Line three
+Line four
+
+[together]
+Chorus line one
+Chorus line two
 ${dirNote}${performerDirectionsText ? `\nApply this performer direction where relevant: ${performerDirectionsText}` : ""}`;
     }
 
