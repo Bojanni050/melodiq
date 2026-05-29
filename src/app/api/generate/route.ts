@@ -841,11 +841,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
       }
 
+      const murekaWebhookUrl = await getWebhookUrl("mureka");
       const genResult = await generateMureka({
         lyrics,
         prompt: prompt || undefined,
         numberOfSongs: 2,
         outputFormat: "mp3",
+        webhookUrl: murekaWebhookUrl || undefined,
       });
 
       const [t1, t2] = await Promise.all([

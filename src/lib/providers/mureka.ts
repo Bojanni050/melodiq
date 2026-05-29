@@ -16,11 +16,13 @@ export async function generateMureka({
   prompt,
   numberOfSongs = 2,
   outputFormat = "mp3",
+  webhookUrl,
 }: {
   lyrics: string;
   prompt?: string;
   numberOfSongs?: number;
   outputFormat?: "mp3" | "wav" | "flac";
+  webhookUrl?: string;
 }): Promise<MurekaSubmitResponse> {
   const apiKey = (await getSetting("WAVESPEED_API_KEY")) || process.env.WAVESPEED_API_KEY;
   if (!apiKey) throw new Error("WAVESPEED_API_KEY not configured");
@@ -32,6 +34,7 @@ export async function generateMureka({
       ...(prompt ? { prompt } : {}),
       number_of_songs: numberOfSongs,
       output_format: outputFormat,
+      ...(webhookUrl ? { webhook_url: webhookUrl } : {}),
     },
     {
       headers: {

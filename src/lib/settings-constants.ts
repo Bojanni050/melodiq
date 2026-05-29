@@ -144,4 +144,5 @@ export const WEBHOOK_DEFAULTS = [
   { key: "TEMPOLOR_WEBHOOK_URL", path: "/api/webhooks/tempolor" },
   { key: "MUSICGPT_WEBHOOK_URL", path: "/api/webhooks/musicgpt" },
   { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
+  { key: "MUREKA_WEBHOOK_URL", path: "/api/webhooks/mureka" },
 ] as const;

@@ -5,7 +5,6 @@ import { eq, desc, and, inArray, ne, lt } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
 import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
-import { getMurekaResult } from "@/lib/providers/mureka";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { uploadToS3 } from "@/lib/s3";
@@ -90,64 +89,8 @@ export async function GET(request: NextRequest) {
 
     const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
 
-    // Mureka polling — jobId is the requestId, second variant has ":1" suffix
-    const generatingMurekaTracks = result
-      .filter((t) => t.provider === "mureka" && t.status === "generating" && !!t.jobId && !t.jobId.endsWith(":1"))
-      .slice(0, 5);
-
     hadGeneratingPoYo = generatingPoYoTracks.length > 0;
     await Promise.allSettled([
-      generatingMurekaTracks.length > 0
-        ? Promise.allSettled(
-            generatingMurekaTracks.map(async (track) => {
-              try {
-                const requestId = track.jobId!;
-                const pollResult = await getMurekaResult(requestId);
-                if (pollResult.status === "completed" && pollResult.outputs && pollResult.outputs.length > 0) {
-                  // Find both variant tracks for this requestId
-                  const variantTracks = result.filter(
-                    (t) => t.provider === "mureka" && (t.jobId === requestId || t.jobId === `${requestId}:1`)
-                  );
-                  await Promise.allSettled(
-                    variantTracks.map(async (t, idx) => {
-                      const audioUrl = pollResult.outputs![idx] ?? pollResult.outputs![0];
-                      if (!audioUrl) return;
-                      // Mark done immediately with CDN URL
-                      await db.update(tracks).set({ status: "done", audioUrl, format: "mp3" }).where(eq(tracks.id, t.id!));
-                      // Upload to S3 in background
-                      (async () => {
-                        try {
-                          const axios = (await import("axios")).default;
-                          const { uploadToS3: s3upload } = await import("@/lib/s3");
-                          const { extractAudioDuration: getDuration } = await import("@/lib/audio-duration");
-                          const res = await axios.get(audioUrl, { responseType: "arraybuffer", timeout: 60000 });
-                          const buf = Buffer.from(res.data);
-                          const s3Key = `tracks/${t.id}/audio.mp3`;
-                          await s3upload(s3Key, buf, "audio/mpeg");
-                          const duration = await getDuration(buf);
-                          await db.update(tracks).set({ s3Key, duration, audioUrl: `/api/tracks/${t.id}/download` }).where(eq(tracks.id, t.id!));
-                        } catch (err: any) {
-                          console.error(`[mureka] background S3 upload failed for track ${t.id}:`, err?.message);
-                        }
-                      })();
-                    })
-                  );
-                } else if (pollResult.status === "failed") {
-                  const variantTracks = result.filter(
-                    (t) => t.provider === "mureka" && (t.jobId === requestId || t.jobId === `${requestId}:1`)
-                  );
-                  await Promise.allSettled(
-                    variantTracks.map((t) =>
-                      db.update(tracks).set({ status: "failed", error: pollResult.error ?? "Mureka generation failed" }).where(eq(tracks.id, t.id!))
-                    )
-                  );
-                }
-              } catch {
-                // best-effort polling
-              }
-            })
-          )
-        : Promise.resolve(),
       hadGeneratingPoYo
         ? Promise.allSettled(
             generatingPoYoTracks.map(async (track) => {
