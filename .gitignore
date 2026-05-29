@@ -6,7 +6,7 @@ node_modules
 kilo.json
 .env.local
 .env.production
-
+.env
 # PWA generated files
 /public/sw.js
 /public/workbox-*.js
