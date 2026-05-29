@@ -103,46 +103,63 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
       continue;
     }
 
-    const audioRes = await axios.get(primaryUrl, { responseType: "arraybuffer" });
-    const audioBuffer = Buffer.from(audioRes.data);
-    const primaryHeaderType = String(audioRes.headers?.["content-type"] || "");
-    const format = /\.wav(\?|$)/i.test(primaryUrl)
-      ? detectFormatFromUrl(primaryUrl)
-      : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
-    const s3Key = targetTrack.s3Key ?? `tracks/${targetTrack.id}/audio.${format}`;
-    await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(format));
-
-    // Extract duration from audio file
-    const duration = await extractAudioDuration(audioBuffer);
-
-    let s3KeyHd: string | null = null;
-    let formatHd: "mp3" | "wav" | null = null;
-    if (variant.audioUrlHd && variant.audioUrlHd !== primaryUrl) {
-      const hdRes = await axios.get(variant.audioUrlHd, { responseType: "arraybuffer" });
-      const hdHeaderType = String(hdRes.headers?.["content-type"] || "");
-      formatHd = /\.wav(\?|$)/i.test(variant.audioUrlHd)
-        ? detectFormatFromUrl(variant.audioUrlHd)
-        : detectFormatFromContentType(hdHeaderType || "audio/mpeg");
-      s3KeyHd = targetTrack.s3KeyHd ?? `tracks/${targetTrack.id}/audio_hd.${formatHd}`;
-      await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
-    }
-
+    // Mark as done immediately with the CDN URL so the user can start listening
+    // while the upload to S3 runs in the background.
+    const format = /\.wav(\?|$)/i.test(primaryUrl) ? detectFormatFromUrl(primaryUrl) : "mp3";
     await db
       .update(tracks)
       .set({
         status: "done",
         title: buildVariantTitle(baseTrack.title, i, variant.title),
         audioId: variant.audioId ?? targetTrack.audioId,
-        s3Key,
-        s3KeyHd,
         format,
-        formatHd,
-        duration,
-        audioUrl: `/api/tracks/${targetTrack.id}/download`,
-        audioUrlHd: s3KeyHd ? `/api/tracks/${targetTrack.id}/download?hd=true` : null,
+        audioUrl: primaryUrl,
         error: null,
       })
       .where(eq(tracks.id, targetTrack.id));
+
+    // Upload to S3 in the background — swap the URL when done
+    (async () => {
+      try {
+        const audioRes = await axios.get(primaryUrl, { responseType: "arraybuffer" });
+        const audioBuffer = Buffer.from(audioRes.data);
+        const primaryHeaderType = String(audioRes.headers?.["content-type"] || "");
+        const resolvedFormat = /\.wav(\?|$)/i.test(primaryUrl)
+          ? detectFormatFromUrl(primaryUrl)
+          : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
+        const s3Key = targetTrack.s3Key ?? `tracks/${targetTrack.id}/audio.${resolvedFormat}`;
+        await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(resolvedFormat));
+
+        const duration = await extractAudioDuration(audioBuffer);
+
+        let s3KeyHd: string | null = null;
+        let formatHd: "mp3" | "wav" | null = null;
+        if (variant.audioUrlHd && variant.audioUrlHd !== primaryUrl) {
+          const hdRes = await axios.get(variant.audioUrlHd, { responseType: "arraybuffer" });
+          const hdHeaderType = String(hdRes.headers?.["content-type"] || "");
+          formatHd = /\.wav(\?|$)/i.test(variant.audioUrlHd)
+            ? detectFormatFromUrl(variant.audioUrlHd)
+            : detectFormatFromContentType(hdHeaderType || "audio/mpeg");
+          s3KeyHd = targetTrack.s3KeyHd ?? `tracks/${targetTrack.id}/audio_hd.${formatHd}`;
+          await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
+        }
+
+        await db
+          .update(tracks)
+          .set({
+            s3Key,
+            s3KeyHd,
+            format: resolvedFormat,
+            formatHd,
+            duration,
+            audioUrl: `/api/tracks/${targetTrack.id}/download`,
+            audioUrlHd: s3KeyHd ? `/api/tracks/${targetTrack.id}/download?hd=true` : null,
+          })
+          .where(eq(tracks.id, targetTrack.id));
+      } catch (err: any) {
+        console.error(`[poyo-sync] background S3 upload failed for track ${targetTrack.id}:`, err?.message ?? err);
+      }
+    })();
 
     updatedTrackIds.push(targetTrack.id);
   }
