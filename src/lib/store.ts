@@ -693,6 +693,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: "sonara-workspaces",
+      storage: createDebouncedStorage(800),
+      partialize: (state) => ({
+        selectedWorkspaceId: state.selectedWorkspaceId,
+        // Persist workspaces without trackIds — those are always hydrated from the server
+        workspaces: state.workspaces.map(({ trackIds: _trackIds, ...rest }) => ({ ...rest, trackIds: [] as string[] })),
+      }),
       merge: (persistedState, currentState) => {
         const typedPersisted = (persistedState as Partial<WorkspaceState>) || {};
         const merged = {

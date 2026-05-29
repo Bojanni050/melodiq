@@ -244,7 +244,15 @@ export default function HomePage() {
     const res = await fetch("/api/tracks");
     if (res.ok) {
       const data = await res.json();
-      setTracks(data.tracks);
+      setTracks((prev) => {
+        // Skip re-render if nothing changed (same IDs + statuses)
+        const next: Track[] = data.tracks;
+        if (
+          prev.length === next.length &&
+          prev.every((t, i) => t.id === next[i].id && t.status === next[i].status && t.title === next[i].title && t.coverUrl === next[i].coverUrl)
+        ) return prev;
+        return next;
+      });
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
       }
