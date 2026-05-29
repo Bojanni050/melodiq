@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "script:backfill-covers": "tsx --tsconfig tsconfig.json scripts/backfill-cover-webp.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
@@ -50,8 +51,10 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/sharp": "^0.31.1",
     "@vitest/coverage-v8": "^4.1.7",
+    "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "jsdom": "^29.1.1",
+    "tsx": "^4.22.3",
     "vitest": "^4.1.7"
   }
 }
