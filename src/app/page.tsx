@@ -412,10 +412,17 @@ export default function HomePage() {
 
     try {
       const needsTitle = !instrumental && !title.trim() && lyrics.trim();
-      const titlePromise = needsTitle ? handleGenerateTitle(lyrics) : Promise.resolve(null);
+      let finalTitle = title;
+      if (needsTitle) {
+        const generatedTitle = await handleGenerateTitle(lyrics);
+        if (generatedTitle) {
+          finalTitle = generatedTitle;
+          useStudioStore.getState().setTitle(finalTitle);
+        }
+      }
 
       const effectiveLanguage = getEffectiveLanguage();
-      const providerResults = await Promise.allSettled(
+      const results = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
           fetch("/api/generate", {
             method: "POST",
@@ -423,7 +430,7 @@ export default function HomePage() {
             body: JSON.stringify({
               prompt: songIdea,
               lyrics,
-              title,
+              title: finalTitle,
               provider,
               providerModel,
               language: effectiveLanguage,
@@ -438,15 +445,6 @@ export default function HomePage() {
           })
         )
       );
-
-      const generatedTitle = await titlePromise;
-      let finalTitle = title;
-      if (generatedTitle) {
-        finalTitle = generatedTitle;
-        useStudioStore.getState().setTitle(finalTitle);
-      }
-
-      const results = providerResults;
 
       const allTrackIds: string[] = [];
       const generatedTitles: string[] = [];
