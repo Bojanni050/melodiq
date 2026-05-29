@@ -13,7 +13,7 @@ type LyricsControlPanelProps = {
   topic: string;
   mood: string;
   style: string;
-  vocalistTag: "auto" | "male" | "female" | "together";
+  vocalistTag: "auto" | "male" | "female" | "together" | "duet";
   performerDirections: string;
   titleValue: string;
   generatingTitle: boolean;
@@ -43,7 +43,7 @@ type LyricsControlPanelProps = {
   onTopicChange: (value: string) => void;
   onMoodChange: (value: string) => void;
   onStyleChange: (value: string) => void;
-  onVocalistTagChange: (value: "auto" | "male" | "female" | "together") => void;
+  onVocalistTagChange: (value: "auto" | "male" | "female" | "together" | "duet") => void;
   onPerformerDirectionsChange: (value: string) => void;
   onTitleChange: (value: string) => void;
   onGenerateTitle: () => void;
@@ -183,7 +183,7 @@ export default function LyricsControlPanel({
             <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
               <select
                 value={vocalistTag}
-                onChange={(event) => onVocalistTagChange(event.target.value as "auto" | "male" | "female" | "together")}
+                onChange={(event) => onVocalistTagChange(event.target.value as "auto" | "male" | "female" | "together" | "duet")}
                 aria-label="Vocalist tag"
                 className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none"
               >
@@ -191,6 +191,7 @@ export default function LyricsControlPanel({
                 <option value="male" className="bg-gray-900">[male]</option>
                 <option value="female" className="bg-gray-900">[female]</option>
                 <option value="together" className="bg-gray-900">[together]</option>
+                <option value="duet" className="bg-gray-900">Duet (auto m/f)</option>
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
                 v

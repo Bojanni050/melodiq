@@ -44,10 +44,10 @@ function isChorusMode(value: unknown): value is ChorusMode {
   return value === "repeat" || value === "variation";
 }
 
-type VocalistTag = "auto" | "male" | "female" | "together";
+type VocalistTag = "auto" | "male" | "female" | "together" | "duet";
 
 function isVocalistTag(value: unknown): value is VocalistTag {
-  return value === "auto" || value === "male" || value === "female" || value === "together";
+  return value === "auto" || value === "male" || value === "female" || value === "together" || value === "duet";
 }
 
 const BLOCK_TYPES: BlockType[] = [
@@ -144,13 +144,29 @@ export async function POST(request: NextRequest) {
 
   const performerDirectionsText = typeof performerDirections === "string" ? performerDirections.trim() : "";
   const vocalistTagValue: VocalistTag = isVocalistTag(vocalistTag) ? vocalistTag : "auto";
+  const dir = performerDirectionsText ? ` - ${performerDirectionsText}` : "";
   const includePerformerTags = vocalistTagValue !== "auto" || performerDirectionsText.length > 0;
-  const performerTagInstruction = includePerformerTags
-    ? vocalistTagValue === "auto"
-      ? `Prefix every non-empty lyric line with exactly one of these tags: [male], [female], or [together].
-If performer direction is provided, include it inside the same brackets after a hyphen, e.g. [male - close-mic, dry, whispered].`
-      : `Prefix every non-empty lyric line with this tag: [${vocalistTagValue}${performerDirectionsText ? ` - ${performerDirectionsText}` : ""}].`
-    : "";
+
+  const performerTagInstruction = (() => {
+    if (!includePerformerTags) return "";
+
+    const dirNote = `If there are musical or vocal directions (e.g. "solo violin", "whispered", "close-mic"), include them inside the same brackets after a hyphen, e.g. [female - restrained, solo violin] or [male - powerful, full band].`;
+
+    if (vocalistTagValue === "duet") {
+      return `This is a duet. Prefix every non-empty lyric line with exactly one tag: [male], [female], or [together] (for harmonised/unison lines).
+Infer the gender combination (male/female, female/female, or male/male) from the topic, mood, pronouns, and existing sections. Be consistent throughout.
+${dirNote}${performerDirectionsText ? `\nApply this performer direction where relevant: ${performerDirectionsText}` : ""}`;
+    }
+
+    if (vocalistTagValue === "auto") {
+      return `Prefix every non-empty lyric line with exactly one of these tags: [male], [female], or [together].
+Choose based on the topic, mood, pronouns, and existing sections to be consistent and natural.
+${dirNote}`;
+    }
+
+    return `Prefix every non-empty lyric line with this tag: [${vocalistTagValue}${dir}].
+${dirNote}`;
+  })();
 
   let chorusInstruction = "";
   if (blockType === "chorus") {

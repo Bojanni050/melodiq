@@ -5,7 +5,7 @@ export type LyricsStudioDraftPayload = {
   topic: string;
   mood: string;
   style: string;
-  vocalistTag: "auto" | "male" | "female" | "together";
+  vocalistTag: "auto" | "male" | "female" | "together" | "duet";
   performerDirections: string;
   blocks: LyricBlock[];
   activePreset: string;

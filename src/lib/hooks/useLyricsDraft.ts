@@ -17,8 +17,8 @@ export interface LyricsDraftState {
   setMood: (v: string) => void;
   style: string;
   setStyle: (v: string) => void;
-  vocalistTag: "auto" | "male" | "female" | "together";
-  setVocalistTag: (v: "auto" | "male" | "female" | "together") => void;
+  vocalistTag: "auto" | "male" | "female" | "together" | "duet";
+  setVocalistTag: (v: "auto" | "male" | "female" | "together" | "duet") => void;
   performerDirections: string;
   setPerformerDirections: (v: string) => void;
   blocks: LyricBlock[];
@@ -48,7 +48,7 @@ export function useLyricsDraft(): LyricsDraftState {
   const [topic, setTopic] = useState("");
   const [mood, setMood] = useState("");
   const [style, setStyle] = useState("");
-  const [vocalistTag, setVocalistTag] = useState<"auto" | "male" | "female" | "together">("auto");
+  const [vocalistTag, setVocalistTag] = useState<"auto" | "male" | "female" | "together" | "duet">("auto");
   const [performerDirections, setPerformerDirections] = useState("");
   const [blocks, setBlocks] = useState<LyricBlock[]>([]);
   const [activePreset, setActivePreset] = useState("");
@@ -72,7 +72,7 @@ export function useLyricsDraft(): LyricsDraftState {
 
       const parsed = JSON.parse(raw) as {
         topic?: string; mood?: string; style?: string;
-        vocalistTag?: "auto" | "male" | "female" | "together";
+        vocalistTag?: "auto" | "male" | "female" | "together" | "duet";
         performerDirections?: string;
         blocks?: Array<Partial<LyricBlock>>; activePreset?: string;
         lyricCols?: number; showLyricsSidebar?: boolean;
