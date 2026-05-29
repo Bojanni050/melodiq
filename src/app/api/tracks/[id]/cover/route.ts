@@ -28,7 +28,10 @@ export async function GET(
     return NextResponse.json({ error: "No cover art available" }, { status: 404 });
   }
 
-  const url = await getPresignedUrl(track.s3KeyCover);
+  const isThumb = new URL(request.url).searchParams.get("thumb") === "1";
+  const s3Key = isThumb && track.s3KeyCoverThumb ? track.s3KeyCoverThumb : track.s3KeyCover;
+
+  const url = await getPresignedUrl(s3Key);
   return NextResponse.redirect(url, {
     headers: {
       // Presigned URL expires in 3600s — cache the redirect for the same duration

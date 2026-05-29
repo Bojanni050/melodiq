@@ -16,6 +16,7 @@ export interface TrackItem {
   s3KeyHd: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
+  s3KeyCoverThumb?: string | null;
   rating?: string | null;
   playCount?: number | null;
 }

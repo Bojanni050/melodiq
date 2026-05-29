@@ -480,6 +480,11 @@ export default function TrackCard({
   const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
   const effectiveCoverUrl = coverOverrideUrl ?? track.coverUrl ?? null;
+  const effectiveThumbUrl = coverOverrideUrl
+    ? `${coverOverrideUrl}&thumb=1`
+    : track.s3KeyCoverThumb
+      ? `/api/tracks/${track.id}/cover?thumb=1`
+      : effectiveCoverUrl;
   const deleteCount = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds.length : 1;
   const deleteMessage =
     deleteCount === 1
@@ -770,7 +775,7 @@ export default function TrackCard({
         ) : effectiveCoverUrl ? (
           <>
             <img
-              src={effectiveCoverUrl}
+              src={effectiveThumbUrl ?? effectiveCoverUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
             />

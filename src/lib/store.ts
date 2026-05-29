@@ -52,6 +52,7 @@ export interface Track {
   rating?: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
+  s3KeyCoverThumb?: string | null;
   playCount?: number | null;
 }
 

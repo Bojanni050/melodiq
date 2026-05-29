@@ -46,6 +46,7 @@ interface Track {
   s3KeyHd: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
+  s3KeyCoverThumb?: string | null;
   rating?: string | null;
 }
 
@@ -189,6 +190,7 @@ export default function HomePage() {
       s3KeyHd: currentTrack.s3KeyHd,
       coverUrl: null,
       s3KeyCover: null,
+      s3KeyCoverThumb: null,
     });
   }, [showTrackDetailsPanel, currentTrack, tracks]);
 
@@ -288,6 +290,7 @@ export default function HomePage() {
       error: track.error,
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
+      s3KeyCoverThumb: track.s3KeyCoverThumb,
     });
   }
 
@@ -551,6 +554,7 @@ export default function HomePage() {
           error: t.error,
           coverUrl: t.coverUrl,
           s3KeyCover: t.s3KeyCover,
+          s3KeyCoverThumb: t.s3KeyCoverThumb,
         }));
 
       player.setPlayContext(playContext);
@@ -580,6 +584,7 @@ export default function HomePage() {
         error: selectedTrack.error,
         coverUrl: selectedTrack.coverUrl,
         s3KeyCover: selectedTrack.s3KeyCover,
+        s3KeyCoverThumb: selectedTrack.s3KeyCoverThumb,
       });
     }
   }

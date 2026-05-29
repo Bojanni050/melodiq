@@ -3,6 +3,24 @@ import { tracks } from "@/db/schema";
 import { eq, and, isNotNull } from "drizzle-orm";
 import { generateCoverArt } from "@/lib/providers/cover-art";
 import { uploadToS3 } from "@/lib/s3";
+import sharp from "sharp";
+
+async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
+  const [webpBuffer, thumbBuffer] = await Promise.all([
+    sharp(rawBuffer).webp({ quality: 85 }).toBuffer(),
+    sharp(rawBuffer).resize(50, 50, { fit: "cover" }).webp({ quality: 80 }).toBuffer(),
+  ]);
+
+  const s3KeyCover = `tracks/${trackId}/cover.webp`;
+  const s3KeyCoverThumb = `tracks/${trackId}/cover_thumb.webp`;
+
+  await Promise.all([
+    uploadToS3(s3KeyCover, webpBuffer, "image/webp"),
+    uploadToS3(s3KeyCoverThumb, thumbBuffer, "image/webp"),
+  ]);
+
+  return { s3KeyCover, s3KeyCoverThumb };
+}
 
 /**
  * Genereert cover art voor een enkele track (Lyria, MiniMax, MusicGPT).
@@ -44,13 +62,13 @@ export async function generateAndSaveCoverArt(track: {
       instrumental: track.instrumental,
     });
 
-    const s3KeyCover = `tracks/${track.id}/cover.jpg`;
-    await uploadToS3(s3KeyCover, imageBuffer, "image/jpeg");
+    const { s3KeyCover, s3KeyCoverThumb } = await processAndUploadCover(imageBuffer, track.id);
 
     await db
       .update(tracks)
       .set({
         s3KeyCover,
+        s3KeyCoverThumb,
         coverUrl: `/api/tracks/${track.id}/cover`,
       })
       .where(eq(tracks.id, track.id));
@@ -83,6 +101,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
 
   try {
     let s3KeyCover: string;
+    let s3KeyCoverThumb: string;
 
     const existing = options?.forceNew
       ? null
@@ -93,6 +112,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
 
     if (existing?.s3KeyCover) {
       s3KeyCover = existing.s3KeyCover;
+      s3KeyCoverThumb = existing.s3KeyCoverThumb ?? s3KeyCover.replace("cover.webp", "cover_thumb.webp");
       console.log(`[cover-art] reusing existing cover for batch of ${batch.tracks.length}`);
     } else {
       const imageBuffer = await generateCoverArt({
@@ -101,9 +121,9 @@ export async function generateAndSaveCoverArtForBatch(batch: {
         instrumental: primary.instrumental,
       });
 
-      // Sla op onder de eerste track ID als canonical S3 key
-      s3KeyCover = `tracks/${primary.id}/cover.jpg`;
-      await uploadToS3(s3KeyCover, imageBuffer, "image/jpeg");
+      const result = await processAndUploadCover(imageBuffer, primary.id);
+      s3KeyCover = result.s3KeyCover;
+      s3KeyCoverThumb = result.s3KeyCoverThumb;
       console.log(`[cover-art] generated new cover for batch of ${batch.tracks.length}`);
     }
 
@@ -114,6 +134,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
           .update(tracks)
           .set({
             s3KeyCover,
+            s3KeyCoverThumb,
             coverUrl: `/api/tracks/${t.id}/cover`,
           })
           .where(eq(tracks.id, t.id))
@@ -127,9 +148,9 @@ export async function generateAndSaveCoverArtForBatch(batch: {
 async function findExistingCover(track: {
   userId: string;
   prompt: string;
-}): Promise<{ s3KeyCover: string } | null> {
+}): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string | null } | null> {
   const result = await db
-    .select({ s3KeyCover: tracks.s3KeyCover })
+    .select({ s3KeyCover: tracks.s3KeyCover, s3KeyCoverThumb: tracks.s3KeyCoverThumb })
     .from(tracks)
     .where(
       and(
@@ -140,5 +161,7 @@ async function findExistingCover(track: {
     )
     .limit(1);
 
-  return result[0]?.s3KeyCover ? { s3KeyCover: result[0].s3KeyCover } : null;
+  return result[0]?.s3KeyCover
+    ? { s3KeyCover: result[0].s3KeyCover, s3KeyCoverThumb: result[0].s3KeyCoverThumb ?? null }
+    : null;
 }

@@ -15,6 +15,13 @@
       "when": 1780007769045,
       "tag": "0001_familiar_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780022189810,
+      "tag": "0002_military_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }
