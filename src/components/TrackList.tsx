@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import GeneratingRow from "@/components/tracks/GeneratingRow";
 import TrackCard from "@/components/tracks/TrackCard";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
 
 type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 
@@ -40,8 +41,15 @@ export default function TrackList({
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
 }) {
-  const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore(
+    useShallow((state) => ({
+      playTrackFromGesture: state.playTrackFromGesture,
+      setQueue: state.setQueue,
+      setPlayContext: state.setPlayContext,
+      autoPlayNext: state.autoPlayNext,
+    }))
+  );
+  const currentTrackId = usePlayerStore((state) => state.currentTrack?.id ?? null);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
@@ -72,9 +80,30 @@ export default function TrackList({
     });
     return map;
   }, [workspaces, workspaceById]);
+  const trackCoverSignature = tracks.map((track) => `${track.id}:${track.coverUrl ?? ""}`).join("\u001f");
+  const coverByTrackIdRef = useRef<{ signature: string; map: Map<string, string | null> }>({
+    signature: "",
+    map: new Map(),
+  });
+  if (coverByTrackIdRef.current.signature !== trackCoverSignature) {
+    coverByTrackIdRef.current = {
+      signature: trackCoverSignature,
+      map: new Map(tracks.map((track) => [track.id, track.coverUrl ?? null])),
+    };
+  }
+  const coverByTrackId = coverByTrackIdRef.current.map;
+  const workspaceCoverById = useMemo(() => {
+    const coverMap = new Map<string, string | null>();
+    workspaces.forEach((workspace) => {
+      const firstCoverTrackId = workspace.trackIds.find((id) => coverByTrackId.get(id)) ?? null;
+      coverMap.set(workspace.id, firstCoverTrackId ? (coverByTrackId.get(firstCoverTrackId) ?? null) : null);
+    });
+    return coverMap;
+  }, [workspaces, coverByTrackId]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const hasScrolledToRestoredTrack = useRef(false);
   const selectedIdsRef = useRef<Set<string>>(new Set());
+  const displayedTracksRef = useRef<TrackItem[]>([]);
   const selectionAnchorIdRef = useRef<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,12 +193,16 @@ export default function TrackList({
   }, [orderedTracks, searchQuery]);
 
   useEffect(() => {
+    displayedTracksRef.current = displayedTracks;
+  }, [displayedTracks]);
+
+  useEffect(() => {
     if (hasScrolledToRestoredTrack.current) return;
-    if (!currentTrack) return;
-    if (!tracks.some((t) => t.id === currentTrack.id)) return;
+    if (!currentTrackId) return;
+    if (!tracks.some((t) => t.id === currentTrackId)) return;
 
     const timer = setTimeout(() => {
-      const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
+      const el = document.querySelector(`[data-track-id="${currentTrackId}"]`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "nearest" });
         hasScrolledToRestoredTrack.current = true;
@@ -177,7 +210,7 @@ export default function TrackList({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [currentTrack, tracks]);
+  }, [currentTrackId, tracks]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
@@ -190,12 +223,14 @@ export default function TrackList({
     }
   }, [tracks]);
 
-  function toggleSelection(trackId: string, options?: { mode?: "toggle" | "range" }) {
+  const getSelectedTrackIds = useCallback(() => Array.from(selectedIdsRef.current), []);
+
+  const toggleSelection = useCallback((trackId: string, options?: { mode?: "toggle" | "range" }) => {
     const mode = options?.mode ?? "toggle";
 
     if (mode === "range") {
       const anchorId = selectionAnchorIdRef.current;
-      const visibleIds = displayedTracks.map((track) => track.id);
+      const visibleIds = displayedTracksRef.current.map((track) => track.id);
       const anchorIndex = anchorId ? visibleIds.indexOf(anchorId) : -1;
       const targetIndex = visibleIds.indexOf(trackId);
 
@@ -229,7 +264,7 @@ export default function TrackList({
     });
 
     selectionAnchorIdRef.current = trackId;
-  }
+  }, []);
 
   function toggleSelectAll() {
     setSelectedIds((current) => {
@@ -255,7 +290,7 @@ export default function TrackList({
 
   const allSelected = displayedTracks.length > 0 && visibleSelectedCount === displayedTracks.length;
 
-  async function deleteTrackIds(trackIds: string[]) {
+  const deleteTrackIds = useCallback(async (trackIds: string[]) => {
     if (trackIds.length === 0) return;
     setDeleting(true);
     try {
@@ -269,7 +304,7 @@ export default function TrackList({
     } finally {
       setDeleting(false);
     }
-  }
+  }, [onDelete]);
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
@@ -281,7 +316,7 @@ export default function TrackList({
     await deleteTrackIds(Array.from(selectedIds));
   }
 
-  function handleMoveToWorkspace(sourceTrackId: string, workspaceId: string) {
+  const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
     const activeSelection = selectedIdsRef.current;
     const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
       ? Array.from(activeSelection)
@@ -297,11 +332,11 @@ export default function TrackList({
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
-  }
+  }, [moveTrackToWorkspace, onMoveToWorkspace]);
 
-  function handlePlay(track: TrackItem) {
+  const handlePlay = useCallback((track: TrackItem) => {
     if (autoQueueAfterPlay) {
-      const orderedPlayContext = displayedTracks
+      const orderedPlayContext = displayedTracksRef.current
         .filter((t) => t.status === "done")
         .map((t) => ({
           id: t.id,
@@ -357,7 +392,7 @@ export default function TrackList({
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
     });
-  }
+  }, [autoPlayNext, autoQueueAfterPlay, playTrackFromGesture, setPlayContext, setQueue]);
 
   function moveTrackInManualOrder(sourceId: string, targetId: string) {
     setManualOrderIds((current) => {
@@ -536,9 +571,8 @@ export default function TrackList({
                 onDragEnd={handleTrackDragEnd}
                 className={canDragReorder ? `rounded-xl transition-colors ${isDragActive ? "ring-1 ring-blue-400/60 bg-blue-500/5" : ""}` : undefined}
               >
-                <TrackCard
+                  <TrackCard
                   track={track}
-                  allTracks={tracks}
                   onPlay={handlePlay}
                   onSelect={onSelect}
                   onDelete={onDelete}
@@ -550,12 +584,13 @@ export default function TrackList({
                   onMoveTracksToWorkspace={handleMoveToWorkspace}
                   playlists={playlists}
                   isSelected={selectedIds.has(track.id)}
-                  selectedTrackIds={Array.from(selectedIds)}
+                  getSelectedTrackIds={getSelectedTrackIds}
                   onToggleSelect={toggleSelection}
                   onTitleUpdate={onTitleUpdate}
                   workspaceById={workspaceById}
                   orderedWorkspaceOptions={orderedWorkspaceOptions}
                   workspaceDisplayNameById={workspaceDisplayNameById}
+                  workspaceCoverById={workspaceCoverById}
                 />
               </div>
             );

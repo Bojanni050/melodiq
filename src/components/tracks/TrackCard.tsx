@@ -10,7 +10,6 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 const TrackCard = memo(function TrackCard({
   track,
-  allTracks,
   onPlay,
   onSelect,
   onDelete,
@@ -22,15 +21,15 @@ const TrackCard = memo(function TrackCard({
   onMoveTracksToWorkspace,
   playlists,
   isSelected,
-  selectedTrackIds,
+  getSelectedTrackIds,
   onToggleSelect,
   onTitleUpdate,
   workspaceById: workspaceByIdProp,
   orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
   workspaceDisplayNameById: workspaceDisplayNameByIdProp,
+  workspaceCoverById: workspaceCoverByIdProp,
 }: {
   track: TrackItem;
-  allTracks: TrackItem[];
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -46,18 +45,18 @@ const TrackCard = memo(function TrackCard({
   onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   isSelected?: boolean;
-  selectedTrackIds?: string[];
+  getSelectedTrackIds?: () => string[];
   onToggleSelect?: (trackId: string, options?: { mode?: "toggle" | "range" }) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
   workspaceById?: Map<string, Workspace>;
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
   workspaceDisplayNameById?: Map<string, string>;
+  workspaceCoverById?: Map<string, string | null>;
 }) {
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const isCurrentlyPlaying = usePlayerStore((state) => state.currentTrack?.id === track.id);
+  const isPlaying = usePlayerStore((state) => state.currentTrack?.id === track.id && state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
   const setIsFullscreen = usePlayerStore((state) => state.setIsFullscreen);
-  const isCurrentlyPlaying = currentTrack?.id === track.id;
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -219,7 +218,7 @@ const TrackCard = memo(function TrackCard({
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
+    const selection = getSelectedTrackIds?.() ?? [];
     setPendingDeleteIds(selection.length > 0 ? selection : [track.id]);
     setConfirmDelete(true);
   }
@@ -230,7 +229,7 @@ const TrackCard = memo(function TrackCard({
 
     setIsRegeneratingCover(true);
     try {
-      const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
+      const selection = getSelectedTrackIds?.() ?? [];
       const shouldBatch = selection.length > 1 && selection.includes(track.id);
 
       if (shouldBatch) {
@@ -450,15 +449,7 @@ const TrackCard = memo(function TrackCard({
     "bg-gradient-to-br from-fuchsia-300 via-violet-500 to-blue-700",
   ];
 
-  const workspaceCoverById = useMemo(() => {
-    const coverByTrackId = new Map(allTracks.map((t) => [t.id, t.coverUrl ?? null]));
-    const coverMap = new Map<string, string | null>();
-    workspaces.forEach((workspace) => {
-      const firstCover = workspace.trackIds.find((id) => coverByTrackId.get(id)) ?? null;
-      coverMap.set(workspace.id, firstCover ? (coverByTrackId.get(firstCover) ?? null) : null);
-    });
-    return coverMap;
-  }, [allTracks, workspaces]);
+  const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
 
   const statusConfig = {
     pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },

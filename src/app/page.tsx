@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -99,6 +99,14 @@ export default function HomePage() {
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const playlistOptions = useMemo(
+    () => playlists.map((playlist) => ({ id: playlist.id, name: playlist.name })),
+    [playlists]
+  );
+  const handleSelectTrack = useCallback((track: Track) => {
+    setSelectedTrack(track);
+    setShowTrackDetailsPanel(true);
+  }, [setShowTrackDetailsPanel]);
 
   useEffect(() => {
     ensureDefaultWorkspace();
@@ -317,12 +325,12 @@ export default function HomePage() {
     return [] as Track[];
   }
 
-  function handleDeleteTrack(trackId: string) {
+  const handleDeleteTrack = useCallback((trackId: string) => {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    if (selectedTrack?.id === trackId) setSelectedTrack(null);
-  }
+    setSelectedTrack((prev) => (prev?.id === trackId ? null : prev));
+  }, []);
 
-  function handleTitleUpdate(trackId: string, newTitle: string) {
+  const handleTitleUpdate = useCallback((trackId: string, newTitle: string) => {
     setTracks((prev) => {
       const idx = prev.findIndex((t) => t.id === trackId);
       if (idx === -1 || prev[idx].title === newTitle) return prev;
@@ -330,12 +338,10 @@ export default function HomePage() {
       next[idx] = { ...next[idx], title: newTitle };
       return next;
     });
-    if (selectedTrack?.id === trackId) {
-      setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
-    }
-  }
+    setSelectedTrack((prev) => (prev?.id === trackId ? { ...prev, title: newTitle } : prev));
+  }, []);
 
-  function handleAddToQueue(track: Track) {
+  const handleAddToQueue = useCallback((track: Track) => {
     usePlayerStore.getState().enqueueTrack({
       id: track.id,
       title: track.title,
@@ -357,15 +363,15 @@ export default function HomePage() {
       s3KeyCover: track.s3KeyCover,
       s3KeyCoverThumb: track.s3KeyCoverThumb,
     });
-  }
+  }, []);
 
-  function handleAddToPlaylist(
+  const handleAddToPlaylist = useCallback((
     trackId: string,
     playlistId: string,
     options?: { allowDuplicate?: boolean }
-  ) {
+  ) => {
     addTrackToPlaylist(playlistId, trackId, options);
-  }
+  }, [addTrackToPlaylist]);
 
   async function fetchCredits() {
     const res = await fetch("/api/credits", { cache: "no-store" });
@@ -585,7 +591,7 @@ export default function HomePage() {
     }
   }
 
-  function handleReusePrompt(track: Track) {
+  const handleReusePrompt = useCallback((track: Track) => {
     const studio = useStudioStore.getState();
 
     // Clear current fields first, then apply values from selected track.
@@ -593,7 +599,7 @@ export default function HomePage() {
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
-  }
+  }, []);
 
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
@@ -689,10 +695,10 @@ export default function HomePage() {
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
-  function handleMoveTrackToWorkspace(trackId: string, workspaceId: string) {
+  const handleMoveTrackToWorkspace = useCallback((trackId: string, workspaceId: string) => {
     moveTrackToWorkspace(workspaceId, trackId);
     setSelectedWorkspaceId(workspaceId);
-  }
+  }, [moveTrackToWorkspace, setSelectedWorkspaceId]);
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -1051,13 +1057,13 @@ export default function HomePage() {
                           <TrackList
                             tracks={selectedWorkspaceTracks}
                             autoQueueAfterPlay
-                            onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
+                            onSelect={handleSelectTrack}
                             onDelete={handleDeleteTrack}
                             onReusePrompt={handleReusePrompt}
                             onAddToQueue={handleAddToQueue}
                             onAddToPlaylist={handleAddToPlaylist}
                             onMoveToWorkspace={handleMoveTrackToWorkspace}
-                            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                            playlists={playlistOptions}
                             onTitleUpdate={handleTitleUpdate}
                           />
                         ) : (
@@ -1084,13 +1090,13 @@ export default function HomePage() {
                           enableDragReorder={false}
                           autoQueueAfterPlay
                           isGenerating={generating}
-                          onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
+                          onSelect={handleSelectTrack}
                           onDelete={handleDeleteTrack}
                           onReusePrompt={handleReusePrompt}
                           onAddToQueue={handleAddToQueue}
                           onAddToPlaylist={handleAddToPlaylist}
                           onMoveToWorkspace={handleMoveTrackToWorkspace}
-                          playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                          playlists={playlistOptions}
                           onTitleUpdate={handleTitleUpdate}
                         />
                       </div>

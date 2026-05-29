@@ -222,7 +222,25 @@ export const usePlayerStore = create<PlayerState>()(
 
           const patch = (track: Track) => {
             const refreshed = byId.get(track.id);
-            return refreshed ? { ...track, ...refreshed } : track;
+            if (!refreshed) return track;
+            const unchanged =
+              track.title === refreshed.title &&
+              track.status === refreshed.status &&
+              track.audioUrl === refreshed.audioUrl &&
+              track.audioUrlHd === refreshed.audioUrlHd &&
+              track.format === refreshed.format &&
+              track.formatHd === refreshed.formatHd &&
+              track.s3Key === refreshed.s3Key &&
+              track.s3KeyHd === refreshed.s3KeyHd &&
+              track.duration === refreshed.duration &&
+              track.lyrics === refreshed.lyrics &&
+              track.error === refreshed.error &&
+              track.rating === refreshed.rating &&
+              track.coverUrl === refreshed.coverUrl &&
+              track.s3KeyCover === refreshed.s3KeyCover &&
+              track.s3KeyCoverThumb === refreshed.s3KeyCoverThumb &&
+              track.playCount === refreshed.playCount;
+            return unchanged ? track : { ...track, ...refreshed };
           };
 
           const nextCurrentTrack = state.currentTrack ? patch(state.currentTrack) : null;
