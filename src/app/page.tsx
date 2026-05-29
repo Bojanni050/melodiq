@@ -647,7 +647,7 @@ export default function HomePage() {
 
       {/* Main content area */}
       <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
           <main className="p-4">
@@ -665,7 +665,7 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="xl:col-span-2 self-start sticky top-(--studio-top-offset) h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
+              <div className="xl:col-span-2 self-start xl:sticky xl:top-(--studio-top-offset) min-h-[400px] xl:h-[calc(100vh-var(--studio-top-offset)-var(--player-height)-var(--studio-bottom-gap))]">
                 <div className="flex flex-col h-full min-h-0">
                   {/* Tabs */}
                   <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
