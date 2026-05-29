@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getPresignedUrl } from "@/lib/s3";
 import { requireAuth } from "@/lib/require-auth";
+import { getCachedCover } from "@/lib/cover-cache";
 
 export async function GET(
   request: NextRequest,
@@ -31,11 +31,20 @@ export async function GET(
   const isThumb = new URL(request.url).searchParams.get("thumb") === "1";
   const s3Key = isThumb && track.s3KeyCoverThumb ? track.s3KeyCoverThumb : track.s3KeyCover;
 
-  const url = await getPresignedUrl(s3Key);
-  return NextResponse.redirect(url, {
-    headers: {
-      // Presigned URL expires in 3600s — cache the redirect for the same duration
-      "Cache-Control": "private, max-age=3600",
-    },
-  });
+  try {
+    const { buffer, cached, contentType } = await getCachedCover(s3Key);
+
+    return new NextResponse(buffer as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": String(buffer.length),
+        "Cache-Control": "private, max-age=86400, immutable",
+        "X-Cover-Cache": cached ? "hit" : "miss",
+      },
+    });
+  } catch (error: any) {
+    console.error(`[cover-cache] failed for track ${id}:`, error?.message ?? error);
+    return NextResponse.json({ error: "Failed to load cover art" }, { status: 500 });
+  }
 }

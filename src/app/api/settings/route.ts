@@ -30,14 +30,16 @@ async function getDirectorySizeBytes(dirPath: string): Promise<number> {
 }
 
 async function getDiskCacheSizeBytes(): Promise<number> {
-  const cachePath = "/data/audio-cache";
-
-  try {
-    await access(cachePath);
-    return await getDirectorySizeBytes(cachePath);
-  } catch {
-    return 0;
+  let total = 0;
+  for (const dir of ["/data/audio-cache", "/data/cover-cache"]) {
+    try {
+      await access(dir);
+      total += await getDirectorySizeBytes(dir);
+    } catch {
+      // dir doesn't exist yet
+    }
   }
+  return total;
 }
 
 export async function GET() {
