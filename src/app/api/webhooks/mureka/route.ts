@@ -14,12 +14,13 @@ function verifySignature(request: NextRequest, rawBody: string): boolean {
   const webhookTimestamp = request.headers.get("webhook-timestamp") ?? "";
   const webhookSignature = request.headers.get("webhook-signature") ?? "";
 
+  // Strip whsec_ prefix but do NOT base64 decode — use as-is per WaveSpeed docs
   const secret = webhookSecret.startsWith("whsec_")
     ? webhookSecret.slice("whsec_".length)
     : webhookSecret;
 
   const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
-  const computed = createHmac("sha256", Buffer.from(secret, "base64"))
+  const computed = createHmac("sha256", secret)
     .update(signedContent)
     .digest("hex");
 

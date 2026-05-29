@@ -27,14 +27,17 @@ export async function generateMureka({
   const apiKey = (await getSetting("WAVESPEED_API_KEY")) || process.env.WAVESPEED_API_KEY;
   if (!apiKey) throw new Error("WAVESPEED_API_KEY not configured");
 
+  const url = webhookUrl
+    ? `https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/generate-song?webhook=${encodeURIComponent(webhookUrl)}`
+    : "https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/generate-song";
+
   const response = await axios.post(
-    "https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/generate-song",
+    url,
     {
       lyrics,
       ...(prompt ? { prompt } : {}),
       number_of_songs: numberOfSongs,
       output_format: outputFormat,
-      ...(webhookUrl ? { webhook_url: webhookUrl } : {}),
     },
     {
       headers: {
