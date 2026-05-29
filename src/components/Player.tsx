@@ -584,6 +584,7 @@ export default function Player() {
       if (!audioEl) return;
 
       const streamUrl = `/api/tracks/${trackId}/stream${wantsHd ? "?hd=true" : ""}`;
+      const trackStreamPath = `/api/tracks/${trackId}/stream`;
 
       setResolvingUrl(true);
       setAudioSource("unknown");
@@ -595,6 +596,11 @@ export default function Player() {
         setAudioSourceState(detectedSource.state);
       }
 
+      const alreadyPlayingThisStream =
+        typeof audioEl.src === "string" &&
+        audioEl.src.includes(trackStreamPath) &&
+        (wantsHd ? audioEl.src.includes("hd=true") : true);
+
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
       const storedProgress = usePlayerStore.getState().progress;
@@ -602,6 +608,15 @@ export default function Player() {
         ? (audioEl.currentTime || 0)
         : (isInitialLoad && storedProgress > 0 ? storedProgress : 0);
       const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
+
+      if (alreadyPlayingThisStream) {
+        lastLoadedTrackIdRef.current = trackId;
+        setResolvingUrl(false);
+        if (usePlayerStore.getState().isPlaying || shouldResume) {
+          void tryPlay();
+        }
+        return;
+      }
 
       audioEl.pause();
       audioEl.currentTime = 0;

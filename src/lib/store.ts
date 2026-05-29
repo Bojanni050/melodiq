@@ -188,7 +188,8 @@ export const usePlayerStore = create<PlayerState>()(
         const audioElement = get().audioElement;
         if (!audioElement) return;
 
-        const url = track.audioUrl || `/api/tracks/${track.id}/download`;
+        const wantsHd = (track.audioUrl || "").includes("hd=true");
+        const url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
         audioElement.pause();
         audioElement.currentTime = 0;
         audioElement.src = url;
