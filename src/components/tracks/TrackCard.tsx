@@ -87,9 +87,11 @@ export default function TrackCard({
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
-  const { workspaces, createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
-    useShallow((s) => ({ workspaces: s.workspaces, createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
+  const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
+    useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
   );
+  // workspaces is derived from props passed by TrackList (computed once there, not per card)
+  const workspaces = workspaceByIdProp ? Array.from(workspaceByIdProp.values()) : [];
   const workspaceById = useMemo(
     () => workspaceByIdProp ?? new Map(workspaces.map((workspace) => [workspace.id, workspace])),
     [workspaceByIdProp, workspaces]
