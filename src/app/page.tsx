@@ -10,7 +10,14 @@ import CreateWorkspaceDialog from "@/components/studio/CreateWorkspaceDialog";
 import NoticeBar from "@/components/studio/NoticeBar";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, useStudioStore, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import {
+  DEFAULT_WORKSPACE_ID,
+  useStudioStore,
+  usePlayerStore,
+  usePlaylistStore,
+  useWorkspaceStore,
+  type Track as PlayerTrack,
+} from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "sonara-studio-workspace-grid-size";
@@ -38,6 +45,7 @@ interface Track {
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;
+  s3Key?: string | null;
   format: string | null;
   formatHd: string | null;
   duration: number | null;
@@ -48,6 +56,7 @@ interface Track {
   s3KeyCover?: string | null;
   s3KeyCoverThumb?: string | null;
   rating?: string | null;
+  playCount?: number | null;
 }
 
 function deriveWorkspaceNameFromTitle(rawTitle: string): string {
@@ -182,6 +191,7 @@ export default function HomePage() {
       status: currentTrack.status,
       audioUrl: currentTrack.audioUrl,
       audioUrlHd: currentTrack.audioUrlHd,
+      s3Key: currentTrack.s3Key ?? null,
       format: currentTrack.format ?? null,
       formatHd: currentTrack.formatHd ?? null,
       duration: currentTrack.duration ?? null,
@@ -191,6 +201,8 @@ export default function HomePage() {
       coverUrl: null,
       s3KeyCover: null,
       s3KeyCoverThumb: null,
+      playCount: currentTrack.playCount ?? null,
+      rating: currentTrack.rating ?? null,
     });
   }, [showTrackDetailsPanel, currentTrack, tracks]);
 
@@ -241,24 +253,65 @@ export default function HomePage() {
   }
 
   async function fetchTracks() {
-    const res = await fetch("/api/tracks");
+    const res = await fetch("/api/tracks", { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
+      const next: Track[] = Array.isArray(data.tracks) ? data.tracks : [];
+      const playerSnapshots: PlayerTrack[] = next.map((track) => ({
+        id: track.id,
+        title: track.title,
+        provider: track.provider,
+        providerModel: track.providerModel,
+        prompt: track.prompt,
+        status: track.status,
+        audioUrl: track.audioUrl,
+        audioUrlHd: track.audioUrlHd,
+        s3Key: track.s3Key ?? null,
+        s3KeyHd: track.s3KeyHd,
+        format: track.format,
+        formatHd: track.formatHd,
+        duration: track.duration,
+        lyrics: track.lyrics,
+        createdAt: track.createdAt,
+        error: track.error,
+        rating: track.rating ?? null,
+        coverUrl: track.coverUrl ?? null,
+        s3KeyCover: track.s3KeyCover ?? null,
+        s3KeyCoverThumb: track.s3KeyCoverThumb ?? null,
+        playCount: track.playCount ?? null,
+      }));
+
+      usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
       setTracks((prev) => {
         // Skip re-render if nothing changed (same IDs + statuses)
-        const next: Track[] = data.tracks;
+        const nextTracks = next;
         if (
-          prev.length === next.length &&
-          prev.every((t, i) => t.id === next[i].id && t.status === next[i].status && t.title === next[i].title && t.coverUrl === next[i].coverUrl)
+          prev.length === nextTracks.length &&
+          prev.every((t, i) =>
+            t.id === nextTracks[i].id &&
+            t.status === nextTracks[i].status &&
+            t.title === nextTracks[i].title &&
+            t.coverUrl === nextTracks[i].coverUrl &&
+            t.audioUrl === nextTracks[i].audioUrl &&
+            t.audioUrlHd === nextTracks[i].audioUrlHd &&
+            t.error === nextTracks[i].error &&
+            t.duration === nextTracks[i].duration &&
+            t.format === nextTracks[i].format &&
+            t.formatHd === nextTracks[i].formatHd &&
+            t.s3KeyHd === nextTracks[i].s3KeyHd &&
+            t.s3KeyCoverThumb === nextTracks[i].s3KeyCoverThumb &&
+            (t.playCount ?? null) === (nextTracks[i].playCount ?? null) &&
+            (t.rating ?? null) === (nextTracks[i].rating ?? null)
+          )
         ) return prev;
-        return next;
+        return nextTracks;
       });
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
       }
-      const knownTrackIds = (data.tracks || []).map((track: Track) => track.id);
+      const knownTrackIds = next.map((track) => track.id);
       syncTracksToDefaultWorkspace(knownTrackIds);
-      return data.tracks as Track[];
+      return next;
     }
 
     return [] as Track[];
@@ -315,7 +368,7 @@ export default function HomePage() {
   }
 
   async function fetchCredits() {
-    const res = await fetch("/api/credits");
+    const res = await fetch("/api/credits", { cache: "no-store" });
     if (res.ok) {
       setCredits(await res.json());
     }

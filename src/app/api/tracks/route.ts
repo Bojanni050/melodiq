@@ -18,6 +18,8 @@ import {
 } from "@/lib/workspaces";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 
+export const dynamic = "force-dynamic";
+
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 const MAX_FILES_PER_UPLOAD = 20;
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(tracks.userId, userId),
-            eq(tracks.status, "generating"),
+            inArray(tracks.status, ["pending", "generating"]),
             ne(tracks.provider, "musicgpt"),
             lt(tracks.createdAt, timeoutCutoff)
           )
@@ -142,7 +144,10 @@ export async function GET(request: NextRequest) {
     finalTracks.map((track) => ({ id: track.id, workspaceId: track.workspaceId ?? null }))
   );
 
-  return NextResponse.json({ tracks: finalTracks, workspaces: workspacePayload });
+  return NextResponse.json(
+    { tracks: finalTracks, workspaces: workspacePayload },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function PATCH(request: NextRequest) {

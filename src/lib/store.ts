@@ -81,6 +81,7 @@ interface PlayerState {
   playTrackFromGesture: (track: Track) => void;
   setPlayContext: (tracks: Track[] | null) => void;
   hydrateQueueFromContext: () => void;
+  syncTrackSnapshots: (tracks: Track[]) => void;
   setAutoPlayNext: (enabled: boolean) => void;
   setShowTrackDetailsPanel: (enabled: boolean) => void;
   setRightPanelWidth: (width: number) => void;
@@ -214,6 +215,40 @@ export const usePlayerStore = create<PlayerState>()(
         if (index < 0) return;
         set({ queue: context.slice(index + 1).filter((t) => t.status === "done") });
       },
+      syncTrackSnapshots: (tracks) =>
+        set((state) => {
+          if (!tracks || tracks.length === 0) return state;
+          const byId = new Map(tracks.map((track) => [track.id, track]));
+
+          const patch = (track: Track) => {
+            const refreshed = byId.get(track.id);
+            return refreshed ? { ...track, ...refreshed } : track;
+          };
+
+          const nextCurrentTrack = state.currentTrack ? patch(state.currentTrack) : null;
+          const nextQueue = state.queue.map(patch);
+          const nextHistory = state.history.map(patch);
+          const nextPlayContext = state.playContext ? state.playContext.map(patch) : null;
+
+          const hasChanges =
+            (state.currentTrack?.id ?? null) !== (nextCurrentTrack?.id ?? null) ||
+            (state.currentTrack?.status ?? null) !== (nextCurrentTrack?.status ?? null) ||
+            (state.currentTrack?.audioUrl ?? null) !== (nextCurrentTrack?.audioUrl ?? null) ||
+            (state.currentTrack?.audioUrlHd ?? null) !== (nextCurrentTrack?.audioUrlHd ?? null) ||
+            state.queue.some((track, index) => track !== nextQueue[index]) ||
+            state.history.some((track, index) => track !== nextHistory[index]) ||
+            (state.playContext ? state.playContext.some((track, index) => track !== nextPlayContext?.[index]) : false);
+
+          if (!hasChanges) return state;
+
+          return {
+            ...state,
+            currentTrack: nextCurrentTrack,
+            queue: nextQueue,
+            history: nextHistory,
+            playContext: nextPlayContext,
+          };
+        }),
       setAutoPlayNext: (enabled) => {
         set({ autoPlayNext: enabled });
         if (enabled) {
