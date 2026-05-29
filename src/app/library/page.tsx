@@ -471,26 +471,10 @@ export default function LibraryPage() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.28em] text-white/35">Library</p>
-                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Songs and workspace folders</h1>
+                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Songs</h1>
                   <p className="max-w-2xl text-sm sm:text-base text-white/60">
                     Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
                   </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setView("songs")}
-                    className={`h-10 px-4 rounded-full text-sm transition-colors ${view === "songs" ? "bg-white text-black" : "bg-white/6 text-white/70 hover:text-white hover:bg-white/10"}`}
-                  >
-                    Songs
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("workspaces")}
-                    className={`h-10 px-4 rounded-full text-sm transition-colors ${view === "workspaces" ? "bg-white text-black" : "bg-white/6 text-white/70 hover:text-white hover:bg-white/10"}`}
-                  >
-                    Workspaces
-                  </button>
                 </div>
               </div>
             </section>
@@ -553,13 +537,16 @@ export default function LibraryPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <button
                             type="button"
-                            onClick={backToWorkspaces}
+                            onClick={() => {
+                              setSelectedWorkspaceId(null);
+                              setView("songs");
+                            }}
                             className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            Workspaces
+                            All songs
                           </button>
                         </div>
                         <h2 className="text-lg font-semibold truncate">{selectedWorkspace.name}</h2>
