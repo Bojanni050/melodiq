@@ -201,7 +201,9 @@ export default function LyricsControlPanel({
               type="text"
               value={performerDirections}
               onChange={(event) => onPerformerDirectionsChange(event.target.value)}
-              placeholder="Performer direction (optional) — goes inside [male]/[female]/[together]"
+              placeholder={vocalistTag === "duet"
+                ? "Describe how the duet is divided, e.g. 'verses solo, last line together, chorus mostly together with alternating lines'"
+                : "Vocal/musical direction (optional) — e.g. 'restrained, solo violin' — goes inside the tag"}
               className="input-field text-sm"
             />
           </div>

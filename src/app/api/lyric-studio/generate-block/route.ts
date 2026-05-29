@@ -168,7 +168,7 @@ Line four
 [together]
 Chorus line one
 Chorus line two
-${dirNote}${performerDirectionsText ? `\nApply this performer direction where relevant: ${performerDirectionsText}` : ""}`;
+${dirNote}${performerDirectionsText ? `\nDuet structure instruction from the user: "${performerDirectionsText}" — follow this when deciding which vocalist sings which lines.` : ""}`;
     }
 
     if (vocalistTagValue === "auto") {
