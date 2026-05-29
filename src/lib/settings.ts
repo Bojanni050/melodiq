@@ -92,6 +92,9 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
   } else if (provider === "musicgpt") {
     const key = await getSetting("MUSICGPT_API_KEY");
     if (!key) missing.push("MUSICGPT_API_KEY");
+  } else if (provider === "mureka") {
+    const key = await getSetting("WAVESPEED_API_KEY");
+    if (!key) missing.push("WAVESPEED_API_KEY");
   } else if (provider === "minimax") {
     const usePoYo = await getSetting("MINIMAX_USE_POYO");
     if (usePoYo === "true") {

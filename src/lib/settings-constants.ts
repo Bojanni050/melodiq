@@ -83,6 +83,20 @@ export const PROVIDERS: ProviderConfig[] = [
     testEndpoint: "minimax",
   },
   {
+    id: "mureka",
+    name: "Mureka V9 (WaveSpeed)",
+    description: "High-quality song generation with lyrics via WaveSpeed AI",
+    fields: [
+      {
+        key: "WAVESPEED_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "wsa_...",
+      },
+    ],
+    testEndpoint: "mureka",
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     description: "Primary LLM provider for prompt optimization and lyrics",

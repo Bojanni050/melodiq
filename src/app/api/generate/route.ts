@@ -8,6 +8,7 @@ import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { generateMinimax } from "@/lib/providers/minimax";
+import { generateMureka } from "@/lib/providers/mureka";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
   const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
-  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
@@ -828,6 +829,59 @@ export async function POST(request: NextRequest) {
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
         response: JSON.stringify({ status: "generating", taskId: genResult.taskId, conversions: [genResult.conversionId1, genResult.conversionId2] }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ tracks: allTracks });
+    }
+
+    if (provider === "mureka") {
+      if (!lyrics?.trim()) {
+        return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
+      }
+
+      const genResult = await generateMureka({
+        lyrics,
+        prompt: prompt || undefined,
+        numberOfSongs: 2,
+        outputFormat: "mp3",
+      });
+
+      const [t1, t2] = await Promise.all([
+        db.update(tracks).set({ status: "generating", jobId: genResult.requestId }).where(eq(tracks.id, track.id!)).returning(),
+        db.insert(tracks).values({
+          userId,
+          provider: "mureka",
+          providerModel: "mureka-v9",
+          prompt,
+          lyrics: lyrics || null,
+          instrumental: false,
+          title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          status: "generating",
+          jobId: `${genResult.requestId}:1`,
+        }).returning(),
+      ]);
+
+      const allTracks = [t1[0], t2[0]];
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch((err) => console.error("[generate] cover art batch failed (mureka)", err));
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "mureka",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, prompt, lyrics: lyrics?.slice(0, 100) }),
+        response: JSON.stringify({ status: "generating", requestId: genResult.requestId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });

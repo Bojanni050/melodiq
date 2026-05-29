@@ -10,6 +10,7 @@ const PROVIDERS = {
   tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["TemPolor v4.6", "TemPolor v3.5", "TemPolor v3", "TemPolor i3.5", "TemPolor i3"], icon: "T" },
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
   minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
+  mureka: { name: "Mureka", fullName: "Mureka V9 (WaveSpeed)", models: ["mureka-v9"], icon: "W" },
 };
 
 const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
