@@ -30,6 +30,11 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "GET",
   },
+  mureka: {
+    url: "https://api.wavespeed.ai/api/v3/user/info",
+    keyPrefix: "",
+    method: "GET",
+  },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
     keyPrefix: "",
@@ -82,6 +87,9 @@ export async function POST(request: Request) {
       info = `Connected — MusicGPT API is active`;
     } else if (provider === "minimax") {
       info = `Connected — MiniMax API is active`;
+    } else if (provider === "mureka") {
+      const credits = response.data?.data?.credits ?? response.data?.credits;
+      info = credits !== undefined ? `Connected — ${credits} credits` : "Connected — WaveSpeed API is active";
     } else if (provider === "openrouter") {
       info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {
