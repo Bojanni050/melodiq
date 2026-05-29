@@ -3,12 +3,12 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 ENV NODE_ENV=production
 RUN npm run build
@@ -29,7 +29,7 @@ COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/src/db ./src/db
 COPY --from=builder /app/node_modules ./node_modules
 
-RUN mkdir -p /data/audio-cache && chown nextjs:nodejs /data/audio-cache
+RUN mkdir -p /data/audio-cache /data/cover-cache && chown nextjs:nodejs /data/audio-cache /data/cover-cache
 
 USER nextjs
 
