@@ -257,6 +257,7 @@ export default function StudioForm({
   const [showTags, setShowTags] = useState(false);
   const [showProTips, setShowProTips] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
+  const [lyricsExpanded, setLyricsExpanded] = useState(false);
   const [providersCollapsed, setProvidersCollapsed] = useState(() => {
     try {
       return window.localStorage.getItem("sonara-providers-collapsed") === "true";
@@ -422,6 +423,19 @@ export default function StudioForm({
             {!instrumental && (
               <button
                 type="button"
+                onClick={() => setLyricsExpanded(true)}
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                title="Expand lyrics editor"
+                aria-label="Expand lyrics editor"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                </svg>
+              </button>
+            )}
+            {!instrumental && (
+              <button
+                type="button"
                 onClick={() => handleCopy(lyrics, "lyrics")}
                 disabled={!lyrics.trim()}
                 className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -530,6 +544,36 @@ Your chorus here`}
           </p>
         )}
       </section>
+
+      {/* Expanded lyrics overlay */}
+      {lyricsExpanded && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#0d0d12]/95 backdrop-blur-sm p-4 sm:p-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+              <span className={`text-xs text-white/30`}>{lyricsCharCount}/{lyricsMaxChars}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLyricsExpanded(false)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
+              title="Collapse lyrics editor"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+              </svg>
+              Close
+            </button>
+          </div>
+          <textarea
+            value={lyrics}
+            onChange={(e) => setLyrics(e.target.value)}
+            placeholder={`Write your lyrics here...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here`}
+            className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-sm leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
+            autoFocus
+          />
+        </div>
+      )}
 
       {/* Style Section */}
       <section className="section-card">
