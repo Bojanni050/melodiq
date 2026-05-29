@@ -485,6 +485,11 @@ const TrackCard = memo(function TrackCard({
       ? "Delete this song? This cannot be undone."
       : `Delete ${deleteCount} selected songs? This cannot be undone.`;
 
+  // Verberg TrackCard als track.status 'generating' of 'pending' is en er geen cover art beschikbaar is
+  if ((track.status === "generating" || track.status === "pending") && !track.coverUrl && !coverOverrideUrl) {
+    return null;
+  }
+
   return (
     <>
       {confirmDelete && (
