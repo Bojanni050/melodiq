@@ -17,6 +17,10 @@ export interface LyricsDraftState {
   setMood: (v: string) => void;
   style: string;
   setStyle: (v: string) => void;
+  vocalistTag: "auto" | "male" | "female" | "together";
+  setVocalistTag: (v: "auto" | "male" | "female" | "together") => void;
+  performerDirections: string;
+  setPerformerDirections: (v: string) => void;
   blocks: LyricBlock[];
   setBlocks: React.Dispatch<React.SetStateAction<LyricBlock[]>>;
   activePreset: string;
@@ -44,6 +48,8 @@ export function useLyricsDraft(): LyricsDraftState {
   const [topic, setTopic] = useState("");
   const [mood, setMood] = useState("");
   const [style, setStyle] = useState("");
+  const [vocalistTag, setVocalistTag] = useState<"auto" | "male" | "female" | "together">("auto");
+  const [performerDirections, setPerformerDirections] = useState("");
   const [blocks, setBlocks] = useState<LyricBlock[]>([]);
   const [activePreset, setActivePreset] = useState("");
   const [lyricCols, setLyricCols] = useState(2);
@@ -66,6 +72,8 @@ export function useLyricsDraft(): LyricsDraftState {
 
       const parsed = JSON.parse(raw) as {
         topic?: string; mood?: string; style?: string;
+        vocalistTag?: "auto" | "male" | "female" | "together";
+        performerDirections?: string;
         blocks?: Array<Partial<LyricBlock>>; activePreset?: string;
         lyricCols?: number; showLyricsSidebar?: boolean;
         structure?: string; customStructure?: string;
@@ -77,6 +85,10 @@ export function useLyricsDraft(): LyricsDraftState {
       if (typeof parsed.topic === "string") setTopic(parsed.topic);
       if (typeof parsed.mood === "string") setMood(parsed.mood);
       if (typeof parsed.style === "string") setStyle(parsed.style);
+      if (parsed.vocalistTag === "auto" || parsed.vocalistTag === "male" || parsed.vocalistTag === "female" || parsed.vocalistTag === "together") {
+        setVocalistTag(parsed.vocalistTag);
+      }
+      if (typeof parsed.performerDirections === "string") setPerformerDirections(parsed.performerDirections);
       if (typeof parsed.activePreset === "string") setActivePreset(parsed.activePreset);
       if (parsed.lyricCols === 1 || parsed.lyricCols === 2) setLyricCols(parsed.lyricCols);
       if (typeof parsed.showLyricsSidebar === "boolean") setShowLyricsSidebar(parsed.showLyricsSidebar);
@@ -124,7 +136,7 @@ export function useLyricsDraft(): LyricsDraftState {
   useEffect(() => {
     if (!hasRestoredDraft) return;
     const payload = buildLyricsStudioDraftPayload({
-      topic, mood, style, blocks, activePreset, lyricCols, showLyricsSidebar,
+      topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar,
       structure, customStructure, language, customLanguage,
       repetitiveChorus, creativityLevel, contextLevel, styleSuggestion,
     });
@@ -132,13 +144,15 @@ export function useLyricsDraft(): LyricsDraftState {
   }, [
     activePreset, blocks, customLanguage, customStructure, hasRestoredDraft,
     language, lyricCols, mood, repetitiveChorus, creativityLevel, contextLevel,
-    showLyricsSidebar, styleSuggestion, structure, style, topic,
+    showLyricsSidebar, styleSuggestion, structure, style, topic, vocalistTag, performerDirections,
   ]);
 
   return {
     topic, setTopic,
     mood, setMood,
     style, setStyle,
+    vocalistTag, setVocalistTag,
+    performerDirections, setPerformerDirections,
     blocks, setBlocks,
     activePreset, setActivePreset,
     lyricCols, setLyricCols,
@@ -167,6 +181,8 @@ export function loadSnapshotIntoState(
   state.setTopic(payload.topic || "");
   state.setMood(payload.mood || "");
   state.setStyle(payload.style || "");
+  state.setVocalistTag(payload.vocalistTag === "male" || payload.vocalistTag === "female" || payload.vocalistTag === "together" ? payload.vocalistTag : "auto");
+  state.setPerformerDirections(payload.performerDirections || "");
   state.setBlocks(sanitizeLyricBlocksForLoad(payload.blocks || [], BLOCK_TYPES, BLOCK_LABELS));
   state.setActivePreset(payload.activePreset || "");
   state.setLyricCols(payload.lyricCols === 1 ? 1 : 2);

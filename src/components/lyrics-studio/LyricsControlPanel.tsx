@@ -13,6 +13,8 @@ type LyricsControlPanelProps = {
   topic: string;
   mood: string;
   style: string;
+  vocalistTag: "auto" | "male" | "female" | "together";
+  performerDirections: string;
   titleValue: string;
   generatingTitle: boolean;
   canGenerateTitle: boolean;
@@ -41,6 +43,8 @@ type LyricsControlPanelProps = {
   onTopicChange: (value: string) => void;
   onMoodChange: (value: string) => void;
   onStyleChange: (value: string) => void;
+  onVocalistTagChange: (value: "auto" | "male" | "female" | "together") => void;
+  onPerformerDirectionsChange: (value: string) => void;
   onTitleChange: (value: string) => void;
   onGenerateTitle: () => void;
   onLanguageChange: (value: string) => void;
@@ -65,6 +69,8 @@ export default function LyricsControlPanel({
   topic,
   mood,
   style,
+  vocalistTag,
+  performerDirections,
   titleValue,
   generatingTitle,
   canGenerateTitle,
@@ -93,6 +99,8 @@ export default function LyricsControlPanel({
   onTopicChange,
   onMoodChange,
   onStyleChange,
+  onVocalistTagChange,
+  onPerformerDirectionsChange,
   onTitleChange,
   onGenerateTitle,
   onLanguageChange,
@@ -170,6 +178,32 @@ export default function LyricsControlPanel({
             placeholder="Genre / style hints (optional)"
             className="input-field text-sm"
           />
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[170px_minmax(0,1fr)]">
+            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
+              <select
+                value={vocalistTag}
+                onChange={(event) => onVocalistTagChange(event.target.value as "auto" | "male" | "female" | "together")}
+                aria-label="Vocalist tag"
+                className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none"
+              >
+                <option value="auto" className="bg-gray-900">Vocal tag: auto</option>
+                <option value="male" className="bg-gray-900">[male]</option>
+                <option value="female" className="bg-gray-900">[female]</option>
+                <option value="together" className="bg-gray-900">[together]</option>
+              </select>
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+                v
+              </span>
+            </div>
+            <input
+              type="text"
+              value={performerDirections}
+              onChange={(event) => onPerformerDirectionsChange(event.target.value)}
+              placeholder="Performer direction (optional) — goes inside [male]/[female]/[together]"
+              className="input-field text-sm"
+            />
+          </div>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <input

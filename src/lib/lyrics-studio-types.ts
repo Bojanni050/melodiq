@@ -8,6 +8,8 @@ export interface LyricStudioSnapshot {
     topic: string;
     mood: string;
     style: string;
+    vocalistTag: "auto" | "male" | "female" | "together";
+    performerDirections: string;
     blocks: LyricBlock[];
     activePreset: string;
     lyricCols: number;

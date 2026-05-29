@@ -5,6 +5,8 @@ export type LyricsStudioDraftPayload = {
   topic: string;
   mood: string;
   style: string;
+  vocalistTag: "auto" | "male" | "female" | "together";
+  performerDirections: string;
   blocks: LyricBlock[];
   activePreset: string;
   lyricCols: number;
@@ -24,6 +26,8 @@ export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload)
     topic: payload.topic,
     mood: payload.mood,
     style: payload.style,
+    vocalistTag: payload.vocalistTag,
+    performerDirections: payload.performerDirections,
     blocks: payload.blocks,
     activePreset: payload.activePreset,
     lyricCols: payload.lyricCols,

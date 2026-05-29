@@ -41,6 +41,7 @@ export default function LyricsStudioPage() {
   const draft = useLyricsDraft();
   const {
     topic, setTopic, mood, setMood, style, setStyle,
+    vocalistTag, setVocalistTag, performerDirections, setPerformerDirections,
     blocks, setBlocks, activePreset, setActivePreset,
     lyricCols, setLyricCols, showLyricsSidebar, setShowLyricsSidebar,
     repetitiveChorus, setRepetitiveChorus,
@@ -189,7 +190,7 @@ export default function LyricsStudioPage() {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: new Date().toISOString(),
-      payload: buildLyricsStudioDraftPayload({ topic, mood, style, blocks, activePreset, lyricCols, showLyricsSidebar, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, contextLevel, styleSuggestion }),
+      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, contextLevel, styleSuggestion }),
     };
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
     setSavedSnapshots(next);
@@ -218,6 +219,7 @@ export default function LyricsStudioPage() {
       body: JSON.stringify({
         blockType: block.type, blockLabel: block.label, topic, mood,
         language: effectiveLanguage, style,
+        vocalistTag, performerDirections,
         existingBlocks: contextBlocks.filter((b) => b.id !== block.id).map(({ type, label, content }) => ({ type, label, content })),
         chorusMode: options?.chorusMode, isFirstChorus: options?.isFirstChorus, temperature, topP,
       }),
@@ -587,6 +589,7 @@ export default function LyricsStudioPage() {
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
               <LyricsControlPanel
                 topic={topic} mood={mood} style={style}
+                vocalistTag={vocalistTag} performerDirections={performerDirections}
                 titleValue={title}
                 generatingTitle={generatingTitle}
                 canGenerateTitle={canGenerateTitle}
@@ -600,6 +603,7 @@ export default function LyricsStudioPage() {
                 blockTypes={BLOCK_TYPES} blockLabels={BLOCK_LABELS} blockColors={BLOCK_COLORS}
                 presets={BLOCK_PRESETS} combinedLyrics={combinedLyrics} copied={copied}
                 onTopicChange={setTopic} onMoodChange={setMood} onStyleChange={setStyle}
+                onVocalistTagChange={setVocalistTag} onPerformerDirectionsChange={setPerformerDirections}
                 onTitleChange={setTitle}
                 onGenerateTitle={generateTitleFromLyrics}
                 onLanguageChange={setLanguage} onCustomLanguageChange={setCustomLanguage}
