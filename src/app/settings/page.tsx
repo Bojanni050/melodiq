@@ -214,7 +214,7 @@ export default function SettingsPage() {
     ? allModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
     : allModels;
 
-  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt"].includes(p.id));
+  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka"].includes(p.id));
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
