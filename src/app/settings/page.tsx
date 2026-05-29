@@ -37,6 +37,10 @@ export default function SettingsPage() {
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
   const [testingModels, setTestingModels] = useState(false);
   const [apiLoggingSaving, setApiLoggingSaving] = useState(false);
+  const [importSourceUrl, setImportSourceUrl] = useState("");
+  const [importSourceEmail, setImportSourceEmail] = useState("");
+  const [importingData, setImportingData] = useState(false);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSettings() {
@@ -118,6 +122,45 @@ export default function SettingsPage() {
       body: JSON.stringify({ key: "ENABLE_API_LOGGING", value: values.ENABLE_API_LOGGING === "true" ? "true" : "false" }),
     });
     setApiLoggingSaving(false);
+  }
+
+  async function runImport() {
+    if (importingData) return;
+    const sourceDatabaseUrl = importSourceUrl.trim();
+    if (!sourceDatabaseUrl) {
+      setImportNotice("Source DATABASE_URL is required.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Import data from another database for your account?\n\nThis will copy tracks and workspaces. Audio files are not copied (S3 keys are reused)."
+    );
+    if (!confirmed) return;
+
+    setImportingData(true);
+    setImportNotice(null);
+    try {
+      const res = await fetch("/api/settings/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceDatabaseUrl,
+          sourceEmail: importSourceEmail.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImportNotice(data?.error || "Import failed.");
+        return;
+      }
+      const importedTracks = typeof data?.importedTracks === "number" ? data.importedTracks : 0;
+      const importedWorkspaces = typeof data?.importedWorkspaces === "number" ? data.importedWorkspaces : 0;
+      setImportNotice(`Imported ${importedTracks} track(s) and ${importedWorkspaces} workspace(s). Refresh Library to see them.`);
+    } catch {
+      setImportNotice("Import failed.");
+    } finally {
+      setImportingData(false);
+    }
   }
 
   const filteredModels = modelSearchQuery
@@ -231,6 +274,51 @@ export default function SettingsPage() {
                 onToggle={() => updateField("ENABLE_API_LOGGING", values.ENABLE_API_LOGGING === "true" ? "false" : "true")}
                 onSave={saveApiLogging}
               />
+
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-2">Import Data</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Import tracks and workspaces from another Sonara/MelodIQ PostgreSQL database.
+                </p>
+                <div className="space-y-2">
+                  <input
+                    type="password"
+                    value={importSourceUrl}
+                    onChange={(e) => setImportSourceUrl(e.target.value)}
+                    placeholder="Source DATABASE_URL (postgres://...)"
+                    className="input-field text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={importSourceEmail}
+                    onChange={(e) => setImportSourceEmail(e.target.value)}
+                    placeholder="Source email (optional, defaults to your account email)"
+                    className="input-field text-sm"
+                  />
+                  {importNotice ? <p className="text-xs text-white/50">{importNotice}</p> : null}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={runImport}
+                      disabled={importingData}
+                      className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {importingData ? "Importing..." : "Import"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImportSourceUrl("");
+                        setImportSourceEmail("");
+                        setImportNotice(null);
+                      }}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              </section>
             </div>
 
           </div>
