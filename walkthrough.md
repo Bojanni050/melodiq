@@ -1001,3 +1001,16 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:16`
   - Updated `sonara-user.md` — user guide versie ververst naar `za 00:16` en status-refresh gedrag verduidelijkt
   - Validated with `npm run build`.
+
+## 2026-05-30 za 00:49 (Chunked tracklisting updates voor soepele Studio UI)
+
+- Findings: Bij grotere tracklijsten kon een volledige state-replace tijdens polling korte UI-haperingen geven, vooral wanneer meerdere status- en metadatawijzigingen tegelijk binnenkwamen.
+- Conclusions: Splits grote trackupdates op in kleine requestAnimationFrame-chunks en verplaats setState naar een React transition, zodat rendering minder blokkeert en oudere batches veilig geannuleerd kunnen worden.
+- Actions:
+  - Updated `src/app/page.tsx` — added `tracksHaveSameRenderableState` helper voor consistente change-detectie
+  - Updated `src/app/page.tsx` — toegevoegd: chunked track state updates (`TRACK_UPDATE_CHUNK_SIZE`, `TRACK_UPDATE_CHUNK_THRESHOLD`) met `requestAnimationFrame`
+  - Updated `src/app/page.tsx` — toegevoegd: `useTransition` rond track state updates en batch guards om stale updates te blokkeren
+  - Updated `src/app/page.tsx` — cleanup toegevoegd voor scheduled animation frames bij unmount/nieuwe fetch
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:49`
+  - Updated `sonara-user.md` — user guide versie ververst naar `za 00:49` en grote-list updategedrag gedocumenteerd
+  - Validated with `npm run build`.

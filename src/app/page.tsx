@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -34,6 +34,8 @@ const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition"
 const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
 const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
 const STUDIO_SECTION_CLASS = "section-card flex min-h-0 flex-1 flex-col overflow-hidden";
+const TRACK_UPDATE_CHUNK_SIZE = 80;
+const TRACK_UPDATE_CHUNK_THRESHOLD = 160;
 
 interface Track {
   id: string;
@@ -68,6 +70,30 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
   return cleaned.slice(0, 100);
 }
 
+function tracksHaveSameRenderableState(previous: Track[], next: Track[]): boolean {
+  if (previous.length !== next.length) return false;
+
+  return previous.every((track, index) => {
+    const nextTrack = next[index];
+    return (
+      track.id === nextTrack.id &&
+      track.status === nextTrack.status &&
+      track.title === nextTrack.title &&
+      track.coverUrl === nextTrack.coverUrl &&
+      track.audioUrl === nextTrack.audioUrl &&
+      track.audioUrlHd === nextTrack.audioUrlHd &&
+      track.error === nextTrack.error &&
+      track.duration === nextTrack.duration &&
+      track.format === nextTrack.format &&
+      track.formatHd === nextTrack.formatHd &&
+      track.s3KeyHd === nextTrack.s3KeyHd &&
+      track.s3KeyCoverThumb === nextTrack.s3KeyCoverThumb &&
+      (track.playCount ?? null) === (nextTrack.playCount ?? null) &&
+      (track.rating ?? null) === (nextTrack.rating ?? null)
+    );
+  });
+}
+
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -99,6 +125,9 @@ export default function HomePage() {
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const trackUpdateFrameRef = useRef<number | null>(null);
+  const trackUpdateBatchRef = useRef(0);
+  const [, startTrackUpdateTransition] = useTransition();
   const playlistOptions = useMemo(
     () => playlists.map((playlist) => ({ id: playlist.id, name: playlist.name })),
     [playlists]
@@ -218,6 +247,14 @@ export default function HomePage() {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
+  useEffect(() => {
+    return () => {
+      if (trackUpdateFrameRef.current !== null) {
+        cancelAnimationFrame(trackUpdateFrameRef.current);
+      }
+    };
+  }, []);
+
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
@@ -290,30 +327,53 @@ export default function HomePage() {
       }));
 
       usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
-      setTracks((prev) => {
-        // Skip re-render if nothing changed (same IDs + statuses)
-        const nextTracks = next;
-        if (
-          prev.length === nextTracks.length &&
-          prev.every((t, i) =>
-            t.id === nextTracks[i].id &&
-            t.status === nextTracks[i].status &&
-            t.title === nextTracks[i].title &&
-            t.coverUrl === nextTracks[i].coverUrl &&
-            t.audioUrl === nextTracks[i].audioUrl &&
-            t.audioUrlHd === nextTracks[i].audioUrlHd &&
-            t.error === nextTracks[i].error &&
-            t.duration === nextTracks[i].duration &&
-            t.format === nextTracks[i].format &&
-            t.formatHd === nextTracks[i].formatHd &&
-            t.s3KeyHd === nextTracks[i].s3KeyHd &&
-            t.s3KeyCoverThumb === nextTracks[i].s3KeyCoverThumb &&
-            (t.playCount ?? null) === (nextTracks[i].playCount ?? null) &&
-            (t.rating ?? null) === (nextTracks[i].rating ?? null)
-          )
-        ) return prev;
-        return nextTracks;
-      });
+
+      if (trackUpdateFrameRef.current !== null) {
+        cancelAnimationFrame(trackUpdateFrameRef.current);
+        trackUpdateFrameRef.current = null;
+      }
+
+      const applyTrackUpdate = (updater: (prev: Track[]) => Track[]) => {
+        startTrackUpdateTransition(() => {
+          setTracks(updater);
+        });
+      };
+
+      if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD) {
+        const batchId = ++trackUpdateBatchRef.current;
+        applyTrackUpdate((prev) => {
+          if (batchId !== trackUpdateBatchRef.current) return prev;
+          return tracksHaveSameRenderableState(prev, next) ? prev : next;
+        });
+      } else {
+        const batchId = ++trackUpdateBatchRef.current;
+        let cursor = 0;
+
+        const applyChunk = () => {
+          if (batchId !== trackUpdateBatchRef.current) return;
+
+          cursor = Math.min(cursor + TRACK_UPDATE_CHUNK_SIZE, next.length);
+          const slice = next.slice(0, cursor);
+          applyTrackUpdate((prev) => {
+            if (batchId !== trackUpdateBatchRef.current) return prev;
+            return tracksHaveSameRenderableState(prev, slice) ? prev : slice;
+          });
+
+          if (cursor < next.length) {
+            trackUpdateFrameRef.current = requestAnimationFrame(applyChunk);
+            return;
+          }
+
+          trackUpdateFrameRef.current = null;
+          applyTrackUpdate((prev) => {
+            if (batchId !== trackUpdateBatchRef.current) return prev;
+            return tracksHaveSameRenderableState(prev, next) ? prev : next;
+          });
+        };
+
+        applyChunk();
+      }
+
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
       }

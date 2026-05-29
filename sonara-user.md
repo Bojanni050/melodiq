@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: za 00:16**
+**Versie: za 00:49**
 
 > AI Music Generation Web App
 
@@ -137,6 +137,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - All track lists now include sorting controls: **New to old** and **Old to new**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - In all track lists except **Recent Tracks**, you can now drag and drop tracks to change the play order used when auto queueing tracks.
+- Studio track refresh now applies large list updates in small animation-frame chunks, so the interface stays responsive while new track statuses and metadata stream in.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views
