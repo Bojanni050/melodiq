@@ -8,7 +8,6 @@ import {
   uuid,
   index,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -61,7 +60,7 @@ export const tracks = pgTable("tracks", {
   index("tracks_user_id_idx").on(table.userId),
   index("tracks_user_id_status_idx").on(table.userId, table.status),
   index("tracks_status_idx").on(table.status),
-  index("tracks_user_id_created_at_idx").on(table.userId, sql`${table.createdAt} DESC`),
+  index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
 ]);
 
 export const workspaces = pgTable("workspaces", {
