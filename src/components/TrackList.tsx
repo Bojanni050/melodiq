@@ -172,7 +172,11 @@ export default function TrackList({
   }, [selectedIds]);
 
   const displayedTracks = useMemo(() => {
-    const list = [...orderedTracks];
+    // Verberg alleen tracks die aan het genereren zijn ("generating" of "pending") én geen geldige titel hebben.
+    const list = orderedTracks.filter(
+      (track) =>
+        track.status === "done" || track.status === "failed" || !!(track.title && track.title.trim().length > 0)
+    );
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
