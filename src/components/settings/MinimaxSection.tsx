@@ -11,6 +11,7 @@ export default function MinimaxSection({
   onFieldChange: (key: string, value: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -29,6 +30,8 @@ export default function MinimaxSection({
       });
     }
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   async function handleTest() {
@@ -85,7 +88,7 @@ export default function MinimaxSection({
 
       <div className="flex items-center gap-2 pt-1">
         <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : saved ? "✓ Saved" : "Save"}
         </button>
         {values.MINIMAX_USE_POYO !== "true" && (
           <button onClick={handleTest} disabled={testing} className="btn-secondary text-xs px-3 py-1.5">

@@ -13,6 +13,7 @@ export default function WebhooksSection({
   onFieldChange: (key: string, value: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -32,6 +33,8 @@ export default function WebhooksSection({
       });
     }
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   const appUrl = values.APP_URL || "";
@@ -86,7 +89,7 @@ export default function WebhooksSection({
         />
         <div className="flex items-center gap-2 pt-1">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-            {saving ? "Saving..." : "Save Webhooks"}
+            {saving ? "Saving..." : saved ? "✓ Saved" : "Save Webhooks"}
           </button>
         </div>
       </div>

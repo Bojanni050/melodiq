@@ -10,6 +10,7 @@ export default function CoverArtSection({
   onChange: (value: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -19,6 +20,8 @@ export default function CoverArtSection({
       body: JSON.stringify({ key: "PIXAZO_API_KEY", value }),
     });
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -38,7 +41,7 @@ export default function CoverArtSection({
           <p className="text-xs text-white/30 mt-1">Get your key at pixazo.ai · Flux 1 Schnell is free</p>
         </div>
         <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : saved ? "✓ Saved" : "Save"}
         </button>
       </div>
     </section>

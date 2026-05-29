@@ -40,6 +40,7 @@ export default function ProviderSection({
   openRouterProps?: OpenRouterModelProps;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -74,6 +75,8 @@ export default function ProviderSection({
     }
 
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   async function handleTest() {
@@ -147,8 +150,11 @@ export default function ProviderSection({
 
       <div className="flex items-center gap-2 pt-1">
         <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : saved ? "✓ Saved" : "Save"}
         </button>
+        {saved && (
+          <span className="text-xs text-green-400 font-medium animate-fade-in">Settings saved successfully</span>
+        )}
         <button onClick={handleTest} disabled={testing} className="btn-secondary text-xs px-3 py-1.5">
           {testing ? "Testing..." : "Test Connection"}
         </button>

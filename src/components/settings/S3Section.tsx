@@ -10,6 +10,7 @@ export default function S3Section({
   onFieldChange: (key: string, value: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [s3Status, setS3Status] = useState<{ connected: boolean; message: string } | null>(null);
   const [s3Stats, setS3Stats] = useState<{ totalSize: number; objectCount: number; formattedSize: string } | null>(null);
@@ -25,6 +26,8 @@ export default function S3Section({
       });
     }
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   async function handleTest() {
@@ -70,7 +73,7 @@ export default function S3Section({
         </div>
         <div className="flex items-center gap-2 pt-1">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-            {saving ? "Saving..." : "Save"}
+            {saving ? "Saving..." : saved ? "✓ Saved" : "Save"}
           </button>
           <button onClick={handleTest} disabled={testing} className="btn-secondary text-xs px-3 py-1.5">
             {testing ? "Testing..." : "Test Connection"}

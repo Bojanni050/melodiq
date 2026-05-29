@@ -10,6 +10,7 @@ export default function LLMRoutingSection({
   onFieldChange: (key: string, value: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setSaving(true);
@@ -21,6 +22,8 @@ export default function LLMRoutingSection({
       });
     }
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   }
 
   return (
@@ -58,7 +61,7 @@ export default function LLMRoutingSection({
         </div>
         <div className="flex items-center gap-2 pt-1">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">
-            {saving ? "Saving..." : "Save LLM Routing"}
+            {saving ? "Saving..." : saved ? "✓ Saved" : "Save LLM Routing"}
           </button>
         </div>
       </div>
