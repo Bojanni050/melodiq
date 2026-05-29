@@ -173,11 +173,11 @@ export default function HomePage() {
 
     const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
 
-    const timer = setTimeout(() => {
-      fetchTracks();
+    const timer = setInterval(() => {
+      void fetchTracks();
     }, interval);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(timer);
   }, [tracks]);
 
   useEffect(() => {

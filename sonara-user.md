@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: do 17:27**
+**Versie: za 00:16**
 
 > AI Music Generation Web App
 
@@ -123,6 +123,8 @@ When you click **Generate Track**:
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
 
 Lyria tracks complete in the same request. PoYo, Tempolor, and MusicGPT tracks may take longer; the app polls for status updates automatically and also processes provider webhooks when results arrive.
+
+If a track is still generating, status polling now keeps running in the Studio even when intermediate responses contain no visual changes, so tracks switch to `done` without requiring a manual page refresh.
 
 For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generation is blocked and the app shows a notification.
 

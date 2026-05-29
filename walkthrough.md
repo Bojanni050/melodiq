@@ -991,3 +991,13 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
   - Updated `sonara-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-30 za 00:16 (Studio polling blijft doorlopen zonder refresh)
+
+- Findings: Trackstatus in Studio ging soms niet naar `done` totdat de gebruiker handmatig refreshte, omdat de polling-loop met `setTimeout` stopte zodra een fetch geen statewijziging veroorzaakte.
+- Conclusions: Polling moet blijven lopen ongeacht of een response de React state wijzigt; een doorlopende `setInterval` voorkomt dat statussync stilvalt tussen twee identieke responses.
+- Actions:
+  - Updated `src/app/page.tsx` — studio polling aangepast van eenmalige `setTimeout` naar doorlopende `setInterval` met dezelfde dynamische intervalkeuze
+  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:16`
+  - Updated `sonara-user.md` — user guide versie ververst naar `za 00:16` en status-refresh gedrag verduidelijkt
+  - Validated with `npm run build`.
