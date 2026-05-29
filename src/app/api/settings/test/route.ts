@@ -2,6 +2,64 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 
+async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: string } | { ok: false; info: string }> {
+  const candidates = [
+    "https://api.wavespeed.ai/api/v3/user/info",
+    "https://api.wavespeed.ai/api/v3/user",
+    "https://api.wavespeed.ai/api/v3/account",
+    "https://api.wavespeed.ai/api/v3/credits",
+    "https://api.wavespeed.ai/api/v3/models",
+    "https://api.wavespeed.ai/api/v3/predictions",
+    "https://api.wavespeed.ai/api/v1/user/info",
+    "https://api.wavespeed.ai/api/v1/user",
+    "https://api.wavespeed.ai/api/v1/account",
+    "https://api.wavespeed.ai/api/v1/credits",
+    "https://api.wavespeed.ai/api/v1/models",
+    "https://api.wavespeed.ai/api/v1/predictions",
+  ];
+
+  let lastMessage = "Request failed";
+
+  for (const url of candidates) {
+    try {
+      const res = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+        validateStatus: () => true,
+      });
+
+      if (res.status === 404) {
+        lastMessage = `404 on ${url}`;
+        continue;
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, info: `Unauthorized (${res.status}). Check WAVESPEED_API_KEY.` };
+      }
+
+      if (res.status < 200 || res.status >= 300) {
+        const message =
+          (res.data && typeof res.data === "object" && (res.data as any).message) ||
+          (res.data && typeof res.data === "object" && (res.data as any).error) ||
+          `HTTP ${res.status}`;
+        lastMessage = `${res.status} on ${url}: ${typeof message === "string" ? message : "Request failed"}`;
+        continue;
+      }
+
+      const credits = (res.data as any)?.data?.credits ?? (res.data as any)?.credits ?? (res.data as any)?.data?.balance ?? (res.data as any)?.balance;
+      const info = credits !== undefined ? `Connected — ${credits} credits` : "Connected — WaveSpeed API is active";
+      return { ok: true, info };
+    } catch (error: any) {
+      lastMessage = error?.message || "Network error";
+    }
+  }
+
+  return { ok: false, info: `Failed (404): could not find a working WaveSpeed endpoint. Last: ${lastMessage}` };
+}
+
 const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string }> = {
   lyria: {
     url: "https://generativelanguage.googleapis.com/v1beta/models",
@@ -30,11 +88,6 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "GET",
   },
-  mureka: {
-    url: "https://api.wavespeed.ai/api/v3/user/info",
-    keyPrefix: "",
-    method: "GET",
-  },
   openrouter: {
     url: "https://openrouter.ai/api/v1/key",
     keyPrefix: "",
@@ -56,6 +109,11 @@ export async function POST(request: Request) {
 
   if (!provider || !apiKey) {
     return NextResponse.json({ error: "Provider and apiKey are required" }, { status: 400 });
+  }
+
+  if (provider === "mureka") {
+    const result = await testWaveSpeedApiKey(apiKey);
+    return NextResponse.json({ success: result.ok, message: result.info });
   }
 
   const endpoint = TEST_ENDPOINTS[provider];
