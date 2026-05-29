@@ -176,17 +176,17 @@ Chorus lines should be punchy and memorable
 Bridge should contrast emotionally with the verses
 ${performerTagInstruction ? `${performerTagInstruction}\n` : ""}Return only the raw lyric text, nothing else`;
   const userPrompt = `Write the ${blockLabel} (${blockType}) for a song.
-  const userPrompt = `Write the ${blockLabel} (${blockType}) for a song.
 Topic: ${topic}
 Mood/Vibe: ${mood}
 Language: ${language}
+${styleText ? `Style/Genre: ${styleText}` : ""}
 ${performerDirectionsText ? `Performer direction: ${performerDirectionsText}` : ""}
 ${vocalistTagValue !== "auto" ? `Vocalist tag: [${vocalistTagValue}]` : ""}
-${styleText ? `Style/Genre: ${styleText}` : ""}
 ${chorusInstruction ? `Chorus instruction: ${chorusInstruction}` : ""}
 ${context ? `--- EXISTING SECTIONS (for context and coherence) ---
 ${context}
 --- END CONTEXT ---` : ""}
+Now write only the lyrics for: ${blockLabel}`;
 
   try {
     const llmProvider = await getLLMProviderForPurpose("lyrics");
