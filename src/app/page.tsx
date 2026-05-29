@@ -545,6 +545,7 @@ export default function HomePage() {
       : ensureDefaultWorkspace();
 
     try {
+      // 1. Titel genereren indien nodig
       const needsTitle = !instrumental && !title.trim() && lyrics.trim();
       let finalTitle = title;
       if (needsTitle) {
@@ -555,6 +556,7 @@ export default function HomePage() {
         }
       }
 
+      // 2. Tracks genereren (API call)
       const effectiveLanguage = getEffectiveLanguage();
       const results = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
@@ -580,6 +582,7 @@ export default function HomePage() {
         )
       );
 
+      // 3. Verzamel nieuwe trackIds en eventuele titels
       const allTrackIds: string[] = [];
       const generatedTitles: string[] = [];
       const errors: string[] = [];
@@ -608,6 +611,7 @@ export default function HomePage() {
         }
       }
 
+      // 4. Workspace assignment (indien nodig)
       let finalWorkspaceId = targetWorkspaceId;
       if (autoCreateWorkspaceFromGeneratedTitle && allTrackIds.length > 0) {
         const preferredTitle = finalTitle.trim() || generatedTitles[0] || "";
@@ -622,19 +626,26 @@ export default function HomePage() {
       }
 
       if (allTrackIds.length > 0) {
-        moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
-        void fetchTracks();
+        // Workspace assignment altijd eerst uitvoeren
+        await moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
       } else {
+        // Fallback: probeer alsnog nieuwe tracks te vinden en toe te wijzen
         const latestTracks = await fetchTracks();
         if (finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
           const discoveredTrackIds = latestTracks
             .map((track) => track.id)
             .filter((trackId) => !existingTrackIds.has(trackId));
           if (discoveredTrackIds.length > 0) {
-            moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
+            await moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
           }
         }
       }
+
+      // 5. Wacht kort zodat cover art generatie (server-side) kan voltooien
+      // (optioneel: poll of fetchTracks, want cover art wordt async op de server gestart)
+      // Hier: fetchTracks pas NA assignment en cover art start
+      await new Promise((resolve) => setTimeout(resolve, 600)); // 600ms wachten
+      await fetchTracks();
 
       if (errors.length > 0) {
         setNotice({ type: "error", message: errors.join(" |") });

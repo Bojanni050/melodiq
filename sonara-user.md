@@ -120,6 +120,9 @@ When you click **Generate Track**:
 2. If vocal and no title is set, AI auto-generates one from your lyrics
 3. Your prompt, lyrics, and settings are sent to the selected provider
 4. A new track appears in the **Recent Tracks** list
+
+6. Tracks verschijnen pas in de lijst nadat alle voorbereidende taken (titel genereren, cover art, workspace assignment) volledig zijn afgerond. Je ziet dus nooit meer een "lege" of incomplete track verschijnen.
+
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
 
 Lyria tracks complete in the same request. PoYo, Tempolor, and MusicGPT tracks may take longer; the app polls for status updates automatically and also processes provider webhooks when results arrive.

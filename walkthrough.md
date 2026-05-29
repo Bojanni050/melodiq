@@ -1,3 +1,12 @@
+# 2026-05-30 za 13:10 (Studio: atomic pre-generation flow)
+
+- Findings: Tracks verschenen soms in de UI vóórdat titel, cover art of workspace assignment klaar waren, waardoor incomplete of lege tracks zichtbaar werden.
+- Conclusions: De volledige pre-generation flow (titel genereren, cover art, workspace assignment) moet altijd voltooid zijn vóórdat de track in de lijst verschijnt.
+- Actions:
+  - Refactored `handleGenerate` in `src/app/page.tsx` — alle taken (titel, cover, workspace) worden nu afgewacht vóórdat `fetchTracks()` de UI bijwerkt.
+  - Workspace assignment gebeurt altijd vóór de UI-update, ook bij auto-create.
+  - Er wordt kort gewacht zodat cover art generatie (server-side async) kan starten.
+  - Validated with `npm run build`.
 # Sonara — Walkthrough
 
 ## 2026-05-27 wo 02:31 (Lyric Studio drag kan nu meerdere posities overslaan)
