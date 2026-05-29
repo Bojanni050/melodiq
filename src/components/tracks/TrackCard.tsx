@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import WaveformBars from "@/components/tracks/WaveformBars";
 import { usePlayerStore, usePlaylistStore, useWorkspaceStore, type Workspace } from "@/lib/store";
@@ -8,7 +8,7 @@ import { useShallow } from "zustand/react/shallow";
 import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
-export default function TrackCard({
+const TrackCard = memo(function TrackCard({
   track,
   allTracks,
   onPlay,
@@ -1137,5 +1137,6 @@ export default function TrackCard({
     </div>
     </>
   );
-}
+});
 
+export default TrackCard;

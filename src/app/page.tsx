@@ -270,9 +270,13 @@ export default function HomePage() {
   }
 
   function handleTitleUpdate(trackId: string, newTitle: string) {
-    setTracks((prev) =>
-      prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t))
-    );
+    setTracks((prev) => {
+      const idx = prev.findIndex((t) => t.id === trackId);
+      if (idx === -1 || prev[idx].title === newTitle) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], title: newTitle };
+      return next;
+    });
     if (selectedTrack?.id === trackId) {
       setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
     }
