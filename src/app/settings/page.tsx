@@ -148,7 +148,10 @@ export default function SettingsPage() {
           sourceEmail: importSourceEmail.trim() || undefined,
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch((error) => {
+        console.error("Import: failed to parse response JSON:", error);
+        return {};
+      });
       if (!res.ok) {
         setImportNotice(data?.error || "Import failed.");
         return;
@@ -156,7 +159,8 @@ export default function SettingsPage() {
       const importedTracks = typeof data?.importedTracks === "number" ? data.importedTracks : 0;
       const importedWorkspaces = typeof data?.importedWorkspaces === "number" ? data.importedWorkspaces : 0;
       setImportNotice(`Imported ${importedTracks} track(s) and ${importedWorkspaces} workspace(s). Refresh Library to see them.`);
-    } catch {
+    } catch (error) {
+      console.error("Import: request failed:", error);
       setImportNotice("Import failed.");
     } finally {
       setImportingData(false);

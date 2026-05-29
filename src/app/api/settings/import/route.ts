@@ -147,7 +147,10 @@ export async function POST(request: NextRequest) {
       SELECT id, name, parent_workspace_id, folder_gradient, is_default, created_at
       FROM workspaces
       WHERE user_id = ${sourceUserId}
-    `.catch(() => []);
+    `.catch((error) => {
+      console.error("Import: failed to read source workspaces:", error);
+      return [];
+    });
 
     const sourceTracks = await sourceSql<SourceTrackRow[]>`
       SELECT
