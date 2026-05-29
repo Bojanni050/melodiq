@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: sonara_app
+    container_name: melodiq_app
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -9,35 +9,38 @@ services:
       - .env.production
     environment:
       - CACHE_DIR=/data/audio-cache
+      - COVER_CACHE_DIR=/data/cover-cache
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - audio_cache:/data/audio-cache
+      - cover_cache:/data/cover-cache
     networks:
       - sonara_net
 
   db:
     image: postgres:16-alpine
-    container_name: sonara_db
+    container_name: melodiq_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: sonara
-      POSTGRES_USER: sonara
+      POSTGRES_DB: melodiq_DB_2026vdM
+      POSTGRES_USER: melodiq_HQ
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonara"]
+      test: ["CMD-SHELL", "pg_isready -U melodiq"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - sonara_net
+      - melodiq_net
 
 volumes:
   postgres_data:
   audio_cache:
+  cover_cache:
 
 networks:
   sonara_net:
