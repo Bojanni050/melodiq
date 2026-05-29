@@ -11,8 +11,14 @@ export async function middleware(request: NextRequest) {
   const isApi = pathname.startsWith("/api/");
 
   if (isAuthPage) {
-    if (token && await verifyTokenEdge(token)) {
+    const payload = token ? await verifyTokenEdge(token) : null;
+    if (payload) {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+    if (token) {
+      const response = NextResponse.next();
+      response.cookies.set("token", "", { path: "/", maxAge: 0 });
+      return response;
     }
     return NextResponse.next();
   }
@@ -21,6 +27,12 @@ export async function middleware(request: NextRequest) {
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (!isApi && token && !(await verifyTokenEdge(token))) {
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.set("token", "", { path: "/", maxAge: 0 });
+    return response;
   }
 
   return NextResponse.next();

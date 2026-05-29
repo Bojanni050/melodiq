@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useUserStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -26,7 +27,9 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    useUserStore.getState().setUser(null);
+    router.replace("/login");
+    router.refresh();
   }
 
   function Icon({ name, active }: { name: string; active: boolean }) {
