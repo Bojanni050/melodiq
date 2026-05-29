@@ -17,7 +17,7 @@ services:
       - audio_cache:/data/audio-cache
       - cover_cache:/data/cover-cache
     networks:
-      - sonara_net
+      - melodiq_net
 
   db:
     image: postgres:16-alpine
@@ -43,5 +43,5 @@ volumes:
   cover_cache:
 
 networks:
-  sonara_net:
+  melodiq_net:
     driver: bridge
