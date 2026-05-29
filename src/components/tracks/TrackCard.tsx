@@ -56,6 +56,7 @@ export default function TrackCard({
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
+  const setIsFullscreen = usePlayerStore((state) => state.setIsFullscreen);
   const isCurrentlyPlaying = currentTrack?.id === track.id;
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -725,12 +726,21 @@ export default function TrackCard({
           }
           onSelect(track);
         }}
+        onDoubleClick={(e) => {
+          if (e.shiftKey) return;
+          if (track.status !== "done") return;
+          if (!isCurrentlyPlaying) onPlay(track);
+          setIsFullscreen(true);
+        }}
       >
       {/* Selection dot */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelect?.(track.id, { mode: e.shiftKey ? "range" : "toggle" });
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
         }}
         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
         title="Select track"
@@ -763,6 +773,9 @@ export default function TrackCard({
           } else {
             onPlay(track);
           }
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
         }}
         className={`relative w-10 h-10 rounded-lg shrink-0 overflow-hidden transition-colors group/play ${isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
