@@ -135,27 +135,13 @@ export async function POST(request: NextRequest) {
 
   if (audioUrl && !failed) {
     try {
-      const axios = (await import("axios")).default;
-      const { uploadToS3 } = await import("@/lib/s3");
-
-      console.log(`[webhook/musicgpt] downloading audio from ${audioUrl}`);
-      const audioRes = await axios.get(audioUrl, {
-        responseType: "arraybuffer",
-        timeout: 60000,
-      });
-      const audioBuffer = Buffer.from(audioRes.data);
-      const s3Key = `tracks/${track.id}/audio.mp3`;
-      await uploadToS3(s3Key, audioBuffer);
-
-      const duration = await extractAudioDuration(audioBuffer);
-
+      // Mark done immediately with CDN URL so the user can start listening
+      // while the S3 upload runs in the background.
       await db
         .update(tracks)
         .set({
           status: "done",
-          s3Key,
-          duration,
-          audioUrl: `/api/tracks/${track.id}/download`,
+          audioUrl,
         })
         .where(eq(tracks.id, track.id!));
 
@@ -180,7 +166,36 @@ export async function POST(request: NextRequest) {
         statusCode: 200,
       });
 
-      console.log(`[webhook/musicgpt] track ${track.id} done (matchedBy=${matchedBy})`);
+      console.log(`[webhook/musicgpt] track ${track.id} done (matchedBy=${matchedBy}), uploading to S3 in background`);
+
+      // Upload to S3 in background and swap URL when done
+      (async () => {
+        try {
+          const axios = (await import("axios")).default;
+          const { uploadToS3 } = await import("@/lib/s3");
+
+          const audioRes = await axios.get(audioUrl, {
+            responseType: "arraybuffer",
+            timeout: 60000,
+          });
+          const audioBuffer = Buffer.from(audioRes.data);
+          const s3Key = `tracks/${track.id}/audio.mp3`;
+          await uploadToS3(s3Key, audioBuffer);
+          const duration = await extractAudioDuration(audioBuffer);
+
+          await db
+            .update(tracks)
+            .set({
+              s3Key,
+              duration,
+              audioUrl: `/api/tracks/${track.id}/download`,
+            })
+            .where(eq(tracks.id, track.id!));
+        } catch (err: any) {
+          console.error(`[webhook/musicgpt] background S3 upload failed for track ${track.id}:`, err?.message ?? err);
+        }
+      })();
+
       return new Response("success", { status: 200 });
     } catch (error: unknown) {
       const message = getErrorMessage(error);
