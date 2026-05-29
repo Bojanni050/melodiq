@@ -258,6 +258,13 @@ export default function StudioForm({
   const [showProTips, setShowProTips] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
   const [lyricsExpanded, setLyricsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!lyricsExpanded) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setLyricsExpanded(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lyricsExpanded]);
   const [providersCollapsed, setProvidersCollapsed] = useState(() => {
     try {
       return window.localStorage.getItem("sonara-providers-collapsed") === "true";
@@ -346,7 +353,7 @@ export default function StudioForm({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5">
+    <div className="relative flex h-full min-h-0 flex-col gap-5">
       {/* Clear All button at top */}
       <div className="flex justify-end">
         <button
@@ -547,7 +554,9 @@ Your chorus here`}
 
       {/* Expanded lyrics overlay */}
       {lyricsExpanded && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#0d0d12]/95 backdrop-blur-sm p-4 sm:p-8">
+        <div
+          className="absolute inset-0 z-50 flex flex-col bg-[#0d0d12]/98 backdrop-blur-sm p-4 rounded-xl"
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
