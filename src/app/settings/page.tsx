@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [apiLoggingSaving, setApiLoggingSaving] = useState(false);
   const [importSourceUrl, setImportSourceUrl] = useState("");
   const [importSourceEmail, setImportSourceEmail] = useState("");
+  const [importSqlFile, setImportSqlFile] = useState<File | null>(null);
   const [importingData, setImportingData] = useState(false);
   const [importNotice, setImportNotice] = useState<string | null>(null);
 
@@ -161,6 +162,48 @@ export default function SettingsPage() {
       setImportNotice(`Imported ${importedTracks} track(s) and ${importedWorkspaces} workspace(s). Refresh Library to see them.`);
     } catch (error) {
       console.error("Import: request failed:", error);
+      setImportNotice("Import failed.");
+    } finally {
+      setImportingData(false);
+    }
+  }
+
+  async function runImportSql() {
+    if (importingData) return;
+    if (!importSqlFile) {
+      setImportNotice("SQL file is required.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Import data from a SQL file for your account?\n\nThis expects a pg_dump plain SQL file with COPY blocks. This will copy tracks and workspaces. Audio files are not copied (S3 keys are reused)."
+    );
+    if (!confirmed) return;
+
+    setImportingData(true);
+    setImportNotice(null);
+    try {
+      const form = new FormData();
+      form.set("sqlFile", importSqlFile);
+      if (importSourceEmail.trim()) form.set("sourceEmail", importSourceEmail.trim());
+
+      const res = await fetch("/api/settings/import", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json().catch((error) => {
+        console.error("Import (SQL): failed to parse response JSON:", error);
+        return {};
+      });
+      if (!res.ok) {
+        setImportNotice(data?.error || "Import failed.");
+        return;
+      }
+      const importedTracks = typeof data?.importedTracks === "number" ? data.importedTracks : 0;
+      const importedWorkspaces = typeof data?.importedWorkspaces === "number" ? data.importedWorkspaces : 0;
+      setImportNotice(`Imported ${importedTracks} track(s) and ${importedWorkspaces} workspace(s). Refresh Library to see them.`);
+    } catch (error) {
+      console.error("Import (SQL): request failed:", error);
       setImportNotice("Import failed.");
     } finally {
       setImportingData(false);
@@ -299,6 +342,14 @@ export default function SettingsPage() {
                     placeholder="Source email (optional, defaults to your account email)"
                     className="input-field text-sm"
                   />
+                  <div className="h-px bg-white/10" />
+                  <input
+                    type="file"
+                    accept=".sql,.txt"
+                    onChange={(e) => setImportSqlFile(e.target.files?.[0] ?? null)}
+                    className="block w-full text-xs text-white/70 file:mr-3 file:rounded-lg file:border file:border-white/10 file:bg-white/5 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white/70 hover:file:bg-white/10"
+                  />
+                  {importSqlFile ? <p className="text-xs text-white/40">Selected: {importSqlFile.name}</p> : null}
                   {importNotice ? <p className="text-xs text-white/50">{importNotice}</p> : null}
                   <div className="flex items-center gap-2">
                     <button
@@ -311,9 +362,18 @@ export default function SettingsPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={runImportSql}
+                      disabled={importingData}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {importingData ? "Importing..." : "Import SQL"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setImportSourceUrl("");
                         setImportSourceEmail("");
+                        setImportSqlFile(null);
                         setImportNotice(null);
                       }}
                       className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
