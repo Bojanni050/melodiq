@@ -503,6 +503,16 @@ export default memo(function TrackList({
   }
 
   function handleTrackDragStart(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.closest("input") ||
+      target.closest("textarea")
+    ) {
+      event.preventDefault();
+      return;
+    }
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", trackId);
     setDraggedTrackId(trackId);

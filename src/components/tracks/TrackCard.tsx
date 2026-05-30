@@ -847,6 +847,8 @@ const TrackCard = memo(function TrackCard({
                 placeholder="Track title"
                 className="flex-1 min-w-0 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
                 maxLength={200}
+                draggable={false}
+                onDragStart={(e) => e.stopPropagation()}
               />
               <button
                 type="button"

@@ -91,13 +91,37 @@ export default function LyricBlockEditor({
                 key={block.id}
                 data-lyric-block-id={block.id}
                 aria-grabbed={draggedBlockId === block.id}
-                onPointerDown={(event) => onStartBlockDragFromCard(event, block.id)}
+                onPointerDown={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (
+                    target.tagName === "INPUT" ||
+                    target.tagName === "TEXTAREA" ||
+                    target.closest("input") ||
+                    target.closest("textarea") ||
+                    target.closest("button")
+                  ) {
+                    return;
+                  }
+                  onStartBlockDragFromCard(event, block.id);
+                }}
                 draggable
-                onDragStart={(event) => onStartBlockMouseDrag(event, block.id)}
+                onDragStart={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (
+                    target.tagName === "INPUT" ||
+                    target.tagName === "TEXTAREA" ||
+                    target.closest("input") ||
+                    target.closest("textarea")
+                  ) {
+                    event.preventDefault();
+                    return;
+                  }
+                  onStartBlockMouseDrag(event, block.id);
+                }}
                 onDragOver={(event) => onBlockMouseDragOver(event, block.id)}
                 onDrop={(event) => onBlockMouseDrop(event, block.id)}
                 onDragEnd={onBlockMouseDragEnd}
-                className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none cursor-grab active:cursor-grabbing select-none ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
+                className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition touch-none cursor-grab active:cursor-grabbing ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                 style={{ borderLeft: `4px solid ${blockColors[block.type]}` }}
                 title="Drag to reorder"
               >
