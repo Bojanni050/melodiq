@@ -87,7 +87,7 @@ export default function HomePage() {
     // Ref voor batch-id
     const trackUpdateBatchRef = useRef(0);
     // React transition voor batch updates
-    const [startTrackUpdateTransition] = useTransition();
+    const [isTrackUpdatePending, startTrackUpdateTransition] = useTransition();
     // Chunking threshold en size
     const TRACK_UPDATE_CHUNK_THRESHOLD = 100;
     const TRACK_UPDATE_CHUNK_SIZE = 50;
