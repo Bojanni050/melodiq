@@ -364,9 +364,10 @@ export default function StudioForm({
   }
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col gap-5">
-      {/* Clear All button at top */}
-      <div className="flex justify-end">
+    <div className="relative flex h-full min-h-0 flex-col gap-4">
+      {/* Top Bar: Studio Header & Clear All */}
+      <div className="flex items-center justify-between shrink-0">
+        <h2 className="text-lg font-semibold tracking-tight text-white/90">Studio</h2>
         <button
           type="button"
           onClick={reset}
@@ -378,9 +379,8 @@ export default function StudioForm({
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
 
-      {/* Provider Dropdown */}
-      <h2 className="text-base font-semibold text-white/90">Studio</h2>
-      <section className="section-card">
+      {/* Provider & Model Section */}
+      <section className="section-card lg:sticky lg:top-0 lg:z-20 lg:bg-[#0a0a0f]/98 lg:backdrop-blur-sm lg:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <h3 className="text-sm font-semibold text-white/80 mb-3">Provider & Model</h3>
         <div className="flex gap-2">
           <select
