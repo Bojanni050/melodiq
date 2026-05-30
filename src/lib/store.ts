@@ -734,11 +734,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       hydrateWorkspacesFromServer: (incomingWorkspaces) =>
         set((state) => {
           const normalizedIncoming = withDefaultWorkspace(incomingWorkspaces || []);
-          const selectedWorkspaceId =
-            state.selectedWorkspaceId &&
-            normalizedIncoming.some((workspace) => workspace.id === state.selectedWorkspaceId)
-              ? state.selectedWorkspaceId
-              : null;
+          const incomingDefault = normalizedIncoming.find((w) => w.isDefault);
+          
+          let selectedWorkspaceId = state.selectedWorkspaceId;
+          
+          if (
+            selectedWorkspaceId === DEFAULT_WORKSPACE_ID ||
+            (selectedWorkspaceId && !normalizedIncoming.some((workspace) => workspace.id === selectedWorkspaceId))
+          ) {
+            selectedWorkspaceId = incomingDefault ? incomingDefault.id : null;
+          }
 
           return {
             workspaces: normalizedIncoming,

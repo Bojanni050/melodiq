@@ -789,7 +789,7 @@ export default function HomePage() {
 
       {/* Main content area */}
       <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-[53px] lg:pt-0">
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
           <main className="p-4">
