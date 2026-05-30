@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import TrackDetail from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -24,6 +26,8 @@ type Track = {
   s3KeyHd: string | null;
   coverUrl: string | null;
   s3KeyCover: string | null;
+  rating?: string | null;
+  playCount?: number | null;
 };
 
 type WorkspaceDisplayMode = "grid" | "list";
@@ -62,11 +66,83 @@ export default function WorkspacesPage() {
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
 
+  const [tracks, setTracks] = useState<Track[]>([]);
+
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
+  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+
   useEffect(() => {
     setSelectedWorkspaceId(null);
   }, [setSelectedWorkspaceId]);
 
-  const [tracks, setTracks] = useState<Track[]>([]);
+  useEffect(() => {
+    if (currentTrack) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const found = tracks.find((t) => t.id === currentTrack.id);
+        return (found || currentTrack) as Track;
+      });
+    }
+  }, [currentTrack, tracks]);
+
+  useEffect(() => {
+    if (selectedTrack) {
+      const found = tracks.find((t) => t.id === selectedTrack.id);
+      if (found && (
+        found.title !== selectedTrack.title ||
+        found.rating !== selectedTrack.rating ||
+        found.coverUrl !== selectedTrack.coverUrl ||
+        found.status !== selectedTrack.status
+      )) {
+        setSelectedTrack(found);
+      }
+    }
+  }, [tracks, selectedTrack]);
+
+  function handleCloseTrackDetails() {
+    setShowTrackDetailsPanel(false);
+  }
+
+  function handlePlayTrack(url: string) {
+    if (!selectedTrack) return;
+
+    const player = usePlayerStore.getState();
+    player.playTrackFromGesture({
+      id: selectedTrack.id,
+      title: selectedTrack.title,
+      provider: selectedTrack.provider,
+      providerModel: selectedTrack.providerModel,
+      prompt: selectedTrack.prompt,
+      status: selectedTrack.status,
+      audioUrl: url,
+      audioUrlHd: selectedTrack.audioUrlHd,
+      format: selectedTrack.format,
+      formatHd: selectedTrack.formatHd,
+      s3Key: null,
+      s3KeyHd: selectedTrack.s3KeyHd,
+      duration: selectedTrack.duration,
+      lyrics: selectedTrack.lyrics,
+      createdAt: selectedTrack.createdAt,
+      error: selectedTrack.error,
+      coverUrl: selectedTrack.coverUrl ?? null,
+      s3KeyCover: selectedTrack.s3KeyCover ?? null,
+    });
+  }
+
+  function handleDownloadTrack(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
+      : (selectedTrack?.format ?? "mp3");
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
+  }
   const [loading, setLoading] = useState(true);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
@@ -164,7 +240,7 @@ export default function WorkspacesPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex flex-col">
+      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-[73px] lg:pt-5">
           <div className="max-w-[1600px] mx-auto space-y-6">
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
@@ -414,7 +490,38 @@ export default function WorkspacesPage() {
             </section>
           </div>
         </main>
+
+        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+          <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={handleCloseTrackDetails}
+                onPlay={handlePlayTrack}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
+
+      {showTrackDetailsPanel && selectedTrack && (
+        <div className="lg:hidden">
+          <TrackDetail
+            track={selectedTrack}
+            onClose={handleCloseTrackDetails}
+            onPlay={handlePlayTrack}
+            onDownload={handleDownloadTrack}
+            mode="overlay"
+          />
+        </div>
+      )}
     </div>
   );
 }
