@@ -584,34 +584,56 @@ export default function Player() {
       if (!audioEl) return;
 
       const streamUrl = `/api/tracks/${trackId}/stream${wantsHd ? "?hd=true" : ""}`;
-      const shouldUseStream = wantsHd ? Boolean(trackSnapshot.s3KeyHd) : Boolean(trackSnapshot.s3Key);
-      const resolvedUrl =
-        shouldUseStream
-          ? streamUrl
-          : wantsHd && trackSnapshot.audioUrlHd
-            ? trackSnapshot.audioUrlHd
-            : trackSnapshot.audioUrl;
+      let resolvedUrl = streamUrl;
 
       setResolvingUrl(true);
       setAudioSource("unknown");
       setAudioSourceState("unknown");
 
-      if (resolvedUrl) {
-        const isInternalStream = resolvedUrl.startsWith("/api/tracks/") && resolvedUrl.includes("/stream");
-        if (isInternalStream) {
-          const detectedSource = await detectAudioSource(resolvedUrl);
+      try {
+        const response = await fetch(streamUrl, {
+          headers: {
+            Range: "bytes=0-0",
+          },
+        });
+
+        if (response.ok) {
+          const cacheStateHeader = (response.headers.get("x-sonara-audio-cache-state") || "").toLowerCase();
+          const sourceHeader = (response.headers.get("x-sonara-audio-source") || "").toLowerCase();
+          const source: AudioSource =
+            sourceHeader === "cache" ? "cache" : sourceHeader === "s3" ? "s3" : "unknown";
+          const state: AudioSourceState =
+            cacheStateHeader === "miss"
+              ? "miss"
+              : cacheStateHeader === "fallback"
+                ? "fallback"
+                : cacheStateHeader === "hit"
+                  ? "hit"
+                  : sourceHeader === "cache"
+                    ? "hit"
+                    : "unknown";
+
           if (!cancelled && requestId === requestIdRef.current) {
-            setAudioSource(detectedSource.source);
-            setAudioSourceState(detectedSource.state);
+            setAudioSource(source);
+            setAudioSourceState(state);
           }
+        } else {
+          const hdFallback = wantsHd ? trackSnapshot.audioUrlHd : null;
+          const fallback = hdFallback || trackSnapshot.audioUrl;
+          if (typeof fallback === "string" && /^https?:\/\//i.test(fallback)) {
+            resolvedUrl = fallback;
+          }
+        }
+      } catch {
+        const hdFallback = wantsHd ? trackSnapshot.audioUrlHd : null;
+        const fallback = hdFallback || trackSnapshot.audioUrl;
+        if (typeof fallback === "string" && /^https?:\/\//i.test(fallback)) {
+          resolvedUrl = fallback;
         }
       }
 
-      const normalizedTargetUrl = resolvedUrl ? new URL(resolvedUrl, window.location.href).toString() : null;
-      const alreadyPlayingThisStream =
-        normalizedTargetUrl !== null &&
-        typeof audioEl.src === "string" &&
-        audioEl.src === normalizedTargetUrl;
+      const normalizedTargetUrl = new URL(resolvedUrl, window.location.href).toString();
+      const alreadyPlayingThisStream = typeof audioEl.src === "string" && audioEl.src === normalizedTargetUrl;
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
@@ -632,7 +654,7 @@ export default function Player() {
 
       audioEl.pause();
       audioEl.currentTime = 0;
-      audioEl.src = normalizedTargetUrl || "";
+      audioEl.src = normalizedTargetUrl;
       audioEl.load();
 
       await new Promise<void>((resolve) => {
@@ -674,9 +696,6 @@ export default function Player() {
     currentTrack?.id,
     currentTrack?.audioUrl,
     currentTrack?.audioUrlHd,
-    currentTrack?.s3Key,
-    currentTrack?.s3KeyHd,
-    detectAudioSource,
     tryPlay,
   ]);
 
