@@ -17,28 +17,40 @@ export async function generateMureka({
   numberOfSongs = 2,
   outputFormat = "mp3",
   webhookUrl,
+  instrumental = false,
 }: {
-  lyrics: string;
+  lyrics?: string;
   prompt?: string;
   numberOfSongs?: number;
   outputFormat?: "mp3" | "wav" | "flac";
   webhookUrl?: string;
+  instrumental?: boolean;
 }): Promise<MurekaSubmitResponse> {
   const apiKey = (await getSetting("WAVESPEED_API_KEY")) || process.env.WAVESPEED_API_KEY;
   if (!apiKey) throw new Error("WAVESPEED_API_KEY not configured");
 
+  const endpoint = instrumental ? "generate-bgm" : "generate-song";
   const url = webhookUrl
-    ? `https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/generate-song?webhook=${encodeURIComponent(webhookUrl)}`
-    : "https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/generate-song";
+    ? `https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/${endpoint}?webhook=${encodeURIComponent(webhookUrl)}`
+    : `https://api.wavespeed.ai/api/v3/mureka-ai/mureka-v9/${endpoint}`;
+
+  const body: Record<string, any> = {
+    number_of_songs: numberOfSongs,
+    output_format: outputFormat,
+  };
+
+  if (instrumental) {
+    if (!prompt) throw new Error("Prompt is required for Mureka instrumental tracks");
+    body.prompt = prompt;
+  } else {
+    if (!lyrics) throw new Error("Lyrics are required for Mureka vocal tracks");
+    body.lyrics = lyrics;
+    if (prompt) body.prompt = prompt;
+  }
 
   const response = await axios.post(
     url,
-    {
-      lyrics,
-      ...(prompt ? { prompt } : {}),
-      number_of_songs: numberOfSongs,
-      output_format: outputFormat,
-    },
+    body,
     {
       headers: {
         Authorization: `Bearer ${apiKey}`,

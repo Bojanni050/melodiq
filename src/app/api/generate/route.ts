@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   if (isMinimaxViaPoYo && typeof lyrics === "string" && lyrics.length > 3500) {
     return NextResponse.json({ error: "Minimax via PoYo lyrics must be 3500 characters or fewer" }, { status: 400 });
   }
-  if (provider === "mureka" && !lyrics?.trim()) {
+  if (provider === "mureka" && !instrumental && !lyrics?.trim()) {
     return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
   }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
@@ -840,17 +840,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === "mureka") {
-      if (!lyrics?.trim()) {
+      if (!instrumental && !lyrics?.trim()) {
         throw new Error("Mureka requires lyrics");
       }
 
       const murekaWebhookUrl = await getWebhookUrl("mureka");
       const genResult = await generateMureka({
-        lyrics,
+        lyrics: instrumental ? undefined : lyrics,
         prompt: prompt || undefined,
         numberOfSongs: 2,
         outputFormat: "mp3",
         webhookUrl: murekaWebhookUrl || undefined,
+        instrumental: instrumental || false,
       });
 
       const [t1, t2] = await Promise.all([
@@ -860,8 +861,8 @@ export async function POST(request: NextRequest) {
           provider: "mureka",
           providerModel: "mureka-v9",
           prompt,
-          lyrics: lyrics || null,
-          instrumental: false,
+          lyrics: instrumental ? null : (lyrics || null),
+          instrumental: instrumental || false,
           title: resolvedTitle ? `${resolvedTitle} (2)` : null,
           status: "generating",
           jobId: `${genResult.requestId}:1`,
