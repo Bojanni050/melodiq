@@ -10,6 +10,8 @@ import {
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
+import { getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 
 function pickAudioUrl(body: any): string | null {
   const files: any[] = body?.files ?? body?.data?.files ?? [];
@@ -151,6 +153,29 @@ export async function POST(request: NextRequest) {
         prompt: track.prompt,
         instrumental: track.instrumental,
       }).catch((error) => console.error("[webhook/poyo-wav] cover art generation failed", error));
+    }
+
+    const resolvedAudioId = audioId ? String(audioId) : track.audioId;
+    const resolvedTaskId = track.jobId ? getOriginalPoYoTaskId(track.jobId) : null;
+    const shouldFetchTimestampedLyrics =
+      !track.instrumental &&
+      resolvedAudioId !== null &&
+      resolvedTaskId !== null &&
+      !track.lyricsTimestamps;
+
+    if (shouldFetchTimestampedLyrics) {
+      void (async () => {
+        try {
+          const payload = await getPoYoTimestampedLyrics(resolvedTaskId, resolvedAudioId);
+          await db
+            .update(tracks)
+            .set({ lyricsTimestamps: JSON.stringify(payload) })
+            .where(eq(tracks.id, track.id!));
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error("[webhook/poyo-wav] timestamped lyrics fetch failed:", message);
+        }
+      })();
     }
 
     console.log(

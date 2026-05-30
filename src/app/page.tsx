@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import useSWR from "swr";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -17,6 +18,7 @@ import {
   usePlaylistStore,
   useWorkspaceStore,
   type Track as PlayerTrack,
+  type Workspace,
 } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
@@ -34,6 +36,14 @@ const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition"
 const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
 const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
 const STUDIO_SECTION_CLASS = "section-card flex min-h-0 flex-1 flex-col overflow-hidden";
+
+async function jsonFetcher<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(res.statusText || "Request failed");
+  }
+  return (await res.json()) as T;
+}
 
 interface Track {
   id: string;
@@ -58,6 +68,9 @@ interface Track {
   rating?: string | null;
   playCount?: number | null;
 }
+
+type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
+type CreditsResponse = { lyria: string | number; poyo: number | null; tempolor: number | null; minimax: number | null };
 
 function deriveWorkspaceNameFromTitle(rawTitle: string): string {
   const cleaned = rawTitle
@@ -100,10 +113,98 @@ export default function HomePage() {
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
 
+  const { data: tracksResponse, mutate: mutateTracksResponse } = useSWR<TracksResponse>("/api/tracks", jsonFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 2000,
+  });
+
+  const { data: creditsResponse } = useSWR<CreditsResponse>("/api/credits", jsonFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  });
+
+  function applyTracksResponse(data: TracksResponse) {
+    const next: Track[] = Array.isArray(data.tracks) ? data.tracks : [];
+    const playerSnapshots: PlayerTrack[] = next.map((track) => ({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      status: track.status,
+      audioUrl: track.audioUrl,
+      audioUrlHd: track.audioUrlHd,
+      s3Key: track.s3Key ?? null,
+      s3KeyHd: track.s3KeyHd,
+      format: track.format,
+      formatHd: track.formatHd,
+      duration: track.duration,
+      lyrics: track.lyrics,
+      createdAt: track.createdAt,
+      error: track.error,
+      rating: track.rating ?? null,
+      coverUrl: track.coverUrl ?? null,
+      s3KeyCover: track.s3KeyCover ?? null,
+      s3KeyCoverThumb: track.s3KeyCoverThumb ?? null,
+      playCount: track.playCount ?? null,
+    }));
+
+    usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
+
+    if (trackUpdateFrameRef.current !== null) {
+      cancelAnimationFrame(trackUpdateFrameRef.current);
+      trackUpdateFrameRef.current = null;
+    }
+
+    const applyTrackUpdate = (updater: (prev: Track[]) => Track[]) => {
+      startTrackUpdateTransition(() => {
+        setTracks(updater);
+      });
+    };
+
+    if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD) {
+      const batchId = ++trackUpdateBatchRef.current;
+      applyTrackUpdate((prev) => {
+        if (batchId !== trackUpdateBatchRef.current) return prev;
+        return tracksHaveSameRenderableState(prev, next) ? prev : next;
+      });
+    } else {
+      const batchId = ++trackUpdateBatchRef.current;
+      let cursor = 0;
+
+      const applyChunk = () => {
+        if (batchId !== trackUpdateBatchRef.current) return;
+
+        cursor = Math.min(cursor + TRACK_UPDATE_CHUNK_SIZE, next.length);
+        const slice = next.slice(0, cursor);
+        applyTrackUpdate((prev) => {
+          if (batchId !== trackUpdateBatchRef.current) return prev;
+          return tracksHaveSameRenderableState(prev, slice) ? prev : slice;
+        });
+
+        if (cursor < next.length) {
+          trackUpdateFrameRef.current = requestAnimationFrame(applyChunk);
+          return;
+        }
+
+        trackUpdateFrameRef.current = null;
+        applyTrackUpdate((prev) => {
+          if (batchId !== trackUpdateBatchRef.current) return prev;
+          return tracksHaveSameRenderableState(prev, next) ? prev : next;
+        });
+      };
+
+      applyChunk();
+    }
+
+    if (Array.isArray(data.workspaces)) {
+      hydrateWorkspacesFromServer(data.workspaces);
+    }
+    syncTracksToDefaultWorkspace(next.map((track) => track.id));
+  }
+
   useEffect(() => {
     ensureDefaultWorkspace();
-    fetchTracks();
-    fetchCredits();
     useStudioStore.persist.rehydrate();
     try {
       const raw = sessionStorage.getItem("lyrics-studio-payload");
@@ -120,6 +221,18 @@ export default function HomePage() {
       // ignore
     }
   }, [ensureDefaultWorkspace]);
+
+  useEffect(() => {
+    if (tracksResponse) {
+      applyTracksResponse(tracksResponse);
+    }
+  }, [tracksResponse]);
+
+  useEffect(() => {
+    if (creditsResponse) {
+      setCredits(creditsResponse);
+    }
+  }, [creditsResponse]);
 
   useEffect(() => {
     try {
@@ -253,68 +366,10 @@ export default function HomePage() {
   }
 
   async function fetchTracks() {
-    const res = await fetch("/api/tracks", { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      const next: Track[] = Array.isArray(data.tracks) ? data.tracks : [];
-      const playerSnapshots: PlayerTrack[] = next.map((track) => ({
-        id: track.id,
-        title: track.title,
-        provider: track.provider,
-        providerModel: track.providerModel,
-        prompt: track.prompt,
-        status: track.status,
-        audioUrl: track.audioUrl,
-        audioUrlHd: track.audioUrlHd,
-        s3Key: track.s3Key ?? null,
-        s3KeyHd: track.s3KeyHd,
-        format: track.format,
-        formatHd: track.formatHd,
-        duration: track.duration,
-        lyrics: track.lyrics,
-        createdAt: track.createdAt,
-        error: track.error,
-        rating: track.rating ?? null,
-        coverUrl: track.coverUrl ?? null,
-        s3KeyCover: track.s3KeyCover ?? null,
-        s3KeyCoverThumb: track.s3KeyCoverThumb ?? null,
-        playCount: track.playCount ?? null,
-      }));
-
-      usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
-      setTracks((prev) => {
-        // Skip re-render if nothing changed (same IDs + statuses)
-        const nextTracks = next;
-        if (
-          prev.length === nextTracks.length &&
-          prev.every((t, i) =>
-            t.id === nextTracks[i].id &&
-            t.status === nextTracks[i].status &&
-            t.title === nextTracks[i].title &&
-            t.coverUrl === nextTracks[i].coverUrl &&
-            t.audioUrl === nextTracks[i].audioUrl &&
-            t.audioUrlHd === nextTracks[i].audioUrlHd &&
-            t.error === nextTracks[i].error &&
-            t.duration === nextTracks[i].duration &&
-            t.format === nextTracks[i].format &&
-            t.formatHd === nextTracks[i].formatHd &&
-            t.s3KeyHd === nextTracks[i].s3KeyHd &&
-            t.s3KeyCoverThumb === nextTracks[i].s3KeyCoverThumb &&
-            (t.playCount ?? null) === (nextTracks[i].playCount ?? null) &&
-            (t.rating ?? null) === (nextTracks[i].rating ?? null)
-          )
-        ) return prev;
-        return nextTracks;
-      });
-      if (Array.isArray(data.workspaces)) {
-        hydrateWorkspacesFromServer(data.workspaces);
-      }
-      const knownTrackIds = next.map((track) => track.id);
-      syncTracksToDefaultWorkspace(knownTrackIds);
-      return next;
-    }
-
-    return [] as Track[];
+    const payload = await mutateTracksResponse();
+    if (!payload) return [] as Track[];
+    applyTracksResponse(payload);
+    return payload.tracks ?? [];
   }
 
   function handleDeleteTrack(trackId: string) {
@@ -365,13 +420,6 @@ export default function HomePage() {
     options?: { allowDuplicate?: boolean }
   ) {
     addTrackToPlaylist(playlistId, trackId, options);
-  }
-
-  async function fetchCredits() {
-    const res = await fetch("/api/credits", { cache: "no-store" });
-    if (res.ok) {
-      setCredits(await res.json());
-    }
   }
 
   function getEffectiveLanguage() {

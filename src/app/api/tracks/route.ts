@@ -66,13 +66,47 @@ export async function GET(request: NextRequest) {
 
   await ensureWorkspaceSchema();
 
+  const trackListSelect = {
+    id: tracks.id,
+    userId: tracks.userId,
+    workspaceId: tracks.workspaceId,
+    title: tracks.title,
+    provider: tracks.provider,
+    providerModel: tracks.providerModel,
+    prompt: tracks.prompt,
+    lyrics: tracks.lyrics,
+    language: tracks.language,
+    instrumental: tracks.instrumental,
+    status: tracks.status,
+    audioUrl: tracks.audioUrl,
+    audioUrlHd: tracks.audioUrlHd,
+    s3Key: tracks.s3Key,
+    s3KeyHd: tracks.s3KeyHd,
+    format: tracks.format,
+    formatHd: tracks.formatHd,
+    duration: tracks.duration,
+    jobId: tracks.jobId,
+    conversionId: tracks.conversionId,
+    audioId: tracks.audioId,
+    wavJobId: tracks.wavJobId,
+    creditsUsed: tracks.creditsUsed,
+    error: tracks.error,
+    coverUrl: tracks.coverUrl,
+    s3KeyCover: tracks.s3KeyCover,
+    s3KeyCoverThumb: tracks.s3KeyCoverThumb,
+    rating: tracks.rating,
+    playCount: tracks.playCount,
+    createdAt: tracks.createdAt,
+    updatedAt: tracks.updatedAt,
+  };
+
   const statusFilter = new URL(request.url).searchParams.get("status");
   const baseWhere = statusFilter
     ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter))
     : eq(tracks.userId, userId);
 
   const result = await db
-    .select()
+    .select(trackListSelect)
     .from(tracks)
     .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
@@ -136,7 +170,7 @@ export async function GET(request: NextRequest) {
 
   // Re-fetch only when PoYo syncing may have mutated rows; otherwise reuse the initial query result.
   const finalTracks = hadGeneratingPoYo
-    ? await db.select().from(tracks).where(eq(tracks.userId, userId)).orderBy(desc(tracks.createdAt))
+    ? await db.select(trackListSelect).from(tracks).where(eq(tracks.userId, userId)).orderBy(desc(tracks.createdAt))
     : result;
 
   const workspacePayload = await getUserWorkspacesWithTrackIds(

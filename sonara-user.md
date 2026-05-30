@@ -109,7 +109,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 
 - **Instrumental tracks** — title is **required**
 - **Vocal tracks** — if left empty, the AI will automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
-
+![alt text](image.png)
 ---
 
 ## Generating a Track

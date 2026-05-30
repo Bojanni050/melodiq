@@ -260,6 +260,30 @@ export function extractPoYoVariants(payload: unknown): PoYoVariant[] {
   return variants;
 }
 
+export async function getPoYoTimestampedLyrics(taskId: string, audioId: string): Promise<unknown> {
+  const API_KEY = await getSetting("POYO_API_KEY");
+
+  const response = await axios.post<unknown>(
+    "https://api.poyo.ai/api/generate/submit",
+    {
+      model: "get-timestamped-lyrics",
+      input: {
+        task_id: taskId,
+        audio_id: audioId,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    }
+  );
+
+  return response.data;
+}
+
 export async function generateMinimaxMusic26({
   prompt,
   lyrics,
