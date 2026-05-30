@@ -143,6 +143,9 @@ export async function POST(request: NextRequest) {
   if (isMinimaxViaPoYo && typeof lyrics === "string" && lyrics.length > 3500) {
     return NextResponse.json({ error: "Minimax via PoYo lyrics must be 3500 characters or fewer" }, { status: 400 });
   }
+  if (provider === "mureka" && !lyrics?.trim()) {
+    return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
+  }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
@@ -838,7 +841,7 @@ export async function POST(request: NextRequest) {
 
     if (provider === "mureka") {
       if (!lyrics?.trim()) {
-        return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
+        throw new Error("Mureka requires lyrics");
       }
 
       const murekaWebhookUrl = await getWebhookUrl("mureka");
