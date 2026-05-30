@@ -189,11 +189,27 @@ export const usePlayerStore = create<PlayerState>()(
         const audioElement = get().audioElement;
         if (!audioElement) return;
 
-        const wantsHd = (track.audioUrl || "").includes("hd=true");
-        const url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
+        // Kies juiste url: absolute (http/https), of fallback naar /api/tracks/[id]/stream
+        let url = track.audioUrl || undefined;
+        if (url && /^https?:\/\//i.test(url)) {
+          // Externe URL, gebruik direct
+        } else if (url && url.startsWith("/")) {
+          // Relatief pad, gebruik direct
+        } else {
+          // Fallback naar Sonara API
+          const wantsHd = (track.audioUrl || "").includes("hd=true");
+          url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
+        }
+
+        // Debug logging
+        if (typeof window !== "undefined") {
+          // eslint-disable-next-line no-console
+          console.log("[Player] playTrackFromGesture:", { track, url });
+        }
+
         audioElement.pause();
         audioElement.currentTime = 0;
-        audioElement.src = url;
+        audioElement.src = url || "";
         audioElement.volume = get().volume;
         audioElement.load();
 

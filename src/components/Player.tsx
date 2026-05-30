@@ -720,8 +720,12 @@ export default function Player() {
       setCurrentTime(0);
       setDuration(0);
       lastLoadedTrackIdRef.current = null;
+      // Auto-play eerste uit queue als die bestaat
+      if (queue.length > 0) {
+        usePlayerStore.getState().playNext();
+      }
     }
-  }, [currentTrack]);
+  }, [currentTrack, queue.length]);
 
   const togglePlay = useCallback(() => {
     if (!allowWithDelay(playToggleCooldownRef, 350)) return;
