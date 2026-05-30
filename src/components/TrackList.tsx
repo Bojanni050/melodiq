@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
@@ -190,7 +190,7 @@ export default function TrackList({
     }
   }, [tracks]);
 
-  function toggleSelection(trackId: string, options?: { mode?: "toggle" | "range" }) {
+  const toggleSelection = useCallback((trackId: string, options?: { mode?: "toggle" | "range" }) => {
     const mode = options?.mode ?? "toggle";
 
     if (mode === "range") {
@@ -229,7 +229,7 @@ export default function TrackList({
     });
 
     selectionAnchorIdRef.current = trackId;
-  }
+  }, [displayedTracks]);
 
   function toggleSelectAll() {
     setSelectedIds((current) => {
@@ -255,7 +255,7 @@ export default function TrackList({
 
   const allSelected = displayedTracks.length > 0 && visibleSelectedCount === displayedTracks.length;
 
-  async function deleteTrackIds(trackIds: string[]) {
+  const deleteTrackIds = useCallback(async (trackIds: string[]) => {
     if (trackIds.length === 0) return;
     setDeleting(true);
     try {
@@ -269,7 +269,7 @@ export default function TrackList({
     } finally {
       setDeleting(false);
     }
-  }
+  }, [onDelete]);
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
@@ -281,7 +281,7 @@ export default function TrackList({
     await deleteTrackIds(Array.from(selectedIds));
   }
 
-  function handleMoveToWorkspace(sourceTrackId: string, workspaceId: string) {
+  const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
     const activeSelection = selectedIdsRef.current;
     const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
       ? Array.from(activeSelection)
@@ -297,9 +297,9 @@ export default function TrackList({
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
-  }
+  }, [moveTrackToWorkspace, onMoveToWorkspace]);
 
-  function handlePlay(track: TrackItem) {
+  const handlePlay = useCallback((track: TrackItem) => {
     if (autoQueueAfterPlay) {
       const orderedPlayContext = displayedTracks
         .filter((t) => t.status === "done")
@@ -357,7 +357,7 @@ export default function TrackList({
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
     });
-  }
+  }, [autoQueueAfterPlay, displayedTracks, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
   function moveTrackInManualOrder(sourceId: string, targetId: string) {
     setManualOrderIds((current) => {
