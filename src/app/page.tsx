@@ -555,8 +555,11 @@ export default function HomePage() {
       return;
     }
 
-    const existingTrackIds = new Set(tracks.map((track) => track.id));
     setGenerating(true);
+    // Yield to the browser main thread so it paints the button's loading state instantly at 60fps
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const existingTrackIds = new Set(tracks.map((track) => track.id));
     const targetWorkspaceId = selectedWorkspaceId && selectedWorkspaceId !== DEFAULT_WORKSPACE_ID
       ? selectedWorkspaceId
       : ensureDefaultWorkspace();
