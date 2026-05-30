@@ -205,7 +205,7 @@ export default function HomePage() {
       });
     };
 
-    if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD) {
+    if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD || tracksRef.current.length > 0) {
       const batchId = ++trackUpdateBatchRef.current;
       applyTrackUpdate((prev) => {
         if (batchId !== trackUpdateBatchRef.current) return prev;
@@ -337,28 +337,31 @@ export default function HomePage() {
       return;
     }
 
-    setSelectedTrack({
-      id: currentTrack.id,
-      title: currentTrack.title,
-      provider: currentTrack.provider,
-      providerModel: currentTrack.providerModel,
-      prompt: currentTrack.prompt,
-      lyrics: currentTrack.lyrics,
-      status: currentTrack.status,
-      audioUrl: currentTrack.audioUrl,
-      audioUrlHd: currentTrack.audioUrlHd,
-      s3Key: currentTrack.s3Key ?? null,
-      format: currentTrack.format ?? null,
-      formatHd: currentTrack.formatHd ?? null,
-      duration: currentTrack.duration ?? null,
-      createdAt: currentTrack.createdAt,
-      error: currentTrack.error,
-      s3KeyHd: currentTrack.s3KeyHd,
-      coverUrl: null,
-      s3KeyCover: null,
-      s3KeyCoverThumb: null,
-      playCount: currentTrack.playCount ?? null,
-      rating: currentTrack.rating ?? null,
+    setSelectedTrack((prev) => {
+      if (prev && prev.id === currentTrack.id) return prev;
+      return {
+        id: currentTrack.id,
+        title: currentTrack.title,
+        provider: currentTrack.provider,
+        providerModel: currentTrack.providerModel,
+        prompt: currentTrack.prompt,
+        lyrics: currentTrack.lyrics,
+        status: currentTrack.status,
+        audioUrl: currentTrack.audioUrl,
+        audioUrlHd: currentTrack.audioUrlHd,
+        s3Key: currentTrack.s3Key ?? null,
+        format: currentTrack.format ?? null,
+        formatHd: currentTrack.formatHd ?? null,
+        duration: currentTrack.duration ?? null,
+        createdAt: currentTrack.createdAt,
+        error: currentTrack.error,
+        s3KeyHd: currentTrack.s3KeyHd,
+        coverUrl: currentTrack.coverUrl ?? null,
+        s3KeyCover: currentTrack.s3KeyCover ?? null,
+        s3KeyCoverThumb: currentTrack.s3KeyCoverThumb ?? null,
+        playCount: currentTrack.playCount ?? null,
+        rating: currentTrack.rating ?? null,
+      };
     });
   }, [showTrackDetailsPanel, currentTrack, tracks]);
 

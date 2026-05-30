@@ -203,25 +203,28 @@ export default function LibraryPage() {
       return;
     }
 
-    setSelectedTrack({
-      id: currentTrack.id,
-      title: currentTrack.title,
-      provider: currentTrack.provider,
-      providerModel: currentTrack.providerModel,
-      prompt: currentTrack.prompt,
-      lyrics: currentTrack.lyrics,
-      status: currentTrack.status,
-      audioUrl: currentTrack.audioUrl,
-      audioUrlHd: currentTrack.audioUrlHd,
-      format: currentTrack.format ?? null,
-      formatHd: currentTrack.formatHd ?? null,
-      duration: currentTrack.duration ?? null,
-      createdAt: currentTrack.createdAt,
-      error: currentTrack.error,
-      s3KeyHd: currentTrack.s3KeyHd,
-      coverUrl: currentTrack.coverUrl ?? null,
-      s3KeyCover: currentTrack.s3KeyCover ?? null,
-      rating: currentTrack.rating ?? null,
+    setSelectedTrack((prev) => {
+      if (prev?.id === currentTrack.id) return prev;
+      return {
+        id: currentTrack.id,
+        title: currentTrack.title,
+        provider: currentTrack.provider,
+        providerModel: currentTrack.providerModel,
+        prompt: currentTrack.prompt,
+        lyrics: currentTrack.lyrics,
+        status: currentTrack.status,
+        audioUrl: currentTrack.audioUrl,
+        audioUrlHd: currentTrack.audioUrlHd,
+        format: currentTrack.format ?? null,
+        formatHd: currentTrack.formatHd ?? null,
+        duration: currentTrack.duration ?? null,
+        createdAt: currentTrack.createdAt,
+        error: currentTrack.error,
+        s3KeyHd: currentTrack.s3KeyHd,
+        coverUrl: currentTrack.coverUrl ?? null,
+        s3KeyCover: currentTrack.s3KeyCover ?? null,
+        rating: currentTrack.rating ?? null,
+      };
     });
   }, [showTrackDetailsPanel, currentTrack, tracks]);
 
