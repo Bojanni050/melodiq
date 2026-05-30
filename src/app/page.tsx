@@ -82,6 +82,41 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
 }
 
 export default function HomePage() {
+    // Ref voor animatieframe batching
+    const trackUpdateFrameRef = useRef<number | null>(null);
+    // Ref voor batch-id
+    const trackUpdateBatchRef = useRef(0);
+    // React transition voor batch updates
+    const [startTrackUpdateTransition] = useTransition();
+    // Chunking threshold en size
+    const TRACK_UPDATE_CHUNK_THRESHOLD = 100;
+    const TRACK_UPDATE_CHUNK_SIZE = 50;
+
+    // Utility: vergelijk of twee track-arrays renderbaar identiek zijn
+    function tracksHaveSameRenderableState(a: Track[], b: Track[]) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (
+          a[i].id !== b[i].id ||
+          a[i].status !== b[i].status ||
+          a[i].title !== b[i].title ||
+          a[i].coverUrl !== b[i].coverUrl ||
+          a[i].audioUrl !== b[i].audioUrl ||
+          a[i].audioUrlHd !== b[i].audioUrlHd ||
+          a[i].error !== b[i].error ||
+          a[i].duration !== b[i].duration ||
+          a[i].format !== b[i].format ||
+          a[i].formatHd !== b[i].formatHd ||
+          a[i].s3KeyHd !== b[i].s3KeyHd ||
+          a[i].s3KeyCoverThumb !== b[i].s3KeyCoverThumb ||
+          (a[i].playCount ?? null) !== (b[i].playCount ?? null) ||
+          (a[i].rating ?? null) !== (b[i].rating ?? null)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    }
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
