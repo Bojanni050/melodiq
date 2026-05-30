@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
-import GeneratingRow from "@/components/tracks/GeneratingRow";
 import TrackCard from "@/components/tracks/TrackCard";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore } from "@/lib/store";
@@ -510,8 +509,6 @@ export default function TrackList({
             </button>
           </div>
         )}
-
-        {isGenerating && <GeneratingRow />}
 
         {displayedTracks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
