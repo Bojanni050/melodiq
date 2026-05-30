@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -70,6 +70,7 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
 
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const trackUpdateFrameRef = useRef<number | null>(null);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null, minimax: null as number | null });
