@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: za 00:49**
+**Versie: do 17:27**
 
 > AI Music Generation Web App
 
@@ -120,14 +120,9 @@ When you click **Generate Track**:
 2. If vocal and no title is set, AI auto-generates one from your lyrics
 3. Your prompt, lyrics, and settings are sent to the selected provider
 4. A new track appears in the **Recent Tracks** list
-
-6. Tracks verschijnen pas in de lijst nadat alle voorbereidende taken (titel genereren, cover art, workspace assignment) volledig zijn afgerond. Je ziet dus nooit meer een "lege" of incomplete track verschijnen.
-
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
 
 Lyria tracks complete in the same request. PoYo, Tempolor, and MusicGPT tracks may take longer; the app polls for status updates automatically and also processes provider webhooks when results arrive.
-
-If a track is still generating, status polling now keeps running in the Studio even when intermediate responses contain no visual changes, so tracks switch to `done` without requiring a manual page refresh.
 
 For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generation is blocked and the app shows a notification.
 
@@ -140,7 +135,6 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - All track lists now include sorting controls: **New to old** and **Old to new**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - In all track lists except **Recent Tracks**, you can now drag and drop tracks to change the play order used when auto queueing tracks.
-- Studio track refresh now applies large list updates in small animation-frame chunks, so the interface stays responsive while new track statuses and metadata stream in.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views

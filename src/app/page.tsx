@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -34,8 +34,6 @@ const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition"
 const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
 const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
 const STUDIO_SECTION_CLASS = "section-card flex min-h-0 flex-1 flex-col overflow-hidden";
-const TRACK_UPDATE_CHUNK_SIZE = 80;
-const TRACK_UPDATE_CHUNK_THRESHOLD = 160;
 
 interface Track {
   id: string;
@@ -70,30 +68,6 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
   return cleaned.slice(0, 100);
 }
 
-function tracksHaveSameRenderableState(previous: Track[], next: Track[]): boolean {
-  if (previous.length !== next.length) return false;
-
-  return previous.every((track, index) => {
-    const nextTrack = next[index];
-    return (
-      track.id === nextTrack.id &&
-      track.status === nextTrack.status &&
-      track.title === nextTrack.title &&
-      track.coverUrl === nextTrack.coverUrl &&
-      track.audioUrl === nextTrack.audioUrl &&
-      track.audioUrlHd === nextTrack.audioUrlHd &&
-      track.error === nextTrack.error &&
-      track.duration === nextTrack.duration &&
-      track.format === nextTrack.format &&
-      track.formatHd === nextTrack.formatHd &&
-      track.s3KeyHd === nextTrack.s3KeyHd &&
-      track.s3KeyCoverThumb === nextTrack.s3KeyCoverThumb &&
-      (track.playCount ?? null) === (nextTrack.playCount ?? null) &&
-      (track.rating ?? null) === (nextTrack.rating ?? null)
-    );
-  });
-}
-
 export default function HomePage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -125,17 +99,6 @@ export default function HomePage() {
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const trackUpdateFrameRef = useRef<number | null>(null);
-  const trackUpdateBatchRef = useRef(0);
-  const [, startTrackUpdateTransition] = useTransition();
-  const playlistOptions = useMemo(
-    () => playlists.map((playlist) => ({ id: playlist.id, name: playlist.name })),
-    [playlists]
-  );
-  const handleSelectTrack = useCallback((track: Track) => {
-    setSelectedTrack(track);
-    setShowTrackDetailsPanel(true);
-  }, [setShowTrackDetailsPanel]);
 
   useEffect(() => {
     ensureDefaultWorkspace();
@@ -202,11 +165,11 @@ export default function HomePage() {
 
     const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
 
-    const timer = setInterval(() => {
-      void fetchTracks();
+    const timer = setTimeout(() => {
+      fetchTracks();
     }, interval);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [tracks]);
 
   useEffect(() => {
@@ -246,14 +209,6 @@ export default function HomePage() {
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
-
-  useEffect(() => {
-    return () => {
-      if (trackUpdateFrameRef.current !== null) {
-        cancelAnimationFrame(trackUpdateFrameRef.current);
-      }
-    };
-  }, []);
 
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
@@ -327,53 +282,30 @@ export default function HomePage() {
       }));
 
       usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
-
-      if (trackUpdateFrameRef.current !== null) {
-        cancelAnimationFrame(trackUpdateFrameRef.current);
-        trackUpdateFrameRef.current = null;
-      }
-
-      const applyTrackUpdate = (updater: (prev: Track[]) => Track[]) => {
-        startTrackUpdateTransition(() => {
-          setTracks(updater);
-        });
-      };
-
-      if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD) {
-        const batchId = ++trackUpdateBatchRef.current;
-        applyTrackUpdate((prev) => {
-          if (batchId !== trackUpdateBatchRef.current) return prev;
-          return tracksHaveSameRenderableState(prev, next) ? prev : next;
-        });
-      } else {
-        const batchId = ++trackUpdateBatchRef.current;
-        let cursor = 0;
-
-        const applyChunk = () => {
-          if (batchId !== trackUpdateBatchRef.current) return;
-
-          cursor = Math.min(cursor + TRACK_UPDATE_CHUNK_SIZE, next.length);
-          const slice = next.slice(0, cursor);
-          applyTrackUpdate((prev) => {
-            if (batchId !== trackUpdateBatchRef.current) return prev;
-            return tracksHaveSameRenderableState(prev, slice) ? prev : slice;
-          });
-
-          if (cursor < next.length) {
-            trackUpdateFrameRef.current = requestAnimationFrame(applyChunk);
-            return;
-          }
-
-          trackUpdateFrameRef.current = null;
-          applyTrackUpdate((prev) => {
-            if (batchId !== trackUpdateBatchRef.current) return prev;
-            return tracksHaveSameRenderableState(prev, next) ? prev : next;
-          });
-        };
-
-        applyChunk();
-      }
-
+      setTracks((prev) => {
+        // Skip re-render if nothing changed (same IDs + statuses)
+        const nextTracks = next;
+        if (
+          prev.length === nextTracks.length &&
+          prev.every((t, i) =>
+            t.id === nextTracks[i].id &&
+            t.status === nextTracks[i].status &&
+            t.title === nextTracks[i].title &&
+            t.coverUrl === nextTracks[i].coverUrl &&
+            t.audioUrl === nextTracks[i].audioUrl &&
+            t.audioUrlHd === nextTracks[i].audioUrlHd &&
+            t.error === nextTracks[i].error &&
+            t.duration === nextTracks[i].duration &&
+            t.format === nextTracks[i].format &&
+            t.formatHd === nextTracks[i].formatHd &&
+            t.s3KeyHd === nextTracks[i].s3KeyHd &&
+            t.s3KeyCoverThumb === nextTracks[i].s3KeyCoverThumb &&
+            (t.playCount ?? null) === (nextTracks[i].playCount ?? null) &&
+            (t.rating ?? null) === (nextTracks[i].rating ?? null)
+          )
+        ) return prev;
+        return nextTracks;
+      });
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
       }
@@ -385,12 +317,12 @@ export default function HomePage() {
     return [] as Track[];
   }
 
-  const handleDeleteTrack = useCallback((trackId: string) => {
+  function handleDeleteTrack(trackId: string) {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    setSelectedTrack((prev) => (prev?.id === trackId ? null : prev));
-  }, []);
+    if (selectedTrack?.id === trackId) setSelectedTrack(null);
+  }
 
-  const handleTitleUpdate = useCallback((trackId: string, newTitle: string) => {
+  function handleTitleUpdate(trackId: string, newTitle: string) {
     setTracks((prev) => {
       const idx = prev.findIndex((t) => t.id === trackId);
       if (idx === -1 || prev[idx].title === newTitle) return prev;
@@ -398,10 +330,12 @@ export default function HomePage() {
       next[idx] = { ...next[idx], title: newTitle };
       return next;
     });
-    setSelectedTrack((prev) => (prev?.id === trackId ? { ...prev, title: newTitle } : prev));
-  }, []);
+    if (selectedTrack?.id === trackId) {
+      setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
+    }
+  }
 
-  const handleAddToQueue = useCallback((track: Track) => {
+  function handleAddToQueue(track: Track) {
     usePlayerStore.getState().enqueueTrack({
       id: track.id,
       title: track.title,
@@ -423,15 +357,15 @@ export default function HomePage() {
       s3KeyCover: track.s3KeyCover,
       s3KeyCoverThumb: track.s3KeyCoverThumb,
     });
-  }, []);
+  }
 
-  const handleAddToPlaylist = useCallback((
+  function handleAddToPlaylist(
     trackId: string,
     playlistId: string,
     options?: { allowDuplicate?: boolean }
-  ) => {
+  ) {
     addTrackToPlaylist(playlistId, trackId, options);
-  }, [addTrackToPlaylist]);
+  }
 
   async function fetchCredits() {
     const res = await fetch("/api/credits", { cache: "no-store" });
@@ -545,7 +479,6 @@ export default function HomePage() {
       : ensureDefaultWorkspace();
 
     try {
-      // 1. Titel genereren indien nodig
       const needsTitle = !instrumental && !title.trim() && lyrics.trim();
       let finalTitle = title;
       if (needsTitle) {
@@ -556,7 +489,6 @@ export default function HomePage() {
         }
       }
 
-      // 2. Tracks genereren (API call)
       const effectiveLanguage = getEffectiveLanguage();
       const results = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
@@ -582,7 +514,6 @@ export default function HomePage() {
         )
       );
 
-      // 3. Verzamel nieuwe trackIds en eventuele titels
       const allTrackIds: string[] = [];
       const generatedTitles: string[] = [];
       const errors: string[] = [];
@@ -611,7 +542,6 @@ export default function HomePage() {
         }
       }
 
-      // 4. Workspace assignment (indien nodig)
       let finalWorkspaceId = targetWorkspaceId;
       if (autoCreateWorkspaceFromGeneratedTitle && allTrackIds.length > 0) {
         const preferredTitle = finalTitle.trim() || generatedTitles[0] || "";
@@ -626,26 +556,19 @@ export default function HomePage() {
       }
 
       if (allTrackIds.length > 0) {
-        // Workspace assignment altijd eerst uitvoeren
-        await moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
+        moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
+        void fetchTracks();
       } else {
-        // Fallback: probeer alsnog nieuwe tracks te vinden en toe te wijzen
         const latestTracks = await fetchTracks();
         if (finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
           const discoveredTrackIds = latestTracks
             .map((track) => track.id)
             .filter((trackId) => !existingTrackIds.has(trackId));
           if (discoveredTrackIds.length > 0) {
-            await moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
+            moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
           }
         }
       }
-
-      // 5. Wacht kort zodat cover art generatie (server-side) kan voltooien
-      // (optioneel: poll of fetchTracks, want cover art wordt async op de server gestart)
-      // Hier: fetchTracks pas NA assignment en cover art start
-      await new Promise((resolve) => setTimeout(resolve, 600)); // 600ms wachten
-      await fetchTracks();
 
       if (errors.length > 0) {
         setNotice({ type: "error", message: errors.join(" |") });
@@ -662,7 +585,7 @@ export default function HomePage() {
     }
   }
 
-  const handleReusePrompt = useCallback((track: Track) => {
+  function handleReusePrompt(track: Track) {
     const studio = useStudioStore.getState();
 
     // Clear current fields first, then apply values from selected track.
@@ -670,7 +593,7 @@ export default function HomePage() {
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
-  }, []);
+  }
 
   function handlePlayTrack(url: string) {
     if (selectedTrack) {
@@ -766,10 +689,10 @@ export default function HomePage() {
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
-  const handleMoveTrackToWorkspace = useCallback((trackId: string, workspaceId: string) => {
+  function handleMoveTrackToWorkspace(trackId: string, workspaceId: string) {
     moveTrackToWorkspace(workspaceId, trackId);
     setSelectedWorkspaceId(workspaceId);
-  }, [moveTrackToWorkspace, setSelectedWorkspaceId]);
+  }
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -1128,13 +1051,13 @@ export default function HomePage() {
                           <TrackList
                             tracks={selectedWorkspaceTracks}
                             autoQueueAfterPlay
-                            onSelect={handleSelectTrack}
+                            onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
                             onDelete={handleDeleteTrack}
                             onReusePrompt={handleReusePrompt}
                             onAddToQueue={handleAddToQueue}
                             onAddToPlaylist={handleAddToPlaylist}
                             onMoveToWorkspace={handleMoveTrackToWorkspace}
-                            playlists={playlistOptions}
+                            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                             onTitleUpdate={handleTitleUpdate}
                           />
                         ) : (
@@ -1161,13 +1084,13 @@ export default function HomePage() {
                           enableDragReorder={false}
                           autoQueueAfterPlay
                           isGenerating={generating}
-                          onSelect={handleSelectTrack}
+                          onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
                           onDelete={handleDeleteTrack}
                           onReusePrompt={handleReusePrompt}
                           onAddToQueue={handleAddToQueue}
                           onAddToPlaylist={handleAddToPlaylist}
                           onMoveToWorkspace={handleMoveTrackToWorkspace}
-                          playlists={playlistOptions}
+                          playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
                           onTitleUpdate={handleTitleUpdate}
                         />
                       </div>
