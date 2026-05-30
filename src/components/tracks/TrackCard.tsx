@@ -65,7 +65,7 @@ const TrackCard = memo(function TrackCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitle, setEditTitle] = useState(track.title || "");
+  const [editTitle, setEditTitle] = useState(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
   const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
@@ -268,7 +268,7 @@ const TrackCard = memo(function TrackCard({
 
   function discardTitle() {
     setIsEditingTitle(false);
-    setEditTitle(track.title || "");
+    setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
   }
 
   function saveTitle() {
@@ -295,7 +295,7 @@ const TrackCard = memo(function TrackCard({
   function handleTitleDoubleClick(e: React.MouseEvent) {
     e.stopPropagation();
     setIsEditingTitle(true);
-    setEditTitle(track.title || track.prompt.substring(0, 50));
+    setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : track.prompt.substring(0, 50));
   }
 
   function handleDownload(url: string, hd = false) {
@@ -303,7 +303,7 @@ const TrackCard = memo(function TrackCard({
     const a = document.createElement("a");
     a.href = url;
     const fmt = hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3");
-    a.download = `${track.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.download = `${(track.title || "track").replace(/\s*\(2\)\s*$/, "")}${hd ? "_hd" : ""}.${fmt}`;
     a.click();
     setTimeout(() => setDownloading(false), 1000);
   }
@@ -435,7 +435,7 @@ const TrackCard = memo(function TrackCard({
   }
 
   function openWorkspaceMoveMenu() {
-    const suggestedName = (track.title || track.prompt || "").trim();
+    const suggestedName = (track.title || track.prompt || "").trim().replace(/\s*\(2\)\s*$/, "");
     setWorkspaceMenuOpen(true);
     setWorkspaceDraftOpen(false);
     if (suggestedName && !newWorkspaceName.trim()) {
@@ -477,7 +477,7 @@ const TrackCard = memo(function TrackCard({
   const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
 
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
-  const title = track.title || track.prompt.substring(0, 50);
+  const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
   const playCount = optimisticPlayCount;
   const isNewUnplayed = track.status === "done" && playCount === 0;

@@ -159,7 +159,10 @@ export default function HomePage() {
   });
 
   function applyTracksResponse(data: TracksResponse) {
-    const next: Track[] = Array.isArray(data.tracks) ? data.tracks : [];
+    const next: Track[] = (Array.isArray(data.tracks) ? data.tracks : []).map((t) => ({
+      ...t,
+      title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
+    }));
     const playerSnapshots: PlayerTrack[] = next.map((track) => ({
       id: track.id,
       title: track.title,

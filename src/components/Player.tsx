@@ -84,6 +84,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   const audioElement = usePlayerStore((state) => state.audioElement);
   const playToggleCooldownRef = useRef(0);
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+  const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   useEffect(() => {
     void loadUser();
@@ -206,7 +207,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
             </button>
             <div>
               <h2 className="text-xl font-semibold">
-                {currentTrack?.title || currentTrack?.prompt.substring(0, 50) || "No track"}
+                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
               <p className="text-sm text-white/60 capitalize">
                 {currentTrack
@@ -270,7 +271,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                 </div>
               )}
               <h3 className="mt-6 text-2xl md:text-3xl font-semibold text-white/90 animate-[pulse_4s_ease-in-out_infinite]">
-                {currentTrack?.title || currentTrack?.prompt.substring(0, 50) || "No track"}
+                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h3>
             </div>
           )}
@@ -416,6 +417,7 @@ export default function Player() {
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+  const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   const detectAudioSource = useCallback(async (streamUrl: string): Promise<{ source: AudioSource; state: AudioSourceState }> => {
     try {
@@ -779,7 +781,7 @@ export default function Player() {
     if (resolvingUrl) return "Loading audio...";
     if (!currentTrack) return "";
 
-    const displayTitle = currentTrack.title || currentTrack.prompt.substring(0, 50);
+    const displayTitle = cleanTitle || currentTrack.prompt.substring(0, 50);
     const suffix = displayTitle ? ` • ${displayTitle}` : "";
     return `MelodIQ Player${suffix}`;
   }
@@ -850,9 +852,9 @@ export default function Player() {
                 <button
                   onClick={() => setIsFullscreen(true)}
                   className="block text-sm font-medium text-white/90 truncate w-full text-left hover:underline"
-                  title={currentTrack.title || currentTrack.prompt}
+                  title={cleanTitle || currentTrack.prompt}
                 >
-                  {currentTrack.title || currentTrack.prompt.substring(0, 50)}
+                  {cleanTitle || currentTrack.prompt.substring(0, 50)}
                 </button>
                 <p className="text-xs text-white/40 truncate">
                   {artistLabel ? `${artistLabel} - ` : ""}{formatProviderLabel(currentTrack.provider)}

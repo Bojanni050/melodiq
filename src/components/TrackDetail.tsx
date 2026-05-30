@@ -80,7 +80,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
     }
   }
 
-  const title = track.title || track.prompt.substring(0, 60);
+  const title = (track.title || track.prompt.substring(0, 60)).replace(/\s*\(2\)\s*$/, "");
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
@@ -122,7 +122,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
         {track.coverUrl ? (
           <img
             src={track.coverUrl}
-            alt={track.title || "Cover art"}
+            alt={title || "Cover art"}
             className="w-full h-full object-cover"
           />
         ) : (

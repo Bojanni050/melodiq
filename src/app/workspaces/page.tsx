@@ -78,7 +78,13 @@ export default function WorkspacesPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setTracks((data.tracks || []).filter((track: Track) => track.status === "done"));
+        const cleanedTracks = (data.tracks || [])
+          .filter((track: Track) => track.status === "done")
+          .map((t: Track) => ({
+            ...t,
+            title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
+          }));
+        setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
         }
