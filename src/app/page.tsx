@@ -118,6 +118,11 @@ export default function HomePage() {
       return true;
     }
   const [tracks, setTracks] = useState<Track[]>([]);
+  const tracksRef = useRef<Track[]>([]);
+  useEffect(() => {
+    tracksRef.current = tracks;
+  }, [tracks]);
+
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null, minimax: null as number | null });
@@ -158,7 +163,7 @@ export default function HomePage() {
     dedupingInterval: 60000,
   });
 
-  function applyTracksResponse(data: TracksResponse) {
+  const applyTracksResponse = useCallback((data: TracksResponse) => {
     const next: Track[] = (Array.isArray(data.tracks) ? data.tracks : []).map((t) => ({
       ...t,
       title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
@@ -236,10 +241,10 @@ export default function HomePage() {
     }
 
     if (Array.isArray(data.workspaces)) {
-      hydrateWorkspacesFromServer(data.workspaces);
+      useWorkspaceStore.getState().hydrateWorkspacesFromServer(data.workspaces);
     }
-    syncTracksToDefaultWorkspace(next.map((track) => track.id));
-  }
+    useWorkspaceStore.getState().syncTracksToDefaultWorkspace(next.map((track) => track.id));
+  }, []);
 
   useEffect(() => {
     ensureDefaultWorkspace();
@@ -403,19 +408,19 @@ export default function HomePage() {
     }
   }
 
-  async function fetchTracks() {
+  const fetchTracks = useCallback(async () => {
     const payload = await mutateTracksResponse();
     if (!payload) return [] as Track[];
     applyTracksResponse(payload);
     return payload.tracks ?? [];
-  }
+  }, [mutateTracksResponse, applyTracksResponse]);
 
-  function handleDeleteTrack(trackId: string) {
+  const handleDeleteTrack = useCallback((trackId: string) => {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    if (selectedTrack?.id === trackId) setSelectedTrack(null);
-  }
+    setSelectedTrack((prev) => (prev?.id === trackId ? null : prev));
+  }, []);
 
-  function handleTitleUpdate(trackId: string, newTitle: string) {
+  const handleTitleUpdate = useCallback((trackId: string, newTitle: string) => {
     setTracks((prev) => {
       const idx = prev.findIndex((t) => t.id === trackId);
       if (idx === -1 || prev[idx].title === newTitle) return prev;
@@ -423,12 +428,15 @@ export default function HomePage() {
       next[idx] = { ...next[idx], title: newTitle };
       return next;
     });
-    if (selectedTrack?.id === trackId) {
-      setSelectedTrack((prev) => (prev ? { ...prev, title: newTitle } : null));
-    }
-  }
+    setSelectedTrack((prev) => {
+      if (prev?.id === trackId) {
+        return { ...prev, title: newTitle };
+      }
+      return prev;
+    });
+  }, []);
 
-  function handleAddToQueue(track: Track) {
+  const handleAddToQueue = useCallback((track: Track) => {
     usePlayerStore.getState().enqueueTrack({
       id: track.id,
       title: track.title,
@@ -450,22 +458,22 @@ export default function HomePage() {
       s3KeyCover: track.s3KeyCover,
       s3KeyCoverThumb: track.s3KeyCoverThumb,
     });
-  }
+  }, []);
 
-  function handleAddToPlaylist(
+  const handleAddToPlaylist = useCallback((
     trackId: string,
     playlistId: string,
     options?: { allowDuplicate?: boolean }
-  ) {
-    addTrackToPlaylist(playlistId, trackId, options);
-  }
+  ) => {
+    usePlaylistStore.getState().addTrackToPlaylist(playlistId, trackId, options);
+  }, []);
 
-  function getEffectiveLanguage() {
+  const getEffectiveLanguage = useCallback(() => {
     const { language, customLanguage } = useStudioStore.getState();
     return language === "Other..." ? customLanguage.trim() || language : language;
-  }
+  }, []);
 
-  async function handleOptimize() {
+  const handleOptimize = useCallback(async () => {
     const { songIdea, selectedProviders, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
     const provider = Object.keys(selectedProviders)[0] || "poyo";
     const res = await fetch("/api/llm", {
@@ -486,9 +494,9 @@ export default function HomePage() {
       const data = await res.json();
       useStudioStore.getState().setSongIdea(data.result);
     }
-  }
+  }, [getEffectiveLanguage]);
 
-  async function handleGenerateLyrics() {
+  const handleGenerateLyrics = useCallback(async () => {
     setShowLyricsOverlay(true);
     const { songIdea, lyricsContext, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
     try {
@@ -513,9 +521,9 @@ export default function HomePage() {
     } finally {
       setShowLyricsOverlay(false);
     }
-  }
+  }, [getEffectiveLanguage]);
 
-  async function handleGenerateTitle(lyrics: string): Promise<string | null> {
+  const handleGenerateTitle = useCallback(async (lyrics: string): Promise<string | null> => {
     try {
       const res = await fetch("/api/generate-title", {
         method: "POST",
@@ -528,9 +536,9 @@ export default function HomePage() {
       }
     } catch {}
     return null;
-  }
+  }, []);
 
-  async function handleGenerate() {
+  const handleGenerate = useCallback(async () => {
     const {
       songIdea,
       lyrics,
@@ -562,10 +570,11 @@ export default function HomePage() {
     // Yield to the browser main thread so it paints the button's loading state instantly at 60fps
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const existingTrackIds = new Set(tracks.map((track) => track.id));
+    const existingTrackIds = new Set(tracksRef.current.map((track) => track.id));
+    const selectedWorkspaceId = useWorkspaceStore.getState().selectedWorkspaceId;
     const targetWorkspaceId = selectedWorkspaceId && selectedWorkspaceId !== DEFAULT_WORKSPACE_ID
       ? selectedWorkspaceId
-      : ensureDefaultWorkspace();
+      : useWorkspaceStore.getState().ensureDefaultWorkspace();
 
     try {
       const needsTitle = !instrumental && !title.trim() && lyrics.trim();
@@ -636,16 +645,16 @@ export default function HomePage() {
         const preferredTitle = finalTitle.trim() || generatedTitles[0] || "";
         const workspaceName = deriveWorkspaceNameFromTitle(preferredTitle);
         if (workspaceName) {
-          const createdWorkspaceId = createWorkspace(workspaceName);
+          const createdWorkspaceId = useWorkspaceStore.getState().createWorkspace(workspaceName);
           if (createdWorkspaceId) {
             finalWorkspaceId = createdWorkspaceId;
-            setSelectedWorkspaceId(createdWorkspaceId);
+            useWorkspaceStore.getState().setSelectedWorkspaceId(createdWorkspaceId);
           }
         }
       }
 
       if (allTrackIds.length > 0) {
-        moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
+        useWorkspaceStore.getState().moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
         void fetchTracks();
       } else {
         const latestTracks = await fetchTracks();
@@ -654,7 +663,7 @@ export default function HomePage() {
             .map((track) => track.id)
             .filter((trackId) => !existingTrackIds.has(trackId));
           if (discoveredTrackIds.length > 0) {
-            moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
+            useWorkspaceStore.getState().moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
           }
         }
       }
@@ -672,9 +681,9 @@ export default function HomePage() {
     } finally {
       setGenerating(false);
     }
-  }
+  }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks]);
 
-  function handleReusePrompt(track: Track) {
+  const handleReusePrompt = useCallback((track: Track) => {
     const studio = useStudioStore.getState();
 
     // Clear current fields first, then apply values from selected track.
@@ -682,12 +691,12 @@ export default function HomePage() {
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
-  }
+  }, []);
 
-  function handlePlayTrack(url: string) {
+  const handlePlayTrack = useCallback((url: string) => {
     if (selectedTrack) {
       const player = usePlayerStore.getState();
-      const playContext = tracks
+      const playContext = tracksRef.current
         .filter((t) => t.status === "done")
         .map((t) => ({
           id: t.id,
@@ -741,9 +750,9 @@ export default function HomePage() {
         s3KeyCoverThumb: selectedTrack.s3KeyCoverThumb,
       });
     }
-  }
+  }, [selectedTrack]);
 
-  function handleDownloadTrack(url: string, hd: boolean) {
+  const handleDownloadTrack = useCallback((url: string, hd: boolean) => {
     const a = document.createElement("a");
     a.href = url;
     const fmt = hd
@@ -751,7 +760,7 @@ export default function HomePage() {
       : (selectedTrack?.format ?? "mp3");
     a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
     a.click();
-  }
+  }, [selectedTrack]);
 
   const [studioTab, setStudioTab] = useState<"workspaces" | "recent">("recent");
   const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
@@ -773,15 +782,24 @@ export default function HomePage() {
   const selectedWorkspaceTracks = useMemo(() => {
     if (!selectedWorkspace) return [];
     const idSet = new Set(selectedWorkspace.trackIds);
-    return tracks.filter((track) => idSet.has(track.id));
-  }, [selectedWorkspace, tracks]);
+    return tracksRef.current.filter((track) => idSet.has(track.id));
+  }, [selectedWorkspace]);
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
-  function handleMoveTrackToWorkspace(trackId: string, workspaceId: string) {
-    moveTrackToWorkspace(workspaceId, trackId);
-    setSelectedWorkspaceId(workspaceId);
-  }
+  const handleMoveTrackToWorkspace = useCallback((trackId: string, workspaceId: string) => {
+    useWorkspaceStore.getState().moveTrackToWorkspace(workspaceId, trackId);
+    useWorkspaceStore.getState().setSelectedWorkspaceId(workspaceId);
+  }, []);
+
+  const handleSelectTrack = useCallback((track: Track) => {
+    setSelectedTrack(track);
+    setShowTrackDetailsPanel(true);
+  }, []);
+
+  const memoizedPlaylists = useMemo(() => {
+    return playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }));
+  }, [playlists]);
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -1140,13 +1158,13 @@ export default function HomePage() {
                           <TrackList
                             tracks={selectedWorkspaceTracks}
                             autoQueueAfterPlay
-                            onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
+                            onSelect={handleSelectTrack}
                             onDelete={handleDeleteTrack}
                             onReusePrompt={handleReusePrompt}
                             onAddToQueue={handleAddToQueue}
                             onAddToPlaylist={handleAddToPlaylist}
                             onMoveToWorkspace={handleMoveTrackToWorkspace}
-                            playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                            playlists={memoizedPlaylists}
                             onTitleUpdate={handleTitleUpdate}
                           />
                         ) : (
@@ -1173,13 +1191,13 @@ export default function HomePage() {
                           enableDragReorder={false}
                           autoQueueAfterPlay
                           isGenerating={generating}
-                          onSelect={(t) => { setSelectedTrack(t); setShowTrackDetailsPanel(true); }}
+                          onSelect={handleSelectTrack}
                           onDelete={handleDeleteTrack}
                           onReusePrompt={handleReusePrompt}
                           onAddToQueue={handleAddToQueue}
                           onAddToPlaylist={handleAddToPlaylist}
                           onMoveToWorkspace={handleMoveTrackToWorkspace}
-                          playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                          playlists={memoizedPlaylists}
                           onTitleUpdate={handleTitleUpdate}
                         />
                       </div>

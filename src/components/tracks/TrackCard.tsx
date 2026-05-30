@@ -1113,16 +1113,17 @@ const TrackCard = memo(function TrackCard({
     </>
   );
 }, (prevProps, nextProps) => {
-  if (prevProps.track.id !== nextProps.track.id) return false;
-  if (prevProps.track.title !== nextProps.track.title) return false;
-  if (prevProps.track.status !== nextProps.track.status) return false;
-  if (prevProps.track.playCount !== nextProps.track.playCount) return false;
-  if (prevProps.track.coverUrl !== nextProps.track.coverUrl) return false;
-  if (prevProps.track.rating !== nextProps.track.rating) return false;
-  if (prevProps.track.s3KeyHd !== nextProps.track.s3KeyHd) return false;
-  if (prevProps.playlists?.length !== nextProps.playlists?.length) return false;
-  if (prevProps.workspaceById?.size !== nextProps.workspaceById?.size) return false;
-  return true;
+  return (
+    prevProps.track.id === nextProps.track.id &&
+    prevProps.track.title === nextProps.track.title &&
+    prevProps.track.status === nextProps.track.status &&
+    prevProps.track.playCount === nextProps.track.playCount &&
+    prevProps.track.coverUrl === nextProps.track.coverUrl &&
+    prevProps.track.rating === nextProps.track.rating &&
+    prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&
+    prevProps.playlists?.length === nextProps.playlists?.length &&
+    prevProps.workspaceById?.size === nextProps.workspaceById?.size
+  );
 });
 
 export default TrackCard;

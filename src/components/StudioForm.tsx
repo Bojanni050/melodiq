@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import GenerateButton from "@/components/studio/GenerateButton";
 import { useStudioStore, usePresetsStore } from "@/lib/store";
 
@@ -210,7 +210,7 @@ const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
   },
 ];
 
-export default function StudioForm({
+export default memo(function StudioForm({
   credits,
   isGenerating,
   onGenerate,
@@ -1048,4 +1048,4 @@ Your chorus here`}
       </div>
     </div>
   );
-}
+});
