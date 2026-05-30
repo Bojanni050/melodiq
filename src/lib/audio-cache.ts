@@ -15,8 +15,13 @@ import { getPresignedUrl } from "@/lib/s3";
  */
 
 function getCacheDir(): string {
-  return process.env.CACHE_DIR || "/data/audio-cache";
+  if (process.env.CACHE_DIR) return process.env.CACHE_DIR;
+  if (process.platform === "win32") {
+    return path.join(process.cwd(), "data", "audio-cache");
+  }
+  return "/data/audio-cache";
 }
+
 
 function ensureCacheDir(): void {
   const dir = getCacheDir();

@@ -15,8 +15,13 @@ import { getPresignedUrl } from "@/lib/s3";
  */
 
 function getCacheDir(): string {
-  return process.env.COVER_CACHE_DIR || "/data/cover-cache";
+  if (process.env.COVER_CACHE_DIR) return process.env.COVER_CACHE_DIR;
+  if (process.platform === "win32") {
+    return path.join(process.cwd(), "data", "cover-cache");
+  }
+  return "/data/cover-cache";
 }
+
 
 function ensureCacheDir(): void {
   const dir = getCacheDir();

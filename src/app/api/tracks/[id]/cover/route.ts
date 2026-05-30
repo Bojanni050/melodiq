@@ -46,9 +46,13 @@ export async function GET(
   } catch (error: any) {
     console.error(`[cover-cache] failed for track ${id}:`, error?.message ?? error);
     // Return a cacheable 404 so the browser stops retrying on every poll
-    return new NextResponse(null, {
-      status: 404,
-      headers: { "Cache-Control": "private, max-age=300" },
-    });
+    return NextResponse.json(
+      { error: "Cover not found" },
+      {
+        status: 404,
+        headers: { "Cache-Control": "private, max-age=300" },
+      }
+    );
   }
 }
+
