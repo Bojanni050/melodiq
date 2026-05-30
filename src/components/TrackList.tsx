@@ -88,6 +88,35 @@ export default function TrackList({
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
+  // Sentinel and Intersection Observer for detecting when generating tracks scroll out of view
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isTopInView, setIsTopInView] = useState(true);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsTopInView(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.unobserve(sentinel);
+    };
+  }, []);
+
+  const hasGeneratingTracks = useMemo(() => {
+    return tracks.some((t) => t.status === "generating" || t.status === "pending");
+  }, [tracks]);
+
+  const scrollToTop = useCallback(() => {
+    sentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   const sortedTracks = useMemo(() => {
     const withTime = tracks.map((t) => ({ t, time: Number(new Date(t.createdAt)) }));
 
@@ -430,6 +459,28 @@ export default function TrackList({
             </select>
           </div>
         </div>
+
+        <div ref={sentinelRef} className="h-0 w-full" />
+
+        {/* Floating "New tracks generating" notification */}
+        {!isTopInView && hasGeneratingTracks && (
+          <div className="sticky top-[42px] z-20 flex justify-center w-full pointer-events-none animate-[slideDown_0.2s_ease-out]">
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="pointer-events-auto flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary-500 text-white text-xs font-semibold shadow-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 border border-primary-400/40"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <span>Nieuwe tracks in aanmaak • Klik om omhoog te scrollen</span>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {visibleSelectedCount > 0 && (
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
