@@ -313,11 +313,13 @@ export default function WorkspacesPage() {
                                 <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-3xl text-white/80 backdrop-blur-sm">+</div>
                               </div>
                             )}
-                            <div className="absolute inset-x-0 bottom-0 p-4">
-                              <h3 className="truncate text-lg font-semibold text-white">{workspace.name}</h3>
-                              <p className="text-sm text-white/70">
-                                {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
-                              </p>
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+                              <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-md">
+                                <h3 className="truncate text-sm font-semibold text-white">{workspace.name}</h3>
+                                <p className="text-xs text-white/70">
+                                  {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </button>
