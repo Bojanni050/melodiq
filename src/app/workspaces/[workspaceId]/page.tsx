@@ -56,7 +56,7 @@ export default function WorkspaceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
 
   useEffect(() => {
     if (workspaceId) {
@@ -133,10 +133,29 @@ export default function WorkspaceDetailPage() {
     [selectedWorkspace, tracks],
   );
 
-  const selectedTrack = useMemo(() => {
-    if (!selectedTrackId) return null;
-    return selectedWorkspaceTracks.find((track) => track.id === selectedTrackId) ?? null;
-  }, [selectedTrackId, selectedWorkspaceTracks]);
+  useEffect(() => {
+    if (currentTrack) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const found = tracks.find((t) => t.id === currentTrack.id);
+        return (found || currentTrack) as TrackItem;
+      });
+    }
+  }, [currentTrack, tracks]);
+
+  useEffect(() => {
+    if (selectedTrack) {
+      const found = tracks.find((t) => t.id === selectedTrack.id);
+      if (found && (
+        found.title !== selectedTrack.title ||
+        found.rating !== selectedTrack.rating ||
+        found.coverUrl !== selectedTrack.coverUrl ||
+        found.status !== selectedTrack.status
+      )) {
+        setSelectedTrack(found);
+      }
+    }
+  }, [tracks, selectedTrack]);
 
   const defaultSortedWorkspaceTracks = useMemo(() => {
     const list = [...selectedWorkspaceTracks];
@@ -194,7 +213,7 @@ export default function WorkspaceDetailPage() {
   }
 
   function handleSelectTrack(track: TrackItem) {
-    setSelectedTrackId(track.id);
+    setSelectedTrack(track);
     setShowTrackDetailsPanel(true);
   }
 

@@ -108,7 +108,9 @@ export default function Sidebar({ credits }: SidebarProps) {
         {/* Nav items */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active = item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
@@ -120,7 +122,12 @@ export default function Sidebar({ credits }: SidebarProps) {
                 }`}
               >
                 <Icon name={item.icon} active={active} />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && (
+                  <span>
+                    {active && <span className="text-[#ff530c] mr-1 font-bold">&gt; </span>}
+                    {item.label}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -206,7 +213,9 @@ export default function Sidebar({ credits }: SidebarProps) {
             {/* Drawer Nav links */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {navItems.map((item) => {
-                const active = pathname === item.href;
+                const active = item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link
                     key={item.href}
