@@ -335,16 +335,6 @@ export default function WorkspaceDetailPage() {
 
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <button
-                    type="button"
-                    onClick={backToFolderView}
-                    className="mb-2 inline-flex items-center gap-1.5 text-sm text-white/55 transition-colors hover:text-white"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to folders
-                  </button>
                   <p className="text-xs uppercase tracking-[0.28em] text-white/35">Workspace</p>
                   <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight truncate">{selectedWorkspace.name}</h1>
                   <p className="text-sm text-white/60 mt-1">
@@ -367,6 +357,42 @@ export default function WorkspaceDetailPage() {
                   </button>
                 )}
               </div>
+            </section>
+
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={backToFolderView}
+                className="inline-flex items-center gap-1.5 text-sm text-white/55 transition-colors hover:text-white"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to folders
+              </button>
+            </div>
+
+            <section className="space-y-4">
+              <h2 className="text-base font-semibold">Tracks</h2>
+              {loading ? (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+              ) : selectedWorkspaceTracks.length > 0 ? (
+                <TrackList
+                  tracks={selectedWorkspaceTracks}
+                  autoQueueAfterPlay
+                  onSelect={handleSelectTrack}
+                  onDelete={handleDeleteTrack}
+                  onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
+                  playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
+                  onTitleUpdate={(trackId, newTitle) =>
+                    setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
+                  }
+                />
+              ) : (
+                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                  This workspace has no songs yet. Use track actions and choose Move To Workspace.
+                </div>
+              )}
             </section>
 
             {!selectedWorkspace.parentWorkspaceId && (
@@ -455,29 +481,6 @@ export default function WorkspaceDetailPage() {
                 )}
               </section>
             )}
-
-            <section className="space-y-4">
-              <h2 className="text-base font-semibold">Tracks</h2>
-              {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
-              ) : selectedWorkspaceTracks.length > 0 ? (
-                <TrackList
-                  tracks={selectedWorkspaceTracks}
-                  autoQueueAfterPlay
-                  onSelect={handleSelectTrack}
-                  onDelete={handleDeleteTrack}
-                  onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
-                  playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
-                  onTitleUpdate={(trackId, newTitle) =>
-                    setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
-                  }
-                />
-              ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                  This workspace has no songs yet. Use track actions and choose Move To Workspace.
-                </div>
-              )}
-            </section>
           </div>
         </main>
 
