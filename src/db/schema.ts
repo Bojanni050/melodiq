@@ -34,6 +34,7 @@ export const tracks = pgTable("tracks", {
   providerModel: varchar("provider_model", { length: 50 }).notNull(),
   prompt: text("prompt").notNull(),
   lyrics: text("lyrics"),
+  lyricsTimestamps: text("lyrics_timestamps"),
   language: varchar("language", { length: 50 }),
   instrumental: boolean("instrumental").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
