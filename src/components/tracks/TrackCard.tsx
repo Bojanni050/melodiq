@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import WaveformBars from "@/components/tracks/WaveformBars";
-import { usePlayerStore, usePlaylistStore, useWorkspaceStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useWorkspaceStore, useSelectionStore, type Workspace } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
@@ -19,11 +19,7 @@ const TrackCard = memo(function TrackCard({
   onAddToQueue,
   onAddToPlaylist,
   onMoveToWorkspace,
-  onMoveTracksToWorkspace,
   playlists,
-  isSelected,
-  selectedTrackIds,
-  onToggleSelect,
   onTitleUpdate,
   workspaceById: workspaceByIdProp,
   orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
@@ -43,16 +39,14 @@ const TrackCard = memo(function TrackCard({
     options?: { allowDuplicate?: boolean }
   ) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
-  onMoveTracksToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
-  isSelected?: boolean;
-  selectedTrackIds?: string[];
-  onToggleSelect?: (trackId: string, options?: { mode?: "toggle" | "range" }) => void;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
   workspaceById?: Map<string, Workspace>;
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
   workspaceDisplayNameById?: Map<string, string>;
 }) {
+  const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
+  const toggleSelection = useSelectionStore((state) => state.toggleSelection);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
@@ -221,8 +215,7 @@ const TrackCard = memo(function TrackCard({
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
-    setPendingDeleteIds(selection.length > 0 ? selection : [track.id]);
+    setPendingDeleteIds([track.id]);
     setConfirmDelete(true);
   }
 
@@ -232,31 +225,14 @@ const TrackCard = memo(function TrackCard({
 
     setIsRegeneratingCover(true);
     try {
-      const selection = Array.isArray(selectedTrackIds) ? selectedTrackIds : [];
-      const shouldBatch = selection.length > 1 && selection.includes(track.id);
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateCoverArt: true }),
+      });
 
-      if (shouldBatch) {
-        const trackIds = [track.id, ...selection.filter((id) => id !== track.id)];
-        const res = await fetch("/api/tracks", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regenerateCoverArt: true, trackIds }),
-        });
-
-        if (res.ok) {
-          const ts = Date.now();
-          window.dispatchEvent(new CustomEvent("sonara:cover-regenerated", { detail: { trackIds, ts } }));
-        }
-      } else {
-        const res = await fetch(`/api/tracks/${track.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ regenerateCoverArt: true }),
-        });
-
-        if (res.ok) {
-          setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
-        }
+      if (res.ok) {
+        setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
       }
     } catch {
       // silently fail
@@ -364,11 +340,10 @@ const TrackCard = memo(function TrackCard({
   function confirmWorkspaceMerge() {
     if (!pendingWorkspaceMerge) return;
 
-    if (onMoveTracksToWorkspace) {
-      onMoveTracksToWorkspace(track.id, pendingWorkspaceMerge.id);
+    if (onMoveToWorkspace) {
+      onMoveToWorkspace(track.id, pendingWorkspaceMerge.id);
     } else {
       moveTrackToWorkspace(pendingWorkspaceMerge.id, track.id);
-      onMoveToWorkspace?.(track.id, pendingWorkspaceMerge.id);
     }
 
     setPendingWorkspaceMerge(null);
@@ -396,11 +371,10 @@ const TrackCard = memo(function TrackCard({
 
     const workspaceId = createWorkspace(trimmed);
     if (workspaceId) {
-      if (onMoveTracksToWorkspace) {
-        onMoveTracksToWorkspace(track.id, workspaceId);
+      if (onMoveToWorkspace) {
+        onMoveToWorkspace(track.id, workspaceId);
       } else {
         moveTrackToWorkspace(workspaceId, track.id);
-        onMoveToWorkspace?.(track.id, workspaceId);
       }
     }
 
@@ -579,11 +553,10 @@ const TrackCard = memo(function TrackCard({
                     key={workspace.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onMoveTracksToWorkspace) {
-                        onMoveTracksToWorkspace(track.id, workspace.id);
+                      if (onMoveToWorkspace) {
+                        onMoveToWorkspace(track.id, workspace.id);
                       } else {
                         moveTrackToWorkspace(workspace.id, track.id);
-                        onMoveToWorkspace?.(track.id, workspace.id);
                       }
                       setWorkspaceMenuOpen(false);
                     }}
@@ -725,7 +698,7 @@ const TrackCard = memo(function TrackCard({
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={(e) => {
           if (e.shiftKey) {
-            onToggleSelect?.(track.id, { mode: "range" });
+            toggleSelection(track.id, allTracks.map((t) => t.id), { mode: "range" });
             return;
           }
           onSelect(track);
@@ -741,7 +714,7 @@ const TrackCard = memo(function TrackCard({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onToggleSelect?.(track.id, { mode: e.shiftKey ? "range" : "toggle" });
+          toggleSelection(track.id, allTracks.map((t) => t.id), { mode: e.shiftKey ? "range" : "toggle" });
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();
@@ -1140,7 +1113,6 @@ const TrackCard = memo(function TrackCard({
     </>
   );
 }, (prevProps, nextProps) => {
-  if (prevProps.isSelected !== nextProps.isSelected) return false;
   if (prevProps.track.id !== nextProps.track.id) return false;
   if (prevProps.track.title !== nextProps.track.title) return false;
   if (prevProps.track.status !== nextProps.track.status) return false;

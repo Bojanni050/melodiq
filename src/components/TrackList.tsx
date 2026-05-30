@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
-import { usePlayerStore, useWorkspaceStore } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
 
 type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 
@@ -71,11 +71,15 @@ export default function TrackList({
     });
     return map;
   }, [workspaces, workspaceById]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const selectedTrackIdsArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
+
+  // Connect to Zustand Selection Store for O(1) instantaneous checkbox performance
+  const selectedIds = useSelectionStore((state) => state.selectedIds);
+  const toggleSelection = useSelectionStore((state) => state.toggleSelection);
+  const toggleSelectAll = useSelectionStore((state) => state.toggleSelectAll);
+  const setSelectedIds = useSelectionStore((state) => state.setSelectedIds);
+  const clearSelection = useSelectionStore((state) => state.clearSelection);
+
   const hasScrolledToRestoredTrack = useRef(false);
-  const selectedIdsRef = useRef<Set<string>>(new Set());
-  const selectionAnchorIdRef = useRef<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
@@ -138,10 +142,6 @@ export default function TrackList({
     });
   }, [enableDragReorder, sortedTracks]);
 
-  useEffect(() => {
-    selectedIdsRef.current = selectedIds;
-  }, [selectedIds]);
-
   const displayedTracks = useMemo(() => {
     const list = [...orderedTracks];
 
@@ -181,72 +181,19 @@ export default function TrackList({
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
-    setSelectedIds((current) => {
-      const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));
-      return next.size === current.size ? current : next;
-    });
-    if (selectionAnchorIdRef.current && !availableIds.has(selectionAnchorIdRef.current)) {
-      selectionAnchorIdRef.current = null;
+    const current = useSelectionStore.getState().selectedIds;
+    const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));
+    if (next.size !== current.size) {
+      setSelectedIds(next);
     }
-  }, [tracks]);
+  }, [tracks, setSelectedIds]);
 
-  const toggleSelection = useCallback((trackId: string, options?: { mode?: "toggle" | "range" }) => {
-    const mode = options?.mode ?? "toggle";
-
-    if (mode === "range") {
-      const anchorId = selectionAnchorIdRef.current;
-      const visibleIds = displayedTracks.map((track) => track.id);
-      const anchorIndex = anchorId ? visibleIds.indexOf(anchorId) : -1;
-      const targetIndex = visibleIds.indexOf(trackId);
-
-      setSelectedIds((current) => {
-        if (targetIndex < 0) return current;
-        if (anchorIndex < 0) {
-          const next = new Set(current);
-          next.add(trackId);
-          return next;
-        }
-
-        const start = Math.min(anchorIndex, targetIndex);
-        const end = Math.max(anchorIndex, targetIndex);
-        const next = new Set(current);
-        visibleIds.slice(start, end + 1).forEach((id) => next.add(id));
-        return next;
-      });
-
-      selectionAnchorIdRef.current = trackId;
-      return;
-    }
-
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(trackId)) {
-        next.delete(trackId);
-      } else {
-        next.add(trackId);
-      }
-      return next;
-    });
-
-    selectionAnchorIdRef.current = trackId;
-  }, [displayedTracks]);
-
-  function toggleSelectAll() {
-    setSelectedIds((current) => {
-      const visibleIds = displayedTracks.map((track) => track.id);
-      const hasAllVisible = visibleIds.length > 0 && visibleIds.every((id) => current.has(id));
-
-      if (hasAllVisible) {
-        const next = new Set(current);
-        visibleIds.forEach((id) => next.delete(id));
-        return next;
-      }
-
-      const next = new Set(current);
-      visibleIds.forEach((id) => next.add(id));
-      return next;
-    });
-  }
+  // Clean selection on component unmount
+  useEffect(() => {
+    return () => {
+      useSelectionStore.getState().clearSelection();
+    };
+  }, []);
 
   const visibleSelectedCount = useMemo(
     () => displayedTracks.reduce((count, track) => (selectedIds.has(track.id) ? count + 1 : count), 0),
@@ -269,7 +216,7 @@ export default function TrackList({
     } finally {
       setDeleting(false);
     }
-  }, [onDelete]);
+  }, [onDelete, setSelectedIds]);
 
   async function handleMassDelete() {
     if (selectedIds.size === 0) return;
@@ -282,7 +229,7 @@ export default function TrackList({
   }
 
   const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
-    const activeSelection = selectedIdsRef.current;
+    const activeSelection = useSelectionStore.getState().selectedIds;
     const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
       ? Array.from(activeSelection)
       : [sourceTrackId];
@@ -297,7 +244,7 @@ export default function TrackList({
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
-  }, [moveTrackToWorkspace, onMoveToWorkspace]);
+  }, [moveTrackToWorkspace, onMoveToWorkspace, setSelectedIds]);
 
   const handlePlay = useCallback((track: TrackItem) => {
     if (autoQueueAfterPlay) {
@@ -420,7 +367,7 @@ export default function TrackList({
       <div className="space-y-1">
         <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-[#0a0a0f] border-b border-white/6 mb-1">
           <button
-            onClick={toggleSelectAll}
+            onClick={() => toggleSelectAll(displayedTracks.map((t) => t.id))}
             className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
             title={allSelected ? "Deselect all" : "Select all"}
           >
@@ -488,7 +435,7 @@ export default function TrackList({
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
             <span className="text-sm text-blue-300">{visibleSelectedCount} selected</span>
             <button
-              onClick={() => setSelectedIds(new Set())}
+              onClick={clearSelection}
               className="ml-auto text-xs text-white/40 hover:text-white/70 transition-colors"
             >
               Clear
@@ -544,12 +491,8 @@ export default function TrackList({
                   onReusePrompt={onReusePrompt}
                   onAddToQueue={onAddToQueue}
                   onAddToPlaylist={onAddToPlaylist}
-                  onMoveToWorkspace={onMoveToWorkspace}
-                  onMoveTracksToWorkspace={handleMoveToWorkspace}
+                  onMoveToWorkspace={handleMoveToWorkspace}
                   playlists={playlists}
-                  isSelected={selectedIds.has(track.id)}
-                  selectedTrackIds={selectedTrackIdsArray}
-                  onToggleSelect={toggleSelection}
                   onTitleUpdate={onTitleUpdate}
                   workspaceById={workspaceById}
                   orderedWorkspaceOptions={orderedWorkspaceOptions}

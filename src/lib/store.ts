@@ -933,3 +933,111 @@ export const useUIStore = create<UIState>()(
     }
   )
 );
+
+// High-Performance Track Selection Store (O(1) Localized Updates)
+interface SelectionState {
+  selectedIds: Set<string>;
+  selectionAnchorId: string | null;
+  toggleSelection: (trackId: string, displayedIds: string[], options?: { mode?: "toggle" | "range" }) => void;
+  toggleSelectAll: (displayedIds: string[]) => void;
+  setSelectedIds: (ids: Set<string>) => void;
+  clearSelection: () => void;
+}
+
+export const useSelectionStore = create<SelectionState>((set) => ({
+  selectedIds: new Set<string>(),
+  selectionAnchorId: null,
+  toggleSelection: (trackId, displayedIds, options) => {
+    set((state) => {
+      const mode = options?.mode ?? "toggle";
+      const next = new Set(state.selectedIds);
+      let anchorId = state.selectionAnchorId;
+
+      if (mode === "range") {
+        const anchorIndex = anchorId ? displayedIds.indexOf(anchorId) : -1;
+        const targetIndex = displayedIds.indexOf(trackId);
+
+        if (targetIndex >= 0) {
+          if (anchorIndex < 0) {
+            next.add(trackId);
+          } else {
+            const start = Math.min(anchorIndex, targetIndex);
+            const end = Math.max(anchorIndex, targetIndex);
+            displayedIds.slice(start, end + 1).forEach((id) => next.add(id));
+          }
+        }
+        anchorId = trackId;
+      } else {
+        if (next.has(trackId)) {
+          next.delete(trackId);
+        } else {
+          next.add(trackId);
+        }
+        anchorId = trackId;
+      }
+
+      return { selectedIds: next, selectionAnchorId: anchorId };
+    });
+  },
+  toggleSelectAll: (displayedIds) => {
+    set((state) => {
+      const hasAllVisible = displayedIds.length > 0 && displayedIds.every((id) => state.selectedIds.has(id));
+      const next = new Set(state.selectedIds);
+      if (hasAllVisible) {
+        displayedIds.forEach((id) => next.delete(id));
+      } else {
+        displayedIds.forEach((id) => next.add(id));
+      }
+      return { selectedIds: next };
+    });
+  },
+  setSelectedIds: (ids) => set({ selectedIds: ids }),
+  clearSelection: () => set({ selectedIds: new Set<string>(), selectionAnchorId: null }),
+}));
+
+// Saved Style & Prompt Presets Store
+export interface SavedPreset {
+  id: string;
+  name: string;
+  prompt: string;
+  notes: string;
+  createdAt: string;
+}
+
+interface PresetsState {
+  presets: SavedPreset[];
+  addPreset: (name: string, prompt: string, notes: string) => void;
+  deletePreset: (id: string) => void;
+}
+
+export const usePresetsStore = create<PresetsState>()(
+  persist(
+    (set) => ({
+      presets: [],
+      addPreset: (name, prompt, notes) =>
+        set((state) => ({
+          presets: [
+            ...state.presets,
+            {
+              id: typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              name: name.trim() || `Style ${new Date().toLocaleDateString()}`,
+              prompt,
+              notes: notes.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        })),
+      deletePreset: (id) =>
+        set((state) => ({
+          presets: state.presets.filter((p) => p.id !== id),
+        })),
+    }),
+    {
+      name: "sonara-presets",
+      storage: createDebouncedStorage(500),
+    }
+  )
+);
+
