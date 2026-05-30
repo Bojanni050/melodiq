@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useWorkspaceStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -13,6 +14,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const buildVersion = "za 22:00";
 
   const navItems = [
@@ -111,10 +113,13 @@ export default function Sidebar({ credits }: SidebarProps) {
             const active = item.href === "/"
               ? pathname === "/"
               : pathname === item.href || pathname.startsWith(item.href + "/");
+            const targetHref = item.href === "/workspaces" && selectedWorkspaceId
+              ? `/workspaces/${selectedWorkspaceId}`
+              : item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={targetHref}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   active
                     ? "bg-white/10 text-white font-medium"
@@ -216,10 +221,13 @@ export default function Sidebar({ credits }: SidebarProps) {
                 const active = item.href === "/"
                   ? pathname === "/"
                   : pathname === item.href || pathname.startsWith(item.href + "/");
+                const targetHref = item.href === "/workspaces" && selectedWorkspaceId
+                  ? `/workspaces/${selectedWorkspaceId}`
+                  : item.href;
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={targetHref}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors ${
                       active

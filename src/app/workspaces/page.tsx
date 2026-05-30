@@ -62,6 +62,10 @@ export default function WorkspacesPage() {
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
 
+  useEffect(() => {
+    setSelectedWorkspaceId(null);
+  }, [setSelectedWorkspaceId]);
+
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
