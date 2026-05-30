@@ -113,6 +113,27 @@ export default function LibraryPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [rejectedFiles, setRejectedFiles] = useState<Array<{ filename: string; reason: string }>>([]);
+
+  const workspacesSentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isWorkspacesTopInView, setIsWorkspacesTopInView] = useState(true);
+
+  useEffect(() => {
+    const sentinel = workspacesSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsWorkspacesTopInView(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.unobserve(sentinel);
+    };
+  }, [view]);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     const res = await fetch("/api/tracks?status=done");
@@ -276,7 +297,7 @@ export default function LibraryPage() {
   }
 
   async function handleUploadSelection(files: FileList | null) {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || uploading) return;
 
     const targetWorkspaceId = workspaces.some((workspace) => workspace.id === uploadWorkspaceId)
       ? uploadWorkspaceId
@@ -285,6 +306,7 @@ export default function LibraryPage() {
     setUploading(true);
     setUploadError(null);
     setUploadNotice(null);
+    setRejectedFiles([]);
 
     try {
       const formData = new FormData();
@@ -299,6 +321,14 @@ export default function LibraryPage() {
       });
 
       const payload = await readApiPayload(response);
+
+      const payloadRejected = isObjectRecord(payload) && Array.isArray(payload.rejected)
+        ? (payload.rejected as Array<{ filename: string; reason: string }>)
+        : [];
+
+      if (payloadRejected.length > 0) {
+        setRejectedFiles(payloadRejected);
+      }
 
       if (!response.ok) {
         if (response.status === 413) {
@@ -332,15 +362,18 @@ export default function LibraryPage() {
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
         });
-
       }
 
-      const rejectedCount = Array.isArray(payload.rejected) ? payload.rejected.length : 0;
-      setUploadNotice(
-        rejectedCount > 0
-          ? `Uploaded ${uploadedTracks.length} file(s), ${rejectedCount} skipped.`
-          : `Uploaded ${uploadedTracks.length} file(s) successfully.`,
-      );
+      const rejectedCount = payloadRejected.length;
+      if (uploadedTracks.length > 0) {
+        setUploadNotice(
+          rejectedCount > 0
+            ? `Uploaded ${uploadedTracks.length} file(s) successfully, but ${rejectedCount} file(s) were skipped.`
+            : `Uploaded ${uploadedTracks.length} file(s) successfully.`
+        );
+      } else {
+        setUploadError("No files were uploaded successfully.");
+      }
 
       await fetchTracks();
     } catch (error) {
@@ -516,6 +549,7 @@ export default function LibraryPage() {
                         aria-label="Upload MP3 or WAV files"
                         title="Upload MP3 or WAV files"
                         className="hidden"
+                        disabled={uploading}
                         onChange={(event) => handleUploadSelection(event.target.files)}
                       />
 
@@ -530,8 +564,47 @@ export default function LibraryPage() {
                     </div>
                   </div>
 
-                  {uploadError && <p className="mt-3 text-sm text-red-300">{uploadError}</p>}
-                  {uploadNotice && <p className="mt-3 text-sm text-emerald-300">{uploadNotice}</p>}
+                  {uploadError && (
+                    <div className="mt-3 flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
+                      <svg className="mt-0.5 w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div>
+                        <span className="font-semibold">Error:</span> {uploadError}
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadNotice && (
+                    <div className="mt-3 flex items-start gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
+                      <svg className="mt-0.5 w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <span className="font-semibold">Success:</span> {uploadNotice}
+                      </div>
+                    </div>
+                  )}
+
+                  {rejectedFiles.length > 0 && (
+                    <div className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-400">
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Some files were skipped or rejected:</span>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto pr-1">
+                        <ul className="text-xs text-amber-300/80 space-y-1.5 list-disc pl-5">
+                          {rejectedFiles.map((file, idx) => (
+                            <li key={idx} className="leading-relaxed">
+                              <span className="font-medium text-amber-300">{file.filename}</span>: <span className="text-amber-400/90">{file.reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -596,6 +669,7 @@ export default function LibraryPage() {
             {/* Workspaces view */}
             {view === "workspaces" && (
               <section className="space-y-5">
+                <div ref={workspacesSentinelRef} className="h-0 w-full" />
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold">Workspaces</h2>
@@ -778,6 +852,22 @@ export default function LibraryPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {!isWorkspacesTopInView && (
+                  <div className="sticky bottom-6 mr-2 z-40 flex justify-end pointer-events-none">
+                    <button
+                      type="button"
+                      onClick={() => workspacesSentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                      className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#11121a]/90 text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
+                      title="Scroll to top"
+                      aria-label="Scroll to top"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    </button>
                   </div>
                 )}
               </section>

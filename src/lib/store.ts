@@ -626,7 +626,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
         return id;
       },
-      moveTrackToWorkspace: (workspaceId, trackId) =>
+      moveTrackToWorkspace: (workspaceId, trackId) => {
+        persistTrackWorkspaceAssignment(trackId, workspaceId);
         set((state) => {
           const targetWorkspace = state.workspaces.find((workspace) => workspace.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -649,8 +650,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               };
             }),
           };
-        }),
-      moveTracksToWorkspace: (workspaceId, trackIds) =>
+        });
+      },
+      moveTracksToWorkspace: (workspaceId, trackIds) => {
+        trackIds.forEach((trackId) => {
+          persistTrackWorkspaceAssignment(trackId, workspaceId);
+        });
         set((state) => {
           const targetWorkspace = state.workspaces.find((w) => w.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -665,7 +670,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               return { ...workspace, trackIds: workspace.trackIds.filter((id) => !trackIdSet.has(id)) };
             }),
           };
-        }),
+        });
+      },
       removeTrackFromWorkspace: (workspaceId, trackId) =>
         set((state) => ({
           workspaces: state.workspaces.map((workspace) => {
@@ -775,27 +781,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
   )
 );
 
-useWorkspaceStore.subscribe((state, prevState) => {
-  if (state.workspaces === prevState.workspaces) return;
-
-  const addedTrackAssignment = new Map<string, string>();
-  const prevWorkspaceById = new Map(prevState.workspaces.map((workspace) => [workspace.id, workspace]));
-
-  state.workspaces.forEach((workspace) => {
-    const previous = prevWorkspaceById.get(workspace.id);
-    if (!previous) return;
-
-    workspace.trackIds.forEach((trackId) => {
-      if (!previous.trackIds.includes(trackId)) {
-        addedTrackAssignment.set(trackId, workspace.id);
-      }
-    });
-  });
-
-  addedTrackAssignment.forEach((workspaceId, trackId) => {
-    persistTrackWorkspaceAssignment(trackId, workspaceId);
-  });
-});
+// Persisting track workspace assignments is handled directly in moveTrackToWorkspace / moveTracksToWorkspace actions
 
 interface StudioState {
   songIdea: string;

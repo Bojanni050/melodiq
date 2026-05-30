@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
@@ -149,6 +149,26 @@ export default function WorkspacesPage() {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [isTopInView, setIsTopInView] = useState(true);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsTopInView(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.unobserve(sentinel);
+    };
+  }, []);
+
   useEffect(() => {
     let active = true;
 
@@ -254,6 +274,7 @@ export default function WorkspacesPage() {
             </section>
 
             <section className="space-y-5">
+              <div ref={sentinelRef} className="h-0 w-full" />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">Workspaces</h2>
@@ -481,6 +502,22 @@ export default function WorkspacesPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {!isTopInView && (
+                <div className="sticky bottom-6 mr-2 z-40 flex justify-end pointer-events-none">
+                  <button
+                    type="button"
+                    onClick={() => sentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                    className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#11121a]/90 text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
+                    title="Scroll to top"
+                    aria-label="Scroll to top"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                  </button>
                 </div>
               )}
             </section>

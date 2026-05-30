@@ -637,6 +637,22 @@ export default memo(function TrackList({
           })
         )}
       </div>
+
+      {!isTopInView && (
+        <div className="sticky bottom-6 mr-2 z-40 flex justify-end pointer-events-none">
+          <button
+            type="button"
+            onClick={scrollToTop}
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#11121a]/90 text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
+            title="Scroll to top"
+            aria-label="Scroll to top"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        </div>
+      )}
     </>
   );
 });
