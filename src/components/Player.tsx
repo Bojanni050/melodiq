@@ -807,6 +807,11 @@ export default function Player() {
               alt=""
               className="h-full w-full object-cover scale-125 blur-2xl opacity-45"
               draggable={false}
+              onError={e => {
+                const target = e.currentTarget;
+                target.onerror = null;
+                target.src = "/fallback-cover.svg";
+              }}
             />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),linear-gradient(135deg,rgba(22,22,33,0.65)_0%,rgba(22,22,33,0.92)_70%,rgba(22,22,33,0.98)_100%)]" />
           </div>
@@ -822,7 +827,17 @@ export default function Player() {
                 title="Go fullscreen"
               >
                 {currentTrack.coverUrl ? (
-                  <img src={currentTrack.coverUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                  <img
+                    src={currentTrack.coverUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                    onError={e => {
+                      const target = e.currentTarget;
+                      target.onerror = null;
+                      target.src = "/fallback-cover.svg";
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
