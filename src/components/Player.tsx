@@ -584,22 +584,34 @@ export default function Player() {
       if (!audioEl) return;
 
       const streamUrl = `/api/tracks/${trackId}/stream${wantsHd ? "?hd=true" : ""}`;
-      const trackStreamPath = `/api/tracks/${trackId}/stream`;
+      const shouldUseStream = wantsHd ? Boolean(trackSnapshot.s3KeyHd) : Boolean(trackSnapshot.s3Key);
+      const resolvedUrl =
+        shouldUseStream
+          ? streamUrl
+          : wantsHd && trackSnapshot.audioUrlHd
+            ? trackSnapshot.audioUrlHd
+            : trackSnapshot.audioUrl;
 
       setResolvingUrl(true);
       setAudioSource("unknown");
       setAudioSourceState("unknown");
 
-      const detectedSource = await detectAudioSource(streamUrl);
-      if (!cancelled && requestId === requestIdRef.current) {
-        setAudioSource(detectedSource.source);
-        setAudioSourceState(detectedSource.state);
+      if (resolvedUrl) {
+        const isInternalStream = resolvedUrl.startsWith("/api/tracks/") && resolvedUrl.includes("/stream");
+        if (isInternalStream) {
+          const detectedSource = await detectAudioSource(resolvedUrl);
+          if (!cancelled && requestId === requestIdRef.current) {
+            setAudioSource(detectedSource.source);
+            setAudioSourceState(detectedSource.state);
+          }
+        }
       }
 
+      const normalizedTargetUrl = resolvedUrl ? new URL(resolvedUrl, window.location.href).toString() : null;
       const alreadyPlayingThisStream =
+        normalizedTargetUrl !== null &&
         typeof audioEl.src === "string" &&
-        audioEl.src.includes(trackStreamPath) &&
-        (wantsHd ? audioEl.src.includes("hd=true") : true);
+        audioEl.src === normalizedTargetUrl;
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
@@ -620,7 +632,7 @@ export default function Player() {
 
       audioEl.pause();
       audioEl.currentTime = 0;
-      audioEl.src = streamUrl;
+      audioEl.src = normalizedTargetUrl || "";
       audioEl.load();
 
       await new Promise<void>((resolve) => {
@@ -658,7 +670,15 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, detectAudioSource, tryPlay]);
+  }, [
+    currentTrack?.id,
+    currentTrack?.audioUrl,
+    currentTrack?.audioUrlHd,
+    currentTrack?.s3Key,
+    currentTrack?.s3KeyHd,
+    detectAudioSource,
+    tryPlay,
+  ]);
 
   useEffect(() => {
     if (audioRef.current) {

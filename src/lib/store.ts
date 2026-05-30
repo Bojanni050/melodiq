@@ -190,7 +190,13 @@ export const usePlayerStore = create<PlayerState>()(
         if (!audioElement) return;
 
         const wantsHd = (track.audioUrl || "").includes("hd=true");
-        const url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
+        const shouldStream = wantsHd ? Boolean(track.s3KeyHd) : Boolean(track.s3Key);
+        const url =
+          shouldStream
+            ? `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`
+            : wantsHd && track.audioUrlHd
+              ? track.audioUrlHd
+              : track.audioUrl || `/api/tracks/${track.id}/stream`;
         audioElement.pause();
         audioElement.currentTime = 0;
         audioElement.src = url;
