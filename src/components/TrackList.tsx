@@ -73,6 +73,7 @@ export default function TrackList({
     return map;
   }, [workspaces, workspaceById]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectedTrackIdsArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
   const hasScrolledToRestoredTrack = useRef(false);
   const selectedIdsRef = useRef<Set<string>>(new Set());
   const selectionAnchorIdRef = useRef<string | null>(null);
@@ -550,7 +551,7 @@ export default function TrackList({
                   onMoveTracksToWorkspace={handleMoveToWorkspace}
                   playlists={playlists}
                   isSelected={selectedIds.has(track.id)}
-                  selectedTrackIds={Array.from(selectedIds)}
+                  selectedTrackIds={selectedTrackIdsArray}
                   onToggleSelect={toggleSelection}
                   onTitleUpdate={onTitleUpdate}
                   workspaceById={workspaceById}

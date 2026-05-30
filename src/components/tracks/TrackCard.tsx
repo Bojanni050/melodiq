@@ -91,7 +91,9 @@ const TrackCard = memo(function TrackCard({
     useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
   );
   // workspaces is derived from props passed by TrackList (computed once there, not per card)
-  const workspaces = workspaceByIdProp ? Array.from(workspaceByIdProp.values()) : [];
+  const workspaces = useMemo(() => {
+    return workspaceByIdProp ? Array.from(workspaceByIdProp.values()) : [];
+  }, [workspaceByIdProp]);
   const workspaceById = useMemo(
     () => workspaceByIdProp ?? new Map(workspaces.map((workspace) => [workspace.id, workspace])),
     [workspaceByIdProp, workspaces]
@@ -1137,6 +1139,18 @@ const TrackCard = memo(function TrackCard({
     </div>
     </>
   );
+}, (prevProps, nextProps) => {
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.track.id !== nextProps.track.id) return false;
+  if (prevProps.track.title !== nextProps.track.title) return false;
+  if (prevProps.track.status !== nextProps.track.status) return false;
+  if (prevProps.track.playCount !== nextProps.track.playCount) return false;
+  if (prevProps.track.coverUrl !== nextProps.track.coverUrl) return false;
+  if (prevProps.track.rating !== nextProps.track.rating) return false;
+  if (prevProps.track.s3KeyHd !== nextProps.track.s3KeyHd) return false;
+  if (prevProps.playlists?.length !== nextProps.playlists?.length) return false;
+  if (prevProps.workspaceById?.size !== nextProps.workspaceById?.size) return false;
+  return true;
 });
 
 export default TrackCard;
