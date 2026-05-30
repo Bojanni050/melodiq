@@ -188,10 +188,16 @@
 
 - Findings: De app-branding stond op meerdere plekken nog hardcoded als `Sonara` (UI labels, metadata, player status, settings placeholders en documentatie), waardoor de naamswijziging niet consistent was.
 - Conclusions: Een gerichte hernoeming van zichtbare branding en package metadata naar `MelodIQ` geeft een consistente gebruikerservaring zonder technische storage-keys of eventnamen te migreren.
-- Actions: `src/app/layout.tsx`, `src/app/manifest.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/app/login/page.tsx`, `src/components/Player.tsx`, `src/components/settings/WebhooksSection.tsx`, `src/components/settings/S3Section.tsx`, `package.json`, `package-lock.json`, `README.md` en `sonara-user.md` bijgewerkt met `MelodIQ` naming; versiestempel bijgewerkt naar `do 13:17` in `src/components/Sidebar.tsx` en `sonara-user.md`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack NFT-warning), validated.
+- Actions: `src/app/layout.tsx`, `src/app/manifest.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/app/login/page.tsx`, `src/components/Player.tsx`, `src/components/settings/WebhooksSection.tsx`, `src/components/settings/S3Section.tsx`, `package.json`, `package-lock.json`, `README.md` en `sonara-user.md` bijgewerkt met `MelodIQ` naming; versiestempel bijgewerkt naar `do 13:17` in `src/components/Sidebar.tsx` en `sonara-user.md`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
 
 ## 2026-05-28 (Cache state zichtbaar gemaakt in player)
 
 - Findings: De player toonde alleen `cache` of `s3`, waardoor een cache-warmup of S3 fallback er hetzelfde uitzag als een gewone cache-hit.
 - Conclusions: Door de stream-route een expliciete cache-state header te laten sturen en de player-badge die status te tonen, wordt direct duidelijk of audio uit cache kwam, nog aan het warmen was, of terugviel op S3.
 - Actions: `src/lib/audio-cache.ts` uitgebreid met `cached` returndata; `src/app/api/tracks/[id]/stream/route.ts` stuurt nu `X-Sonara-Audio-Cache-State` met `hit`, `miss` of `fallback`; `src/components/Player.tsx` toont cache-state in badge-title en fullscreen/player UI; `src/components/Sidebar.tsx` versie bijgewerkt naar `do 16:15`; `sonara-user.md` bijgewerkt met de cache-badge uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+
+## 2026-05-30 (Correctie Default Workspace duplicatie en track synchronisatie)
+
+- Findings: De client-side Zustand store gebruikte de hardcoded string `"workspace-default"` als ID voor de default workspace, terwijl de database de default workspace aanmaakt met een willekeurige UUID. Dit leidde tot dubbele default workspace mappen in de UI na database hydratatie en zorgde ervoor dat alle nummers uit de default workspace onterecht als "buiten de default workspace toegewezen" werden gezien, waardoor de tracklijsten leeg konden raken.
+- Conclusions: De Zustand store moet de default workspace filteren en track synchronisatie dynamisch sturen op basis van de `isDefault` vlag of de daadwerkelijk actieve UUID van de default workspace, in plaats van een hardcoded string ID te verwachten.
+- Actions: `src/lib/store.ts` aangepast: `withDefaultWorkspace` sluit nu de redundant hardcoded `DEFAULT_WORKSPACE_ID` uit in `otherWorkspaces` filter om duplicaten te voorkomen; `syncTracksToDefaultWorkspace` zoekt nu dynamisch de actieve default workspace via `isDefault` vlag op en gebruikt die dynamic ID voor track filtering en opslag; gevalideerd.

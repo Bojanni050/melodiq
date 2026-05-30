@@ -525,7 +525,7 @@ function withDefaultWorkspace(workspaces: Workspace[]) {
   });
 
   const otherWorkspaces = workspaces
-    .filter((workspace) => workspace.id !== normalizedDefault.id)
+    .filter((workspace) => workspace.id !== normalizedDefault.id && workspace.id !== DEFAULT_WORKSPACE_ID)
     .map((workspace) => {
       const parentWorkspaceId = workspace.parentWorkspaceId || null;
       const parentWorkspace = parentWorkspaceId ? parentWorkspaceById.get(parentWorkspaceId) : null;
@@ -712,9 +712,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             trackIds: workspace.trackIds.filter((trackId) => knownTrackIds.has(trackId)),
           }));
 
+          const defaultWorkspace = cleaned.find((w) => w.isDefault) || cleaned[0];
+          const defaultWorkspaceId = defaultWorkspace?.id || DEFAULT_WORKSPACE_ID;
+
           const assignedOutsideDefault = new Set(
             cleaned
-              .filter((workspace) => workspace.id !== DEFAULT_WORKSPACE_ID)
+              .filter((workspace) => workspace.id !== defaultWorkspaceId)
               .flatMap((workspace) => workspace.trackIds)
           );
 
@@ -722,7 +725,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
           return {
             workspaces: cleaned.map((workspace) =>
-              workspace.id === DEFAULT_WORKSPACE_ID
+              workspace.id === defaultWorkspaceId
                 ? { ...workspace, trackIds: defaultTrackIds }
                 : workspace
             ),
