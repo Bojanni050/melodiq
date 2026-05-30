@@ -1,12 +1,3 @@
-# 2026-05-30 za 13:10 (Studio: atomic pre-generation flow)
-
-- Findings: Tracks verschenen soms in de UI vóórdat titel, cover art of workspace assignment klaar waren, waardoor incomplete of lege tracks zichtbaar werden.
-- Conclusions: De volledige pre-generation flow (titel genereren, cover art, workspace assignment) moet altijd voltooid zijn vóórdat de track in de lijst verschijnt.
-- Actions:
-  - Refactored `handleGenerate` in `src/app/page.tsx` — alle taken (titel, cover, workspace) worden nu afgewacht vóórdat `fetchTracks()` de UI bijwerkt.
-  - Workspace assignment gebeurt altijd vóór de UI-update, ook bij auto-create.
-  - Er wordt kort gewacht zodat cover art generatie (server-side async) kan starten.
-  - Validated with `npm run build`.
 # Sonara — Walkthrough
 
 ## 2026-05-27 wo 02:31 (Lyric Studio drag kan nu meerdere posities overslaan)
@@ -999,27 +990,4 @@
   - Updated `src/components/TrackList.tsx` — empty-state boodschap uitgebreid met “No tracks match your search” bij geen zoekmatches
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
   - Updated `sonara-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
-  - Validated with `npm run build`.
-
-## 2026-05-30 za 00:16 (Studio polling blijft doorlopen zonder refresh)
-
-- Findings: Trackstatus in Studio ging soms niet naar `done` totdat de gebruiker handmatig refreshte, omdat de polling-loop met `setTimeout` stopte zodra een fetch geen statewijziging veroorzaakte.
-- Conclusions: Polling moet blijven lopen ongeacht of een response de React state wijzigt; een doorlopende `setInterval` voorkomt dat statussync stilvalt tussen twee identieke responses.
-- Actions:
-  - Updated `src/app/page.tsx` — studio polling aangepast van eenmalige `setTimeout` naar doorlopende `setInterval` met dezelfde dynamische intervalkeuze
-  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:16`
-  - Updated `sonara-user.md` — user guide versie ververst naar `za 00:16` en status-refresh gedrag verduidelijkt
-  - Validated with `npm run build`.
-
-## 2026-05-30 za 00:49 (Chunked tracklisting updates voor soepele Studio UI)
-
-- Findings: Bij grotere tracklijsten kon een volledige state-replace tijdens polling korte UI-haperingen geven, vooral wanneer meerdere status- en metadatawijzigingen tegelijk binnenkwamen.
-- Conclusions: Splits grote trackupdates op in kleine requestAnimationFrame-chunks en verplaats setState naar een React transition, zodat rendering minder blokkeert en oudere batches veilig geannuleerd kunnen worden.
-- Actions:
-  - Updated `src/app/page.tsx` — added `tracksHaveSameRenderableState` helper voor consistente change-detectie
-  - Updated `src/app/page.tsx` — toegevoegd: chunked track state updates (`TRACK_UPDATE_CHUNK_SIZE`, `TRACK_UPDATE_CHUNK_THRESHOLD`) met `requestAnimationFrame`
-  - Updated `src/app/page.tsx` — toegevoegd: `useTransition` rond track state updates en batch guards om stale updates te blokkeren
-  - Updated `src/app/page.tsx` — cleanup toegevoegd voor scheduled animation frames bij unmount/nieuwe fetch
-  - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:49`
-  - Updated `sonara-user.md` — user guide versie ververst naar `za 00:49` en grote-list updategedrag gedocumenteerd
   - Validated with `npm run build`.

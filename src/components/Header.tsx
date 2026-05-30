@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUserStore } from "@/lib/store";
 
 export default function Header() {
   const pathname = usePathname();
@@ -19,9 +18,7 @@ export default function Header() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    useUserStore.getState().setUser(null);
-    router.replace("/login");
-    router.refresh();
+    router.push("/login");
   }
 
   return (

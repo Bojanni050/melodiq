@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUserStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -13,7 +12,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const buildVersion = "za 00:49";
+  const buildVersion = "do 17:27";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -27,9 +26,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    useUserStore.getState().setUser(null);
-    router.replace("/login");
-    router.refresh();
+    router.push("/login");
   }
 
   function Icon({ name, active }: { name: string; active: boolean }) {
