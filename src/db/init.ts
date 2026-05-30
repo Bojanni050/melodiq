@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "provider_model" varchar(50) NOT NULL,
   "prompt" text NOT NULL,
   "lyrics" text,
+  "lyrics_timestamps" text,
   "language" varchar(50),
   "instrumental" boolean NOT NULL DEFAULT false,
   "status" varchar(20) NOT NULL DEFAULT 'pending',
@@ -47,6 +48,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "format_hd" VARCHAR(10),
   "cover_url" TEXT,
   "s3_key_cover" TEXT,
+  "s3_key_cover_thumb" TEXT,
   "conversion_id" VARCHAR(255),
   "audio_id" VARCHAR(255),
   "wav_job_id" VARCHAR(255),
@@ -98,6 +100,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover_url TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover_thumb TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_url_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_hd TEXT;
@@ -106,6 +109,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS play_count integer NOT NULL DEFAULT 
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 `;
 
 const alterUsersSql = `
