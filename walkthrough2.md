@@ -92,109 +92,109 @@
 
 - Findings: In Studio was subfolder-aanmaak nog niet beschikbaar in de workspace panel-flow, terwijl de gewenste structuur expliciet `workspace -> folder` is zonder extra nesting.
 - Conclusions: Subfolder-creatie moet ook in Studio kunnen op geopende hoofdfolders, en de persisted workspace-data moet defensief genormaliseerd worden zodat oude of handmatig ingevoerde nested data automatisch naar maximaal 1 niveau wordt teruggebracht.
-- Actions: `src/app/page.tsx` aangepast met subfolder create-flow (`+ Add Subfolder`) alleen voor geopende hoofdfolders, root-only workspace-overzicht, parent-terugknop bij child-weergave en subfolderlijst in de geopende hoofdfolder; `src/lib/store.ts` normalisatie in `withDefaultWorkspace` aangescherpt zodat alleen kinderen van root-workspaces een `parentWorkspaceId` behouden; `musiq-user.md` bijgewerkt met Studio-subfolder gedrag en versie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/app/page.tsx` aangepast met subfolder create-flow (`+ Add Subfolder`) alleen voor geopende hoofdfolders, root-only workspace-overzicht, parent-terugknop bij child-weergave en subfolderlijst in de geopende hoofdfolder; `src/lib/store.ts` normalisatie in `withDefaultWorkspace` aangescherpt zodat alleen kinderen van root-workspaces een `parentWorkspaceId` behouden; `melodiq-user.md` bijgewerkt met Studio-subfolder gedrag en versie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Library upload van MP3/WAV met workspace-keuze en batch)
 
 - Findings: De Library had nog geen directe importflow voor bestaande audiobestanden, waardoor users losse uploads extern moesten regelen en tracks daarna handmatig organiseren.
 - Conclusions: Voeg een dedicated uploadflow toe op Library Songs view met multi-file support en workspace-selectie, plus een backend endpoint dat meerdere MP3/WAV-bestanden in Ã©Ã©n request accepteert.
-- Actions: `src/app/api/tracks/route.ts` uitgebreid met `POST` multipart upload voor maximaal 20 bestanden tegelijk (MP3/WAV-validatie, S3-upload, track insert met `provider=upload`); `src/app/library/page.tsx` uitgebreid met uploadkaart (`Select MP3/WAV Files`), workspace-dropdown, upload statusmelding en directe workspace-toewijzing van nieuwe track IDs via store; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:18`; `musiq-user.md` bijgewerkt met uploadgebruik; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/app/api/tracks/route.ts` uitgebreid met `POST` multipart upload voor maximaal 20 bestanden tegelijk (MP3/WAV-validatie, S3-upload, track insert met `provider=upload`); `src/app/library/page.tsx` uitgebreid met uploadkaart (`Select MP3/WAV Files`), workspace-dropdown, upload statusmelding en directe workspace-toewijzing van nieuwe track IDs via store; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:18`; `melodiq-user.md` bijgewerkt met uploadgebruik; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Uploaded-bestanden expliciet gemarkeerd in UI)
 
 - Findings: Na toevoegen van Library upload was niet direct zichtbaar welke tracks lokaal geupload zijn versus AI-gegenereerd.
 - Conclusions: Toon een expliciete visuele indicator op lijst- en detailniveau voor tracks met `provider=upload`, zodat herkomst direct duidelijk is.
-- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload â€¢ Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `musiq-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met `Uploaded` badge naast status voor geuploade tracks; `src/components/TrackDetail.tsx` uitgebreid met `Uploaded file` label en leesbare bronlabels (`Upload â€¢ Local file`) voor geuploade tracks; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:21`; `melodiq-user.md` bijgewerkt met indicator-uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Workspace folder opent nu op eigen detailpagina)
 
 - Findings: De Workspaces-pagina toonde na folderselectie de tracklisting onder hetzelfde folderoverzicht, waardoor de focus op Ã©Ã©n folder minder duidelijk was.
 - Conclusions: Splits de flow in overzicht en detailroute, zodat folderklikken naar een dedicated pagina met tracklisting gaat en terugnavigatie expliciet wordt.
-- Actions: `src/app/workspaces/page.tsx` omgezet naar puur folderoverzicht met kliknavigatie naar `/workspaces/{id}`; nieuwe route toegevoegd in `src/app/workspaces/[workspaceId]/page.tsx` met folder-specifieke tracklisting, subfoldernavigatie en `Back to folders` knop; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:24`; `musiq-user.md` bijgewerkt met nieuwe navigatie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/app/workspaces/page.tsx` omgezet naar puur folderoverzicht met kliknavigatie naar `/workspaces/{id}`; nieuwe route toegevoegd in `src/app/workspaces/[workspaceId]/page.tsx` met folder-specifieke tracklisting, subfoldernavigatie en `Back to folders` knop; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:24`; `melodiq-user.md` bijgewerkt met nieuwe navigatie; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Duplicate upload preventie via unieke audio-hash)
 
 - Findings: Het uploaden van hetzelfde MP3/WAV-bestand meerdere keren maakte dubbele tracks aan in de library.
 - Conclusions: Gebruik een content-gebaseerde SHA-256 hash per upload en weiger uploads waarvan dezelfde hash al bestaat voor dezelfde gebruiker.
-- Actions: `src/app/api/tracks/route.ts` uitgebreid met `createHash("sha256")` op de audiobuffer, duplicate-check op bestaande `provider="upload"` tracks met dezelfde hash (`audioId`) en opslag van de hash op nieuwe uploadrecords; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:27`; `musiq-user.md` bijgewerkt met dedupe-gedrag; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/app/api/tracks/route.ts` uitgebreid met `createHash("sha256")` op de audiobuffer, duplicate-check op bestaande `provider="upload"` tracks met dezelfde hash (`audioId`) en opslag van de hash op nieuwe uploadrecords; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:27`; `melodiq-user.md` bijgewerkt met dedupe-gedrag; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Play-count tracking + new-dot indicator)
 
 - Findings: Tracks hadden nog geen afspeelstatistiek en er was geen visuele markering voor nieuwe, nog niet afgespeelde songs.
 - Conclusions: Een persistente `play_count` in de database, een dedicated play increment endpoint en een directe UI-event zorgen voor zowel betrouwbare telling als onmiddellijke feedback in de lijst.
-- Actions: `src/db/schema.ts` uitgebreid met `play_count`; `src/db/init.ts` bijgewerkt voor create/alter compatibiliteit; toegevoegd `src/app/api/tracks/[id]/play/route.ts` voor auth-safe increment; `src/components/Player.tsx` laat nu bij start playback een increment-call lopen en dispatcht `musiq:track-played`; `src/components/tracks/TrackCard.tsx` toont play count onder beschrijving, rendert een gele glow-dot bij ongespeelde tracks en verwijdert die direct na play via event-listener; `src/components/tracks/types.ts` en `src/lib/store.ts` tracktypes uitgebreid met `playCount`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:35`; `musiq-user.md` bijgewerkt met play-count gedrag; validated.
+- Actions: `src/db/schema.ts` uitgebreid met `play_count`; `src/db/init.ts` bijgewerkt voor create/alter compatibiliteit; toegevoegd `src/app/api/tracks/[id]/play/route.ts` voor auth-safe increment; `src/components/Player.tsx` laat nu bij start playback een increment-call lopen en dispatcht `melodiq:track-played`; `src/components/tracks/TrackCard.tsx` toont play count onder beschrijving, rendert een gele glow-dot bij ongespeelde tracks en verwijdert die direct na play via event-listener; `src/components/tracks/types.ts` en `src/lib/store.ts` tracktypes uitgebreid met `playCount`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:35`; `melodiq-user.md` bijgewerkt met play-count gedrag; validated.
 
 ## 2026-05-27 (Cover art regenerate actie + grid-size controls op Library/Workspaces)
 
 - Findings: Er ontbrak een directe trackactie om cover art opnieuw te genereren, de cover prompt voelde te generiek, en de 4/8/12/16 gridselector bestond nog niet op Library Workspaces en de dedicated Workspaces-pagina.
 - Conclusions: Een expliciete `Regenerate Cover Art` trackactie met force-new generatie voorkomt hergebruik van dezelfde cover; een artistiekere prompt geeft visueel rijkere covers; dezelfde grid-size controls op alle workspace-overzichten houdt UX consistent.
-- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met menu-actie `Regenerate Cover Art`, loading-state en lokale cover refresh; `src/app/api/tracks/[id]/route.ts` PATCH ondersteunt nu `regenerateCoverArt`; `src/lib/generate-cover.ts` ondersteunt `forceNew` om prompt-based reuse te skippen bij regenereren; `src/lib/providers/cover-art.ts` promptrichting aangepast naar uitgesproken artsy/editorial stijl; `src/app/library/page.tsx` en `src/app/workspaces/page.tsx` uitgebreid met persistente 4/8/12/16 workspace-grid selector in grid mode; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:41`; `musiq-user.md` bijgewerkt; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/tracks/TrackCard.tsx` uitgebreid met menu-actie `Regenerate Cover Art`, loading-state en lokale cover refresh; `src/app/api/tracks/[id]/route.ts` PATCH ondersteunt nu `regenerateCoverArt`; `src/lib/generate-cover.ts` ondersteunt `forceNew` om prompt-based reuse te skippen bij regenereren; `src/lib/providers/cover-art.ts` promptrichting aangepast naar uitgesproken artsy/editorial stijl; `src/app/library/page.tsx` en `src/app/workspaces/page.tsx` uitgebreid met persistente 4/8/12/16 workspace-grid selector in grid mode; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:41`; `melodiq-user.md` bijgewerkt; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Play count pas na 10 seconden playback)
 
 - Findings: De play counter verhoogde direct bij start van afspelen, waardoor korte starts/skips ook als play werden geteld.
 - Conclusions: Een 10-seconden playbackdrempel met timer en cleanup op pauze/trackwissel telt alleen betekenisvolle listens en voorkomt inflatie van plays.
-- Actions: `src/components/Player.tsx` aangepast met 10s timer-gebaseerde play tracking (`/api/tracks/[id]/play` pas na 10 seconden actieve playback), timer cleanup bij pauze/trackwissel/einde en reset per tracksessie; bestaande UI-event `musiq:track-played` blijft gebruikt zodat de new-dot pas na echte play verdwijnt; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:45`; `musiq-user.md` bijgewerkt met 10s-regel; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/Player.tsx` aangepast met 10s timer-gebaseerde play tracking (`/api/tracks/[id]/play` pas na 10 seconden actieve playback), timer cleanup bij pauze/trackwissel/einde en reset per tracksessie; bestaande UI-event `melodiq:track-played` blijft gebruikt zodat de new-dot pas na echte play verdwijnt; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 03:45`; `melodiq-user.md` bijgewerkt met 10s-regel; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Lyric Studio markerblokken + AI titelgeneratie)
 
 - Findings: In Lyric Studio ontbraken speciale lege sectiemarkers voor instrumentale passages, en er was geen directe titelworkflow vanuit de lyric-blokken.
 - Conclusions: Voeg twee expliciete markerblokken toe (`[intrumental]`, `[instrumetal drop]`) die geen lyrics bevatten maar wel als sectietag exporteren, en voeg een titelveld met AI-generate knop toe op basis van de samengestelde lyrics.
-- Actions: `src/lib/lyrics-utils.ts` uitgebreid met nieuwe blocktypes, labels, structure-parser ondersteuning en combine-logica voor lege markersecties; `src/lib/lyrics-studio-constants.ts` uitgebreid met markerblokken in toolbar en kleurmapping; `src/components/lyrics-studio/LyricBlockEditor.tsx` aangepast zodat markerblokken geen lyrics/translate/generate toelaten; `src/app/api/lyric-studio/generate-block/route.ts` en `src/app/api/lyric-studio/translate/route.ts` typeguards uitgebreid voor de nieuwe blocktypes; `src/components/lyrics-studio/LyricsControlPanel.tsx` uitgebreid met title input en `Generate title` knop; `src/app/lyrics-studio/page.tsx` gekoppeld met `/api/generate-title`, title-state wiring en overdracht van title naar Studio; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 14:31`; `musiq-user.md` bijgewerkt; validated.
+- Actions: `src/lib/lyrics-utils.ts` uitgebreid met nieuwe blocktypes, labels, structure-parser ondersteuning en combine-logica voor lege markersecties; `src/lib/lyrics-studio-constants.ts` uitgebreid met markerblokken in toolbar en kleurmapping; `src/components/lyrics-studio/LyricBlockEditor.tsx` aangepast zodat markerblokken geen lyrics/translate/generate toelaten; `src/app/api/lyric-studio/generate-block/route.ts` en `src/app/api/lyric-studio/translate/route.ts` typeguards uitgebreid voor de nieuwe blocktypes; `src/components/lyrics-studio/LyricsControlPanel.tsx` uitgebreid met title input en `Generate title` knop; `src/app/lyrics-studio/page.tsx` gekoppeld met `/api/generate-title`, title-state wiring en overdracht van title naar Studio; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 14:31`; `melodiq-user.md` bijgewerkt; validated.
 
 ## 2026-05-27 (Library upload hint + robuuste non-JSON foutafhandeling)
 
 - Findings: Bij uploadfouten met HTML-responses (zoals te grote request) kon de frontend falen met `Unexpected token '<'` en was voor users onduidelijk wat de limiet was.
 - Conclusions: Maak upload-response parsing tolerant voor non-JSON en toon in de UI expliciet de uploadlimiet en foutverwachting.
-- Actions: `src/app/library/page.tsx` uitgebreid met veilige `readApiPayload` parser, duidelijke fallback foutmelding bij non-JSON responses en specifieke 413 melding; uploadkaart helpertekst aangevuld met limiet van 20 bestanden per upload; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 14:48`; `musiq-user.md` bijgewerkt met limiet/foutmelding; validated.
+- Actions: `src/app/library/page.tsx` uitgebreid met veilige `readApiPayload` parser, duidelijke fallback foutmelding bij non-JSON responses en specifieke 413 melding; uploadkaart helpertekst aangevuld met limiet van 20 bestanden per upload; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 14:48`; `melodiq-user.md` bijgewerkt met limiet/foutmelding; validated.
 
 ## 2026-05-27 (Library upload workspace-dropdown gevuld met bestaande workspaces)
 
 - Findings: In Library upload liet de workspace-dropdown soms alleen `Default Workspace` zien, ondanks bestaande workspaces in persistente state.
 - Conclusions: Forceer eerst workspace-store rehydratie en voer daarna pas de default-workspace normalisatie uit; zo blijven bestaande persisted workspaces zichtbaar in de dropdown.
-- Actions: `src/app/library/page.tsx` aangepast met expliciete `useWorkspaceStore.persist.rehydrate()` en `onFinishHydration`-flow vóór `ensureDefaultWorkspace`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:10`; `musiq-user.md` bijgewerkt met workspace-dropdown gedrag; validated.
+- Actions: `src/app/library/page.tsx` aangepast met expliciete `useWorkspaceStore.persist.rehydrate()` en `onFinishHydration`-flow vóór `ensureDefaultWorkspace`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:10`; `melodiq-user.md` bijgewerkt met workspace-dropdown gedrag; validated.
 
 ## 2026-05-27 (Docker build-fix: ontbrekende setVolume in Player)
 
 - Findings: De Docker/Next build faalde met TypeScript-fout `Cannot find name 'setVolume'` in de player volume-handler.
 - Conclusions: De `Player` component gebruikte `setVolume` in `handleVolume`, maar haalde de action niet uit de Zustand store-destructuring; toevoeging van de ontbrekende action herstelt compile.
-- Actions: `src/components/Player.tsx` bijgewerkt door `setVolume` toe te voegen aan `usePlayerStore()` destructuring in de `Player` component; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:17`; `musiq-user.md` versie bijgewerkt naar `wo 15:17`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
+- Actions: `src/components/Player.tsx` bijgewerkt door `setVolume` toe te voegen aan `usePlayerStore()` destructuring in de `Player` component; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:17`; `melodiq-user.md` versie bijgewerkt naar `wo 15:17`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
 
 ## 2026-05-27 (Herstel: tracks verdwenen door workspace-schema mismatch)
 
 - Findings: Na introductie van DB-workspaces konden track-overzichten leeg lijken wanneer `tracks.workspace_id`/`workspaces` nog niet in de database aanwezig waren op runtime.
 - Conclusions: Voeg een runtime schema-guard + fallback toe zodat track-API nooit hard faalt op ontbrekende migratie en de bestaande tracks direct zichtbaar blijven.
-- Actions: `src/lib/workspaces.ts` uitgebreid met `ensureWorkspaceSchema()` (idempotente `ALTER TABLE`/`CREATE TABLE IF NOT EXISTS`) en fallback payload; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` laten schema-guard eerst draaien; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:05`; `musiq-user.md` versie bijgewerkt naar `wo 16:05`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/lib/workspaces.ts` uitgebreid met `ensureWorkspaceSchema()` (idempotente `ALTER TABLE`/`CREATE TABLE IF NOT EXISTS`) en fallback payload; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` laten schema-guard eerst draaien; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:05`; `melodiq-user.md` versie bijgewerkt naar `wo 16:05`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Playback fix: /stream 502 fallback naar direct S3)
 
 - Findings: Sommige tracks speelden niet af doordat `/api/tracks/[id]/stream` met 502 kon falen wanneer de disk-cache laag een fout gaf (bijv. cache write/read of cache path issues).
 - Conclusions: Voeg een robuuste fallback toe: als cache-stream faalt, stream direct vanaf S3 (met Range-header doorgezet) zodat playback blijft werken.
-- Actions: `src/app/api/tracks/[id]/stream/route.ts` uitgebreid met fallback pad naar `getPresignedUrl` + `fetch` proxy inclusief Range/Content-Range handling; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:11`; `musiq-user.md` versie bijgewerkt naar `wo 16:11`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/app/api/tracks/[id]/stream/route.ts` uitgebreid met fallback pad naar `getPresignedUrl` + `fetch` proxy inclusief Range/Content-Range handling; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:11`; `melodiq-user.md` versie bijgewerkt naar `wo 16:11`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Autoplay fix: next track startte op eindpositie)
 
 - Findings: Bij automatisch door afspelen naar de volgende track nam de player soms de oude `currentTime` mee, waardoor de nieuwe track in de laatste seconden begon.
 - Conclusions: Playback-positie alleen hervatten als exact dezelfde track opnieuw geladen wordt; bij trackwissel altijd vanaf 0 starten.
-- Actions: `src/components/Player.tsx` uitgebreid met `lastLoadedTrackIdRef` en conditionele resume-logica zodat `resumeTime` alleen geldt voor dezelfde track-id; reset toegevoegd bij `!currentTrack`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:33`; `musiq-user.md` versie bijgewerkt naar `wo 16:33`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/components/Player.tsx` uitgebreid met `lastLoadedTrackIdRef` en conditionele resume-logica zodat `resumeTime` alleen geldt voor dezelfde track-id; reset toegevoegd bij `!currentTrack`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 16:33`; `melodiq-user.md` versie bijgewerkt naar `wo 16:33`; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-27 (Lyric Studio style suggestion max 1000 chars)
 
 - Findings: De AI style suggestion in Lyric Studio had nog geen harde outputlimiet in tekens.
 - Conclusions: Een server-side cap op sanitize-niveau voorkomt te lange output ongeacht providergedrag en houdt de UI-respons consistent.
-- Actions: `src/lib/lyrics-style-suggestion.ts` aangepast met expliciete promptregel `maximum 1000 characters` en harde truncatie naar 1000 tekens in `sanitizeStyleSuggestionResponse`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:51`; `musiq-user.md` bijgewerkt met de 1000-char limiet; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/lib/lyrics-style-suggestion.ts` aangepast met expliciete promptregel `maximum 1000 characters` en harde truncatie naar 1000 tekens in `sanitizeStyleSuggestionResponse`; `src/components/Sidebar.tsx` versie bijgewerkt naar `wo 15:51`; `melodiq-user.md` bijgewerkt met de 1000-char limiet; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-28 (App-naam hernoemd naar MelodIQ)
 
-- Findings: De app-branding stond op meerdere plekken nog hardcoded als `Musiq` (UI labels, metadata, player status, settings placeholders en documentatie), waardoor de naamswijziging niet consistent was.
+- Findings: De app-branding stond op meerdere plekken nog hardcoded als `MelodIQ` (UI labels, metadata, player status, settings placeholders en documentatie), waardoor de naamswijziging niet consistent was.
 - Conclusions: Een gerichte hernoeming van zichtbare branding en package metadata naar `MelodIQ` geeft een consistente gebruikerservaring zonder technische storage-keys of eventnamen te migreren.
-- Actions: `src/app/layout.tsx`, `src/app/manifest.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/app/login/page.tsx`, `src/components/Player.tsx`, `src/components/settings/WebhooksSection.tsx`, `src/components/settings/S3Section.tsx`, `package.json`, `package-lock.json`, `README.md` en `musiq-user.md` bijgewerkt met `MelodIQ` naming; versiestempel bijgewerkt naar `do 13:17` in `src/components/Sidebar.tsx` en `musiq-user.md`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
+- Actions: `src/app/layout.tsx`, `src/app/manifest.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/app/login/page.tsx`, `src/components/Player.tsx`, `src/components/settings/WebhooksSection.tsx`, `src/components/settings/S3Section.tsx`, `package.json`, `package-lock.json`, `README.md` en `melodiq-user.md` bijgewerkt met `MelodIQ` naming; versiestempel bijgewerkt naar `do 13:17` in `src/components/Sidebar.tsx` en `melodiq-user.md`; build uitgevoerd met `npm run build` en volledig geslaagd (met bestaande Turbopack-warning over NFT trace), validated.
 
 ## 2026-05-28 (Cache state zichtbaar gemaakt in player)
 
 - Findings: De player toonde alleen `cache` of `s3`, waardoor een cache-warmup of S3 fallback er hetzelfde uitzag als een gewone cache-hit.
 - Conclusions: Door de stream-route een expliciete cache-state header te laten sturen en de player-badge die status te tonen, wordt direct duidelijk of audio uit cache kwam, nog aan het warmen was, of terugviel op S3.
-- Actions: `src/lib/audio-cache.ts` uitgebreid met `cached` returndata; `src/app/api/tracks/[id]/stream/route.ts` stuurt nu `x-musiq-audio-cache-state` met `hit`, `miss` of `fallback`; `src/components/Player.tsx` toont cache-state in badge-title en fullscreen/player UI; `src/components/Sidebar.tsx` versie bijgewerkt naar `do 16:15`; `musiq-user.md` bijgewerkt met de cache-badge uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
+- Actions: `src/lib/audio-cache.ts` uitgebreid met `cached` returndata; `src/app/api/tracks/[id]/stream/route.ts` stuurt nu `x-melodiq-audio-cache-state` met `hit`, `miss` of `fallback`; `src/components/Player.tsx` toont cache-state in badge-title en fullscreen/player UI; `src/components/Sidebar.tsx` versie bijgewerkt naar `do 16:15`; `melodiq-user.md` bijgewerkt met de cache-badge uitleg; build uitgevoerd met `npm run build` en volledig geslaagd, validated.
 
 ## 2026-05-30 (Correctie Default Workspace duplicatie en track synchronisatie)
 

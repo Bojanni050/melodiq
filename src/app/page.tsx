@@ -22,7 +22,7 @@ import {
 } from "@/lib/store";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
-const WORKSPACE_GRID_SIZE_STORAGE_KEY = "musiq-studio-workspace-grid-size";
+const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq-studio-workspace-grid-size";
 const WORKSPACE_GRID_CLASS_BY_SIZE: Record<4 | 8 | 12 | 16, string> = {
   4: "grid-cols-[repeat(4,minmax(0,1fr))]",
   8: "grid-cols-[repeat(8,minmax(0,1fr))]",
@@ -143,7 +143,7 @@ export default function HomePage() {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const WORKSPACE_VIEW_MODE_STORAGE_KEY = "musiq-studio-workspace-view-mode";
+  const WORKSPACE_VIEW_MODE_STORAGE_KEY = "melodiq-studio-workspace-view-mode";
   const [workspaceViewMode, setWorkspaceViewMode] = useState<"grid" | "list">("list");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);

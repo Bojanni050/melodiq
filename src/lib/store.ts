@@ -196,7 +196,7 @@ export const usePlayerStore = create<PlayerState>()(
         } else if (url && url.startsWith("/")) {
           // Relatief pad, gebruik direct
         } else {
-          // Fallback naar Musiq API
+          // Fallback naar MelodIQ API
           const wantsHd = (track.audioUrl || "").includes("hd=true");
           url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
         }
@@ -279,7 +279,7 @@ export const usePlayerStore = create<PlayerState>()(
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
     }),
     {
-      name: "musiq-player",
+      name: "melodiq-player",
       storage: createDebouncedStorage(300),
       partialize: (state) => ({
         volume: state.volume,
@@ -427,7 +427,7 @@ export const usePlaylistStore = create<PlaylistState>()(
       setSelectedPlaylistId: (playlistId) => set({ selectedPlaylistId: playlistId }),
     }),
     {
-      name: "musiq-playlists",
+      name: "melodiq-playlists",
     }
   )
 );
@@ -758,7 +758,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }),
     }),
     {
-      name: "musiq-workspaces",
+      name: "melodiq-workspaces",
       storage: createDebouncedStorage(800),
       partialize: (state) => ({
         selectedWorkspaceId: state.selectedWorkspaceId,
@@ -882,7 +882,7 @@ export const useStudioStore = create<StudioState>()(
         }),
     }),
     {
-      name: "musiq-studio",
+      name: "melodiq-studio",
       storage: createDebouncedStorage(500),
       skipHydration: true,
       merge: (persistedState: any, currentState) => {
@@ -914,7 +914,7 @@ export const useUIStore = create<UIState>()(
       setSelectedTrackId: (id) => set({ selectedTrackId: id }),
     }),
     {
-      name: "musiq-ui",
+      name: "melodiq-ui",
       partialize: (state) => ({ activeTab: state.activeTab }),
     }
   )
@@ -1021,7 +1021,7 @@ export const usePresetsStore = create<PresetsState>()(
         })),
     }),
     {
-      name: "musiq-presets",
+      name: "melodiq-presets",
       storage: createDebouncedStorage(500),
     }
   )

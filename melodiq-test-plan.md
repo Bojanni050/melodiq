@@ -1,4 +1,4 @@
-Je gaat tests toevoegen aan het Musiq AI Music Studio project (Next.js 16 + TypeScript 6 + React 19 + Zustand + Drizzle).
+Je gaat tests toevoegen aan het MelodIQ AI Music Studio project (Next.js 16 + TypeScript 6 + React 19 + Zustand + Drizzle).
 
 ## Setup
 

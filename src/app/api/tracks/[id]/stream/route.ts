@@ -75,8 +75,8 @@ export async function GET(
           "Content-Range": `bytes ${start}-${end}/${fileSize}`,
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=31536000, immutable",
-          "x-musiq-audio-source": "cache",
-          "x-musiq-audio-cache-state": cacheState,
+          "x-melodiq-audio-source": "cache",
+          "x-melodiq-audio-cache-state": cacheState,
         },
       });
     }
@@ -97,8 +97,8 @@ export async function GET(
         "Content-Length": String(fileSize),
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=31536000, immutable",
-        "x-musiq-audio-source": "cache",
-        "x-musiq-audio-cache-state": cacheState,
+        "x-melodiq-audio-source": "cache",
+        "x-melodiq-audio-cache-state": cacheState,
       },
     });
   } catch (error) {
@@ -129,8 +129,8 @@ export async function GET(
           ...(fallbackContentRange ? { "Content-Range": fallbackContentRange } : {}),
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=300",
-          "x-musiq-audio-source": "s3",
-          "x-musiq-audio-cache-state": "fallback",
+          "x-melodiq-audio-source": "s3",
+          "x-melodiq-audio-cache-state": "fallback",
         },
       });
     } catch (fallbackError) {

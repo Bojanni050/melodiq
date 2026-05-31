@@ -5,9 +5,9 @@ Write-Host "🗄️  Running database migration on VPS..." -ForegroundColor Cyan
 Write-Host ""
 
 # VPS details
-$VPS_HOST = "musiq.nl"
+$VPS_HOST = "melodiq.nl"
 $VPS_USER = "bojan"  # Update if different
-$VPS_PATH = "/var/www/vhosts/musiq.nl/musiq.nl"
+$VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq.nl"
 
 $SSH_COMMANDS = @"
 cd $VPS_PATH && \
@@ -22,7 +22,7 @@ ssh "$VPS_USER@$VPS_HOST" $SSH_COMMANDS
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ Database migration successful!" -ForegroundColor Green
-    Write-Host "🌐 Test: https://musiq.nl" -ForegroundColor Cyan
+    Write-Host "🌐 Test: https://melodiq.nl" -ForegroundColor Cyan
 } else {
     Write-Host ""
     Write-Host "❌ Migration failed!" -ForegroundColor Red

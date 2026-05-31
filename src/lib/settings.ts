@@ -111,7 +111,7 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
   const s3Endpoint = await getSetting("S3_ENDPOINT") || process.env.S3_ENDPOINT;
   const s3AccessKey = await getSetting("S3_ACCESS_KEY") || process.env.S3_ACCESS_KEY;
   const s3SecretKey = await getSetting("S3_SECRET_KEY") || process.env.S3_SECRET_KEY;
-  const s3Bucket = await getSetting("S3_BUCKET") || process.env.S3_BUCKET || "musiq-tracks";
+  const s3Bucket = await getSetting("S3_BUCKET") || process.env.S3_BUCKET || "melodiq-tracks";
   
   if (!s3Endpoint) missing.push("S3_ENDPOINT");
   if (!s3AccessKey) missing.push("S3_ACCESS_KEY");

@@ -278,7 +278,7 @@ export default memo(function StudioForm({
   }, [lyricsExpanded]);
   const [providersCollapsed, setProvidersCollapsed] = useState(() => {
     try {
-      return window.localStorage.getItem("musiq-providers-collapsed") === "true";
+      return window.localStorage.getItem("melodiq-providers-collapsed") === "true";
     } catch {
       return false;
     }
@@ -286,7 +286,7 @@ export default memo(function StudioForm({
 
   useEffect(() => {
     try {
-      window.localStorage.setItem("musiq-providers-collapsed", String(providersCollapsed));
+      window.localStorage.setItem("melodiq-providers-collapsed", String(providersCollapsed));
     } catch {
       // ignore
     }

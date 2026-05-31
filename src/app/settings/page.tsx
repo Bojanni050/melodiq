@@ -325,7 +325,7 @@ export default function SettingsPage() {
               <section className="section-card">
                 <h2 className="text-sm font-semibold mb-2">Import Data</h2>
                 <p className="text-xs text-white/40 mb-3">
-                  Import tracks and workspaces from another Musiq/MelodIQ PostgreSQL database.
+                  Import tracks and workspaces from another MelodIQ/MelodIQ PostgreSQL database.
                 </p>
                 <div className="space-y-2">
                   <input

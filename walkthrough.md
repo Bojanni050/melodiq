@@ -1,4 +1,4 @@
-# Musiq — Walkthrough
+# MelodIQ — Walkthrough
 
 ## 2026-05-27 wo 02:31 (Lyric Studio drag kan nu meerdere posities overslaan)
 
@@ -25,7 +25,7 @@
 - Actions:
   - Updated `src/components/TrackList.tsx` — added optionele `enableDragReorder` prop (default `true`) met drag state, drop handling en handmatige lijstvolgorde die gebruikt wordt voor play context
   - Updated `src/app/page.tsx` — `Recent Tracks` `TrackList` call now sets `enableDragReorder={false}`
-  - Updated `musiq-user.md` — gebruikersdocumentatie aangevuld met drag-and-drop play-order gedrag en de uitzondering voor Recent Tracks
+  - Updated `melodiq-user.md` — gebruikersdocumentatie aangevuld met drag-and-drop play-order gedrag en de uitzondering voor Recent Tracks
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 13:32 (MusicGPT timeout skip + failed-track recovery)
@@ -394,7 +394,7 @@
 
 ## 2026-05-20 (Brand color unification — orange consistency)
 
-- Findings: Purple (#8b5cf6) had leaked into focus rings, range slider thumb, aurora background, and VOCAL badge — conflicting with Musiq's orange (#ff530c) brand identity.
+- Findings: Purple (#8b5cf6) had leaked into focus rings, range slider thumb, aurora background, and VOCAL badge — conflicting with MelodIQ's orange (#ff530c) brand identity.
 - Conclusions: Replace all purple UI elements with orange to maintain consistent brand identity throughout the app.
 - Actions:
   - Updated `src/app/globals.css` — replaced purple aurora gradient with orange gradient (#cc4109, #e64a0b, #ff530c, #ff8550); replaced purple focus rings with orange for `.input-field:focus` and `.select-field:focus` (rgba(255, 83, 12, 0.3) and rgba(255, 83, 12, 0.5)); replaced purple range slider thumb (#8b5cf6) with orange (#ff530c)
@@ -425,7 +425,7 @@
 - Actions:
   - Updated `src/components/StudioForm.tsx` — provider dropdown + model-select verplaatst naar de `Studio` card; language-selector verwijderd uit de Create-pagina; `Vocal Gender` als losse card behouden voor vocal mode
   - Updated `src/app/lyrics-studio/page.tsx` — language-selector (incl. `Other...` custom language input) toegevoegd boven de Structure-sectie
-  - Updated `musiq-user.md` — secties geactualiseerd met nieuwe locatie van Provider en Language + versie bump
+  - Updated `melodiq-user.md` — secties geactualiseerd met nieuwe locatie van Provider en Language + versie bump
 
 ## 2026-05-21 (Fullscreen player album art zichtbaar + fuzzy achtergrond)
 
@@ -452,7 +452,7 @@
 - Findings: In Studio hadden workspace cards geen gebruikersinstelling voor grid-omvang, een enkele cover werd in een 2x2 collage niet mooi gecentreerd, en mappen voelden op sommige delen van de kaart niet betrouwbaar klikbaar.
 - Conclusions: Voeg een persistente grid-optie toe (4/8/12/16), render single-cover kaarten als gecentreerde hero-cover, en maak de volledige kaart betrouwbaar klikbaar door decoratieve lagen pointer-events uit te zetten.
 - Actions:
-  - Updated `src/app/page.tsx` — added persistente workspace grid setting met localStorage key `musiq-studio-workspace-grid-size` en selectorchips voor 4/8/12/16
+  - Updated `src/app/page.tsx` — added persistente workspace grid setting met localStorage key `melodiq-studio-workspace-grid-size` en selectorchips voor 4/8/12/16
   - Updated `src/app/page.tsx` — workspace cards tonen nu alleen het ingestelde aantal via `visibleWorkspaces`
   - Updated `src/app/page.tsx` — single-cover layout gecentreerd met flex-variant i.p.v. altijd een 2x2 collage
   - Updated `src/app/page.tsx` — clickability verbeterd via `cursor-pointer`, `pointer-events-none` op overlays en `draggable={false}` op cover images
@@ -470,7 +470,7 @@
   - Updated `src/app/library/page.tsx` — delete-actie verborgen voor default workspace (label `Default`)
   - Updated `src/app/workspaces/page.tsx` — delete-knop vervangen door `System default` badge voor de default workspace
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:53`
-  - Updated `musiq-user.md` — gebruikersdocumentatie uitgebreid met default workspace gedrag
+  - Updated `melodiq-user.md` — gebruikersdocumentatie uitgebreid met default workspace gedrag
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 00:56 (Studio workspace: folder-open mode + back/breadcrumb navigatie)
@@ -483,7 +483,7 @@
   - Updated `src/app/page.tsx` — toegevoegd `Back to folders` knop in de header wanneer een folder open is
   - Updated `src/app/page.tsx` — breadcrumb `Workspaces / {naam}` gemaakt met klik op `Workspaces` om terug te keren naar overview
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:56`
-  - Updated `musiq-user.md` — user guide aangevuld met folder-open gedrag en terugnavigatie
+  - Updated `melodiq-user.md` — user guide aangevuld met folder-open gedrag en terugnavigatie
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 01:03 (Grid selector gedrag + Workspaces pagina playable TrackList)
@@ -574,7 +574,7 @@
   - Updated `src/app/lyrics-studio/page.tsx` — sidebar header omgezet naar row layout met nieuwe `Copy` knop rechts
   - Updated `src/app/lyrics-studio/page.tsx` — knop gebruikt bestaande `copyAllLyrics()` en `copied` feedback (`Copied!`)
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 17:50`
-  - Updated `musiq-user.md` — user guide uitgebreid met nieuwe sidebar copy-knop
+  - Updated `melodiq-user.md` — user guide uitgebreid met nieuwe sidebar copy-knop
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 18:31 (Playlist duplicate prompt met Yes/No)
@@ -644,7 +644,7 @@
 
 - Findings: Registration was open to anyone. Internal error messages were exposed in the register catch block. MiniMax webhook route was missing.
 - Conclusions: Gate registration behind REGISTRATION_ENABLED env flag (absent = closed). Fix catch block to log internally and return generic message. MiniMax uses PoYo's webhook payload format so the route is a direct adaptation.
-- Actions: Added REGISTRATION_ENABLED gate to src/app/api/auth/register/route.ts. Fixed catch block to use console.error and return generic message. Created src/app/api/webhooks/minimax/route.ts (task_id, status: finished, files[].audio_url, provider: "minimax"). Removed MiniMax open issue from musiq-rules.md. Validated with npm run build.
+- Actions: Added REGISTRATION_ENABLED gate to src/app/api/auth/register/route.ts. Fixed catch block to use console.error and return generic message. Created src/app/api/webhooks/minimax/route.ts (task_id, status: finished, files[].audio_url, provider: "minimax"). Removed MiniMax open issue from melodiq-rules.md. Validated with npm run build.
 
 ## 2026-05-18 (Webhook secret check — alle routes)
 - Findings: Not all webhook routes verified WEBHOOK_SECRET.
@@ -667,9 +667,9 @@
 - Actions: Added cleanup interval with 5-min sweep to rate limiter in generate/route.ts; validated.
 
 ## 2026-05-20 (PWA ondersteuning)
-- Findings: Musiq had geen Progressive Web App functionaliteit — geen installeerbaar maken, geen offline ondersteuning, geen app manifest.
+- Findings: MelodIQ had geen Progressive Web App functionaliteit — geen installeerbaar maken, geen offline ondersteuning, geen app manifest.
 - Conclusions: PWA-ondersteuning met next-pwa zorgt voor installable web app ervaring met service worker en manifest. Next.js 16 vereist Turbopack-compatibiliteit en correcte TypeScript manifest types. Icons placeholder met README voor toekomstige generatie.
-- Actions: Geïnstalleerd next-pwa dependency. Gemaakt src/app/manifest.ts met Musiq manifest config (name, icons, theme colors, standalone mode). Updated next.config.mjs — wrapped config met withPWA (dest: public, disable in dev, register: true), toegevoegd turbopack: {} voor compatibiliteit. Updated src/app/layout.tsx — toegevoegd PWA meta tags (theme-color, apple-mobile-web-app-capable, status-bar-style). Gemaakt public/icons/ folder met README.icons.md voor placeholder icons instructies (192×192 en 512×512 PNG, muzieknoot SVG basis). Updated .gitignore — excluded PWA-gegenereerde bestanden (sw.js, workbox-*.js, worker-*.js plus maps). Fixed manifest purpose type ("maskable" in plaats van "any maskable" voor TypeScript). Validated met npm run build — manifest route beschikbaar op /manifest.webmanifest; validated.
+- Actions: Geïnstalleerd next-pwa dependency. Gemaakt src/app/manifest.ts met MelodIQ manifest config (name, icons, theme colors, standalone mode). Updated next.config.mjs — wrapped config met withPWA (dest: public, disable in dev, register: true), toegevoegd turbopack: {} voor compatibiliteit. Updated src/app/layout.tsx — toegevoegd PWA meta tags (theme-color, apple-mobile-web-app-capable, status-bar-style). Gemaakt public/icons/ folder met README.icons.md voor placeholder icons instructies (192×192 en 512×512 PNG, muzieknoot SVG basis). Updated .gitignore — excluded PWA-gegenereerde bestanden (sw.js, workbox-*.js, worker-*.js plus maps). Fixed manifest purpose type ("maskable" in plaats van "any maskable" voor TypeScript). Validated met npm run build — manifest route beschikbaar op /manifest.webmanifest; validated.
 
 ## 2026-05-20 (Create playlist vanuit track options)
 - Findings: Playlists moesten eerst in Library worden aangemaakt voordat tracks eraan toegevoegd konden worden. Track options menu had geen directe manier om nieuwe playlists te maken.
@@ -685,19 +685,19 @@
 
 - Findings: Lyric Studio had alleen taal- en songstructuurkeuzes, waardoor lyrics nog niet sectie-voor-sectie konden worden opgebouwd.
 - Conclusions: Een lokale block editor past bij de bestaande Studio-flow zonder databasewijziging; omdat dnd-kit niet aanwezig is, zijn reorder-knoppen gebruikt in plaats van een nieuwe dependency.
-- Actions: Updated src/app/lyrics-studio/page.tsx met metadataformulier, bestaande structure dropdown, block presets, add-block controls, block cards met generate/copy/use-in-studio acties en lokale LyricBlock state. Added src/app/api/lyric-studio/generate-block/route.ts met requireAuth(), centrale callLLM() en logApi(). Updated src/lib/providers/llm.ts om callLLM te exporteren. Updated src/components/Sidebar.tsx versie naar do 02:05. Updated musiq-user.md met Lyric Studio uitleg. Validated met npm run build; validated.
+- Actions: Updated src/app/lyrics-studio/page.tsx met metadataformulier, bestaande structure dropdown, block presets, add-block controls, block cards met generate/copy/use-in-studio acties en lokale LyricBlock state. Added src/app/api/lyric-studio/generate-block/route.ts met requireAuth(), centrale callLLM() en logApi(). Updated src/lib/providers/llm.ts om callLLM te exporteren. Updated src/components/Sidebar.tsx versie naar do 02:05. Updated melodiq-user.md met Lyric Studio uitleg. Validated met npm run build; validated.
 
 ## 2026-05-21 (Split prompt and lyrics LLM routing)
 
 - Findings: Settings gebruikte een gecombineerd Lyrics & Prompt model, en /api/llm had nog lokale LLM/logging-logica waardoor prompt- en lyric-generatie niet apart routeerbaar waren.
 - Conclusions: Prompt-optimalisatie en lyric-generatie hebben aparte provider/model-keuzes nodig. Centrale callLLM() moet daarom purpose-aware zijn, zodat Studio lyrics en Lyric Studio blocks dezelfde lyrics provider gebruiken.
-- Actions: Updated src/app/settings/page.tsx met LLM Routing, aparte Prompt/Lyrics providers, aparte OpenRouter prompt/lyrics model selectors en aparte OpenAI prompt/lyrics model fields. Updated src/lib/providers/llm.ts met purpose-based provider/model selectie via PROMPT_LLM_PROVIDER, LYRICS_LLM_PROVIDER, OPENROUTER_PROMPT_MODEL, OPENROUTER_LYRICS_MODEL, OPENAI_PROMPT_MODEL en OPENAI_LYRICS_MODEL. Rebuilt src/app/api/llm/route.ts op centrale callLLM() en logApi(). Updated src/app/api/lyric-studio/generate-block/route.ts om de lyrics provider te gebruiken. Updated src/components/Sidebar.tsx versie naar do 02:12 en musiq-user.md Settings uitleg. Validated met npm run build; validated.
+- Actions: Updated src/app/settings/page.tsx met LLM Routing, aparte Prompt/Lyrics providers, aparte OpenRouter prompt/lyrics model selectors en aparte OpenAI prompt/lyrics model fields. Updated src/lib/providers/llm.ts met purpose-based provider/model selectie via PROMPT_LLM_PROVIDER, LYRICS_LLM_PROVIDER, OPENROUTER_PROMPT_MODEL, OPENROUTER_LYRICS_MODEL, OPENAI_PROMPT_MODEL en OPENAI_LYRICS_MODEL. Rebuilt src/app/api/llm/route.ts op centrale callLLM() en logApi(). Updated src/app/api/lyric-studio/generate-block/route.ts om de lyrics provider te gebruiken. Updated src/components/Sidebar.tsx versie naar do 02:12 en melodiq-user.md Settings uitleg. Validated met npm run build; validated.
 
 ## 2026-05-21 (Lyric Studio presets and complete song generation)
 
 - Findings: De Simple preset was dubbel met Pop en Lyric Studio miste snelle block-duplicatie en een manier om direct alle secties van een songstructuur te vullen.
 - Conclusions: Presets moeten scherper aansluiten op pop, AABA en dance/EDM flows; complete-song generatie kan veilig sequentieel per block lopen zodat eerdere blocks context geven aan latere blocks.
-- Actions: Updated src/app/lyrics-studio/page.tsx met nieuwe BLOCK_PRESETS, EDM/Dance labelmapping (Drop, Breakdown, Build-up), duplicateBlock(), duplicate button per block, preset/structure parsing en Generate complete song button in de Song Structure card. Updated src/components/Sidebar.tsx versie naar do 02:19 en musiq-user.md Lyric Studio uitleg. Validated met npm run build; validated.
+- Actions: Updated src/app/lyrics-studio/page.tsx met nieuwe BLOCK_PRESETS, EDM/Dance labelmapping (Drop, Breakdown, Build-up), duplicateBlock(), duplicate button per block, preset/structure parsing en Generate complete song button in de Song Structure card. Updated src/components/Sidebar.tsx versie naar do 02:19 en melodiq-user.md Lyric Studio uitleg. Validated met npm run build; validated.
 
 ## 2026-05-21 (Lyric Studio: rechter lyrics-sidebar)
 
@@ -758,7 +758,7 @@
 - Conclusions: Verwijder tabs-state en submenu-UI uit de Studio-pagina en render de Create-layout altijd direct.
 - Actions:
   - Updated `src/app/page.tsx` — removed `useUIStore` tab state, removed Create/Library top submenu, removed conditional tab rendering, and kept only the Create layout
-  - Updated `musiq-user.md` — wording aangepast naar Studio Create page + Library page via sidebar
+  - Updated `melodiq-user.md` — wording aangepast naar Studio Create page + Library page via sidebar
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:34`
 
 ## 2026-05-21 do 05:41 (Library playlists als gallery view)
@@ -770,7 +770,7 @@
   - Updated `src/app/library/page.tsx` — added playlist gallery grid with create-card and playlist cards
   - Updated `src/app/library/page.tsx` — playlist card cover now uses up to 4 song cover images from that playlist (collage), fallback placeholder when empty
   - Updated `src/app/library/page.tsx` — clicking playlist card sets active playlist and switches to Songs view
-  - Updated `musiq-user.md` — added Library Views section
+  - Updated `melodiq-user.md` — added Library Views section
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-05:41`
 
 ## 2026-05-21 do 11:14 (Player spacing + mobile details panel start-off fix)
@@ -783,7 +783,7 @@
   - Updated `src/app/page.tsx`, `src/app/library/page.tsx` — added shared close handler that sets `showTrackDetailsPanel=false` on close (sidebar + mobile overlay)
   - Updated `src/components/Player.tsx` — added mobile-on-mount guard to start details panel off for viewports `<=1023px`
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:14`
-  - Updated `musiq-user.md` — version updated to `do 11:14`
+  - Updated `melodiq-user.md` — version updated to `do 11:14`
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 11:39 (Viewport shell boven fixed player, geen overlap)
@@ -798,7 +798,7 @@
   - Updated `src/app/account/page.tsx`, `src/app/logs/page.tsx`, `src/app/settings/page.tsx` — replaced full-page scroll wrappers with constrained `calc(100vh - player)` scroll containers
   - Updated `src/app/lyrics-studio/page.tsx` — root shell constrained to `h-[calc(100vh-var(--player-height))]`
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:39`
-  - Updated `musiq-user.md` — version updated to `do 11:39`
+  - Updated `melodiq-user.md` — version updated to `do 11:39`
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 11:43 (Sidebar credits/logout boven player)
@@ -808,7 +808,7 @@
 - Actions:
   - Updated `src/components/Sidebar.tsx` — desktop sidebar changed from `bottom-0` to `bottom-[var(--player-height)]`
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-11:43`
-  - Updated `musiq-user.md` — version updated to `do 11:43`
+  - Updated `melodiq-user.md` — version updated to `do 11:43`
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 12:16 (Lyric Studio repetitive chorus toggle)
@@ -821,7 +821,7 @@
   - Updated `src/app/lyrics-studio/page.tsx` — updated full-song generation flow: first chorus is generated once and reused verbatim when repetitive mode is enabled; when disabled, chorus blocks are generated with variation mode
   - Updated `src/app/api/lyric-studio/generate-block/route.ts` — added `chorusMode` and `isFirstChorus` request handling + validation + prompt instructions for repeat/variation behavior
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:16`
-  - Updated `musiq-user.md` — version updated to `do 12:16` and Lyric Studio docs include repetitive chorus option
+  - Updated `melodiq-user.md` — version updated to `do 12:16` and Lyric Studio docs include repetitive chorus option
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 12:18 (Lyric Studio stop generating button)
@@ -833,7 +833,7 @@
   - Updated `src/app/lyrics-studio/page.tsx` — added `AbortController` + stop refs (`songGenerationAbortRef`, `stopSongGenerationRef`) and wired cancellation into block generation loop
   - Updated `src/app/lyrics-studio/page.tsx` — `requestBlockLyrics` now accepts `AbortSignal` for cancellable fetch calls
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-12:18`
-  - Updated `musiq-user.md` — version updated to `do 12:18` and Lyric Studio section mentions stop action
+  - Updated `melodiq-user.md` — version updated to `do 12:18` and Lyric Studio section mentions stop action
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 15:34 (Lyric Studio creativity + top-p sliders)
@@ -847,7 +847,7 @@
   - Updated `src/app/api/lyric-studio/generate-block/route.ts` — added validation for `temperature` (0.1-1.2) and `topP` (0.1-1.0), then forwarded both into `callLLM(...)`
   - Updated `src/lib/providers/llm.ts` — `callLLM` now accepts `temperature` and `topP` options and passes them to OpenRouter/OpenAI payloads (`temperature`, `top_p`)
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-15:34`
-  - Updated `musiq-user.md` — version updated to `do 15:34` and Lyric Studio docs mention both sliders
+  - Updated `melodiq-user.md` — version updated to `do 15:34` and Lyric Studio docs mention both sliders
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 15:51 (API sent/received logging in centrale logger)
@@ -871,7 +871,7 @@
   - Updated `src/app/lyrics-studio/page.tsx` — generation logic now reuses first chorus only when repetitive mode is on and the current chorus block does not request unique override
   - Updated `src/app/lyrics-studio/page.tsx` — single block generation now also respects repetitive chorus mode versus unique override
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-16:07`
-  - Updated `musiq-user.md` — version updated to `do 16:07` and Lyric Studio docs now include snapshot and unique chorus override usage
+  - Updated `melodiq-user.md` — version updated to `do 16:07` and Lyric Studio docs now include snapshot and unique chorus override usage
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 17:53 (Logs page collapsible input/output per call)
@@ -884,7 +884,7 @@
   - Updated `src/app/logs/page.tsx` — expanded detail view now shows both Input (`request`) and Output (`response`) payloads in formatted panels
   - Updated `src/app/logs/page.tsx` — refresh now resets expanded state so all calls return to collapsed view
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-17:53`
-  - Updated `musiq-user.md` — version updated to `do 17:53` and added Logs section behavior
+  - Updated `melodiq-user.md` — version updated to `do 17:53` and added Logs section behavior
   - Validated with `npm run build`.
 
 ## 2026-05-21 do 18:00 (Lyrics generator: alleen section-tagged output)
@@ -895,7 +895,7 @@
   - Updated `src/app/api/llm/route.ts` — tightened `type === "lyrics"` system prompt to require plain section tags (`[Verse]`, `[Chorus]`, `[Bridge]`) and forbid intro/outro text, commentary, numbering, markdown, quotes, or notes
   - Updated `src/app/api/llm/route.ts` — added explicit rule: return exactly lyrics content with section tags, nothing else
   - Updated `src/components/Sidebar.tsx` — version number updated to `0.do-18:00`
-  - Updated `musiq-user.md` — version updated to `do 18:00` and documented strict generated-lyrics output format
+  - Updated `melodiq-user.md` — version updated to `do 18:00` and documented strict generated-lyrics output format
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 21:48 (MusicGPT lyrics max 3000 blokkeren met popup)
@@ -906,7 +906,7 @@
   - Updated `src/app/page.tsx` — added preflight check in `handleGenerate()` that blocks MusicGPT generation when lyrics exceed 3000 chars and shows an error popup via `setNotice(...)`
   - Updated `src/app/api/generate/route.ts` — added provider-specific validation returning `400` when `provider === "musicgpt"` and lyrics exceed 3000 chars
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 21:48`
-  - Updated `musiq-user.md` — user guide versie ververst naar `vr 21:48` en MusicGPT 3000-char limiet gedocumenteerd
+  - Updated `melodiq-user.md` — user guide versie ververst naar `vr 21:48` en MusicGPT 3000-char limiet gedocumenteerd
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 22:03 (Lyric Studio in-app dialogs + player persistent tussen pagina's)
@@ -918,18 +918,18 @@
   - Updated `src/app/lyrics-studio/page.tsx` — added in-app notice banners for generation/copy/style errors and save/clear feedback
   - Updated `src/components/Player.tsx` — introduced module-level shared audio element to keep playback alive across component remounts during navigation
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:03`
-  - Updated `musiq-user.md` — user guide versie ververst naar `vr 22:03` met uitleg over in-app dialogs en persistente playback
+  - Updated `melodiq-user.md` — user guide versie ververst naar `vr 22:03` met uitleg over in-app dialogs en persistente playback
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 22:39 (MusicGPT webhook verwerkt MusicAI conversion_path)
 
-- Findings: De MusicGPT `MusicAI` webhook-docs tonen audio-callbacks met `success: true`, `conversion_id` en `conversion_path`, terwijl de generieke webhook-doc ook `status: "COMPLETED"` noemt. Musiq verwerkte alleen exact `COMPLETED`, waardoor geldige MusicGPT audio-webhooks zonder `status` als wachtend konden blijven staan.
+- Findings: De MusicGPT `MusicAI` webhook-docs tonen audio-callbacks met `success: true`, `conversion_id` en `conversion_path`, terwijl de generieke webhook-doc ook `status: "COMPLETED"` noemt. MelodIQ verwerkte alleen exact `COMPLETED`, waardoor geldige MusicGPT audio-webhooks zonder `status` als wachtend konden blijven staan.
 - Conclusions: Behandel een payload met audio-URL (`audio_url` of `conversion_path`) als voltooid zolang MusicGPT niet expliciet een failure meldt, en houd `conversion_id` matching leidend voor de twee trackvarianten.
 - Actions:
   - Updated `src/app/api/webhooks/musicgpt/route.ts` — added typed payload parsing, header-or-query secret support, non-audio callback skipping, and completion detection based on actual audio URL instead of only `status === "COMPLETED"`
   - Updated `src/lib/settings.ts` — webhook URL secret appending now uses URL query params safely and falls back to `NEXT_PUBLIC_APP_URL` when deriving webhook URLs from app config
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:39`
-  - Updated `musiq-user.md` — user guide versie ververst naar `vr 22:39` en MusicGPT als webhook-provider verduidelijkt
+  - Updated `melodiq-user.md` — user guide versie ververst naar `vr 22:39` en MusicGPT als webhook-provider verduidelijkt
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 22:50 (Studio tracks kolom gesplitst: workspace + recent)
@@ -941,7 +941,7 @@
   - Updated `src/app/page.tsx` — replaced single right-column list with two half-height cards: top `Workspace Tracks` block with breadcrumb (`Workspaces / {workspace}`), bottom `Recent Tracks` block
   - Updated `src/app/page.tsx` — each block now has independent `overflow-y-auto` for easier browsing in long lists
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 22:50`
-  - Updated `musiq-user.md` — user guide versie ververst naar `vr 22:50` en Studio split-column gedrag gedocumenteerd
+  - Updated `melodiq-user.md` — user guide versie ververst naar `vr 22:50` en Studio split-column gedrag gedocumenteerd
   - Validated with `npm run build`.
 
 ## 2026-05-22 vr 23:31 (Track sorting in alle tracklijsten)
@@ -953,7 +953,7 @@
   - Updated `src/components/TrackList.tsx` — introduced sorted `displayedTracks` (by `createdAt`) for rendering and selection counts
   - Updated `src/components/TrackList.tsx` — autoplay play-context now follows the active list sorting order
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `vr 23:31`
-  - Updated `musiq-user.md` — user guide versie ververst naar `vr 23:31` en sorteeropties gedocumenteerd
+  - Updated `melodiq-user.md` — user guide versie ververst naar `vr 23:31` en sorteeropties gedocumenteerd
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 00:21 (Studio workspace cards gelijk aan Workspaces)
@@ -964,12 +964,12 @@
   - Updated `src/app/page.tsx` — dropdown vervangen door workspace folder cards met dezelfde gradient/collage styling en klik-selectie als op de Workspaces-pagina
   - Updated `src/app/page.tsx` — create-workspace controls in Studio gelijkgetrokken met de Workspaces implementatie (`+ Create Workspace`, Add/Cancel flow)
   - Updated `src/app/page.tsx` — `No workspace` card toegevoegd om selectie expliciet te resetten en alleen recent tracks te tonen
-  - Updated `musiq-user.md` — Workspace-sectie geactualiseerd en versiestempel bijgewerkt
+  - Updated `melodiq-user.md` — Workspace-sectie geactualiseerd en versiestempel bijgewerkt
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 00:27 (PoYo WAV per variant)
 
-- Findings: PoYo retourneert volgens de docs een enkele generation `task_id` met meerdere `files[]`, ieder met een eigen `audio_id`; Musiq gaf variant 2 intern een synthetische `jobId` (`taskId:v2`) en gebruikte die vervolgens voor `convert-to-wav`, waardoor alleen variant 1 een geldige WAV-conversie kreeg.
+- Findings: PoYo retourneert volgens de docs een enkele generation `task_id` met meerdere `files[]`, ieder met een eigen `audio_id`; MelodIQ gaf variant 2 intern een synthetische `jobId` (`taskId:v2`) en gebruikte die vervolgens voor `convert-to-wav`, waardoor alleen variant 1 een geldige WAV-conversie kreeg.
 - Conclusions: WAV-conversies moeten altijd de originele PoYo generation task-id gebruiken en alleen per variant verschillen via `audio_id`; fallback-polling moet dezelfde normalisatie gebruiken zodat gemiste webhooks geen WAV-aanvraag overslaan.
 - Actions:
   - Updated `src/app/api/generate/route.ts` — tweede PoYo-reservetrack blijft `generating` met synthetische lokale variant-id in plaats van direct `failed`
@@ -977,7 +977,7 @@
   - Updated `src/lib/providers/poyo.ts` en `src/lib/poyo-sync.ts` — `audio_id` wordt meegenomen in variantextractie en opgeslagen op de juiste track
   - Updated `src/app/api/webhooks/poyo/route.ts`, `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` — webhook en fallback-polling vragen WAV-conversie per gesyncte variant aan met de originele task-id
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 00:27`
-  - Updated `musiq-user.md` — user guide versie ververst naar `za 00:27` en PoYo HD/WAV per variant verduidelijkt
+  - Updated `melodiq-user.md` — user guide versie ververst naar `za 00:27` en PoYo HD/WAV per variant verduidelijkt
   - Validated with `npm run build`.
 
 ## 2026-05-23 za 21:34 (Zoekbalken in alle tracklistings)
@@ -989,5 +989,5 @@
   - Updated `src/components/TrackList.tsx` — selectie-logica verbeterd voor gefilterde resultaten (select all werkt nu op zichtbare items)
   - Updated `src/components/TrackList.tsx` — empty-state boodschap uitgebreid met “No tracks match your search” bij geen zoekmatches
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
-  - Updated `musiq-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
+  - Updated `melodiq-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
   - Validated with `npm run build`.

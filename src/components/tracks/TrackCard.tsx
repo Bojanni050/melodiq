@@ -177,8 +177,8 @@ const TrackCard = memo(function TrackCard({
       setOptimisticPlayCount((count) => Math.max(1, count + 1));
     }
 
-    window.addEventListener("musiq:track-played", handleTrackPlayed);
-    return () => window.removeEventListener("musiq:track-played", handleTrackPlayed);
+    window.addEventListener("melodiq:track-played", handleTrackPlayed);
+    return () => window.removeEventListener("melodiq:track-played", handleTrackPlayed);
   }, [track.id]);
 
   useEffect(() => {
@@ -190,8 +190,8 @@ const TrackCard = memo(function TrackCard({
       setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${ts}`);
     }
 
-    window.addEventListener("musiq:cover-regenerated", handleCoverRegenerated);
-    return () => window.removeEventListener("musiq:cover-regenerated", handleCoverRegenerated);
+    window.addEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
+    return () => window.removeEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
   }, [track.id]);
 
   async function executeDelete() {

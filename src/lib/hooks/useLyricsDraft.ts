@@ -7,8 +7,8 @@ import type { LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
 import { BLOCK_LABELS, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
 import { useStudioStore } from "@/lib/store";
 
-const STORAGE_KEY = "musiq-lyrics-studio";
-const SNAPSHOTS_KEY = "musiq-lyrics-studio-snapshots";
+const STORAGE_KEY = "melodiq-lyrics-studio";
+const SNAPSHOTS_KEY = "melodiq-lyrics-studio-snapshots";
 
 export interface LyricsDraftState {
   topic: string;

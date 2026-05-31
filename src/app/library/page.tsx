@@ -36,7 +36,7 @@ interface LibraryTrack {
 
 type LibraryView = "songs" | "workspaces";
 type WorkspaceDisplayMode = "grid" | "list";
-const WORKSPACE_GRID_SIZE_STORAGE_KEY = "musiq.workspace-grid-size";
+const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
 
 function hashString(value: string) {
   let hash = 0;

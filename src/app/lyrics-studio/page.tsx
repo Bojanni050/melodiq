@@ -497,7 +497,7 @@ export default function LyricsStudioPage() {
     setTitle("");
     setCreativityLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
-    window.localStorage.removeItem("musiq-lyrics-studio");
+    window.localStorage.removeItem("melodiq-lyrics-studio");
     setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
   }
 
