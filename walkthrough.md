@@ -1027,4 +1027,5 @@
 - Actions:
   - Updated `src/components/tracks/TrackCard.tsx` — removed `allTracks` prop, accepted pre-computed `workspaceCoverById` and `onToggleSelection` props, and removed the heavy internal `useMemo` cover calculation.
   - Updated `src/components/TrackList.tsx` — pre-computed `workspaceCoverById` once using the stable cover key, added a `displayedTracksRef` pattern to stabilize `handlePlay` and `handleToggleSelection` callbacks, and updated `TrackCard` to receive the new stable props.
+  - Updated `src/components/Sidebar.tsx` — updated the sidebar build version stamp to `zo 07:50`.
   - Validated with `npx tsc --noEmit` returning **0 compile errors**.
