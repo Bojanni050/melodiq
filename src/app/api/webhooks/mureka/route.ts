@@ -27,6 +27,65 @@ function verifySignature(request: NextRequest, rawBody: string): boolean {
   const expectedSig = `v3,${computed}`;
   return webhookSignature.split(" ").some((sig) => sig === expectedSig);
 }
+function extractOutputs(body: any): string[] {
+  if (!body || typeof body !== "object") return [];
+
+  // Helper to extract URLs from a single value (string, object, array)
+  function extractFromValue(val: any): string[] {
+    if (!val) return [];
+    if (typeof val === "string") {
+      if (val.startsWith("http") || val.startsWith("/")) {
+        return [val];
+      }
+      return [];
+    }
+    if (Array.isArray(val)) {
+      return val.flatMap(extractFromValue);
+    }
+    if (typeof val === "object") {
+      const urlCandidates = [
+        val.url,
+        val.audio_url,
+        val.audioUrl,
+        val.wav_url,
+        val.wavUrl,
+        val.file,
+      ];
+      for (const cand of urlCandidates) {
+        if (typeof cand === "string" && (cand.startsWith("http") || cand.startsWith("/"))) {
+          return [cand];
+        }
+      }
+      // If it's some other object, search values shallowly
+      return Object.values(val).flatMap(extractFromValue);
+    }
+    return [];
+  }
+
+  // Try all potential result fields in the webhook body
+  const fieldsToTry = [
+    body.output,
+    body.outputs,
+    body.data?.output,
+    body.data?.outputs,
+    body.result,
+    body.results,
+    body.data?.result,
+    body.data?.results,
+    body.prediction?.output,
+    body.prediction?.outputs,
+  ];
+
+  for (const field of fieldsToTry) {
+    const found = extractFromValue(field);
+    if (found.length > 0) {
+      return found;
+    }
+  }
+
+  // Fallback: search the entire body
+  return extractFromValue(body);
+}
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -41,13 +100,19 @@ export async function POST(request: NextRequest) {
     return new Response("forbidden", { status: 403 });
   }
 
-  const requestId = typeof body.id === "string" ? body.id : null;
+  const requestId =
+    typeof body.id === "string"
+      ? body.id
+      : typeof body.prediction_id === "string"
+      ? body.prediction_id
+      : typeof body.predictionId === "string"
+      ? body.predictionId
+      : typeof (body.data as any)?.id === "string"
+      ? (body.data as any).id
+      : null;
+
   const status = typeof body.status === "string" ? body.status.toLowerCase() : "";
-  const outputs: string[] = Array.isArray(body.output)
-    ? (body.output as unknown[]).filter((u): u is string => typeof u === "string")
-    : Array.isArray(body.outputs)
-    ? (body.outputs as unknown[]).filter((u): u is string => typeof u === "string")
-    : [];
+  const outputs = extractOutputs(body);
 
   console.log(`[webhook/mureka] received: id=${requestId} status=${status} outputs=${outputs.length}`);
 
@@ -68,7 +133,7 @@ export async function POST(request: NextRequest) {
     return new Response("success", { status: 200 });
   }
 
-  if ((status === "succeeded" || status === "completed") && outputs.length > 0) {
+  if ((status === "succeeded" || status === "completed" || status === "done") && outputs.length > 0) {
     const variantTracks = await db.select().from(tracks).where(
       or(eq(tracks.jobId, requestId), eq(tracks.jobId, `${requestId}:1`))
     );

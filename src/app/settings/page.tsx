@@ -8,6 +8,7 @@ import LLMRoutingSection from "@/components/settings/LLMRoutingSection";
 import MinimaxSection from "@/components/settings/MinimaxSection";
 import ModelDetailModal from "@/components/settings/ModelDetailModal";
 import MusicGptRecoverySection from "@/components/settings/MusicGptRecoverySection";
+import WavRecoverySection from "@/components/settings/WavRecoverySection";
 import ProviderSection from "@/components/settings/ProviderSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
@@ -248,6 +249,7 @@ export default function SettingsPage() {
 
               <MinimaxSection values={values} onFieldChange={updateField} />
               <MusicGptRecoverySection />
+              <WavRecoverySection />
               <WebhooksSection values={values} onFieldChange={updateField} />
             </div>
 
