@@ -181,9 +181,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
     const start = i * linesPerColumn;
     const end = start + linesPerColumn;
     return lyricsLines.slice(start, end);
-  });
-
-  return (
+  });  return (
     <div className="fixed inset-0 z-[60] bg-black overflow-hidden">
       {coverUrl && (
         <div
@@ -220,26 +218,11 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
             </div>
           </div>
         </div>
-        <div className="flex-1 flex items-center gap-12 px-12 pb-32 overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden">
           {showLyrics ? (
-            <>
-              <div className="flex-1 flex items-center justify-center">
-                <div className={`grid gap-12 max-w-6xl w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-                  {columns.map((column, colIndex) => (
-                    <div key={colIndex} className="space-y-2">
-                      {column.map((line, lineIndex) => (
-                        <p
-                          key={lineIndex}
-                          className="text-white/80 text-sm md:text-base leading-relaxed"
-                        >
-                          {line}
-                        </p>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="w-96 shrink-0">
+            <div className="flex flex-col lg:flex-row items-center gap-8 w-full max-w-6xl">
+              {/* Cover art - rendered above lyrics on mobile, right of lyrics on desktop */}
+              <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-96 lg:h-96 lg:shrink-0 order-1 lg:order-2 flex items-center justify-center">
                 {coverUrl ? (
                   <img
                     src={coverUrl}
@@ -248,38 +231,56 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                   />
                 ) : (
                   <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                    <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-20 h-20 lg:w-32 lg:h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
                 )}
               </div>
-            </>
+
+              {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
+              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center">
+                <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                  {columns.map((column, colIndex) => (
+                    <div key={colIndex} className="space-y-2 text-center lg:text-left">
+                      {column.map((line, lineIndex) => (
+                        <p
+                          key={lineIndex}
+                          className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
               {coverUrl ? (
                 <img
                   src={coverUrl}
                   alt="Album art"
-                  className="w-[420px] max-w-[78vw] aspect-square rounded-3xl shadow-2xl shadow-black/60 object-cover animate-[pulse_4s_ease-in-out_infinite]"
+                  className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] rounded-3xl shadow-2xl shadow-black/60 object-cover animate-[pulse_4s_ease-in-out_infinite]"
                 />
               ) : (
-                <div className="w-[420px] max-w-[78vw] aspect-square rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10 animate-[pulse_4s_ease-in-out_infinite]">
-                  <svg className="w-32 h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10 animate-[pulse_4s_ease-in-out_infinite]">
+                  <svg className="w-20 h-20 lg:w-32 lg:h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                   </svg>
                 </div>
               )}
-              <h3 className="mt-6 text-2xl md:text-3xl font-semibold text-white/90 animate-[pulse_4s_ease-in-out_infinite]">
+              <h3 className="mt-4 sm:mt-6 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90 animate-[pulse_4s_ease-in-out_infinite]">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h3>
             </div>
           )}
         </div>
-        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xl border-t border-white/10">
-          <div className="px-8 py-6">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-sm text-white/60 w-12 text-right">
+        <div className="bg-black/60 backdrop-blur-xl border-t border-white/10 w-full shrink-0 z-10 relative">
+          <div className="px-6 sm:px-8 py-4 sm:py-6">
+            <div className="flex items-center gap-4 mb-4 sm:mb-6">
+              <span className="text-xs sm:text-sm text-white/60 w-12 text-right">
                 {formatTime(currentTime)}
               </span>
               <input
@@ -292,13 +293,13 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                 aria-label="Seek position"
                 className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
               />
-              <span className="text-sm text-white/60 w-12">
+              <span className="text-xs sm:text-sm text-white/60 w-12">
                 {formatTime(duration)}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-6">
-              <div className="w-28 shrink-0" />
-              <div className="flex items-center justify-center gap-6 flex-1">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
+              <div className="hidden lg:block lg:w-28 lg:shrink-0" />
+              <div className="flex items-center justify-center gap-6 w-full lg:flex-1">
                 <button
                   onClick={handlePrevious}
                   className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
@@ -334,7 +335,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                   </svg>
                 </button>
               </div>
-              <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center justify-center lg:justify-end gap-4 w-full lg:w-auto lg:shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsFullscreen(false)}
@@ -358,7 +359,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                     value={volume}
                     onChange={handleVolume}
                     aria-label="Volume"
-                    className="w-24 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
+                    className="w-20 sm:w-24 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
                   />
                 </div>
               </div>

@@ -826,7 +826,7 @@ const TrackCard = memo(function TrackCard({
 
       {/* Track info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 w-full">
           {isNewUnplayed && (
             <span
               className="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-[0_0_0_2px_rgba(253,224,71,0.25),0_0_10px_rgba(253,224,71,0.85)]"
@@ -873,23 +873,23 @@ const TrackCard = memo(function TrackCard({
             </div>
           ) : (
             <h3
-              className={`text-sm font-medium truncate cursor-text ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
+              className={`text-sm font-medium truncate cursor-text flex-1 min-w-0 ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
               onDoubleClick={handleTitleDoubleClick}
               title="Double-click to edit"
             >
               {title}
             </h3>
           )}
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass}`}>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
             {status.label}
           </span>
           {isUploadedTrack && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200">
+            <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">
               Uploaded
             </span>
           )}
           {assignedWorkspaceName && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px]" title={assignedWorkspaceName}>
+            <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px] shrink-0" title={assignedWorkspaceName}>
               {assignedWorkspaceName}
             </span>
           )}
@@ -900,8 +900,8 @@ const TrackCard = memo(function TrackCard({
           </div>
         ) : (
           <>
-            <p className="text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
-            <p className="text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
+            <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+            <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
               {playCount} {playCount === 1 ? "play" : "plays"}
             </p>
           </>
@@ -914,10 +914,10 @@ const TrackCard = memo(function TrackCard({
       {/* Time + actions */}
       <div className="flex items-center gap-1 shrink-0">
         <div className="mr-1 text-right leading-tight">
-          <p className="text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
-          <p className="text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
+          <p className="hidden sm:block text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
+          <p className="hidden sm:block text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
           {track.duration && track.status === "done" && (
-            <p className="text-[10px] text-white/20 whitespace-nowrap mt-0.5">{formatDuration(track.duration)}</p>
+            <p className="text-[10px] text-white/40 sm:text-white/20 whitespace-nowrap mt-0.5">{formatDuration(track.duration)}</p>
           )}
         </div>
         {track.status === "done" && (
@@ -926,7 +926,7 @@ const TrackCard = memo(function TrackCard({
             <button
               onClick={(e) => handleRating(e, "up")}
               disabled={ratingLoading}
-              className={`p-1 rounded-lg transition-all duration-200 ${
+              className={`hidden md:inline-flex p-1 rounded-lg transition-all duration-200 ${
                 currentRating === "up"
                   ? "text-green-400"
                   : "text-white/20 hover:text-green-300"
@@ -940,13 +940,13 @@ const TrackCard = memo(function TrackCard({
               aria-label="Rate track positive"
             >
               <svg className="w-3.5 h-3.5" fill={currentRating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
               </svg>
             </button>
             <button
               onClick={(e) => handleRating(e, "down")}
               disabled={ratingLoading}
-              className={`p-1 rounded-lg transition-all duration-200 ${
+              className={`hidden md:inline-flex p-1 rounded-lg transition-all duration-200 ${
                 currentRating === "down"
                   ? "text-red-400"
                   : "text-white/20 hover:text-red-300"
@@ -960,7 +960,7 @@ const TrackCard = memo(function TrackCard({
               aria-label="Rate track negative"
             >
               <svg className="w-3.5 h-3.5" fill={currentRating === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
               </svg>
             </button>
           </>
@@ -973,7 +973,7 @@ const TrackCard = memo(function TrackCard({
                 handleDownload(track.audioUrl!);
               }}
               disabled={downloading}
-              className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+              className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
               title={`Download ${mp3Label}`}
             >
               {mp3Label}
@@ -985,7 +985,7 @@ const TrackCard = memo(function TrackCard({
                   handleDownload(track.audioUrlHd!, true);
                 }}
                 disabled={downloading}
-                className="px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
                 title={`Download ${hdLabel}`}
               >
                 {hdLabel}
