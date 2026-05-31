@@ -497,7 +497,7 @@ export default function LyricsStudioPage() {
     setTitle("");
     setCreativityLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
-    window.localStorage.removeItem("sonara-lyrics-studio");
+    window.localStorage.removeItem("musiq-lyrics-studio");
     setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
   }
 

@@ -12,7 +12,7 @@ export async function uploadToS3(
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
   const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
   const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
-  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
+  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "musiq-tracks";
 
   const s3 = new S3({
     endpoint: endpoint || undefined,
@@ -43,7 +43,7 @@ export async function getPresignedUrl(key: string, expiresIn = 3600) {
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
   const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
   const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
-  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
+  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "musiq-tracks";
 
   const s3 = new S3({
     endpoint: endpoint || undefined,
@@ -74,7 +74,7 @@ export async function deleteFromS3(key: string) {
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
   const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
   const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
-  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "sonara-tracks";
+  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "musiq-tracks";
 
   const s3 = new S3({
     endpoint: endpoint || undefined,

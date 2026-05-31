@@ -37,16 +37,16 @@ function AudioSourceBadge({ source }: { source: AudioSource; state: AudioSourceS
 
 declare global {
   interface Window {
-    __sonaraSharedAudioElement?: HTMLAudioElement;
+    __musiqSharedAudioElement?: HTMLAudioElement;
   }
 }
 
 function getSharedAudioElement() {
   if (typeof window === "undefined") return null;
-  if (!window.__sonaraSharedAudioElement) {
-    window.__sonaraSharedAudioElement = new Audio();
+  if (!window.__musiqSharedAudioElement) {
+    window.__musiqSharedAudioElement = new Audio();
   }
-  return window.__sonaraSharedAudioElement;
+  return window.__musiqSharedAudioElement;
 }
 
 function formatProviderLabel(provider: string) {
@@ -430,8 +430,8 @@ export default function Player() {
 
       if (!response.ok) return { source: "unknown", state: "unknown" };
 
-      const cacheStateHeader = (response.headers.get("x-sonara-audio-cache-state") || "").toLowerCase();
-      const sourceHeader = (response.headers.get("x-sonara-audio-source") || "").toLowerCase();
+      const cacheStateHeader = (response.headers.get("x-musiq-audio-cache-state") || "").toLowerCase();
+      const sourceHeader = (response.headers.get("x-musiq-audio-source") || "").toLowerCase();
       if (sourceHeader === "cache") {
         return { source: "cache", state: cacheStateHeader === "miss" ? "miss" : "hit" };
       }
@@ -518,7 +518,7 @@ export default function Player() {
           }
 
           window.dispatchEvent(
-            new CustomEvent("sonara:track-played", {
+            new CustomEvent("musiq:track-played", {
               detail: { trackId, ...(typeof playCount === "number" ? { playCount } : {}) },
             })
           );
@@ -601,8 +601,8 @@ export default function Player() {
         });
 
         if (response.ok) {
-          const cacheStateHeader = (response.headers.get("x-sonara-audio-cache-state") || "").toLowerCase();
-          const sourceHeader = (response.headers.get("x-sonara-audio-source") || "").toLowerCase();
+          const cacheStateHeader = (response.headers.get("x-musiq-audio-cache-state") || "").toLowerCase();
+          const sourceHeader = (response.headers.get("x-musiq-audio-source") || "").toLowerCase();
           const source: AudioSource =
             sourceHeader === "cache" ? "cache" : sourceHeader === "s3" ? "s3" : "unknown";
           const state: AudioSourceState =

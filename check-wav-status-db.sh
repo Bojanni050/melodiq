@@ -4,7 +4,7 @@
 echo "🔍 Checking WAV status for recent PoYo tracks..."
 echo ""
 
-docker compose exec -T db psql -U sonara -d sonara << 'EOF'
+docker compose exec -T db psql -U musiq -d musiq << 'EOF'
 SELECT 
   id,
   title,

@@ -1,11 +1,11 @@
-# Deploy Sonara to VPS
+# Deploy Musiq to VPS
 # Usage: .\deploy-to-vps.ps1 "commit message"
 
 param(
     [string]$CommitMessage = "Update: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
 )
 
-Write-Host "🚀 Deploying Sonara to VPS..." -ForegroundColor Cyan
+Write-Host "🚀 Deploying Musiq to VPS..." -ForegroundColor Cyan
 Write-Host ""
 
 # Step 1: Git commit and push
@@ -31,9 +31,9 @@ Write-Host "🔄 Deploying on VPS..." -ForegroundColor Yellow
 Write-Host ""
 
 # Replace with your VPS SSH details
-$VPS_HOST = "bojannatuurlijk.nl"
+$VPS_HOST = "musiq.nl"
 $VPS_USER = "bojan"  # Update if different
-$VPS_PATH = "/var/www/vhosts/bojannatuurlijk.nl/sonara.bojannatuurlijk.nl"
+$VPS_PATH = "/var/www/vhosts/musiq.nl/musiq.nl"
 
 $SSH_COMMANDS = @"
 cd $VPS_PATH && \
@@ -54,7 +54,7 @@ ssh "$VPS_USER@$VPS_HOST" $SSH_COMMANDS
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ Deployment successful!" -ForegroundColor Green
-    Write-Host "🌐 Check: https://sonara.bojannatuurlijk.nl" -ForegroundColor Cyan
+    Write-Host "🌐 Check: https://musiq.nl" -ForegroundColor Cyan
 } else {
     Write-Host ""
     Write-Host "❌ Deployment failed!" -ForegroundColor Red

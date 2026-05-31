@@ -6,7 +6,7 @@
 echo "🔧 Adding wav_job_id column to tracks table..."
 echo ""
 
-docker compose exec -T db psql -U sonara -d sonara << 'EOF'
+docker compose exec -T db psql -U musiq -d musiq << 'EOF'
 -- Add wav_job_id column
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 

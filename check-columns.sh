@@ -4,7 +4,7 @@
 echo "🔍 Checking tracks table columns..."
 echo ""
 
-docker compose exec -T db psql -U sonara -d sonara -c "
+docker compose exec -T db psql -U musiq -d musiq -c "
 SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'tracks' 

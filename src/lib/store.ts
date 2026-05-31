@@ -196,7 +196,7 @@ export const usePlayerStore = create<PlayerState>()(
         } else if (url && url.startsWith("/")) {
           // Relatief pad, gebruik direct
         } else {
-          // Fallback naar Sonara API
+          // Fallback naar Musiq API
           const wantsHd = (track.audioUrl || "").includes("hd=true");
           url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
         }
@@ -279,7 +279,7 @@ export const usePlayerStore = create<PlayerState>()(
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
     }),
     {
-      name: "sonara-player",
+      name: "musiq-player",
       storage: createDebouncedStorage(300),
       partialize: (state) => ({
         volume: state.volume,
@@ -427,7 +427,7 @@ export const usePlaylistStore = create<PlaylistState>()(
       setSelectedPlaylistId: (playlistId) => set({ selectedPlaylistId: playlistId }),
     }),
     {
-      name: "sonara-playlists",
+      name: "musiq-playlists",
     }
   )
 );
@@ -758,7 +758,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }),
     }),
     {
-      name: "sonara-workspaces",
+      name: "musiq-workspaces",
       storage: createDebouncedStorage(800),
       partialize: (state) => ({
         selectedWorkspaceId: state.selectedWorkspaceId,
@@ -882,7 +882,7 @@ export const useStudioStore = create<StudioState>()(
         }),
     }),
     {
-      name: "sonara-studio",
+      name: "musiq-studio",
       storage: createDebouncedStorage(500),
       skipHydration: true,
       merge: (persistedState: any, currentState) => {
@@ -914,7 +914,7 @@ export const useUIStore = create<UIState>()(
       setSelectedTrackId: (id) => set({ selectedTrackId: id }),
     }),
     {
-      name: "sonara-ui",
+      name: "musiq-ui",
       partialize: (state) => ({ activeTab: state.activeTab }),
     }
   )
@@ -1021,7 +1021,7 @@ export const usePresetsStore = create<PresetsState>()(
         })),
     }),
     {
-      name: "sonara-presets",
+      name: "musiq-presets",
       storage: createDebouncedStorage(500),
     }
   )

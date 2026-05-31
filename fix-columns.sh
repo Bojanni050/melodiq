@@ -4,7 +4,7 @@
 echo "🔧 Adding missing columns to tracks table..."
 echo ""
 
-docker compose exec -T db psql -U sonara -d sonara << 'EOF'
+docker compose exec -T db psql -U musiq -d musiq << 'EOF'
 -- Add columns if they don't exist
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_url_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_hd TEXT;
