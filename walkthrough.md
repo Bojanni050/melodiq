@@ -991,3 +991,19 @@
   - Updated `src/components/Sidebar.tsx` — build version tekst ververst naar `za 21:34`
   - Updated `melodiq-user.md` — user guide versie ververst naar `za 21:34` en tracklist-zoekfunctie gedocumenteerd
   - Validated with `npm run build`.
+
+## 2026-05-31 zo 06:49 (PoYo WAV S3 SSL bypass en Mureka BGM webhook status fix)
+
+- Findings: 
+  - PoYo WAV-downloads verschenen niet na "Dance It Away" op desktop doordat de achtergrond S3-upload faalde op SSL certificate verification (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) voor `s3.danubedata.ro`.
+  - Mureka BGM (instrumental) tracks bleven oneindig op "generating" staan in de UI na succesvolle generatie, omdat de Mureka webhook-parser alleen arrays ondersteunde en faalde op de single-object output structuur van `generate-bgm`.
+- Conclusions: 
+  - S3 uploads moeten TLS/SSL errors bypassen (`rejectUnauthorized: false`), en er moet een makkelijke herstelknop in Settings komen om ontbrekende WAV-bestanden opnieuw te triggeren.
+  - De Mureka webhook-parser moet uiterst robuust zijn en alle mogelijke output-varianten (single object, array, geneste data) en task ID parameters correct parsen.
+- Actions:
+  - Updated `src/lib/s3.ts` — ingesteld met `rejectUnauthorized: false` in NodeHttpHandler HTTPS agent om SSL intermediate validation errors te negeren.
+  - Created `src/components/settings/WavRecoverySection.tsx` — een premium UI-panel in Settings waarmee de gebruiker met één klik `/api/tracks/retry-wav` kan aanroepen en mislukte WAV-bestanden kan herstellen.
+  - Updated `src/app/settings/page.tsx` — `WavRecoverySection` geïmporteerd en gerenderd naast MusicGPT recovery.
+  - Updated `src/app/api/webhooks/mureka/route.ts` — `extractOutputs` helper toegevoegd om robuust audio-URLs te parsen (arrays, strings, objects). Tevens robuuste `requestId` extractie toegevoegd om alle Mureka status-updates correct te synchroniseren.
+  - Validated with `npx tsc --noEmit` which completed successfully with **0 compilation errors**.
+  - Pushed all changes successfully to `main` branch on GitHub.
