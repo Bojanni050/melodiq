@@ -884,6 +884,11 @@ const TrackCard = memo(function TrackCard({
           <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
             {status.label}
           </span>
+          {track.status === "done" && track.lyricsTimestamps && (
+            <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">
+              TCL
+            </span>
+          )}
           {isUploadedTrack && (
             <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">
               Uploaded
@@ -1155,6 +1160,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.coverUrl === nextProps.track.coverUrl &&
     prevProps.track.rating === nextProps.track.rating &&
     prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&
+    prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
     prevProps.workspaceById?.size === nextProps.workspaceById?.size
   );

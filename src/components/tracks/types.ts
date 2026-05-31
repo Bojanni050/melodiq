@@ -19,6 +19,7 @@ export interface TrackItem {
   s3KeyCoverThumb?: string | null;
   rating?: string | null;
   playCount?: number | null;
+  lyricsTimestamps?: string | null;
 }
 
 export interface PlaylistOption {

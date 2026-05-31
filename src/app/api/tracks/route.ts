@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
     s3KeyCoverThumb: tracks.s3KeyCoverThumb,
     rating: tracks.rating,
     playCount: tracks.playCount,
+    lyricsTimestamps: tracks.lyricsTimestamps,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
   };

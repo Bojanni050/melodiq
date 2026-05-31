@@ -67,6 +67,7 @@ interface Track {
   s3KeyCoverThumb?: string | null;
   rating?: string | null;
   playCount?: number | null;
+  lyricsTimestamps?: string | null;
 }
 
 type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
@@ -110,7 +111,8 @@ export default function HomePage() {
           a[i].s3KeyHd !== b[i].s3KeyHd ||
           a[i].s3KeyCoverThumb !== b[i].s3KeyCoverThumb ||
           (a[i].playCount ?? null) !== (b[i].playCount ?? null) ||
-          (a[i].rating ?? null) !== (b[i].rating ?? null)
+          (a[i].rating ?? null) !== (b[i].rating ?? null) ||
+          (a[i].lyricsTimestamps ?? null) !== (b[i].lyricsTimestamps ?? null)
         ) {
           return false;
         }
@@ -308,25 +310,7 @@ export default function HomePage() {
     }
   }, [workspaceViewMode]);
 
-  useEffect(() => {
-    const hasGenerating = tracks.some(
-      (t) => t.status === "generating" || t.status === "pending"
-    );
-    const hasDoneWithoutCover = tracks.some(
-      (t) => t.status === "done" && !t.coverUrl
-    );
-    const hasDoneWithoutHd = tracks.some(
-      (t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd
-    );
 
-    const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
-
-    const timer = setTimeout(() => {
-      fetchTracks();
-    }, interval);
-
-    return () => clearTimeout(timer);
-  }, [tracks]);
 
   useEffect(() => {
     if (!showTrackDetailsPanel || !currentTrack) return;
@@ -428,6 +412,28 @@ export default function HomePage() {
     applyTracksResponse(payload);
     return payload.tracks ?? [];
   }, [mutateTracksResponse, applyTracksResponse]);
+
+  const hasGenerating = useMemo(() => {
+    return tracks.some((t) => t.status === "generating" || t.status === "pending");
+  }, [tracks]);
+
+  const hasDoneWithoutCover = useMemo(() => {
+    return tracks.some((t) => t.status === "done" && !t.coverUrl);
+  }, [tracks]);
+
+  const hasDoneWithoutHd = useMemo(() => {
+    return tracks.some((t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd);
+  }, [tracks]);
+
+  useEffect(() => {
+    const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
+
+    const timer = setInterval(() => {
+      fetchTracks();
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [hasGenerating, hasDoneWithoutCover, hasDoneWithoutHd, fetchTracks]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
     setTracks((prev) => prev.filter((t) => t.id !== trackId));
