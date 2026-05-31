@@ -207,3 +207,13 @@
 - Findings: Editing or saving a track title on the Studio page caused severe browser lag/freezing when the list contained many tracks.
 - Conclusions: Unstable callbacks (`onPlay`, `toggleSelection` dependent on transient `displayedTracks` reference) and passing `allTracks` to all cards caused the entire list of cards to re-render. Inside each card, a heavy $O(N)$ workspace cover mapping was computed on every render, resulting in massive CPU lockups.
 - Actions: Removed `allTracks` prop from `TrackCard`. Stabilized the selection callback by introducing `displayedTracksRef` and passing `onToggleSelection` callback to `TrackCard`. Memoized `workspaceCoverById` once in `TrackList` using a stable cover key (`tracks.map((t) => `${t.id}:${t.coverUrl ?? ""}`).join("|")`) that does not change on title updates, making its reference 100% stable. Updated the sidebar build version stamp in `src/components/Sidebar.tsx` to `zo 07:50`. Verified typescript safety with `npx tsc --noEmit` returning 0 errors.
+
+## 2026-05-31 (Tracklist performance optimalisatie)
+
+- Findings: Het dubbelklikken op een tracktitel om deze te bewerken veroorzaakte stotteringen doordat click-events doorborrelden naar de container en ongewild de zware zijbalk activeerden. Het slepen van tracks stotterde hevig door continue React state updates tijdens `dragover`. Grote lijsten (500+ items) vertraagden React rendering, en synchrone status polling in `/api/tracks` (GET) blokkeerde de API response.
+- Conclusions: Stop propagatie van de titel click-events, vervang React dragover-state door directe DOM class manipulatie, voeg infinite scroll (lazy rendering) toe via IntersectionObserver, en haal synchrone status polling uit de GET endpoint.
+- Actions:
+  - Aangepast `src/components/tracks/TrackCard.tsx`: click-propagatie gestopt met `onClick={(e) => e.stopPropagation()}` op de titel `<h3>` element.
+  - Aangepast `src/components/TrackList.tsx`: React state `dragOverTrackId` en `draggedTrackId` verwijderd en vervangen door `draggedTrackIdRef` (useRef); drag event handlers herschreven naar pure DOM manipulatie met HTML5 dragEnter/dragLeave; `visibleCount` en IntersectionObserver infinite scroll sentinel toegevoegd om per 30 items te pagineren.
+  - Aangepast `src/app/api/tracks/route.ts`: synchrone Suno/PoYo status polling uit GET route verwijderd; database timeout checks uitgevoerd vòòr de tracks SELECT query om query performance te optimaliseren.
+  - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 08:15`; validated met `npm run build` (succesvol geslaagd, compile OK).

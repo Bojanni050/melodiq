@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: do 17:27**
+**Versie: zo 08:25**
 
 > AI Music Generation Web App
 
@@ -80,6 +80,11 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - Add blocks such as Intro, Verse, Pre-Chorus, Chorus, Bridge, and Outro
 - Reorder blocks by dragging the card or drag handle on both desktop and touch screens; the up/down buttons stay available as fallback
 - Use presets like Pop, ABABCB, AABA, Extended, and EDM/Dance structures to create a full structure quickly
+- **Where is the song about? (Topic)** veld is nu een resizable textarea van minimaal 2 regels hoog.
+- **Vibe/mood/atmosphere** en **Genre/stijl** invoervelden hebben nu clickable suggestietags (horizontaal scrollbaar, 50-tag pool per veld) die je met één klik kunt toggelen in de invoer. Er is ook een refresh-icoon om nieuwe suggestietags te laden met premium micro-animatie.
+- De preset `ABABC` is aangepast naar `ABABCB` (Vers-Refrein-Vers-Refrein-Brug-Refrein).
+- Je kunt nu de **huidige songstructuur opslaan** als een custom preset. Deze verschijnt direct in de Presets grid en kan met een 'x' knop ook weer worden verwijderd.
+- **Geavanceerde instellingen** (Repetitive chorus, Creativity slider en Context slider) zijn nu samengevoegd in een inklapbaar blok dat standaard collapsed (ingeklapt) is om schermruimte te besparen.
 - **Repetitive chorus** (default ON) in Song Structure: when enabled, AI writes one chorus and repeats it; when disabled, AI generates chorus variations
 - **Creativity** slider (1-10) adjusts LLM temperature from 0.1 to 1.2 with zones: low (1-3), medium (4-7), high (8-10)
 - **Context (Top-P)** slider (1-10) adjusts Top-P from 0.1 to 1.0 and is sent with each lyric generation prompt
@@ -134,7 +139,9 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - **Workspace Tracks** — shown in the upper half of the right Studio column for the currently selected workspace, with breadcrumb navigation (`Workspaces / {selected workspace}`). Workspace selection in Studio now uses the same folder cards (gradient + cover collage) as the dedicated Workspaces page.
 - All track lists now include sorting controls: **New to old** and **Old to new**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
-- In all track lists except **Recent Tracks**, you can now drag and drop tracks to change the play order used when auto queueing tracks.
+- In all track lists except **Recent Tracks**, you can now drag and drop tracks to change the play order used when auto queueing tracks. De drag-and-drop functionaliteit is volledig geoptimaliseerd met **Zero-Render slepen** (geen React re-renders tijdens het bewegen van de muis), waardoor slepen boterzacht en zonder framedrops verloopt.
+- De tracklijsten ondersteunen nu **Infinite Scroll / Lazy Loading**: standaard worden de eerste 30 tracks getoond, en zodra je naar beneden scrolt worden er automatisch 30 extra geladen. Dit verlaagt de rendertijd naar minder dan 3ms.
+- Het dubbelklikken op de titel van een nummer om deze direct te bewerken flitst nu direct open en start zonder vertraging op, doordat kliks op de titeltekst de zware detailzijbalk niet meer triggeren.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views

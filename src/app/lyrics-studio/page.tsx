@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import CollapsibleSidebar from "@/components/CollapsibleSidebar";
@@ -52,6 +52,61 @@ export default function LyricsStudioPage() {
   } = draft;
 
   const { title, setTitle, language, customLanguage, structure, customStructure, setLanguage, setCustomLanguage, setStructure, setCustomStructure } = useStudioStore();
+
+  const [customPresets, setCustomPresets] = useState<Record<string, BlockType[]>>({});
+
+  // Restore custom presets on mount
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("melodiq-custom-presets");
+      if (raw) {
+        setCustomPresets(JSON.parse(raw));
+      }
+    } catch (error) {
+      console.error("Failed to load custom presets", error);
+    }
+  }, []);
+
+  const allPresets = useMemo(() => ({
+    ...BLOCK_PRESETS,
+    ...customPresets
+  }), [customPresets]);
+
+  function handleSaveCurrentStructure(name: string) {
+    if (blocks.length === 0) {
+      setNotice({ type: "error", message: "Voeg eerst blokken toe aan de songstructuur." });
+      return;
+    }
+    const types = blocks.map((b) => b.type);
+    const next = {
+      ...customPresets,
+      [name]: types,
+    };
+    setCustomPresets(next);
+    try {
+      window.localStorage.setItem("melodiq-custom-presets", JSON.stringify(next));
+      setActivePreset(name);
+      setNotice({ type: "success", message: `Structuur preset "${name}" is opgeslagen.` });
+    } catch (error) {
+      console.error("Failed to save custom preset", error);
+      setNotice({ type: "error", message: "Kon custom preset niet opslaan." });
+    }
+  }
+
+  function handleDeleteCustomPreset(name: string) {
+    const next = { ...customPresets };
+    delete next[name];
+    setCustomPresets(next);
+    try {
+      window.localStorage.setItem("melodiq-custom-presets", JSON.stringify(next));
+      setNotice({ type: "info", message: `Structuur preset "${name}" is verwijderd.` });
+      if (activePreset === name) {
+        setActivePreset("");
+      }
+    } catch (error) {
+      console.error("Failed to delete custom preset", error);
+    }
+  }
 
   const [credits] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
@@ -148,7 +203,7 @@ export default function LyricsStudioPage() {
       return;
     }
     setActivePreset(name);
-    setBlocks(createPresetBlocks(BLOCK_PRESETS[name], name));
+    setBlocks(createPresetBlocks(allPresets[name], name));
   }
 
   function formatSnapshotTimestamp(date: Date) {
@@ -254,7 +309,7 @@ export default function LyricsStudioPage() {
       if (types.length > 0) return createPresetBlocks(types, STRUCTURE_PRESET_MAP[structure]);
     }
     const presetName = activePreset || STRUCTURE_PRESET_MAP[structure] || "Pop";
-    return createPresetBlocks(BLOCK_PRESETS[presetName] || BLOCK_PRESETS.Pop, presetName);
+    return createPresetBlocks(allPresets[presetName] || allPresets.Pop, presetName);
   }
 
   async function generateSongLyrics() {
@@ -504,7 +559,7 @@ export default function LyricsStudioPage() {
   function handleConfirmAction() {
     if (confirmAction === "replaceBlocks" && pendingPresetName) {
       setActivePreset(pendingPresetName);
-      setBlocks(createPresetBlocks(BLOCK_PRESETS[pendingPresetName], pendingPresetName));
+      setBlocks(createPresetBlocks(allPresets[pendingPresetName], pendingPresetName));
       setPendingPresetName(null);
     } else if (confirmAction === "replaceStudio" && pendingStudioPayload) {
       sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: pendingStudioPayload.lyrics, style: pendingStudioPayload.style, title: title.trim() }));
@@ -601,7 +656,7 @@ export default function LyricsStudioPage() {
                 contextLevel={contextLevel} contextZone={contextZone} topP={topP}
                 canGenerateBlocks={canGenerateBlocks} generatingSong={generatingSong}
                 blockTypes={BLOCK_TYPES} blockLabels={BLOCK_LABELS} blockColors={BLOCK_COLORS}
-                presets={BLOCK_PRESETS} combinedLyrics={combinedLyrics} copied={copied}
+                presets={allPresets} combinedLyrics={combinedLyrics} copied={copied}
                 onTopicChange={setTopic} onMoodChange={setMood} onStyleChange={setStyle}
                 onVocalistTagChange={setVocalistTag} onPerformerDirectionsChange={setPerformerDirections}
                 onTitleChange={setTitle}
@@ -620,6 +675,8 @@ export default function LyricsStudioPage() {
                 onAddBlock={addBlock}
                 onClearAll={() => clearAllDraft()}
                 onCopyAll={copyAllLyrics}
+                onSaveCurrentStructure={handleSaveCurrentStructure}
+                onDeleteCustomPreset={handleDeleteCustomPreset}
               />
 
               <section className="min-h-[620px] rounded-2xl border border-white/10 bg-[#101018]/80 p-4 lg:p-5">

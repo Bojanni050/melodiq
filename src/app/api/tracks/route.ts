@@ -105,73 +105,26 @@ export async function GET(request: NextRequest) {
     ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter))
     : eq(tracks.userId, userId);
 
-  const result = await db
+  // Run database timeout check before fetching tracks
+  if (!statusFilter) {
+    const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
+    await db.update(tracks)
+      .set({ status: "failed", error: "Generation timed out. Please try again." })
+      .where(
+        and(
+          eq(tracks.userId, userId),
+          inArray(tracks.status, ["pending", "generating"]),
+          ne(tracks.provider, "musicgpt"),
+          lt(tracks.createdAt, timeoutCutoff)
+        )
+      );
+  }
+
+  const finalTracks = await db
     .select(trackListSelect)
     .from(tracks)
     .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
-
-  // PoYo polling and timeout updates only make sense when fetching all statuses.
-  // Skip both when a status filter is active (e.g. ?status=done from the library page).
-  let hadGeneratingPoYo = false;
-  if (!statusFilter) {
-    const generatingPoYoTracks = Array.from(
-      new Map(
-        result
-          .filter((track) => track.provider === "poyo" && track.status === "generating" && !!track.jobId)
-          .map((track) => [getOriginalPoYoTaskId(track.jobId!), track])
-      ).values()
-    ).slice(0, 5);
-
-    const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
-
-    hadGeneratingPoYo = generatingPoYoTracks.length > 0;
-    await Promise.allSettled([
-      hadGeneratingPoYo
-        ? Promise.allSettled(
-            generatingPoYoTracks.map(async (track) => {
-              try {
-                const sourceJobId = getOriginalPoYoTaskId(track.jobId!);
-                const statusPayload = await getPoYoStatus(sourceJobId);
-                const statusValue = getPoYoStatusValue(statusPayload);
-                if (statusValue === "completed" || statusValue === "finished") {
-                  const syncResult = await syncPoYoTaskResult(sourceJobId, statusPayload);
-                  const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
-                  if (syncedTrackIds.length > 0) {
-                    const syncedTracks = await db
-                      .select()
-                      .from(tracks)
-                      .where(inArray(tracks.id, syncedTrackIds));
-
-                    await Promise.allSettled(
-                      syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
-                    );
-                  }
-                }
-              } catch {
-                // Best-effort fallback polling for missed webhooks.
-              }
-            })
-          )
-        : Promise.resolve(),
-
-      db.update(tracks)
-        .set({ status: "failed", error: "Generation timed out. Please try again." })
-        .where(
-          and(
-            eq(tracks.userId, userId),
-            inArray(tracks.status, ["pending", "generating"]),
-            ne(tracks.provider, "musicgpt"),
-            lt(tracks.createdAt, timeoutCutoff)
-          )
-        ),
-    ]);
-  }
-
-  // Re-fetch only when PoYo syncing may have mutated rows; otherwise reuse the initial query result.
-  const finalTracks = hadGeneratingPoYo
-    ? await db.select(trackListSelect).from(tracks).where(eq(tracks.userId, userId)).orderBy(desc(tracks.createdAt))
-    : result;
 
   const workspacePayload = await getUserWorkspacesWithTrackIds(
     userId,

@@ -238,10 +238,16 @@ export default memo(function TrackList({
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
-  const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
-  const [dragOverTrackId, setDragOverTrackId] = useState<string | null>(null);
+  const draggedTrackIdRef = useRef<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
+
+  const [visibleCount, setVisibleCount] = useState(30);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [searchQuery, tracks]);
 
   // Sentinel and Intersection Observer for detecting when generating tracks scroll out of view
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -352,6 +358,30 @@ export default memo(function TrackList({
   useEffect(() => {
     displayedTracksRef.current = displayedTracks;
   }, [displayedTracks]);
+
+  const paginatedTracks = useMemo(() => {
+    return displayedTracks.slice(0, visibleCount);
+  }, [displayedTracks, visibleCount]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && visibleCount < displayedTracks.length) {
+          setVisibleCount((prev) => Math.min(prev + 30, displayedTracks.length));
+        }
+      },
+      { rootMargin: "200px" }
+    );
+
+    observer.observe(sentinel);
+    return () => {
+      observer.unobserve(sentinel);
+    };
+  }, [displayedTracks.length, visibleCount]);
 
   // Pre-calculate and memoize workspace cover map in a stable manner
   const workspaceCoversKey = useMemo(() => {
@@ -545,31 +575,47 @@ export default memo(function TrackList({
     }
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", trackId);
-    setDraggedTrackId(trackId);
-    setDragOverTrackId(trackId);
+    draggedTrackIdRef.current = trackId;
+    event.currentTarget.classList.add("opacity-45");
   }
 
   function handleTrackDragOver(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
-    if (dragOverTrackId !== trackId) {
-      setDragOverTrackId(trackId);
+  }
+
+  function handleTrackDragEnter(event: React.DragEvent<HTMLDivElement>, trackId: string) {
+    event.preventDefault();
+    if (canDragReorder && draggedTrackIdRef.current && draggedTrackIdRef.current !== trackId) {
+      event.currentTarget.classList.add("ring-1", "ring-blue-400/60", "bg-blue-500/5");
     }
+  }
+
+  function handleTrackDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    event.currentTarget.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
   }
 
   function handleTrackDrop(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
-    const sourceId = draggedTrackId ?? event.dataTransfer.getData("text/plain");
+    event.currentTarget.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
+    const sourceId = draggedTrackIdRef.current ?? event.dataTransfer.getData("text/plain");
     if (sourceId && sourceId !== trackId) {
       moveTrackInManualOrder(sourceId, trackId);
     }
-    setDraggedTrackId(null);
-    setDragOverTrackId(null);
+    draggedTrackIdRef.current = null;
   }
 
-  function handleTrackDragEnd() {
-    setDraggedTrackId(null);
-    setDragOverTrackId(null);
+  function handleTrackDragEnd(event: React.DragEvent<HTMLDivElement>) {
+    event.currentTarget.classList.remove("opacity-45");
+    draggedTrackIdRef.current = null;
+    
+    // Cleanup any orphaned styles
+    const container = event.currentTarget.parentElement;
+    if (container) {
+      container.querySelectorAll(".ring-1").forEach((el) => {
+        el.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
+      });
+    }
   }
 
   const canDragReorder = enableDragReorder && searchQuery.trim().length === 0;
@@ -621,7 +667,7 @@ export default memo(function TrackList({
           onMassDelete={handleMassDelete}
         />
 
-        {displayedTracks.length === 0 ? (
+        {paginatedTracks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -631,41 +677,50 @@ export default memo(function TrackList({
             </p>
           </div>
         ) : (
-          displayedTracks.map((track) => {
-            const isDragActive = canDragReorder && dragOverTrackId === track.id && draggedTrackId !== track.id;
+          <>
+            {paginatedTracks.map((track) => {
+              return (
+                <div
+                  key={track.id}
+                  data-track-id={track.id}
+                  draggable={canDragReorder}
+                  onDragStart={(event) => handleTrackDragStart(event, track.id)}
+                  onDragOver={(event) => handleTrackDragOver(event, track.id)}
+                  onDragEnter={(event) => handleTrackDragEnter(event, track.id)}
+                  onDragLeave={handleTrackDragLeave}
+                  onDrop={(event) => handleTrackDrop(event, track.id)}
+                  onDragEnd={handleTrackDragEnd}
+                  className={canDragReorder ? "rounded-xl transition-colors" : undefined}
+                >
+                  <TrackCard
+                    track={track}
+                    onPlay={handlePlay}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    onDeleteTracks={deleteTrackIds}
+                    onReusePrompt={onReusePrompt}
+                    onAddToQueue={onAddToQueue}
+                    onAddToPlaylist={onAddToPlaylist}
+                    onMoveToWorkspace={handleMoveToWorkspace}
+                    playlists={playlists}
+                    onTitleUpdate={onTitleUpdate}
+                    workspaceById={workspaceById}
+                    orderedWorkspaceOptions={orderedWorkspaceOptions}
+                    workspaceDisplayNameById={workspaceDisplayNameById}
+                    workspaceCoverById={workspaceCoverById}
+                    onToggleSelection={handleToggleSelection}
+                  />
+                </div>
+              );
+            })}
 
-            return (
-              <div
-                key={track.id}
-                data-track-id={track.id}
-                draggable={canDragReorder}
-                onDragStart={(event) => handleTrackDragStart(event, track.id)}
-                onDragOver={(event) => handleTrackDragOver(event, track.id)}
-                onDrop={(event) => handleTrackDrop(event, track.id)}
-                onDragEnd={handleTrackDragEnd}
-                className={canDragReorder ? `rounded-xl transition-colors ${isDragActive ? "ring-1 ring-blue-400/60 bg-blue-500/5" : ""}` : undefined}
-              >
-                <TrackCard
-                  track={track}
-                  onPlay={handlePlay}
-                  onSelect={onSelect}
-                  onDelete={onDelete}
-                  onDeleteTracks={deleteTrackIds}
-                  onReusePrompt={onReusePrompt}
-                  onAddToQueue={onAddToQueue}
-                  onAddToPlaylist={onAddToPlaylist}
-                  onMoveToWorkspace={handleMoveToWorkspace}
-                  playlists={playlists}
-                  onTitleUpdate={onTitleUpdate}
-                  workspaceById={workspaceById}
-                  orderedWorkspaceOptions={orderedWorkspaceOptions}
-                  workspaceDisplayNameById={workspaceDisplayNameById}
-                  workspaceCoverById={workspaceCoverById}
-                  onToggleSelection={handleToggleSelection}
-                />
+            {/* Sentinel for infinite scroll */}
+            {visibleCount < displayedTracks.length && (
+              <div ref={loadMoreSentinelRef} className="h-8 w-full flex items-center justify-center py-4">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
 

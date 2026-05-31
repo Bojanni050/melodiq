@@ -45,7 +45,7 @@ export type StructureOption = {
 export const STRUCTURES: StructureOption[] = [
   { label: "Eenvoudige pop-variaties", group: true },
   { value: "abab", label: "ABAB", desc: "Vers - Refrein - Vers - Refrein. Simpel, radio-vriendelijk." },
-  { value: "ababc", label: "ABABC", desc: "Vers - Refrein - Vers - Refrein - Brug/Outro. Extra ruimte voor finale." },
+  { value: "ababcb", label: "ABABCB", desc: "Vers - Refrein - Vers - Refrein - Brug - Refrein. Klassieke pop-structuur." },
   { value: "ababcbc", label: "ABABCBC", desc: "Extra herhaling van B/C voor dramatische build-up. Festival-stijl." },
   { value: "aaa", label: "AAA (alleen couplet)", desc: "Alles is tekst-vers, muziek herhaalt zich. Volksliedjes, ballads." },
   { value: "aaba", label: "AABA (klassieke 32-bar)", desc: "A-vers - A-vers - B-brug - A-vers. Jazz, ballads, cine-muziek." },
@@ -102,7 +102,7 @@ export const BLOCK_COLORS: Record<BlockType, string> = {
 
 export const STRUCTURE_PRESET_MAP: Record<string, string> = {
   abab: "ABABCB",
-  ababc: "ABABCB",
+  ababcb: "ABABCB",
   ababcbc: "Extended",
   aaa: "AABA",
   aaba: "AABA",
@@ -117,3 +117,25 @@ export const STRUCTURE_PRESET_MAP: Record<string, string> = {
   "pop-triplechorus": "Extended",
   "pop-instrumental": "Extended",
 };
+
+// 50 Vibe / Mood / Atmosphere suggesties
+export const MOOD_SUGGESTIONS = [
+  "sensual", "sad", "melancholic", "ironic", "happy", "nostalgic", "euphoric", "dark", 
+  "dreamy", "ethereal", "energetic", "aggressive", "romantic", "mystical", "gloomy", 
+  "uplifting", "peaceful", "haunting", "rebellious", "intimate", "chill", "fierce", 
+  "hypnotic", "quirky", "epic", "somber", "hopeful", "cinematic", "retro", "futuristic", 
+  "cozy", "lonely", "trippy", "grungy", "smooth", "vintage", "soulful", "brooding", 
+  "playful", "seductive", "angry", "reflective", "magical", "moody", "whimsical", 
+  "tender", "suspenseful", "relaxed", "shadowy", "warm"
+];
+
+// 50 Genre / Stijl suggesties
+export const STYLE_SUGGESTIONS = [
+  "pop", "rock", "indie", "synthwave", "lofi", "jazz", "blues", "r&b", "soul", "hip hop", 
+  "rap", "trap", "metal", "punk", "folk", "country", "acoustic", "ambient", "techno", 
+  "house", "edm", "future bass", "dubstep", "drum & bass", "classical", "orchestral", 
+  "cinematic", "disco", "funk", "reggae", "ska", "grunge", "shoegaze", "post-rock", 
+  "dream pop", "afrobeat", "latin", "reggaeton", "salsa", "metalcore", "hyperpop", 
+  "cyberpunk", "americana", "bluegrass", "psychedelic", "garage rock", "electro swing", 
+  "deep house", "neo-classical", "trip-hop"
+];

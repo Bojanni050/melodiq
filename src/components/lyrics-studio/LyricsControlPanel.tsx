@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import BlockToolbar from "@/components/lyrics-studio/BlockToolbar";
 import PresetSelector from "@/components/lyrics-studio/PresetSelector";
 import {
   LANGUAGES,
   STRUCTURES,
   STRUCTURE_PRESET_MAP,
+  MOOD_SUGGESTIONS,
+  STYLE_SUGGESTIONS,
 } from "@/lib/lyrics-studio-constants";
 import type { BlockType } from "@/lib/lyrics-utils";
 
@@ -63,6 +66,8 @@ type LyricsControlPanelProps = {
   onAddBlock: (type: BlockType) => void;
   onClearAll: () => void;
   onCopyAll: () => void;
+  onSaveCurrentStructure?: (name: string) => void;
+  onDeleteCustomPreset?: (name: string) => void;
 };
 
 export default function LyricsControlPanel({
@@ -119,7 +124,54 @@ export default function LyricsControlPanel({
   onAddBlock,
   onClearAll,
   onCopyAll,
+  onSaveCurrentStructure,
+  onDeleteCustomPreset,
 }: LyricsControlPanelProps) {
+  const [displayedMoods, setDisplayedMoods] = useState<string[]>([]);
+  const [displayedStyles, setDisplayedStyles] = useState<string[]>([]);
+  const [isShufflingMoods, setIsShufflingMoods] = useState(false);
+  const [isShufflingStyles, setIsShufflingStyles] = useState(false);
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+
+  function getRandomSubset(arr: string[], count = 12): string[] {
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
+  useEffect(() => {
+    setDisplayedMoods(getRandomSubset(MOOD_SUGGESTIONS));
+    setDisplayedStyles(getRandomSubset(STYLE_SUGGESTIONS));
+  }, []);
+
+  function shuffleMoods() {
+    setIsShufflingMoods(true);
+    setDisplayedMoods(getRandomSubset(MOOD_SUGGESTIONS));
+    setTimeout(() => setIsShufflingMoods(false), 500);
+  }
+
+  function shuffleStyles() {
+    setIsShufflingStyles(true);
+    setDisplayedStyles(getRandomSubset(STYLE_SUGGESTIONS));
+    setTimeout(() => setIsShufflingStyles(false), 500);
+  }
+
+  function toggleTag(currentValue: string, tag: string): string {
+    const tags = currentValue
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const tagLower = tag.toLowerCase();
+    const index = tags.findIndex((t) => t.toLowerCase() === tagLower);
+    if (index >= 0) {
+      tags.splice(index, 1);
+    } else {
+      tags.push(tag);
+    }
+    return tags.join(", ");
+  }
   return (
     <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
       <section className="section-card">
@@ -129,20 +181,57 @@ export default function LyricsControlPanel({
         </div>
 
         <div className="space-y-3">
-          <input
-            type="text"
-            value={topic}
-            onChange={(event) => onTopicChange(event.target.value)}
-            placeholder="Where is the song about?"
-            className="input-field text-sm"
-          />
-          <input
-            type="text"
-            value={mood}
-            onChange={(event) => onMoodChange(event.target.value)}
-            placeholder="Vibe / mood / atmosphere"
-            className="input-field text-sm"
-          />
+          <div>
+            <textarea
+              value={topic}
+              onChange={(event) => onTopicChange(event.target.value)}
+              placeholder="Where is the song about?"
+              rows={2}
+              className="input-field text-sm min-h-[56px] resize-y py-2"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <input
+              type="text"
+              value={mood}
+              onChange={(event) => onMoodChange(event.target.value)}
+              placeholder="Vibe / mood / atmosphere"
+              className="input-field text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={shuffleMoods}
+                title="Ververs suggesties"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+              >
+                <svg className={`h-3.5 w-3.5 ${isShufflingMoods ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                </svg>
+              </button>
+              <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto py-0.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {displayedMoods.map((tag) => {
+                  const tagsArray = mood.split(",").map(t => t.trim().toLowerCase());
+                  const isActive = tagsArray.includes(tag.toLowerCase());
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => onMoodChange(toggleTag(mood, tag))}
+                      className={`rounded-full border px-2.5 py-0.5 text-xs transition duration-200 cursor-pointer ${
+                        isActive
+                          ? "border-primary-500 bg-primary-500/20 text-white font-medium shadow-[0_0_10px_rgba(255,83,12,0.15)]"
+                          : "border-white/5 bg-white/5 text-white/40 hover:border-white/15 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
           <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
             <select
               value={selectedLanguage}
@@ -171,13 +260,47 @@ export default function LyricsControlPanel({
             />
           )}
 
-          <input
-            type="text"
-            value={style}
-            onChange={(event) => onStyleChange(event.target.value)}
-            placeholder="Genre / style hints (optional)"
-            className="input-field text-sm"
-          />
+          <div className="space-y-1.5">
+            <input
+              type="text"
+              value={style}
+              onChange={(event) => onStyleChange(event.target.value)}
+              placeholder="Genre / style hints (optional)"
+              className="input-field text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={shuffleStyles}
+                title="Ververs suggesties"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+              >
+                <svg className={`h-3.5 w-3.5 ${isShufflingStyles ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                </svg>
+              </button>
+              <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto py-0.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {displayedStyles.map((tag) => {
+                  const tagsArray = style.split(",").map(t => t.trim().toLowerCase());
+                  const isActive = tagsArray.includes(tag.toLowerCase());
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => onStyleChange(toggleTag(style, tag))}
+                      className={`rounded-full border px-2.5 py-0.5 text-xs transition duration-200 cursor-pointer ${
+                        isActive
+                          ? "border-primary-500 bg-primary-500/20 text-white font-medium shadow-[0_0_10px_rgba(255,83,12,0.15)]"
+                          : "border-white/5 bg-white/5 text-white/40 hover:border-white/15 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[170px_minmax(0,1fr)]">
             <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
@@ -318,63 +441,134 @@ export default function LyricsControlPanel({
           presets={presets}
           activePreset={activePreset}
           onApplyPreset={onPresetApply}
+          onDeletePreset={onDeleteCustomPreset}
         />
 
-        <label className="mt-4 flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
-          <input
-            type="checkbox"
-            checked={repetitiveChorus}
-            onChange={(event) => onRepetitiveChorusChange(event.target.checked)}
-            className="mt-0.5"
-          />
-          <span>
-            Repetitive chorus
-            <span className="block text-xs text-white/45">
-              {repetitiveChorus
-                ? "AI writes one chorus and repeats it throughout the song."
-                : "AI writes chorus variations throughout the song."}
-            </span>
-          </span>
-        </label>
-
-        <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
-          <div className="flex items-center justify-between text-sm text-white/85">
-            <span>Creativity</span>
-            <span>{creativityLevel}/10</span>
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            step={1}
-            value={creativityLevel}
-            onChange={(event) => onCreativityLevelChange(Number(event.target.value))}
-            aria-label="Creativity level"
-            className="mt-2 w-full accent-primary-500"
-          />
-          <p className="mt-1 text-xs text-white/50">
-            {creativityZone} • temp {temperature.toFixed(2)} • zones: 1-3 laag, 4-7 middel, 8-10 hoog
-          </p>
+        <div className="mt-3">
+          {!isSavingPreset ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSavingPreset(true);
+                setNewPresetName("");
+              }}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/0 px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Huidige structuur opslaan
+            </button>
+          ) : (
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">Nieuwe structuur opslaan</p>
+              <input
+                type="text"
+                value={newPresetName}
+                onChange={(e) => setNewPresetName(e.target.value)}
+                placeholder="Bijv. Pop Met Dubbel Refrein"
+                className="input-field text-xs py-1.5"
+                autoFocus
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsSavingPreset(false)}
+                  className="rounded px-2.5 py-1 text-xs font-medium text-white/60 hover:text-white transition"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const trimmed = newPresetName.trim();
+                    if (trimmed && onSaveCurrentStructure) {
+                      onSaveCurrentStructure(trimmed);
+                      setIsSavingPreset(false);
+                    }
+                  }}
+                  disabled={!newPresetName.trim()}
+                  className="rounded bg-primary-500 px-3 py-1 text-xs font-semibold text-white hover:bg-primary-400 disabled:opacity-45 disabled:cursor-not-allowed transition"
+                >
+                  Opslaan
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
-          <div className="flex items-center justify-between text-sm text-white/85">
-            <span>Context (Top-P)</span>
-            <span>{contextLevel}/10</span>
-          </div>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            step={1}
-            value={contextLevel}
-            onChange={(event) => onContextLevelChange(Number(event.target.value))}
-            aria-label="Context level"
-            className="mt-2 w-full accent-primary-500"
-          />
-          <p className="mt-1 text-xs text-white/50">
-            {contextZone} • top-p {topP.toFixed(2)} • intern 0.1-1.0
-          </p>
+        <div className="border-t border-white/5 mt-4 pt-3">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-white/35 transition hover:text-white/60 py-1"
+          >
+            <span>Geavanceerde instellingen</span>
+            <span className={`transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}>
+              ▼
+            </span>
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-3 space-y-3">
+              <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                <input
+                  type="checkbox"
+                  checked={repetitiveChorus}
+                  onChange={(event) => onRepetitiveChorusChange(event.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Repetitive chorus
+                  <span className="block text-xs text-white/45">
+                    {repetitiveChorus
+                      ? "AI writes one chorus and repeats it throughout the song."
+                      : "AI writes chorus variations throughout the song."}
+                  </span>
+                </span>
+              </label>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                <div className="flex items-center justify-between text-sm text-white/85">
+                  <span>Creativity</span>
+                  <span>{creativityLevel}/10</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={creativityLevel}
+                  onChange={(event) => onCreativityLevelChange(Number(event.target.value))}
+                  aria-label="Creativity level"
+                  className="mt-2 w-full accent-primary-500"
+                />
+                <p className="mt-1 text-xs text-white/50">
+                  {creativityZone} • temp {temperature.toFixed(2)} • zones: 1-3 laag, 4-7 middel, 8-10 hoog
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                <div className="flex items-center justify-between text-sm text-white/85">
+                  <span>Context (Top-P)</span>
+                  <span>{contextLevel}/10</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={contextLevel}
+                  onChange={(event) => onContextLevelChange(Number(event.target.value))}
+                  aria-label="Context level"
+                  className="mt-2 w-full accent-primary-500"
+                />
+                <p className="mt-1 text-xs text-white/50">
+                  {contextZone} • top-p {topP.toFixed(2)} • intern 0.1-1.0
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <button

@@ -867,6 +867,7 @@ const TrackCard = memo(function TrackCard({
           ) : (
             <h3
               className={`text-sm font-medium truncate cursor-text flex-1 min-w-0 ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
+              onClick={(e) => e.stopPropagation()}
               onDoubleClick={handleTitleDoubleClick}
               title="Double-click to edit"
             >
