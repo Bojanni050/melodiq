@@ -10,7 +10,6 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 const TrackCard = memo(function TrackCard({
   track,
-  allTracks,
   onPlay,
   onSelect,
   onDelete,
@@ -24,9 +23,10 @@ const TrackCard = memo(function TrackCard({
   workspaceById: workspaceByIdProp,
   orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
   workspaceDisplayNameById: workspaceDisplayNameByIdProp,
+  workspaceCoverById: workspaceCoverByIdProp,
+  onToggleSelection,
 }: {
   track: TrackItem;
-  allTracks: TrackItem[];
   onPlay: (track: TrackItem) => void;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -44,9 +44,10 @@ const TrackCard = memo(function TrackCard({
   workspaceById?: Map<string, Workspace>;
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
   workspaceDisplayNameById?: Map<string, string>;
+  workspaceCoverById?: Map<string, string | null>;
+  onToggleSelection?: (trackId: string, shiftKey: boolean) => void;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
-  const toggleSelection = useSelectionStore((state) => state.toggleSelection);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
@@ -426,15 +427,7 @@ const TrackCard = memo(function TrackCard({
     "bg-gradient-to-br from-fuchsia-300 via-violet-500 to-blue-700",
   ];
 
-  const workspaceCoverById = useMemo(() => {
-    const coverByTrackId = new Map(allTracks.map((t) => [t.id, t.coverUrl ?? null]));
-    const coverMap = new Map<string, string | null>();
-    workspaces.forEach((workspace) => {
-      const firstCover = workspace.trackIds.find((id) => coverByTrackId.get(id)) ?? null;
-      coverMap.set(workspace.id, firstCover ? (coverByTrackId.get(firstCover) ?? null) : null);
-    });
-    return coverMap;
-  }, [allTracks, workspaces]);
+  const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
 
   const statusConfig = {
     pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },
@@ -698,7 +691,7 @@ const TrackCard = memo(function TrackCard({
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={(e) => {
           if (e.shiftKey) {
-            toggleSelection(track.id, allTracks.map((t) => t.id), { mode: "range" });
+            onToggleSelection?.(track.id, true);
             return;
           }
           onSelect(track);
@@ -714,7 +707,7 @@ const TrackCard = memo(function TrackCard({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          toggleSelection(track.id, allTracks.map((t) => t.id), { mode: e.shiftKey ? "range" : "toggle" });
+          onToggleSelection?.(track.id, e.shiftKey);
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();

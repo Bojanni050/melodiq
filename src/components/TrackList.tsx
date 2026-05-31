@@ -347,6 +347,36 @@ export default memo(function TrackList({
     });
   }, [orderedTracks, searchQuery]);
 
+  // Keep a ref of the displayed tracks so callbacks can read them without changing their dependency references
+  const displayedTracksRef = useRef(displayedTracks);
+  useEffect(() => {
+    displayedTracksRef.current = displayedTracks;
+  }, [displayedTracks]);
+
+  // Pre-calculate and memoize workspace cover map in a stable manner
+  const workspaceCoversKey = useMemo(() => {
+    return tracks.map((t) => `${t.id}:${t.coverUrl ?? ""}`).join("|");
+  }, [tracks]);
+
+  const workspaceCoverById = useMemo(() => {
+    const coverByTrackId = new Map(tracks.map((t) => [t.id, t.coverUrl ?? null]));
+    const coverMap = new Map<string, string | null>();
+    workspaces.forEach((workspace) => {
+      const firstCover = workspace.trackIds.find((id) => coverByTrackId.get(id)) ?? null;
+      coverMap.set(workspace.id, firstCover ? (coverByTrackId.get(firstCover) ?? null) : null);
+    });
+    return coverMap;
+  }, [workspaceCoversKey, workspaces]);
+
+  // Stable shift-click / selection callback
+  const handleToggleSelection = useCallback((trackId: string, shiftKey: boolean) => {
+    useSelectionStore.getState().toggleSelection(
+      trackId,
+      displayedTracksRef.current.map((t) => t.id),
+      { mode: shiftKey ? "range" : "toggle" }
+    );
+  }, []);
+
   useEffect(() => {
     if (hasScrolledToRestoredTrack.current) return;
     if (!currentTrack) return;
@@ -427,7 +457,7 @@ export default memo(function TrackList({
 
   const handlePlay = useCallback((track: TrackItem) => {
     if (autoQueueAfterPlay) {
-      const orderedPlayContext = displayedTracks
+      const orderedPlayContext = displayedTracksRef.current
         .filter((t) => t.status === "done")
         .map((t) => ({
           id: t.id,
@@ -483,7 +513,7 @@ export default memo(function TrackList({
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
     });
-  }, [autoQueueAfterPlay, displayedTracks, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
+  }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
   function moveTrackInManualOrder(sourceId: string, targetId: string) {
     setManualOrderIds((current) => {
@@ -617,7 +647,6 @@ export default memo(function TrackList({
               >
                 <TrackCard
                   track={track}
-                  allTracks={tracks}
                   onPlay={handlePlay}
                   onSelect={onSelect}
                   onDelete={onDelete}
@@ -631,6 +660,8 @@ export default memo(function TrackList({
                   workspaceById={workspaceById}
                   orderedWorkspaceOptions={orderedWorkspaceOptions}
                   workspaceDisplayNameById={workspaceDisplayNameById}
+                  workspaceCoverById={workspaceCoverById}
+                  onToggleSelection={handleToggleSelection}
                 />
               </div>
             );

@@ -1016,3 +1016,15 @@
   - Updated `src/app/page.tsx` — `handleTitleUpdate` geoptimaliseerd met een optimistische `mutateTracksResponse` cache-update met `{ revalidate: false }` om direct de SWR-status te synchroniseren zonder vertraging.
   - Validated with `npx tsc --noEmit` which completed successfully with **0 compilation errors**.
   - Pushed all changes successfully to `main` branch on GitHub.
+
+## 2026-05-31 zo 07:46 (Studio Page Track Title Edit Rendering Path Optimization)
+
+- Findings: Despite the SWR optimistic update, editing or saving a track title on the Studio page still caused browser lag when the track list was extremely large (1000+ tracks). This was caused by three issues:
+  1. The `allTracks` prop was passed to all `TrackCard`s, changing its reference and forcing all cards to re-render.
+  2. Inside every `TrackCard`'s render body, a heavy $O(N)$ workspace cover mapping calculation (`workspaceCoverById`) was performed on every render.
+  3. Unstable callbacks (`onPlay` and selection) were recreated on every render of `TrackList` due to dependencies on the transient `displayedTracks` reference.
+- Conclusions: We must stabilize all callbacks and completely remove the transient `allTracks` prop from `TrackCard` to let `React.memo` successfully skip unchanged cards. Furthermore, the `workspaceCoverById` Map should be calculated exactly once in `TrackList` with a stable cover key (`tracks.map((t) => `${t.id}:${t.coverUrl ?? ""}`).join("|")`) that doesn't change on title updates, making its reference 100% stable.
+- Actions:
+  - Updated `src/components/tracks/TrackCard.tsx` — removed `allTracks` prop, accepted pre-computed `workspaceCoverById` and `onToggleSelection` props, and removed the heavy internal `useMemo` cover calculation.
+  - Updated `src/components/TrackList.tsx` — pre-computed `workspaceCoverById` once using the stable cover key, added a `displayedTracksRef` pattern to stabilize `handlePlay` and `handleToggleSelection` callbacks, and updated `TrackCard` to receive the new stable props.
+  - Validated with `npx tsc --noEmit` returning **0 compile errors**.
