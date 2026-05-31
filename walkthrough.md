@@ -1007,3 +1007,12 @@
   - Updated `src/app/api/webhooks/mureka/route.ts` — `extractOutputs` helper toegevoegd om robuust audio-URLs te parsen (arrays, strings, objects). Tevens robuuste `requestId` extractie toegevoegd om alle Mureka status-updates correct te synchroniseren.
   - Validated with `npx tsc --noEmit` which completed successfully with **0 compilation errors**.
   - Pushed all changes successfully to `main` branch on GitHub.
+
+## 2026-05-31 zo 07:40 (Studio Page Track Title Edit Slowdown Fix)
+
+- Findings: Het aanpassen van een tracktitel op de Studio-pagina veroorzaakte een ernstige vertraging/bevriezing van de computer. Dit kwam doordat SWR de `/api/tracks` cache niet automatisch synchroniseerde bij een lokale titelwijziging, waardoor de SWR-herauthenticatie naderhand een volledige, synchrone herberekening en re-render van de gehele tracklijst (die wel 1000+ nummers kan bevatten) forceerde.
+- Conclusions: We moeten de SWR-cache van SWR direct optimistisch en in-memory muteren bij een titelwijziging middels `mutateTracksResponse` met `{ revalidate: false }`. Dit zorgt voor een instant update zonder dat er een zware netwerkrefetch of dubbele synchrone render van de gehele component-boom wordt getriggerd.
+- Actions:
+  - Updated `src/app/page.tsx` — `handleTitleUpdate` geoptimaliseerd met een optimistische `mutateTracksResponse` cache-update met `{ revalidate: false }` om direct de SWR-status te synchroniseren zonder vertraging.
+  - Validated with `npx tsc --noEmit` which completed successfully with **0 compilation errors**.
+  - Pushed all changes successfully to `main` branch on GitHub.

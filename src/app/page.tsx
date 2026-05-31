@@ -437,7 +437,22 @@ export default function HomePage() {
       }
       return prev;
     });
-  }, []);
+
+    // Optimistically update the local SWR cache to prevent redundant refetches and lags
+    void mutateTracksResponse(
+      (current) => {
+        if (!current) return current;
+        const incomingTracks = Array.isArray(current.tracks) ? current.tracks : [];
+        return {
+          ...current,
+          tracks: incomingTracks.map((t) =>
+            t.id === trackId ? { ...t, title: newTitle } : t
+          ),
+        };
+      },
+      { revalidate: false }
+    );
+  }, [mutateTracksResponse]);
 
   const handleAddToQueue = useCallback((track: Track) => {
     usePlayerStore.getState().enqueueTrack({
