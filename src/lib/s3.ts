@@ -1,4 +1,6 @@
 import { S3 } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
+import https from "node:https";
 import { getSetting } from "@/lib/settings";
 
 export async function uploadToS3(
@@ -20,6 +22,11 @@ export async function uploadToS3(
       secretAccessKey: secretKey,
     },
     forcePathStyle: true,
+    requestHandler: new NodeHttpHandler({
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
+    }),
   });
 
   await s3.putObject({
@@ -46,6 +53,11 @@ export async function getPresignedUrl(key: string, expiresIn = 3600) {
       secretAccessKey: secretKey,
     },
     forcePathStyle: true,
+    requestHandler: new NodeHttpHandler({
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
+    }),
   });
 
   const { GetObjectCommand } = await import("@aws-sdk/client-s3");
@@ -72,6 +84,11 @@ export async function deleteFromS3(key: string) {
       secretAccessKey: secretKey,
     },
     forcePathStyle: true,
+    requestHandler: new NodeHttpHandler({
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
+    }),
   });
 
   const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
