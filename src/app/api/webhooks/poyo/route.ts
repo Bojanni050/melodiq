@@ -43,7 +43,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const taskId = typeof body.task_id === "string" ? body.task_id : undefined;
+  const taskId =
+    (typeof body.task_id === "string" ? body.task_id : undefined) ??
+    (isJsonObject(body.data) && typeof body.data.task_id === "string" ? body.data.task_id : undefined) ??
+    (isJsonObject(body.input) && typeof body.input.task_id === "string" ? body.input.task_id : undefined);
   const status = getPoYoStatusValue(body);
   const filesRaw = Array.isArray(body.files) ? body.files : [];
   const files = filesRaw.map(parsePoYoWebhookFile).filter((file): file is PoYoWebhookFile => Boolean(file));

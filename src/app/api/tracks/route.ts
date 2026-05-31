@@ -8,7 +8,7 @@ import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { uploadToS3 } from "@/lib/s3";
-import { contentTypeForFormat } from "@/lib/audio-format";
+import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { workspaces } from "@/db/schema";
 import {
@@ -16,7 +16,10 @@ import {
   ensureWorkspaceSchema,
   getUserWorkspacesWithTrackIds,
 } from "@/lib/workspaces";
-import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
+import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { getTempolorStatus } from "@/lib/providers/tempolor";
+import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
+import axios from "axios";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +60,17 @@ function detectUploadFormat(file: File): "mp3" | "wav" | null {
 function titleFromFilename(filename: string) {
   const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
   return withoutExtension || "Untitled Upload";
+}
+
+function getPoYoErrorMessage(payload: unknown): string | null {
+  if (!isJsonObject(payload)) return null;
+  const direct = payload.error;
+  if (typeof direct === "string" && direct.trim()) return direct;
+  const data = payload.data;
+  if (!isJsonObject(data)) return null;
+  const nested = data.error;
+  if (typeof nested === "string" && nested.trim()) return nested;
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -118,6 +132,174 @@ export async function GET(request: NextRequest) {
           lt(tracks.createdAt, timeoutCutoff)
         )
       );
+  }
+
+  // Active-polling fallback: Check status of active (pending/generating) tracks
+  if (!statusFilter) {
+    const activeTracks = await db
+      .select()
+      .from(tracks)
+      .where(
+        and(
+          eq(tracks.userId, userId),
+          inArray(tracks.status, ["pending", "generating"])
+        )
+      );
+
+    if (activeTracks.length > 0) {
+      await Promise.allSettled(
+        activeTracks.map(async (track) => {
+          // 1. PoYo (Suno) active polling fallback
+          if (track.provider === "poyo" && track.jobId) {
+            try {
+              const sourceJobId = getOriginalPoYoTaskId(track.jobId);
+              const status = await getPoYoStatus(sourceJobId);
+              const statusValue = getPoYoStatusValue(status);
+
+              if (statusValue === "completed" || statusValue === "finished") {
+                const syncResult = await syncPoYoTaskResult(sourceJobId, status);
+                const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
+                if (syncedTrackIds.length > 0) {
+                  const syncedTracks = await db
+                    .select()
+                    .from(tracks)
+                    .where(inArray(tracks.id, syncedTrackIds));
+
+                  await Promise.allSettled(
+                    syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
+                  );
+                }
+              } else if (statusValue === "failed" || statusValue === "error") {
+                const errorMessage = getPoYoErrorMessage(status) || "Generation failed";
+                await db
+                  .update(tracks)
+                  .set({ status: "failed", error: errorMessage })
+                  .where(eq(tracks.id, track.id));
+              }
+            } catch (e: any) {
+              console.error(`[tracks-api] Failed active polling for PoYo track ${track.id}:`, e?.message ?? e);
+            }
+          }
+
+          // 2. Tempolor active polling fallback
+          else if (track.provider === "tempolor" && track.jobId) {
+            try {
+              const status = await getTempolorStatus(track.jobId);
+
+              if (status.status === "completed") {
+                const [mp3Res, hdRes] = await Promise.all([
+                  axios.get(status.audio_url, { responseType: "arraybuffer" }),
+                  status.audio_url_hd
+                    ? axios.get(status.audio_url_hd, { responseType: "arraybuffer" })
+                    : null,
+                ]);
+
+                const primaryHeaderType = String(mp3Res.headers?.["content-type"] || "");
+                const format = /\.wav(\?|$)/i.test(status.audio_url)
+                  ? detectFormatFromUrl(status.audio_url)
+                  : detectFormatFromContentType(primaryHeaderType || "audio/mpeg");
+                const formatHd = status.audio_url_hd
+                  ? detectFormatFromUrl(status.audio_url_hd)
+                  : null;
+
+                const s3Key = `tracks/${track.id}/audio.${format}`;
+                const s3KeyHd = status.audio_url_hd && formatHd
+                  ? `tracks/${track.id}/audio_hd.${formatHd}`
+                  : null;
+
+                await Promise.all([
+                  uploadToS3(s3Key, Buffer.from(mp3Res.data), contentTypeForFormat(format)),
+                  ...(hdRes && s3KeyHd
+                    ? [uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd!))]
+                    : []),
+                ]);
+
+                await db
+                  .update(tracks)
+                  .set({
+                    status: "done",
+                    s3Key,
+                    s3KeyHd,
+                    format,
+                    formatHd,
+                    audioUrl: `/api/tracks/${track.id}/download`,
+                    audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
+                  })
+                  .where(eq(tracks.id, track.id));
+              } else if (status.status === "failed") {
+                await db
+                  .update(tracks)
+                  .set({ status: "failed", error: status.error || "Generation failed" })
+                  .where(eq(tracks.id, track.id));
+              }
+            } catch (e: any) {
+              console.error(`[tracks-api] Failed active polling for Tempolor track ${track.id}:`, e?.message ?? e);
+            }
+          }
+
+          // 3. MusicGPT active polling fallback
+          else if (track.provider === "musicgpt" && track.conversionId) {
+            try {
+              const conversion = await getMusicGptConversionById(track.conversionId);
+
+              if (conversion) {
+                const status = (conversion.status ?? "").toUpperCase();
+                const audioUrl =
+                  conversion.audio_url ??
+                  conversion.conversion_path_1 ??
+                  conversion.conversion_path ??
+                  null;
+
+                if (status === "COMPLETED" && audioUrl) {
+                  const audioRes = await axios.get(audioUrl, {
+                    responseType: "arraybuffer",
+                    timeout: 60000,
+                  });
+
+                  const audioBuffer = Buffer.from(audioRes.data);
+                  const s3Key = `tracks/${track.id}/audio.mp3`;
+                  await uploadToS3(s3Key, audioBuffer, "audio/mpeg");
+
+                  const duration = await extractAudioDuration(audioBuffer);
+
+                  await db
+                    .update(tracks)
+                    .set({
+                      status: "done",
+                      s3Key,
+                      format: "mp3",
+                      duration,
+                      audioUrl: `/api/tracks/${track.id}/download`,
+                      error: null,
+                    })
+                    .where(eq(tracks.id, track.id));
+
+                  if (!track.s3KeyCover) {
+                    generateAndSaveCoverArt({
+                      id: track.id,
+                      userId: track.userId,
+                      title: track.title,
+                      prompt: track.prompt,
+                      instrumental: track.instrumental,
+                    }).catch((error) => console.error("[tracks-api] Cover art generation failed", error));
+                  }
+                } else if (status === "FAILED" || status.includes("FAIL")) {
+                  await db
+                    .update(tracks)
+                    .set({
+                      status: "failed",
+                      error: conversion.status_msg || "Generation failed",
+                    })
+                    .where(eq(tracks.id, track.id));
+                }
+              }
+            } catch (e: any) {
+              console.error(`[tracks-api] Failed active polling for MusicGPT track ${track.id}:`, e?.message ?? e);
+            }
+          }
+        })
+      );
+    }
   }
 
   const finalTracks = await db

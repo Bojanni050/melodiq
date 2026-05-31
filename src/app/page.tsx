@@ -413,7 +413,7 @@ export default function HomePage() {
 
   const fetchTracks = useCallback(async () => {
     try {
-      const res = await fetch("/api/tracks", { cache: "no-store" });
+      const res = await fetch(`/api/tracks?t=${Date.now()}`, { cache: "no-store" });
       if (res.ok) {
         const payload = await res.json() as TracksResponse;
         await mutateTracksResponse(payload, { revalidate: false });

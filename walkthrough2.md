@@ -225,5 +225,5 @@
 - Actions:
   - Aangepast `src/components/TrackList.tsx`: De render-invocatie van `<SelectionActionPill>` verwijderd uit de JSX.
   - Aangepast `src/components/tracks/TrackCard.tsx`: `handleDelete` en `executeDelete` aangepast zodat ze de Zustand selection store checken; als de huidige track geselecteerd is, wordt bulkverwijdering voor alle geselecteerde tracks in gang gezet via een eenduidige bevestigingsmodal en `onDeleteTracks` callback.
-  - Aangepast `src/app/page.tsx`: De polling-functie `fetchTracks` herschreven om een directe fetch call met `cache: "no-store"` te doen naar `/api/tracks`, de SWR-cache handmatig bij te werken via `mutateTracksResponse(payload, { revalidate: false })` en `applyTracksResponse` aan te roepen.
-  - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 09:32`; validated met `npm run build` (succesvol geslaagd, compile OK).
+  - Aangepast `src/app/page.tsx`: De polling-functie `fetchTracks` herschreven om een directe fetch call met een cache-busting timestamp (`/api/tracks?t=Date.now()`, `cache: "no-store"`) te doen naar `/api/tracks`, de SWR-cache handmatig bij te werken via `mutateTracksResponse(payload, { revalidate: false })` en `applyTracksResponse` aan te roepen.
+  - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 10:00`; validated met `npm run build` (succesvol geslaagd, compile OK).
