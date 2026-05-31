@@ -91,6 +91,22 @@ export default function LyricBlockEditor({
                 key={block.id}
                 data-lyric-block-id={block.id}
                 aria-grabbed={draggedBlockId === block.id}
+                onPointerDown={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (!target.closest("[data-drag-handle]")) {
+                    return;
+                  }
+                  onStartBlockDragFromCard(event, block.id);
+                }}
+                draggable
+                onDragStart={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (!target.closest("[data-drag-handle]")) {
+                    event.preventDefault();
+                    return;
+                  }
+                  onStartBlockMouseDrag(event, block.id);
+                }}
                 onDragOver={(event) => onBlockMouseDragOver(event, block.id)}
                 onDrop={(event) => onBlockMouseDrop(event, block.id)}
                 onDragEnd={onBlockMouseDragEnd}
@@ -101,10 +117,9 @@ export default function LyricBlockEditor({
                 <div className="mb-3 flex flex-wrap items-center gap-2 select-none">
                   <button
                     type="button"
+                    data-drag-handle
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
-                    draggable
                     aria-label={`Drag ${block.label || blockLabels[block.type]} block`}
-                    onDragStart={(event) => onStartBlockMouseDrag(event, block.id)}
                     className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
                     title="Drag to reorder"
                   >

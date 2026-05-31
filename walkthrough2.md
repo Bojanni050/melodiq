@@ -217,3 +217,13 @@
   - Aangepast `src/components/TrackList.tsx`: React state `dragOverTrackId` en `draggedTrackId` verwijderd en vervangen door `draggedTrackIdRef` (useRef); drag event handlers herschreven naar pure DOM manipulatie met HTML5 dragEnter/dragLeave; `visibleCount` en IntersectionObserver infinite scroll sentinel toegevoegd om per 30 items te pagineren.
   - Aangepast `src/app/api/tracks/route.ts`: synchrone Suno/PoYo status polling uit GET route verwijderd; database timeout checks uitgevoerd vòòr de tracks SELECT query om query performance te optimaliseren.
   - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 08:15`; validated met `npm run build` (succesvol geslaagd, compile OK).
+
+## 2026-05-31 (Bulkdelete, selectie-bar cleanup en status polling fix)
+
+- Findings: De blauwe selectiebalk bovenaan de tracklist was redundant omdat de selectieteller al in de header wordt getoond. Daarnaast wilden gebruikers meerdere nummers tegelijk kunnen verwijderen door simpelweg op het prullenbak-icoon van een van de geselecteerde tracks te klikken, en was er een issue waarbij nieuw gegenereerde nummers in de tracklist soms pas na een handmatige paginarefresh als "complete" (done/failed) werden getoond door SWR-caching/deduplicatie.
+- Conclusions: De blauwe `SelectionActionPill` kan volledig worden weggelaten. Door `handleDelete` in `TrackCard` de actieve selectie te laten checken kunnen we bulkverwijdering en een enkele bevestigingsmodal triggeren vanaf elk geselecteerd prullenbak-icoon. Door `fetchTracks` op de homepage via een directe fetch call met `cache: "no-store"` uit te voeren en de SWR cache handmatig bij te werken, omzeilen we de caching- en deduping-problemen volledig, wat zorgt voor een realtime status-update in de UI.
+- Actions:
+  - Aangepast `src/components/TrackList.tsx`: De render-invocatie van `<SelectionActionPill>` verwijderd uit de JSX.
+  - Aangepast `src/components/tracks/TrackCard.tsx`: `handleDelete` en `executeDelete` aangepast zodat ze de Zustand selection store checken; als de huidige track geselecteerd is, wordt bulkverwijdering voor alle geselecteerde tracks in gang gezet via een eenduidige bevestigingsmodal en `onDeleteTracks` callback.
+  - Aangepast `src/app/page.tsx`: De polling-functie `fetchTracks` herschreven om een directe fetch call met `cache: "no-store"` te doen naar `/api/tracks`, de SWR-cache handmatig bij te werken via `mutateTracksResponse(payload, { revalidate: false })` en `applyTracksResponse` aan te roepen.
+  - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 09:32`; validated met `npm run build` (succesvol geslaagd, compile OK).

@@ -412,6 +412,17 @@ export default function HomePage() {
   }
 
   const fetchTracks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tracks", { cache: "no-store" });
+      if (res.ok) {
+        const payload = await res.json() as TracksResponse;
+        await mutateTracksResponse(payload, { revalidate: false });
+        applyTracksResponse(payload);
+        return payload.tracks ?? [];
+      }
+    } catch (error) {
+      console.error("Failed to fetch tracks directly, falling back to SWR mutate:", error);
+    }
     const payload = await mutateTracksResponse();
     if (!payload) return [] as Track[];
     applyTracksResponse(payload);

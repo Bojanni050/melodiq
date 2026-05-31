@@ -204,8 +204,10 @@ const TrackCard = memo(function TrackCard({
       if (onDeleteTracks) {
         await onDeleteTracks(ids);
       } else {
-        const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
-        if (res.ok) onDelete?.(track.id);
+        for (const id of ids) {
+          const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
+          if (res.ok) onDelete?.(id);
+        }
       }
     } catch {
       // silently fail
@@ -216,7 +218,12 @@ const TrackCard = memo(function TrackCard({
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
-    setPendingDeleteIds([track.id]);
+    const activeSelection = useSelectionStore.getState().selectedIds;
+    if (activeSelection.size > 0 && activeSelection.has(track.id)) {
+      setPendingDeleteIds(Array.from(activeSelection));
+    } else {
+      setPendingDeleteIds([track.id]);
+    }
     setConfirmDelete(true);
   }
 
