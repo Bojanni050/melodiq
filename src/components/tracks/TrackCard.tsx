@@ -894,6 +894,37 @@ const TrackCard = memo(function TrackCard({
             </span>
           )}
         </div>
+
+        {/* Mobile Download Buttons Row */}
+        {track.status === "done" && track.audioUrl && (
+          <div className="flex sm:hidden items-center gap-2 mt-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload(track.audioUrl!);
+              }}
+              disabled={downloading}
+              className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
+              title={`Download ${mp3Label}`}
+            >
+              📥 {mp3Label}
+            </button>
+            {track.s3KeyHd && track.audioUrlHd && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(track.audioUrlHd!, true);
+                }}
+                disabled={downloading}
+                className="px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shrink-0"
+                title={`Download ${hdLabel}`}
+              >
+                📥 {hdLabel}
+              </button>
+            )}
+          </div>
+        )}
+
         {(track.status === "generating" || track.status === "pending") ? (
           <div className="mt-1.5 text-primary-500/40 w-full">
             <WaveformBars count={32} className="h-2 w-full" />
