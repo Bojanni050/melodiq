@@ -785,8 +785,8 @@ export default function HomePage() {
   const selectedWorkspaceTracks = useMemo(() => {
     if (!selectedWorkspace) return [];
     const idSet = new Set(selectedWorkspace.trackIds);
-    return tracksRef.current.filter((track) => idSet.has(track.id));
-  }, [selectedWorkspace]);
+    return tracks.filter((track) => idSet.has(track.id));
+  }, [selectedWorkspace, tracks]);
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
