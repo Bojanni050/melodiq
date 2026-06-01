@@ -54,6 +54,7 @@ export interface Track {
   s3KeyCover?: string | null;
   s3KeyCoverThumb?: string | null;
   playCount?: number | null;
+  lyricsTimestamps?: string | null;
 }
 
 interface PlayerState {

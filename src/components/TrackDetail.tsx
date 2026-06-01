@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useUserStore } from "@/lib/store";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useUserStore, usePlayerStore } from "@/lib/store";
+import { parseLyrics } from "@/lib/parse-lyrics";
 
 interface TrackDetailProps {
   track: {
@@ -11,6 +12,7 @@ interface TrackDetailProps {
     providerModel: string;
     prompt: string;
     lyrics: string | null;
+    lyricsTimestamps?: string | null;
     status: string;
     audioUrl: string | null;
     audioUrlHd: string | null;
@@ -37,10 +39,67 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const { user, loadUser } = useUserStore();
+  const { currentTrack, audioElement } = usePlayerStore();
+  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
     void loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    if (!audioElement || currentTrack?.id !== track.id) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audioElement.currentTime || 0);
+    };
+
+    audioElement.addEventListener("timeupdate", handleTimeUpdate);
+    // Initial sync
+    setCurrentTime(audioElement.currentTime || 0);
+
+    return () => {
+      audioElement.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [audioElement, currentTrack, track.id]);
+
+  const parsedLyrics = useMemo(() => {
+    return parseLyrics(track.lyrics, track.lyricsTimestamps);
+  }, [track.lyrics, track.lyricsTimestamps]);
+
+  const hasTimings = useMemo(() => {
+    return parsedLyrics.some((line) => line.startTime >= 0);
+  }, [parsedLyrics]);
+
+  const activeLineIndex = useMemo(() => {
+    if (!hasTimings) return -1;
+    let activeIndex = -1;
+    for (let i = 0; i < parsedLyrics.length; i++) {
+      if (parsedLyrics[i].startTime <= currentTime) {
+        activeIndex = i;
+      } else {
+        break;
+      }
+    }
+    return activeIndex;
+  }, [parsedLyrics, currentTime, hasTimings]);
+
+  const sidebarActiveLineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (sidebarActiveLineRef.current) {
+      sidebarActiveLineRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [activeLineIndex]);
+
+  const handleLineClick = useCallback((startTime: number) => {
+    if (startTime >= 0 && audioElement && currentTrack?.id === track.id) {
+      audioElement.currentTime = startTime;
+      setCurrentTime(startTime);
+    }
+  }, [audioElement, currentTrack, track.id]);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
@@ -270,7 +329,9 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
         {track.lyrics && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Lyrics</h4>
+              <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
+              </h4>
               <button
                 onClick={() => handleCopy(track.lyrics!, "lyrics")}
                 className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
@@ -287,7 +348,36 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
                 )}
               </button>
             </div>
-            <pre className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono">{track.lyrics}</pre>
+            {hasTimings ? (
+              <div className="max-h-[350px] overflow-y-auto pr-1 py-12 scroll-smooth space-y-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                {parsedLyrics.map((line, index) => {
+                  const isActive = index === activeLineIndex;
+                  const isPlayed = index < activeLineIndex;
+                  const isTrackPlaying = currentTrack?.id === track.id;
+
+                  return (
+                    <div
+                      key={index}
+                      ref={isActive ? sidebarActiveLineRef : null}
+                      onClick={() => handleLineClick(line.startTime)}
+                      className={`transition-all duration-300 leading-relaxed py-0.5 ${
+                        isTrackPlaying ? "cursor-pointer" : ""
+                      } ${
+                        isActive
+                          ? "text-white font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] opacity-100"
+                          : isPlayed
+                          ? "text-white/50 font-medium"
+                          : "text-white/25 font-medium hover:text-white/50"
+                      }`}
+                    >
+                      {line.text}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <pre className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono">{track.lyrics}</pre>
+            )}
           </div>
         )}
 

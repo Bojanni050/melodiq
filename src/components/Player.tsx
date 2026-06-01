@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import { usePlayerStore, useUserStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { parseLyrics } from "@/lib/parse-lyrics";
 
 type AudioSource = "cache" | "s3" | "unknown";
 type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -89,6 +90,45 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
   useEffect(() => {
     void loadUser();
   }, [loadUser]);
+
+  const parsedLyrics = useMemo(() => {
+    return parseLyrics(currentTrack?.lyrics ?? null, currentTrack?.lyricsTimestamps);
+  }, [currentTrack]);
+
+  const hasTimings = useMemo(() => {
+    return parsedLyrics.some((line) => line.startTime >= 0);
+  }, [parsedLyrics]);
+
+  const activeLineIndex = useMemo(() => {
+    if (!hasTimings) return -1;
+    let activeIndex = -1;
+    for (let i = 0; i < parsedLyrics.length; i++) {
+      if (parsedLyrics[i].startTime <= currentTime) {
+        activeIndex = i;
+      } else {
+        break;
+      }
+    }
+    return activeIndex;
+  }, [parsedLyrics, currentTime, hasTimings]);
+
+  const activeLineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeLineRef.current) {
+      activeLineRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [activeLineIndex]);
+
+  const handleLineClick = useCallback((startTime: number) => {
+    if (startTime >= 0 && audioElement) {
+      audioElement.currentTime = startTime;
+      setCurrentTime(startTime);
+    }
+  }, [audioElement]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -239,21 +279,47 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
               </div>
 
               {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
-              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center">
-                <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-                  {columns.map((column, colIndex) => (
-                    <div key={colIndex} className="space-y-2 text-center lg:text-left">
-                      {column.map((line, lineIndex) => (
-                        <p
-                          key={lineIndex}
-                          className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center h-[300px] sm:h-[420px] lg:h-[480px]">
+                {hasTimings ? (
+                  <div className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {parsedLyrics.map((line, index) => {
+                      const isActive = index === activeLineIndex;
+                      const isPlayed = index < activeLineIndex;
+
+                      return (
+                        <div
+                          key={index}
+                          ref={isActive ? activeLineRef : null}
+                          onClick={() => handleLineClick(line.startTime)}
+                          className={`cursor-pointer transition-all duration-500 origin-center lg:origin-left py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
+                            isActive
+                              ? "text-white font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,255,255,0.45)] opacity-100"
+                              : isPlayed
+                              ? "text-white/45 font-medium hover:text-white/80"
+                              : "text-white/20 font-medium hover:text-white/60"
+                          }`}
                         >
-                          {line}
-                        </p>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+                          {line.text}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                    {columns.map((column, colIndex) => (
+                      <div key={colIndex} className="space-y-2 text-center lg:text-left">
+                        {column.map((line, lineIndex) => (
+                          <p
+                            key={lineIndex}
+                            className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+                          >
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
