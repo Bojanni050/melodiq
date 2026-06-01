@@ -69,12 +69,27 @@ For task/goal tracking, use the stash MCP tools.
 | Verbinding | `mcp-remote` via npx |
 | Gebruik | Stabiele referentie — specs, projectdefinities, lange-termijn facts |
 
-start session: use stash recall to load my profile and recent project context. Summarize what you know about me, then we begin.
 
-Before answering, always recall relevant context using the stash MCP tool.
-Query: current topic, project name, or user preferences.
+# Geheugenbeheer met Stash (MCP)
+Dit project gebruikt de 'Stash' MCP-server voor persistente, actieve geheugenopslag. 
+Copilot moet bij elke complexe taak of nieuwe sessie actief de Stash-tools raadplegen.
 
-After important decisions or changes, store a summary using stash rememeber
+## Richtlijnen voor Tool-gebruik:
+1. **Initialisatie:** Raadpleeg bij de start van een nieuwe chat-sessie altijd de `stash.recall` tool met zoektermen die relevant zijn voor de huidige taak (bijv. project-specifieke doelen, bekende valkuilen of eerdere technische keuzes).
+2. **Context-verrijking:** Voordat je ingrijpende wijzigingen in de code aanbrengt, gebruik `stash.recall` om te checken of er eerdere discussies of "failure patterns" zijn die relevant zijn voor de huidige context.
+3. **Leren & Opslaan:** Gebruik `stash.remember` om belangrijke projectbesluiten, gedane beloftes aan de gebruiker, of ontdekte oplossingen voor bugs proactief op te slaan.
+4. **Agent Mode:** Werk in Agent Mode en geef de voorkeur aan het gebruik van Stash-tools boven het herstellen van context uit het chat-venster alleen.
+
+## Persoonlijke context (Bo):
+- Naam: Bo (Bojan van der Heide).
+- Rol: Webmaster, webdesigner, grafisch ontwerper.
+- Stack: React 19, FastAPI, MongoDB (o.a. 'Sonara').
+- Vrienden: Yassine (spreek uit: Jessien) is mijn beste vriend.
+- Voorkeur: Korte, bondige antwoorden.
+- Hardware: Windows, Xiaomi 14 Android-telefoon.
+
+## Prioriteit:
+Als de informatie in Stash conflicteert met algemene aannames, heeft de informatie uit Stash (jouw persoonlijke geheugen) altijd voorrang.
 
 ### Context7 — Actuele library-documentatie
 | Eigenschap | Waarde |
