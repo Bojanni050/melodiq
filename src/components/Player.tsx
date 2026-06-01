@@ -279,7 +279,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
               </div>
 
               {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
-              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center h-[300px] sm:h-[420px] lg:h-[480px]">
+              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]">
                 {hasTimings ? (
                   <div className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {parsedLyrics.map((line, index) => {
@@ -305,19 +305,21 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                     })}
                   </div>
                 ) : (
-                  <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-                    {columns.map((column, colIndex) => (
-                      <div key={colIndex} className="space-y-2 text-center lg:text-left">
-                        {column.map((line, lineIndex) => (
-                          <p
-                            key={lineIndex}
-                            className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
-                          >
-                            {line}
-                          </p>
-                        ))}
-                      </div>
-                    ))}
+                  <div className="w-full h-full overflow-y-auto px-4 pr-2 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [-ms-overflow-style:none]">
+                    <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                      {columns.map((column, colIndex) => (
+                        <div key={colIndex} className="space-y-2 text-center lg:text-left">
+                          {column.map((line, lineIndex) => (
+                            <p
+                              key={lineIndex}
+                              className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+                            >
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
