@@ -213,6 +213,7 @@ export default function LibraryPage() {
         providerModel: currentTrack.providerModel,
         prompt: currentTrack.prompt,
         lyrics: currentTrack.lyrics,
+        lyricsTimestamps: currentTrack.lyricsTimestamps,
         status: currentTrack.status,
         audioUrl: currentTrack.audioUrl,
         audioUrlHd: currentTrack.audioUrlHd,
