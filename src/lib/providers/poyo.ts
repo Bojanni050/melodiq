@@ -149,23 +149,21 @@ export async function getPoYoStatus(jobId: string): Promise<unknown> {
        String(error.response?.data?.error?.message || error.response?.data?.message || "").includes("music generation"));
 
     if (isMusicTaskError) {
-      console.log(`[poyo] Job ${jobId} is a music generation task. Fetching details via POST generate/detail/music...`);
+      console.log(`[poyo] Job ${jobId} is a music generation task. Fetching details via GET generate/detail/music?task_id=${jobId}...`);
       try {
-        const detailRes = await axios.post<unknown>(
-          "https://api.poyo.ai/api/generate/detail/music",
-          { task_id: jobId },
+        const detailRes = await axios.get<unknown>(
+          `https://api.poyo.ai/api/generate/detail/music?task_id=${jobId}`,
           {
             headers: {
               Authorization: `Bearer ${API_KEY}`,
-              "Content-Type": "application/json",
             },
             timeout: 30000,
           }
         );
         return detailRes.data;
-      } catch (postError: any) {
+      } catch (getError: any) {
         throw new Error(
-          postError.response?.data?.error?.message || postError.response?.data?.message || postError.message
+          getError.response?.data?.error?.message || getError.response?.data?.message || getError.message
         );
       }
     }
