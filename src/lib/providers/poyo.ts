@@ -143,6 +143,32 @@ export async function getPoYoStatus(jobId: string): Promise<unknown> {
     );
     return response.data;
   } catch (error: any) {
+    const isMusicTaskError =
+      error.response?.status === 400 &&
+      (String(error.response?.data?.error?.message || error.response?.data?.message || "").includes("detail/music") ||
+       String(error.response?.data?.error?.message || error.response?.data?.message || "").includes("music generation"));
+
+    if (isMusicTaskError) {
+      console.log(`[poyo] Job ${jobId} is a music generation task. Fetching details via POST generate/detail/music...`);
+      try {
+        const detailRes = await axios.post<unknown>(
+          "https://api.poyo.ai/api/generate/detail/music",
+          { task_id: jobId },
+          {
+            headers: {
+              Authorization: `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 30000,
+          }
+        );
+        return detailRes.data;
+      } catch (postError: any) {
+        throw new Error(
+          postError.response?.data?.error?.message || postError.response?.data?.message || postError.message
+        );
+      }
+    }
     throw new Error(error.response?.data?.error?.message || error.response?.data?.message || error.message);
   }
 }
