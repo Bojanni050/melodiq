@@ -5,6 +5,36 @@ export interface ParsedLyricLine {
 }
 
 /**
+ * Detects if a lyricsTimestamps string is just a task submission object
+ * (e.g. from PoYo submit response) rather than actual timing data.
+ */
+export function isLyricsTaskSubmission(lyricsTimestamps: string | null | undefined): boolean {
+  if (!lyricsTimestamps) return false;
+  try {
+    const trimmed = typeof lyricsTimestamps === "string" ? lyricsTimestamps.trim() : "";
+    if (typeof lyricsTimestamps === "string" && !trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+      return false;
+    }
+    const parsed = typeof lyricsTimestamps === "string" ? JSON.parse(trimmed) : lyricsTimestamps;
+    if (parsed && typeof parsed === "object") {
+      const hasTaskId = !!(parsed.task_id || parsed.taskId || (parsed.data && (parsed.data.task_id || parsed.data.taskId)));
+      const hasActualTimings = !!(
+        Array.isArray(parsed) ||
+        parsed.lines || parsed.words || parsed.segments || parsed.lyrics ||
+        (parsed.data && (
+          parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics ||
+          parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics ||
+          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics
+        )) ||
+        parsed.result || parsed.output
+      );
+      return hasTaskId && !hasActualTimings;
+    }
+  } catch {}
+  return false;
+}
+
+/**
  * Parses track lyrics and their associated timestamps into a normalized array of timed lines.
  * Handles line-level JSON timestamps, word-level JSON timestamps (reconstructing lines),
  * and classic LRC timing strings.
@@ -18,7 +48,7 @@ export function parseLyrics(
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith("[")); // Filter out section headers like [Chorus]
 
-  if (!lyricsTimestamps) {
+  if (!lyricsTimestamps || isLyricsTaskSubmission(lyricsTimestamps)) {
     return defaultLines.map((text) => ({ text, startTime: -1 }));
   }
 
@@ -53,7 +83,15 @@ export function parseLyrics(
           items = rawData.data;
         } else if (rawData.data && typeof rawData.data === "object") {
           const d = rawData.data;
-          items = d.lines || d.words || d.segments || d.lyrics || [];
+          items = d.lines || d.words || d.segments || d.lyrics || 
+                  d.result?.lines || d.result?.words || d.result?.segments || d.result?.lyrics || 
+                  d.output?.lines || d.output?.words || d.output?.segments || d.output?.lyrics || [];
+        } else if (rawData.result && typeof rawData.result === "object") {
+          const r = rawData.result;
+          items = r.lines || r.words || r.segments || r.lyrics || [];
+        } else if (rawData.output && typeof rawData.output === "object") {
+          const o = rawData.output;
+          items = o.lines || o.words || o.segments || o.lyrics || [];
         }
       }
 

@@ -791,6 +791,46 @@ export default function HomePage() {
     }
   }, [selectedTrack]);
 
+  // Self-healing: Background check to resolve lyricsTimestamps task IDs when a track is selected
+  useEffect(() => {
+    if (!selectedTrack?.id) return;
+    
+    let active = true;
+    const fetchTrackDetail = async () => {
+      try {
+        const res = await fetch(`/api/tracks/${selectedTrack.id}`);
+        if (!res.ok) return;
+        const updatedTrack = await res.json();
+        
+        if (!active) return;
+        
+        if (updatedTrack && updatedTrack.lyricsTimestamps !== selectedTrack.lyricsTimestamps) {
+          console.log(`[TCL-Sync] Healed lyricsTimestamps detected for track ${updatedTrack.id}`);
+          setSelectedTrack(updatedTrack);
+          
+          mutateTracksResponse(
+            (prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                tracks: prev.tracks.map((t) => (t.id === updatedTrack.id ? { ...t, lyricsTimestamps: updatedTrack.lyricsTimestamps } : t)),
+              };
+            },
+            { revalidate: false }
+          );
+        }
+      } catch (err) {
+        console.error("[TCL-Sync] Failed to fetch track detail:", err);
+      }
+    };
+    
+    void fetchTrackDetail();
+    
+    return () => {
+      active = false;
+    };
+  }, [selectedTrack?.id, selectedTrack?.lyricsTimestamps, mutateTracksResponse]);
+
   const handleDownloadTrack = useCallback((url: string, hd: boolean) => {
     const a = document.createElement("a");
     a.href = url;

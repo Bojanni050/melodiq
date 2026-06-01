@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, workspaces } from "@/db/schema";
+import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { getPoYoStatus } from "@/lib/providers/poyo";
@@ -62,6 +63,30 @@ export async function GET(
   const track = result[0];
 
   if (track.status === "done" || track.status === "failed") {
+    // Self-healing: if the stored lyrics timestamps are actually just a task submission receipt
+    if (track.status === "done" && track.lyricsTimestamps && isLyricsTaskSubmission(track.lyricsTimestamps)) {
+      try {
+        const parsed = JSON.parse(track.lyricsTimestamps);
+        const taskId = parsed.task_id || parsed.taskId || parsed.data?.task_id;
+        if (taskId) {
+          console.log(`[GET tracks/[id]] self-healing task_id submission detected: ${taskId}`);
+          const status = await getPoYoStatus(taskId);
+          const statusValue = getPoYoStatusValue(status);
+          if (statusValue === "completed" || statusValue === "finished") {
+            const finalTimestamps = JSON.stringify(status);
+            await db
+              .update(tracks)
+              .set({ lyricsTimestamps: finalTimestamps })
+              .where(eq(tracks.id, track.id!));
+            track.lyricsTimestamps = finalTimestamps;
+            console.log(`[GET tracks/[id]] self-healed lyricsTimestamps for track ${track.id}`);
+          }
+        }
+      } catch (err: any) {
+        console.error(`[GET tracks/[id]] self-healing check failed for track ${track.id}:`, err?.message ?? err);
+      }
+    }
+
     let audioUrl = track.audioUrl;
     let audioUrlHd = track.audioUrlHd;
 

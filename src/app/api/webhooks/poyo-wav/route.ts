@@ -11,7 +11,7 @@ import {
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
-import { getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
+import { getPoYoTimestampedLyrics, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 
 function pickAudioUrl(body: any): string | null {
   const files: any[] = body?.files ?? body?.data?.files ?? [];
@@ -166,14 +166,50 @@ export async function POST(request: NextRequest) {
     if (shouldFetchTimestampedLyrics) {
       void (async () => {
         try {
-          const payload = await getPoYoTimestampedLyrics(resolvedTaskId, resolvedAudioId);
+          console.log(`[webhook/poyo-wav] submitting timestamped lyrics task for track ${track.id}`);
+          const submitRes: any = await getPoYoTimestampedLyrics(resolvedTaskId, resolvedAudioId);
+          const taskId = submitRes?.task_id || submitRes?.data?.task_id;
+          
+          if (!taskId) {
+            console.error(`[webhook/poyo-wav] no task_id returned from getPoYoTimestampedLyrics submit for track ${track.id}`);
+            return;
+          }
+
+          // Save the task submission first so we know a task was started
           await db
             .update(tracks)
-            .set({ lyricsTimestamps: JSON.stringify(payload) })
+            .set({ lyricsTimestamps: JSON.stringify(submitRes) })
             .where(eq(tracks.id, track.id!));
+
+          // Poll for completion in the background
+          let completed = false;
+          let attempts = 0;
+          const maxAttempts = 30; // 30 attempts * 2s = 60s max
+
+          while (!completed && attempts < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            attempts++;
+
+            const statusData = await getPoYoStatus(taskId);
+            const statusValue = getPoYoStatusValue(statusData);
+
+            console.log(`[webhook/poyo-wav] polling lyrics status (attempt ${attempts}): ${statusValue}`);
+
+            if (statusValue === "completed" || statusValue === "finished") {
+              await db
+                .update(tracks)
+                .set({ lyricsTimestamps: JSON.stringify(statusData) })
+                .where(eq(tracks.id, track.id!));
+              completed = true;
+              console.log(`[webhook/poyo-wav] successfully retrieved and saved timestamped lyrics for track ${track.id}`);
+            } else if (statusValue === "failed" || statusValue === "error") {
+              console.error(`[webhook/poyo-wav] get-timestamped-lyrics task failed for track ${track.id}`);
+              completed = true;
+            }
+          }
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : String(error);
-          console.error("[webhook/poyo-wav] timestamped lyrics fetch failed:", message);
+          console.error("[webhook/poyo-wav] timestamped lyrics polling failed:", message);
         }
       })();
     }
