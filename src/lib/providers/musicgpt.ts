@@ -21,6 +21,7 @@ export interface MusicGptConversion {
   title?: string;
   lyrics?: string;
   lyrics_timestamped_1?: string;
+  lyrics_timestamped_2?: string;
   music_style?: string;
 }
 

@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
         try {
           const axios = (await import("axios")).default;
           const { uploadToS3 } = await import("@/lib/s3");
+          const { getMusicGptConversionById } = await import("@/lib/providers/musicgpt");
 
           const audioRes = await axios.get(audioUrl, {
             responseType: "arraybuffer",
@@ -183,12 +184,67 @@ export async function POST(request: NextRequest) {
           await uploadToS3(s3Key, audioBuffer);
           const duration = await extractAudioDuration(audioBuffer);
 
+          // Retrieve WAV and timestamps from full conversion details
+          let s3KeyHd: string | null = null;
+          let formatHd: string | null = null;
+          let audioUrlHd: string | null = null;
+          let lyricsTimestamps: string | null = null;
+
+          if (track.conversionId) {
+            try {
+              const conversion = await getMusicGptConversionById(track.conversionId);
+              if (conversion) {
+                const isTrack1 = track.conversionId === conversion.conversion_id_1;
+                const isTrack2 = track.conversionId === conversion.conversion_id_2;
+
+                const wavUrl = isTrack1
+                  ? conversion.conversion_path_wav_1
+                  : isTrack2
+                    ? conversion.conversion_path_wav_2
+                    : (conversion.conversion_path_wav_1 || conversion.conversion_path_wav_2);
+
+                const rawTimestamps = isTrack1
+                  ? conversion.lyrics_timestamped_1
+                  : (conversion as any).lyrics_timestamped_2 || conversion.lyrics_timestamped_1;
+
+                if (wavUrl) {
+                  try {
+                    console.log(`[webhook/musicgpt] downloading WAV audio for track ${track.id} from ${wavUrl}`);
+                    const wavRes = await axios.get(wavUrl, {
+                      responseType: "arraybuffer",
+                      timeout: 60000,
+                    });
+                    const wavBuffer = Buffer.from(wavRes.data);
+                    s3KeyHd = `tracks/${track.id}/audio_hd.wav`;
+                    await uploadToS3(s3KeyHd, wavBuffer, "audio/wav");
+                    formatHd = "wav";
+                    audioUrlHd = `/api/tracks/${track.id}/download?hd=true`;
+                  } catch (wavErr: any) {
+                    console.error(`[webhook/musicgpt] background WAV S3 upload failed for track ${track.id}:`, wavErr?.message ?? wavErr);
+                  }
+                }
+
+                if (rawTimestamps) {
+                  try {
+                    lyricsTimestamps = typeof rawTimestamps === "string"
+                      ? rawTimestamps
+                      : JSON.stringify(rawTimestamps);
+                  } catch {}
+                }
+              }
+            } catch (convErr: any) {
+              console.warn(`[webhook/musicgpt] failed to fetch conversion details for track ${track.id}:`, convErr.message);
+            }
+          }
+
           await db
             .update(tracks)
             .set({
               s3Key,
               duration,
               audioUrl: `/api/tracks/${track.id}/download`,
+              ...(s3KeyHd ? { s3KeyHd, formatHd, audioUrlHd } : {}),
+              ...(lyricsTimestamps ? { lyricsTimestamps } : {}),
             })
             .where(eq(tracks.id, track.id!));
         } catch (err: any) {
