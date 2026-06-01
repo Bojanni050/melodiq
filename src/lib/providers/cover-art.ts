@@ -23,10 +23,12 @@ export async function generateCoverArt({
   prompt,
   title,
   instrumental,
+  lyrics,
 }: {
   prompt: string;
   title: string;
   instrumental: boolean;
+  lyrics?: string | null;
 }): Promise<Buffer> {
   const apiKey = (await getSetting("PIXAZO_API_KEY")) || process.env.PIXAZO_API_KEY || "";
 
@@ -34,7 +36,7 @@ export async function generateCoverArt({
     throw new Error("PIXAZO_API_KEY not configured");
   }
 
-  const imagePrompt = await buildImagePrompt({ prompt, title, instrumental });
+  const imagePrompt = await buildImagePrompt({ prompt, title, instrumental, lyrics });
 
   const generateRes = await axios.post<PixazoGenerateResponse>(
     PIXAZO_GENERATE_URL,
@@ -106,16 +108,18 @@ async function buildImagePrompt({
   prompt,
   title,
   instrumental,
+  lyrics,
 }: {
   prompt: string;
   title: string;
   instrumental: boolean;
+  lyrics?: string | null;
 }): Promise<string> {
   const type = instrumental ? "instrumental" : "vocal";
 
   let visualSummary: string;
   try {
-    visualSummary = await generateImagePrompt(prompt, title, instrumental);
+    visualSummary = await generateImagePrompt(prompt, title, instrumental, lyrics);
   } catch {
     // fallback if LLM fails
     visualSummary = prompt.replace(/[^\w\s,.-]/g, " ").slice(0, 150).trim();
@@ -124,7 +128,7 @@ async function buildImagePrompt({
   return (
     `Create an expressive, artsy album cover for a ${type} music track. ` +
     `${visualSummary} ` +
-    `Visual direction: editorial art photography mixed with painterly textures, dramatic composition, bold contrast, atmospheric color grading, tactile grain, and layered depth. ` +
+    `Ensure the artwork is rendered in the specified style with high quality, dramatic composition, bold contrast, atmospheric color grading, tactile grain, and layered depth. ` +
     `Square format, no text, no letters, no logos, no watermarks.`
   );
 }

@@ -229,24 +229,34 @@ Rules:
 export async function generateImagePrompt(
   songContent: string,
   title: string,
-  instrumental: boolean
+  instrumental: boolean,
+  lyrics?: string | null
 ): Promise<string> {
   const type = instrumental ? "instrumental" : "vocal";
 
   const systemPrompt = `You are a visual art director specializing in album cover design.
-Given a song title and content, write a short visual scene description for an AI image generator.
+Given a song title, musical style/genre, and its lyrics (if vocal), write a short, highly evocative visual scene description for an AI image generator (Flux).
+
+First, analyze the song style/genre and lyrics to choose the most appropriate artistic medium and style for the cover:
+- For example, if it's cozy acoustic folk, indie, or an emotional ballad, maybe it should be "a soft watercolor illustration", "a textured oil painting", or "a warm nostalgic photograph".
+- If it's playful synth-pop, electronic, or high-energy pop, maybe it should be "a vibrant modern cartoon illustration", "a colorful retro-futuristic digital art piece", or "bold graphic vector art".
+- If it's a gritty rap/hip-hop, techno, or cyberpunk track, maybe it should be "a realistic gritty photograph with high contrast", "a dark cinematic street photograph", or "a glowing neon digital artwork".
+- If it's heavy rock, metal, or dark ambient, maybe it should be "a textured surrealist charcoal drawing" or "an atmospheric dark painting".
+Let the artistic medium and visual style feel organically derived from the mood, genre, and themes of the song.
 
 Rules:
-- Respond with ONLY the visual description — no explanation, no preamble
-- Maximum 2 sentences
-- Focus on: mood, atmosphere, lighting, colors, and a concrete visual scene or subject
-- No text, letters, or words in the description
-- No mention of music, instruments, or song titles
-- Make it cinematic and evocative`;
+- Respond with ONLY the visual description — no explanation, no preamble.
+- Maximum 2 sentences.
+- Explicitly state the chosen style/medium (e.g., "a realistic photograph", "a textured oil painting", "a vibrant cartoon illustration", "a watercolor painting", "a minimalist charcoal sketch", etc.) in the description.
+- Focus on: mood, atmosphere, lighting, colors, and a concrete visual scene or subject.
+- No text, letters, or words in the description.
+- No mention of music, instruments, or song titles.
+- Make it cinematic and highly evocative.`;
 
   const userPrompt = `Song title: ${title}
 Type: ${type}
-Content: ${songContent.slice(0, 600)}`;
+Musical Style/Genre Cues: ${songContent}
+${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
 
   const imageModel = await getSetting("OPENROUTER_IMAGE_MODEL");
   return callLLM(userPrompt, systemPrompt, {

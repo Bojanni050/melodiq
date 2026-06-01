@@ -33,6 +33,7 @@ export async function generateAndSaveCoverArt(track: {
   title: string | null;
   prompt: string;
   instrumental: boolean;
+  lyrics?: string | null;
 }, options?: { forceNew?: boolean }): Promise<void> {
   try {
     const shouldReuse = !options?.forceNew;
@@ -60,6 +61,7 @@ export async function generateAndSaveCoverArt(track: {
       prompt: track.prompt,
       title: track.title || "Untitled",
       instrumental: track.instrumental,
+      lyrics: track.lyrics,
     });
 
     const { s3KeyCover, s3KeyCoverThumb } = await processAndUploadCover(imageBuffer, track.id);
@@ -93,6 +95,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
     prompt: string;
     title: string | null;
     instrumental: boolean;
+    lyrics?: string | null;
   }>;
 }, options?: { forceNew?: boolean }): Promise<void> {
   if (batch.tracks.length === 0) return;
@@ -119,6 +122,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
         prompt: primary.prompt,
         title: primary.title || "Untitled",
         instrumental: primary.instrumental,
+        lyrics: primary.lyrics,
       });
 
       const result = await processAndUploadCover(imageBuffer, primary.id);

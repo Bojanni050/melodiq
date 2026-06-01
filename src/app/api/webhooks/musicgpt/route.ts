@@ -153,6 +153,7 @@ export async function POST(request: NextRequest) {
           title: track.title,
           prompt: track.prompt,
           instrumental: track.instrumental,
+          lyrics: track.lyrics,
         }).catch((error) => console.error("[webhook/musicgpt] cover art generation failed", error));
       }
 

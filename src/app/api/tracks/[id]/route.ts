@@ -304,6 +304,7 @@ export async function GET(
               title: track.title,
               prompt: track.prompt,
               instrumental: track.instrumental,
+              lyrics: track.lyrics,
             }).catch((error) => console.error("[tracks/[id]] cover art generation failed", error));
           }
 
@@ -386,6 +387,7 @@ export async function PATCH(
           title: track.title,
           prompt: track.prompt,
           instrumental: track.instrumental,
+          lyrics: track.lyrics,
         },
         { forceNew: true }
       );
