@@ -410,6 +410,7 @@ export default function Player() {
   const playToggleCooldownRef = useRef(0);
   const currentTrackRef = useRef<Track | null>(null);
   const playCountedTrackIdRef = useRef<string | null>(null);
+  const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -493,39 +494,56 @@ export default function Player() {
     audioRef.current.volume = volume;
     usePlayerStore.getState().setAudioElement(audioRef.current);
 
+    const clearPlayTimer = () => {
+      if (playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+    };
+
     const countPlayIfNeeded = () => {
       const trackId = currentTrackRef.current?.id;
       if (!trackId) return;
       if (playCountedTrackIdRef.current === trackId) return;
-      playCountedTrackIdRef.current = trackId;
+      if (playCountTimerRef.current) return;
 
-      void (async () => {
-        try {
-          const res = await fetch(`/api/tracks/${trackId}/play`, { method: "POST" });
-          if (!res.ok) return;
-          const data: unknown = await res.json().catch(() => null);
-          const playCount =
-            data && typeof data === "object" && "playCount" in data && typeof (data as { playCount?: unknown }).playCount === "number"
-              ? (data as { playCount: number }).playCount
-              : null;
+      playCountTimerRef.current = setTimeout(() => {
+        playCountTimerRef.current = null;
+        
+        const currentId = currentTrackRef.current?.id;
+        if (!currentId || currentId !== trackId) return;
+        if (playCountedTrackIdRef.current === trackId) return;
+        
+        playCountedTrackIdRef.current = trackId;
 
-          if (typeof playCount === "number") {
-            usePlayerStore.setState((state) =>
-              state.currentTrack?.id === trackId
-                ? { currentTrack: { ...state.currentTrack, playCount } }
-                : {}
+        void (async () => {
+          try {
+            const res = await fetch(`/api/tracks/${trackId}/play`, { method: "POST" });
+            if (!res.ok) return;
+            const data: unknown = await res.json().catch(() => null);
+            const playCount =
+              data && typeof data === "object" && "playCount" in data && typeof (data as { playCount?: unknown }).playCount === "number"
+                ? (data as { playCount: number }).playCount
+                : null;
+
+            if (typeof playCount === "number") {
+              usePlayerStore.setState((state) =>
+                state.currentTrack?.id === trackId
+                  ? { currentTrack: { ...state.currentTrack, playCount } }
+                  : {}
+              );
+            }
+
+            window.dispatchEvent(
+              new CustomEvent("melodiq:track-played", {
+                detail: { trackId, ...(typeof playCount === "number" ? { playCount } : {}) },
+              })
             );
+          } catch (error) {
+            console.error("Failed to record play:", error);
           }
-
-          window.dispatchEvent(
-            new CustomEvent("melodiq:track-played", {
-              detail: { trackId, ...(typeof playCount === "number" ? { playCount } : {}) },
-            })
-          );
-        } catch (error) {
-          console.error("Failed to record play:", error);
-        }
-      })();
+        })();
+      }, 30_000);
     };
 
     const handleTimeUpdate = () => {
@@ -539,6 +557,7 @@ export default function Player() {
     };
 
     const handleEnded = () => {
+      clearPlayTimer();
       const { autoPlayNext, queue, playNext, setIsPlaying, setProgress } = usePlayerStore.getState();
       if (autoPlayNext && queue.length > 0) {
         playNext();
@@ -557,6 +576,7 @@ export default function Player() {
     audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
     audioRef.current.addEventListener("ended", handleEnded);
     audioRef.current.addEventListener("playing", countPlayIfNeeded);
+    audioRef.current.addEventListener("pause", clearPlayTimer);
 
     setCurrentTime(audioRef.current.currentTime || 0);
     setDuration(audioRef.current.duration || 0);
@@ -567,7 +587,9 @@ export default function Player() {
         audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
         audioRef.current.removeEventListener("ended", handleEnded);
         audioRef.current.removeEventListener("playing", countPlayIfNeeded);
+        audioRef.current.removeEventListener("pause", clearPlayTimer);
       }
+      clearPlayTimer();
     };
   }, [volume]);
 

@@ -482,9 +482,41 @@ Your lyrics here
 
 [Chorus]
 Your chorus here`}
-                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed pb-12 pr-4"
+                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed"
               />
-              <div className="absolute bottom-2 right-3 flex items-center gap-1.5 bg-[#12121a]/85 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/5 shadow-md z-10">
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateLyrics}
+                  disabled={!lyricsContext || generatingLyrics}
+                  className="btn-ghost text-xs flex items-center gap-1.5"
+                >
+                  {generatingLyrics ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )}
+                  {generatingLyrics ? "Generating..." : "Generate Lyrics"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLyricsExpanded(true)}
+                  className="btn-ghost text-xs flex items-center gap-1.5"
+                  title="Expand lyrics editor"
+                  aria-label="Expand lyrics editor"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                  </svg>
+                  Expand Editor
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-[#12121a]/85 px-2 py-1 rounded-lg border border-white/5 shadow-md">
                 <button
                   type="button"
                   onClick={() => handleCopy(lyrics, "lyrics")}
@@ -522,34 +554,6 @@ Your chorus here`}
                   {lyricsCharCount}/{lyricsMaxChars}
                 </span>
               </div>
-            </div>
-            <div className="flex items-center justify-between gap-2 mt-2">
-              <button
-                onClick={handleGenerateLyrics}
-                disabled={!lyricsContext || generatingLyrics}
-                className="btn-ghost text-xs flex items-center gap-1.5"
-              >
-                {generatingLyrics ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                )}
-                {generatingLyrics ? "Generating..." : "Generate Lyrics"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setLyricsExpanded(true)}
-                className="btn-ghost text-xs flex items-center gap-1.5"
-                title="Expand lyrics editor"
-                aria-label="Expand lyrics editor"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                </svg>
-                Expand Editor
-              </button>
             </div>
           </>
         )}
@@ -604,48 +608,8 @@ Your chorus here`}
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
             placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
-            className="input-field min-h-[120px] resize-y text-sm leading-relaxed pb-12 pr-4"
+            className="input-field min-h-[120px] resize-y text-sm leading-relaxed"
           />
-          <div className="absolute bottom-2 right-3 flex items-center gap-1.5 bg-[#12121a]/85 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/5 shadow-md z-10">
-            <button
-              type="button"
-              onClick={() => handleCopy(songIdea, "style")}
-              disabled={!songIdea.trim()}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Copy style"
-              aria-label="Copy style"
-            >
-              {copiedField === "style" ? (
-                <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSongIdea("")}
-              disabled={!songIdea.trim()}
-              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Clear style"
-              aria-label="Clear style"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-            <div className="h-3.5 w-px bg-white/10" />
-            <span
-              className={`text-[10px] font-mono select-none ${
-                promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/30"
-              }`}
-            >
-              {promptCharCount}/{styleMaxChars}
-            </span>
-          </div>
         </div>
 
         <div className="mt-3">
@@ -690,51 +654,94 @@ Your chorus here`}
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mt-3">
-          <button
-            onClick={handleOptimize}
-            disabled={!songIdea || optimizing}
-            className="btn-ghost text-xs flex items-center gap-1.5"
-          >
-            {optimizing ? (
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            )}
-            {optimizing ? "Generating..." : "Generate Style"}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleOptimize}
+              disabled={!songIdea || optimizing}
+              className="btn-ghost text-xs flex items-center gap-1.5"
+            >
+              {optimizing ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
+              {optimizing ? "Generating..." : "Generate Style"}
+            </button>
 
-          <button
-            type="button"
-            disabled={!songIdea.trim()}
-            onClick={() => {
-              setShowSavePresetForm(!showSavePresetForm);
-              setPresetName("");
-              setPresetNotes("");
-            }}
-            className="btn-secondary text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Sla huidige stijl op als preset"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            Save Preset
-          </button>
-
-          {presets.length > 0 && (
             <button
               type="button"
-              onClick={() => setShowSavedPresetsList(!showSavedPresetsList)}
-              className={`btn-ghost text-xs flex items-center gap-1.5 ${showSavedPresetsList ? "text-primary-300 font-semibold" : "text-white/60 hover:text-white"}`}
+              disabled={!songIdea.trim()}
+              onClick={() => {
+                setShowSavePresetForm(!showSavePresetForm);
+                setPresetName("");
+                setPresetNotes("");
+              }}
+              className="btn-secondary text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Sla huidige stijl op als preset"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
               </svg>
-              My Presets ({presets.length})
+              Save Preset
             </button>
-          )}
+
+            {presets.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowSavedPresetsList(!showSavedPresetsList)}
+                className={`btn-ghost text-xs flex items-center gap-1.5 ${showSavedPresetsList ? "text-primary-300 font-semibold" : "text-white/60 hover:text-white"}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                My Presets ({presets.length})
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-[#12121a]/85 px-2 py-1 rounded-lg border border-white/5 shadow-md">
+            <button
+              type="button"
+              onClick={() => handleCopy(songIdea, "style")}
+              disabled={!songIdea.trim()}
+              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Copy style"
+              aria-label="Copy style"
+            >
+              {copiedField === "style" ? (
+                <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSongIdea("")}
+              disabled={!songIdea.trim()}
+              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Clear style"
+              aria-label="Clear style"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            <div className="h-3.5 w-px bg-white/10" />
+            <span
+              className={`text-[10px] font-mono select-none ${
+                promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/30"
+              }`}
+            >
+              {promptCharCount}/{styleMaxChars}
+            </span>
+          </div>
         </div>
 
         {/* Save Preset Form */}
