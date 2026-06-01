@@ -438,53 +438,6 @@ export default memo(function StudioForm({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {!instrumental && (
-              <button
-                type="button"
-                onClick={() => setLyricsExpanded(true)}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-                title="Expand lyrics editor"
-                aria-label="Expand lyrics editor"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                </svg>
-              </button>
-            )}
-            {!instrumental && (
-              <button
-                type="button"
-                onClick={() => handleCopy(lyrics, "lyrics")}
-                disabled={!lyrics.trim()}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Copy lyrics"
-                aria-label="Copy lyrics"
-              >
-                {copiedField === "lyrics" ? (
-                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                )}
-              </button>
-            )}
-            {!instrumental && (
-              <button
-                type="button"
-                onClick={() => setLyrics("")}
-                disabled={!lyrics.trim()}
-                className="text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Clear lyrics"
-                aria-label="Clear lyrics"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            )}
             <button
               type="button"
               role="switch"
@@ -529,15 +482,48 @@ Your lyrics here
 
 [Chorus]
 Your chorus here`}
-                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed pb-6"
+                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed pb-12 pr-4"
               />
-              <span className={`absolute bottom-2 right-3 text-xs pointer-events-none ${
-                lyricsCharCount >= lyricsMaxChars ? "text-red-400" : "text-white/20"
-              }`}>
-                {lyricsCharCount}/{lyricsMaxChars}
-              </span>
+              <div className="absolute bottom-2 right-3 flex items-center gap-1.5 bg-[#12121a]/85 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/5 shadow-md z-10">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(lyrics, "lyrics")}
+                  disabled={!lyrics.trim()}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Copy lyrics"
+                  aria-label="Copy lyrics"
+                >
+                  {copiedField === "lyrics" ? (
+                    <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLyrics("")}
+                  disabled={!lyrics.trim()}
+                  className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Clear lyrics"
+                  aria-label="Clear lyrics"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+                <div className="h-3.5 w-px bg-white/10" />
+                <span className={`text-[10px] font-mono select-none ${
+                  lyricsCharCount >= lyricsMaxChars ? "text-red-400" : "text-white/30"
+                }`}>
+                  {lyricsCharCount}/{lyricsMaxChars}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center justify-between gap-2 mt-2">
               <button
                 onClick={handleGenerateLyrics}
                 disabled={!lyricsContext || generatingLyrics}
@@ -551,6 +537,18 @@ Your chorus here`}
                   </svg>
                 )}
                 {generatingLyrics ? "Generating..." : "Generate Lyrics"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setLyricsExpanded(true)}
+                className="btn-ghost text-xs flex items-center gap-1.5"
+                title="Expand lyrics editor"
+                aria-label="Expand lyrics editor"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                </svg>
+                Expand Editor
               </button>
             </div>
           </>
@@ -599,7 +597,16 @@ Your chorus here`}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-white/80">Style & Prompt</h3>
-          <div className="flex items-center gap-2">
+        </div>
+
+        <div className="relative">
+          <textarea
+            value={songIdea}
+            onChange={(e) => setSongIdea(e.target.value)}
+            placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
+            className="input-field min-h-[120px] resize-y text-sm leading-relaxed pb-12 pr-4"
+          />
+          <div className="absolute bottom-2 right-3 flex items-center gap-1.5 bg-[#12121a]/85 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/5 shadow-md z-10">
             <button
               type="button"
               onClick={() => handleCopy(songIdea, "style")}
@@ -609,41 +616,36 @@ Your chorus here`}
               aria-label="Copy style"
             >
               {copiedField === "style" ? (
-                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               )}
             </button>
             <button
+              type="button"
               onClick={() => setSongIdea("")}
-              className="text-white/30 hover:text-white/60 transition-colors"
-              title="Clear"
+              disabled={!songIdea.trim()}
+              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Clear style"
+              aria-label="Clear style"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
+            <div className="h-3.5 w-px bg-white/10" />
+            <span
+              className={`text-[10px] font-mono select-none ${
+                promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/30"
+              }`}
+            >
+              {promptCharCount}/{styleMaxChars}
+            </span>
           </div>
-        </div>
-
-        <div className="relative">
-          <textarea
-            value={songIdea}
-            onChange={(e) => setSongIdea(e.target.value)}
-            placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
-            className="input-field min-h-[120px] resize-y text-sm leading-relaxed pb-6"
-          />
-          <span
-            className={`absolute bottom-2 right-3 text-xs pointer-events-none ${
-              promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/20"
-            }`}
-          >
-            {promptCharCount}/{styleMaxChars}
-          </span>
         </div>
 
         <div className="mt-3">
