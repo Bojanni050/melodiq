@@ -4,6 +4,61 @@ export interface ParsedLyricLine {
   endTime?: number;  // in seconds
 }
 
+function parseTimestampValue(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.replace(",", ".");
+  const direct = Number(normalized);
+  if (Number.isFinite(direct)) return direct;
+
+  // Supports mm:ss(.ms) and hh:mm:ss(.ms) formats
+  const parts = normalized.split(":");
+  if (parts.length < 2 || parts.length > 3) return null;
+
+  const numericParts = parts.map((part) => Number(part));
+  if (!numericParts.every((part) => Number.isFinite(part))) return null;
+
+  if (parts.length === 2) {
+    const [mins, secs] = numericParts;
+    return mins * 60 + secs;
+  }
+
+  const [hours, mins, secs] = numericParts;
+  return hours * 3600 + mins * 60 + secs;
+}
+
+function parseLrcLines(lrcText: string): ParsedLyricLine[] {
+  const lrcLines = lrcText.split("\n");
+  const parsed: ParsedLyricLine[] = [];
+  const lrcRegex = /^\[(\d+):(\d+(?:[.,]\d+)?)\](.*)/;
+
+  for (const lrcLine of lrcLines) {
+    const match = lrcLine.trim().match(lrcRegex);
+    if (!match) continue;
+
+    const mins = parseInt(match[1], 10);
+    const secs = parseFloat(match[2].replace(",", "."));
+    const text = match[3].trim();
+    const startTime = mins * 60 + secs;
+
+    if (text && !text.startsWith("[") && Number.isFinite(startTime)) {
+      parsed.push({ text, startTime });
+    }
+  }
+
+  if (parsed.length > 0) {
+    parsed.sort((a, b) => a.startTime - b.startTime);
+  }
+
+  return parsed;
+}
+
 /**
  * Detects if a lyricsTimestamps string is just a task submission object
  * (e.g. from PoYo submit response) rather than actual timing data.
@@ -66,6 +121,7 @@ export function parseLyrics(
 
     if (rawData) {
       let items: any[] = [];
+      let embeddedTimingText: string | null = null;
 
       // Extract items from different possible JSON shapes
       if (Array.isArray(rawData)) {
@@ -93,6 +149,41 @@ export function parseLyrics(
           const o = rawData.output;
           items = o.lines || o.words || o.segments || o.lyrics || [];
         }
+
+        // Some providers return timestamped lyrics as an embedded LRC-like string
+        const candidates = [
+          rawData.lrc,
+          rawData.lyrics_timestamped,
+          rawData.lyricsTimestamped,
+          rawData.timestamped_lyrics,
+          rawData.data?.lrc,
+          rawData.data?.lyrics_timestamped,
+          rawData.data?.lyricsTimestamped,
+          rawData.data?.timestamped_lyrics,
+          rawData.data?.result?.lrc,
+          rawData.data?.result?.lyrics_timestamped,
+          rawData.data?.result?.lyricsTimestamped,
+          rawData.data?.result?.timestamped_lyrics,
+          rawData.data?.output?.lrc,
+          rawData.data?.output?.lyrics_timestamped,
+          rawData.data?.output?.lyricsTimestamped,
+          rawData.data?.output?.timestamped_lyrics,
+          rawData.result?.lrc,
+          rawData.result?.lyrics_timestamped,
+          rawData.result?.lyricsTimestamped,
+          rawData.result?.timestamped_lyrics,
+          rawData.output?.lrc,
+          rawData.output?.lyrics_timestamped,
+          rawData.output?.lyricsTimestamped,
+          rawData.output?.timestamped_lyrics,
+        ];
+
+        const firstStringCandidate = candidates.find(
+          (candidate) => typeof candidate === "string" && candidate.trim().length > 0
+        );
+        if (typeof firstStringCandidate === "string") {
+          embeddedTimingText = firstStringCandidate;
+        }
       }
 
       if (items.length > 0) {
@@ -113,29 +204,38 @@ export function parseLyrics(
               const rawStart = item.start !== undefined ? item.start :
                                item.startTime !== undefined ? item.startTime :
                                item.start_time !== undefined ? item.start_time :
+                               item.timestamp !== undefined ? item.timestamp :
                                item.time !== undefined ? item.time :
                                item.offset !== undefined ? item.offset :
                                item.t !== undefined ? item.t :
-                               item.begin !== undefined ? item.begin : 0;
+                               item.begin !== undefined ? item.begin :
+                               item.ts !== undefined ? item.ts :
+                               item.start_ms !== undefined ? item.start_ms :
+                               item.startMs !== undefined ? item.startMs :
+                               -1;
               
               const rawEnd = item.end !== undefined ? item.end :
                              item.endTime !== undefined ? item.endTime :
                              item.end_time !== undefined ? item.end_time :
+                             item.timestamp_end !== undefined ? item.timestamp_end :
                              item.duration !== undefined ? (Number(rawStart) + Number(item.duration)) : undefined;
 
-              start = Number(rawStart);
-              if (rawEnd !== undefined) {
-                end = Number(rawEnd);
+              const parsedStart = parseTimestampValue(rawStart);
+              start = parsedStart ?? -1;
+
+              const parsedEnd = rawEnd !== undefined ? parseTimestampValue(rawEnd) : null;
+              if (parsedEnd !== null) {
+                end = parsedEnd;
               }
             }
 
             return { text: text.trim(), startTime: start, endTime: end };
           })
-          .filter((item) => item.text);
+          .filter((item) => item.text && Number.isFinite(item.startTime));
 
         if (parsed.length > 0) {
           // Detect if times are in milliseconds (e.g. 5000 instead of 5.0 seconds) and convert to seconds
-          const maxStart = Math.max(...parsed.map((p) => p.startTime), 0);
+          const maxStart = Math.max(...parsed.map((p) => p.startTime).filter((value) => value >= 0), 0);
           if (maxStart > 300) {
             parsed.forEach((p) => {
               p.startTime = p.startTime / 1000;
@@ -146,7 +246,7 @@ export function parseLyrics(
           }
 
           // If we have single words, group them to match defaultLines (reconstructing line-level timings)
-          const looksLikeWords = parsed.length > defaultLines.length * 2 && parsed.every((p) => !p.text.includes(" "));
+          const looksLikeWords = parsed.length > defaultLines.length * 2 && parsed.every((p) => !p.text.includes(" ") && p.startTime >= 0);
           if (looksLikeWords && defaultLines.length > 0) {
             const grouped: ParsedLyricLine[] = [];
             let wordIndex = 0;
@@ -186,6 +286,13 @@ export function parseLyrics(
           return parsed;
         }
       }
+
+      if (embeddedTimingText) {
+        const embeddedParsed = parseLrcLines(embeddedTimingText);
+        if (embeddedParsed.length > 0) {
+          return embeddedParsed;
+        }
+      }
     }
   } catch (e) {
     console.warn("Failed to parse lyricsTimestamps:", e);
@@ -193,25 +300,8 @@ export function parseLyrics(
 
   // Fallback to LRC parser in case it is formatted as a standard LRC string
   if (typeof lyricsTimestamps === "string" && lyricsTimestamps.includes("[")) {
-    const lrcLines = lyricsTimestamps.split("\n");
-    const parsed: ParsedLyricLine[] = [];
-    const lrcRegex = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
-
-    for (const lrcLine of lrcLines) {
-      const match = lrcLine.trim().match(lrcRegex);
-      if (match) {
-        const mins = parseInt(match[1], 10);
-        const secs = parseFloat(match[2]);
-        const text = match[3].trim();
-        const startTime = mins * 60 + secs;
-        if (text && !text.startsWith("[")) {
-          parsed.push({ text, startTime });
-        }
-      }
-    }
-
+    const parsed = parseLrcLines(lyricsTimestamps);
     if (parsed.length > 0) {
-      parsed.sort((a, b) => a.startTime - b.startTime);
       return parsed;
     }
   }

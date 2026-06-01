@@ -4,6 +4,12 @@
 - Conclusions: Helpers verplaatsen naar `src/lib` en UI-secties naar gerichte componentbestanden verlaagt complexiteit zonder business-flow te wijzigen.
 - Actions: Aangemaakt `src/lib/lyrics-utils.ts` en `src/lib/track-utils.ts`; toegevoegd `src/components/lyrics-studio/LyricBlockEditor.tsx`, `src/components/lyrics-studio/PresetSelector.tsx`, `src/components/lyrics-studio/BlockToolbar.tsx`; toegevoegd `src/components/tracks/types.ts`, `src/components/tracks/WaveformBars.tsx`, `src/components/tracks/ConfirmDialog.tsx`, `src/components/tracks/GeneratingRow.tsx`, `src/components/tracks/TrackCard.tsx`; toegevoegd `src/components/studio/GenerateButton.tsx`, `src/components/studio/NoticeBar.tsx`, `src/components/studio/CreateWorkspaceDialog.tsx`, `src/components/studio/ResizablePanel.tsx`; gerefactord `src/components/TrackList.tsx`, `src/app/lyrics-studio/page.tsx`, `src/app/page.tsx` naar imports van nieuwe modules; build uitgevoerd met `npm run build` (compile ok, faalt bij page data door ongeldige `postgres` URL in env voor `/api/auth/register`), validated.
 
+## 2026-06-01 (Timed lyrics highlight compatibiliteit hersteld)
+
+- Findings: Tracks met `lyricsTimestamps` JSON highlightten de actieve lyric-regel niet betrouwbaar, omdat de parser te strikt was op tijdnotaties en enkele geneste payloadvormen (zoals embedded `lyrics_timestamped`/LRC strings) niet oppakte.
+- Conclusions: De timed-lyrics parser moet meerdere timestampformaten accepteren (`seconds`, `mm:ss`, `hh:mm:ss`) en ook geneste payloadvelden met embedded LRC kunnen uitlezen voordat wordt teruggevallen naar untimed lyrics.
+- Actions: `src/lib/parse-lyrics.ts` uitgebreid met robuuste tijdparser, herbruikbare LRC-parser en ondersteuning voor extra velden (`timestamp`, `ts`, `start_ms`, `lyrics_timestamped`, `timestamped_lyrics` in nested data/result/output vormen); fallback-LRC parsing gecentraliseerd; toegevoegd `src/lib/__tests__/parse-lyrics.test.ts` met regressietests voor `mm:ss`, embedded nested LRC en task-submission fallback; `src/components/Sidebar.tsx` buildversie bijgewerkt naar `202606011926`; `melodiq-user.md` versie en timed-lyrics gedrag bijgewerkt; gevalideerd met `npm run test -- src/lib/__tests__/parse-lyrics.test.ts` en `npm run build`.
+
 ## 2026-05-26 (Build-fix voor ongeldige DATABASE_URL)
 
 - Findings: Productiebuild viel uit tijdens page-data collectie door een ongeldige `DATABASE_URL` (`ERR_INVALID_URL`) die al bij module-import van de DB-client crashte.

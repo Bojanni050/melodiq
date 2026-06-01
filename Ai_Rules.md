@@ -69,7 +69,12 @@ For task/goal tracking, use the stash MCP tools.
 | Verbinding | `mcp-remote` via npx |
 | Gebruik | Stabiele referentie — specs, projectdefinities, lange-termijn facts |
 
+start session: use stash recall to load my profile and recent project context. Summarize what you know about me, then we begin.
 
+Before answering, always recall relevant context using the stash MCP tool.
+Query: current topic, project name, or user preferences.
+
+After important decisions or changes, store a summary using stash rememeber
 
 ### Context7 — Actuele library-documentatie
 | Eigenschap | Waarde |

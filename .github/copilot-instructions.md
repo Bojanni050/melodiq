@@ -1,6 +1,6 @@
 # ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
-# Fecha: 2026-05-26 16:40:35
+# Fecha: 2026-06-01 17:33:10
 # No editar directamente - los cambios se sobrescribirán
 # 
 # Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
@@ -62,6 +62,7 @@ Bo gebruikt een **drielaags systeem** van memory en documentatie-raadpleging. Be
 - Mental Models: Technical stack & preferences, Active projects, Personal profile, Working method & patterns
 
 ## Memory Protocol
+Start session: use hindsight recall to load my profile and recent project context. Summarize what you know about me, then we begin.
 
 Before answering, always recall relevant context using the hindsight MCP tool.
 Query: current topic, project name, or user preferences.
@@ -78,7 +79,12 @@ For task/goal tracking, use the stash MCP tools.
 | Verbinding | `mcp-remote` via npx |
 | Gebruik | Stabiele referentie — specs, projectdefinities, lange-termijn facts |
 
+start session: use stash recall to load my profile and recent project context. Summarize what you know about me, then we begin.
 
+Before answering, always recall relevant context using the stash MCP tool.
+Query: current topic, project name, or user preferences.
+
+After important decisions or changes, store a summary using stash rememeber
 
 ### Context7 — Actuele library-documentatie
 | Eigenschap | Waarde |
