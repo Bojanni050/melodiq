@@ -17,7 +17,7 @@ async function main() {
   const trackId = process.argv[2] || "063883e0-4e12-4aea-beb0-a266c81a7933";
 
   console.log("====================================================");
-  console.log("      MELODIQ MANUAL TRACK TIMINGS HEALER");
+  console.log("      MELODIQ MANUAL TRACK TIMINGS HEALER (DIAGNOSTIC)");
   console.log("====================================================");
   console.log("DATABASE URL:", databaseUrl.replace(/:[^:@]+@/, ":****@"));
   console.log("TARGET TRACK ID:", trackId);
@@ -82,42 +82,67 @@ async function main() {
     console.log("⏳ Querying PoYo API for task status/details...");
 
     let statusData: any = null;
+    let successfulUrl: string = "";
+    let successfulMethod: string = "";
 
-    try {
-      // 1. Try standard GET status endpoint
-      const response = await axios.get(
-        `https://api.poyo.ai/api/generate/status/${taskId}`,
-        {
-          headers: { Authorization: `Bearer ${poyoApiKey}` }
-        }
-      );
-      statusData = response.data;
-    } catch (error: any) {
-      const isMusicTask =
-        error.response?.status === 400 &&
-        (String(error.response?.data?.error?.message || error.response?.data?.message || "").includes("detail/music") ||
-         String(error.response?.data?.error?.message || error.response?.data?.message || "").includes("music generation"));
+    const key = poyoApiKey;
 
-      if (isMusicTask) {
-        console.log(`[poyo] Task ${taskId} is a music generation task. Querying details via POST generate/detail/music...`);
-        const response = await axios.post(
-          "https://api.poyo.ai/api/generate/detail/music",
-          { task_id: taskId },
-          {
-            headers: {
-              Authorization: `Bearer ${poyoApiKey}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
+    // Define multiple endpoint structures to test
+    const attempts = [
+      {
+        name: "GET with path parameter (standard style)",
+        fn: () => axios.get(`https://api.poyo.ai/api/generate/detail/music/${taskId}`, {
+          headers: { Authorization: `Bearer ${key}` }
+        }),
+        url: `https://api.poyo.ai/api/generate/detail/music/${taskId}`,
+        method: "GET"
+      },
+      {
+        name: "GET with task_id query parameter",
+        fn: () => axios.get(`https://api.poyo.ai/api/generate/detail/music?task_id=${taskId}`, {
+          headers: { Authorization: `Bearer ${key}` }
+        }),
+        url: `https://api.poyo.ai/api/generate/detail/music?task_id=${taskId}`,
+        method: "GET"
+      },
+      {
+        name: "GET with id query parameter",
+        fn: () => axios.get(`https://api.poyo.ai/api/generate/detail/music?id=${taskId}`, {
+          headers: { Authorization: `Bearer ${key}` }
+        }),
+        url: `https://api.poyo.ai/api/generate/detail/music?id=${taskId}`,
+        method: "GET"
+      },
+      {
+        name: "POST with task_id in body",
+        fn: () => axios.post(`https://api.poyo.ai/api/generate/detail/music`, { task_id: taskId }, {
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }
+        }),
+        url: `https://api.poyo.ai/api/generate/detail/music`,
+        method: "POST"
+      }
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        console.log(`\n⏳ Trying: ${attempt.name}`);
+        const response = await attempt.fn();
         statusData = response.data;
-      } else {
-        throw error;
+        successfulUrl = attempt.url;
+        successfulMethod = attempt.method;
+        console.log(`✅ Success! Endpoint: [${attempt.method}] ${attempt.url}`);
+        break;
+      } catch (err: any) {
+        console.log(`❌ Failed ${attempt.name}: ${err.message}`);
+        if (err.response) {
+          console.log(`   Status: ${err.response.status}`);
+          console.log(`   Response: ${JSON.stringify(err.response.data).substring(0, 200)}`);
+        }
       }
     }
 
     if (!statusData) {
-      console.error("❌ Error: Received empty status data from PoYo API!");
+      console.error("\n❌ Error: All endpoint attempts failed. Unable to fetch details from PoYo API!");
       return;
     }
 
@@ -128,7 +153,7 @@ async function main() {
       ""
     ).toLowerCase();
 
-    console.log(`🌐 PoYo task status: "${statusValue}"`);
+    console.log(`\n🌐 PoYo task status: "${statusValue}"`);
 
     const isDone = statusValue === "completed" || statusValue === "finished";
 
@@ -147,6 +172,7 @@ async function main() {
       console.log("🎉 SUCCESS: Track has been successfully healed in the DB!");
       console.log("====================================================");
       console.log("Updated Track:", updateResult[0].title);
+      console.log("Successful API call:", `[${successfulMethod}] ${successfulUrl}`);
     } else {
       console.log("\n====================================================");
       console.log(`⚠️  NOTICE: The task is not finished on PoYo side yet.`);
