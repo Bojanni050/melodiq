@@ -17,11 +17,26 @@ async function getPoYoStatus(jobId: string, apiKey: string): Promise<any> {
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
-  const poyoApiKey = process.env.POYO_API_KEY;
 
   if (!databaseUrl) {
     console.error("❌ Error: DATABASE_URL is not set in environment or env files!");
     return;
+  }
+
+  const sql = postgres(databaseUrl);
+
+  let poyoApiKey = process.env.POYO_API_KEY;
+  if (!poyoApiKey) {
+    try {
+      const settingsResult = await sql`
+        SELECT value FROM settings WHERE key = 'POYO_API_KEY';
+      `;
+      if (settingsResult.length > 0) {
+        poyoApiKey = settingsResult[0].value;
+      }
+    } catch (e: any) {
+      console.warn("⚠️ Warning: Could not fetch POYO_API_KEY from settings table:", e.message);
+    }
   }
 
   // Get track ID from command line arguments
@@ -31,11 +46,9 @@ async function main() {
   console.log("      MELODIQ MANUAL TRACK TIMINGS HEALER");
   console.log("====================================================");
   console.log("DATABASE URL:", databaseUrl.replace(/:[^:@]+@/, ":****@"));
-  console.log("POYO API KEY:", poyoApiKey ? "✅ Found (Configured)" : "❌ Missing!");
+  console.log("POYO API KEY:", poyoApiKey ? "✅ Found (Loaded from Database Settings)" : "❌ Missing!");
   console.log("TARGET TRACK ID:", trackId);
   console.log("----------------------------------------------------");
-
-  const sql = postgres(databaseUrl);
 
   try {
     console.log(`⏳ Fetching track ${trackId} from database...`);
