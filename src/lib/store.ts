@@ -136,6 +136,10 @@ export const usePlayerStore = create<PlayerState>()(
             }
           }
 
+          if (track.lyrics && track.lyrics.trim()) {
+            nextState.showTrackDetailsPanel = true;
+          }
+
           return nextState as PlayerState;
         });
       },
@@ -162,6 +166,7 @@ export const usePlayerStore = create<PlayerState>()(
             history: state.currentTrack
               ? [...state.history, state.currentTrack].slice(-50)
               : state.history,
+            showTrackDetailsPanel: (nextTrack.lyrics && nextTrack.lyrics.trim()) ? true : state.showTrackDetailsPanel,
           };
         }),
       playPrevious: () =>
@@ -180,6 +185,7 @@ export const usePlayerStore = create<PlayerState>()(
             queue: state.currentTrack
               ? [state.currentTrack, ...state.queue]
               : state.queue,
+            showTrackDetailsPanel: (previousTrack.lyrics && previousTrack.lyrics.trim()) ? true : state.showTrackDetailsPanel,
           };
         }),
       setIsPlaying: (playing) => set({ isPlaying: playing }),

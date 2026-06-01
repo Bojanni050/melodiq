@@ -83,13 +83,24 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
     return activeIndex;
   }, [parsedLyrics, currentTime, hasTimings]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const sidebarActiveLineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (sidebarActiveLineRef.current) {
-      sidebarActiveLineRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
+    if (containerRef.current && sidebarActiveLineRef.current) {
+      const container = containerRef.current;
+      const activeEl = sidebarActiveLineRef.current;
+      
+      const containerHeight = container.clientHeight;
+      const elemTop = activeEl.offsetTop;
+      const elemHeight = activeEl.clientHeight;
+      
+      // Center the active element exactly in the middle of the container
+      const targetScrollTop = elemTop - (containerHeight / 2) + (elemHeight / 2);
+      
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: "smooth"
       });
     }
   }, [activeLineIndex]);
@@ -349,7 +360,10 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
               </button>
             </div>
             {hasTimings ? (
-              <div className="max-h-[350px] overflow-y-auto pr-1 py-12 scroll-smooth space-y-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <div
+                ref={containerRef}
+                className="max-h-[350px] overflow-y-auto pr-1 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+              >
                 {parsedLyrics.map((line, index) => {
                   const isActive = index === activeLineIndex;
                   const isPlayed = index < activeLineIndex;
@@ -364,7 +378,7 @@ export default function TrackDetail({ track, onClose, onPlay, onDownload, mode =
                         isTrackPlaying ? "cursor-pointer" : ""
                       } ${
                         isActive
-                          ? "text-white font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,255,255,0.35)] opacity-100"
+                          ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
                           : isPlayed
                           ? "text-white/50 font-medium"
                           : "text-white/25 font-medium hover:text-white/50"
