@@ -112,13 +112,24 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
     return activeIndex;
   }, [parsedLyrics, currentTime, hasTimings]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (activeLineRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
+    if (containerRef.current && activeLineRef.current) {
+      const container = containerRef.current;
+      const activeEl = activeLineRef.current;
+      
+      const containerHeight = container.clientHeight;
+      const elemTop = activeEl.offsetTop;
+      const elemHeight = activeEl.clientHeight;
+      
+      // Center the active element exactly in the middle of the container
+      const targetScrollTop = elemTop - (containerHeight / 2) + (elemHeight / 2);
+      
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: "smooth"
       });
     }
   }, [activeLineIndex]);
@@ -281,7 +292,10 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
               {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
               <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]">
                 {hasTimings ? (
-                  <div className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  <div
+                    ref={containerRef}
+                    className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  >
                     {parsedLyrics.map((line, index) => {
                       const isActive = index === activeLineIndex;
                       const isPlayed = index < activeLineIndex;
@@ -293,7 +307,7 @@ function FullscreenPlayer({ audioSource, audioSourceState }: { audioSource: Audi
                           onClick={() => handleLineClick(line.startTime)}
                           className={`cursor-pointer transition-all duration-500 origin-center lg:origin-left py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
                             isActive
-                              ? "text-white font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,255,255,0.45)] opacity-100"
+                              ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
                               : isPlayed
                               ? "text-white/45 font-medium hover:text-white/80"
                               : "text-white/20 font-medium hover:text-white/60"
