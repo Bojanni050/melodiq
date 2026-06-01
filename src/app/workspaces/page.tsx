@@ -28,6 +28,7 @@ type Track = {
   s3KeyCover: string | null;
   rating?: string | null;
   playCount?: number | null;
+  lyricsTimestamps?: string | null;
 };
 
 type WorkspaceDisplayMode = "grid" | "list";
@@ -127,6 +128,7 @@ export default function WorkspacesPage() {
       s3KeyHd: selectedTrack.s3KeyHd,
       duration: selectedTrack.duration,
       lyrics: selectedTrack.lyrics,
+      lyricsTimestamps: selectedTrack.lyricsTimestamps,
       createdAt: selectedTrack.createdAt,
       error: selectedTrack.error,
       coverUrl: selectedTrack.coverUrl ?? null,

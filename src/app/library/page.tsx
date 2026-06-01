@@ -32,6 +32,7 @@ interface LibraryTrack {
   coverUrl: string | null;
   s3KeyCover: string | null;
   rating?: string | null;
+  lyricsTimestamps?: string | null;
 }
 
 type LibraryView = "songs" | "workspaces";
@@ -411,6 +412,7 @@ export default function LibraryPage() {
         s3KeyHd: track.s3KeyHd,
         duration: track.duration,
         lyrics: track.lyrics,
+        lyricsTimestamps: track.lyricsTimestamps,
         createdAt: track.createdAt,
         error: track.error,
         coverUrl: track.coverUrl,
@@ -441,6 +443,7 @@ export default function LibraryPage() {
       s3KeyHd: selectedTrack.s3KeyHd,
       duration: selectedTrack.duration,
       lyrics: selectedTrack.lyrics,
+      lyricsTimestamps: selectedTrack.lyricsTimestamps,
       createdAt: selectedTrack.createdAt,
       error: selectedTrack.error,
       coverUrl: selectedTrack.coverUrl,
