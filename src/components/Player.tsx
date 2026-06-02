@@ -509,10 +509,6 @@ export default function Player() {
     return `MelodIQ Player${suffix}`;
   }
 
-  if (isFullscreen && currentTrack) {
-    return <FullscreenPlayer audioSource={audioSource} audioSourceState={audioSourceState} />;
-  }
-
   const isNowPlaying = currentTrack !== null;
   const nowPlayingQueue = currentTrack ? [currentTrack, ...queue] : queue;
   const playerCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
@@ -524,7 +520,11 @@ export default function Player() {
         {getStatusString()}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-40 overflow-hidden">
+      {isFullscreen && currentTrack && (
+        <FullscreenPlayer audioSource={audioSource} audioSourceState={audioSourceState} />
+      )}
+
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#161621] border-t border-white/5 z-[60] overflow-hidden">
         {playerCoverUrl ? (
           <div aria-hidden="true" className="absolute inset-0">
             <img

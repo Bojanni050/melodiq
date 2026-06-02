@@ -185,52 +185,6 @@ export default function FullscreenPlayer({
     };
   }, [audioElement]);
 
-  const handleSeek = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const time = parseFloat(e.target.value);
-      if (audioElement) {
-        audioElement.currentTime = time;
-        setCurrentTime(time);
-      }
-    },
-    [audioElement]
-  );
-
-  const handleVolume = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const vol = parseFloat(e.target.value);
-      setVolume(vol);
-    },
-    [setVolume]
-  );
-
-  const togglePlay = useCallback(() => {
-    if (!allowWithDelay(playToggleCooldownRef, 350)) return;
-    if (!currentTrack) return;
-    const nextPlaying = !isPlaying;
-    usePlayerStore.getState().setIsPlaying(nextPlaying);
-  }, [currentTrack, isPlaying]);
-
-  const handlePrevious = useCallback(() => {
-    if (audioElement && audioElement.currentTime > 3) {
-      audioElement.currentTime = 0;
-      setCurrentTime(0);
-      return;
-    }
-    usePlayerStore.getState().playPrevious();
-  }, [audioElement]);
-
-  const handleNext = useCallback(() => {
-    usePlayerStore.getState().playNext();
-  }, []);
-
-  const formatTime = (s: number) => {
-    if (!s || isNaN(s)) return "0:00";
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  };
-
   const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
   const lyrics = currentTrack?.lyrics || "";
   const lyricsLines = lyrics.split("\n").filter((line) => line.trim());
@@ -252,7 +206,7 @@ export default function FullscreenPlayer({
   });
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black overflow-hidden">
+    <div className="fixed top-0 left-0 right-0 bottom-16 z-[50] bg-black overflow-hidden">
       {coverUrl && (
         <div
           className="absolute inset-0 bg-cover bg-center scale-115 blur-[90px] opacity-45 saturate-150"
@@ -377,95 +331,6 @@ export default function FullscreenPlayer({
               </h3>
             </div>
           )}
-        </div>
-        <div className="bg-black/60 backdrop-blur-xl border-t border-white/10 w-full shrink-0 z-10 relative">
-          <div className="px-6 sm:px-8 py-4 sm:py-6">
-            <div className="flex items-center gap-4 mb-4 sm:mb-6">
-              <span className="text-xs sm:text-sm text-white/60 w-12 text-right">
-                {formatTime(currentTime)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                value={currentTime}
-                onChange={handleSeek}
-                disabled={!currentTrack}
-                aria-label="Seek position"
-                className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
-              />
-              <span className="text-xs sm:text-sm text-white/60 w-12">
-                {formatTime(duration)}
-              </span>
-            </div>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
-              <div className="hidden lg:block lg:w-28 lg:shrink-0" />
-              <div className="flex items-center justify-center gap-6 w-full lg:flex-1">
-                <button
-                  onClick={handlePrevious}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
-                  title="Previous"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 5h2v14H6zM9 12l10 7V5z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={togglePlay}
-                  disabled={!currentTrack}
-                  className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600 hover:shadow-2xl hover:shadow-primary-500/50 active:scale-95 flex items-center justify-center transition-all disabled:opacity-50"
-                >
-                  {isPlaying ? (
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-all"
-                  title="Next"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 5h2v14h-2zM6 19l10-7L6 5z" />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex items-center justify-center lg:justify-end gap-4 w-full lg:w-auto lg:shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsFullscreen(false)}
-                  disabled={!currentTrack}
-                  className="p-2 rounded-full text-white/60 hover:text-white/85 disabled:opacity-30 transition-colors"
-                  title="Exit fullscreen"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 12a1 1 0 100-2 1 1 0 000 2z" />
-                  </svg>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={volume}
-                    onChange={handleVolume}
-                    aria-label="Volume"
-                    className="w-20 sm:w-24 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-primary-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
