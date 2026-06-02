@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606021115**
+**Versie: 202606021626**
 
 > AI Music Generation Web App
 
@@ -114,6 +114,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 
 - **Instrumental tracks** — title is **required**
 - **Vocal tracks** — if left empty, the AI will automatically extract a title from your lyrics when you generate. You can also click **Generate Title** to preview it beforehand
+- In the desktop right-hand **Track Details** sidebar, the lyrics section now stays clipped to the panel height and fades to black at the bottom while you scroll.
 ![alt text](image.png)
 ---
 

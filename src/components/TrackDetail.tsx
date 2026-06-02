@@ -270,7 +270,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   }
 
   const panelContent = (
-    <div className="flex flex-col min-h-full">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 px-4 py-3 flex items-center justify-between">
         <h3 className="text-sm font-medium text-white/60">Track Details</h3>
@@ -356,7 +356,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       </div>
 
       {/* Details Container */}
-      <div className="flex-1 flex flex-col px-6 py-5 space-y-6">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
 
         {/* Prompt */}
         <div className="shrink-0">
@@ -399,7 +399,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
         {/* Lyrics */}
         {track.lyrics && (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <div className="shrink-0 flex items-center justify-between mb-2">
               <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">
                 Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
@@ -421,37 +421,43 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               </button>
             </div>
             {hasTimings ? (
-              <div
-                ref={containerRef}
-                className="flex-1 min-h-[400px] overflow-y-auto px-3 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
-              >
-                {parsedLyrics.map((line, index) => {
-                  const isActive = index === activeLineIndex;
-                  const isPlayed = index < activeLineIndex;
-                  const isTrackPlaying = currentTrack?.id === track.id;
+              <div className="relative flex-1 min-h-0 overflow-hidden">
+                <div
+                  ref={containerRef}
+                  className="h-full overflow-y-auto px-3 pt-3 pb-16 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+                >
+                  {parsedLyrics.map((line, index) => {
+                    const isActive = index === activeLineIndex;
+                    const isPlayed = index < activeLineIndex;
+                    const isTrackPlaying = currentTrack?.id === track.id;
 
-                  return (
-                    <div
-                      key={index}
-                      ref={isActive ? sidebarActiveLineRef : null}
-                      onClick={() => handleLineClick(line.startTime)}
-                      className={`transition-all duration-300 leading-relaxed py-0.5 ${
-                        isTrackPlaying ? "cursor-pointer" : ""
-                      } ${
-                        isActive
-                          ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
-                          : isPlayed
-                          ? "text-white/50 font-medium"
-                          : "text-white/25 font-medium hover:text-white/50"
-                      }`}
-                    >
-                      {line.text}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={index}
+                        ref={isActive ? sidebarActiveLineRef : null}
+                        onClick={() => handleLineClick(line.startTime)}
+                        className={`transition-all duration-300 leading-relaxed py-0.5 ${
+                          isTrackPlaying ? "cursor-pointer" : ""
+                        } ${
+                          isActive
+                            ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
+                            : isPlayed
+                            ? "text-white/50 font-medium"
+                            : "text-white/25 font-medium hover:text-white/50"
+                        }`}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/95 to-transparent" />
               </div>
             ) : (
-              <pre className="flex-1 min-h-[400px] overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">{track.lyrics}</pre>
+              <div className="relative flex-1 min-h-0 overflow-hidden">
+                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">{track.lyrics}</pre>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/95 to-transparent" />
+              </div>
             )}
           </div>
         )}
@@ -468,7 +474,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   if (mode === "sidebar") {
     return (
-      <div className="h-full w-full bg-[#0d0d12] overflow-y-auto">
+      <div className="h-full w-full bg-[#0d0d12] overflow-hidden">
         {panelContent}
       </div>
     );

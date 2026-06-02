@@ -251,3 +251,9 @@
 - Findings: Voor productie-issues met timed lyrics per specifieke track-id ontbrak snelle, auth-veilige inspectie van parser-input en parser-output in dezelfde response.
 - Conclusions: Een dedicated endpoint onder de bestaande tracks-route maakt vergelijking van payload-shape en parse-resultaten direct mogelijk zonder handmatige DB-shell of losse scripts.
 - Actions: Toegevoegd `src/app/api/tracks/[id]/lyrics-debug/route.ts` met auth + user-scope check (`requireAuth` + `userId` filter), parserdiagnostiek (`parseLyrics`, `isLyricsTaskSubmission`), payload-shape analyse (velden/arrays/start-field usage), en hints voor veelvoorkomende parseproblemen; buildVersion bijgewerkt naar `202606021626` in `src/components/Sidebar.tsx`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-02 (Rechter lyrics-sidebar begrensd met fade)
+
+- Findings: De rechter Track Details sidebar liet de lyrics-sectie als onderdeel van de volledige kolom meelopen, waardoor de detailsweergave visueel langer werd dan de naastliggende trackkolom.
+- Conclusions: De sidebar moet zelf een vaste paneelhoogte houden, met alleen een intern scrollbaar lyrics-vak en een fade-overlay onderaan om doorlopende content visueel af te kappen.
+- Actions: `src/components/TrackDetail.tsx` aangepast zodat de sidebar-mode `overflow-hidden` gebruikt, de detailscontainer `min-h-0`/`overflow-hidden` afdwingt, en het lyrics-gedeelte een eigen scrollcontainer met zwarte bottom-fade krijgt voor timed en untimed lyrics; `melodiq-user.md` versie en beschrijving bijgewerkt; buildVersion bijgewerkt naar `202606021626`; validatie volgt via `npm run build`.
