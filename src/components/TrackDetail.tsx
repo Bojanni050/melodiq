@@ -277,7 +277,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         </button>
       </div>
 
-      {/* Artwork */}
+      {/* Artwork with Overlay */}
       <div className="aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ff530c]/20 overflow-hidden">
         {track.coverUrl ? (
           <img
@@ -292,100 +292,67 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </svg>
           </div>
         )}
-      </div>
 
-      {/* Info */}
-      <div className="px-6 py-4 space-y-4">
-        <div>
-          <h2 className="text-xl font-bold">{title}</h2>
-          <p className="text-sm text-white/40 mt-1">
-            {artistLabel ? `${artistLabel} - ` : ""}{providerLabel} • {providerModelLabel}
-            {track.duration && (
-              <span className="ml-2 text-white/30">• {formatDuration(track.duration)}</span>
-            )}
-          </p>
-          {isUploadedTrack && (
-            <span className="mt-2 inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-200">
-              Uploaded file
-            </span>
-          )}
-        </div>
+        {/* Gradient Overlay for Text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          {track.status === "done" && track.audioUrl && (
-            <>
-              <button
-                onClick={() => onPlay(track.audioUrl!)}
-                className="flex-1 btn-primary py-2.5 text-sm"
-              >
-                Play
-              </button>
-              <button
-                onClick={() => handleDownload(track.audioUrl!)}
-                disabled={downloading}
-                className="btn-secondary text-sm px-3 py-2.5"
-              >
-                {mp3Label}
-              </button>
-              {track.s3KeyHd && track.audioUrlHd && (
-                <button
-                  onClick={() => handleDownload(track.audioUrlHd!, true)}
-                  disabled={downloading}
-                  className="btn-secondary text-sm px-3 py-2.5"
-                >
-                  {wavLabel}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Rating */}
+        {/* Rating Overlay (Top Right) */}
         {track.status === "done" && (
-          <div className="flex items-center justify-center gap-3 py-2">
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
             <button
               onClick={() => handleRating("up")}
               disabled={ratingLoading}
-              className={`group relative p-3 rounded-xl transition-all duration-200 ${
+              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
                 currentRating === "up"
-                  ? "text-green-400"
-                  : "text-white/40 hover:text-green-300"
+                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                  : "bg-black/40 text-white/70 border border-white/10 hover:bg-black/60 hover:text-white"
               }`}
-              style={{
-                boxShadow: currentRating === "up"
-                  ? "inset -2px -2px 6px rgba(74, 222, 128, 0.1), inset 2px 2px 6px rgba(0, 0, 0, 0.4)"
-                  : "-2px -2px 6px rgba(255, 255, 255, 0.05), 2px 2px 6px rgba(0, 0, 0, 0.3)",
-              }}
               title="Thumbs up"
               aria-label="Rate track positive"
             >
-              <svg className="w-5 h-5" fill={currentRating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill={currentRating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
               </svg>
             </button>
             <button
               onClick={() => handleRating("down")}
               disabled={ratingLoading}
-              className={`group relative p-3 rounded-xl transition-all duration-200 ${
+              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
                 currentRating === "down"
-                  ? "text-red-400"
-                  : "text-white/40 hover:text-red-300"
+                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  : "bg-black/40 text-white/70 border border-white/10 hover:bg-black/60 hover:text-white"
               }`}
-              style={{
-                boxShadow: currentRating === "down"
-                  ? "inset -2px -2px 6px rgba(248, 113, 113, 0.1), inset 2px 2px 6px rgba(0, 0, 0, 0.4)"
-                  : "-2px -2px 6px rgba(255, 255, 255, 0.05), 2px 2px 6px rgba(0, 0, 0, 0.3)",
-              }}
               title="Thumbs down"
               aria-label="Rate track negative"
             >
-              <svg className="w-5 h-5" fill={currentRating === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill={currentRating === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
               </svg>
             </button>
           </div>
         )}
+
+        {/* Info Overlay (Bottom) */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end z-10">
+          <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
+          <p className="text-xs text-white/80 mt-1.5 drop-shadow-sm font-medium">
+            {artistLabel ? `${artistLabel} - ` : ""}{providerLabel} • {providerModelLabel}
+            {track.duration && (
+              <span className="ml-1.5 text-white/60">• {formatDuration(track.duration)}</span>
+            )}
+          </p>
+          {isUploadedTrack && (
+            <div className="mt-2.5">
+              <span className="inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-emerald-100 uppercase tracking-wider">
+                Uploaded file
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Details Container */}
+      <div className="px-6 py-5 space-y-6">
 
         {/* Prompt */}
         <div>
@@ -420,8 +387,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           {promptExpanded ? (
             <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
           ) : (
-            <p className="text-sm text-white/35 leading-relaxed line-clamp-2">
-              Prompttext ingeklapt. Klik op Prompt om de volledige tekst te zien.
+            <p className="text-sm text-white/40 leading-relaxed line-clamp-2">
+              {track.prompt}
             </p>
           )}
         </div>
