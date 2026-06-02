@@ -233,3 +233,9 @@
   - Aangepast `src/components/tracks/TrackCard.tsx`: `handleDelete` en `executeDelete` aangepast zodat ze de Zustand selection store checken; als de huidige track geselecteerd is, wordt bulkverwijdering voor alle geselecteerde tracks in gang gezet via een eenduidige bevestigingsmodal en `onDeleteTracks` callback.
   - Aangepast `src/app/page.tsx`: De polling-functie `fetchTracks` herschreven om een directe fetch call met een cache-busting timestamp (`/api/tracks?t=Date.now()`, `cache: "no-store"`) te doen naar `/api/tracks`, de SWR-cache handmatig bij te werken via `mutateTracksResponse(payload, { revalidate: false })` en `applyTracksResponse` aan te roepen.
   - Aangepast `src/components/Sidebar.tsx`: buildVersion bijgewerkt naar `zo 10:00`; validated met `npm run build` (succesvol geslaagd, compile OK).
+
+## 2026-06-02 (Rechter details-sidebar hoogte gelijkgetrokken)
+
+- Findings: De rechter details-sidebar op Library/Workspaces forceerde een eigen viewporthoogte en week daardoor visueel af van de hoofdcontenthoogte.
+- Conclusions: De detailcontainer moet de hoogte van het resizable panel volgen (`h-full`) in plaats van opnieuw `100vh - player` te berekenen.
+- Actions: `src/app/library/page.tsx`, `src/app/workspaces/page.tsx` en `src/app/workspaces/[workspaceId]/page.tsx` aangepast van `sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto` naar `h-full overflow-y-auto`; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606021150`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
