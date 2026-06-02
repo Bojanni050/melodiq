@@ -252,6 +252,12 @@
 - Conclusions: Een dedicated endpoint onder de bestaande tracks-route maakt vergelijking van payload-shape en parse-resultaten direct mogelijk zonder handmatige DB-shell of losse scripts.
 - Actions: Toegevoegd `src/app/api/tracks/[id]/lyrics-debug/route.ts` met auth + user-scope check (`requireAuth` + `userId` filter), parserdiagnostiek (`parseLyrics`, `isLyricsTaskSubmission`), payload-shape analyse (velden/arrays/start-field usage), en hints voor veelvoorkomende parseproblemen; buildVersion bijgewerkt naar `202606021626` in `src/components/Sidebar.tsx`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
 
+## 2026-06-02 (Prompt preview toegevoegd in track overlay)
+
+- Findings: In de track-overlay ontbrak een snelle prompt-weergave direct onder titel/metadata, waardoor promptcontext pas lager in de panel-content zichtbaar was.
+- Conclusions: Een compacte prompt-preview in de artwork-overlay met alleen de eerste niet-lege regel sluit beter aan op de gewenste UX en houdt de header-informatie direct bruikbaar.
+- Actions: `src/components/TrackDetail.tsx` aangepast met `promptFirstLine` afleiding en een nieuwe overlay-sectie onder titel/metadata (label + copy-knop + single-line truncation) voor `mode === "overlay"`; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606021912`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
 ## 2026-06-02 (Rechter lyrics-sidebar begrensd met fade)
 
 - Findings: De rechter Track Details sidebar liet de lyrics-sectie als onderdeel van de volledige kolom meelopen, waardoor de detailsweergave visueel langer werd dan de naastliggende trackkolom.
