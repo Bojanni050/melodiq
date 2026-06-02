@@ -50,7 +50,7 @@ export default function ResizablePanel({
         aria-orientation="vertical"
         aria-label="Resize details panel"
       />
-      <aside className="right-details-panel hidden lg:block shrink-0 border-l border-white/5 bg-[#0d0d12]">
+      <aside className="right-details-panel hidden lg:flex lg:flex-col shrink-0 border-l border-white/5 bg-[#0d0d12]">
         {children}
       </aside>
     </>

@@ -172,7 +172,7 @@ export default function HomePage() {
         </div>
 
         <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidthFromStore} setWidth={setRightPanelWidth}>
-          <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+          <div className="h-full overflow-y-auto">
             {selectedTrack ? (
               <TrackDetail
                 mode="sidebar"
