@@ -52,4 +52,38 @@ describe("parseLyrics", () => {
     expect(parsed[0].startTime).toBe(-1);
     expect(parsed[1].startTime).toBe(-1);
   });
+
+  it("does not downscale valid second-based timelines above 300s", () => {
+    const lyrics = "Intro\nFinale";
+    const payload = JSON.stringify({
+      lines: [
+        { text: "Intro", start: 12 },
+        { text: "Finale", start: 342 },
+      ],
+    });
+
+    const parsed = parseLyrics(lyrics, payload);
+
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0].startTime).toBe(12);
+    expect(parsed[1].startTime).toBe(342);
+  });
+
+  it("downscales millisecond timelines to seconds", () => {
+    const lyrics = "Alpha\nBeta\nGamma";
+    const payload = JSON.stringify({
+      lines: [
+        { text: "Alpha", start: 5000 },
+        { text: "Beta", start: 9000 },
+        { text: "Gamma", start: 13000 },
+      ],
+    });
+
+    const parsed = parseLyrics(lyrics, payload);
+
+    expect(parsed).toHaveLength(3);
+    expect(parsed[0].startTime).toBeCloseTo(5, 3);
+    expect(parsed[1].startTime).toBeCloseTo(9, 3);
+    expect(parsed[2].startTime).toBeCloseTo(13, 3);
+  });
 });

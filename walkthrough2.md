@@ -239,3 +239,9 @@
 - Findings: De rechter details-sidebar op Library/Workspaces forceerde een eigen viewporthoogte en week daardoor visueel af van de hoofdcontenthoogte.
 - Conclusions: De detailcontainer moet de hoogte van het resizable panel volgen (`h-full`) in plaats van opnieuw `100vh - player` te berekenen.
 - Actions: `src/app/library/page.tsx`, `src/app/workspaces/page.tsx` en `src/app/workspaces/[workspaceId]/page.tsx` aangepast van `sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto` naar `h-full overflow-y-auto`; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606021150`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-02 (Timed lyrics parsing bij lange tracks gefixt)
+
+- Findings: Timed lyrics konden uitvallen bij sommige tracks omdat de parser elke timeline met `maxStart > 300` als milliseconden interpreteerde en door `1000` deelde. Geldige seconde-timings boven 5 minuten werden daardoor fout geschaald.
+- Conclusions: Milliseconde-detectie moet conservatief en veldbewust zijn: expliciete `_ms` velden direct converteren, en alleen een globale fallback doen voor echt grote numerieke waarden.
+- Actions: `src/lib/parse-lyrics.ts` aangepast met expliciete handling voor `start_ms`/`startMs` en `end_ms`/`endMs`/`duration_ms`, plus conservatieve fallback (`maxStart >= 1000`) in plaats van `> 300`; `src/lib/__tests__/parse-lyrics.test.ts` uitgebreid met regressietests voor lange seconde-timings en ms-conversie; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606021157`; gevalideerd met `npm run test -- src/lib/__tests__/parse-lyrics.test.ts` en `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.

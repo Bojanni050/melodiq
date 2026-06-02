@@ -285,33 +285,72 @@ export function parseLyrics(
             let end: number | undefined = undefined;
 
             if (item && typeof item === "object") {
-              const rawStart = item.start !== undefined ? item.start :
-                               item.startS !== undefined ? item.startS :
-                               item.startTime !== undefined ? item.startTime :
-                               item.start_time !== undefined ? item.start_time :
-                               item.timestamp !== undefined ? item.timestamp :
-                               item.time !== undefined ? item.time :
-                               item.offset !== undefined ? item.offset :
-                               item.t !== undefined ? item.t :
-                               item.begin !== undefined ? item.begin :
-                               item.ts !== undefined ? item.ts :
-                               item.start_ms !== undefined ? item.start_ms :
-                               item.startMs !== undefined ? item.startMs :
-                               -1;
-              
-              const rawEnd = item.end !== undefined ? item.end :
-                             item.endS !== undefined ? item.endS :
-                             item.endTime !== undefined ? item.endTime :
-                             item.end_time !== undefined ? item.end_time :
-                             item.timestamp_end !== undefined ? item.timestamp_end :
-                             item.duration !== undefined ? (Number(rawStart) + Number(item.duration)) : undefined;
+              let rawStart: unknown = -1;
+              let startIsMs = false;
+
+              if (item.start_ms !== undefined) {
+                rawStart = item.start_ms;
+                startIsMs = true;
+              } else if (item.startMs !== undefined) {
+                rawStart = item.startMs;
+                startIsMs = true;
+              } else if (item.start !== undefined) {
+                rawStart = item.start;
+              } else if (item.startS !== undefined) {
+                rawStart = item.startS;
+              } else if (item.startTime !== undefined) {
+                rawStart = item.startTime;
+              } else if (item.start_time !== undefined) {
+                rawStart = item.start_time;
+              } else if (item.timestamp !== undefined) {
+                rawStart = item.timestamp;
+              } else if (item.time !== undefined) {
+                rawStart = item.time;
+              } else if (item.offset !== undefined) {
+                rawStart = item.offset;
+              } else if (item.t !== undefined) {
+                rawStart = item.t;
+              } else if (item.begin !== undefined) {
+                rawStart = item.begin;
+              } else if (item.ts !== undefined) {
+                rawStart = item.ts;
+              }
+
+              let rawEnd: unknown = undefined;
+              let endIsMs = false;
+
+              if (item.end_ms !== undefined) {
+                rawEnd = item.end_ms;
+                endIsMs = true;
+              } else if (item.endMs !== undefined) {
+                rawEnd = item.endMs;
+                endIsMs = true;
+              } else if (item.end !== undefined) {
+                rawEnd = item.end;
+              } else if (item.endS !== undefined) {
+                rawEnd = item.endS;
+              } else if (item.endTime !== undefined) {
+                rawEnd = item.endTime;
+              } else if (item.end_time !== undefined) {
+                rawEnd = item.end_time;
+              } else if (item.timestamp_end !== undefined) {
+                rawEnd = item.timestamp_end;
+              } else if (item.duration_ms !== undefined) {
+                rawEnd = Number(rawStart) + Number(item.duration_ms);
+                endIsMs = true;
+              } else if (item.duration !== undefined) {
+                rawEnd = Number(rawStart) + Number(item.duration);
+              }
 
               const parsedStart = parseTimestampValue(rawStart);
               start = parsedStart ?? -1;
+              if (startIsMs && start >= 0) {
+                start = start / 1000;
+              }
 
               const parsedEnd = rawEnd !== undefined ? parseTimestampValue(rawEnd) : null;
               if (parsedEnd !== null) {
-                end = parsedEnd;
+                end = endIsMs ? parsedEnd / 1000 : parsedEnd;
               }
             }
 
@@ -320,9 +359,16 @@ export function parseLyrics(
           .filter((item) => item.text && Number.isFinite(item.startTime));
 
         if (parsed.length > 0) {
-          // Detect if times are in milliseconds (e.g. 5000 instead of 5.0 seconds) and convert to seconds
-          const maxStart = Math.max(...parsed.map((p) => p.startTime).filter((value) => value >= 0), 0);
-          if (maxStart > 300) {
+          // Detect millisecond timelines conservatively.
+          // Previous logic used `> 300` which incorrectly converted valid second-based
+          // tracks longer than 5 minutes.
+          const nonNegativeStarts = parsed
+            .map((p) => p.startTime)
+            .filter((value) => value >= 0)
+            .sort((a, b) => a - b);
+          const maxStart = nonNegativeStarts.length > 0 ? nonNegativeStarts[nonNegativeStarts.length - 1] : 0;
+          const looksLikeMilliseconds = maxStart >= 1000;
+          if (looksLikeMilliseconds) {
             parsed.forEach((p) => {
               p.startTime = p.startTime / 1000;
               if (p.endTime !== undefined) {
