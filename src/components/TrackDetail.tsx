@@ -245,6 +245,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   }
 
   const title = (track.title || track.prompt.substring(0, 60)).replace(/\s*\(2\)\s*$/, "");
+  const promptFirstLine = track.prompt
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.length > 0) ?? "";
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
   const isUploadedTrack = track.provider === "upload";
@@ -345,6 +349,30 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <span className="ml-1.5 text-white/60">• {formatDuration(track.duration)}</span>
             )}
           </p>
+          {mode === "overlay" && promptFirstLine && (
+            <div className="mt-3 rounded-lg border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-sm">
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-white/45">Prompt</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(track.prompt, "prompt-overlay")}
+                  className="rounded p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                  title="Copy prompt"
+                >
+                  {copiedField === "prompt-overlay" ? (
+                    <svg className="h-3.5 w-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="truncate text-xs leading-relaxed text-white/75">{promptFirstLine}</p>
+            </div>
+          )}
           {isUploadedTrack && (
             <div className="mt-2.5">
               <span className="inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-emerald-100 uppercase tracking-wider">
