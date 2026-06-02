@@ -314,43 +314,49 @@ export default function HomePage() {
 
 
   useEffect(() => {
-    if (!showTrackDetailsPanel || !currentTrack) return;
-
-    const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-    if (matchedTrack) {
-      setSelectedTrack(matchedTrack);
-      return;
-    }
+    if (!showTrackDetailsPanel) return;
 
     setSelectedTrack((prev) => {
-      if (prev && prev.id === currentTrack.id) return prev;
-      return {
-        id: currentTrack.id,
-        title: currentTrack.title,
-        provider: currentTrack.provider,
-        providerModel: currentTrack.providerModel,
-        prompt: currentTrack.prompt,
-        lyrics: currentTrack.lyrics,
-        lyricsTimestamps: currentTrack.lyricsTimestamps,
-        status: currentTrack.status,
-        audioUrl: currentTrack.audioUrl,
-        audioUrlHd: currentTrack.audioUrlHd,
-        s3Key: currentTrack.s3Key ?? null,
-        format: currentTrack.format ?? null,
-        formatHd: currentTrack.formatHd ?? null,
-        duration: currentTrack.duration ?? null,
-        createdAt: currentTrack.createdAt,
-        error: currentTrack.error,
-        s3KeyHd: currentTrack.s3KeyHd,
-        coverUrl: currentTrack.coverUrl ?? null,
-        s3KeyCover: currentTrack.s3KeyCover ?? null,
-        s3KeyCoverThumb: currentTrack.s3KeyCoverThumb ?? null,
-        playCount: currentTrack.playCount ?? null,
-        rating: currentTrack.rating ?? null,
-        instrumental: currentTrack.instrumental ?? null,
-      };
+      // Keep the selected track updated with fresh data from tracks list
+      if (prev) {
+        const matched = tracks.find((t) => t.id === prev.id);
+        if (matched) return matched;
+        return prev;
+      }
+      // If nothing is selected, default to current playing track
+      if (currentTrack) {
+        const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
+        if (matchedTrack) return matchedTrack;
+        
+        return {
+          id: currentTrack.id,
+          title: currentTrack.title,
+          provider: currentTrack.provider,
+          providerModel: currentTrack.providerModel,
+          prompt: currentTrack.prompt,
+          lyrics: currentTrack.lyrics,
+          lyricsTimestamps: currentTrack.lyricsTimestamps,
+          status: currentTrack.status,
+          audioUrl: currentTrack.audioUrl,
+          audioUrlHd: currentTrack.audioUrlHd,
+          s3Key: currentTrack.s3Key ?? null,
+          format: currentTrack.format ?? null,
+          formatHd: currentTrack.formatHd ?? null,
+          duration: currentTrack.duration ?? null,
+          createdAt: currentTrack.createdAt,
+          error: currentTrack.error,
+          s3KeyHd: currentTrack.s3KeyHd,
+          coverUrl: currentTrack.coverUrl ?? null,
+          s3KeyCover: currentTrack.s3KeyCover ?? null,
+          s3KeyCoverThumb: currentTrack.s3KeyCoverThumb ?? null,
+          playCount: currentTrack.playCount ?? null,
+          rating: currentTrack.rating ?? null,
+          instrumental: currentTrack.instrumental ?? null,
+        };
+      }
+      return null;
     });
-  }, [showTrackDetailsPanel, currentTrack, tracks]);
+  }, [showTrackDetailsPanel, tracks, currentTrack]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
