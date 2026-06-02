@@ -2,7 +2,8 @@
 
 import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import { usePlayerStore, useUserStore } from "@/lib/store";
-import { parseLyrics } from "@/lib/parse-lyrics";
+import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { useSWRConfig } from "swr";
 import {
   AudioSource,
   AudioSourceState,
@@ -34,9 +35,78 @@ export default function FullscreenPlayer({
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
+  const { mutate } = useSWRConfig();
+
   useEffect(() => {
     void loadUser();
   }, [loadUser]);
+
+  // central self-healing polling loop inside FullscreenPlayer
+  useEffect(() => {
+    if (!currentTrack || currentTrack.status !== "done" || currentTrack.provider !== "poyo") return;
+
+    const hasTimings = currentTrack.lyricsTimestamps && !isLyricsTaskSubmission(currentTrack.lyricsTimestamps)
+      ? parseLyrics(currentTrack.lyrics ?? null, currentTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
+      : false;
+
+    // We only poll if it has NO timings, OR if it's currently a task submission receipt
+    const needsPolling = !hasTimings || isLyricsTaskSubmission(currentTrack.lyricsTimestamps);
+    if (!needsPolling) return;
+
+    console.log(`[TCL-Sync] FullscreenPlayer started polling for track ${currentTrack.id}`);
+    
+    let pollCount = 0;
+    const maxPolls = 15; // 15 polls * 5 seconds = 75 seconds max
+    let active = true;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const res = await fetch(`/api/tracks/${currentTrack.id}`);
+        if (!res.ok) return;
+        const updatedTrack = await res.json();
+
+        if (!active) return;
+
+        if (updatedTrack && updatedTrack.lyricsTimestamps !== currentTrack.lyricsTimestamps) {
+          const updatedHasTimings = updatedTrack.lyricsTimestamps && !isLyricsTaskSubmission(updatedTrack.lyricsTimestamps)
+            ? parseLyrics(updatedTrack.lyrics ?? null, updatedTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
+            : false;
+
+          console.log(`[TCL-Sync] FullscreenPlayer fetched update. Has Timings: ${updatedHasTimings}`);
+
+          // Update player store instantly so fullscreen view starts tracking
+          usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+
+          // Update SWR global list so other components/lists are reactively aware
+          void mutate("/api/tracks");
+
+          // If we finally got real timings, stop polling
+          if (updatedHasTimings) {
+            console.log(`[TCL-Sync] FullscreenPlayer polling finished successfully for track ${currentTrack.id}`);
+            return;
+          }
+        }
+      } catch (err: any) {
+        console.error(`[TCL-Sync] FullscreenPlayer polling error:`, err?.message ?? err);
+      }
+
+      pollCount++;
+      if (pollCount < maxPolls && active) {
+        timerId = setTimeout(poll, 5000);
+      } else if (pollCount >= maxPolls) {
+        console.log(`[TCL-Sync] FullscreenPlayer stopped polling: hit max retries for track ${currentTrack.id}`);
+      }
+    };
+
+    timerId = setTimeout(poll, 2000); // start first poll after 2 seconds
+
+    return () => {
+      active = false;
+      clearTimeout(timerId);
+    };
+  }, [currentTrack?.id, currentTrack?.lyricsTimestamps, mutate]);
 
   const parsedLyrics = useMemo(() => {
     return parseLyrics(currentTrack?.lyrics ?? null, currentTrack?.lyricsTimestamps);

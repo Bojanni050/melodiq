@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useUserStore, usePlayerStore } from "@/lib/store";
-import { parseLyrics } from "@/lib/parse-lyrics";
+import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { useSWRConfig } from "swr";
 
 interface TrackDetailProps {
   track: {
@@ -25,6 +26,7 @@ interface TrackDetailProps {
     coverUrl?: string | null;
     s3KeyCover?: string | null;
     rating?: string | null;
+    instrumental?: boolean | null;
   };
   onClose: () => void;
   onPlay: (url: string) => void;
@@ -32,15 +34,97 @@ interface TrackDetailProps {
   mode?: "overlay" | "sidebar";
 }
 
-export default function TrackDetail({ track, onClose, onPlay, onDownload, mode = "overlay" }: TrackDetailProps) {
+export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay" }: TrackDetailProps) {
   const [downloading, setDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
+  const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, audioElement } = usePlayerStore();
   const [currentTime, setCurrentTime] = useState(0);
+  const { mutate } = useSWRConfig();
+
+  // central track state to support instant self-healing updates
+  const [localTrack, setLocalTrack] = useState(initialTrack);
+
+  useEffect(() => {
+    setLocalTrack(initialTrack);
+    setCurrentRating(initialTrack.rating ?? null);
+  }, [initialTrack]);
+
+  // central self-healing polling loop
+  useEffect(() => {
+    if (localTrack.status !== "done" || localTrack.provider !== "poyo" || localTrack.instrumental) return;
+
+    const hasTimings = localTrack.lyricsTimestamps && !isLyricsTaskSubmission(localTrack.lyricsTimestamps)
+      ? parseLyrics(localTrack.lyrics, localTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
+      : false;
+
+    // We only poll if it has NO timings, OR if it's currently a task submission receipt
+    const needsPolling = !hasTimings || isLyricsTaskSubmission(localTrack.lyricsTimestamps);
+    if (!needsPolling) return;
+
+    console.log(`[TCL-Sync] central TrackDetail started polling for track ${localTrack.id}`);
+    
+    let pollCount = 0;
+    const maxPolls = 15; // 15 polls * 5 seconds = 75 seconds max
+    let active = true;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const res = await fetch(`/api/tracks/${localTrack.id}`);
+        if (!res.ok) return;
+        const updatedTrack = await res.json();
+
+        if (!active) return;
+
+        if (updatedTrack && updatedTrack.lyricsTimestamps !== localTrack.lyricsTimestamps) {
+          const updatedHasTimings = updatedTrack.lyricsTimestamps && !isLyricsTaskSubmission(updatedTrack.lyricsTimestamps)
+            ? parseLyrics(updatedTrack.lyrics, updatedTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
+            : false;
+
+          console.log(`[TCL-Sync] central TrackDetail fetched update. Has Timings: ${updatedHasTimings}`);
+
+          // Update local state instantly so user sees it right away
+          setLocalTrack(updatedTrack);
+
+          // Update player store instantly so playing track keeps tracking lyrics
+          usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+
+          // Update SWR global list so other lists are reactively aware
+          void mutate("/api/tracks");
+
+          // If we finally got real timings, stop polling
+          if (updatedHasTimings) {
+            console.log(`[TCL-Sync] central TrackDetail polling finished successfully for track ${localTrack.id}`);
+            return;
+          }
+        }
+      } catch (err: any) {
+        console.error(`[TCL-Sync] central TrackDetail polling error:`, err?.message ?? err);
+      }
+
+      pollCount++;
+      if (pollCount < maxPolls && active) {
+        timerId = setTimeout(poll, 5000);
+      } else if (pollCount >= maxPolls) {
+        console.log(`[TCL-Sync] central TrackDetail stopped polling: hit max retries for track ${localTrack.id}`);
+      }
+    };
+
+    timerId = setTimeout(poll, 2000); // start first poll after 2 seconds
+
+    return () => {
+      active = false;
+      clearTimeout(timerId);
+    };
+  }, [localTrack.id, localTrack.lyricsTimestamps, mutate]);
+
+  // Shadow initialTrack with the active stateful localTrack
+  const track = localTrack;
 
   useEffect(() => {
     void loadUser();

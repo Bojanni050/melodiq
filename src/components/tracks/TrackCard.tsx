@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
+import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import WaveformBars from "@/components/tracks/WaveformBars";
 import { usePlayerStore, usePlaylistStore, useWorkspaceStore, useSelectionStore, type Workspace } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
@@ -884,7 +885,7 @@ const TrackCard = memo(function TrackCard({
           <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
             {status.label}
           </span>
-          {track.status === "done" && track.lyricsTimestamps && (
+          {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (
             <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">
               TCL
             </span>
