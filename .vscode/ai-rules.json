@@ -5,6 +5,11 @@
       "path": ".github/copilot-instructions.md",
       "lastSyncHash": "fe6a3a5da967f562123786a81ef824455dffe47b0d4374a28aa6cc45096a8246",
       "lastSyncDate": "2026-06-01T22:36:48.029Z"
+    },
+    "agents": {
+      "path": "agents.md",
+      "lastSyncHash": "fe6a3a5da967f562123786a81ef824455dffe47b0d4374a28aa6cc45096a8246",
+      "lastSyncDate": "2026-06-02T09:42:27.971Z"
     }
   }
 }

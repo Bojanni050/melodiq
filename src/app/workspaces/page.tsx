@@ -545,7 +545,7 @@ export default function WorkspacesPage() {
         </main>
 
         <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
-          <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+          <div className="h-full overflow-y-auto">
             {selectedTrack ? (
               <TrackDetail
                 mode="sidebar"
