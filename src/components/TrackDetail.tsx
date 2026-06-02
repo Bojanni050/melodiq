@@ -266,7 +266,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   }
 
   const panelContent = (
-    <>
+    <div className="flex flex-col min-h-full">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 px-4 py-3 flex items-center justify-between">
         <h3 className="text-sm font-medium text-white/60">Track Details</h3>
@@ -278,7 +278,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       </div>
 
       {/* Artwork with Overlay */}
-      <div className="aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ff530c]/20 overflow-hidden">
+      <div className="shrink-0 aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ff530c]/20 overflow-hidden">
         {track.coverUrl ? (
           <img
             src={track.coverUrl}
@@ -352,10 +352,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       </div>
 
       {/* Details Container */}
-      <div className="px-6 py-5 space-y-6">
+      <div className="flex-1 flex flex-col px-6 py-5 space-y-6">
 
         {/* Prompt */}
-        <div>
+        <div className="shrink-0">
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
@@ -395,8 +395,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
         {/* Lyrics */}
         {track.lyrics && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="shrink-0 flex items-center justify-between mb-2">
               <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">
                 Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
               </h4>
@@ -419,7 +419,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             {hasTimings ? (
               <div
                 ref={containerRef}
-                className="max-h-[350px] overflow-y-auto px-3 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+                className="flex-1 min-h-[400px] overflow-y-auto px-3 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
               >
                 {parsedLyrics.map((line, index) => {
                   const isActive = index === activeLineIndex;
@@ -447,19 +447,19 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 })}
               </div>
             ) : (
-              <pre className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono">{track.lyrics}</pre>
+              <pre className="flex-1 min-h-[400px] overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">{track.lyrics}</pre>
             )}
           </div>
         )}
 
         {/* Error */}
         {track.error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="shrink-0 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-sm text-red-400">{track.error}</p>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 
   if (mode === "sidebar") {
