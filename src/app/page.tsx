@@ -852,9 +852,9 @@ export default function HomePage() {
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
           <main className="p-4">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="flex flex-col xl:flex-row gap-6 xl:gap-8">
               {/* Form column */}
-              <div className="xl:col-span-1 max-w-xl xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-32px)]">
+              <div className="w-full xl:w-[500px] xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-32px)]">
                 <StudioForm
                   credits={credits}
                   isGenerating={generating}
@@ -866,7 +866,7 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="xl:col-span-2 self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-32px)]">
+              <div className="w-full xl:flex-1 xl:max-w-[1000px] self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-32px)]">
                 <div className="flex flex-col h-full min-h-0">
                   {/* Tabs */}
                   <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
