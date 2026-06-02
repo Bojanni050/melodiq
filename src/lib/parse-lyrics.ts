@@ -66,11 +66,26 @@ function parseLrcLines(lrcText: string): ParsedLyricLine[] {
 export function isLyricsTaskSubmission(lyricsTimestamps: string | null | undefined): boolean {
   if (!lyricsTimestamps) return false;
   try {
-    const trimmed = typeof lyricsTimestamps === "string" ? lyricsTimestamps.trim() : "";
-    if (typeof lyricsTimestamps === "string" && !trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    let parsedStr = typeof lyricsTimestamps === "string" ? lyricsTimestamps.trim() : "";
+    let parsed: any = lyricsTimestamps;
+
+    while (typeof parsedStr === "string" && (parsedStr.startsWith("{") || parsedStr.startsWith("[") || parsedStr.startsWith('"'))) {
+      try {
+        const temp = JSON.parse(parsedStr);
+        if (typeof temp === "string") {
+          parsedStr = temp.trim();
+        } else {
+          parsed = temp;
+          break;
+        }
+      } catch (e) {
+        break;
+      }
+    }
+
+    if (typeof parsed === "string" && !parsedStr.startsWith("{") && !parsedStr.startsWith("[")) {
       return false;
     }
-    const parsed = typeof lyricsTimestamps === "string" ? JSON.parse(trimmed) : lyricsTimestamps;
     if (parsed && typeof parsed === "object") {
       const hasTaskId = !!(parsed.task_id || parsed.taskId || (parsed.data && (parsed.data.task_id || parsed.data.taskId)));
       const hasActualTimings = !!(
@@ -109,15 +124,25 @@ export function parseLyrics(
   }
 
   try {
-    let rawData: any;
+    let rawData: any = lyricsTimestamps;
     if (typeof lyricsTimestamps === "string") {
-      // Check if it's actually a JSON string
-      const trimmed = lyricsTimestamps.trim();
-      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        rawData = JSON.parse(trimmed);
+      let currentStr = lyricsTimestamps.trim();
+      while (typeof currentStr === "string" && (currentStr.startsWith("{") || currentStr.startsWith("[") || currentStr.startsWith('"'))) {
+        try {
+          const parsed = JSON.parse(currentStr);
+          if (typeof parsed === "string") {
+            currentStr = parsed.trim();
+          } else {
+            rawData = parsed;
+            break;
+          }
+        } catch (e) {
+          break;
+        }
       }
-    } else {
-      rawData = lyricsTimestamps;
+      if (!rawData || typeof rawData === "string") {
+        rawData = currentStr;
+      }
     }
 
     if (rawData) {

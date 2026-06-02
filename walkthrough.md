@@ -1029,3 +1029,20 @@
   - Updated `src/components/TrackList.tsx` — pre-computed `workspaceCoverById` once using the stable cover key, added a `displayedTracksRef` pattern to stabilize `handlePlay` and `handleToggleSelection` callbacks, and updated `TrackCard` to receive the new stable props.
   - Updated `src/components/Sidebar.tsx` — updated the sidebar build version stamp to `zo 07:50`.
   - Validated with `npx tsc --noEmit` returning **0 compile errors**.
+
+## 2026-06-02 di 11:15 (TrackCard component refactoring into smaller reusable sub-components)
+
+- Findings: TrackCard.tsx was a massive file (1171 lines, 51.2 KB) containing multiple inline dialogs, play button logic, rating actions, and action menus, making it difficult to maintain and understand.
+- Conclusions: Extract distinct responsibilities (modal dialogs, play button, rating thumbs, action menu) into highly cohesive, modular, and reusable sub-components in the same folder. This cuts the file size and complexity of TrackCard.tsx in half, improving maintainability while fully preserving memoization and performance optimizations.
+- Actions:
+  - Created `src/components/tracks/CreatePlaylistDialog.tsx` — extracted custom fixed-overlay playlist creation dialog.
+  - Created `src/components/tracks/DuplicatePlaylistDialog.tsx` — extracted warning dialog for duplicate tracks.
+  - Created `src/components/tracks/MergeWorkspaceDialog.tsx` — extracted workspace naming conflict confirmation dialog.
+  - Created `src/components/tracks/MoveToWorkspaceDialog.tsx` — extracted the complex workspace selector modal with folder visualizers and search inputs.
+  - Created `src/components/tracks/TrackPlayButton.tsx` — extracted dynamic play/pause controls, waveforms, error indicators, and album art loaders.
+  - Created `src/components/tracks/TrackRating.tsx` — extracted thumbs up/down visual components and rating styles.
+  - Created `src/components/tracks/TrackActionMenu.tsx` — extracted dropdown action menu, which fully encapsulates its own click-outside listener and local open state.
+  - Updated `src/components/tracks/TrackCard.tsx` — removed massive inline structures, replaced them with the newly created sub-components, and simplified props/callbacks while fully preserving custom React.memo performance caching.
+  - Updated `src/components/Sidebar.tsx` — build version stamp updated to `di 11:15`.
+  - Updated `melodiq-user.md` — user guide version updated to `di 11:15`.
+  - Validated with `npm run build` which succeeded completely with **0 compilation or TypeScript errors**.
