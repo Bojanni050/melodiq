@@ -75,11 +75,11 @@ export function isLyricsTaskSubmission(lyricsTimestamps: string | null | undefin
       const hasTaskId = !!(parsed.task_id || parsed.taskId || (parsed.data && (parsed.data.task_id || parsed.data.taskId)));
       const hasActualTimings = !!(
         Array.isArray(parsed) ||
-        parsed.lines || parsed.words || parsed.segments || parsed.lyrics ||
+        parsed.lines || parsed.words || parsed.segments || parsed.lyrics || parsed.lrc || parsed.lyrics_timestamped || parsed.timestamped_lyrics || parsed.lyricsTimestamped || parsed.timestampedLyrics ||
         (parsed.data && (
-          parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics ||
-          parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics ||
-          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics
+          parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics || parsed.data.lrc || parsed.data.lyrics_timestamped || parsed.data.timestamped_lyrics || parsed.data.lyricsTimestamped || parsed.data.timestampedLyrics ||
+          parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics || parsed.data.result?.lrc || parsed.data.result?.lyrics_timestamped || parsed.data.result?.timestamped_lyrics || parsed.data.result?.lyricsTimestamped || parsed.data.result?.timestampedLyrics ||
+          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics || parsed.data.output?.lrc || parsed.data.output?.lyrics_timestamped || parsed.data.output?.timestamped_lyrics || parsed.data.output?.lyricsTimestamped || parsed.data.output?.timestampedLyrics
         )) ||
         parsed.result || parsed.output
       );
