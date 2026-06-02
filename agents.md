@@ -1,6 +1,6 @@
 # ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
-# Fecha: 2026-06-02 09:42:27
+# Fecha: 2026-06-02 14:28:49
 # No editar directamente - los cambios se sobrescribirán
 # 
 # Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
@@ -301,6 +301,7 @@ project-root/
 - **`{projectnaam}-user.md`**: gebruikersdocumentatie — alleen wanneer gebruikerszijdige functionaliteit verandert
 - **`{projectnaam}-rules.md`**: leading authority voor projectspecifieke regels
 
+
 **Prioriteitsvolgorde bij conflict:**
 1. `{projectnaam}-rules.md` — altijd leidend
 2. `ai_rules.md` — generieke basis
@@ -337,6 +338,7 @@ Na de taak:
 - [ ] `{projectnaam}-user.md` bijgewerkt indien gebruikerszijdige wijziging?
 - [ ] Geen secrets in de code terechtgekomen?
 - [ ] Geen `any` gebruikt zonder commentaar?
+- [ ] buildnumber geupdated? (Onder app-titel linksboven, formaat: buildno. <currentyear><currentmonth><currentday><currenttime> eg, 202606021233
 
 ---
 

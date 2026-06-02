@@ -3,13 +3,13 @@
   "targets": {
     "copilot": {
       "path": ".github/copilot-instructions.md",
-      "lastSyncHash": "fe6a3a5da967f562123786a81ef824455dffe47b0d4374a28aa6cc45096a8246",
-      "lastSyncDate": "2026-06-01T22:36:48.029Z"
+      "lastSyncHash": "e8da85fd4faa7c03654265d0b975ae951341946fc7a19d0087a27b484bba807e",
+      "lastSyncDate": "2026-06-02T14:28:53.994Z"
     },
     "agents": {
       "path": "agents.md",
-      "lastSyncHash": "fe6a3a5da967f562123786a81ef824455dffe47b0d4374a28aa6cc45096a8246",
-      "lastSyncDate": "2026-06-02T09:42:27.971Z"
+      "lastSyncHash": "e8da85fd4faa7c03654265d0b975ae951341946fc7a19d0087a27b484bba807e",
+      "lastSyncDate": "2026-06-02T14:28:49.969Z"
     }
   }
 }

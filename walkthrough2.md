@@ -245,3 +245,9 @@
 - Findings: Timed lyrics konden uitvallen bij sommige tracks omdat de parser elke timeline met `maxStart > 300` als milliseconden interpreteerde en door `1000` deelde. Geldige seconde-timings boven 5 minuten werden daardoor fout geschaald.
 - Conclusions: Milliseconde-detectie moet conservatief en veldbewust zijn: expliciete `_ms` velden direct converteren, en alleen een globale fallback doen voor echt grote numerieke waarden.
 - Actions: `src/lib/parse-lyrics.ts` aangepast met expliciete handling voor `start_ms`/`startMs` en `end_ms`/`endMs`/`duration_ms`, plus conservatieve fallback (`maxStart >= 1000`) in plaats van `> 300`; `src/lib/__tests__/parse-lyrics.test.ts` uitgebreid met regressietests voor lange seconde-timings en ms-conversie; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606021157`; gevalideerd met `npm run test -- src/lib/__tests__/parse-lyrics.test.ts` en `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-02 (Track-id lyrics parsing debug endpoint toegevoegd)
+
+- Findings: Voor productie-issues met timed lyrics per specifieke track-id ontbrak snelle, auth-veilige inspectie van parser-input en parser-output in dezelfde response.
+- Conclusions: Een dedicated endpoint onder de bestaande tracks-route maakt vergelijking van payload-shape en parse-resultaten direct mogelijk zonder handmatige DB-shell of losse scripts.
+- Actions: Toegevoegd `src/app/api/tracks/[id]/lyrics-debug/route.ts` met auth + user-scope check (`requireAuth` + `userId` filter), parserdiagnostiek (`parseLyrics`, `isLyricsTaskSubmission`), payload-shape analyse (velden/arrays/start-field usage), en hints voor veelvoorkomende parseproblemen; buildVersion bijgewerkt naar `202606021626` in `src/components/Sidebar.tsx`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
