@@ -99,7 +99,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                 </span>
                 {buildVersion && (
                   <span className="text-[11px] text-white/35">
-                    version number {buildVersion}
+                    build number {buildVersion}
                   </span>
                 )}
               </div>
@@ -171,7 +171,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               </span>
               {buildVersion && (
                 <span className="text-[10px] text-white/35">
-                  version number {buildVersion}
+                  build number {buildVersion}
                 </span>
               )}
             </div>
