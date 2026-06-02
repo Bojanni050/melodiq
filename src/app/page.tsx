@@ -872,7 +872,7 @@ export default function HomePage() {
               </div>
 
               {/* Track list column */}
-              <div className="w-full xl:flex-1 xl:max-w-[1000px] self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-32px)]">
+              <div className="w-full xl:flex-1 self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-32px)]">
                 <div className="flex flex-col h-full min-h-0">
                   {/* Tabs */}
                   <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">

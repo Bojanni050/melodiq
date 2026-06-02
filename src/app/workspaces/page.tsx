@@ -82,28 +82,22 @@ export default function WorkspacesPage() {
   }, [setSelectedWorkspaceId]);
 
   useEffect(() => {
-    if (currentTrack) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const found = tracks.find((t) => t.id === currentTrack.id);
-        return (found || currentTrack) as Track;
-      });
-    }
-  }, [currentTrack, tracks]);
+    if (!showTrackDetailsPanel) return;
 
-  useEffect(() => {
-    if (selectedTrack) {
-      const found = tracks.find((t) => t.id === selectedTrack.id);
-      if (found && (
-        found.title !== selectedTrack.title ||
-        found.rating !== selectedTrack.rating ||
-        found.coverUrl !== selectedTrack.coverUrl ||
-        found.status !== selectedTrack.status
-      )) {
-        setSelectedTrack(found);
+    setSelectedTrack((prev) => {
+      if (prev) {
+        const found = tracks.find((t) => t.id === prev.id);
+        if (found) return found as Track;
+        return prev;
       }
-    }
-  }, [tracks, selectedTrack]);
+      if (currentTrack) {
+        const found = tracks.find((t) => t.id === currentTrack.id);
+        if (found) return found as Track;
+        return currentTrack as Track;
+      }
+      return null;
+    });
+  }, [showTrackDetailsPanel, tracks, currentTrack]);
 
   function handleCloseTrackDetails() {
     setShowTrackDetailsPanel(false);
