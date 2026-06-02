@@ -189,6 +189,12 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     }
   }, [activeLineIndex]);
 
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [track.id]);
+
   const handleLineClick = useCallback((startTime: number) => {
     if (startTime >= 0 && audioElement && currentTrack?.id === track.id) {
       audioElement.currentTime = startTime;
@@ -446,7 +452,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             {hasTimings ? (
               <div
                 ref={containerRef}
-                className="max-h-[350px] overflow-y-auto pr-1 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
+                className="max-h-[350px] overflow-y-auto px-3 py-12 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full"
               >
                 {parsedLyrics.map((line, index) => {
                   const isActive = index === activeLineIndex;

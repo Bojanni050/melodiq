@@ -151,6 +151,12 @@ export default function FullscreenPlayer({
     }
   }, [activeLineIndex]);
 
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [currentTrack?.id]);
+
   const handleLineClick = useCallback((startTime: number) => {
     if (startTime >= 0 && audioElement) {
       audioElement.currentTime = startTime;
