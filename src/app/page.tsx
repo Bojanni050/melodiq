@@ -150,6 +150,7 @@ export default function HomePage() {
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
@@ -357,6 +358,25 @@ export default function HomePage() {
       return null;
     });
   }, [showTrackDetailsPanel, tracks, currentTrack]);
+
+  const prevIsPlaying = useRef(isPlaying);
+  const prevCurrentTrackId = useRef(currentTrack?.id);
+
+  useEffect(() => {
+    const playResumed = isPlaying && !prevIsPlaying.current;
+    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
+    
+    prevIsPlaying.current = isPlaying;
+    prevCurrentTrackId.current = currentTrack?.id;
+
+    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const matched = tracks.find((t) => t.id === currentTrack.id);
+        return matched || (currentTrack as unknown as Track);
+      });
+    }
+  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);

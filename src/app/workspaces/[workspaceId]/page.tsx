@@ -41,6 +41,7 @@ export default function WorkspaceDetailPage() {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const { playlists, addTrackToPlaylist } = usePlaylistStore();
@@ -150,6 +151,25 @@ export default function WorkspaceDetailPage() {
       return null;
     });
   }, [showTrackDetailsPanel, tracks, currentTrack]);
+
+  const prevIsPlaying = useRef(isPlaying);
+  const prevCurrentTrackId = useRef(currentTrack?.id);
+
+  useEffect(() => {
+    const playResumed = isPlaying && !prevIsPlaying.current;
+    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
+    
+    prevIsPlaying.current = isPlaying;
+    prevCurrentTrackId.current = currentTrack?.id;
+
+    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const matched = tracks.find((t) => t.id === currentTrack.id);
+        return matched || (currentTrack as unknown as TrackItem);
+      });
+    }
+  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
 
   const defaultSortedWorkspaceTracks = useMemo(() => {
     const list = [...selectedWorkspaceTracks];
