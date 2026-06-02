@@ -6,9 +6,14 @@ function createDebouncedStorage<T>(delayMs: number): PersistStorage<T> {
   return {
     getItem: (name) => {
       if (typeof window === "undefined") return null;
-      const str = localStorage.getItem(name);
-      if (!str) return null;
-      return JSON.parse(str) as StorageValue<T>;
+      try {
+        const str = localStorage.getItem(name);
+        if (!str) return null;
+        return JSON.parse(str) as StorageValue<T>;
+      } catch (e) {
+        console.warn(`[PersistStorage] Failed to read ${name} from localStorage:`, e);
+        return null;
+      }
     },
     setItem: (name, value) => {
       if (typeof window === "undefined") return;
@@ -17,7 +22,11 @@ function createDebouncedStorage<T>(delayMs: number): PersistStorage<T> {
       timers.set(
         name,
         setTimeout(() => {
-          localStorage.setItem(name, JSON.stringify(value));
+          try {
+            localStorage.setItem(name, JSON.stringify(value));
+          } catch (e) {
+            console.error(`[PersistStorage] Failed to save ${name} to localStorage:`, e);
+          }
           timers.delete(name);
         }, delayMs)
       );
@@ -27,7 +36,11 @@ function createDebouncedStorage<T>(delayMs: number): PersistStorage<T> {
       const existing = timers.get(name);
       if (existing) clearTimeout(existing);
       timers.delete(name);
-      localStorage.removeItem(name);
+      try {
+        localStorage.removeItem(name);
+      } catch (e) {
+        console.warn(`[PersistStorage] Failed to remove ${name} from localStorage:`, e);
+      }
     },
   };
 }
@@ -288,16 +301,25 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: "melodiq-player",
       storage: createDebouncedStorage(300),
-      partialize: (state) => ({
-        volume: state.volume,
-        queue: state.queue,
-        currentTrack: state.currentTrack,
-        autoPlayNext: state.autoPlayNext,
-        showTrackDetailsPanel: state.showTrackDetailsPanel,
-        rightPanelWidth: state.rightPanelWidth,
-        isFullscreen: state.isFullscreen,
-        progress: state.progress,
-      }),
+      partialize: (state) => {
+        // Scrub bulky fields (lyrics/timings) from tracks before persisting to avoid localStorage quota limits
+        const scrubTrack = (track: any) => {
+          if (!track) return null;
+          const { lyrics, lyricsTimestamps, ...rest } = track;
+          return rest;
+        };
+
+        return {
+          volume: state.volume,
+          queue: state.queue.map(scrubTrack).filter(Boolean),
+          currentTrack: scrubTrack(state.currentTrack),
+          autoPlayNext: state.autoPlayNext,
+          showTrackDetailsPanel: state.showTrackDetailsPanel,
+          rightPanelWidth: state.rightPanelWidth,
+          isFullscreen: state.isFullscreen,
+          progress: state.progress,
+        };
+      },
     }
   )
 );
