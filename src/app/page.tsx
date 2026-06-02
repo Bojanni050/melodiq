@@ -1,255 +1,63 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import useSWR from "swr";
-import clsx from "clsx";
+import { useEffect, useMemo } from "react";
+import { usePlaylistStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
+import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
-import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
-import CreateWorkspaceDialog from "@/components/studio/CreateWorkspaceDialog";
-import NoticeBar from "@/components/studio/NoticeBar";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import {
-  DEFAULT_WORKSPACE_ID,
-  useStudioStore,
-  usePlayerStore,
-  usePlaylistStore,
-  useWorkspaceStore,
-  type Track as PlayerTrack,
-  type Workspace,
-} from "@/lib/store";
-
-const MUSICGPT_LYRICS_MAX_CHARS = 3000;
-const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq-studio-workspace-grid-size";
-const WORKSPACE_GRID_CLASS_BY_SIZE: Record<4 | 8 | 12 | 16, string> = {
-  4: "grid-cols-[repeat(4,minmax(0,1fr))]",
-  8: "grid-cols-[repeat(8,minmax(0,1fr))]",
-  12: "grid-cols-[repeat(12,minmax(0,1fr))]",
-  16: "grid-cols-[repeat(16,minmax(0,1fr))]",
-};
-
-const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-xs font-medium transition";
-const SEGMENTED_ICON_BUTTON_BASE = "rounded-md p-1.5 transition";
-const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition";
-const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
-const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
-const STUDIO_SECTION_CLASS = "section-card flex min-h-0 flex-1 flex-col overflow-hidden";
-
-async function jsonFetcher<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(res.statusText || "Request failed");
-  }
-  return (await res.json()) as T;
-}
-
-interface Track {
-  id: string;
-  title: string | null;
-  provider: string;
-  providerModel: string;
-  prompt: string;
-  lyrics: string | null;
-  status: "pending" | "generating" | "done" | "failed";
-  audioUrl: string | null;
-  audioUrlHd: string | null;
-  s3Key?: string | null;
-  format: string | null;
-  formatHd: string | null;
-  duration: number | null;
-  createdAt: string;
-  error: string | null;
-  s3KeyHd: string | null;
-  coverUrl?: string | null;
-  s3KeyCover?: string | null;
-  s3KeyCoverThumb?: string | null;
-  rating?: string | null;
-  playCount?: number | null;
-  lyricsTimestamps?: string | null;
-}
-
-type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
-type CreditsResponse = { lyria: string | number; poyo: number | null; tempolor: number | null; minimax: number | null };
-
-function deriveWorkspaceNameFromTitle(rawTitle: string): string {
-  const cleaned = rawTitle
-    .replace(/[\\/:*?"<>|]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return cleaned.slice(0, 100);
-}
+import NoticeBar from "@/components/studio/NoticeBar";
+import StudioTabBar from "@/components/studio/StudioTabBar";
+import WorkspacePanel from "@/components/studio/WorkspacePanel";
+import RecentTracksPanel from "@/components/studio/RecentTracksPanel";
+import { useTrackManager } from "@/hooks/useTrackManager";
+import { useStudioActions } from "@/hooks/useStudioActions";
+import { useWorkspaceView } from "@/hooks/useWorkspaceView";
+import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 
 export default function HomePage() {
-    // Ref voor animatieframe batching
-    const trackUpdateFrameRef = useRef<number | null>(null);
-    // Ref voor batch-id
-    const trackUpdateBatchRef = useRef(0);
-    // React transition voor batch updates
-    const [isTrackUpdatePending, startTrackUpdateTransition] = useTransition();
-    // Chunking threshold en size
-    const TRACK_UPDATE_CHUNK_THRESHOLD = 100;
-    const TRACK_UPDATE_CHUNK_SIZE = 50;
+  const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate } = useTrackManager();
 
-    // Utility: vergelijk of twee track-arrays renderbaar identiek zijn
-    function tracksHaveSameRenderableState(a: Track[], b: Track[]) {
-      if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) {
-        if (
-          a[i].id !== b[i].id ||
-          a[i].status !== b[i].status ||
-          a[i].title !== b[i].title ||
-          a[i].coverUrl !== b[i].coverUrl ||
-          a[i].audioUrl !== b[i].audioUrl ||
-          a[i].audioUrlHd !== b[i].audioUrlHd ||
-          a[i].error !== b[i].error ||
-          a[i].duration !== b[i].duration ||
-          a[i].format !== b[i].format ||
-          a[i].formatHd !== b[i].formatHd ||
-          a[i].s3KeyHd !== b[i].s3KeyHd ||
-          a[i].s3KeyCoverThumb !== b[i].s3KeyCoverThumb ||
-          (a[i].playCount ?? null) !== (b[i].playCount ?? null) ||
-          (a[i].rating ?? null) !== (b[i].rating ?? null) ||
-          (a[i].lyricsTimestamps ?? null) !== (b[i].lyricsTimestamps ?? null)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    }
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const tracksRef = useRef<Track[]>([]);
-  useEffect(() => {
-    tracksRef.current = tracks;
-  }, [tracks]);
+  const {
+    generating,
+    notice,
+    setNotice,
+    showLyricsOverlay,
+    handleOptimize,
+    handleGenerateLyrics,
+    handleGenerateTitle,
+    handleGenerate,
+    handleReusePrompt,
+  } = useStudioActions({ tracksRef, fetchTracks });
 
-  const [generating, setGenerating] = useState(false);
-  const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
-  const [credits, setCredits] = useState({ lyria: "Pay-per-use" as string | number, poyo: null as number | null, tempolor: null as number | null, minimax: null as number | null });
-  const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
-  const playlists = usePlaylistStore((state) => state.playlists);
-  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
-  const workspaces = useWorkspaceStore((state) => state.workspaces);
-  const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
-  const setSelectedWorkspaceId = useWorkspaceStore((state) => state.setSelectedWorkspaceId);
-  const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
-  const createWorkspaceFolder = useWorkspaceStore((state) => state.createWorkspaceFolder);
-  const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
-  const moveTracksToWorkspace = useWorkspaceStore((state) => state.moveTracksToWorkspace);
+  const workspaceView = useWorkspaceView(tracks);
+
+  const {
+    credits,
+    creditValue,
+    selectedTrack,
+    showTrackDetailsPanel,
+    rightPanelWidth,
+    setRightPanelWidth,
+    handleSelectTrack,
+    handleCloseTrackDetails,
+    handleDeleteTrackFromPlayer,
+    handlePlayTrack,
+    handleDownloadTrack,
+    handleAddToQueue,
+    handleAddToPlaylist,
+    handleMoveTrackToWorkspace,
+  } = useTrackPlayer({ tracksRef });
+
+  // Combine delete handlers so both track list and player panel stay in sync
+  const handleDelete = (trackId: string) => {
+    handleDeleteTrack(trackId);
+    handleDeleteTrackFromPlayer(trackId);
+  };
+
+  // Bootstrap: ensure default workspace and rehydrate studio store
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
-  const syncTracksToDefaultWorkspace = useWorkspaceStore((state) => state.syncTracksToDefaultWorkspace);
-  const hydrateWorkspacesFromServer = useWorkspaceStore((state) => state.hydrateWorkspacesFromServer);
-  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
-  const [newWorkspaceName, setNewWorkspaceName] = useState("");
-  const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const WORKSPACE_VIEW_MODE_STORAGE_KEY = "melodiq-studio-workspace-view-mode";
-  const [workspaceViewMode, setWorkspaceViewMode] = useState<"grid" | "list">("list");
-  const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
-  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
-  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-
-  const { data: tracksResponse, mutate: mutateTracksResponse } = useSWR<TracksResponse>("/api/tracks", jsonFetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 2000,
-  });
-
-  const { data: creditsResponse } = useSWR<CreditsResponse>("/api/credits", jsonFetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60000,
-  });
-
-  const applyTracksResponse = useCallback((data: TracksResponse) => {
-    const next: Track[] = (Array.isArray(data.tracks) ? data.tracks : []).map((t) => ({
-      ...t,
-      title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
-    }));
-    const playerSnapshots: PlayerTrack[] = next.map((track) => ({
-      id: track.id,
-      title: track.title,
-      provider: track.provider,
-      providerModel: track.providerModel,
-      prompt: track.prompt,
-      status: track.status,
-      audioUrl: track.audioUrl,
-      audioUrlHd: track.audioUrlHd,
-      s3Key: track.s3Key ?? null,
-      s3KeyHd: track.s3KeyHd,
-      format: track.format,
-      formatHd: track.formatHd,
-      duration: track.duration,
-      lyrics: track.lyrics,
-      lyricsTimestamps: track.lyricsTimestamps,
-      createdAt: track.createdAt,
-      error: track.error,
-      rating: track.rating ?? null,
-      coverUrl: track.coverUrl ?? null,
-      s3KeyCover: track.s3KeyCover ?? null,
-      s3KeyCoverThumb: track.s3KeyCoverThumb ?? null,
-      playCount: track.playCount ?? null,
-    }));
-
-    usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);
-
-    if (trackUpdateFrameRef.current !== null) {
-      cancelAnimationFrame(trackUpdateFrameRef.current);
-      trackUpdateFrameRef.current = null;
-    }
-
-    const applyTrackUpdate = (updater: (prev: Track[]) => Track[]) => {
-      startTrackUpdateTransition(() => {
-        setTracks(updater);
-      });
-    };
-
-    if (next.length < TRACK_UPDATE_CHUNK_THRESHOLD || tracksRef.current.length > 0) {
-      const batchId = ++trackUpdateBatchRef.current;
-      applyTrackUpdate((prev) => {
-        if (batchId !== trackUpdateBatchRef.current) return prev;
-        return tracksHaveSameRenderableState(prev, next) ? prev : next;
-      });
-    } else {
-      const batchId = ++trackUpdateBatchRef.current;
-      let cursor = 0;
-
-      const applyChunk = () => {
-        if (batchId !== trackUpdateBatchRef.current) return;
-
-        cursor = Math.min(cursor + TRACK_UPDATE_CHUNK_SIZE, next.length);
-        const slice = next.slice(0, cursor);
-        applyTrackUpdate((prev) => {
-          if (batchId !== trackUpdateBatchRef.current) return prev;
-          return tracksHaveSameRenderableState(prev, slice) ? prev : slice;
-        });
-
-        if (cursor < next.length) {
-          trackUpdateFrameRef.current = requestAnimationFrame(applyChunk);
-          return;
-        }
-
-        trackUpdateFrameRef.current = null;
-        applyTrackUpdate((prev) => {
-          if (batchId !== trackUpdateBatchRef.current) return prev;
-          return tracksHaveSameRenderableState(prev, next) ? prev : next;
-        });
-      };
-
-      applyChunk();
-    }
-
-    if (Array.isArray(data.workspaces)) {
-      useWorkspaceStore.getState().hydrateWorkspacesFromServer(data.workspaces);
-    }
-    useWorkspaceStore.getState().syncTracksToDefaultWorkspace(next.map((track) => track.id));
-  }, []);
-
   useEffect(() => {
     ensureDefaultWorkspace();
     useStudioStore.persist.rehydrate();
@@ -269,604 +77,13 @@ export default function HomePage() {
     }
   }, [ensureDefaultWorkspace]);
 
-  useEffect(() => {
-    if (tracksResponse) {
-      applyTracksResponse(tracksResponse);
-    }
-  }, [tracksResponse]);
-
-  useEffect(() => {
-    if (creditsResponse) {
-      setCredits(creditsResponse);
-    }
-  }, [creditsResponse]);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(WORKSPACE_GRID_SIZE_STORAGE_KEY);
-      if (saved === "4" || saved === "8" || saved === "12" || saved === "16") {
-        setWorkspaceGridSize(Number(saved) as 4 | 8 | 12 | 16);
-      }
-      const savedView = window.localStorage.getItem(WORKSPACE_VIEW_MODE_STORAGE_KEY);
-      if (savedView === "grid" || savedView === "list") {
-        setWorkspaceViewMode(savedView);
-      }
-    } catch {
-      // ignore localStorage read failures
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
-    } catch {
-      // ignore localStorage write failures
-    }
-  }, [workspaceGridSize]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(WORKSPACE_VIEW_MODE_STORAGE_KEY, workspaceViewMode);
-    } catch {
-      // ignore localStorage write failures
-    }
-  }, [workspaceViewMode]);
-
-
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      // Keep the selected track updated with fresh data from tracks list
-      if (prev) {
-        const matched = tracks.find((t) => t.id === prev.id);
-        if (matched) return matched;
-        return prev;
-      }
-      // If nothing is selected, default to current playing track
-      if (currentTrack) {
-        const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-        if (matchedTrack) return matchedTrack;
-        
-        return {
-          id: currentTrack.id,
-          title: currentTrack.title,
-          provider: currentTrack.provider,
-          providerModel: currentTrack.providerModel,
-          prompt: currentTrack.prompt,
-          lyrics: currentTrack.lyrics,
-          lyricsTimestamps: currentTrack.lyricsTimestamps,
-          status: currentTrack.status,
-          audioUrl: currentTrack.audioUrl,
-          audioUrlHd: currentTrack.audioUrlHd,
-          s3Key: currentTrack.s3Key ?? null,
-          format: currentTrack.format ?? null,
-          formatHd: currentTrack.formatHd ?? null,
-          duration: currentTrack.duration ?? null,
-          createdAt: currentTrack.createdAt,
-          error: currentTrack.error,
-          s3KeyHd: currentTrack.s3KeyHd,
-          coverUrl: currentTrack.coverUrl ?? null,
-          s3KeyCover: currentTrack.s3KeyCover ?? null,
-          s3KeyCoverThumb: currentTrack.s3KeyCoverThumb ?? null,
-          playCount: currentTrack.playCount ?? null,
-          rating: currentTrack.rating ?? null,
-          instrumental: currentTrack.instrumental ?? null,
-        };
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, tracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-    
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as Track);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
-  }, [rightPanelWidth]);
-
-  function handleCloseTrackDetails() {
-    setSelectedTrack(null);
-    setShowTrackDetailsPanel(false);
-  }
-
-  function handleCreateWorkspace() {
-    const id = createWorkspace(newWorkspaceName);
-    if (!id) return;
-    setSelectedWorkspaceId(id);
-    setNewWorkspaceName("");
-    setShowCreateWorkspace(false);
-  }
-
-  function handleCreateWorkspaceKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleCreateWorkspace();
-    } else if (event.key === "Escape") {
-      setShowCreateWorkspace(false);
-      setNewWorkspaceName("");
-    }
-  }
-
-  function handleCreateFolder() {
-    if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return;
-    const id = createWorkspaceFolder(selectedWorkspace.id, newFolderName);
-    if (!id) return;
-    setSelectedWorkspaceId(id);
-    setNewFolderName("");
-    setShowCreateFolder(false);
-  }
-
-  function handleCreateFolderKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleCreateFolder();
-    } else if (event.key === "Escape") {
-      setShowCreateFolder(false);
-      setNewFolderName("");
-    }
-  }
-
-  const fetchTracks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tracks?t=${Date.now()}`, { cache: "no-store" });
-      if (res.ok) {
-        const payload = await res.json() as TracksResponse;
-        await mutateTracksResponse(payload, { revalidate: false });
-        applyTracksResponse(payload);
-        return payload.tracks ?? [];
-      }
-    } catch (error) {
-      console.error("Failed to fetch tracks directly, falling back to SWR mutate:", error);
-    }
-    const payload = await mutateTracksResponse();
-    if (!payload) return [] as Track[];
-    applyTracksResponse(payload);
-    return payload.tracks ?? [];
-  }, [mutateTracksResponse, applyTracksResponse]);
-
-  const hasGenerating = useMemo(() => {
-    return tracks.some((t) => t.status === "generating" || t.status === "pending");
-  }, [tracks]);
-
-  const hasDoneWithoutCover = useMemo(() => {
-    return tracks.some((t) => t.status === "done" && !t.coverUrl);
-  }, [tracks]);
-
-  const hasDoneWithoutHd = useMemo(() => {
-    return tracks.some((t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd);
-  }, [tracks]);
-
-  useEffect(() => {
-    const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
-
-    const timer = setInterval(() => {
-      fetchTracks();
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [hasGenerating, hasDoneWithoutCover, hasDoneWithoutHd, fetchTracks]);
-
-  const handleDeleteTrack = useCallback((trackId: string) => {
-    setTracks((prev) => prev.filter((t) => t.id !== trackId));
-    setSelectedTrack((prev) => (prev?.id === trackId ? null : prev));
-  }, []);
-
-  const handleTitleUpdate = useCallback((trackId: string, newTitle: string) => {
-    setTracks((prev) => {
-      const idx = prev.findIndex((t) => t.id === trackId);
-      if (idx === -1 || prev[idx].title === newTitle) return prev;
-      const next = [...prev];
-      next[idx] = { ...next[idx], title: newTitle };
-      return next;
-    });
-    setSelectedTrack((prev) => {
-      if (prev?.id === trackId) {
-        return { ...prev, title: newTitle };
-      }
-      return prev;
-    });
-
-    // Optimistically update the local SWR cache to prevent redundant refetches and lags
-    void mutateTracksResponse(
-      (current) => {
-        if (!current) return current;
-        const incomingTracks = Array.isArray(current.tracks) ? current.tracks : [];
-        return {
-          ...current,
-          tracks: incomingTracks.map((t) =>
-            t.id === trackId ? { ...t, title: newTitle } : t
-          ),
-        };
-      },
-      { revalidate: false }
-    );
-  }, [mutateTracksResponse]);
-
-  const handleAddToQueue = useCallback((track: Track) => {
-    usePlayerStore.getState().enqueueTrack({
-      id: track.id,
-      title: track.title,
-      provider: track.provider,
-      providerModel: track.providerModel,
-      prompt: track.prompt,
-      status: track.status,
-      audioUrl: track.audioUrl,
-      audioUrlHd: track.audioUrlHd,
-      format: track.format,
-      formatHd: track.formatHd,
-      s3Key: null,
-      s3KeyHd: track.s3KeyHd,
-      duration: null,
-      lyrics: track.lyrics,
-      createdAt: track.createdAt,
-      error: track.error,
-      coverUrl: track.coverUrl,
-      s3KeyCover: track.s3KeyCover,
-      s3KeyCoverThumb: track.s3KeyCoverThumb,
-    });
-  }, []);
-
-  const handleAddToPlaylist = useCallback((
-    trackId: string,
-    playlistId: string,
-    options?: { allowDuplicate?: boolean }
-  ) => {
-    usePlaylistStore.getState().addTrackToPlaylist(playlistId, trackId, options);
-  }, []);
-
-  const getEffectiveLanguage = useCallback(() => {
-    const { language, customLanguage } = useStudioStore.getState();
-    return language === "Other..." ? customLanguage.trim() || language : language;
-  }, []);
-
-  const handleOptimize = useCallback(async () => {
-    const { songIdea, selectedProviders, lyricsContext, structure, customStructure, vocalGender } = useStudioStore.getState();
-    const provider = Object.keys(selectedProviders)[0] || "poyo";
-    const res = await fetch("/api/llm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "optimize",
-        idea: songIdea,
-        provider,
-        language: getEffectiveLanguage(),
-        context: lyricsContext,
-        structure,
-        customStructure,
-        vocalGender,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      useStudioStore.getState().setSongIdea(data.result);
-    }
-  }, [getEffectiveLanguage]);
-
-  const handleGenerateLyrics = useCallback(async () => {
-    setShowLyricsOverlay(true);
-    const { songIdea, lyricsContext, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
-    try {
-      const res = await fetch("/api/llm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "lyrics",
-          idea: songIdea,
-          context: lyricsContext,
-          language: getEffectiveLanguage(),
-          instrumental,
-          structure,
-          customStructure,
-          vocalGender,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        useStudioStore.getState().setLyrics(data.result);
-      }
-    } finally {
-      setShowLyricsOverlay(false);
-    }
-  }, [getEffectiveLanguage]);
-
-  const handleGenerateTitle = useCallback(async (lyrics: string): Promise<string | null> => {
-    try {
-      const res = await fetch("/api/generate-title", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lyrics }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.title;
-      }
-    } catch {}
-    return null;
-  }, []);
-
-  const handleGenerate = useCallback(async () => {
-    const {
-      songIdea,
-      lyrics,
-      title,
-      selectedProviders,
-      instrumental,
-      autoCreateWorkspaceFromGeneratedTitle,
-      vocalGender,
-      weirdness,
-      styleInfluence,
-    } = useStudioStore.getState();
-
-    const providerEntries = Object.entries(selectedProviders);
-
-    if (providerEntries.length === 0) {
-      setNotice({ type: "error", message: "Selecteer minimaal één provider." });
-      return;
-    }
-
-    if (selectedProviders.musicgpt && lyrics.length > MUSICGPT_LYRICS_MAX_CHARS) {
-      setNotice({
-        type: "error",
-        message: `MusicGPT lyrics mogen maximaal ${MUSICGPT_LYRICS_MAX_CHARS} karakters zijn.`,
-      });
-      return;
-    }
-
-    setGenerating(true);
-    // Yield to the browser main thread so it paints the button's loading state instantly at 60fps
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const existingTrackIds = new Set(tracksRef.current.map((track) => track.id));
-    const selectedWorkspaceId = useWorkspaceStore.getState().selectedWorkspaceId;
-    const targetWorkspaceId = selectedWorkspaceId && selectedWorkspaceId !== DEFAULT_WORKSPACE_ID
-      ? selectedWorkspaceId
-      : useWorkspaceStore.getState().ensureDefaultWorkspace();
-
-    try {
-      const needsTitle = !instrumental && !title.trim() && lyrics.trim();
-      let finalTitle = title;
-      if (needsTitle) {
-        const generatedTitle = await handleGenerateTitle(lyrics);
-        if (generatedTitle) {
-          finalTitle = generatedTitle;
-          useStudioStore.getState().setTitle(finalTitle);
-        }
-      }
-
-      const effectiveLanguage = getEffectiveLanguage();
-      const results = await Promise.allSettled(
-        providerEntries.map(([provider, providerModel]) =>
-          fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              prompt: songIdea,
-              lyrics,
-              title: finalTitle,
-              provider,
-              providerModel,
-              language: effectiveLanguage,
-              instrumental,
-              vocalGender,
-              weirdness,
-              styleInfluence,
-            }),
-          }).then(async (res) => {
-            const data = await res.json();
-            return { ok: res.ok, data, provider };
-          })
-        )
-      );
-
-      const allTrackIds: string[] = [];
-      const generatedTitles: string[] = [];
-      const errors: string[] = [];
-
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          const { ok, data, provider } = result.value;
-          if (ok) {
-            const returnedTracks: Track[] = Array.isArray(data.tracks)
-              ? data.tracks
-              : data.track
-                ? [data.track]
-                : [];
-            const ids: string[] = returnedTracks.map((t: Track) => t.id).filter(Boolean);
-            const titles = returnedTracks
-              .map((t: Track) => (typeof t.title === "string" ? t.title.trim() : ""))
-              .filter(Boolean);
-
-            generatedTitles.push(...titles);
-            allTrackIds.push(...ids);
-          } else {
-            errors.push(`${provider}: ${data.error || "failed"}`);
-          }
-        } else {
-          errors.push("Generation request failed");
-        }
-      }
-
-      let finalWorkspaceId = targetWorkspaceId;
-      if (autoCreateWorkspaceFromGeneratedTitle && allTrackIds.length > 0) {
-        const preferredTitle = finalTitle.trim() || generatedTitles[0] || "";
-        const workspaceName = deriveWorkspaceNameFromTitle(preferredTitle);
-        if (workspaceName) {
-          const createdWorkspaceId = useWorkspaceStore.getState().createWorkspace(workspaceName);
-          if (createdWorkspaceId) {
-            finalWorkspaceId = createdWorkspaceId;
-            useWorkspaceStore.getState().setSelectedWorkspaceId(createdWorkspaceId);
-          }
-        }
-      }
-
-      if (allTrackIds.length > 0) {
-        useWorkspaceStore.getState().moveTracksToWorkspace(finalWorkspaceId, allTrackIds);
-        void fetchTracks();
-      } else {
-        const latestTracks = await fetchTracks();
-        if (finalWorkspaceId !== DEFAULT_WORKSPACE_ID) {
-          const discoveredTrackIds = latestTracks
-            .map((track) => track.id)
-            .filter((trackId) => !existingTrackIds.has(trackId));
-          if (discoveredTrackIds.length > 0) {
-            useWorkspaceStore.getState().moveTracksToWorkspace(finalWorkspaceId, discoveredTrackIds);
-          }
-        }
-      }
-
-      if (errors.length > 0) {
-        setNotice({ type: "error", message: errors.join(" |") });
-        if (allTrackIds.length === 0) {
-          window.alert(errors.join(" |"));
-        }
-      } else {
-        setNotice(null);
-      }
-    } catch {
-      setNotice({ type: "error", message: "Failed to generate track" });
-    } finally {
-      setGenerating(false);
-    }
-  }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks]);
-
-  const handleReusePrompt = useCallback((track: Track) => {
-    const studio = useStudioStore.getState();
-
-    // Clear current fields first, then apply values from selected track.
-    studio.setSongIdea("");
-    studio.setLyrics("");
-    studio.setSongIdea(track.prompt || "");
-    studio.setLyrics(track.lyrics || "");
-  }, []);
-
-  const handlePlayTrack = useCallback((url: string) => {
-    if (selectedTrack) {
-      const player = usePlayerStore.getState();
-      const playContext = tracksRef.current
-        .filter((t) => t.status === "done")
-        .map((t) => ({
-          id: t.id,
-          title: t.title,
-          provider: t.provider,
-          providerModel: t.providerModel,
-          prompt: t.prompt,
-          status: t.status,
-          audioUrl: t.audioUrl,
-          audioUrlHd: t.audioUrlHd,
-          format: t.format,
-          formatHd: t.formatHd,
-          s3Key: null,
-          s3KeyHd: t.s3KeyHd,
-          duration: null,
-          lyrics: t.lyrics,
-          lyricsTimestamps: t.lyricsTimestamps,
-          createdAt: t.createdAt,
-          error: t.error,
-          coverUrl: t.coverUrl,
-          s3KeyCover: t.s3KeyCover,
-          s3KeyCoverThumb: t.s3KeyCoverThumb,
-        }));
-
-      player.setPlayContext(playContext);
-
-      if (player.autoPlayNext) {
-        const index = playContext.findIndex((t) => t.id === selectedTrack.id);
-        if (index >= 0) {
-          player.setQueue(playContext.slice(index + 1));
-        }
-      }
-      player.playTrackFromGesture({
-        id: selectedTrack.id,
-        title: selectedTrack.title,
-        provider: selectedTrack.provider,
-        providerModel: selectedTrack.providerModel,
-        prompt: selectedTrack.prompt,
-        status: selectedTrack.status,
-        audioUrl: url,
-        audioUrlHd: selectedTrack.audioUrlHd,
-        format: selectedTrack.format,
-        formatHd: selectedTrack.formatHd,
-        s3Key: null,
-        s3KeyHd: selectedTrack.s3KeyHd,
-        duration: null,
-        lyrics: selectedTrack.lyrics,
-        lyricsTimestamps: selectedTrack.lyricsTimestamps,
-        createdAt: selectedTrack.createdAt,
-        error: selectedTrack.error,
-        coverUrl: selectedTrack.coverUrl,
-        s3KeyCover: selectedTrack.s3KeyCover,
-        s3KeyCoverThumb: selectedTrack.s3KeyCoverThumb,
-      });
-    }
-  }, [selectedTrack]);
-
-
-  const handleDownloadTrack = useCallback((url: string, hd: boolean) => {
-    const a = document.createElement("a");
-    a.href = url;
-    const fmt = hd
-      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
-      : (selectedTrack?.format ?? "mp3");
-    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
-    a.click();
-  }, [selectedTrack]);
-
-  const [studioTab, setStudioTab] = useState<"workspaces" | "recent">("recent");
-  const creditValue = typeof credits.poyo === "number" ? credits.poyo : typeof credits.tempolor === "number" ? credits.tempolor : null;
-  const selectedWorkspace = selectedWorkspaceId
-    ? workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null
-    : null;
-  const rootWorkspaces = useMemo(
-    () => workspaces.filter((workspace) => !workspace.parentWorkspaceId),
-    [workspaces],
+  const playlists = usePlaylistStore((state) => state.playlists);
+  const memoizedPlaylists = useMemo(
+    () => playlists.map((p) => ({ id: p.id, name: p.name })),
+    [playlists]
   );
-  const selectedWorkspaceParent = useMemo(() => {
-    if (!selectedWorkspace?.parentWorkspaceId) return null;
-    return workspaces.find((workspace) => workspace.id === selectedWorkspace.parentWorkspaceId) ?? null;
-  }, [selectedWorkspace, workspaces]);
-  const selectedWorkspaceChildren = useMemo(() => {
-    if (!selectedWorkspace || selectedWorkspace.parentWorkspaceId) return [];
-    return workspaces.filter((workspace) => workspace.parentWorkspaceId === selectedWorkspace.id);
-  }, [selectedWorkspace, workspaces]);
-  const selectedWorkspaceTracks = useMemo(() => {
-    if (!selectedWorkspace) return [];
-    const idSet = new Set(selectedWorkspace.trackIds);
-    return tracks.filter((track) => idSet.has(track.id));
-  }, [selectedWorkspace, tracks]);
-  const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
-  const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
-  const handleMoveTrackToWorkspace = useCallback((trackId: string, workspaceId: string) => {
-    useWorkspaceStore.getState().moveTrackToWorkspace(workspaceId, trackId);
-    useWorkspaceStore.getState().setSelectedWorkspaceId(workspaceId);
-  }, []);
-
-  const handleSelectTrack = useCallback((track: Track) => {
-    setSelectedTrack(track);
-    setShowTrackDetailsPanel(true);
-  }, []);
-
-  const memoizedPlaylists = useMemo(() => {
-    return playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }));
-  }, [playlists]);
+  const rightPanelWidthFromStore = usePlayerStore((state) => state.rightPanelWidth);
 
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -879,7 +96,7 @@ export default function HomePage() {
 
           <main className="p-4">
             <div className="flex flex-col xl:flex-row gap-6 xl:gap-8">
-              {/* Form column */}
+              {/* Studio form column */}
               <div className="w-full xl:w-[500px] xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-32px)]">
                 <StudioForm
                   credits={credits}
@@ -894,381 +111,59 @@ export default function HomePage() {
               {/* Track list column */}
               <div className="w-full xl:flex-1 self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-32px)]">
                 <div className="flex flex-col h-full min-h-0">
-                  {/* Tabs */}
-                  <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
-                    <button
-                      type="button"
-                      onClick={() => setStudioTab("workspaces")}
-                      className={clsx(
-                        SEGMENTED_BUTTON_BASE,
-                        studioTab === "workspaces" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
-                      )}
-                    >
-                      Workspaces
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStudioTab("recent")}
-                      className={clsx(
-                        SEGMENTED_BUTTON_BASE,
-                        studioTab === "recent" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
-                      )}
-                    >
-                      Recent Tracks
-                    </button>
-                  </div>
+                  <StudioTabBar activeTab={workspaceView.studioTab} onTabChange={workspaceView.setStudioTab} />
 
-                  {studioTab === "workspaces" && (
-                    <section className={STUDIO_SECTION_CLASS}>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
-                          <p className="text-xs text-white/40">
-                            {isWorkspaceFolderOpen
-                              ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
-                              : workspaceViewMode === "grid"
-                                ? `${workspaceGridSize} columns per row.`
-                                : `${rootWorkspaces.length} workspaces.`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {!isWorkspaceFolderOpen && (
-                            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
-                              <button
-                                type="button"
-                                onClick={() => setWorkspaceViewMode("list")}
-                                className={clsx(
-                                  SEGMENTED_ICON_BUTTON_BASE,
-                                  workspaceViewMode === "list" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
-                                )}
-                                title="List view"
-                                aria-label="List view"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 10h16" />
-                                </svg>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setWorkspaceViewMode("grid")}
-                                className={clsx(
-                                  SEGMENTED_ICON_BUTTON_BASE,
-                                  workspaceViewMode === "grid" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
-                                )}
-                                title="Grid view"
-                                aria-label="Grid view"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                          {!isWorkspaceFolderOpen && workspaceViewMode === "grid" && (
-                            <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
-                              {[4, 8, 12, 16].map((size) => (
-                                <button
-                                  key={size}
-                                  type="button"
-                                  onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
-                                  className={clsx(
-                                    SEGMENTED_SIZE_BUTTON_BASE,
-                                    workspaceGridSize === size ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
-                                  )}
-                                  title={`Show ${size} workspace cards`}
-                                  aria-label={`Show ${size} workspace cards`}
-                                >
-                                  {size}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          {isWorkspaceFolderOpen && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (selectedWorkspace?.parentWorkspaceId) {
-                                  setSelectedWorkspaceId(selectedWorkspace.parentWorkspaceId);
-                                  return;
-                                }
-                                setSelectedWorkspaceId(null);
-                              }}
-                              className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
-                              title="Back to workspace overview"
-                            >
-                              {selectedWorkspace?.parentWorkspaceId ? "← Back to parent" : "← Back to folders"}
-                            </button>
-                          )}
-                          <CreateWorkspaceDialog
-                            open={showCreateWorkspace}
-                            value={newWorkspaceName}
-                            onOpen={() => setShowCreateWorkspace(true)}
-                            onChange={setNewWorkspaceName}
-                            onSubmit={handleCreateWorkspace}
-                            onCancel={() => {
-                              setShowCreateWorkspace(false);
-                              setNewWorkspaceName("");
-                              setShowCreateFolder(false);
-                              setNewFolderName("");
-                            }}
-                            onKeyDown={handleCreateWorkspaceKeyDown}
-                          />
-                          {isWorkspaceFolderOpen && !selectedWorkspace?.parentWorkspaceId && (
-                            showCreateFolder ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  value={newFolderName}
-                                  onChange={(event) => setNewFolderName(event.target.value)}
-                                  onKeyDown={handleCreateFolderKeyDown}
-                                  placeholder="Subfolder name"
-                                  className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
-                                  aria-label="Subfolder name"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleCreateFolder}
-                                  className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
-                                >
-                                  Add
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowCreateFolder(false);
-                                    setNewFolderName("");
-                                  }}
-                                  className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setShowCreateFolder(true)}
-                                className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
-                              >
-                                + Add Subfolder
-                              </button>
-                            )
-                          )}
-                        </div>
-                      </div>
-
-                      {!isWorkspaceFolderOpen && (
-                        <div className="mb-3 overflow-y-auto pr-1">
-                          {workspaceViewMode === "grid" ? (
-                            <div className={`grid gap-3 ${workspaceGridClass}`}>
-                              {rootWorkspaces.map((workspace) => {
-                                const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                                const coverUrls = getWorkspaceCoverCollage(workspace.id, workspaceTracks);
-                                const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
-                                const childCount = workspaces.filter((child) => child.parentWorkspaceId === workspace.id).length;
-                                const hasSingleCover = coverUrls.length === 1;
-
-                                return (
-                                  <button
-                                    key={workspace.id}
-                                    type="button"
-                                    onClick={() => setSelectedWorkspaceId(workspace.id)}
-                                    className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""}`}
-                                  >
-                                    <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
-                                      <div className="pointer-events-none absolute inset-0 bg-black/10" />
-                                      {coverUrls.length > 0 ? (
-                                        <div
-                                          className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"}`}
-                                        >
-                                          {coverUrls.map((cover, index) => (
-                                            <img
-                                              key={`${workspace.id}-${index}`}
-                                              src={cover}
-                                              alt={workspace.name}
-                                              draggable={false}
-                                              className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
-                                            />
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                          <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-                                            <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                            </svg>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                                        <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
-                                          <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                                          <p className="text-xs text-white/65">
-                                            {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {rootWorkspaces.map((workspace) => {
-                                const workspaceTracks = tracks.filter((track) => workspace.trackIds.includes(track.id));
-                                const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
-                                const childCount = workspaces.filter((child) => child.parentWorkspaceId === workspace.id).length;
-
-                                return (
-                                  <button
-                                    key={workspace.id}
-                                    type="button"
-                                    onClick={() => setSelectedWorkspaceId(workspace.id)}
-                                    className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-left transition hover:bg-white/5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40 bg-white/5" : ""}`}
-                                  >
-                                    <div
-                                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-white/10"
-                                      style={{ backgroundImage: gradient }}
-                                    >
-                                      <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                      </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-white truncate">{workspace.name}</p>
-                                    </div>
-                                    <span className="text-xs text-white/40 shrink-0">
-                                      {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
-                                      {childCount > 0 ? ` • ${childCount} folders` : ""}
-                                    </span>
-                                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-[11px] text-white/35 mb-1 truncate">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (selectedWorkspace?.parentWorkspaceId) {
-                                  setSelectedWorkspaceId(selectedWorkspace.parentWorkspaceId);
-                                  return;
-                                }
-                                setSelectedWorkspaceId(null);
-                              }}
-                              className="text-white/60 hover:text-white/80 transition-colors"
-                              title="Back to workspace overview"
-                            >
-                              {selectedWorkspace?.parentWorkspaceId ? selectedWorkspaceParent?.name ?? "Workspaces" : "Workspaces"}
-                            </button>
-                            <span className="mx-1 text-white/20">&gt;</span>
-                            <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
-                          </div>
-                        </div>
-                        <span className="text-xs text-white/30 shrink-0">
-                          {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
-                        </span>
-                      </div>
-
-                      {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
-                        <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
-                          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Subfolders</p>
-                          <div className="space-y-1.5">
-                            {selectedWorkspaceChildren.map((childWorkspace) => {
-                              const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
-                              const childCover = getWorkspaceCoverCollage(childWorkspace.id, childTracks)[0];
-
-                              return (
-                                <button
-                                  key={childWorkspace.id}
-                                  type="button"
-                                  onClick={() => setSelectedWorkspaceId(childWorkspace.id)}
-                                  className="group flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
-                                >
-                                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-white/10 bg-[#11131f]">
-                                    {childCover ? (
-                                      <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
-                                    ) : (
-                                      <div className="flex h-full w-full items-center justify-center">
-                                        <svg className="h-4 w-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-                                        </svg>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
-                                  </div>
-                                  <span className="text-[11px] text-white/45">
-                                    {childTracks.length} {childTracks.length === 1 ? "song" : "songs"}
-                                  </span>
-                                  <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                        {selectedWorkspace ? (
-                          <TrackList
-                            tracks={selectedWorkspaceTracks}
-                            autoQueueAfterPlay
-                            onSelect={handleSelectTrack}
-                            onDelete={handleDeleteTrack}
-                            onReusePrompt={handleReusePrompt}
-                            onAddToQueue={handleAddToQueue}
-                            onAddToPlaylist={handleAddToPlaylist}
-                            onMoveToWorkspace={handleMoveTrackToWorkspace}
-                            playlists={memoizedPlaylists}
-                            onTitleUpdate={handleTitleUpdate}
-                          />
-                        ) : (
-                          <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
-                            <p className="text-sm text-white/45">
-                              Select or create a workspace above to pin its tracks here.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </section>
+                  {workspaceView.studioTab === "workspaces" && (
+                    <WorkspacePanel
+                      tracks={tracks}
+                      workspaces={workspaceView.workspaces}
+                      selectedWorkspaceId={workspaceView.selectedWorkspaceId}
+                      setSelectedWorkspaceId={workspaceView.setSelectedWorkspaceId}
+                      selectedWorkspace={workspaceView.selectedWorkspace}
+                      rootWorkspaces={workspaceView.rootWorkspaces}
+                      selectedWorkspaceParent={workspaceView.selectedWorkspaceParent}
+                      selectedWorkspaceChildren={workspaceView.selectedWorkspaceChildren}
+                      selectedWorkspaceTracks={workspaceView.selectedWorkspaceTracks}
+                      workspaceViewMode={workspaceView.workspaceViewMode}
+                      setWorkspaceViewMode={workspaceView.setWorkspaceViewMode}
+                      workspaceGridSize={workspaceView.workspaceGridSize}
+                      setWorkspaceGridSize={workspaceView.setWorkspaceGridSize}
+                      showCreateWorkspace={workspaceView.showCreateWorkspace}
+                      setShowCreateWorkspace={workspaceView.setShowCreateWorkspace}
+                      newWorkspaceName={workspaceView.newWorkspaceName}
+                      setNewWorkspaceName={workspaceView.setNewWorkspaceName}
+                      handleCreateWorkspace={workspaceView.handleCreateWorkspace}
+                      handleCreateWorkspaceKeyDown={workspaceView.handleCreateWorkspaceKeyDown}
+                      showCreateFolder={workspaceView.showCreateFolder}
+                      setShowCreateFolder={workspaceView.setShowCreateFolder}
+                      newFolderName={workspaceView.newFolderName}
+                      setNewFolderName={workspaceView.setNewFolderName}
+                      handleCreateFolder={workspaceView.handleCreateFolder}
+                      handleCreateFolderKeyDown={workspaceView.handleCreateFolderKeyDown}
+                      onSelectTrack={handleSelectTrack}
+                      onDeleteTrack={handleDelete}
+                      onReusePrompt={handleReusePrompt}
+                      onAddToQueue={handleAddToQueue}
+                      onAddToPlaylist={handleAddToPlaylist}
+                      onMoveToWorkspace={handleMoveTrackToWorkspace}
+                      onTitleUpdate={handleTitleUpdate}
+                      playlists={memoizedPlaylists}
+                    />
                   )}
 
-                  {studioTab === "recent" && (
-                    <section className={STUDIO_SECTION_CLASS}>
-                      <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
-                        <span className="text-xs text-white/30">{tracks.length} tracks</span>
-                      </div>
-
-                      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                        <TrackList
-                          tracks={tracks}
-                          enableDragReorder={false}
-                          autoQueueAfterPlay
-                          isGenerating={generating}
-                          onSelect={handleSelectTrack}
-                          onDelete={handleDeleteTrack}
-                          onReusePrompt={handleReusePrompt}
-                          onAddToQueue={handleAddToQueue}
-                          onAddToPlaylist={handleAddToPlaylist}
-                          onMoveToWorkspace={handleMoveTrackToWorkspace}
-                          playlists={memoizedPlaylists}
-                          onTitleUpdate={handleTitleUpdate}
-                        />
-                      </div>
-                    </section>
+                  {workspaceView.studioTab === "recent" && (
+                    <RecentTracksPanel
+                      tracks={tracks}
+                      isGenerating={generating}
+                      onSelect={handleSelectTrack}
+                      onDelete={handleDelete}
+                      onReusePrompt={handleReusePrompt}
+                      onAddToQueue={handleAddToQueue}
+                      onAddToPlaylist={handleAddToPlaylist}
+                      onMoveToWorkspace={handleMoveTrackToWorkspace}
+                      onTitleUpdate={handleTitleUpdate}
+                      playlists={memoizedPlaylists}
+                    />
                   )}
                 </div>
               </div>
@@ -1276,7 +171,7 @@ export default function HomePage() {
           </main>
         </div>
 
-        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidthFromStore} setWidth={setRightPanelWidth}>
           <div className="sticky top-0 h-[calc(100vh-var(--player-height))] overflow-y-auto">
             {selectedTrack ? (
               <TrackDetail

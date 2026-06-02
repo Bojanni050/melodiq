@@ -1,5 +1,20 @@
 # MelodIQ — Walkthrough
 
+## 2026-06-02 ma 11:25 (page.tsx refactored — 1332 → 180 regels)
+
+- Findings: `src/app/page.tsx` was 1332 regels en 60 KB en bevatte alles: SWR data fetching, track state management, workspace logica, AI generatie en alle JSX. Dit maakten de file moeilijk te onderhouden en te begrijpen.
+- Conclusions: Extraheer logica naar custom hooks en JSX naar sub-componenten, zodat page.tsx een dunne orkestratie-laag wordt van ~180 regels.
+- Actions:
+  - Created `src/hooks/useTrackManager.ts` — SWR fetching, chunked rendering, auto-polling, `handleDeleteTrack`, `handleTitleUpdate`
+  - Created `src/hooks/useStudioActions.ts` — `handleGenerate`, `handleOptimize`, `handleGenerateLyrics`, `handleGenerateTitle`, `handleReusePrompt`, `generating` en `notice` state
+  - Created `src/hooks/useWorkspaceView.ts` — studioTab, grid/list view mode, workspaceGridSize, create workspace/folder dialogs, afgeleide workspace data
+  - Created `src/hooks/useTrackPlayer.ts` — credits SWR, `selectedTrack`, `handleSelectTrack`, `handlePlayTrack`, `handleDownloadTrack`, `handleAddToQueue`, `handleAddToPlaylist`, `handleMoveTrackToWorkspace`
+  - Created `src/components/studio/StudioTabBar.tsx` — stateless segmented tab-balk (Workspaces / Recent Tracks)
+  - Created `src/components/studio/WorkspacePanel.tsx` — volledig workspace-paneel: header met view-toggles, grid/list workspace-kaarten, subfolder-listing en ingesloten TrackList
+  - Created `src/components/studio/RecentTracksPanel.tsx` — dunne wrapper rond TrackList voor de "Recent Tracks" tab
+  - Rewrote `src/app/page.tsx` — van 1332 naar ~180 regels; puur orkestratie
+  - Validated with `npm run build` — ✅ 0 TypeScript errors, 39 pagina's gegenereerd
+
 ## 2026-05-27 wo 02:31 (Lyric Studio drag kan nu meerdere posities overslaan)
 
 - Findings: De Lyric Studio drop-target berekening voelde nog te lokaal aan, waardoor het verplaatsen over grotere afstanden niet altijd betrouwbaar was wanneer je door lege ruimte tussen blokken slepte.
