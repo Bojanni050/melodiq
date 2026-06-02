@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
-import { getPoYoStatusValue } from "@/lib/providers/poyo";
+import { extractPoYoErrorMessage, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
@@ -72,8 +72,19 @@ export async function POST(request: NextRequest) {
       const syncResult = await syncPoYoTaskResult(taskId, body);
 
       if (syncResult.variantCount === 0) {
-        await db.update(tracks).set({ status: "failed", error: syncResult.error || "No audio URL in webhook" }).where(eq(tracks.id, track.id!));
-        return NextResponse.json({ error: syncResult.error || "No audio URL" }, { status: 400 });
+        const errorMessage = syncResult.error || "No audio URL in webhook";
+        console.error(`[webhook/poyo] sync produced no variants for task ${taskId} (track ${track.id}): ${errorMessage}`);
+        await db.update(tracks).set({ status: "failed", error: errorMessage }).where(eq(tracks.id, track.id!));
+        await logApi({
+          userId: track.userId,
+          type: "webhook",
+          provider: "poyo",
+          endpoint: "/api/webhooks/poyo",
+          request: JSON.stringify(body),
+          response: JSON.stringify({ taskId, error: errorMessage }),
+          statusCode: 400,
+        });
+        return NextResponse.json({ error: errorMessage }, { status: 400 });
       }
 
       // Match each file to its corresponding track and save audioId + request WAV conversion
@@ -143,10 +154,21 @@ export async function POST(request: NextRequest) {
   }
 
   if (status === "failed" || status === "error") {
+    const errorMessage = extractPoYoErrorMessage(body) || "Generation failed";
+    console.error(`[webhook/poyo] PoYo reported failure for task ${taskId} (track ${track.id}): ${errorMessage}`);
     await db.update(tracks).set({
       status: "failed",
-      error: typeof body.error_message === "string" ? body.error_message : "Generation failed",
+      error: errorMessage,
     }).where(eq(tracks.id, track.id!));
+    await logApi({
+      userId: track.userId,
+      type: "webhook",
+      provider: "poyo",
+      endpoint: "/api/webhooks/poyo",
+      request: JSON.stringify(body),
+      response: JSON.stringify({ taskId, error: errorMessage }),
+      statusCode: 200,
+    });
     return NextResponse.json({ success: true });
   }
 

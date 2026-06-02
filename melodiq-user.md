@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606021626**
+**Versie: 202606030127**
 
 > AI Music Generation Web App
 
@@ -127,6 +127,8 @@ When you click **Generate Track**:
 3. Your prompt, lyrics, and settings are sent to the selected provider
 4. A new track appears in the **Recent Tracks** list
 5. Status updates: `pending` → `generating` → `done` (or `failed`)
+
+When a generation fails, MelodIQ now shows the detailed provider error reason on the track whenever the provider returns one.
 
 Lyria tracks complete in the same request. PoYo, Tempolor, and MusicGPT tracks may take longer; the app polls for status updates automatically and also processes provider webhooks when results arrive.
 

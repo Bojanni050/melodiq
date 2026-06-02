@@ -4,7 +4,7 @@ import { tracks, workspaces } from "@/db/schema";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
-import { getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
+import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
@@ -27,17 +27,6 @@ type JsonObject = Record<string, unknown>;
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function getPoYoErrorMessage(payload: unknown): string | null {
-  if (!isJsonObject(payload)) return null;
-  const direct = payload.error;
-  if (typeof direct === "string" && direct.trim()) return direct;
-  const data = payload.data;
-  if (!isJsonObject(data)) return null;
-  const nested = data.error;
-  if (typeof nested === "string" && nested.trim()) return nested;
-  return null;
 }
 
 export async function GET(
@@ -169,7 +158,8 @@ export async function GET(
       }
 
       if (statusValue === "failed" || statusValue === "error") {
-        const errorMessage = getPoYoErrorMessage(status) || "Generation failed";
+        const errorMessage = extractPoYoErrorMessage(status) || "Generation failed";
+        console.error(`[tracks/[id]] PoYo generation failed for task ${sourceJobId} (track ${track.id}): ${errorMessage}`);
         const updated = await db
           .update(tracks)
           .set({ status: "failed", error: errorMessage })

@@ -36,6 +36,14 @@ function getStringField(obj: JsonObject, keys: string[]): string | undefined {
   return undefined;
 }
 
+function firstNonEmptyString(values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return null;
+}
+
 export function normalizePoYoModel(model?: string): string {
   if (!model) return "V5_5";
   const normalized = model.toUpperCase().replace(/\./g, "_");
@@ -206,6 +214,56 @@ export function getPoYoStatusValue(payload: unknown): string {
     getStringField(isJsonObject(getFromPath(payload, ["data"])) ? (getFromPath(payload, ["data"]) as JsonObject) : {}, ["status"]) ||
     "";
   return status.toLowerCase();
+}
+
+export function extractPoYoErrorMessage(payload: unknown): string | null {
+  const directCandidates: unknown[] = [
+    getFromPath(payload, ["error"]),
+    getFromPath(payload, ["error_message"]),
+    getFromPath(payload, ["message"]),
+    getFromPath(payload, ["msg"]),
+    getFromPath(payload, ["reason"]),
+    getFromPath(payload, ["status_msg"]),
+    getFromPath(payload, ["detail"]),
+    getFromPath(payload, ["error", "message"]),
+    getFromPath(payload, ["error", "msg"]),
+    getFromPath(payload, ["error", "reason"]),
+    getFromPath(payload, ["data", "error"]),
+    getFromPath(payload, ["data", "error_message"]),
+    getFromPath(payload, ["data", "message"]),
+    getFromPath(payload, ["data", "msg"]),
+    getFromPath(payload, ["data", "reason"]),
+    getFromPath(payload, ["data", "status_msg"]),
+    getFromPath(payload, ["data", "detail"]),
+    getFromPath(payload, ["data", "error", "message"]),
+    getFromPath(payload, ["data", "error", "msg"]),
+    getFromPath(payload, ["data", "error", "reason"]),
+    getFromPath(payload, ["result", "error"]),
+    getFromPath(payload, ["result", "error_message"]),
+    getFromPath(payload, ["result", "message"]),
+    getFromPath(payload, ["result", "reason"]),
+    getFromPath(payload, ["result", "status_msg"]),
+    getFromPath(payload, ["result", "detail"]),
+    getFromPath(payload, ["result", "error", "message"]),
+    getFromPath(payload, ["output", "error"]),
+    getFromPath(payload, ["output", "error_message"]),
+    getFromPath(payload, ["output", "message"]),
+    getFromPath(payload, ["output", "reason"]),
+    getFromPath(payload, ["output", "status_msg"]),
+    getFromPath(payload, ["output", "detail"]),
+    getFromPath(payload, ["output", "error", "message"]),
+  ];
+
+  const message = firstNonEmptyString(directCandidates);
+  if (message) return message;
+
+  const errorObject = getFromPath(payload, ["error"]);
+  if (isJsonObject(errorObject)) {
+    const serialized = JSON.stringify(errorObject);
+    if (serialized !== "{}") return serialized;
+  }
+
+  return null;
 }
 
 export type PoYoVariant = { audioId?: string; audioUrl?: string; audioUrlHd?: string; title?: string };

@@ -263,3 +263,9 @@
 - Findings: De rechter Track Details sidebar liet de lyrics-sectie als onderdeel van de volledige kolom meelopen, waardoor de detailsweergave visueel langer werd dan de naastliggende trackkolom.
 - Conclusions: De sidebar moet zelf een vaste paneelhoogte houden, met alleen een intern scrollbaar lyrics-vak en een fade-overlay onderaan om doorlopende content visueel af te kappen.
 - Actions: `src/components/TrackDetail.tsx` aangepast zodat de sidebar-mode `overflow-hidden` gebruikt, de detailscontainer `min-h-0`/`overflow-hidden` afdwingt, en het lyrics-gedeelte een eigen scrollcontainer met zwarte bottom-fade krijgt voor timed en untimed lyrics; `melodiq-user.md` versie en beschrijving bijgewerkt; buildVersion bijgewerkt naar `202606021626`; validatie volgt via `npm run build`.
+
+## 2026-06-03 wo 01:27 (PoYo failure reason extraction + backend failure logging)
+
+- Findings: Bij PoYo-fails kwam de echte reden niet altijd door omdat alleen een beperkt setje foutvelden werd gelezen; daarnaast werd een fail-status niet overal expliciet gelogd met task-id en reden.
+- Conclusions: Centraliseer PoYo error parsing in de providerlaag met brede veldsupport en gebruik die in zowel webhook als polling routes; log bij elke fail-overgang expliciet in backendlogs en API-log records.
+- Actions: `src/lib/providers/poyo.ts` uitgebreid met `extractPoYoErrorMessage()` voor meerdere nested error/message/reason/status_msg velden; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` omgezet naar de centrale helper + expliciete `console.error` logging met task-id/track-id/error; `src/app/api/webhooks/poyo/route.ts` omgezet naar centrale helper en uitgebreid met failure `logApi(...)` writes voor `status=failed/error` en no-variant sync-fail; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606030127`; `melodiq-user.md` versie + fail-reason gedrag bijgewerkt; gevalideerd met `npm run build` (geslaagd).

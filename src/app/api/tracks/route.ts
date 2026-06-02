@@ -4,7 +4,7 @@ import { tracks } from "@/db/schema";
 import { eq, desc, and, inArray, ne, lt } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
-import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
+import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { uploadToS3 } from "@/lib/s3";
@@ -60,17 +60,6 @@ function detectUploadFormat(file: File): "mp3" | "wav" | null {
 function titleFromFilename(filename: string) {
   const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
   return withoutExtension || "Untitled Upload";
-}
-
-function getPoYoErrorMessage(payload: unknown): string | null {
-  if (!isJsonObject(payload)) return null;
-  const direct = payload.error;
-  if (typeof direct === "string" && direct.trim()) return direct;
-  const data = payload.data;
-  if (!isJsonObject(data)) return null;
-  const nested = data.error;
-  if (typeof nested === "string" && nested.trim()) return nested;
-  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -171,7 +160,8 @@ export async function GET(request: NextRequest) {
                   );
                 }
               } else if (statusValue === "failed" || statusValue === "error") {
-                const errorMessage = getPoYoErrorMessage(status) || "Generation failed";
+                const errorMessage = extractPoYoErrorMessage(status) || "Generation failed";
+                console.error(`[tracks-api] PoYo generation failed for task ${sourceJobId} (track ${track.id}): ${errorMessage}`);
                 await db
                   .update(tracks)
                   .set({ status: "failed", error: errorMessage })
