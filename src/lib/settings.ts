@@ -66,7 +66,8 @@ export async function getWebhookUrl(provider: string): Promise<string> {
   // Auto-derive from APP_URL
   const appUrl = await getSetting("APP_URL") || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) {
-    const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/${provider.toLowerCase()}`;
+    const derivedPath = provider.toLowerCase().replace(/_/g, "-");
+    const base = `${appUrl.replace(/\/$/, "")}/api/webhooks/${derivedPath}`;
     return appendWebhookSecret(base);
   }
 
