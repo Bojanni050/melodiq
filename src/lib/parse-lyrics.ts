@@ -79,7 +79,8 @@ export function isLyricsTaskSubmission(lyricsTimestamps: string | null | undefin
         (parsed.data && (
           parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics || parsed.data.lrc || parsed.data.lyrics_timestamped || parsed.data.timestamped_lyrics || parsed.data.lyricsTimestamped || parsed.data.timestampedLyrics ||
           parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics || parsed.data.result?.lrc || parsed.data.result?.lyrics_timestamped || parsed.data.result?.timestamped_lyrics || parsed.data.result?.lyricsTimestamped || parsed.data.result?.timestampedLyrics ||
-          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics || parsed.data.output?.lrc || parsed.data.output?.lyrics_timestamped || parsed.data.output?.timestamped_lyrics || parsed.data.output?.lyricsTimestamped || parsed.data.output?.timestampedLyrics
+          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics || parsed.data.output?.lrc || parsed.data.output?.lyrics_timestamped || parsed.data.output?.timestamped_lyrics || parsed.data.output?.lyricsTimestamped || parsed.data.output?.timestampedLyrics ||
+          (Array.isArray(parsed.data.files) && parsed.data.files[0] && (parsed.data.files[0].timestampe_lyrics?.aligned_words || parsed.data.files[0].timestamped_lyrics?.aligned_words))
         )) ||
         parsed.result || parsed.output
       );
@@ -141,7 +142,8 @@ export function parseLyrics(
           const d = rawData.data;
           items = d.lines || d.words || d.segments || d.lyrics || 
                   d.result?.lines || d.result?.words || d.result?.segments || d.result?.lyrics || 
-                  d.output?.lines || d.output?.words || d.output?.segments || d.output?.lyrics || [];
+                  d.output?.lines || d.output?.words || d.output?.segments || d.output?.lyrics || 
+                  (Array.isArray(d.files) && d.files[0] && (d.files[0].timestampe_lyrics?.aligned_words || d.files[0].timestamped_lyrics?.aligned_words)) || [];
         } else if (rawData.result && typeof rawData.result === "object") {
           const r = rawData.result;
           items = r.lines || r.words || r.segments || r.lyrics || [];
@@ -187,6 +189,63 @@ export function parseLyrics(
       }
 
       if (items.length > 0) {
+        const isWordLevelWithNewlines = items.length > 0 && typeof items[0] === 'object' && items.some((item: any) => {
+          const t = String(item?.word || item?.text || "");
+          return t.includes('\n');
+        });
+
+        if (isWordLevelWithNewlines) {
+          const reconstructedLines: any[] = [];
+          let currentLineText = "";
+          let currentStart = -1;
+          let currentEnd: number | null = null;
+
+          for (const item of items as any[]) {
+            const wordText = String(item.word || item.text || "");
+            
+            const rawStart = item.start !== undefined ? item.start : item.startS !== undefined ? item.startS : item.startTime !== undefined ? item.startTime : -1;
+            const parsedStart = typeof rawStart === "string" ? parseFloat(rawStart) : Number(rawStart);
+            const start = !Number.isNaN(parsedStart) ? parsedStart : -1;
+            
+            const rawEnd = item.end !== undefined ? item.end : item.endS !== undefined ? item.endS : item.endTime !== undefined ? item.endTime : undefined;
+            const parsedEnd = rawEnd !== undefined ? (typeof rawEnd === "string" ? parseFloat(rawEnd) : Number(rawEnd)) : null;
+            const end = parsedEnd !== null && !Number.isNaN(parsedEnd) ? parsedEnd : null;
+
+            if (currentStart === -1 && start >= 0) {
+              currentStart = start;
+            }
+            if (end !== null && end >= 0) {
+              currentEnd = end;
+            }
+
+            currentLineText += wordText;
+
+            if (wordText.includes('\n')) {
+              const parts = currentLineText.split('\n');
+              for (let i = 0; i < parts.length - 1; i++) {
+                const textPart = parts[i].trim();
+                if (textPart && !textPart.startsWith("[")) {
+                  reconstructedLines.push({
+                    text: textPart,
+                    startTime: currentStart,
+                    endTime: currentEnd
+                  });
+                }
+                currentStart = -1;
+              }
+              currentLineText = parts[parts.length - 1];
+            }
+          }
+          if (currentLineText.trim() && !currentLineText.trim().startsWith("[")) {
+            reconstructedLines.push({
+              text: currentLineText.trim(),
+              startTime: currentStart,
+              endTime: currentEnd
+            });
+          }
+          items = reconstructedLines;
+        }
+
         // Map and normalize each item
         const parsed: ParsedLyricLine[] = items
           .map((item) => {
@@ -202,6 +261,7 @@ export function parseLyrics(
 
             if (item && typeof item === "object") {
               const rawStart = item.start !== undefined ? item.start :
+                               item.startS !== undefined ? item.startS :
                                item.startTime !== undefined ? item.startTime :
                                item.start_time !== undefined ? item.start_time :
                                item.timestamp !== undefined ? item.timestamp :
@@ -215,6 +275,7 @@ export function parseLyrics(
                                -1;
               
               const rawEnd = item.end !== undefined ? item.end :
+                             item.endS !== undefined ? item.endS :
                              item.endTime !== undefined ? item.endTime :
                              item.end_time !== undefined ? item.end_time :
                              item.timestamp_end !== undefined ? item.timestamp_end :
