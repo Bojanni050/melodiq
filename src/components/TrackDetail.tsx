@@ -131,6 +131,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   }, [loadUser]);
 
   useEffect(() => {
+    setCurrentTime(0);
+  }, [track.id]);
+
+  useEffect(() => {
     if (!audioElement || currentTrack?.id !== track.id) return;
 
     const handleTimeUpdate = () => {
