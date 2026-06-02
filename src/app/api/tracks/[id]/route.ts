@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, workspaces } from "@/db/schema";
-import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
-import { getPoYoStatus } from "@/lib/providers/poyo";
+import { getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
-import { getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import {
@@ -84,6 +83,42 @@ export async function GET(
         }
       } catch (err: any) {
         console.error(`[GET tracks/[id]] self-healing check failed for track ${track.id}:`, err?.message ?? err);
+      }
+    }
+
+    // Self-healing: if a track is done, vocal, but has no actual timings, trigger get-timestamped-lyrics
+    const hasTimings = track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps)
+      ? parseLyrics(track.lyrics, track.lyricsTimestamps).some(l => l.startTime >= 0)
+      : false;
+
+    if (
+      track.status === "done" &&
+      track.provider === "poyo" &&
+      !track.instrumental &&
+      track.lyrics &&
+      track.audioId &&
+      track.jobId &&
+      !hasTimings &&
+      !isLyricsTaskSubmission(track.lyricsTimestamps) // avoid double submission if already in progress
+    ) {
+      try {
+        const resolvedTaskId = getOriginalPoYoTaskId(track.jobId);
+        console.log(`[GET tracks/[id]] self-healing: triggering missing timestamped lyrics task for track ${track.id}`);
+        const submitRes: any = await getPoYoTimestampedLyrics(resolvedTaskId, track.audioId);
+        const taskId = submitRes?.task_id || submitRes?.data?.task_id;
+        
+        if (taskId) {
+          const serializedReceipt = JSON.stringify(submitRes);
+          await db
+            .update(tracks)
+            .set({ lyricsTimestamps: serializedReceipt })
+            .where(eq(tracks.id, track.id!));
+          
+          track.lyricsTimestamps = serializedReceipt;
+          console.log(`[GET tracks/[id]] self-healing: successfully submitted lyrics task ${taskId} for track ${track.id}`);
+        }
+      } catch (err: any) {
+        console.error(`[GET tracks/[id]] self-healing lyrics submit failed:`, err?.message ?? err);
       }
     }
 
