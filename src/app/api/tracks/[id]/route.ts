@@ -95,7 +95,6 @@ export async function GET(
       track.status === "done" &&
       track.provider === "poyo" &&
       !track.instrumental &&
-      track.lyrics &&
       track.audioId &&
       track.jobId &&
       !hasTimings &&
