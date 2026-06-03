@@ -16,10 +16,26 @@ function isJsonObject(value: unknown): value is JsonObject {
 
 type PoYoWebhookFile = { audio_url?: string; audio_id?: string | null };
 
+function firstString(value: unknown[]): string | undefined {
+  for (const item of value) {
+    if (typeof item === "string" && item.trim()) return item;
+  }
+  return undefined;
+}
+
 function parsePoYoWebhookFile(value: unknown): PoYoWebhookFile | null {
   if (!isJsonObject(value)) return null;
   const audioUrl = typeof value.audio_url === "string" ? value.audio_url : undefined;
-  const audioId = value.audio_id === null || typeof value.audio_id === "string" ? value.audio_id : undefined;
+  const resolvedAudioId = firstString([
+    value.audio_id,
+    value.audioId,
+    value.file_id,
+    value.fileId,
+    value.song_id,
+    value.songId,
+    value.id,
+  ]);
+  const audioId = resolvedAudioId ?? (value.audio_id === null ? null : undefined);
   return audioUrl || audioId ? { audio_url: audioUrl, audio_id: audioId } : null;
 }
 
@@ -87,7 +103,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: errorMessage }, { status: 400 });
       }
 
-      // Match each file to its corresponding track and save audioId + request WAV conversion
+      // Match each file to its corresponding track and save audioId when provided.
+      // WAV conversion is requested below from synced track records to avoid depending on one webhook field shape.
       const allSyncedIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
       if (allSyncedIds.length > 0) {
         const syncedTracks = await db
@@ -104,22 +121,28 @@ export async function POST(request: NextRequest) {
               .update(tracks)
               .set({ audioId: file.audio_id })
               .where(eq(tracks.id, trackId));
-
-            const trackForFile = syncedTracks.find((t) => t.id === trackId);
-            if (trackForFile) {
-              await requestMissingWavConversion({
-                ...trackForFile,
-                jobId: taskId,
-                audioId: file.audio_id,
-              });
-            }
           })
         );
 
+        // Re-fetch after optional audioId updates so conversion requests see latest DB values.
+        const refreshedSyncedTracks = await db
+          .select()
+          .from(tracks)
+          .where(inArray(tracks.id, allSyncedIds));
+
+        await Promise.allSettled(
+          refreshedSyncedTracks.map((syncedTrack) =>
+            requestMissingWavConversion({
+              ...syncedTrack,
+              jobId: syncedTrack.jobId ?? taskId,
+            })
+          )
+        );
+
         // Fire cover art for all synced tracks as one batch
-        if (syncedTracks.length > 0) {
+        if (refreshedSyncedTracks.length > 0) {
           generateAndSaveCoverArtForBatch({
-            tracks: syncedTracks.map((t) => ({
+            tracks: refreshedSyncedTracks.map((t) => ({
               id: t.id!,
               userId: t.userId,
               prompt: t.prompt,

@@ -269,3 +269,9 @@
 - Findings: Bij PoYo-fails kwam de echte reden niet altijd door omdat alleen een beperkt setje foutvelden werd gelezen; daarnaast werd een fail-status niet overal expliciet gelogd met task-id en reden.
 - Conclusions: Centraliseer PoYo error parsing in de providerlaag met brede veldsupport en gebruik die in zowel webhook als polling routes; log bij elke fail-overgang expliciet in backendlogs en API-log records.
 - Actions: `src/lib/providers/poyo.ts` uitgebreid met `extractPoYoErrorMessage()` voor meerdere nested error/message/reason/status_msg velden; `src/app/api/tracks/route.ts` en `src/app/api/tracks/[id]/route.ts` omgezet naar de centrale helper + expliciete `console.error` logging met task-id/track-id/error; `src/app/api/webhooks/poyo/route.ts` omgezet naar centrale helper en uitgebreid met failure `logApi(...)` writes voor `status=failed/error` en no-variant sync-fail; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606030127`; `melodiq-user.md` versie + fail-reason gedrag bijgewerkt; gevalideerd met `npm run build` (geslaagd).
+
+## 2026-06-03 wo 04:53 (PoYo WAV recovery voor nieuwe generaties gefixt)
+
+- Findings: Nieuwe PoYo tracks kregen soms geen WAV omdat de webhook-flow WAV-conversie vooral triggert op `file.audio_id`; als PoYo een andere key-vorm terugstuurt, werd de conversie overgeslagen.
+- Conclusions: WAV-conversie moet niet afhankelijk zijn van één specifiek webhook-field, maar op de gesyncte trackrecords draaien nadat audioId-updates zijn toegepast.
+- Actions: `src/app/api/webhooks/poyo/route.ts` aangepast met bredere audio-id parsing (`audio_id`, `audioId`, `file_id`, `song_id`, `id`), daarna gesyncte tracks opnieuw ophalen en `requestMissingWavConversion(...)` uitvoeren op alle gesyncte tracks; cover-batch gebruikt nu de refreshed trackset; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606030453`; gevalideerd met `npm run build` (geslaagd).
