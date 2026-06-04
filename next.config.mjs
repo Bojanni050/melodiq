@@ -8,6 +8,9 @@ const buildVersion = `0.${buildNow.getFullYear()}${pad2(buildNow.getMonth() + 1)
 const nextConfig = {
   allowedDevOrigins: ["10.0.0.251"],
   output: "standalone",
+  experimental: {
+    proxyClientMaxBodySize: 50 * 1024 * 1024,
+  },
   env: {
     NEXT_PUBLIC_BUILD_VERSION: buildVersion,
   },

@@ -368,9 +368,12 @@ export default function LibraryPage() {
         const apiError = isObjectRecord(payload) && typeof payload.error === "string"
           ? payload.error
           : null;
+        const apiDetails = isObjectRecord(payload) && typeof payload.details === "string"
+          ? payload.details
+          : null;
 
         if (apiError) {
-          throw new Error(apiError);
+          throw new Error(apiDetails ? `${apiError} (${apiDetails})` : apiError);
         }
 
         throw new Error(`Upload failed (HTTP ${response.status}).`);
