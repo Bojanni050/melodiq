@@ -62,6 +62,18 @@ function titleFromFilename(filename: string) {
   return withoutExtension || "Untitled Upload";
 }
 
+function getUploadErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error.trim();
+  }
+
+  return fallback;
+}
+
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
@@ -496,7 +508,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error("[tracks/upload] Failed to upload file:", file.name, error);
-        rejected.push({ filename: file.name, reason: "Upload failed." });
+        rejected.push({ filename: file.name, reason: getUploadErrorMessage(error, "Upload failed.") });
       }
     }
 
@@ -516,6 +528,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[tracks/upload] Unexpected upload error:", error);
-    return NextResponse.json({ error: "Failed to upload files" }, { status: 500 });
+    return NextResponse.json({ error: getUploadErrorMessage(error, "Failed to upload files") }, { status: 500 });
   }
 }
