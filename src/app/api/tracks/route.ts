@@ -71,6 +71,25 @@ function getUploadErrorMessage(error: unknown, fallback: string) {
     return error.trim();
   }
 
+  if (isJsonObject(error)) {
+    if (typeof error.message === "string" && error.message.trim()) {
+      return error.message.trim();
+    }
+
+    if (typeof error.error === "string" && error.error.trim()) {
+      return error.error.trim();
+    }
+
+    const cause = error.cause;
+    if (cause instanceof Error && cause.message.trim()) {
+      return cause.message.trim();
+    }
+
+    if (typeof error.code === "string" && error.code.trim()) {
+      return `${fallback} (${error.code.trim()})`;
+    }
+  }
+
   return fallback;
 }
 
@@ -513,9 +532,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (uploadedTracks.length === 0) {
+      const uniqueReasons = Array.from(
+        new Set(rejected.map((item) => item.reason.trim()).filter((reason) => reason.length > 0))
+      );
+      const reasonSummary = uniqueReasons.slice(0, 2).join(" | ");
+
       return NextResponse.json(
         {
-          error: "No files were uploaded.",
+          error: reasonSummary ? `No files were uploaded. ${reasonSummary}` : "No files were uploaded.",
           rejected,
         },
         { status: 400 }
