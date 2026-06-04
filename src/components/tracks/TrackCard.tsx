@@ -529,7 +529,7 @@ const TrackCard = memo(function TrackCard({
               />
             )}
             {isEditingTitle ? (
-              <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-1 min-w-0 max-w-full" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={titleInputRef}
                   type="text"
@@ -539,7 +539,7 @@ const TrackCard = memo(function TrackCard({
                   onBlur={discardTitle}
                   aria-label="Edit track title"
                   placeholder="Track title"
-                  className="flex-1 min-w-0 text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
+                  className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
                   maxLength={200}
                   draggable={false}
                   onDragStart={(e) => e.stopPropagation()}
