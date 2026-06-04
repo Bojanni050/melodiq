@@ -428,7 +428,9 @@ export default function WorkspacesPage() {
                             )}
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
                               <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-md">
-                                <h3 className="truncate text-sm font-semibold text-white">{workspace.name}</h3>
+                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-white sm:text-sm sm:truncate">
+                                  {workspace.name}
+                                </h3>
                                 <p className="text-xs text-white/70">
                                   {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
                                 </p>
@@ -438,23 +440,10 @@ export default function WorkspacesPage() {
                         </button>
 
                         <div className="flex items-center justify-between gap-2 px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => openWorkspace(workspace.id)}
-                            className="text-sm text-white/60 transition-colors hover:text-white"
-                          >
-                            Open workspace
-                          </button>
                           {workspace.id === DEFAULT_WORKSPACE_ID ? (
                             <span className="text-sm text-white/35">Default</span>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => deleteWorkspace(workspace.id)}
-                              className="text-sm text-white/35 transition-colors hover:text-red-400"
-                            >
-                              Delete
-                            </button>
+                            <span className="text-sm text-white/35">Tap folder to open</span>
                           )}
                         </div>
                       </article>
@@ -486,30 +475,13 @@ export default function WorkspacesPage() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-white">{workspace.name}</p>
+                          <p className="whitespace-normal wrap-break-word text-base font-medium leading-snug text-white sm:text-sm sm:truncate">
+                            {workspace.name}
+                          </p>
                           <p className="text-xs text-white/45">
                             {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
                             {childCount > 0 ? ` • ${childCount} folders` : ""}
                           </p>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => openWorkspace(workspace.id)}
-                            className="text-xs text-white/50 transition-colors hover:text-white"
-                          >
-                            Open
-                          </button>
-                          {workspace.id !== DEFAULT_WORKSPACE_ID && (
-                            <button
-                              type="button"
-                              onClick={() => deleteWorkspace(workspace.id)}
-                              className="text-xs text-white/30 transition-colors hover:text-red-400"
-                            >
-                              Delete
-                            </button>
-                          )}
                         </div>
 
                         <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

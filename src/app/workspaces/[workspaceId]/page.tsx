@@ -49,7 +49,6 @@ export default function WorkspaceDetailPage() {
     workspaces,
     setSelectedWorkspaceId,
     createWorkspaceFolder,
-    deleteWorkspace,
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
 
@@ -360,18 +359,7 @@ export default function WorkspaceDetailPage() {
 
                 {selectedWorkspace.id === DEFAULT_WORKSPACE_ID ? (
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/45">Default workspace</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      deleteWorkspace(selectedWorkspace.id);
-                      router.push("/workspaces");
-                    }}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-red-500/10 hover:text-red-200"
-                  >
-                    Delete workspace
-                  </button>
-                )}
+                ) : null}
               </div>
             </section>
 
