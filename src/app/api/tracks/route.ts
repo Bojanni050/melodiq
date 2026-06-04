@@ -422,7 +422,32 @@ export async function POST(request: NextRequest) {
   await ensureWorkspaceSchema();
 
   try {
-    const formData = await request.formData();
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("multipart/form-data")) {
+      return NextResponse.json(
+        { error: "Invalid upload request. Please upload files using the file picker." },
+        { status: 415 }
+      );
+    }
+
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (error) {
+      const parseError = getUploadErrorMessage(error, "Failed to parse upload body.");
+      const likelyTooLarge = /too\s*large|payload|content\s*length|body\s*size|entity\s*too\s*large/i.test(parseError);
+
+      return NextResponse.json(
+        {
+          error: likelyTooLarge
+            ? "Upload is too large. Try fewer files or smaller files."
+            : "Could not read upload form data. Please reselect files and try again.",
+          details: parseError,
+        },
+        { status: likelyTooLarge ? 413 : 400 }
+      );
+    }
+
     const uploadedEntries = formData.getAll("files");
     const files = uploadedEntries.filter((entry): entry is File => entry instanceof File);
 
