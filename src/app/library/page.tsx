@@ -104,6 +104,7 @@ export default function LibraryPage() {
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadMetadataInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<LibraryView>("songs");
@@ -117,6 +118,9 @@ export default function LibraryPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [rejectedFiles, setRejectedFiles] = useState<Array<{ filename: string; reason: string }>>([]);
+  const [uploadPromptDraft, setUploadPromptDraft] = useState("");
+  const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
+  const [uploadMetadataFiles, setUploadMetadataFiles] = useState<File[]>([]);
 
   const workspacesSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isWorkspacesTopInView, setIsWorkspacesTopInView] = useState(true);
@@ -344,6 +348,21 @@ export default function LibraryPage() {
       Array.from(files).forEach((file) => {
         formData.append("files", file);
       });
+
+      const trimmedPrompt = uploadPromptDraft.trim();
+      if (trimmedPrompt) {
+        formData.append("uploadPrompt", trimmedPrompt);
+      }
+
+      const trimmedLyrics = uploadLyricsDraft.trim();
+      if (trimmedLyrics) {
+        formData.append("uploadLyrics", trimmedLyrics);
+      }
+
+      uploadMetadataFiles.forEach((file) => {
+        formData.append("metadataFiles", file);
+      });
+
       formData.append("workspaceId", targetWorkspaceId);
 
       const response = await fetch("/api/tracks", {
@@ -571,7 +590,7 @@ export default function LibraryPage() {
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-white">Upload MP3/WAV to Library</p>
-                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace. Max 20 files per upload; oversized uploads show a clear error.</p>
+                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace. Add optional prompt/lyrics in UI, or attach .txt metadata files. Max 20 files per upload.</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <label className="text-xs text-white/60" htmlFor="upload-workspace-select">Workspace</label>
@@ -611,6 +630,71 @@ export default function LibraryPage() {
                       </button>
                     </div>
                   </div>
+
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                    <div className="space-y-1">
+                      <label htmlFor="upload-prompt-input" className="text-xs text-white/60">Optional prompt (applies to all selected audio files)</label>
+                      <textarea
+                        id="upload-prompt-input"
+                        value={uploadPromptDraft}
+                        onChange={(event) => setUploadPromptDraft(event.target.value)}
+                        rows={3}
+                        disabled={uploading}
+                        placeholder="Describe style / mood / context for uploaded tracks"
+                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label htmlFor="upload-lyrics-input" className="text-xs text-white/60">Optional lyrics (applies to all selected audio files)</label>
+                      <textarea
+                        id="upload-lyrics-input"
+                        value={uploadLyricsDraft}
+                        onChange={(event) => setUploadLyricsDraft(event.target.value)}
+                        rows={3}
+                        disabled={uploading}
+                        placeholder="Paste lyrics here"
+                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      ref={uploadMetadataInputRef}
+                      type="file"
+                      multiple
+                      accept=".txt,text/plain"
+                      aria-label="Attach metadata TXT files"
+                      title="Attach metadata TXT files"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(event) => {
+                        const next = event.target.files ? Array.from(event.target.files) : [];
+                        setUploadMetadataFiles(next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => uploadMetadataInputRef.current?.click()}
+                      className="h-9 rounded-full border border-white/12 bg-[#11121a] px-3 text-xs font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-65"
+                    >
+                      Attach TXT metadata files
+                    </button>
+                    {uploadMetadataFiles.length > 0 && (
+                      <span className="text-xs text-white/60">
+                        {uploadMetadataFiles.length} metadata file(s) selected
+                      </span>
+                    )}
+                  </div>
+
+                  {uploadMetadataFiles.length > 0 && (
+                    <div className="mt-2 rounded-xl border border-white/10 bg-black/20 p-2 text-xs text-white/65">
+                      {uploadMetadataFiles.slice(0, 6).map((file) => file.name).join(" | ")}
+                      {uploadMetadataFiles.length > 6 ? ` | +${uploadMetadataFiles.length - 6} more` : ""}
+                    </div>
+                  )}
 
                   {uploadError && (
                     <div className="mt-3 flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">

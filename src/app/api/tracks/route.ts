@@ -62,6 +62,38 @@ function titleFromFilename(filename: string) {
   return withoutExtension || "Untitled Upload";
 }
 
+type UploadMetadata = {
+  prompt: string | null;
+  lyrics: string | null;
+};
+
+function normalizeUploadText(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function baseNameWithoutExtension(filename: string) {
+  return filename.replace(/\.[^/.]+$/, "").trim().toLowerCase();
+}
+
+function parseMetadataText(text: string): UploadMetadata {
+  const normalized = text.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return { prompt: null, lyrics: null };
+
+  const promptMatch = normalized.match(/(?:^|\n)\s*prompt\s*:\s*([\s\S]*?)(?=\n\s*lyrics\s*:|$)/i);
+  const lyricsMatch = normalized.match(/(?:^|\n)\s*lyrics\s*:\s*([\s\S]*)$/i);
+
+  if (!promptMatch && !lyricsMatch) {
+    return { prompt: null, lyrics: normalized };
+  }
+
+  const prompt = promptMatch?.[1]?.trim() || null;
+  const lyrics = lyricsMatch?.[1]?.trim() || null;
+
+  return { prompt, lyrics };
+}
+
 function getUploadErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim();
@@ -467,6 +499,25 @@ export async function POST(request: NextRequest) {
       typeof requestedWorkspaceIdRaw === "string" && requestedWorkspaceIdRaw.trim()
         ? requestedWorkspaceIdRaw.trim()
         : null;
+    const globalUploadPrompt = normalizeUploadText(formData.get("uploadPrompt"));
+    const globalUploadLyrics = normalizeUploadText(formData.get("uploadLyrics"));
+    const metadataEntries = formData.getAll("metadataFiles");
+    const metadataFiles = metadataEntries.filter(
+      (entry): entry is File => entry instanceof File && entry.name.toLowerCase().endsWith(".txt")
+    );
+
+    const metadataByBaseName = new Map<string, UploadMetadata>();
+    for (const metadataFile of metadataFiles) {
+      try {
+        const content = new TextDecoder("utf-8").decode(await metadataFile.arrayBuffer());
+        const parsed = parseMetadataText(content);
+
+        if (!parsed.prompt && !parsed.lyrics) continue;
+        metadataByBaseName.set(baseNameWithoutExtension(metadataFile.name), parsed);
+      } catch (error) {
+        console.error("[tracks/upload] Failed to parse metadata file:", metadataFile.name, error);
+      }
+    }
 
     const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
     let targetWorkspaceId = defaultWorkspace.id;
@@ -502,6 +553,9 @@ export async function POST(request: NextRequest) {
         const trackId = crypto.randomUUID();
         const audioBuffer = Buffer.from(await file.arrayBuffer());
         const uploadHash = createHash("sha256").update(audioBuffer).digest("hex");
+        const sidecarMetadata = metadataByBaseName.get(baseNameWithoutExtension(file.name));
+        const uploadPrompt = sidecarMetadata?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
+        const uploadLyrics = sidecarMetadata?.lyrics ?? globalUploadLyrics ?? null;
 
         const duplicateTrack = await db
           .select({ id: tracks.id })
@@ -533,7 +587,8 @@ export async function POST(request: NextRequest) {
             title: titleFromFilename(file.name),
             provider: "upload",
             providerModel: "manual-upload",
-            prompt: `Uploaded file: ${file.name}`,
+            prompt: uploadPrompt,
+            lyrics: uploadLyrics,
             status: "done",
             s3Key,
             format,
