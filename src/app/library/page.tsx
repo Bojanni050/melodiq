@@ -39,6 +39,16 @@ type LibraryView = "songs" | "workspaces";
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
 const MAX_UPLOAD_QUEUE = 10;
+const WORKSPACE_FOLDER_BG_CLASSES = [
+  "bg-linear-135 from-violet-600 to-pink-500",
+  "bg-linear-135 from-sky-500 to-green-500",
+  "bg-linear-135 from-orange-500 to-red-500",
+  "bg-linear-135 from-teal-500 to-indigo-500",
+  "bg-linear-135 from-amber-500 to-pink-500",
+  "bg-linear-135 from-green-500 to-cyan-500",
+  "bg-linear-135 from-violet-500 to-orange-500",
+  "bg-linear-135 from-blue-600 to-teal-500",
+] as const;
 
 type QueuedUploadItem = {
   id: string;
@@ -624,12 +634,15 @@ export default function LibraryPage() {
     return pickSeededItems(covers, workspaceId, Math.min(4, covers.length));
   }
 
-  function getWorkspaceGradient(workspaceId: string, folderGradient?: string | null) {
-    return (
-      folderGradient ||
-      WORKSPACE_FOLDER_GRADIENTS[hashString(workspaceId) % WORKSPACE_FOLDER_GRADIENTS.length] ||
-      "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))"
-    );
+  function getWorkspaceGradientClass(workspaceId: string, folderGradient?: string | null) {
+    if (folderGradient) {
+      const index = WORKSPACE_FOLDER_GRADIENTS.findIndex((value) => value === folderGradient);
+      if (index >= 0) {
+        return WORKSPACE_FOLDER_BG_CLASSES[index % WORKSPACE_FOLDER_BG_CLASSES.length];
+      }
+    }
+
+    return WORKSPACE_FOLDER_BG_CLASSES[hashString(workspaceId) % WORKSPACE_FOLDER_BG_CLASSES.length];
   }
 
   const SWATCH_COLORS = [
@@ -661,8 +674,8 @@ export default function LibraryPage() {
       <Sidebar credits={null} />
 
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-[73px] lg:pt-5">
-          <div className="max-w-[1600px] mx-auto space-y-6">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+          <div className="max-w-400 mx-auto space-y-6">
 
             {/* Header */}
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
@@ -831,7 +844,7 @@ export default function LibraryPage() {
                 </div>
 
                 {workspaces.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
                     No workspaces yet. Create one to start grouping tracks.
                   </div>
                 ) : workspaceDisplayMode === "grid" ? (
@@ -839,7 +852,7 @@ export default function LibraryPage() {
                     {workspaces.map((workspace) => {
                       const wTracks = getWorkspaceTracks(workspace.id, tracks, workspaces);
                       const coverImages = getWorkspaceCoverImages(workspace.id);
-                      const gradient = getWorkspaceGradient(workspace.id, workspace.folderGradient);
+                      const gradientClass = getWorkspaceGradientClass(workspace.id, workspace.folderGradient);
 
                       return (
                         <article
@@ -851,8 +864,7 @@ export default function LibraryPage() {
                             onClick={() => openWorkspace(workspace.id)}
                             className="block w-full text-left"
                           >
-                            {/* dynamic gradient — inline style required */}
-                            <div className="relative aspect-[4/3] overflow-hidden" style={{ backgroundImage: gradient }}>
+                            <div className={`relative aspect-4/3 overflow-hidden ${gradientClass}`}>
                               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_35%),linear-gradient(180deg,transparent,rgba(0,0,0,0.38))]" />
                               {coverImages.length > 0 ? (
                                 <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
@@ -979,7 +991,7 @@ export default function LibraryPage() {
       </div>
 
       {isUploadPanelOpen && (
-        <div className="fixed inset-0 z-[70]">
+        <div className="fixed inset-0 z-70">
           <button
             type="button"
             aria-label="Close upload panel"
@@ -987,7 +999,7 @@ export default function LibraryPage() {
             className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
           />
 
-          <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-[560px] border-l border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+          <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-140 border-l border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
             <div className="flex h-full flex-col">
               <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div>
@@ -1088,13 +1100,13 @@ export default function LibraryPage() {
                 </div>
 
                 {queuedUploads.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-4 text-sm text-white/55">
+                  <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-4 text-sm text-white/55">
                     No files queued yet.
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {queuedUploads.map((item) => (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/3 p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white">{item.file.name}</p>

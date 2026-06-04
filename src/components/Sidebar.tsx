@@ -15,7 +15,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
-  const buildVersion = "202606041011";
+  const buildVersion = "202606041025";
 
   const navItems = [
     { href: "/", label: "Studio", icon: "studio" },
@@ -85,7 +85,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   return (
     <>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-[var(--player-height)] bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 ${collapsed ? "w-[60px]" : "w-[240px]"}`}>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-(--player-height) bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 ${collapsed ? "w-15" : "w-60"}`}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
           <Link href="/" className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             </svg>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
-                <span className="text-lg font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
+                <span className="text-lg font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                   MelodIQ
                 </span>
                 {buildVersion && (
@@ -129,7 +129,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                 <Icon name={item.icon} active={active} />
                 {!collapsed && (
                   <span>
-                    {active && <span className="text-[#ff530c] mr-1 font-bold">&gt; </span>}
+                    {active && <span className="text-primary-500 mr-1 font-bold">&gt; </span>}
                     {item.label}
                   </span>
                 )}
@@ -159,14 +159,14 @@ export default function Sidebar({ credits }: SidebarProps) {
       </aside>
 
       {/* Mobile top header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 h-[53px]">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 h-13.25">
         <div className="flex items-center justify-between px-4 h-full">
           <Link href="/" className="flex items-center gap-2">
             <svg className="w-6 h-6 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold bg-gradient-to-r from-primary-400 to-[#ff530c] bg-clip-text text-transparent">
+              <span className="text-base font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                 MelodIQ
               </span>
               {buildVersion && (
@@ -199,7 +199,7 @@ export default function Sidebar({ credits }: SidebarProps) {
           />
           
           {/* Drawer content */}
-          <div className="relative ml-auto h-full w-[280px] bg-[#0d0d12] border-l border-white/5 flex flex-col z-10 shadow-2xl">
+          <div className="relative ml-auto h-full w-70 bg-[#0d0d12] border-l border-white/5 flex flex-col z-10 shadow-2xl">
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
               <span className="text-base font-semibold text-white">Menu</span>
