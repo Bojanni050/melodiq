@@ -93,6 +93,7 @@ export default function LibraryPage() {
     createWorkspace,
     deleteWorkspace,
     moveTrackToWorkspace,
+    moveTracksToWorkspace,
     ensureDefaultWorkspace,
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
@@ -388,6 +389,9 @@ export default function LibraryPage() {
       );
 
       if (uploadedTracks.length > 0) {
+        const uploadedTrackIds = uploadedTracks.map((track) => track.id);
+        moveTracksToWorkspace(targetWorkspaceId, uploadedTrackIds);
+
         setTracks((current) => {
           const byId = new Map(current.map((track) => [track.id, track]));
           uploadedTracks.forEach((track) => byId.set(track.id, track));
@@ -395,6 +399,14 @@ export default function LibraryPage() {
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           );
         });
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("melodiq:tracks-uploaded", {
+              detail: { trackIds: uploadedTrackIds, workspaceId: targetWorkspaceId },
+            })
+          );
+        }
       }
 
       const rejectedCount = payloadRejected.length;
