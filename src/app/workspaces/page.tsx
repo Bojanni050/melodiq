@@ -428,7 +428,7 @@ export default function WorkspacesPage() {
                             )}
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
                               <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-md">
-                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-white sm:text-sm sm:truncate">
+                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-white sm:text-sm">
                                   {workspace.name}
                                 </h3>
                                 <p className="text-xs text-white/70">
@@ -439,13 +439,11 @@ export default function WorkspacesPage() {
                           </div>
                         </button>
 
-                        <div className="flex items-center justify-between gap-2 px-4 py-3">
-                          {workspace.id === DEFAULT_WORKSPACE_ID ? (
+                        {workspace.id === DEFAULT_WORKSPACE_ID ? (
+                          <div className="px-4 py-3">
                             <span className="text-sm text-white/35">Default</span>
-                          ) : (
-                            <span className="text-sm text-white/35">Tap folder to open</span>
-                          )}
-                        </div>
+                          </div>
+                        ) : null}
                       </article>
                     );
                   })}
@@ -475,7 +473,7 @@ export default function WorkspacesPage() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className="whitespace-normal wrap-break-word text-base font-medium leading-snug text-white sm:text-sm sm:truncate">
+                          <p className="whitespace-normal wrap-break-word text-base font-medium leading-snug text-white sm:text-sm">
                             {workspace.name}
                           </p>
                           <p className="text-xs text-white/45">
