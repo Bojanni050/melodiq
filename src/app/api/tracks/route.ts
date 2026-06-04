@@ -535,7 +535,7 @@ export async function POST(request: NextRequest) {
       const uniqueReasons = Array.from(
         new Set(rejected.map((item) => item.reason.trim()).filter((reason) => reason.length > 0))
       );
-      const reasonSummary = uniqueReasons.slice(0, 2).join(" | ");
+      const reasonSummary = uniqueReasons.join(" | ");
 
       return NextResponse.json(
         {
