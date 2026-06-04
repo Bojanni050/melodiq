@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
-const MAX_FILES_PER_UPLOAD = 20;
+const MAX_FILES_PER_UPLOAD = 10;
 const MAX_TRACKS_PER_COVER_REGEN = 50;
 
 type JsonObject = Record<string, unknown>;
@@ -67,6 +67,10 @@ type UploadMetadata = {
   lyrics: string | null;
 };
 
+type UploadItemOverride = {
+  title: string | null;
+};
+
 function normalizeUploadText(value: FormDataEntryValue | null): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -92,6 +96,23 @@ function parseMetadataText(text: string): UploadMetadata {
   const lyrics = lyricsMatch?.[1]?.trim() || null;
 
   return { prompt, lyrics };
+}
+
+function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemOverride[] {
+  if (typeof value !== "string" || !value.trim()) return [];
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map((item) => {
+      if (!isJsonObject(item)) return { title: null };
+      const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
+      return { title };
+    });
+  } catch {
+    return [];
+  }
 }
 
 function getUploadErrorMessage(error: unknown, fallback: string) {
@@ -501,6 +522,7 @@ export async function POST(request: NextRequest) {
         : null;
     const globalUploadPrompt = normalizeUploadText(formData.get("uploadPrompt"));
     const globalUploadLyrics = normalizeUploadText(formData.get("uploadLyrics"));
+    const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
       (entry): entry is File => entry instanceof File && entry.name.toLowerCase().endsWith(".txt")
@@ -516,6 +538,25 @@ export async function POST(request: NextRequest) {
         metadataByBaseName.set(baseNameWithoutExtension(metadataFile.name), parsed);
       } catch (error) {
         console.error("[tracks/upload] Failed to parse metadata file:", metadataFile.name, error);
+      }
+    }
+
+    const metadataByIndex = new Map<number, UploadMetadata>();
+    for (const [key, value] of formData.entries()) {
+      if (!key.startsWith("metadataFile:")) continue;
+      if (!(value instanceof File) || !value.name.toLowerCase().endsWith(".txt")) continue;
+
+      const indexRaw = key.slice("metadataFile:".length);
+      const index = Number.parseInt(indexRaw, 10);
+      if (!Number.isFinite(index) || index < 0) continue;
+
+      try {
+        const content = new TextDecoder("utf-8").decode(await value.arrayBuffer());
+        const parsed = parseMetadataText(content);
+        if (!parsed.prompt && !parsed.lyrics) continue;
+        metadataByIndex.set(index, parsed);
+      } catch (error) {
+        console.error("[tracks/upload] Failed to parse indexed metadata file:", value.name, error);
       }
     }
 
@@ -537,7 +578,7 @@ export async function POST(request: NextRequest) {
     const uploadedTracks: Array<typeof tracks.$inferSelect> = [];
     const rejected: Array<{ filename: string; reason: string }> = [];
 
-    for (const file of files) {
+    for (const [index, file] of files.entries()) {
       const format = detectUploadFormat(file);
       if (!format) {
         rejected.push({ filename: file.name, reason: "Only MP3 and WAV files are supported." });
@@ -553,9 +594,11 @@ export async function POST(request: NextRequest) {
         const trackId = crypto.randomUUID();
         const audioBuffer = Buffer.from(await file.arrayBuffer());
         const uploadHash = createHash("sha256").update(audioBuffer).digest("hex");
-        const sidecarMetadata = metadataByBaseName.get(baseNameWithoutExtension(file.name));
+        const sidecarMetadata = metadataByIndex.get(index) ?? metadataByBaseName.get(baseNameWithoutExtension(file.name));
+        const itemOverride = uploadItemOverrides[index];
         const uploadPrompt = sidecarMetadata?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
         const uploadLyrics = sidecarMetadata?.lyrics ?? globalUploadLyrics ?? null;
+        const uploadTitle = itemOverride?.title ?? titleFromFilename(file.name);
 
         const duplicateTrack = await db
           .select({ id: tracks.id })
@@ -584,7 +627,7 @@ export async function POST(request: NextRequest) {
           .values({
             id: trackId,
             userId,
-            title: titleFromFilename(file.name),
+            title: uploadTitle,
             provider: "upload",
             providerModel: "manual-upload",
             prompt: uploadPrompt,

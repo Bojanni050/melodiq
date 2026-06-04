@@ -38,6 +38,14 @@ interface LibraryTrack {
 type LibraryView = "songs" | "workspaces";
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
+const MAX_UPLOAD_QUEUE = 10;
+
+type QueuedUploadItem = {
+  id: string;
+  file: File;
+  title: string;
+  metadataFile: File | null;
+};
 
 function hashString(value: string) {
   let hash = 0;
@@ -65,6 +73,23 @@ function getWorkspaceTracks(
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isSupportedAudioFile(file: File) {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return type.includes("mpeg") || type.includes("mp3") || type.includes("wav") || type.includes("wave") || name.endsWith(".mp3") || name.endsWith(".wav");
+}
+
+function titleFromUploadFilename(filename: string) {
+  const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
+  return withoutExtension || "Untitled Upload";
+}
+
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function readApiPayload(response: Response): Promise<unknown> {
@@ -118,9 +143,11 @@ export default function LibraryPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [rejectedFiles, setRejectedFiles] = useState<Array<{ filename: string; reason: string }>>([]);
+  const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+  const [queuedUploads, setQueuedUploads] = useState<QueuedUploadItem[]>([]);
+  const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
-  const [uploadMetadataFiles, setUploadMetadataFiles] = useState<File[]>([]);
 
   const workspacesSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isWorkspacesTopInView, setIsWorkspacesTopInView] = useState(true);
@@ -331,8 +358,68 @@ export default function LibraryPage() {
     setShowTrackDetailsPanel(false);
   }
 
-  async function handleUploadSelection(files: FileList | null) {
+  function handleQueueAudioSelection(files: FileList | null) {
     if (!files || files.length === 0 || uploading) return;
+
+    const incoming = Array.from(files);
+    const invalid = incoming.filter((file) => !isSupportedAudioFile(file));
+    const valid = incoming.filter((file) => isSupportedAudioFile(file));
+
+    if (invalid.length > 0) {
+      setRejectedFiles((current) => [
+        ...current,
+        ...invalid.map((file) => ({ filename: file.name, reason: "Only MP3 and WAV files are supported." })),
+      ]);
+    }
+
+    setQueuedUploads((current) => {
+      const room = Math.max(0, MAX_UPLOAD_QUEUE - current.length);
+      const accepted = valid.slice(0, room).map((file) => ({
+        id: typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        title: titleFromUploadFilename(file.name),
+        metadataFile: null,
+      }));
+
+      if (valid.length > room) {
+        setUploadError(`Queue limit reached. Maximum ${MAX_UPLOAD_QUEUE} files per upload batch.`);
+      }
+
+      return [...current, ...accepted];
+    });
+
+    if (uploadInputRef.current) {
+      uploadInputRef.current.value = "";
+    }
+  }
+
+  function handleMetadataAttachSelection(files: FileList | null) {
+    if (!pendingMetadataTargetId || !files || files.length === 0) return;
+    const file = files[0];
+
+    if (!file.name.toLowerCase().endsWith(".txt")) {
+      setUploadError("Metadata file must be a .txt file.");
+      return;
+    }
+
+    setQueuedUploads((current) =>
+      current.map((item) =>
+        item.id === pendingMetadataTargetId
+          ? { ...item, metadataFile: file }
+          : item
+      )
+    );
+    setPendingMetadataTargetId(null);
+
+    if (uploadMetadataInputRef.current) {
+      uploadMetadataInputRef.current.value = "";
+    }
+  }
+
+  async function handleStartUpload() {
+    if (queuedUploads.length === 0 || uploading) return;
 
     const targetWorkspaceId = workspaces.some((workspace) => workspace.id === uploadWorkspaceId)
       ? uploadWorkspaceId
@@ -345,9 +432,21 @@ export default function LibraryPage() {
 
     try {
       const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append("files", file);
+      queuedUploads.forEach((item, index) => {
+        formData.append("files", item.file);
+        if (item.metadataFile) {
+          formData.append(`metadataFile:${index}`, item.metadataFile);
+        }
       });
+
+      formData.append(
+        "uploadItems",
+        JSON.stringify(
+          queuedUploads.map((item) => ({
+            title: item.title.trim() || null,
+          }))
+        )
+      );
 
       const trimmedPrompt = uploadPromptDraft.trim();
       if (trimmedPrompt) {
@@ -358,10 +457,6 @@ export default function LibraryPage() {
       if (trimmedLyrics) {
         formData.append("uploadLyrics", trimmedLyrics);
       }
-
-      uploadMetadataFiles.forEach((file) => {
-        formData.append("metadataFiles", file);
-      });
 
       formData.append("workspaceId", targetWorkspaceId);
 
@@ -426,6 +521,8 @@ export default function LibraryPage() {
             })
           );
         }
+
+        setQueuedUploads([]);
       }
 
       const rejectedCount = payloadRejected.length;
@@ -445,9 +542,6 @@ export default function LibraryPage() {
       setUploadError(message);
     } finally {
       setUploading(false);
-      if (uploadInputRef.current) {
-        uploadInputRef.current.value = "";
-      }
     }
   }
 
@@ -580,165 +674,21 @@ export default function LibraryPage() {
                     Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
                   </p>
                 </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadPanelOpen(true)}
+                    className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                  >
+                    Upload Files
+                  </button>
+                </div>
               </div>
             </section>
 
             {/* Songs view */}
             {view === "songs" && (
               <section className="space-y-4">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-white">Upload MP3/WAV to Library</p>
-                      <p className="text-xs text-white/55">You can upload multiple files at once and send them directly to a workspace. Add optional prompt/lyrics in UI, or attach .txt metadata files. Max 20 files per upload.</p>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <label className="text-xs text-white/60" htmlFor="upload-workspace-select">Workspace</label>
-                      <select
-                        id="upload-workspace-select"
-                        value={uploadWorkspaceId}
-                        onChange={(event) => setUploadWorkspaceId(event.target.value)}
-                        className="h-10 min-w-[220px] rounded-full border border-white/12 bg-[#11121a] px-4 text-sm text-white outline-none focus:border-white/25"
-                        disabled={uploading}
-                      >
-                        {uploadWorkspaceOptions.map((workspace) => (
-                          <option key={workspace.id} value={workspace.id}>
-                            {workspace.label}
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        ref={uploadInputRef}
-                        type="file"
-                        multiple
-                        accept=".mp3,.wav,audio/mpeg,audio/wav"
-                        aria-label="Upload MP3 or WAV files"
-                        title="Upload MP3 or WAV files"
-                        className="hidden"
-                        disabled={uploading}
-                        onChange={(event) => handleUploadSelection(event.target.files)}
-                      />
-
-                      <button
-                        type="button"
-                        disabled={uploading}
-                        onClick={() => uploadInputRef.current?.click()}
-                        className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
-                      >
-                        {uploading ? "Uploading..." : "Select MP3/WAV Files"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                    <div className="space-y-1">
-                      <label htmlFor="upload-prompt-input" className="text-xs text-white/60">Optional prompt (applies to all selected audio files)</label>
-                      <textarea
-                        id="upload-prompt-input"
-                        value={uploadPromptDraft}
-                        onChange={(event) => setUploadPromptDraft(event.target.value)}
-                        rows={3}
-                        disabled={uploading}
-                        placeholder="Describe style / mood / context for uploaded tracks"
-                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label htmlFor="upload-lyrics-input" className="text-xs text-white/60">Optional lyrics (applies to all selected audio files)</label>
-                      <textarea
-                        id="upload-lyrics-input"
-                        value={uploadLyricsDraft}
-                        onChange={(event) => setUploadLyricsDraft(event.target.value)}
-                        rows={3}
-                        disabled={uploading}
-                        placeholder="Paste lyrics here"
-                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <input
-                      ref={uploadMetadataInputRef}
-                      type="file"
-                      multiple
-                      accept=".txt,text/plain"
-                      aria-label="Attach metadata TXT files"
-                      title="Attach metadata TXT files"
-                      className="hidden"
-                      disabled={uploading}
-                      onChange={(event) => {
-                        const next = event.target.files ? Array.from(event.target.files) : [];
-                        setUploadMetadataFiles(next);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={uploading}
-                      onClick={() => uploadMetadataInputRef.current?.click()}
-                      className="h-9 rounded-full border border-white/12 bg-[#11121a] px-3 text-xs font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-65"
-                    >
-                      Attach TXT metadata files
-                    </button>
-                    {uploadMetadataFiles.length > 0 && (
-                      <span className="text-xs text-white/60">
-                        {uploadMetadataFiles.length} metadata file(s) selected
-                      </span>
-                    )}
-                  </div>
-
-                  {uploadMetadataFiles.length > 0 && (
-                    <div className="mt-2 rounded-xl border border-white/10 bg-black/20 p-2 text-xs text-white/65">
-                      {uploadMetadataFiles.slice(0, 6).map((file) => file.name).join(" | ")}
-                      {uploadMetadataFiles.length > 6 ? ` | +${uploadMetadataFiles.length - 6} more` : ""}
-                    </div>
-                  )}
-
-                  {uploadError && (
-                    <div className="mt-3 flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
-                      <svg className="mt-0.5 w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <div>
-                        <span className="font-semibold">Error:</span> {uploadError}
-                      </div>
-                    </div>
-                  )}
-
-                  {uploadNotice && (
-                    <div className="mt-3 flex items-start gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
-                      <svg className="mt-0.5 w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <span className="font-semibold">Success:</span> {uploadNotice}
-                      </div>
-                    </div>
-                  )}
-
-                  {rejectedFiles.length > 0 && (
-                    <div className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-amber-400">
-                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span>Some files were skipped or rejected:</span>
-                      </div>
-                      <div className="max-h-48 overflow-y-auto pr-1">
-                        <ul className="text-xs text-amber-300/80 space-y-1.5 list-disc pl-5">
-                          {rejectedFiles.map((file, idx) => (
-                            <li key={idx} className="leading-relaxed">
-                              <span className="font-medium text-amber-300">{file.filename}</span>: <span className="text-amber-400/90">{file.reason}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     {selectedWorkspace ? (
@@ -1027,6 +977,236 @@ export default function LibraryPage() {
           </div>
         </ResizablePanel>
       </div>
+
+      {isUploadPanelOpen && (
+        <div className="fixed inset-0 z-[70]">
+          <button
+            type="button"
+            aria-label="Close upload panel"
+            onClick={() => setIsUploadPanelOpen(false)}
+            className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
+          />
+
+          <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-[560px] border-l border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+            <div className="flex h-full flex-col">
+              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Upload Files</h3>
+                  <p className="text-xs text-white/55">Queue up to {MAX_UPLOAD_QUEUE} files, edit titles, add metadata, then upload.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsUploadPanelOpen(false)}
+                  title="Close upload panel"
+                  aria-label="Close upload panel"
+                  className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                <div className="space-y-2">
+                  <label className="text-xs text-white/60" htmlFor="upload-panel-workspace-select">Workspace</label>
+                  <select
+                    id="upload-panel-workspace-select"
+                    value={uploadWorkspaceId}
+                    onChange={(event) => setUploadWorkspaceId(event.target.value)}
+                    className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                    disabled={uploading}
+                  >
+                    {uploadWorkspaceOptions.map((workspace) => (
+                      <option key={workspace.id} value={workspace.id}>
+                        {workspace.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="upload-panel-prompt" className="text-xs text-white/60">Optional prompt (global)</label>
+                    <textarea
+                      id="upload-panel-prompt"
+                      value={uploadPromptDraft}
+                      onChange={(event) => setUploadPromptDraft(event.target.value)}
+                      rows={3}
+                      disabled={uploading}
+                      placeholder="Style / mood / context"
+                      className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="upload-panel-lyrics" className="text-xs text-white/60">Optional lyrics (global)</label>
+                    <textarea
+                      id="upload-panel-lyrics"
+                      value={uploadLyricsDraft}
+                      onChange={(event) => setUploadLyricsDraft(event.target.value)}
+                      rows={3}
+                      disabled={uploading}
+                      placeholder="Paste lyrics"
+                      className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    multiple
+                    accept=".mp3,.wav,audio/mpeg,audio/wav"
+                    aria-label="Queue MP3/WAV files"
+                    title="Queue MP3/WAV files"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(event) => handleQueueAudioSelection(event.target.files)}
+                  />
+                  <input
+                    ref={uploadMetadataInputRef}
+                    type="file"
+                    accept=".txt,text/plain"
+                    aria-label="Attach metadata TXT file"
+                    title="Attach metadata TXT file"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(event) => handleMetadataAttachSelection(event.target.files)}
+                  />
+
+                  <button
+                    type="button"
+                    disabled={uploading || queuedUploads.length >= MAX_UPLOAD_QUEUE}
+                    onClick={() => uploadInputRef.current?.click()}
+                    className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+                  >
+                    Add MP3/WAV Files
+                  </button>
+
+                  <span className="text-xs text-white/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
+                </div>
+
+                {queuedUploads.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-4 text-sm text-white/55">
+                    No files queued yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {queuedUploads.map((item) => (
+                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-white">{item.file.name}</p>
+                            <p className="text-xs text-white/45">{formatFileSize(item.file.size)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setQueuedUploads((current) => current.filter((upload) => upload.id !== item.id))}
+                            className="rounded-full p-1.5 text-white/45 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                            title="Remove from queue"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="mt-2 space-y-2">
+                          <label htmlFor={`upload-item-title-${item.id}`} className="text-xs text-white/60">Title</label>
+                          <input
+                            id={`upload-item-title-${item.id}`}
+                            type="text"
+                            value={item.title}
+                            onChange={(event) => {
+                              const nextTitle = event.target.value;
+                              setQueuedUploads((current) =>
+                                current.map((upload) =>
+                                  upload.id === item.id ? { ...upload, title: nextTitle } : upload
+                                )
+                              );
+                            }}
+                            disabled={uploading}
+                            className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                          />
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={uploading}
+                              onClick={() => {
+                                setPendingMetadataTargetId(item.id);
+                                uploadMetadataInputRef.current?.click();
+                              }}
+                              className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-xs font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
+                            >
+                              {item.metadataFile ? "Replace metadata TXT" : "Attach metadata TXT"}
+                            </button>
+                            {item.metadataFile && (
+                              <>
+                                <span className="truncate text-xs text-white/55">{item.metadataFile.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQueuedUploads((current) =>
+                                      current.map((upload) =>
+                                        upload.id === item.id ? { ...upload, metadataFile: null } : upload
+                                      )
+                                    );
+                                  }}
+                                  className="text-xs text-red-300/85 hover:text-red-200"
+                                >
+                                  Remove TXT
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
+                    <span className="font-semibold">Error:</span> {uploadError}
+                  </div>
+                )}
+
+                {uploadNotice && (
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
+                    <span className="font-semibold">Success:</span> {uploadNotice}
+                  </div>
+                )}
+
+                {rejectedFiles.length > 0 && (
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3">
+                    <p className="text-sm font-semibold text-amber-300">Rejected files</p>
+                    <ul className="mt-2 space-y-1 text-xs text-amber-200/80">
+                      {rejectedFiles.map((file, idx) => (
+                        <li key={idx}>
+                          <span className="font-medium">{file.filename}</span>: {file.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/10 px-5 py-4">
+                <button
+                  type="button"
+                  disabled={uploading || queuedUploads.length === 0}
+                  onClick={handleStartUpload}
+                  className="h-11 w-full rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+                >
+                  {uploading ? "Uploading..." : `Upload ${queuedUploads.length} file(s)`}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {showTrackDetailsPanel && selectedTrack && (
         <div className="lg:hidden">
