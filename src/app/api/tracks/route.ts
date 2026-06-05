@@ -27,6 +27,8 @@ const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 
 const MAX_FILES_PER_UPLOAD = 10;
 const MAX_TRACKS_PER_COVER_REGEN = 50;
+const MAX_UPLOAD_REQUEST_BYTES = 200 * 1024 * 1024;
+const MAX_UPLOAD_REQUEST_MB = Math.round(MAX_UPLOAD_REQUEST_BYTES / (1024 * 1024));
 
 type JsonObject = Record<string, unknown>;
 
@@ -483,6 +485,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const contentLength = Number.parseInt(request.headers.get("content-length") || "", 10);
+    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_BYTES) {
+      return NextResponse.json(
+        { error: `Upload is too large. Current server limit is ${MAX_UPLOAD_REQUEST_MB}MB.` },
+        { status: 413 }
+      );
+    }
+
     let formData: FormData;
     try {
       formData = await request.formData();
@@ -493,7 +503,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: likelyTooLarge
-            ? "Upload is too large. Try fewer files or smaller files."
+            ? `Upload is too large. Current server limit is ${MAX_UPLOAD_REQUEST_MB}MB.`
             : "Could not read upload form data. Please reselect files and try again.",
           details: parseError,
         },

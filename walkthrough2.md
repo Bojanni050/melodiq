@@ -275,3 +275,9 @@
 - Findings: Nieuwe PoYo tracks kregen soms geen WAV omdat de webhook-flow WAV-conversie vooral triggert op `file.audio_id`; als PoYo een andere key-vorm terugstuurt, werd de conversie overgeslagen.
 - Conclusions: WAV-conversie moet niet afhankelijk zijn van één specifiek webhook-field, maar op de gesyncte trackrecords draaien nadat audioId-updates zijn toegepast.
 - Actions: `src/app/api/webhooks/poyo/route.ts` aangepast met bredere audio-id parsing (`audio_id`, `audioId`, `file_id`, `song_id`, `id`), daarna gesyncte tracks opnieuw ophalen en `requestMissingWavConversion(...)` uitvoeren op alle gesyncte tracks; cover-batch gebruikt nu de refreshed trackset; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606030453`; gevalideerd met `npm run build` (geslaagd).
+
+## 2026-06-06 (Grote WAV uploadlimiet verhoogd + 413 feedback verbeterd)
+
+- Findings: Uploads van grote WAV-bestanden (zoals 73,9MB) faalden al bij multipart parsing met `Failed to parse body as FormData`, omdat de Next proxy-bodylimiet op 50MB stond.
+- Conclusions: De uploadproxylimiet moet ruim boven de gewenste WAV-grootte staan en de API moet expliciet 413 teruggeven met een heldere limietmelding bij te grote requests.
+- Actions: `next.config.mjs` aangepast met configureerbare `UPLOAD_PROXY_MAX_BODY_MB` (default 200MB) voor `experimental.proxyClientMaxBodySize`; `src/app/api/tracks/route.ts` uitgebreid met pre-check op `content-length` en consistente 413-foutmelding met limiet in MB; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
