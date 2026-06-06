@@ -35,9 +35,10 @@ interface LibraryTrack {
   lyricsTimestamps?: string | null;
 }
 
-type LibraryView = "songs" | "workspaces";
+type LibraryView = "songs" | "playlists" | "workspaces";
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
+const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 const MAX_UPLOAD_QUEUE = 10;
 const WORKSPACE_FOLDER_BG_CLASSES = [
   "bg-linear-135 from-violet-600 to-pink-500",
@@ -120,7 +121,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -158,6 +159,8 @@ export default function LibraryPage() {
   const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
+  const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
+  const [coverPickerPlaylistId, setCoverPickerPlaylistId] = useState<string | null>(null);
 
   const workspacesSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isWorkspacesTopInView, setIsWorkspacesTopInView] = useState(true);
@@ -314,15 +317,57 @@ export default function LibraryPage() {
     window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
   }, [workspaceGridSize]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(PLAYLIST_COVERS_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as unknown;
+      if (!isObjectRecord(parsed)) return;
+
+      const next: Record<string, string> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (typeof value === "string" && value.trim()) {
+          next[key] = value;
+        }
+      }
+
+      setPlaylistCoverOverrides(next);
+    } catch {
+      // Ignore malformed localStorage payload.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(PLAYLIST_COVERS_STORAGE_KEY, JSON.stringify(playlistCoverOverrides));
+  }, [playlistCoverOverrides]);
+
   const selectedWorkspace = useMemo(
     () => (selectedWorkspaceId ? workspaces.find((w) => w.id === selectedWorkspaceId) ?? null : null),
     [selectedWorkspaceId, workspaces],
+  );
+
+  const selectedPlaylist = useMemo(
+    () => (selectedPlaylistId ? playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null : null),
+    [playlists, selectedPlaylistId],
   );
 
   const visibleTracks = useMemo(
     () => (selectedWorkspace ? tracks.filter((t) => selectedWorkspace.trackIds.includes(t.id)) : tracks),
     [selectedWorkspace, tracks],
   );
+
+  const visiblePlaylistTracks = useMemo(
+    () => (selectedPlaylist ? tracks.filter((track) => selectedPlaylist.trackIds.includes(track.id)) : tracks),
+    [selectedPlaylist, tracks],
+  );
+
+  const activeSongs = useMemo(() => {
+    if (selectedWorkspace) return visibleTracks;
+    if (selectedPlaylist) return visiblePlaylistTracks;
+    return tracks;
+  }, [selectedWorkspace, selectedPlaylist, visibleTracks, visiblePlaylistTracks, tracks]);
 
   const parentWorkspaceNameById = useMemo(
     () =>
@@ -345,6 +390,7 @@ export default function LibraryPage() {
   );
 
   function openWorkspace(id: string) {
+    setSelectedPlaylistId(null);
     setSelectedWorkspaceId(id);
     setView("songs");
   }
@@ -352,6 +398,17 @@ export default function LibraryPage() {
   function backToWorkspaces() {
     setSelectedWorkspaceId(null);
     setView("workspaces");
+  }
+
+  function openPlaylist(playlistId: string) {
+    setSelectedWorkspaceId(null);
+    setSelectedPlaylistId(playlistId);
+    setView("songs");
+  }
+
+  function backToPlaylists() {
+    setSelectedPlaylistId(null);
+    setView("playlists");
   }
 
   function handleCreateWorkspace() {
@@ -582,7 +639,7 @@ export default function LibraryPage() {
     if (!selectedTrack) return;
 
     const player = usePlayerStore.getState();
-    const playContext = visibleTracks
+    const playContext = activeSongs
       .filter((track) => track.status === "done")
       .map((track) => ({
         id: track.id,
@@ -657,6 +714,46 @@ export default function LibraryPage() {
     return pickSeededItems(covers, workspaceId, Math.min(4, covers.length));
   }
 
+  function getPlaylistCoverCandidates(playlistId: string) {
+    const playlist = playlists.find((item) => item.id === playlistId);
+    if (!playlist) return [] as string[];
+
+    const covers = tracks
+      .filter((track) => playlist.trackIds.includes(track.id))
+      .map((track) => track.coverUrl)
+      .filter((coverUrl): coverUrl is string => Boolean(coverUrl));
+
+    if (covers.length === 0) return [];
+
+    return Array.from(new Set(covers));
+  }
+
+  function getPlaylistRandomCover(playlistId: string) {
+    const candidates = getPlaylistCoverCandidates(playlistId);
+    if (candidates.length === 0) return null;
+
+    const index = hashString(`${playlistId}:${candidates.join("|")}`) % candidates.length;
+    return candidates[index] ?? null;
+  }
+
+  function getPlaylistCover(playlistId: string) {
+    const override = playlistCoverOverrides[playlistId];
+    if (override) return override;
+    return getPlaylistRandomCover(playlistId);
+  }
+
+  function handleSetPlaylistCover(playlistId: string, coverUrl: string) {
+    setPlaylistCoverOverrides((current) => ({ ...current, [playlistId]: coverUrl }));
+  }
+
+  function handleResetPlaylistCover(playlistId: string) {
+    setPlaylistCoverOverrides((current) => {
+      const next = { ...current };
+      delete next[playlistId];
+      return next;
+    });
+  }
+
   function getWorkspaceGradientClass(workspaceId: string, folderGradient?: string | null) {
     if (folderGradient) {
       const index = WORKSPACE_FOLDER_GRADIENTS.findIndex((value) => value === folderGradient);
@@ -705,10 +802,26 @@ export default function LibraryPage() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.28em] text-white/35">Library</p>
-                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Songs</h1>
+                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}</h1>
                   <p className="max-w-2xl text-sm sm:text-base text-white/60">
                     Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
                   </p>
+                  <div className="mt-3 inline-flex rounded-full border border-white/10 bg-white/5 p-1">
+                    {[
+                      { key: "songs", label: "Songs" },
+                      { key: "playlists", label: "Playlists" },
+                      { key: "workspaces", label: "Workspaces" },
+                    ].map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setView(item.key as LibraryView)}
+                        className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === item.key ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <button
@@ -747,6 +860,23 @@ export default function LibraryPage() {
                         <h2 className="text-lg font-semibold truncate">{selectedWorkspace.name}</h2>
                         <p className="text-sm text-white/55">{visibleTracks.length} songs in this workspace.</p>
                       </>
+                    ) : selectedPlaylist ? (
+                      <>
+                        <div className="flex items-center gap-2 mb-1">
+                          <button
+                            type="button"
+                            onClick={backToPlaylists}
+                            className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            All playlists
+                          </button>
+                        </div>
+                        <h2 className="text-lg font-semibold truncate">{selectedPlaylist.name}</h2>
+                        <p className="text-sm text-white/55">{visiblePlaylistTracks.length} songs in this playlist.</p>
+                      </>
                     ) : (
                       <>
                         <h2 className="text-lg font-semibold">All Songs</h2>
@@ -755,7 +885,7 @@ export default function LibraryPage() {
                     )}
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {visibleTracks.length} tracks
+                    {activeSongs.length} tracks
                   </div>
                 </div>
 
@@ -763,7 +893,7 @@ export default function LibraryPage() {
                   <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
                 ) : (
                   <TrackList
-                    tracks={visibleTracks}
+                    tracks={activeSongs}
                     autoQueueAfterPlay
                     onSelect={(track) => {
                       setSelectedTrack({
@@ -780,6 +910,86 @@ export default function LibraryPage() {
                       setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                     }
                   />
+                )}
+              </section>
+            )}
+
+            {/* Playlists view */}
+            {view === "playlists" && (
+              <section className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Playlists</h2>
+                    <p className="text-sm text-white/55">Open a playlist folder, or set a custom cover from the songs inside.</p>
+                  </div>
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                    {playlists.length} playlists
+                  </div>
+                </div>
+
+                {playlists.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
+                    No playlists yet. Add songs to playlists from track actions first.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {playlists.map((playlist) => {
+                      const playlistTracks = tracks.filter((track) => playlist.trackIds.includes(track.id));
+                      const playlistCover = getPlaylistCover(playlist.id);
+
+                      return (
+                        <article
+                          key={playlist.id}
+                          className="group overflow-hidden rounded-[26px] border border-white/10 bg-[#0f1017] shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => openPlaylist(playlist.id)}
+                            className="block w-full text-left"
+                          >
+                            <div className="relative aspect-4/3 overflow-hidden bg-linear-135 from-[#1d2333] to-[#0f121a]">
+                              {playlistCover ? (
+                                <img
+                                  src={playlistCover}
+                                  alt={playlist.name}
+                                  loading="lazy"
+                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <svg className="h-14 w-14 text-white/35" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                  </svg>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10" />
+                              <div className="absolute inset-x-0 bottom-0 p-4">
+                                <h3 className="truncate text-lg font-semibold text-white">{playlist.name}</h3>
+                                <p className="text-sm text-white/75">{playlistTracks.length} songs</p>
+                              </div>
+                            </div>
+                          </button>
+
+                          <div className="flex items-center justify-between gap-2 px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => openPlaylist(playlist.id)}
+                              className="text-sm text-white/60 transition-colors hover:text-white"
+                            >
+                              Open playlist
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCoverPickerPlaylistId(playlist.id)}
+                              className="text-sm text-white/45 transition-colors hover:text-white"
+                            >
+                              Change cover
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
               </section>
             )}
@@ -1014,6 +1224,91 @@ export default function LibraryPage() {
           </div>
         </ResizablePanel>
       </div>
+
+      {coverPickerPlaylistId && (
+        <div className="fixed inset-0 z-70">
+          <button
+            type="button"
+            aria-label="Close playlist cover picker"
+            onClick={() => setCoverPickerPlaylistId(null)}
+            className="absolute inset-0 bg-black/65"
+          />
+
+          <div className="absolute left-1/2 top-1/2 w-[min(760px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Change Playlist Cover</h3>
+                <p className="text-sm text-white/55">Pick a cover from playlist songs or randomize it.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCoverPickerPlaylistId(null)}
+                className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                title="Close"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {(() => {
+              const candidates = getPlaylistCoverCandidates(coverPickerPlaylistId);
+              const randomCover = getPlaylistRandomCover(coverPickerPlaylistId);
+
+              return (
+                <>
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={!randomCover}
+                      onClick={() => {
+                        if (!randomCover) return;
+                        handleSetPlaylistCover(coverPickerPlaylistId, randomCover);
+                      }}
+                      className="h-9 rounded-full border border-white/12 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Use random
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleResetPlaylistCover(coverPickerPlaylistId)}
+                      className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                      Reset to auto
+                    </button>
+                  </div>
+
+                  {candidates.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-white/15 bg-white/3 p-4 text-sm text-white/55">
+                      No cover images found in this playlist yet.
+                    </div>
+                  ) : (
+                    <div className="grid max-h-[52vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                      {candidates.map((coverUrl) => {
+                        const activeCover = playlistCoverOverrides[coverPickerPlaylistId] ?? null;
+                        const isActive = activeCover === coverUrl;
+
+                        return (
+                          <button
+                            key={coverUrl}
+                            type="button"
+                            onClick={() => handleSetPlaylistCover(coverPickerPlaylistId, coverUrl)}
+                            className={`overflow-hidden rounded-2xl border transition ${isActive ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.5)]" : "border-white/12 hover:border-white/35"}`}
+                            title="Use this cover"
+                          >
+                            <img src={coverUrl} alt="Playlist cover candidate" className="h-28 w-full object-cover" loading="lazy" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {isUploadPanelOpen && (
         <div className="fixed inset-0 z-70">

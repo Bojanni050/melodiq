@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606061802**
+**Versie: 202606061830**
 
 > AI Music Generation Web App
 
@@ -161,7 +161,9 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
-- **Playlists view** — gallery-style playlist cards with cover art collage generated from songs inside each playlist
+- **Playlists view** — dedicated tab in Library with clickable playlist folders/cards
+- Playlist folders now default to a random cover chosen from songs inside that playlist
+- Per playlist folder, use **Change cover** to manually choose a different cover image; **Reset to auto** switches back to automatic random cover selection
 - Clicking a playlist card opens that playlist in Songs view
 - If you add a song to a playlist where it already exists, MelodIQ now asks: “Song is already on the playlist. Do you want to add it again?” with **Yes / No**
 
