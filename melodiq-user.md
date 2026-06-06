@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606030127**
+**Versie: 202606061802**
 
 > AI Music Generation Web App
 
@@ -151,6 +151,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
 - In Library Songs view, use **Select MP3/WAV Files** to upload one or meerdere audiofiles tegelijk; MelodIQ ondersteunt batch-upload van MP3 en WAV
+- In Library upload kun je per queued track nu ook een metadata sidecar als **TXT of LRC** koppelen; bij LRC worden timed lyrics automatisch in sync opgeslagen
 - Library upload ondersteunt maximaal 20 bestanden per keer; bij een te grote upload toont MelodIQ nu een duidelijke foutmelding in plaats van een technische JSON-parse fout
 - De workspace-dropdown in Library upload wordt nu gevuld na persist-hydratie zodat je direct alle bestaande (sub)workspaces ziet
 - Voor upload kies je eerst de doelworkspace in de workspace dropdown; alle succesvol geuploade tracks worden direct aan die workspace toegewezen
@@ -203,6 +204,7 @@ Click a track to open a slide-out panel with:
 - Track info (provider, model, status, date)
 - Full style prompt, collapsed by default; click Prompt to expand it
 - Full lyrics (if vocal)
+- In Library kun je in Track Details nu lyrics **toevoegen** als ze ontbreken en bestaande lyrics **bewerken en opslaan**
 - Tracks met geldige JSON/LRC timestamps highlighten nu automatisch de actieve lyric-regel tijdens playback (ook bij geneste timestamp payloads en `mm:ss` tijdnotatie)
 - **Play** — stream the audio inline
 - **Download** — save the MP3 file (HD version if available)

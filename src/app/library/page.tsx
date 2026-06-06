@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
-import TrackDetail from "@/components/TrackDetail";
+import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   DEFAULT_WORKSPACE_ID,
@@ -367,6 +367,28 @@ export default function LibraryPage() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
   }
+
+  const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
+    const normalizedTrack: LibraryTrack = {
+      ...updatedTrack,
+      coverUrl: updatedTrack.coverUrl ?? null,
+      s3KeyCover: updatedTrack.s3KeyCover ?? null,
+    };
+
+    setTracks((current) =>
+      current.map((track) =>
+        track.id === normalizedTrack.id
+          ? { ...track, ...normalizedTrack }
+          : track
+      )
+    );
+
+    setSelectedTrack((current) =>
+      current && current.id === normalizedTrack.id
+        ? { ...current, ...normalizedTrack }
+        : current
+    );
+  }, []);
 
   function handleQueueAudioSelection(files: FileList | null) {
     if (!files || files.length === 0 || uploading) return;
@@ -981,6 +1003,7 @@ export default function LibraryPage() {
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
                 allowLyricsEdit
+                onTrackUpdated={handleTrackUpdated}
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
@@ -1231,6 +1254,7 @@ export default function LibraryPage() {
             onDownload={handleDownloadTrack}
             mode="overlay"
             allowLyricsEdit
+            onTrackUpdated={handleTrackUpdated}
           />
         </div>
       )}

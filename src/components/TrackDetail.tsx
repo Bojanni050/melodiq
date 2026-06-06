@@ -5,37 +5,40 @@ import { useUserStore, usePlayerStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { useSWRConfig } from "swr";
 
+export type TrackDetailTrack = {
+  id: string;
+  title: string | null;
+  provider: string;
+  providerModel: string;
+  prompt: string;
+  lyrics: string | null;
+  lyricsTimestamps?: string | null;
+  status: "pending" | "generating" | "done" | "failed";
+  audioUrl: string | null;
+  audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
+  duration: number | null;
+  createdAt: string;
+  error: string | null;
+  s3KeyHd: string | null;
+  coverUrl?: string | null;
+  s3KeyCover?: string | null;
+  rating?: string | null;
+  instrumental?: boolean | null;
+};
+
 interface TrackDetailProps {
-  track: {
-    id: string;
-    title: string | null;
-    provider: string;
-    providerModel: string;
-    prompt: string;
-    lyrics: string | null;
-    lyricsTimestamps?: string | null;
-    status: string;
-    audioUrl: string | null;
-    audioUrlHd: string | null;
-    format: string | null;
-    formatHd: string | null;
-    duration: number | null;
-    createdAt: string;
-    error: string | null;
-    s3KeyHd: string | null;
-    coverUrl?: string | null;
-    s3KeyCover?: string | null;
-    rating?: string | null;
-    instrumental?: boolean | null;
-  };
+  track: TrackDetailTrack;
   onClose: () => void;
   onPlay: (url: string) => void;
   onDownload: (url: string, hd: boolean) => void;
   mode?: "overlay" | "sidebar";
   allowLyricsEdit?: boolean;
+  onTrackUpdated?: (track: TrackDetailTrack) => void;
 }
 
-export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false }: TrackDetailProps) {
+export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false, onTrackUpdated }: TrackDetailProps) {
   const [downloading, setDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
@@ -268,6 +271,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
       const updatedTrack = await res.json();
       setLocalTrack(updatedTrack);
+      onTrackUpdated?.(updatedTrack);
       usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
       void mutate("/api/tracks");
       setLyricsEditing(false);
