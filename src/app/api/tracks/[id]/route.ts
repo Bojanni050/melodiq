@@ -395,10 +395,11 @@ export async function PATCH(
     }
 
     const title = body.title;
+    const lyrics = body.lyrics;
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
 
-    if (title === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
+    if (title === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -437,6 +438,22 @@ export async function PATCH(
         updates.title = trimmed ? trimmed : null;
       } else {
         return NextResponse.json({ error: "Invalid title" }, { status: 400 });
+      }
+    }
+
+    if (lyrics !== undefined) {
+      if (lyrics === null) {
+        updates.lyrics = null;
+        updates.lyricsTimestamps = null;
+      } else if (typeof lyrics === "string") {
+        const trimmedLyrics = lyrics.trim();
+        if (trimmedLyrics.length > 20000) {
+          return NextResponse.json({ error: "Lyrics too long (max 20000 characters)" }, { status: 400 });
+        }
+        updates.lyrics = trimmedLyrics ? trimmedLyrics : null;
+        updates.lyricsTimestamps = null;
+      } else {
+        return NextResponse.json({ error: "Invalid lyrics" }, { status: 400 });
       }
     }
 

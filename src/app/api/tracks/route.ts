@@ -19,6 +19,7 @@ import {
 import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
+import { parseLyrics } from "@/lib/parse-lyrics";
 import axios from "axios";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ function titleFromFilename(filename: string) {
 type UploadMetadata = {
   prompt: string | null;
   lyrics: string | null;
+  lyricsTimestamps: string | null;
 };
 
 type UploadItemOverride = {
@@ -83,21 +85,52 @@ function baseNameWithoutExtension(filename: string) {
   return filename.replace(/\.[^/.]+$/, "").trim().toLowerCase();
 }
 
+function isSupportedMetadataFilename(filename: string) {
+  const normalized = filename.toLowerCase();
+  return normalized.endsWith(".txt") || normalized.endsWith(".lrc");
+}
+
+function extractLyricsFromTimestampedText(timestampedText: string): string | null {
+  const lines = parseLyrics(null, timestampedText)
+    .map((line) => line.text.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) return null;
+  return lines.join("\n");
+}
+
 function parseMetadataText(text: string): UploadMetadata {
   const normalized = text.replace(/\r\n/g, "\n").trim();
-  if (!normalized) return { prompt: null, lyrics: null };
+  if (!normalized) return { prompt: null, lyrics: null, lyricsTimestamps: null };
 
   const promptMatch = normalized.match(/(?:^|\n)\s*prompt\s*:\s*([\s\S]*?)(?=\n\s*lyrics\s*:|$)/i);
   const lyricsMatch = normalized.match(/(?:^|\n)\s*lyrics\s*:\s*([\s\S]*)$/i);
 
   if (!promptMatch && !lyricsMatch) {
-    return { prompt: null, lyrics: normalized };
+    return { prompt: null, lyrics: normalized, lyricsTimestamps: null };
   }
 
   const prompt = promptMatch?.[1]?.trim() || null;
   const lyrics = lyricsMatch?.[1]?.trim() || null;
 
-  return { prompt, lyrics };
+  return { prompt, lyrics, lyricsTimestamps: null };
+}
+
+function parseMetadataFile(file: File, content: string): UploadMetadata {
+  if (file.name.toLowerCase().endsWith(".lrc")) {
+    const normalized = content.replace(/\r\n/g, "\n").trim();
+    if (!normalized) {
+      return { prompt: null, lyrics: null, lyricsTimestamps: null };
+    }
+
+    return {
+      prompt: null,
+      lyrics: extractLyricsFromTimestampedText(normalized),
+      lyricsTimestamps: normalized,
+    };
+  }
+
+  return parseMetadataText(content);
 }
 
 function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemOverride[] {
@@ -535,16 +568,16 @@ export async function POST(request: NextRequest) {
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
-      (entry): entry is File => entry instanceof File && entry.name.toLowerCase().endsWith(".txt")
+      (entry): entry is File => entry instanceof File && isSupportedMetadataFilename(entry.name)
     );
 
     const metadataByBaseName = new Map<string, UploadMetadata>();
     for (const metadataFile of metadataFiles) {
       try {
         const content = new TextDecoder("utf-8").decode(await metadataFile.arrayBuffer());
-        const parsed = parseMetadataText(content);
+        const parsed = parseMetadataFile(metadataFile, content);
 
-        if (!parsed.prompt && !parsed.lyrics) continue;
+        if (!parsed.prompt && !parsed.lyrics && !parsed.lyricsTimestamps) continue;
         metadataByBaseName.set(baseNameWithoutExtension(metadataFile.name), parsed);
       } catch (error) {
         console.error("[tracks/upload] Failed to parse metadata file:", metadataFile.name, error);
@@ -554,7 +587,7 @@ export async function POST(request: NextRequest) {
     const metadataByIndex = new Map<number, UploadMetadata>();
     for (const [key, value] of formData.entries()) {
       if (!key.startsWith("metadataFile:")) continue;
-      if (!(value instanceof File) || !value.name.toLowerCase().endsWith(".txt")) continue;
+      if (!(value instanceof File) || !isSupportedMetadataFilename(value.name)) continue;
 
       const indexRaw = key.slice("metadataFile:".length);
       const index = Number.parseInt(indexRaw, 10);
@@ -562,8 +595,8 @@ export async function POST(request: NextRequest) {
 
       try {
         const content = new TextDecoder("utf-8").decode(await value.arrayBuffer());
-        const parsed = parseMetadataText(content);
-        if (!parsed.prompt && !parsed.lyrics) continue;
+        const parsed = parseMetadataFile(value, content);
+        if (!parsed.prompt && !parsed.lyrics && !parsed.lyricsTimestamps) continue;
         metadataByIndex.set(index, parsed);
       } catch (error) {
         console.error("[tracks/upload] Failed to parse indexed metadata file:", value.name, error);
@@ -608,6 +641,7 @@ export async function POST(request: NextRequest) {
         const itemOverride = uploadItemOverrides[index];
         const uploadPrompt = sidecarMetadata?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
         const uploadLyrics = sidecarMetadata?.lyrics ?? globalUploadLyrics ?? null;
+        const uploadLyricsTimestamps = sidecarMetadata?.lyricsTimestamps ?? null;
         const uploadTitle = itemOverride?.title ?? titleFromFilename(file.name);
 
         const duplicateTrack = await db
@@ -642,6 +676,7 @@ export async function POST(request: NextRequest) {
             providerModel: "manual-upload",
             prompt: uploadPrompt,
             lyrics: uploadLyrics,
+            lyricsTimestamps: uploadLyricsTimestamps,
             status: "done",
             s3Key,
             format,

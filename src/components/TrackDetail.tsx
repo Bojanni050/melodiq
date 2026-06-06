@@ -32,14 +32,18 @@ interface TrackDetailProps {
   onPlay: (url: string) => void;
   onDownload: (url: string, hd: boolean) => void;
   mode?: "overlay" | "sidebar";
+  allowLyricsEdit?: boolean;
 }
 
-export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay" }: TrackDetailProps) {
+export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false }: TrackDetailProps) {
   const [downloading, setDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
+  const [lyricsDraft, setLyricsDraft] = useState(initialTrack.lyrics ?? "");
+  const [lyricsEditing, setLyricsEditing] = useState(false);
+  const [lyricsSaving, setLyricsSaving] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, audioElement } = usePlayerStore();
   const [currentTime, setCurrentTime] = useState(0);
@@ -51,6 +55,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   useEffect(() => {
     setLocalTrack(initialTrack);
     setCurrentRating(initialTrack.rating ?? null);
+    setLyricsDraft(initialTrack.lyrics ?? "");
+    setLyricsEditing(false);
   }, [initialTrack]);
 
   // central self-healing polling loop
@@ -244,6 +250,35 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     }
   }
 
+  async function handleSaveLyrics() {
+    setLyricsSaving(true);
+    try {
+      const trimmedLyrics = lyricsDraft.trim();
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lyrics: trimmedLyrics ? trimmedLyrics : null }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = payload && typeof payload.error === "string" ? payload.error : "Failed to update lyrics";
+        throw new Error(message);
+      }
+
+      const updatedTrack = await res.json();
+      setLocalTrack(updatedTrack);
+      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+      void mutate("/api/tracks");
+      setLyricsEditing(false);
+      setLyricsDraft(updatedTrack.lyrics ?? "");
+    } catch (error) {
+      console.error("Failed to update lyrics:", error);
+    } finally {
+      setLyricsSaving(false);
+    }
+  }
+
   const title = (track.title || track.prompt.substring(0, 60)).replace(/\s*\(2\)\s*$/, "");
   const promptFirstLine = track.prompt
     .split("\n")
@@ -426,29 +461,80 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         </div>
 
         {/* Lyrics */}
-        {track.lyrics && (
+        {(track.lyrics || allowLyricsEdit) && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <div className="shrink-0 flex items-center justify-between mb-2">
               <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">
                 Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
               </h4>
-              <button
-                onClick={() => handleCopy(track.lyrics!, "lyrics")}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-                title="Copy lyrics"
-              >
-                {copiedField === "lyrics" ? (
-                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
+              <div className="flex items-center gap-1">
+                {allowLyricsEdit && !lyricsEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLyricsDraft(track.lyrics ?? "");
+                      setLyricsEditing(true);
+                    }}
+                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
+                  >
+                    {track.lyrics ? "Edit" : "Add"}
+                  </button>
                 )}
-              </button>
+                {allowLyricsEdit && lyricsEditing && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLyricsDraft(track.lyrics ?? "");
+                        setLyricsEditing(false);
+                      }}
+                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                      disabled={lyricsSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLyrics}
+                      className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
+                      disabled={lyricsSaving}
+                    >
+                      {lyricsSaving ? "Saving..." : "Save"}
+                    </button>
+                  </>
+                )}
+                {track.lyrics && !lyricsEditing && (
+                  <button
+                    onClick={() => handleCopy(track.lyrics!, "lyrics")}
+                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                    title="Copy lyrics"
+                  >
+                    {copiedField === "lyrics" ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
-            {hasTimings ? (
+            {lyricsEditing ? (
+              <div className="relative flex-1 min-h-0 overflow-hidden">
+                <textarea
+                  value={lyricsDraft}
+                  onChange={(event) => setLyricsDraft(event.target.value)}
+                  placeholder="Add or edit lyrics here"
+                  className="h-full w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
+                  maxLength={20000}
+                  disabled={lyricsSaving}
+                />
+              </div>
+            ) : track.lyrics ? hasTimings ? (
               <div className="relative flex-1 min-h-0 overflow-hidden">
                 <div
                   ref={containerRef}
@@ -485,6 +571,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <div className="relative flex-1 min-h-0 overflow-hidden">
                 <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">{track.lyrics}</pre>
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/95 to-transparent" />
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
+                No lyrics yet.
               </div>
             )}
           </div>

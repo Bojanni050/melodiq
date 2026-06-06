@@ -409,8 +409,9 @@ export default function LibraryPage() {
     if (!pendingMetadataTargetId || !files || files.length === 0) return;
     const file = files[0];
 
-    if (!file.name.toLowerCase().endsWith(".txt")) {
-      setUploadError("Metadata file must be a .txt file.");
+    const normalizedName = file.name.toLowerCase();
+    if (!normalizedName.endsWith(".txt") && !normalizedName.endsWith(".lrc")) {
+      setUploadError("Metadata file must be a .txt or .lrc file.");
       return;
     }
 
@@ -979,6 +980,7 @@ export default function LibraryPage() {
                 onClose={handleCloseTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
+                allowLyricsEdit
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
@@ -1079,9 +1081,9 @@ export default function LibraryPage() {
                   <input
                     ref={uploadMetadataInputRef}
                     type="file"
-                    accept=".txt,text/plain"
-                    aria-label="Attach metadata TXT file"
-                    title="Attach metadata TXT file"
+                    accept=".txt,.lrc,text/plain"
+                    aria-label="Attach metadata TXT or LRC file"
+                    title="Attach metadata TXT or LRC file"
                     className="hidden"
                     disabled={uploading}
                     onChange={(event) => handleMetadataAttachSelection(event.target.files)}
@@ -1152,7 +1154,7 @@ export default function LibraryPage() {
                               }}
                               className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-xs font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
                             >
-                              {item.metadataFile ? "Replace metadata TXT" : "Attach metadata TXT"}
+                              {item.metadataFile ? "Replace metadata TXT/LRC" : "Attach metadata TXT/LRC"}
                             </button>
                             {item.metadataFile && (
                               <>
@@ -1168,7 +1170,7 @@ export default function LibraryPage() {
                                   }}
                                   className="text-xs text-red-300/85 hover:text-red-200"
                                 >
-                                  Remove TXT
+                                  Remove metadata
                                 </button>
                               </>
                             )}
@@ -1228,6 +1230,7 @@ export default function LibraryPage() {
             onPlay={handlePlayTrack}
             onDownload={handleDownloadTrack}
             mode="overlay"
+            allowLyricsEdit
           />
         </div>
       )}
