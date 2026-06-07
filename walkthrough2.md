@@ -293,3 +293,9 @@
 - Findings: In Library ontbrak een aparte Playlists-tab met mapachtige cards; playlists hadden geen duidelijke coverpresentatie en gebruikers konden de folder-cover niet handmatig aanpassen.
 - Conclusions: Voeg een eigen `playlists` view toe in Library met klikbare playlist-folders, kies standaard automatisch een random cover uit playlist-tracks, en bied een cover-picker om de cover per playlist te overschrijven of terug te zetten naar auto.
 - Actions: `src/app/library/page.tsx` uitgebreid met `LibraryView = "songs" | "playlists" | "workspaces"`, header-tabs, playlist-folder grid cards, open-flow naar Songs-view per playlist, en cover-picker modal; playlist-covers worden persistent opgeslagen via `localStorage` key `melodiq.playlist-covers`; playback context gebruikt nu de actieve songset (`activeSongs`) zodat queue/autoplay ook klopt binnen geselecteerde playlists; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606061830`; `melodiq-user.md` geüpdatet met playlists-tab en handmatige coverkeuze; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-07 zo 05:08 (Song toevoegen aan bestaande playlist hersteld in Library)
+
+- Findings: In de Library songs-view werkte "Add to playlist" niet voor bestaande playlists, omdat `TrackList` een no-op callback (`onAddToPlaylist={() => undefined}`) kreeg in plaats van de echte store-actie.
+- Conclusions: Koppel de callback direct aan `usePlaylistStore().addTrackToPlaylist` met correcte argumentvolgorde (`playlistId`, `trackId`, `options`) zodat dezelfde flow als in workspaces/home wordt gebruikt.
+- Actions: `src/app/library/page.tsx` aangepast: `addTrackToPlaylist` uit de playlist-store gedestructured en `TrackList` nu gekoppeld met `onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
