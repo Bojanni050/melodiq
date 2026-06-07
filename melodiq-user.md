@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606071333**
+**Versie: 202606071412**
 
 > AI Music Generation Web App
 
@@ -143,6 +143,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - All track lists now include sorting controls: **New to old** and **Old to new**.
 - All track lists now include a **Search tracks** bar to filter by title, prompt, provider, model, or lyrics.
 - In all track lists except **Recent Tracks**, you can now drag and drop tracks to change the play order used when auto queueing tracks. De drag-and-drop functionaliteit is volledig geoptimaliseerd met **Zero-Render slepen** (geen React re-renders tijdens het bewegen van de muis), waardoor slepen boterzacht en zonder framedrops verloopt.
+- Track drag-and-drop plaatst nu preciezer: raak je de bovenste helft van een track, dan wordt de gesleepte track erboven ingevoegd; raak je de onderste helft, dan wordt die eronder ingevoegd.
 - De tracklijsten ondersteunen nu **Infinite Scroll / Lazy Loading**: standaard worden de eerste 30 tracks getoond, en zodra je naar beneden scrolt worden er automatisch 30 extra geladen. Dit verlaagt de rendertijd naar minder dan 3ms.
 - Het dubbelklikken op de titel van een nummer om deze direct te bewerken flitst nu direct open en start zonder vertraging op, doordat kliks op de titeltekst de zware detailzijbalk niet meer triggeren.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.

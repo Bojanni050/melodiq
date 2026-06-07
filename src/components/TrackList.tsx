@@ -7,6 +7,7 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
 
 type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
+type DropPosition = "before" | "after";
 
 // Isolated header component with localized high-performance selection selectors
 const TrackListHeader = memo(function TrackListHeader({
@@ -239,6 +240,7 @@ export default memo(function TrackList({
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
   const draggedTrackIdRef = useRef<string | null>(null);
+  const dragHoverRef = useRef<{ targetId: string; position: DropPosition } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmMassDelete, setConfirmMassDelete] = useState(false);
 
@@ -547,7 +549,7 @@ export default memo(function TrackList({
     });
   }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
-  function moveTrackInManualOrder(sourceId: string, targetId: string) {
+  function moveTrackInManualOrder(sourceId: string, targetId: string, position: DropPosition) {
     setManualOrderIds((current) => {
       const source = current ?? sortedTracks.map((track) => track.id);
       const fromIndex = source.indexOf(sourceId);
@@ -559,9 +561,49 @@ export default memo(function TrackList({
 
       const next = [...source];
       const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
+
+      // Calculate insertion index relative to original target track.
+      let insertIndex = toIndex;
+      if (fromIndex < toIndex) {
+        insertIndex -= 1;
+      }
+      if (position === "after") {
+        insertIndex += 1;
+      }
+
+      const clampedIndex = Math.max(0, Math.min(insertIndex, next.length));
+      next.splice(clampedIndex, 0, moved);
       return next;
     });
+  }
+
+  function clearDropIndicator(container: HTMLElement | null) {
+    if (!container) return;
+    container.querySelectorAll(".melodiq-drop-before, .melodiq-drop-after").forEach((element) => {
+      element.classList.remove(
+        "melodiq-drop-before",
+        "melodiq-drop-after",
+        "border-t-2",
+        "border-b-2",
+        "border-blue-400/70",
+        "bg-blue-500/5"
+      );
+    });
+  }
+
+  function setDropIndicator(target: HTMLElement, position: DropPosition) {
+    const container = target.parentElement;
+    clearDropIndicator(container);
+
+    target.classList.add("bg-blue-500/5", "border-blue-400/70");
+    if (position === "before") {
+      target.classList.add("melodiq-drop-before", "border-t-2");
+      target.classList.remove("melodiq-drop-after", "border-b-2");
+      return;
+    }
+
+    target.classList.add("melodiq-drop-after", "border-b-2");
+    target.classList.remove("melodiq-drop-before", "border-t-2");
   }
 
   function handleTrackDragStart(event: React.DragEvent<HTMLDivElement>, trackId: string) {
@@ -584,40 +626,74 @@ export default memo(function TrackList({
   function handleTrackDragOver(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
+
+    if (!canDragReorder || !draggedTrackIdRef.current || draggedTrackIdRef.current === trackId) {
+      return;
+    }
+
+    const target = event.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const pointerOffset = event.clientY - rect.top;
+    const position: DropPosition = pointerOffset <= rect.height / 2 ? "before" : "after";
+
+    const previous = dragHoverRef.current;
+    if (previous?.targetId === trackId && previous.position === position) {
+      return;
+    }
+
+    dragHoverRef.current = { targetId: trackId, position };
+    setDropIndicator(target, position);
   }
 
   function handleTrackDragEnter(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
-    if (canDragReorder && draggedTrackIdRef.current && draggedTrackIdRef.current !== trackId) {
-      event.currentTarget.classList.add("ring-1", "ring-blue-400/60", "bg-blue-500/5");
-    }
+    handleTrackDragOver(event, trackId);
   }
 
   function handleTrackDragLeave(event: React.DragEvent<HTMLDivElement>) {
-    event.currentTarget.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
+    const relatedTarget = event.relatedTarget as Node | null;
+    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
+      return;
+    }
+
+    event.currentTarget.classList.remove(
+      "melodiq-drop-before",
+      "melodiq-drop-after",
+      "border-t-2",
+      "border-b-2",
+      "border-blue-400/70",
+      "bg-blue-500/5"
+    );
+
+    if (dragHoverRef.current?.targetId === event.currentTarget.dataset.trackId) {
+      dragHoverRef.current = null;
+    }
   }
 
   function handleTrackDrop(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
-    event.currentTarget.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
+    clearDropIndicator(event.currentTarget.parentElement);
     const sourceId = draggedTrackIdRef.current ?? event.dataTransfer.getData("text/plain");
+    const dropPosition = dragHoverRef.current?.targetId === trackId
+      ? dragHoverRef.current.position
+      : "before";
+
     if (sourceId && sourceId !== trackId) {
-      moveTrackInManualOrder(sourceId, trackId);
+      moveTrackInManualOrder(sourceId, trackId, dropPosition);
     }
+
     draggedTrackIdRef.current = null;
+    dragHoverRef.current = null;
   }
 
   function handleTrackDragEnd(event: React.DragEvent<HTMLDivElement>) {
     event.currentTarget.classList.remove("opacity-45");
     draggedTrackIdRef.current = null;
+    dragHoverRef.current = null;
     
     // Cleanup any orphaned styles
     const container = event.currentTarget.parentElement;
-    if (container) {
-      container.querySelectorAll(".ring-1").forEach((el) => {
-        el.classList.remove("ring-1", "ring-blue-400/60", "bg-blue-500/5");
-      });
-    }
+    clearDropIndicator(container);
   }
 
   const canDragReorder = enableDragReorder && searchQuery.trim().length === 0;
@@ -686,7 +762,7 @@ export default memo(function TrackList({
                   onDragLeave={handleTrackDragLeave}
                   onDrop={(event) => handleTrackDrop(event, track.id)}
                   onDragEnd={handleTrackDragEnd}
-                  className={canDragReorder ? "rounded-xl transition-colors" : undefined}
+                  className={canDragReorder ? "rounded-xl border border-transparent transition-colors" : undefined}
                 >
                   <TrackCard
                     track={track}
