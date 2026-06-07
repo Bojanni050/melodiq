@@ -500,7 +500,7 @@ function persistWorkspaceDelete(workspaceId: string) {
   }).catch((error) => console.error("[store] persistWorkspaceDelete failed", error));
 }
 
-function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string) {
+function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string | null) {
   if (typeof window === "undefined") return;
 
   void fetch(`/api/tracks/${trackId}`, {
@@ -508,6 +508,24 @@ function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ workspaceId }),
   }).catch((error) => console.error("[store] persistTrackWorkspaceAssignment failed", error));
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toPersistedWorkspaceId(workspaceId: string, workspaces: Workspace[]): string | null {
+  if (workspaceId === DEFAULT_WORKSPACE_ID) {
+    const defaultWorkspace =
+      workspaces.find((workspace) => workspace.isDefault) ||
+      workspaces.find((workspace) => workspace.id === DEFAULT_WORKSPACE_ID);
+
+    if (defaultWorkspace?.id && UUID_REGEX.test(defaultWorkspace.id)) {
+      return defaultWorkspace.id;
+    }
+
+    return null;
+  }
+
+  return UUID_REGEX.test(workspaceId) ? workspaceId : null;
 }
 
 function createDefaultWorkspace(): Workspace {
@@ -657,7 +675,8 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         return id;
       },
       moveTrackToWorkspace: (workspaceId, trackId) => {
-        persistTrackWorkspaceAssignment(trackId, workspaceId);
+        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
+        persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
         set((state) => {
           const targetWorkspace = state.workspaces.find((workspace) => workspace.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -683,8 +702,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         });
       },
       moveTracksToWorkspace: (workspaceId, trackIds) => {
+        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
         trackIds.forEach((trackId) => {
-          persistTrackWorkspaceAssignment(trackId, workspaceId);
+          persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
         });
         set((state) => {
           const targetWorkspace = state.workspaces.find((w) => w.id === workspaceId);
