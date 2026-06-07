@@ -66,6 +66,71 @@ function detectUploadFormat(file: File): "mp3" | "wav" | null {
   return null;
 }
 
+function stripMp3Metadata(buffer: Buffer): Buffer {
+  let start = 0;
+  let end = buffer.length;
+
+  // Remove leading ID3v2 tag when present.
+  if (buffer.length >= 10 && buffer.toString("ascii", 0, 3) === "ID3") {
+    const tagSize =
+      ((buffer[6] & 0x7f) << 21) |
+      ((buffer[7] & 0x7f) << 14) |
+      ((buffer[8] & 0x7f) << 7) |
+      (buffer[9] & 0x7f);
+    const headerAndTagBytes = 10 + tagSize;
+    if (headerAndTagBytes > 0 && headerAndTagBytes < buffer.length) {
+      start = headerAndTagBytes;
+    }
+  }
+
+  // Remove trailing ID3v1 tag when present.
+  if (end - start >= 128 && buffer.toString("ascii", end - 128, end - 125) === "TAG") {
+    end -= 128;
+  }
+
+  return buffer.subarray(start, end);
+}
+
+function stripWavMetadata(buffer: Buffer): Buffer {
+  const minimumHeaderSize = 12;
+  if (buffer.length < minimumHeaderSize) return buffer;
+
+  const riffId = buffer.toString("ascii", 0, 4);
+  const waveId = buffer.toString("ascii", 8, 12);
+  if (riffId !== "RIFF" || waveId !== "WAVE") return buffer;
+
+  const dataChunks: Buffer[] = [];
+  let offset = 12;
+
+  while (offset + 8 <= buffer.length) {
+    const chunkId = buffer.toString("ascii", offset, offset + 4);
+    const chunkSize = buffer.readUInt32LE(offset + 4);
+    const chunkDataStart = offset + 8;
+    const chunkDataEnd = Math.min(chunkDataStart + chunkSize, buffer.length);
+
+    if (chunkId === "data" && chunkDataEnd > chunkDataStart) {
+      dataChunks.push(buffer.subarray(chunkDataStart, chunkDataEnd));
+    }
+
+    // WAV chunks are word-aligned, so odd-sized chunks include one pad byte.
+    offset = chunkDataStart + chunkSize + (chunkSize % 2);
+  }
+
+  if (dataChunks.length === 0) return buffer;
+  return Buffer.concat(dataChunks);
+}
+
+function getAudioOnlyBytesForHash(audioBuffer: Buffer, format: "mp3" | "wav"): Buffer {
+  if (format === "mp3") return stripMp3Metadata(audioBuffer);
+  if (format === "wav") return stripWavMetadata(audioBuffer);
+  return audioBuffer;
+}
+
+function computeUploadAudioHash(audioBuffer: Buffer, format: "mp3" | "wav"): string {
+  const hashBytes = getAudioOnlyBytesForHash(audioBuffer, format);
+  return createHash("sha256").update(hashBytes).digest("hex");
+}
+
 function titleFromFilename(filename: string) {
   const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
   return withoutExtension || "Untitled Upload";
@@ -185,6 +250,23 @@ function getUploadErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+function isUniqueConstraintViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const maybeCode = (error as { code?: unknown }).code;
+  if (typeof maybeCode === "string" && maybeCode === "23505") {
+    return true;
+  }
+
+  const maybeCause = (error as { cause?: unknown }).cause;
+  if (maybeCause && typeof maybeCause === "object") {
+    const nestedCode = (maybeCause as { code?: unknown }).code;
+    return typeof nestedCode === "string" && nestedCode === "23505";
+  }
+
+  return false;
 }
 
 export async function GET(request: NextRequest) {
@@ -644,7 +726,7 @@ export async function POST(request: NextRequest) {
       try {
         const trackId = crypto.randomUUID();
         const audioBuffer = Buffer.from(await file.arrayBuffer());
-        const uploadHash = createHash("sha256").update(audioBuffer).digest("hex");
+        const uploadHash = computeUploadAudioHash(audioBuffer, format);
         const sidecarMetadata = metadataByIndex.get(index) ?? metadataByBaseName.get(baseNameWithoutExtension(file.name));
         const itemOverride = uploadItemOverrides[index];
         const uploadPrompt = sidecarMetadata?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
@@ -702,6 +784,11 @@ export async function POST(request: NextRequest) {
           uploadedTracks.push(inserted[0]);
         }
       } catch (error) {
+        if (isUniqueConstraintViolation(error)) {
+          rejected.push({ filename: file.name, reason: "Duplicate upload detected." });
+          continue;
+        }
+
         console.error("[tracks/upload] Failed to upload file:", file.name, error);
         rejected.push({ filename: file.name, reason: getUploadErrorMessage(error, "Upload failed.") });
       }

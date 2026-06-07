@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606070744**
+**Versie: 202606071333**
 
 > AI Music Generation Web App
 
@@ -156,7 +156,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - De workspace-dropdown in Library upload wordt nu gevuld na persist-hydratie zodat je direct alle bestaande (sub)workspaces ziet
 - Voor upload kies je eerst de doelworkspace in de workspace dropdown; alle succesvol geuploade tracks worden direct aan die workspace toegewezen
 - Geuploade tracks tonen nu een duidelijke **Uploaded** badge in de tracklijst en **Uploaded file** label in Track Details
-- MelodIQ berekent nu per upload een unieke audio-hash (SHA-256) en blokkeert dubbele uploads van exact hetzelfde audiobestand
+- MelodIQ berekent bij upload een audio-only SHA-256 hash (metadata zoals ID3/LRC/TXT telt niet mee) en blokkeert zo robuuster dubbele uploads van dezelfde audiotrack
 - MelodIQ houdt nu per track bij hoe vaak je die afspeelt; een play telt pas mee na 30 seconden actieve playback, en het aantal plays staat onder de trackbeschrijving in de lijst
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken

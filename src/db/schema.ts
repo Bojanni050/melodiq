@@ -7,6 +7,7 @@ import {
   integer,
   uuid,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -63,6 +64,7 @@ export const tracks = pgTable("tracks", {
   index("tracks_user_id_status_idx").on(table.userId, table.status),
   index("tracks_status_idx").on(table.status),
   index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
+  uniqueIndex("tracks_user_provider_audio_id_unique").on(table.userId, table.provider, table.audioId),
 ]);
 
 export const workspaces = pgTable("workspaces", {
