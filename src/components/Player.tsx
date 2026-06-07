@@ -111,6 +111,8 @@ export default function Player() {
   const currentTrackRef = useRef<Track | null>(null);
   const playCountedTrackIdRef = useRef<string | null>(null);
   const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverAutoGenerateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverAutoRequestedTrackIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -201,6 +203,79 @@ export default function Player() {
       }
     };
 
+    const clearCoverAutoGenerateTimer = () => {
+      if (coverAutoGenerateTimerRef.current) {
+        clearTimeout(coverAutoGenerateTimerRef.current);
+        coverAutoGenerateTimerRef.current = null;
+      }
+    };
+
+    const trackHasCover = (track: Track | null | undefined) => {
+      if (!track) return false;
+      return Boolean(track.coverUrl || track.s3KeyCover || track.s3KeyCoverThumb);
+    };
+
+    const scheduleAutoCoverGenerationIfNeeded = () => {
+      const track = currentTrackRef.current;
+      if (!track || track.status !== "done") return;
+      if (trackHasCover(track)) return;
+      if (coverAutoRequestedTrackIdsRef.current.has(track.id)) return;
+      if (coverAutoGenerateTimerRef.current) return;
+
+      coverAutoGenerateTimerRef.current = setTimeout(() => {
+        coverAutoGenerateTimerRef.current = null;
+
+        const latestTrack = currentTrackRef.current;
+        const audioEl = audioRef.current;
+        if (!latestTrack || latestTrack.id !== track.id) return;
+        if (!audioEl || audioEl.paused) return;
+        if (trackHasCover(latestTrack)) return;
+        if (coverAutoRequestedTrackIdsRef.current.has(track.id)) return;
+
+        coverAutoRequestedTrackIdsRef.current.add(track.id);
+
+        void (async () => {
+          try {
+            const response = await fetch(`/api/tracks/${track.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ regenerateCoverArt: true }),
+            });
+
+            if (!response.ok) {
+              coverAutoRequestedTrackIdsRef.current.delete(track.id);
+              return;
+            }
+
+            const refreshedTrack = await response.json().catch(() => null) as Partial<Track> | null;
+            const cacheBust = Date.now();
+            const nextCoverUrl = `/api/tracks/${track.id}/cover?t=${cacheBust}`;
+
+            usePlayerStore.setState((state) => {
+              if (state.currentTrack?.id !== track.id) return {};
+
+              return {
+                currentTrack: {
+                  ...state.currentTrack,
+                  ...(refreshedTrack ? refreshedTrack : {}),
+                  coverUrl: nextCoverUrl,
+                },
+              };
+            });
+
+            window.dispatchEvent(
+              new CustomEvent("melodiq:cover-regenerated", {
+                detail: { trackIds: [track.id], ts: cacheBust },
+              })
+            );
+          } catch (error) {
+            console.error("Failed to auto-generate cover art:", error);
+            coverAutoRequestedTrackIdsRef.current.delete(track.id);
+          }
+        })();
+      }, 30_000);
+    };
+
     const countPlayIfNeeded = () => {
       const trackId = currentTrackRef.current?.id;
       if (!trackId) return;
@@ -258,6 +333,7 @@ export default function Player() {
 
     const handleEnded = () => {
       clearPlayTimer();
+      clearCoverAutoGenerateTimer();
       const { autoPlayNext, queue, playNext, setIsPlaying, setProgress } = usePlayerStore.getState();
       if (autoPlayNext && queue.length > 0) {
         playNext();
@@ -276,7 +352,9 @@ export default function Player() {
     audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
     audioRef.current.addEventListener("ended", handleEnded);
     audioRef.current.addEventListener("playing", countPlayIfNeeded);
+    audioRef.current.addEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
     audioRef.current.addEventListener("pause", clearPlayTimer);
+    audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
 
     setCurrentTime(audioRef.current.currentTime || 0);
     setDuration(audioRef.current.duration || 0);
@@ -287,9 +365,12 @@ export default function Player() {
         audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
         audioRef.current.removeEventListener("ended", handleEnded);
         audioRef.current.removeEventListener("playing", countPlayIfNeeded);
+        audioRef.current.removeEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
         audioRef.current.removeEventListener("pause", clearPlayTimer);
+        audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
       }
       clearPlayTimer();
+      clearCoverAutoGenerateTimer();
     };
   }, [volume]);
 
