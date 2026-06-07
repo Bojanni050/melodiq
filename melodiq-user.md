@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606071705**
+**Versie: 202606072018**
 
 > AI Music Generation Web App
 
@@ -153,6 +153,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
 - In Library Songs view, use **Select MP3/WAV Files** to upload one or meerdere audiofiles tegelijk; MelodIQ ondersteunt batch-upload van MP3 en WAV
+- In het upload-zijpaneel kun je MP3/WAV nu ook direct naar een drag-and-drop veld slepen om ze aan de queue toe te voegen
 - In Library upload kun je per queued track nu ook een metadata sidecar als **TXT of LRC** koppelen; bij LRC worden timed lyrics automatisch in sync opgeslagen
 - Library upload ondersteunt maximaal 20 bestanden per keer; bij een te grote upload toont MelodIQ nu een duidelijke foutmelding in plaats van een technische JSON-parse fout
 - De workspace-dropdown in Library upload wordt nu gevuld na persist-hydratie zodat je direct alle bestaande (sub)workspaces ziet
@@ -160,6 +161,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Geuploade tracks tonen nu een duidelijke **Uploaded** badge in de tracklijst en **Uploaded file** label in Track Details
 - MelodIQ berekent bij upload een audio-only SHA-256 hash (metadata zoals ID3/LRC/TXT telt niet mee) en blokkeert zo robuuster dubbele uploads van dezelfde audiotrack
 - MelodIQ houdt nu per track bij hoe vaak je die afspeelt; een play telt pas mee na 30 seconden actieve playback, en het aantal plays staat onder de trackbeschrijving in de lijst
+- Speel je een track zonder cover art langer dan 30 seconden af, dan start MelodIQ automatisch covergeneratie voor die track
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile

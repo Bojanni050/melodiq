@@ -155,6 +155,7 @@ export default function LibraryPage() {
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [rejectedFiles, setRejectedFiles] = useState<Array<{ filename: string; reason: string }>>([]);
   const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+  const [isUploadDropzoneActive, setIsUploadDropzoneActive] = useState(false);
   const [queuedUploads, setQueuedUploads] = useState<QueuedUploadItem[]>([]);
   const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
@@ -506,6 +507,36 @@ export default function LibraryPage() {
     if (uploadMetadataInputRef.current) {
       uploadMetadataInputRef.current.value = "";
     }
+  }
+
+  function handleUploadDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsUploadDropzoneActive(false);
+
+    if (uploading) return;
+    handleQueueAudioSelection(event.dataTransfer.files);
+  }
+
+  function handleUploadDragOver(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "copy";
+    if (!uploading) {
+      setIsUploadDropzoneActive(true);
+    }
+  }
+
+  function handleUploadDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const relatedTarget = event.relatedTarget as Node | null;
+    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
+      return;
+    }
+
+    setIsUploadDropzoneActive(false);
   }
 
   async function handleStartUpload() {
@@ -1417,6 +1448,21 @@ export default function LibraryPage() {
                   </button>
 
                   <span className="text-xs text-white/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
+                </div>
+
+                <div
+                  onDrop={handleUploadDrop}
+                  onDragOver={handleUploadDragOver}
+                  onDragEnter={handleUploadDragOver}
+                  onDragLeave={handleUploadDragLeave}
+                  className={`rounded-2xl border-2 border-dashed px-4 py-5 text-center transition-colors ${
+                    isUploadDropzoneActive
+                      ? "border-primary-400/80 bg-primary-500/10"
+                      : "border-white/15 bg-white/3"
+                  } ${uploading ? "opacity-60" : ""}`}
+                >
+                  <p className="text-sm font-medium text-white/85">Drag and drop MP3/WAV files here</p>
+                  <p className="mt-1 text-xs text-white/55">Drop files to add them to the upload queue.</p>
                 </div>
 
                 {queuedUploads.length === 0 ? (

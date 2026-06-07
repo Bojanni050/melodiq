@@ -329,3 +329,15 @@
 - Findings: De drag-and-drop volgorde werd in runtime-state beheerd, waardoor handmatig verplaatste tracks bij refresh of nieuwe sessie terug konden vallen op sortering in plaats van de door gebruiker ingestelde positie.
 - Conclusions: Sla de handmatige trackvolgorde persistent op en laad die weer in bij openen, zodat een verplaatste track op dezelfde positie blijft tot de gebruiker opnieuw reordert.
 - Actions: `src/components/TrackList.tsx` uitgebreid met localStorage-persistentie (`melodiq.track-manual-order.v1`), veilige read/write helpers, init-flow voor herstel van opgeslagen volgorde, en sync-effecten zodat nieuwe/verwijderde tracks netjes worden gemerged zonder verlies van handmatige volgorde; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606071705`; `melodiq-user.md` versie en track-order gedrag bijgewerkt; validated.
+
+## 2026-06-07 zo 20:15 (Automatische covergeneratie na 30s playback zonder cover)
+
+- Findings: Tracks zonder cover art bleven visueel leeg in de player tenzij handmatig `Regenerate Cover Art` werd gebruikt.
+- Conclusions: Trigger automatische covergeneratie na 30 seconden actieve playback voor tracks die nog geen cover hebben, met guardrails tegen dubbele requests.
+- Actions: `src/components/Player.tsx` uitgebreid met auto-cover timer (`30_000ms`), cover-presence check (`coverUrl`/`s3KeyCover`/`s3KeyCoverThumb`), duplicate-request guard per track-id, en automatische `PATCH /api/tracks/{id}` call met `regenerateCoverArt: true`; toegevoegd state refresh van `currentTrack.coverUrl` met cache-bust query en event dispatch `melodiq:cover-regenerated` voor UI-sync; timer cleanup toegevoegd op pause/ended/unmount; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606072015`; `melodiq-user.md` versie en behavior bijgewerkt; validated.
+
+## 2026-06-07 zo 20:18 (Upload-zijpaneel met drag-and-drop veld)
+
+- Findings: Uploaden in de Library-sidepanel vereiste handmatig bestanden kiezen via de file picker, wat trager werkt dan slepen vanuit Verkenner.
+- Conclusions: Voeg een dedicated drag-and-drop uploadveld toe dat dezelfde queue-logica gebruikt als de bestaande picker, zodat beide flows consistent blijven.
+- Actions: `src/app/library/page.tsx` uitgebreid met drag-state (`isUploadDropzoneActive`), handlers voor `onDragOver/onDragLeave/onDrop`, en een zichtbare dropzone in het upload-zijpaneel die MP3/WAV bestanden direct aan de bestaande uploadqueue toevoegt; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606072018`; `melodiq-user.md` versie en upload-uitleg bijgewerkt; validated.
