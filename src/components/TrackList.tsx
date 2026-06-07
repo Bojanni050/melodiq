@@ -8,6 +8,33 @@ import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/stor
 
 type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 type DropPosition = "before" | "after";
+const TRACK_ORDER_STORAGE_KEY = "melodiq.track-manual-order.v1";
+
+function readPersistedTrackOrder(): string[] | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(TRACK_ORDER_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+
+    return parsed.filter((value): value is string => typeof value === "string" && value.length > 0);
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedTrackOrder(order: string[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(TRACK_ORDER_STORAGE_KEY, JSON.stringify(order));
+  } catch {
+    // Ignore storage failures (private mode/quota), keep runtime order in memory.
+  }
+}
 
 // Isolated header component with localized high-performance selection selectors
 const TrackListHeader = memo(function TrackListHeader({
@@ -239,6 +266,7 @@ export default memo(function TrackList({
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
+  const [hasLoadedPersistedManualOrder, setHasLoadedPersistedManualOrder] = useState(false);
   const draggedTrackIdRef = useRef<string | null>(null);
   const dragHoverRef = useRef<{ targetId: string; position: DropPosition } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -312,7 +340,22 @@ export default memo(function TrackList({
 
   useEffect(() => {
     if (!enableDragReorder) {
+      setHasLoadedPersistedManualOrder(true);
+      return;
+    }
+
+    const persistedOrder = readPersistedTrackOrder();
+    setManualOrderIds(persistedOrder ?? []);
+    setHasLoadedPersistedManualOrder(true);
+  }, [enableDragReorder]);
+
+  useEffect(() => {
+    if (!enableDragReorder) {
       setManualOrderIds(null);
+      return;
+    }
+
+    if (!hasLoadedPersistedManualOrder) {
       return;
     }
 
@@ -332,7 +375,15 @@ export default memo(function TrackList({
 
       return next;
     });
-  }, [enableDragReorder, sortedTracks]);
+  }, [enableDragReorder, hasLoadedPersistedManualOrder, sortedTracks]);
+
+  useEffect(() => {
+    if (!enableDragReorder || !hasLoadedPersistedManualOrder || !manualOrderIds) {
+      return;
+    }
+
+    writePersistedTrackOrder(manualOrderIds);
+  }, [enableDragReorder, hasLoadedPersistedManualOrder, manualOrderIds]);
 
   const displayedTracks = useMemo(() => {
     const list = [...orderedTracks];

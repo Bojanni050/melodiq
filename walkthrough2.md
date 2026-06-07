@@ -323,3 +323,9 @@
 - Findings: Track drag-and-drop voelde onnauwkeurig omdat drop alleen op target-id gebeurde zonder expliciet onderscheid tussen boven/onder insertie; daardoor kwam een gesleepte track niet altijd op de verwachte positie.
 - Conclusions: Bepaal de drop-positie op basis van cursorlocatie binnen de target-track (bovenste helft = insert before, onderste helft = insert after) en toon duidelijke visuele boven/onder indicator tijdens slepen.
 - Actions: `src/components/TrackList.tsx` aangepast met `DropPosition` (`before`/`after`), cursor-gebaseerde `handleTrackDragOver` positionering, aangepaste reorder-indexberekening in `moveTrackInManualOrder(...)`, en nieuwe visuele drop-indicator cleanup/tekenlogica; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606071412`; `melodiq-user.md` versie en drag-drop gedrag bijgewerkt; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-07 zo 17:05 (Trackvolgorde persistent opgeslagen na drag-and-drop)
+
+- Findings: De drag-and-drop volgorde werd in runtime-state beheerd, waardoor handmatig verplaatste tracks bij refresh of nieuwe sessie terug konden vallen op sortering in plaats van de door gebruiker ingestelde positie.
+- Conclusions: Sla de handmatige trackvolgorde persistent op en laad die weer in bij openen, zodat een verplaatste track op dezelfde positie blijft tot de gebruiker opnieuw reordert.
+- Actions: `src/components/TrackList.tsx` uitgebreid met localStorage-persistentie (`melodiq.track-manual-order.v1`), veilige read/write helpers, init-flow voor herstel van opgeslagen volgorde, en sync-effecten zodat nieuwe/verwijderde tracks netjes worden gemerged zonder verlies van handmatige volgorde; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606071705`; `melodiq-user.md` versie en track-order gedrag bijgewerkt; validated.
