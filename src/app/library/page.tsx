@@ -121,7 +121,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -904,7 +904,7 @@ export default function LibraryPage() {
                       });
                       setShowTrackDetailsPanel(true);
                     }}
-                    onAddToPlaylist={() => undefined}
+                    onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
                     playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
                     onTitleUpdate={(trackId, newTitle) =>
                       setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
