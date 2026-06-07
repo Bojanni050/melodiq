@@ -14,6 +14,7 @@ interface TrackActionMenuProps {
   onAddToQueue?: (track: TrackItem) => void;
   onCreatePlaylistClick: () => void;
   onAddToPlaylistClick: (playlistId: string, playlistName: string, isDuplicate: boolean) => void;
+  onRemoveFromPlaylistClick: (playlistId: string, playlistName: string) => void;
 }
 
 export default function TrackActionMenu({
@@ -26,10 +27,12 @@ export default function TrackActionMenu({
   onAddToQueue,
   onCreatePlaylistClick,
   onAddToPlaylistClick,
+  onRemoveFromPlaylistClick,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
+  const playlistsContainingTrack = allPlaylists.filter((playlist) => playlist.trackIds.includes(track.id));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -139,6 +142,26 @@ export default function TrackActionMenu({
             </>
           ) : (
             <p className="px-2.5 py-1 text-xs text-white/40 italic">No playlists yet</p>
+          )}
+
+          {playlistsContainingTrack.length > 0 && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from playlist</p>
+              {playlistsContainingTrack.map((playlist) => (
+                <button
+                  key={`remove-${playlist.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onRemoveFromPlaylistClick(playlist.id, playlist.name);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+                >
+                  {playlist.name}
+                </button>
+              ))}
+            </>
           )}
         </div>
       )}

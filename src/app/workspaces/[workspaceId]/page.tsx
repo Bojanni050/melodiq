@@ -44,7 +44,7 @@ export default function WorkspaceDetailPage() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const { playlists, addTrackToPlaylist } = usePlaylistStore();
+  const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
   const {
     workspaces,
     setSelectedWorkspaceId,
@@ -89,11 +89,12 @@ export default function WorkspaceDetailPage() {
     }
 
     fetchTracks();
+    void loadPlaylists();
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadPlaylists]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);

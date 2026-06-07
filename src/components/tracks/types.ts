@@ -25,4 +25,5 @@ export interface TrackItem {
 export interface PlaylistOption {
   id: string;
   name: string;
+  trackIds?: string[];
 }

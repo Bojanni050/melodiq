@@ -121,7 +121,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -203,10 +203,11 @@ export default function LibraryPage() {
   useEffect(() => {
     let active = true;
     fetchTracks(() => active);
+    void loadPlaylists();
     return () => {
       active = false;
     };
-  }, [fetchTracks]);
+  }, [fetchTracks, loadPlaylists]);
 
   useEffect(() => {
     useWorkspaceStore.persist.rehydrate();
@@ -926,6 +927,10 @@ export default function LibraryPage() {
                   <TrackList
                     tracks={activeSongs}
                     autoQueueAfterPlay
+                    onManualOrderChange={(orderedTrackIds) => {
+                      if (!selectedPlaylist) return;
+                      reorderPlaylistTracks(selectedPlaylist.id, orderedTrackIds);
+                    }}
                     onSelect={(track) => {
                       setSelectedTrack({
                         ...track,

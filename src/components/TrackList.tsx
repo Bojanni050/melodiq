@@ -208,6 +208,7 @@ export default memo(function TrackList({
   onMoveToWorkspace,
   playlists,
   onTitleUpdate,
+  onManualOrderChange,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
@@ -225,6 +226,7 @@ export default memo(function TrackList({
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
+  onManualOrderChange?: (orderedTrackIds: string[]) => void;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -601,6 +603,8 @@ export default memo(function TrackList({
   }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
   function moveTrackInManualOrder(sourceId: string, targetId: string, position: DropPosition) {
+    let nextOrder: string[] | null = null;
+
     setManualOrderIds((current) => {
       const source = current ?? sortedTracks.map((track) => track.id);
       const fromIndex = source.indexOf(sourceId);
@@ -624,8 +628,13 @@ export default memo(function TrackList({
 
       const clampedIndex = Math.max(0, Math.min(insertIndex, next.length));
       next.splice(clampedIndex, 0, moved);
+      nextOrder = next;
       return next;
     });
+
+    if (nextOrder) {
+      onManualOrderChange?.(nextOrder);
+    }
   }
 
   function clearDropIndicator(container: HTMLElement | null) {

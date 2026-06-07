@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { playlistTracks, playlists, tracks } from "@/db/schema";
@@ -9,6 +9,24 @@ import { requireAuth } from "@/lib/require-auth";
 function normalizeTrackIds(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+async function normalizePlaylistOrder(playlistId: string, orderedRows: Array<{ id: string }>) {
+  // Phase 1: move current positions away from the target range to avoid unique collisions.
+  for (let index = 0; index < orderedRows.length; index += 1) {
+    await db
+      .update(playlistTracks)
+      .set({ position: index + 100000 })
+      .where(eq(playlistTracks.id, orderedRows[index].id));
+  }
+
+  // Phase 2: assign final contiguous positions.
+  for (let index = 0; index < orderedRows.length; index += 1) {
+    await db
+      .update(playlistTracks)
+      .set({ position: index })
+      .where(eq(playlistTracks.id, orderedRows[index].id));
+  }
 }
 
 export async function DELETE(
@@ -118,11 +136,7 @@ export async function PATCH(
         .where(eq(playlistTracks.playlistId, id))
         .orderBy(asc(playlistTracks.position), asc(playlistTracks.createdAt));
 
-      await Promise.all(
-        remaining.map((row, index) =>
-          db.update(playlistTracks).set({ position: index }).where(eq(playlistTracks.id, row.id))
-        )
-      );
+      await normalizePlaylistOrder(id, remaining);
 
       const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
       const playlist = hydrated.find((item) => item.id === id);
@@ -156,11 +170,7 @@ export async function PATCH(
 
       nextRows.push(...remainingRows);
 
-      await Promise.all(
-        nextRows.map((row, index) =>
-          db.update(playlistTracks).set({ position: index }).where(eq(playlistTracks.id, row.id))
-        )
-      );
+      await normalizePlaylistOrder(id, nextRows);
 
       const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
       const playlist = hydrated.find((item) => item.id === id);

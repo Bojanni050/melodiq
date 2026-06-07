@@ -84,6 +84,7 @@ const TrackCard = memo(function TrackCard({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
+  const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
   const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
     useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
   );
@@ -321,6 +322,10 @@ const TrackCard = memo(function TrackCard({
     }
 
     executeAddToPlaylist(playlistId);
+  }
+
+  function handleRemoveFromPlaylistClick(playlistId: string) {
+    removeTrackFromPlaylist(playlistId, track.id);
   }
 
   function handleMoveToWorkspace(workspaceId: string) {
@@ -697,6 +702,7 @@ const TrackCard = memo(function TrackCard({
               onAddToQueue={onAddToQueue}
               onCreatePlaylistClick={() => setShowCreatePlaylistDialog(true)}
               onAddToPlaylistClick={handleAddToPlaylistClick}
+              onRemoveFromPlaylistClick={handleRemoveFromPlaylistClick}
             />
           )}
           <button

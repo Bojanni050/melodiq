@@ -58,9 +58,11 @@ export default function HomePage() {
 
   // Bootstrap: ensure default workspace and rehydrate studio store
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
+  const loadPlaylists = usePlaylistStore((state) => state.loadPlaylists);
   useEffect(() => {
     ensureDefaultWorkspace();
     useStudioStore.persist.rehydrate();
+    void loadPlaylists();
     try {
       const raw = sessionStorage.getItem("lyrics-studio-payload");
       if (raw) {
@@ -75,7 +77,7 @@ export default function HomePage() {
     } catch {
       // ignore
     }
-  }, [ensureDefaultWorkspace]);
+  }, [ensureDefaultWorkspace, loadPlaylists]);
 
   const playlists = usePlaylistStore((state) => state.playlists);
   const memoizedPlaylists = useMemo(
