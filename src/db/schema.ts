@@ -23,6 +23,7 @@ export const users = pgTable("users", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   tracks: many(tracks),
+  playlists: many(playlists),
   apiLogs: many(apiLogs),
 }));
 
@@ -100,6 +101,48 @@ export const tracksRelations = relations(tracks, ({ one }) => ({
   workspace: one(workspaces, {
     fields: [tracks.workspaceId],
     references: [workspaces.id],
+  }),
+}));
+
+export const playlists = pgTable("playlists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("playlists_user_id_idx").on(table.userId),
+  uniqueIndex("playlists_user_name_unique").on(table.userId, table.name),
+]);
+
+export const playlistTracks = pgTable("playlist_tracks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  playlistId: uuid("playlist_id").notNull(),
+  trackId: uuid("track_id").notNull(),
+  position: integer("position").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("playlist_tracks_playlist_idx").on(table.playlistId),
+  index("playlist_tracks_track_idx").on(table.trackId),
+  uniqueIndex("playlist_tracks_playlist_position_unique").on(table.playlistId, table.position),
+]);
+
+export const playlistsRelations = relations(playlists, ({ one, many }) => ({
+  user: one(users, {
+    fields: [playlists.userId],
+    references: [users.id],
+  }),
+  playlistTracks: many(playlistTracks),
+}));
+
+export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
+  playlist: one(playlists, {
+    fields: [playlistTracks.playlistId],
+    references: [playlists.id],
+  }),
+  track: one(tracks, {
+    fields: [playlistTracks.trackId],
+    references: [tracks.id],
   }),
 }));
 

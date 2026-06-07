@@ -74,6 +74,28 @@ CREATE INDEX IF NOT EXISTS "workspaces_parent_idx" ON "workspaces"("parent_works
 CREATE UNIQUE INDEX IF NOT EXISTS "workspaces_single_default_per_user_idx" ON "workspaces"("user_id") WHERE "is_default" = true;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 
+CREATE TABLE IF NOT EXISTS "playlists" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "name" varchar(255) NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "playlist_tracks" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "playlist_id" uuid NOT NULL REFERENCES "playlists"("id") ON DELETE CASCADE,
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "position" integer NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "playlists_user_id_idx" ON "playlists"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
+CREATE INDEX IF NOT EXISTS "playlist_tracks_playlist_idx" ON "playlist_tracks"("playlist_id");
+CREATE INDEX IF NOT EXISTS "playlist_tracks_track_idx" ON "playlist_tracks"("track_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
+
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid REFERENCES "users"("id"),
@@ -112,6 +134,8 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
 `;
 
 const alterUsersSql = `
