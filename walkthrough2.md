@@ -299,3 +299,9 @@
 - Findings: In de Library songs-view werkte "Add to playlist" niet voor bestaande playlists, omdat `TrackList` een no-op callback (`onAddToPlaylist={() => undefined}`) kreeg in plaats van de echte store-actie.
 - Conclusions: Koppel de callback direct aan `usePlaylistStore().addTrackToPlaylist` met correcte argumentvolgorde (`playlistId`, `trackId`, `options`) zodat dezelfde flow als in workspaces/home wordt gebruikt.
 - Actions: `src/app/library/page.tsx` aangepast: `addTrackToPlaylist` uit de playlist-store gedestructured en `TrackList` nu gekoppeld met `onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.
+
+## 2026-06-07 zo 05:20 (workspace-default query failure bij tracks update/upload opgelost)
+
+- Findings: API-calls konden `workspaceId = "workspace-default"` doorsturen terwijl DB-kolom `workspaces.id` een UUID is. Daardoor faalde de query `where workspaces.id = $1` met non-UUID input en brak track-update/upload flows.
+- Conclusions: Normaliseer de sentinel `workspace-default` server-side naar de echte default workspace UUID en valideer workspace IDs eerst op UUID-formaat vóór DB-filters op UUID-kolommen.
+- Actions: `src/app/api/tracks/route.ts` uitgebreid met `DEFAULT_WORKSPACE_SENTINEL` + UUID-validatie zodat uploadflow bij sentinel direct `defaultWorkspace.id` gebruikt en geen ongeldige UUID-query doet; `src/app/api/tracks/[id]/route.ts` uitgebreid met dezelfde normalisatie/validatie en fallback naar `ensureDefaultWorkspaceForUser(userId)` bij sentinel; `src/components/Sidebar.tsx` buildVersion bijgewerkt naar `202606070520`; `melodiq-user.md` versie bijgewerkt naar `202606070520`; gevalideerd met `npm run build` (geslaagd, met bestaande Turbopack NFT warning), validated.

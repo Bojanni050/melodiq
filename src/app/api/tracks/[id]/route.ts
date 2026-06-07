@@ -19,14 +19,20 @@ import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
-import { ensureWorkspaceSchema } from "@/lib/workspaces";
+import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
+const DEFAULT_WORKSPACE_SENTINEL = "workspace-default";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type JsonObject = Record<string, unknown>;
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUuid(value: string): boolean {
+  return UUID_REGEX.test(value);
 }
 
 export async function GET(
@@ -461,10 +467,18 @@ export async function PATCH(
       if (workspaceId === null) {
         updates.workspaceId = null;
       } else if (typeof workspaceId === "string" && workspaceId.trim()) {
+        const normalizedWorkspaceId = workspaceId.trim();
+
+        if (normalizedWorkspaceId === DEFAULT_WORKSPACE_SENTINEL) {
+          const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
+          updates.workspaceId = defaultWorkspace.id;
+        } else if (!isUuid(normalizedWorkspaceId)) {
+          return NextResponse.json({ error: "Invalid workspaceId" }, { status: 400 });
+        } else {
         const targetWorkspace = await db
           .select({ id: workspaces.id })
           .from(workspaces)
-          .where(and(eq(workspaces.id, workspaceId.trim()), eq(workspaces.userId, userId)))
+          .where(and(eq(workspaces.id, normalizedWorkspaceId), eq(workspaces.userId, userId)))
           .limit(1);
 
         if (!targetWorkspace[0]) {
@@ -472,6 +486,7 @@ export async function PATCH(
         }
 
         updates.workspaceId = targetWorkspace[0].id;
+        }
       } else {
         return NextResponse.json({ error: "Invalid workspaceId" }, { status: 400 });
       }

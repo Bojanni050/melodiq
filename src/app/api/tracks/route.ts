@@ -30,11 +30,17 @@ const MAX_FILES_PER_UPLOAD = 10;
 const MAX_TRACKS_PER_COVER_REGEN = 50;
 const MAX_UPLOAD_REQUEST_BYTES = 200 * 1024 * 1024;
 const MAX_UPLOAD_REQUEST_MB = Math.round(MAX_UPLOAD_REQUEST_BYTES / (1024 * 1024));
+const DEFAULT_WORKSPACE_SENTINEL = "workspace-default";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type JsonObject = Record<string, unknown>;
 
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUuid(value: string): boolean {
+  return UUID_REGEX.test(value);
 }
 
 function detectUploadFormat(file: File): "mp3" | "wav" | null {
@@ -606,7 +612,9 @@ export async function POST(request: NextRequest) {
     const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
     let targetWorkspaceId = defaultWorkspace.id;
 
-    if (requestedWorkspaceId) {
+    if (requestedWorkspaceId === DEFAULT_WORKSPACE_SENTINEL) {
+      targetWorkspaceId = defaultWorkspace.id;
+    } else if (requestedWorkspaceId && isUuid(requestedWorkspaceId)) {
       const workspaceResult = await db
         .select({ id: workspaces.id })
         .from(workspaces)
