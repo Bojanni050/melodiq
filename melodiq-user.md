@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606072018**
+**Versie: 202606072155**
 
 > AI Music Generation Web App
 
@@ -170,6 +170,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Per playlist folder, use **Change cover** to manually choose a different cover image; **Reset to auto** switches back to automatic random cover selection
 - Clicking a playlist card opens that playlist in Songs view
 - If you add a song to a playlist where it already exists, MelodIQ now asks: “Song is already on the playlist. Do you want to add it again?” with **Yes / No**
+- Playlist-data (incl. trackvolgorde) wordt nu opgeslagen in de database en gesynchroniseerd per account, zodat je op andere devices dezelfde playlists en volgorde ziet
+- In track actions staat nu ook **Remove from playlist** met een lijst van playlists waarin die track zit, zodat je die direct kunt loskoppelen
 
 ### Workspaces
 
