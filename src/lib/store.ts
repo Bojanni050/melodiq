@@ -100,9 +100,11 @@ interface PlayerState {
   setAutoPlayNext: (enabled: boolean) => void;
   setShowTrackDetailsPanel: (enabled: boolean) => void;
   setRightPanelWidth: (width: number) => void;
+  playHighestQuality: boolean;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
   setIsFullscreen: (fullscreen: boolean) => void;
+  setPlayHighestQuality: (enabled: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -120,6 +122,7 @@ export const usePlayerStore = create<PlayerState>()(
       audioElement: null,
       playContext: null,
       isFullscreen: false,
+      playHighestQuality: false,
       setCurrentTrack: (track) => {
         if (!track) {
           set({
@@ -304,6 +307,7 @@ export const usePlayerStore = create<PlayerState>()(
       setVolume: (volume) => set({ volume }),
       setProgress: (progress) => set({ progress }),
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
+      setPlayHighestQuality: (enabled) => set({ playHighestQuality: enabled }),
     }),
     {
       name: "melodiq-player",
@@ -325,6 +329,7 @@ export const usePlayerStore = create<PlayerState>()(
           rightPanelWidth: state.rightPanelWidth,
           isFullscreen: state.isFullscreen,
           progress: state.progress,
+          playHighestQuality: state.playHighestQuality,
         };
       },
     }

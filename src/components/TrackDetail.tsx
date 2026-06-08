@@ -327,7 +327,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     .map((line) => line.trim())
     .find((line) => line.length > 0) ?? "";
   const mp3Label = (track.format ?? "mp3").toUpperCase();
-  const wavLabel = track.formatHd === "wav" ? "WAV" : "HD";
+  const wavLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const providerLabelBase = isUploadedTrack ? "Upload" : track.provider;

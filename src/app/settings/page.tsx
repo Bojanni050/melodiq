@@ -13,6 +13,7 @@ import ProviderSection from "@/components/settings/ProviderSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS } from "@/lib/settings-constants";
+import { usePlayerStore } from "@/lib/store";
 import { applyWebhookDefaults, createModelPlaceholder, LLMModel } from "@/lib/settings-utils";
 
 function formatBytes(bytes: number): string {
@@ -43,6 +44,7 @@ export default function SettingsPage() {
   const [importSqlFile, setImportSqlFile] = useState<File | null>(null);
   const [importingData, setImportingData] = useState(false);
   const [importNotice, setImportNotice] = useState<string | null>(null);
+  const { playHighestQuality, setPlayHighestQuality } = usePlayerStore();
 
   useEffect(() => {
     async function loadSettings() {
@@ -315,6 +317,31 @@ export default function SettingsPage() {
                 <p className="text-base font-semibold text-white/90">
                   {formatBytes(diskCacheSizeBytes)}
                 </p>
+              </section>
+
+              <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">Playback Quality</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  When enabled, FLAC is preferred over WAV, then MP3 as fallback. Off always uses MP3 when available.
+                </p>
+                <label className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-white/70">Play highest quality</span>
+                  <button
+                    type="button"
+                    aria-label="Toggle highest quality playback"
+                    onClick={() => setPlayHighestQuality(!playHighestQuality)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      playHighestQuality ? "bg-emerald-500/20" : "bg-white/10"
+                    }`}
+                  >
+                    <span className="sr-only">Play highest quality</span>
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                        playHighestQuality ? "translate-x-6" : ""
+                      }`}
+                    />
+                  </button>
+                </label>
               </section>
 
               <ApiLoggingCard
