@@ -480,7 +480,7 @@ const TrackCard = memo(function TrackCard({
   const playCount = optimisticPlayCount;
   const isNewUnplayed = track.status === "done" && playCount === 0;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
-  const hdLabel = track.formatHd === "wav" ? "WAV" : "HD";
+  const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const effectiveCoverUrl = coverOverrideUrl ?? track.coverUrl ?? null;
   const effectiveThumbUrl = coverOverrideUrl
