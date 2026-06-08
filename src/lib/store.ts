@@ -269,9 +269,15 @@ export const usePlayerStore = create<PlayerState>()(
 
           const hasChanges =
             (state.currentTrack?.id ?? null) !== (nextCurrentTrack?.id ?? null) ||
+            (state.currentTrack?.title ?? null) !== (nextCurrentTrack?.title ?? null) ||
+            (state.currentTrack?.prompt ?? null) !== (nextCurrentTrack?.prompt ?? null) ||
             (state.currentTrack?.status ?? null) !== (nextCurrentTrack?.status ?? null) ||
             (state.currentTrack?.audioUrl ?? null) !== (nextCurrentTrack?.audioUrl ?? null) ||
             (state.currentTrack?.audioUrlHd ?? null) !== (nextCurrentTrack?.audioUrlHd ?? null) ||
+            (state.currentTrack?.lyrics ?? null) !== (nextCurrentTrack?.lyrics ?? null) ||
+            (state.currentTrack?.lyricsTimestamps ?? null) !== (nextCurrentTrack?.lyricsTimestamps ?? null) ||
+            (state.currentTrack?.coverUrl ?? null) !== (nextCurrentTrack?.coverUrl ?? null) ||
+            (state.currentTrack?.rating ?? null) !== (nextCurrentTrack?.rating ?? null) ||
             state.queue.some((track, index) => track !== nextQueue[index]) ||
             state.history.some((track, index) => track !== nextHistory[index]) ||
             (state.playContext ? state.playContext.some((track, index) => track !== nextPlayContext?.[index]) : false);

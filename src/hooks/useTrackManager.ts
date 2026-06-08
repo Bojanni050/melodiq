@@ -49,6 +49,7 @@ function tracksHaveSameRenderableState(a: Track[], b: Track[]) {
       a[i].id !== b[i].id ||
       a[i].status !== b[i].status ||
       a[i].title !== b[i].title ||
+      a[i].prompt !== b[i].prompt ||
       a[i].coverUrl !== b[i].coverUrl ||
       a[i].audioUrl !== b[i].audioUrl ||
       a[i].audioUrlHd !== b[i].audioUrlHd ||
@@ -58,6 +59,7 @@ function tracksHaveSameRenderableState(a: Track[], b: Track[]) {
       a[i].formatHd !== b[i].formatHd ||
       a[i].s3KeyHd !== b[i].s3KeyHd ||
       a[i].s3KeyCoverThumb !== b[i].s3KeyCoverThumb ||
+      (a[i].lyrics ?? null) !== (b[i].lyrics ?? null) ||
       (a[i].playCount ?? null) !== (b[i].playCount ?? null) ||
       (a[i].rating ?? null) !== (b[i].rating ?? null) ||
       (a[i].lyricsTimestamps ?? null) !== (b[i].lyricsTimestamps ?? null)

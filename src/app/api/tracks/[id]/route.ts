@@ -401,11 +401,12 @@ export async function PATCH(
     }
 
     const title = body.title;
+    const prompt = body.prompt;
     const lyrics = body.lyrics;
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
 
-    if (title === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -445,6 +446,26 @@ export async function PATCH(
       } else {
         return NextResponse.json({ error: "Invalid title" }, { status: 400 });
       }
+    }
+
+    if (prompt !== undefined) {
+      const track = result[0];
+      if (track.provider !== "upload") {
+        return NextResponse.json({ error: "Prompt can only be edited for uploaded tracks" }, { status: 400 });
+      }
+      if (typeof prompt !== "string") {
+        return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
+      }
+
+      const trimmedPrompt = prompt.trim();
+      if (!trimmedPrompt) {
+        return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+      }
+      if (trimmedPrompt.length > 10000) {
+        return NextResponse.json({ error: "Prompt too long (max 10000 characters)" }, { status: 400 });
+      }
+
+      updates.prompt = trimmedPrompt;
     }
 
     if (lyrics !== undefined) {

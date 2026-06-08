@@ -44,6 +44,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
+  const [promptDraft, setPromptDraft] = useState(initialTrack.prompt);
+  const [promptEditing, setPromptEditing] = useState(false);
+  const [promptSaving, setPromptSaving] = useState(false);
   const [lyricsDraft, setLyricsDraft] = useState(initialTrack.lyrics ?? "");
   const [lyricsEditing, setLyricsEditing] = useState(false);
   const [lyricsSaving, setLyricsSaving] = useState(false);
@@ -58,6 +61,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   useEffect(() => {
     setLocalTrack(initialTrack);
     setCurrentRating(initialTrack.rating ?? null);
+    setPromptDraft(initialTrack.prompt);
+    setPromptEditing(false);
     setLyricsDraft(initialTrack.lyrics ?? "");
     setLyricsEditing(false);
   }, [initialTrack]);
@@ -253,6 +258,39 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     }
   }
 
+  async function handleSavePrompt() {
+    const trimmedPrompt = promptDraft.trim();
+    if (!trimmedPrompt) return;
+
+    setPromptSaving(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: trimmedPrompt }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = payload && typeof payload.error === "string" ? payload.error : "Failed to update prompt";
+        throw new Error(message);
+      }
+
+      const updatedTrack = await res.json();
+      setLocalTrack(updatedTrack);
+      onTrackUpdated?.(updatedTrack);
+      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+      void mutate("/api/tracks");
+      setPromptEditing(false);
+      setPromptDraft(updatedTrack.prompt);
+      setPromptExpanded(true);
+    } catch (error) {
+      console.error("Failed to update prompt:", error);
+    } finally {
+      setPromptSaving(false);
+    }
+  }
+
   async function handleSaveLyrics() {
     setLyricsSaving(true);
     try {
@@ -304,6 +342,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     return providerLabelBase[0].toUpperCase() + providerLabelBase.slice(1);
   })();
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
+  const canEditPrompt = isUploadedTrack;
+  const promptDraftIsValid = promptDraft.trim().length > 0;
 
   function formatDuration(seconds: number | null): string {
     if (!seconds || seconds <= 0) return "";
@@ -439,23 +479,78 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               </svg>
               Prompt
             </button>
-            <button
-              onClick={() => handleCopy(track.prompt, "prompt")}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-              title="Copy prompt"
-            >
-              {copiedField === "prompt" ? (
-                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+            <div className="flex items-center gap-1">
+              {canEditPrompt && !promptEditing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromptDraft(track.prompt);
+                    setPromptEditing(true);
+                    setPromptExpanded(true);
+                  }}
+                  className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  title="Edit prompt"
+                >
+                  Edit
+                </button>
               )}
-            </button>
+              {canEditPrompt && promptEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromptDraft(track.prompt);
+                      setPromptEditing(false);
+                    }}
+                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    disabled={promptSaving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSavePrompt}
+                    className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
+                    disabled={promptSaving || !promptDraftIsValid}
+                  >
+                    {promptSaving ? "Saving..." : "Save"}
+                  </button>
+                </>
+              )}
+              {!promptEditing && (
+                <button
+                  onClick={() => handleCopy(track.prompt, "prompt")}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                  title="Copy prompt"
+                >
+                  {copiedField === "prompt" ? (
+                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
-          {promptExpanded ? (
+          {promptEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={promptDraft}
+                onChange={(event) => setPromptDraft(event.target.value)}
+                placeholder="Add or edit the upload prompt"
+                className="h-32 w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
+                maxLength={10000}
+                disabled={promptSaving}
+              />
+              {!promptDraftIsValid && (
+                <p className="text-xs text-red-300/80">Prompt is required for uploaded tracks.</p>
+              )}
+            </div>
+          ) : promptExpanded ? (
             <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
           ) : (
             <p className="text-sm text-white/40 leading-relaxed line-clamp-2">

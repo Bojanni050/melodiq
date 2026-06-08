@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606072155**
+**Versie: 202606080413**
 
 > AI Music Generation Web App
 
@@ -211,6 +211,7 @@ Click a track to open a slide-out panel with:
 
 - Track info (provider, model, status, date)
 - Full style prompt, collapsed by default; click Prompt to expand it
+- Bij geuploade tracks kun je de prompt in Track Details nu direct **bewerken en opslaan**
 - Full lyrics (if vocal)
 - In Library kun je in Track Details nu lyrics **toevoegen** als ze ontbreken en bestaande lyrics **bewerken en opslaan**
 - Tracks met geldige JSON/LRC timestamps highlighten nu automatisch de actieve lyric-regel tijdens playback (ook bij geneste timestamp payloads en `mm:ss` tijdnotatie)
