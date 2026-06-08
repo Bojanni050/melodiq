@@ -9,6 +9,17 @@ import { useShallow } from "zustand/react/shallow";
 type AudioSource = "cache" | "s3" | "unknown";
 type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
+function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
+  if (!playHighestQuality) return "";
+
+  // Prefer FLAC, then WAV — check HD slot first, then primary slot
+  for (const fmt of ["flac", "wav"] as const) {
+    if (track.formatHd === fmt && track.s3KeyHd) return "?hd=true";
+    if (track.format === fmt && track.s3Key) return "";
+  }
+  return "";
+}
+
 function AudioSourceBadge({ source }: { source: AudioSource; state: AudioSourceState }) {
   if (source === "unknown") return null;
 
@@ -379,6 +390,7 @@ export default function Player() {
     autoPlayNext,
     showTrackDetailsPanel,
     isFullscreen,
+    playHighestQuality,
     playNext,
     playPrevious,
     setAutoPlayNext,
@@ -395,6 +407,7 @@ export default function Player() {
       autoPlayNext: s.autoPlayNext,
       showTrackDetailsPanel: s.showTrackDetailsPanel,
       isFullscreen: s.isFullscreen,
+      playHighestQuality: s.playHighestQuality,
       playNext: s.playNext,
       playPrevious: s.playPrevious,
       setAutoPlayNext: s.setAutoPlayNext,
@@ -578,12 +591,12 @@ export default function Player() {
 
     async function resolveAndLoad() {
       const trackId = trackSnapshot.id;
-      const wantsHd = (trackSnapshot.audioUrl || "").includes("hd=true");
+      const suffix = resolveStreamSuffix(trackSnapshot, usePlayerStore.getState().playHighestQuality);
 
       const audioEl = audioRef.current;
       if (!audioEl) return;
 
-      const streamUrl = `/api/tracks/${trackId}/stream${wantsHd ? "?hd=true" : ""}`;
+      const streamUrl = `/api/tracks/${trackId}/stream${suffix}`;
       const trackStreamPath = `/api/tracks/${trackId}/stream`;
 
       setResolvingUrl(true);
@@ -598,8 +611,7 @@ export default function Player() {
 
       const alreadyPlayingThisStream =
         typeof audioEl.src === "string" &&
-        audioEl.src.includes(trackStreamPath) &&
-        (wantsHd ? audioEl.src.includes("hd=true") : true);
+        audioEl.src === streamUrl;
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
@@ -658,7 +670,7 @@ export default function Player() {
     return () => {
       cancelled = true;
     };
-  }, [currentTrack?.id, currentTrack?.audioUrl, detectAudioSource, tryPlay]);
+  }, [currentTrack?.id, currentTrack?.audioUrl, currentTrack?.format, currentTrack?.formatHd, currentTrack?.s3Key, currentTrack?.s3KeyHd, playHighestQuality, detectAudioSource, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {

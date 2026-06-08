@@ -8,7 +8,8 @@ import { getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { uploadToS3 } from "@/lib/s3";
-import { contentTypeForFormat } from "@/lib/audio-format";
+import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
+import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { workspaces } from "@/db/schema";
 import {
@@ -304,10 +305,19 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const s3Key = `tracks/${trackId}/audio.${format}`;
+        let uploadBuffer: Buffer = audioBuffer;
+        let uploadFormat: "mp3" | "wav" | "flac" = format;
+
+        if (format === "wav") {
+          await saveWavLocally(trackId, audioBuffer);
+          uploadBuffer = await convertWavToFlac(audioBuffer);
+          uploadFormat = "flac";
+        }
+
+        const s3Key = `tracks/${trackId}/audio.${uploadFormat}`;
         const duration = await extractAudioDuration(audioBuffer);
 
-        await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(format));
+        await uploadToS3(s3Key, uploadBuffer, contentTypeForFormat(uploadFormat));
 
         const inserted = await db
           .insert(tracks)
@@ -320,7 +330,7 @@ export async function POST(request: NextRequest) {
             prompt: `Uploaded file: ${file.name}`,
             status: "done",
             s3Key,
-            format,
+            format: uploadFormat,
             duration,
             audioId: uploadHash,
             workspaceId: targetWorkspaceId,

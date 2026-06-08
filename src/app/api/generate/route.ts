@@ -507,7 +507,7 @@ export async function POST(request: NextRequest) {
       const s3Key = `tracks/${track.id}/audio.${format}`;
 
       let s3KeyHd: string | null = null;
-      let formatHd: "mp3" | "wav" | null = null;
+      let formatHd: "mp3" | "wav" | "flac" | null = null;
       let audioUrlHd: string | null = null;
       if (genResult.audioBufferHd && genResult.mimeTypeHd) {
         formatHd = detectFormatFromContentType(genResult.mimeTypeHd);
