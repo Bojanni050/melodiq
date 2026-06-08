@@ -133,7 +133,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
         const duration = await extractAudioDuration(audioBuffer);
 
         let s3KeyHd: string | null = null;
-        let formatHd: "mp3" | "wav" | null = null;
+        let formatHd: "mp3" | "wav" | "flac" | null = null;
         if (variant.audioUrlHd && variant.audioUrlHd !== primaryUrl) {
           const hdRes = await axios.get(variant.audioUrlHd, { responseType: "arraybuffer" });
           const hdHeaderType = String(hdRes.headers?.["content-type"] || "");
