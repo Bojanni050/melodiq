@@ -9,9 +9,7 @@ const execFileAsync = promisify(execFile);
 
 const LOCAL_WAV_DIR =
   process.env.LOCAL_WAV_DIR ||
-  (process.env.NODE_ENV === "production"
-    ? "/data/wav-uploads"
-    : join(process.cwd(), "data", "wav-uploads"));
+  join(process.cwd(), "data", "wav-uploads");
 
 export async function saveWavLocally(trackId: string, wavBuffer: Buffer): Promise<string> {
   await mkdir(LOCAL_WAV_DIR, { recursive: true });
