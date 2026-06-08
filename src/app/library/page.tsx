@@ -121,7 +121,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists, createPlaylist } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -148,6 +148,8 @@ export default function LibraryPage() {
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
   const [uploading, setUploading] = useState(false);
@@ -420,6 +422,14 @@ export default function LibraryPage() {
     setNewWorkspaceName("");
     setShowCreateWorkspace(false);
     setView("workspaces");
+  }
+
+  function handleCreatePlaylist() {
+    const id = createPlaylist(newPlaylistName);
+    if (!id) return;
+    setSelectedPlaylistId(id);
+    setNewPlaylistName("");
+    setShowCreatePlaylist(false);
   }
 
   function handleCloseTrackDetails() {
@@ -958,14 +968,43 @@ export default function LibraryPage() {
                     <h2 className="text-lg font-semibold">Playlists</h2>
                     <p className="text-sm text-white/55">Open a playlist folder, or set a custom cover from the songs inside.</p>
                   </div>
-                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {playlists.length} playlists
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                      {playlists.length} playlists
+                    </div>
+                    {showCreatePlaylist ? (
+                      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                        <input
+                          value={newPlaylistName}
+                          onChange={(e) => setNewPlaylistName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleCreatePlaylist(); if (e.key === "Escape") { setShowCreatePlaylist(false); setNewPlaylistName(""); } }}
+                          placeholder="Playlist name"
+                          maxLength={100}
+                          className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
+                          autoFocus
+                        />
+                        <button type="button" onClick={handleCreatePlaylist} className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90">
+                          Add
+                        </button>
+                        <button type="button" onClick={() => { setShowCreatePlaylist(false); setNewPlaylistName(""); }} className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white">
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowCreatePlaylist(true)}
+                        className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        + Create playlist
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {playlists.length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
-                    No playlists yet. Add songs to playlists from track actions first.
+                    No playlists yet. Create one above or add songs to a playlist from track actions.
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
