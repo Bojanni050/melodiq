@@ -352,6 +352,48 @@ export default function SettingsPage() {
               />
 
               <section className="section-card">
+                <h2 className="text-sm font-semibold mb-3">Export</h2>
+                <p className="text-xs text-white/40 mb-3">
+                  Download your track listing or a full database backup.
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-white/60 font-medium mb-1.5">Track listing</p>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/api/export/tracks?format=csv"
+                        download
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                      >
+                        Export CSV
+                      </a>
+                      <a
+                        href="/api/export/tracks?format=json"
+                        download
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                      >
+                        Export JSON
+                      </a>
+                    </div>
+                  </div>
+                  <div className="h-px bg-white/10" />
+                  <div>
+                    <p className="text-xs text-white/60 font-medium mb-1.5">Database backup</p>
+                    <p className="text-xs text-white/30 mb-2">
+                      Volledig JSON backup — tracks, workspaces, playlists en volgorde.
+                    </p>
+                    <a
+                      href="/api/export/db"
+                      download
+                      className="inline-block rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                    >
+                      Download backup
+                    </a>
+                  </div>
+                </div>
+              </section>
+
+              <section className="section-card">
                 <h2 className="text-sm font-semibold mb-2">Import Data</h2>
                 <p className="text-xs text-white/40 mb-3">
                   Import tracks and workspaces from another MelodIQ/MelodIQ PostgreSQL database.
