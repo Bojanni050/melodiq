@@ -15,7 +15,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
-  const buildVersion = "202606090607";
+  const buildVersion = "202606091542";
 
   const navItems = [
     { href: "/library", label: "Library", icon: "library" },
