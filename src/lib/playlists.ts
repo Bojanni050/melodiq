@@ -6,6 +6,7 @@ import { playlists, playlistTracks } from "@/db/schema";
 export type PlaylistPayload = {
   id: string;
   name: string;
+  description: string | null;
   trackIds: string[];
   createdAt: string;
 };
@@ -15,6 +16,7 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
     .select({
       id: playlists.id,
       name: playlists.name,
+      description: playlists.description,
       createdAt: playlists.createdAt,
     })
     .from(playlists)
@@ -44,6 +46,7 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
   return playlistRows.map((row) => ({
     id: row.id,
     name: row.name,
+    description: row.description ?? null,
     trackIds: tracksByPlaylistId.get(row.id) ?? [],
     createdAt: row.createdAt.toISOString(),
   }));
@@ -55,6 +58,7 @@ export async function getUserPlaylistById(userId: string, playlistId: string) {
       id: playlists.id,
       userId: playlists.userId,
       name: playlists.name,
+      description: playlists.description,
       createdAt: playlists.createdAt,
     })
     .from(playlists)

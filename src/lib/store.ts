@@ -379,6 +379,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 export interface Playlist {
   id: string;
   name: string;
+  description?: string | null;
   trackIds: string[];
   createdAt: string;
 }
@@ -423,6 +424,7 @@ interface PlaylistState {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   deletePlaylist: (playlistId: string) => void;
   setSelectedPlaylistId: (playlistId: string | null) => void;
+  updatePlaylistDescription: (playlistId: string, description: string) => void;
 }
 
 function persistPlaylistCreate(input: { id: string; name: string }) {
@@ -595,6 +597,20 @@ export const usePlaylistStore = create<PlaylistState>()(
         persistPlaylistDelete(playlistId);
       },
       setSelectedPlaylistId: (playlistId) => set({ selectedPlaylistId: playlistId }),
+      updatePlaylistDescription: (playlistId, description) => {
+        const trimmed = description.trim().slice(0, 500);
+        set((state) => ({
+          playlists: state.playlists.map((playlist) =>
+            playlist.id === playlistId ? { ...playlist, description: trimmed } : playlist
+          ),
+        }));
+        if (typeof window === "undefined") return;
+        void fetch(`/api/playlists/${playlistId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update-description", description: trimmed }),
+        }).catch((error) => console.error("[store] updatePlaylistDescription failed", error));
+      },
     }),
     {
       name: "melodiq-playlists",

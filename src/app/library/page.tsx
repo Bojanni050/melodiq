@@ -121,7 +121,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists, createPlaylist } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -164,6 +164,8 @@ export default function LibraryPage() {
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
   const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
   const [coverPickerPlaylistId, setCoverPickerPlaylistId] = useState<string | null>(null);
+  const [editingDescriptionPlaylistId, setEditingDescriptionPlaylistId] = useState<string | null>(null);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
 
   const workspacesSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isWorkspacesTopInView, setIsWorkspacesTopInView] = useState(true);
@@ -928,6 +930,9 @@ export default function LibraryPage() {
                         </div>
                         <h2 className="text-lg font-semibold truncate">{selectedPlaylist.name}</h2>
                         <p className="text-sm text-white/55">{visiblePlaylistTracks.length} songs in this playlist.</p>
+                        {selectedPlaylist.description && (
+                          <p className="text-sm text-white/40 mt-1 max-w-xl">{selectedPlaylist.description}</p>
+                        )}
                       </>
                     ) : (
                       <>
@@ -1056,6 +1061,55 @@ export default function LibraryPage() {
                             </div>
                           </button>
 
+                          {/* Description */}
+                          {editingDescriptionPlaylistId === playlist.id ? (
+                            <div className="px-4 pb-3 space-y-2">
+                              <textarea
+                                autoFocus
+                                value={descriptionDraft}
+                                onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 500))}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") { setEditingDescriptionPlaylistId(null); setDescriptionDraft(""); }
+                                }}
+                                rows={3}
+                                maxLength={500}
+                                placeholder="Add a description…"
+                                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 resize-none"
+                              />
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs text-white/35">{descriptionDraft.length}/500</span>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => { setEditingDescriptionPlaylistId(null); setDescriptionDraft(""); }}
+                                    className="h-8 rounded-full px-3 text-xs text-white/50 hover:text-white transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updatePlaylistDescription(playlist.id, descriptionDraft);
+                                      setEditingDescriptionPlaylistId(null);
+                                      setDescriptionDraft("");
+                                    }}
+                                    className="h-8 rounded-full bg-white px-3 text-xs font-medium text-black hover:bg-white/90 transition-colors"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : playlist.description ? (
+                            <button
+                              type="button"
+                              onClick={() => { setEditingDescriptionPlaylistId(playlist.id); setDescriptionDraft(playlist.description ?? ""); }}
+                              className="mx-4 mb-2 block w-[calc(100%-2rem)] text-left text-xs text-white/50 hover:text-white/80 transition-colors line-clamp-2"
+                            >
+                              {playlist.description}
+                            </button>
+                          ) : null}
+
                           <div className="flex items-center justify-between gap-2 px-4 py-3">
                             <button
                               type="button"
@@ -1064,13 +1118,22 @@ export default function LibraryPage() {
                             >
                               Open playlist
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setCoverPickerPlaylistId(playlist.id)}
-                              className="text-sm text-white/45 transition-colors hover:text-white"
-                            >
-                              Change cover
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => { setEditingDescriptionPlaylistId(playlist.id); setDescriptionDraft(playlist.description ?? ""); }}
+                                className="text-sm text-white/45 transition-colors hover:text-white"
+                              >
+                                {playlist.description ? "Edit description" : "Add description"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCoverPickerPlaylistId(playlist.id)}
+                                className="text-sm text-white/45 transition-colors hover:text-white"
+                              >
+                                Change cover
+                              </button>
+                            </div>
                           </div>
                         </article>
                       );

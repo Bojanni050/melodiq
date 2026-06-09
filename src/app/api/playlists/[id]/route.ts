@@ -203,6 +203,20 @@ export async function PATCH(
       return NextResponse.json({ playlist });
     }
 
+    if (action === "update-description") {
+      const raw = typeof body?.description === "string" ? body.description : "";
+      const description = raw.trim().slice(0, 500) || null;
+
+      await db
+        .update(playlists)
+        .set({ description, updatedAt: new Date() })
+        .where(and(eq(playlists.id, id), eq(playlists.userId, auth.userId)));
+
+      const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
+      const playlist = hydrated.find((item) => item.id === id);
+      return NextResponse.json({ playlist });
+    }
+
     return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
   } catch (error) {
     console.error("[playlists/patch]", error);
