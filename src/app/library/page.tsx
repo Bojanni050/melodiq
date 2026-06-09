@@ -836,14 +836,13 @@ export default function LibraryPage() {
 
   return (
     <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
-      {/* Subtle cover art ambient glow — kept very dim so library UI stays readable */}
+      {/* Blurred cover art as background */}
       {coverUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center scale-115 blur-[120px] opacity-15 saturate-150 pointer-events-none"
+          className="absolute inset-0 bg-cover bg-center scale-115 blur-[80px] opacity-20 saturate-200 pointer-events-none"
           style={{ backgroundImage: `url(${coverUrl})` }}
         />
       )}
-      <div className="absolute inset-0 bg-[#09090d]/80 pointer-events-none" />
       <Sidebar credits={null} />
 
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">
