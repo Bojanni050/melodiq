@@ -756,9 +756,13 @@ export async function POST(request: NextRequest) {
         let uploadFormat: "mp3" | "wav" | "flac" = format;
 
         if (format === "wav") {
-          await saveWavLocally(trackId, audioBuffer);
-          uploadBuffer = await convertWavToFlac(audioBuffer);
-          uploadFormat = "flac";
+          await saveWavLocally(trackId, audioBuffer).catch(() => {});
+          const flacBuffer = await convertWavToFlac(audioBuffer);
+          if (flacBuffer) {
+            uploadBuffer = flacBuffer;
+            uploadFormat = "flac";
+          }
+          // If ffmpeg unavailable, uploadBuffer/uploadFormat stay as WAV — upload as-is
         }
 
         const s3Key = `tracks/${trackId}/audio.${uploadFormat}`;
