@@ -87,7 +87,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   return (
     <>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-(--player-height) bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${collapsed ? "w-15" : "w-60"}`}>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${collapsed ? "w-15" : "w-60"}`}>
         {/* Cover art ambient background with fade-to-black on the right */}
         {sidebarCoverUrl && (
           <div
