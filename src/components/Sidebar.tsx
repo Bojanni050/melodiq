@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useWorkspaceStore } from "@/lib/store";
+import { useWorkspaceStore, usePlayerStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -15,6 +15,8 @@ export default function Sidebar({ credits }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
   const buildVersion = "202606091542";
 
   const navItems = [
@@ -85,7 +87,15 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   return (
     <>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-(--player-height) bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 ${collapsed ? "w-15" : "w-60"}`}>
+      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-(--player-height) bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${collapsed ? "w-15" : "w-60"}`}>
+        {/* Cover art ambient background with fade-to-black on the right */}
+        {sidebarCoverUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center blur-[60px] opacity-20 saturate-200 pointer-events-none scale-110"
+            style={{ backgroundImage: `url(${sidebarCoverUrl})` }}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0d0d12] pointer-events-none" />
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
           <Link href="/" className="flex items-center gap-2">
