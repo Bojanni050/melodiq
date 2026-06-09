@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { redirect } from "next/navigation";
 import { usePlaylistStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
@@ -17,6 +18,7 @@ import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 
 export default function HomePage() {
+  redirect("/library");
   const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate } = useTrackManager();
 
   const {

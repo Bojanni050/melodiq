@@ -832,8 +832,19 @@ export default function LibraryPage() {
           ? "grid-cols-[repeat(12,minmax(0,1fr))]"
           : "grid-cols-[repeat(16,minmax(0,1fr))]";
 
+  const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
+
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+      {/* Fullscreen-style cover art ambient effect */}
+      {coverUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center scale-115 blur-[90px] opacity-45 saturate-150 pointer-events-none"
+          style={{ backgroundImage: `url(${coverUrl})` }}
+        />
+      )}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/90 pointer-events-none" />
       <Sidebar credits={null} />
 
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">

@@ -18,9 +18,9 @@ export default function Sidebar({ credits }: SidebarProps) {
   const buildVersion = "202606090607";
 
   const navItems = [
+    { href: "/library", label: "Library", icon: "library" },
     { href: "/", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
-    { href: "/library", label: "Library", icon: "library" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
     { href: "/account", label: "Account", icon: "account" },
     { href: "/settings", label: "Settings", icon: "settings" },
