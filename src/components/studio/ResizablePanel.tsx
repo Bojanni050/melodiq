@@ -13,16 +13,24 @@ export default function ResizablePanel({
   setWidth: (value: number) => void;
   children: React.ReactNode;
 }) {
+  const panelRef = useRef<HTMLElement>(null);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(0);
+  const currentWidthRef = useRef(width);
 
   function startResize(e: React.MouseEvent<HTMLDivElement>) {
     resizeStartXRef.current = e.clientX;
     resizeStartWidthRef.current = width;
+    currentWidthRef.current = width;
 
     const onMouseMove = (event: MouseEvent) => {
       const delta = resizeStartXRef.current - event.clientX;
-      setWidth(resizeStartWidthRef.current + delta);
+      const next = Math.max(280, Math.min(800, resizeStartWidthRef.current + delta));
+      currentWidthRef.current = next;
+      // Write directly to the DOM — zero React re-renders while dragging
+      if (panelRef.current) {
+        panelRef.current.style.width = `${next}px`;
+      }
     };
 
     const onMouseUp = () => {
@@ -30,6 +38,8 @@ export default function ResizablePanel({
       document.body.style.userSelect = "";
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
+      // Single store update when drag ends
+      setWidth(currentWidthRef.current);
     };
 
     document.body.style.cursor = "col-resize";
@@ -50,7 +60,11 @@ export default function ResizablePanel({
         aria-orientation="vertical"
         aria-label="Resize details panel"
       />
-      <aside className="right-details-panel hidden lg:flex lg:flex-col shrink-0 border-l border-white/5 bg-[#0d0d12]">
+      <aside
+        ref={panelRef}
+        style={{ width }}
+        className="hidden lg:flex lg:flex-col shrink-0 border-l border-white/5 bg-[#0d0d12]"
+      >
         {children}
       </aside>
     </>
