@@ -362,10 +362,11 @@ export default function LibraryPage() {
     [selectedWorkspace, tracks],
   );
 
-  const visiblePlaylistTracks = useMemo(
-    () => (selectedPlaylist ? tracks.filter((track) => selectedPlaylist.trackIds.includes(track.id)) : tracks),
-    [selectedPlaylist, tracks],
-  );
+  const visiblePlaylistTracks = useMemo(() => {
+    if (!selectedPlaylist) return tracks;
+    const byId = new Map(tracks.map((t) => [t.id, t]));
+    return selectedPlaylist.trackIds.map((id) => byId.get(id)).filter((t): t is typeof tracks[number] => Boolean(t));
+  }, [selectedPlaylist, tracks]);
 
   const activeSongs = useMemo(() => {
     if (selectedWorkspace) return visibleTracks;
@@ -937,6 +938,7 @@ export default function LibraryPage() {
                   <TrackList
                     tracks={activeSongs}
                     autoQueueAfterPlay
+                    enableDragReorder={!!selectedPlaylist}
                     onManualOrderChange={(orderedTrackIds) => {
                       if (!selectedPlaylist) return;
                       reorderPlaylistTracks(selectedPlaylist.id, orderedTrackIds);
