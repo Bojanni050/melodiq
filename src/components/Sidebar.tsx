@@ -148,8 +148,8 @@ export default function Sidebar({ credits }: SidebarProps) {
           })}
         </nav>
 
-        {/* Bottom section */}
-        <div className="px-3 pb-4 space-y-3 border-t border-white/5 pt-3">
+        {/* Bottom section — pb-24 keeps logout above the 80px player bar */}
+        <div className="px-3 pb-24 space-y-3 border-t border-white/5 pt-3">
           {credits !== null && (
             <div className="px-3 py-2 bg-white/5 rounded-lg">
               <p className="text-xs text-white/40">Credits</p>
