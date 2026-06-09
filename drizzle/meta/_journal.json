@@ -36,6 +36,13 @@
       "when": 1780863600000,
       "tag": "0004_persistent_playlists",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1749549600000,
+      "tag": "0005_playlist_description",
+      "breakpoints": true
     }
   ]
 }
