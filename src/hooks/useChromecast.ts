@@ -199,10 +199,25 @@ export function useChromecast() {
     const ctx = contextRef.current;
     if (!ctx || !window.chrome?.cast) return;
 
+    // Remember whether local audio was playing so we can restore it after
+    // requestSession() — the Cast device-picker dialog can cause the browser
+    // to pause the audio element as a side effect.
+    const sharedAudio =
+      typeof window !== "undefined"
+        ? (window as Window & { __melodiqSharedAudioElement?: HTMLAudioElement })
+            .__melodiqSharedAudioElement ?? null
+        : null;
+    const wasPlaying = sharedAudio ? !sharedAudio.paused : false;
+
     try {
       // Request session if not yet connected
       if (castState !== "connected") {
         await ctx.requestSession();
+      }
+
+      // Restore local playback if the dialog paused it
+      if (wasPlaying && sharedAudio && sharedAudio.paused) {
+        sharedAudio.play().catch(() => {});
       }
 
       const session = ctx.getCurrentSession();
