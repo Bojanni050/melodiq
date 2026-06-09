@@ -175,6 +175,21 @@ export default function Player() {
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
+
+    // Keep MediaSession metadata in sync so the OS lock screen shows the
+    // correct track info and artwork while playing in the background.
+    if ("mediaSession" in navigator && currentTrack) {
+      const artwork: MediaImage[] = [];
+      const coverSrc = currentTrack.coverUrl || (currentTrack.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
+      if (coverSrc) {
+        artwork.push({ src: coverSrc, sizes: "512x512", type: "image/jpeg" });
+      }
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title?.replace(/\s*\(2\)\s*$/, "") || currentTrack.prompt.substring(0, 60),
+        artist: "",
+        artwork,
+      });
+    }
   }, [currentTrack]);
 
   const tryPlay = useCallback(async () => {
@@ -362,6 +377,64 @@ export default function Player() {
       setIsPlaying(false);
     };
 
+    // Auto-reconnect when the audio stream drops (e.g. mobile network switch or
+    // long-lived connection timeout). Saves the current position, reloads the
+    // src, and resumes from where it left off.
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleAudioError = () => {
+      const audioEl = audioRef.current;
+      const track = currentTrackRef.current;
+      if (!audioEl || !track) return;
+      // Only attempt reconnect if we were actually playing
+      if (!usePlayerStore.getState().isPlaying) return;
+
+      const resumeAt = audioEl.currentTime || 0;
+      console.warn(`[Player] Audio error — reconnecting at ${resumeAt.toFixed(1)}s`);
+
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(async () => {
+        reconnectTimer = null;
+        if (!audioRef.current || currentTrackRef.current?.id !== track.id) return;
+        const el = audioRef.current;
+        el.pause();
+        // Force browser to re-request the stream from the server
+        const currentSrc = el.src;
+        el.src = "";
+        el.load();
+        el.src = currentSrc;
+        el.load();
+        try {
+          await new Promise<void>((resolve) => {
+            const onReady = () => { el.removeEventListener("canplay", onReady); resolve(); };
+            el.addEventListener("canplay", onReady, { once: true });
+          });
+          el.currentTime = resumeAt;
+          await el.play();
+        } catch {
+          // If reconnect also fails, leave paused — don't loop forever
+        }
+      }, 1500);
+    };
+
+    // Register MediaSession so iOS/Android treat this as active media and
+    // don't suspend the network connection after extended background use.
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("play", () => {
+        void audioRef.current?.play();
+        usePlayerStore.getState().setIsPlaying(true);
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        audioRef.current?.pause();
+        usePlayerStore.getState().setIsPlaying(false);
+      });
+      navigator.mediaSession.setActionHandler("previoustrack", () => {
+        usePlayerStore.getState().playPrevious();
+      });
+      navigator.mediaSession.setActionHandler("nexttrack", () => {
+        usePlayerStore.getState().playNext();
+      });
+    }
+
     audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
     audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
     audioRef.current.addEventListener("ended", handleEnded);
@@ -369,11 +442,19 @@ export default function Player() {
     audioRef.current.addEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
     audioRef.current.addEventListener("pause", clearPlayTimer);
     audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
+    audioRef.current.addEventListener("error", handleAudioError);
 
     setCurrentTime(audioRef.current.currentTime || 0);
     setDuration(audioRef.current.duration || 0);
 
     return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+      }
       if (audioRef.current) {
         audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
         audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
@@ -382,6 +463,7 @@ export default function Player() {
         audioRef.current.removeEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
         audioRef.current.removeEventListener("pause", clearPlayTimer);
         audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
+        audioRef.current.removeEventListener("error", handleAudioError);
       }
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
