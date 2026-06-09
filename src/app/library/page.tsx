@@ -1353,7 +1353,7 @@ export default function LibraryPage() {
         </main>
 
         <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
-          <div className="h-full overflow-y-auto pb-24">
+          <div className="h-full overflow-y-auto pb-4">
             {selectedTrack ? (
               <TrackDetail
                 mode="sidebar"
