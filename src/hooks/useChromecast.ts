@@ -63,6 +63,8 @@ interface CastOptions {
   receiverApplicationId: string;
   autoJoinPolicy: string;
   resumeSavedSession: boolean;
+  /** When false, the SDK does not intercept local <audio>/<video> elements */
+  castMediaElements?: boolean;
 }
 
 interface ChromecastMediaInfo {
@@ -151,7 +153,10 @@ export function useChromecast() {
           receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
           autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
           resumeSavedSession: false,
-        });
+          // Prevent the SDK from intercepting local <audio> elements —
+          // we want the app player to keep running independently of Cast.
+          castMediaElements: false,
+        } as CastOptions);
         contextRef.current = ctx;
 
         const syncState = () => {
