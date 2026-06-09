@@ -7,6 +7,8 @@ import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import FullscreenPlayer from "@/components/player/FullscreenPlayer";
+import ChromecastButton from "@/components/ChromecastButton";
+import type { CastTrackInfo } from "@/hooks/useChromecast";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -613,6 +615,26 @@ export default function Player() {
   const nowPlayingQueue = currentTrack ? [currentTrack, ...queue] : queue;
   const playerCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
 
+  // Build CastTrackInfo for the current track
+  const castTrackInfo = useMemo((): CastTrackInfo | null => {
+    if (!currentTrack) return null;
+    const suffix = resolveStreamSuffix(currentTrack, usePlayerStore.getState().playHighestQuality);
+    const streamUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/tracks/${currentTrack.id}/stream${suffix}`;
+    const fmt = suffix
+      ? (currentTrack.formatHd ?? currentTrack.format ?? "mp3")
+      : (currentTrack.format ?? "mp3");
+    const contentType =
+      fmt === "flac" ? "audio/flac" : fmt === "wav" ? "audio/wav" : "audio/mpeg";
+    return {
+      streamUrl,
+      contentType,
+      title: currentTrack.title || currentTrack.prompt.substring(0, 80) || undefined,
+      coverUrl: playerCoverUrl ?? undefined,
+      currentTime,
+      duration,
+    };
+  }, [currentTrack, currentTime, duration, playerCoverUrl, playHighestQuality]);
+
   return (
     <>
       {/* Screen reader live region */}
@@ -801,6 +823,8 @@ export default function Player() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 3v18" />
               </svg>
             </button>
+
+            <ChromecastButton track={castTrackInfo} disabled={!currentTrack} />
 
             <button
               type="button"
