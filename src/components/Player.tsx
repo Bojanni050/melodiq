@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useMemo } from "react";
-import { usePlayerStore, useUserStore } from "@/lib/store";
+import { usePlayerStore, useUserStore, usePlaylistStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -134,6 +134,10 @@ export default function Player() {
   const [resolvingUrl, setResolvingUrl] = useState(false);
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const playlists = usePlaylistStore((state) => state.playlists);
+  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
@@ -635,6 +639,17 @@ export default function Player() {
     }
   }, [currentTrack, queue.length]);
 
+  useEffect(() => {
+    if (!actionsMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setActionsMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [actionsMenuOpen]);
+
   const togglePlay = useCallback(() => {
     if (!allowWithDelay(playToggleCooldownRef, 350)) return;
     if (!currentTrack && queue.length > 0) {
@@ -919,6 +934,53 @@ export default function Player() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             </button>
+
+            {/* Track actions menu */}
+            {currentTrack && (
+              <div className="relative" ref={actionsMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setActionsMenuOpen((o) => !o)}
+                  className={`p-2 rounded-full transition-colors ${actionsMenuOpen ? "text-primary-400 bg-white/10" : "text-white/30 hover:text-white/70 hover:bg-white/5"}`}
+                  title="Track actions"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+                  </svg>
+                </button>
+
+                {actionsMenuOpen && (
+                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 rounded-xl border border-white/10 bg-[#12121a] shadow-2xl p-1.5">
+                    <p className="px-2.5 pb-1 pt-0.5 text-[11px] uppercase tracking-wide text-white/35">Add to playlist</p>
+                    {playlists.length === 0 ? (
+                      <p className="px-2.5 py-1.5 text-xs text-white/40 italic">No playlists yet</p>
+                    ) : (
+                      playlists.map((playlist) => {
+                        const alreadyIn = playlist.trackIds.includes(currentTrack.id);
+                        return (
+                          <button
+                            key={playlist.id}
+                            type="button"
+                            onClick={() => {
+                              addTrackToPlaylist(playlist.id, currentTrack.id, { allowDuplicate: false });
+                              setActionsMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                          >
+                            <span>{playlist.name}</span>
+                            {alreadyIn && (
+                              <svg className="w-3.5 h-3.5 text-primary-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Volume */}
             <div className="hidden lg:flex items-center gap-2 ml-1">
