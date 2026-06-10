@@ -742,9 +742,11 @@ const TrackCard = memo(function TrackCard({
           <div className="mr-1 text-right leading-tight">
             <p className="hidden sm:block text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
             <p className="hidden sm:block text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
-            {track.duration && track.status === "done" && (
-              <p className="text-[10px] text-white/40 sm:text-white/20 whitespace-nowrap mt-0.5">{formatDuration(track.duration)}</p>
-            )}
+          </div>
+          <div className="hidden sm:flex w-12 justify-end mr-1">
+            {track.duration && track.status === "done" ? (
+              <span className="text-[11px] text-white/45 tabular-nums whitespace-nowrap">{formatDuration(track.duration)}</span>
+            ) : null}
           </div>
           {track.status === "done" && (
             <TrackRating
