@@ -743,11 +743,6 @@ const TrackCard = memo(function TrackCard({
             <p className="hidden sm:block text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
             <p className="hidden sm:block text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
           </div>
-          <div className="hidden sm:flex w-12 justify-end mr-1">
-            {track.duration && track.status === "done" ? (
-              <span className="text-[11px] text-white/45 tabular-nums whitespace-nowrap">{formatDuration(track.duration)}</span>
-            ) : null}
-          </div>
           {track.status === "done" && (
             <TrackRating
               rating={currentRating}

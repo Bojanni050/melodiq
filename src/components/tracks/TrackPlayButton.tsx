@@ -2,6 +2,7 @@
 
 import type { TrackItem } from "./types";
 import WaveformBars from "./WaveformBars";
+import { formatDuration } from "@/lib/track-utils";
 
 interface TrackPlayButtonProps {
   track: TrackItem;
@@ -103,6 +104,11 @@ export default function TrackPlayButton({
         <div className="w-full h-full bg-white/5 flex items-center justify-center text-primary-400/60">
           <WaveformBars count={4} className="h-3" />
         </div>
+      )}
+      {track.status === "done" && track.duration && (
+        <span className="absolute bottom-0.5 right-1 text-[9px] font-medium tabular-nums text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] leading-none pointer-events-none">
+          {formatDuration(track.duration)}
+        </span>
       )}
     </button>
   );
