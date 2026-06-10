@@ -11,10 +11,12 @@ interface Props {
   /** Fallback metadata to pass alongside the URL */
   meta: Pick<CastTrackInfo, "title" | "coverUrl" | "currentTime" | "duration"> | null;
   disabled?: boolean;
+  /** Called after media successfully loads on the Cast device so the player can pause locally */
+  onCastConnected?: () => void;
 }
 
-export default function ChromecastButton({ trackId, hd, meta, disabled }: Props) {
-  const { castState, startCasting, stopCasting } = useChromecast();
+export default function ChromecastButton({ trackId, hd, meta, disabled, onCastConnected }: Props) {
+  const { castState, requestCastSession, loadCastMedia, stopCasting } = useChromecast();
   const [resolving, setResolving] = useState(false);
 
   const handleClick = useCallback(async () => {
@@ -25,25 +27,27 @@ export default function ChromecastButton({ trackId, hd, meta, disabled }: Props)
       return;
     }
 
+    // Step 1: open the device picker immediately (requires user gesture).
+    const sessionOk = await requestCastSession();
+    if (!sessionOk) return;
+
+    // Step 2: fetch presigned URL (async is safe now — session is established).
     setResolving(true);
     try {
-      // Fetch a presigned S3 URL — Chromecast makes the request directly,
-      // bypassing our cookie-based auth.
       const res = await fetch(`/api/tracks/${trackId}/cast-url${hd ? "?hd=true" : ""}`);
       if (!res.ok) {
         console.error("Failed to get cast URL", await res.text());
         return;
       }
       const data = await res.json() as { url: string; contentType: string };
-      await startCasting({
-        streamUrl: data.url,
-        contentType: data.contentType,
-        ...meta,
-      });
+
+      // Step 3: load the media into the session and pause local playback.
+      const ok = await loadCastMedia({ streamUrl: data.url, contentType: data.contentType, ...meta });
+      if (ok) onCastConnected?.();
     } finally {
       setResolving(false);
     }
-  }, [castState, trackId, hd, meta, startCasting, stopCasting]);
+  }, [castState, trackId, hd, meta, requestCastSession, loadCastMedia, stopCasting, onCastConnected]);
 
   // Only show when Cast API found a device (or is already active)
   if (castState === "unavailable") return null;

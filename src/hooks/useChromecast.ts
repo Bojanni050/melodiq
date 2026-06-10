@@ -195,34 +195,33 @@ export function useChromecast() {
       });
   }, []);
 
-  const startCasting = useCallback(async (info: CastTrackInfo) => {
+  // Step 1: open the device-picker dialog immediately on user gesture.
+  // Must be called synchronously within the click handler so Chrome treats
+  // it as a trusted interaction.
+  const requestCastSession = useCallback(async (): Promise<boolean> => {
     const ctx = contextRef.current;
-    if (!ctx || !window.chrome?.cast) return;
+    if (!ctx) return false;
+    if (castState === "connected") return true;
+    try {
+      await ctx.requestSession();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [castState]);
 
-    // Remember whether local audio was playing so we can restore it after
-    // requestSession() — the Cast device-picker dialog can cause the browser
-    // to pause the audio element as a side effect.
-    const sharedAudio =
-      typeof window !== "undefined"
-        ? (window as Window & { __melodiqSharedAudioElement?: HTMLAudioElement })
-            .__melodiqSharedAudioElement ?? null
-        : null;
-    const wasPlaying = sharedAudio ? !sharedAudio.paused : false;
+  // Step 2: load media into the already-established Cast session.
+  // Call this after fetching the presigned URL (async is fine here because
+  // the session is already open — no user-gesture requirement).
+  // Returns true on success so the caller can pause local playback.
+  const loadCastMedia = useCallback(async (info: CastTrackInfo): Promise<boolean> => {
+    const ctx = contextRef.current;
+    if (!ctx || !window.chrome?.cast) return false;
+
+    const session = ctx.getCurrentSession();
+    if (!session) return false;
 
     try {
-      // Request session if not yet connected
-      if (castState !== "connected") {
-        await ctx.requestSession();
-      }
-
-      // Restore local playback if the dialog paused it
-      if (wasPlaying && sharedAudio && sharedAudio.paused) {
-        sharedAudio.play().catch(() => {});
-      }
-
-      const session = ctx.getCurrentSession();
-      if (!session) return;
-
       const { MediaInfo, LoadRequest, StreamType, MetadataType, MusicTrackMediaMetadata } =
         window.chrome.cast.media;
 
@@ -247,10 +246,23 @@ export function useChromecast() {
       }
 
       await session.loadMedia(request as ChromecastLoadRequest);
+
+      // Pause local audio — Chromecast is now playing
+      const sharedAudio =
+        typeof window !== "undefined"
+          ? (window as Window & { __melodiqSharedAudioElement?: HTMLAudioElement })
+              .__melodiqSharedAudioElement ?? null
+          : null;
+      if (sharedAudio && !sharedAudio.paused) {
+        sharedAudio.pause();
+      }
+
+      return true;
     } catch (err) {
-      console.error("Cast error:", err);
+      console.error("Cast load error:", err);
+      return false;
     }
-  }, [castState]);
+  }, []);
 
   const stopCasting = useCallback(() => {
     contextRef.current?.endCurrentSession(true);
@@ -264,5 +276,5 @@ export function useChromecast() {
     }
   }, []);
 
-  return { castState, startCasting, stopCasting, seekCast };
+  return { castState, requestCastSession, loadCastMedia, stopCasting, seekCast };
 }

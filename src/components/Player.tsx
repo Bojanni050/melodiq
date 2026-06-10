@@ -921,6 +921,7 @@ export default function Player() {
               hd={castHd}
               meta={castMeta}
               disabled={!currentTrack}
+              onCastConnected={() => usePlayerStore.getState().setIsPlaying(false)}
             />
 
             <button
