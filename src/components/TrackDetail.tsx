@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { useUserStore, usePlayerStore } from "@/lib/store";
+import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { useSWRConfig } from "swr";
 
@@ -53,6 +53,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [lyricsSaving, setLyricsSaving] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, audioElement } = usePlayerStore();
+  const workspaces = useWorkspaceStore((state) => state.workspaces);
   const [currentTime, setCurrentTime] = useState(0);
   const { mutate } = useSWRConfig();
 
@@ -344,6 +345,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   })();
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
   const canEditPrompt = isUploadedTrack;
+  const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
   const promptDraftIsValid = promptDraft.trim().length > 0;
 
   function formatDuration(seconds: number | null): string {
@@ -675,6 +677,14 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 No lyrics yet.
               </div>
             )}
+          </div>
+        )}
+
+        {/* Workspace */}
+        {currentWorkspace && (
+          <div className="shrink-0 flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-white/35">Workspace</span>
+            <span className="text-xs font-medium text-white/65 truncate">{currentWorkspace.name}</span>
           </div>
         )}
 

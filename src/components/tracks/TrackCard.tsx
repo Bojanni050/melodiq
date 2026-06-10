@@ -132,7 +132,7 @@ const TrackCard = memo(function TrackCard({
   }, [workspaceDisplayNameByIdProp, workspaceById, workspaces]);
 
   const assignedWorkspaceName = useMemo(() => {
-    const assignedWorkspace = workspaces.find((workspace) => workspaceById.get(workspace.id)?.trackIds.includes(track.id));
+    const assignedWorkspace = workspaces.find((workspace) => !workspace.isDefault && workspaceById.get(workspace.id)?.trackIds.includes(track.id));
     if (!assignedWorkspace) return null;
     return workspaceDisplayNameById.get(assignedWorkspace.id) ?? assignedWorkspace.name;
   }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
@@ -726,6 +726,11 @@ const TrackCard = memo(function TrackCard({
                 {playCount} {playCount === 1 ? "play" : "plays"}
               </p>
             </>
+          )}
+          {assignedWorkspaceName && (
+            <p className="text-[10px] text-white/30 mt-0.5 truncate">
+              <span className="opacity-60">in</span> {assignedWorkspaceName}
+            </p>
           )}
           {track.error && (
             <p className="text-xs text-red-400 mt-0.5">{track.error}</p>
