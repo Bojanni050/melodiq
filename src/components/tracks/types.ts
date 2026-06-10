@@ -20,6 +20,7 @@ export interface TrackItem {
   rating?: string | null;
   playCount?: number | null;
   lyricsTimestamps?: string | null;
+  artistName?: string | null;
 }
 
 export interface PlaylistOption {

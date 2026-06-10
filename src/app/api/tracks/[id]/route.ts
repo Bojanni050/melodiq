@@ -405,8 +405,9 @@ export async function PATCH(
     const lyrics = body.lyrics;
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
+    const artistName = body.artistName;
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -481,6 +482,20 @@ export async function PATCH(
         updates.lyricsTimestamps = null;
       } else {
         return NextResponse.json({ error: "Invalid lyrics" }, { status: 400 });
+      }
+    }
+
+    if (artistName !== undefined) {
+      if (artistName === null) {
+        updates.artistName = null;
+      } else if (typeof artistName === "string") {
+        const trimmed = artistName.trim();
+        if (trimmed.length > 255) {
+          return NextResponse.json({ error: "Artist name too long (max 255 characters)" }, { status: 400 });
+        }
+        updates.artistName = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid artistName" }, { status: 400 });
       }
     }
 

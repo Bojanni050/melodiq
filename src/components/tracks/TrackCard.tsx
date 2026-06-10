@@ -70,6 +70,9 @@ const TrackCard = memo(function TrackCard({
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
+  const [isEditingArtist, setIsEditingArtist] = useState(false);
+  const [editArtist, setEditArtist] = useState(track.artistName ?? "");
+  const artistInputRef = useRef<HTMLInputElement | null>(null);
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
   const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
@@ -140,6 +143,17 @@ const TrackCard = memo(function TrackCard({
       titleInputRef.current.select();
     }
   }, [isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingArtist && artistInputRef.current) {
+      artistInputRef.current.focus();
+      artistInputRef.current.select();
+    }
+  }, [isEditingArtist]);
+
+  useEffect(() => {
+    if (!isEditingArtist) setEditArtist(track.artistName ?? "");
+  }, [track.artistName, isEditingArtist]);
 
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
@@ -230,6 +244,28 @@ const TrackCard = memo(function TrackCard({
   function discardTitle() {
     setIsEditingTitle(false);
     setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
+  }
+
+  function saveArtist() {
+    const trimmed = editArtist.trim();
+    setIsEditingArtist(false);
+    const next = trimmed || null;
+    if (next === (track.artistName ?? null)) return;
+    fetch(`/api/tracks/${track.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artistName: next }),
+    }).catch(() => {});
+  }
+
+  function discardArtist() {
+    setIsEditingArtist(false);
+    setEditArtist(track.artistName ?? "");
+  }
+
+  function handleArtistKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") { e.preventDefault(); saveArtist(); }
+    else if (e.key === "Escape") { discardArtist(); }
   }
 
   function saveTitle() {
@@ -599,6 +635,55 @@ const TrackCard = memo(function TrackCard({
               </span>
             )}
           </div>
+
+          {/* Artist name row */}
+          {isEditingArtist ? (
+            <div className="flex items-center gap-1 mt-0.5 min-w-0" onClick={(e) => e.stopPropagation()}>
+              <input
+                ref={artistInputRef}
+                type="text"
+                value={editArtist}
+                onChange={(e) => setEditArtist(e.target.value)}
+                onKeyDown={handleArtistKeyDown}
+                onBlur={discardArtist}
+                aria-label="Edit artist name"
+                placeholder="Artist name"
+                className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-xs bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 text-white/80"
+                maxLength={255}
+                draggable={false}
+                onDragStart={(e) => e.stopPropagation()}
+              />
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); saveArtist(); }}
+                className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors"
+                title="Save (Enter)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); discardArtist(); }}
+                className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors"
+                title="Discard (Esc)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <p
+              className="text-[10px] text-white/40 mt-0.5 truncate cursor-text select-none"
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => { e.stopPropagation(); setIsEditingArtist(true); }}
+              title={track.artistName ? "Double-click to edit artist" : "Double-click to add artist name"}
+            >
+              {track.artistName ?? <span className="italic opacity-50">no artist — double-click to add</span>}
+            </p>
+          )}
 
           {/* Mobile Download Buttons Row */}
           {track.status === "done" && track.audioUrl && (

@@ -56,6 +56,7 @@ export const tracks = pgTable("tracks", {
   coverUrl: text("cover_url"),
   s3KeyCover: text("s3_key_cover"),
   s3KeyCoverThumb: text("s3_key_cover_thumb"),
+  artistName: varchar("artist_name", { length: 255 }),
   rating: varchar("rating", { length: 10 }),
   playCount: integer("play_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

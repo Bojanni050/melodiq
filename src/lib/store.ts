@@ -69,6 +69,7 @@ export interface Track {
   playCount?: number | null;
   lyricsTimestamps?: string | null;
   instrumental?: boolean | null;
+  artistName?: string | null;
 }
 
 interface PlayerState {
@@ -281,6 +282,7 @@ export const usePlayerStore = create<PlayerState>()(
             (state.currentTrack?.lyricsTimestamps ?? null) !== (nextCurrentTrack?.lyricsTimestamps ?? null) ||
             (state.currentTrack?.coverUrl ?? null) !== (nextCurrentTrack?.coverUrl ?? null) ||
             (state.currentTrack?.rating ?? null) !== (nextCurrentTrack?.rating ?? null) ||
+            (state.currentTrack?.artistName ?? null) !== (nextCurrentTrack?.artistName ?? null) ||
             state.queue.some((track, index) => track !== nextQueue[index]) ||
             state.history.some((track, index) => track !== nextHistory[index]) ||
             (state.playContext ? state.playContext.some((track, index) => track !== nextPlayContext?.[index]) : false);

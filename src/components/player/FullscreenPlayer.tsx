@@ -32,7 +32,7 @@ export default function FullscreenPlayer({
   const [duration, setDuration] = useState(0);
   const audioElement = usePlayerStore((state) => state.audioElement);
   const playToggleCooldownRef = useRef(0);
-  const artistLabel = (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+  const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   const { mutate } = useSWRConfig();
@@ -239,7 +239,7 @@ export default function FullscreenPlayer({
               </h2>
               <p className="text-sm text-white/60 capitalize">
                 {currentTrack
-                  ? `${artistLabel ? `${artistLabel} - ` : ""}${formatProviderLabel(currentTrack.provider)} • ${currentTrack.providerModel}`
+                  ? `${artistLabel ? `${artistLabel} — ` : ""}${currentTrack.artistName ? "composer: " : ""}${formatProviderLabel(currentTrack.provider)} • ${currentTrack.providerModel}`
                   : ""}
               </p>
               <div className="mt-2">

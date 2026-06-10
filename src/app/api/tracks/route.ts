@@ -308,6 +308,7 @@ export async function GET(request: NextRequest) {
     rating: tracks.rating,
     playCount: tracks.playCount,
     lyricsTimestamps: tracks.lyricsTimestamps,
+    artistName: tracks.artistName,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
   };

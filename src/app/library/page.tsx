@@ -12,6 +12,7 @@ import {
   usePlaylistStore,
   useWorkspaceStore,
 } from "@/lib/store";
+import { formatTotalDuration } from "@/lib/track-utils";
 
 interface LibraryTrack {
   id: string;
@@ -33,6 +34,7 @@ interface LibraryTrack {
   s3KeyCover: string | null;
   rating?: string | null;
   lyricsTimestamps?: string | null;
+  artistName?: string | null;
 }
 
 type LibraryView = "songs" | "playlists" | "workspaces";
@@ -375,6 +377,19 @@ export default function LibraryPage() {
     if (selectedPlaylist) return visiblePlaylistTracks;
     return tracks;
   }, [selectedWorkspace, selectedPlaylist, visibleTracks, visiblePlaylistTracks, tracks]);
+
+  const totalDuration = useMemo(
+    () => formatTotalDuration(activeSongs.reduce((s, t) => s + (t.duration ?? 0), 0)),
+    [activeSongs],
+  );
+  const visibleTracksTotalDuration = useMemo(
+    () => formatTotalDuration(visibleTracks.reduce((s, t) => s + (t.duration ?? 0), 0)),
+    [visibleTracks],
+  );
+  const visiblePlaylistTracksTotalDuration = useMemo(
+    () => formatTotalDuration(visiblePlaylistTracks.reduce((s, t) => s + (t.duration ?? 0), 0)),
+    [visiblePlaylistTracks],
+  );
 
   const parentWorkspaceNameById = useMemo(
     () =>
@@ -738,6 +753,7 @@ export default function LibraryPage() {
       coverUrl: selectedTrack.coverUrl,
       s3KeyCover: selectedTrack.s3KeyCover,
       rating: selectedTrack.rating ?? null,
+      artistName: selectedTrack.artistName ?? null,
     });
   }
 
@@ -912,7 +928,7 @@ export default function LibraryPage() {
                           </button>
                         </div>
                         <h2 className="text-lg font-semibold truncate">{selectedWorkspace.name}</h2>
-                        <p className="text-sm text-white/55">{visibleTracks.length} songs in this workspace.</p>
+                        <p className="text-sm text-white/55">{visibleTracks.length} songs in this workspace{visibleTracksTotalDuration ? ` (${visibleTracksTotalDuration})` : ""}.</p>
                       </>
                     ) : selectedPlaylist ? (
                       <>
@@ -929,7 +945,7 @@ export default function LibraryPage() {
                           </button>
                         </div>
                         <h2 className="text-lg font-semibold truncate">{selectedPlaylist.name}</h2>
-                        <p className="text-sm text-white/55">{visiblePlaylistTracks.length} songs in this playlist.</p>
+                        <p className="text-sm text-white/55">{visiblePlaylistTracks.length} songs in this playlist{visiblePlaylistTracksTotalDuration ? ` (${visiblePlaylistTracksTotalDuration})` : ""}.</p>
                         {selectedPlaylist.description && (
                           <p className="text-sm text-white/40 mt-1 max-w-xl">{selectedPlaylist.description}</p>
                         )}
@@ -942,7 +958,7 @@ export default function LibraryPage() {
                     )}
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {activeSongs.length} tracks
+                    {activeSongs.length} tracks{totalDuration ? ` (${totalDuration})` : ""}
                   </div>
                 </div>
 

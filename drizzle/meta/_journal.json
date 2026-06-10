@@ -43,6 +43,13 @@
       "when": 1749549600000,
       "tag": "0005_playlist_description",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749636000000,
+      "tag": "0006_track_artist_name",
+      "breakpoints": true
     }
   ]
 }
