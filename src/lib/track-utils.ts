@@ -53,10 +53,11 @@ export function formatTrackDateTime(date: Date): { date: string; time: string } 
     dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
-  const timeStr = date.toLocaleTimeString("en-US", {
-    hour: "numeric",
+  const timeStr = date.toLocaleTimeString("nl-NL", {
+    hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    hour12: false,
+    timeZone: "Europe/Amsterdam",
   });
 
   return { date: dateStr, time: timeStr };
