@@ -655,6 +655,7 @@ export async function POST(request: NextRequest) {
         : null;
     const globalUploadPrompt = normalizeUploadText(formData.get("uploadPrompt"));
     const globalUploadLyrics = normalizeUploadText(formData.get("uploadLyrics"));
+    const globalUploadInstrumental = formData.get("instrumental") === "true";
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
@@ -789,7 +790,7 @@ export async function POST(request: NextRequest) {
             audioId: uploadHash,
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
-            instrumental: false,
+            instrumental: globalUploadInstrumental,
             creditsUsed: 0,
             error: null,
           })

@@ -164,6 +164,7 @@ export default function LibraryPage() {
   const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
+  const [uploadInstrumental, setUploadInstrumental] = useState(false);
   const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
   const [coverPickerPlaylistId, setCoverPickerPlaylistId] = useState<string | null>(null);
   const [editingDescriptionPlaylistId, setEditingDescriptionPlaylistId] = useState<string | null>(null);
@@ -600,7 +601,11 @@ export default function LibraryPage() {
         formData.append("uploadPrompt", trimmedPrompt);
       }
 
-      const trimmedLyrics = uploadLyricsDraft.trim();
+      if (uploadInstrumental) {
+        formData.append("instrumental", "true");
+      }
+
+      const trimmedLyrics = uploadInstrumental ? "" : uploadLyricsDraft.trim();
       if (trimmedLyrics) {
         formData.append("uploadLyrics", trimmedLyrics);
       }
@@ -1555,7 +1560,25 @@ export default function LibraryPage() {
                   </select>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                {/* Instrumental toggle */}
+                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-white">Instrumental</p>
+                    <p className="text-xs text-white/45">No lyrics — hides the lyrics field</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={uploadInstrumental}
+                    disabled={uploading}
+                    onClick={() => setUploadInstrumental((v) => !v)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${uploadInstrumental ? "bg-primary-500" : "bg-white/15"}`}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${uploadInstrumental ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                </div>
+
+                <div className={`grid gap-3 transition-all duration-200 ${uploadInstrumental ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
                   <div className="space-y-1">
                     <label htmlFor="upload-panel-prompt" className="text-xs text-white/60">Optional prompt (global)</label>
                     <textarea
@@ -1568,18 +1591,20 @@ export default function LibraryPage() {
                       className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label htmlFor="upload-panel-lyrics" className="text-xs text-white/60">Optional lyrics (global)</label>
-                    <textarea
-                      id="upload-panel-lyrics"
-                      value={uploadLyricsDraft}
-                      onChange={(event) => setUploadLyricsDraft(event.target.value)}
-                      rows={3}
-                      disabled={uploading}
-                      placeholder="Paste lyrics"
-                      className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
-                    />
-                  </div>
+                  {!uploadInstrumental && (
+                    <div className="space-y-1">
+                      <label htmlFor="upload-panel-lyrics" className="text-xs text-white/60">Optional lyrics (global)</label>
+                      <textarea
+                        id="upload-panel-lyrics"
+                        value={uploadLyricsDraft}
+                        onChange={(event) => setUploadLyricsDraft(event.target.value)}
+                        rows={3}
+                        disabled={uploading}
+                        placeholder="Paste lyrics"
+                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between gap-2">
