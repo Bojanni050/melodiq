@@ -873,21 +873,57 @@ export default function LibraryPage() {
                   <p className="max-w-2xl text-sm sm:text-base text-white/60">
                     Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
                   </p>
-                  <div className="mt-3 inline-flex rounded-full border border-white/10 bg-white/5 p-1">
-                    {[
-                      { key: "songs", label: "Songs" },
-                      { key: "playlists", label: "Playlists" },
-                      { key: "workspaces", label: "Workspaces" },
-                    ].map((item) => (
+                  <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
+                    {/* All Songs */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlaylistId(null); setSelectedWorkspaceId(null); setView("songs"); }}
+                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "songs" && !selectedPlaylist && !selectedWorkspace ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                    >
+                      Songs
+                    </button>
+
+                    {/* Playlists + contextual sub-pill */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlaylistId(null); setView("playlists"); }}
+                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${(view === "playlists" || !!selectedPlaylist) && !selectedWorkspace ? "bg-white/15 text-white" : "text-white/60 hover:text-white"}`}
+                    >
+                      Playlists
+                    </button>
+                    <div className={`flex items-center overflow-hidden transition-all duration-200 ${selectedPlaylist ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"}`}>
+                      <svg className="w-3 h-3 text-white/25 shrink-0 mx-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                       <button
-                        key={item.key}
                         type="button"
-                        onClick={() => setView(item.key as LibraryView)}
-                        className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === item.key ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                        onClick={() => selectedPlaylist && setView("songs")}
+                        className={`h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-colors ${view === "songs" && !!selectedPlaylist ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                       >
-                        {item.label}
+                        {selectedPlaylist?.name ?? "songs"}
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Workspaces + contextual sub-pill */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedWorkspaceId(null); setView("workspaces"); }}
+                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${(view === "workspaces" || !!selectedWorkspace) && !selectedPlaylist ? "bg-white/15 text-white" : "text-white/60 hover:text-white"}`}
+                    >
+                      Workspaces
+                    </button>
+                    <div className={`flex items-center overflow-hidden transition-all duration-200 ${selectedWorkspace ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"}`}>
+                      <svg className="w-3 h-3 text-white/25 shrink-0 mx-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <button
+                        type="button"
+                        onClick={() => selectedWorkspace && setView("songs")}
+                        className={`h-8 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-colors ${view === "songs" && !!selectedWorkspace ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                      >
+                        {selectedWorkspace?.name ?? "songs"}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div>
