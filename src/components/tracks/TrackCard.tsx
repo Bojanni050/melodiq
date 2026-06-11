@@ -814,6 +814,8 @@ const TrackCard = memo(function TrackCard({
   return (
     prevProps.track.id === nextProps.track.id &&
     prevProps.track.title === nextProps.track.title &&
+    prevProps.track.prompt === nextProps.track.prompt &&
+    prevProps.track.lyrics === nextProps.track.lyrics &&
     prevProps.track.status === nextProps.track.status &&
     prevProps.track.playCount === nextProps.track.playCount &&
     prevProps.track.coverUrl === nextProps.track.coverUrl &&
