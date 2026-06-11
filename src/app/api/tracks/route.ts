@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks } from "@/db/schema";
+import { tracks, users } from "@/db/schema";
 import { eq, desc, and, inArray, ne, lt } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
@@ -663,6 +663,9 @@ export async function POST(request: NextRequest) {
     const globalUploadLyrics = normalizeUploadText(formData.get("uploadLyrics"));
     const globalUploadInstrumental = formData.get("instrumental") === "true";
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
+
+    const userRow = await db.select({ name: users.name, artistAlias: users.artistAlias }).from(users).where(eq(users.id, userId)).limit(1);
+    const defaultComposer = userRow[0]?.artistAlias?.trim() || userRow[0]?.name?.trim() || null;
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
       (entry): entry is File => entry instanceof File && isSupportedMetadataFilename(entry.name)
@@ -798,6 +801,7 @@ export async function POST(request: NextRequest) {
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: isInstrumental,
+            artistName: defaultComposer,
             creditsUsed: 0,
             error: null,
           })
