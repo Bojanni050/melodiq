@@ -652,7 +652,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <div className="flex-1 min-h-0 overflow-hidden">
                 <div
                   ref={containerRef}
-                  className="h-full overflow-y-auto px-3 pt-3 pb-4 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
+                  className="h-full overflow-y-auto px-3 pt-3 pb-16 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
                 >
                   {parsedLyrics.map((line, index) => {
                     const isActive = index === activeLineIndex;
@@ -682,7 +682,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               </div>
             ) : (
               <div className="flex-1 min-h-0 overflow-hidden">
-                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
+                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
