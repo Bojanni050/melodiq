@@ -24,27 +24,16 @@ function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string 
 }
 
 export function AudioSourceBadge({ source }: { source: AudioSource; state: AudioSourceState }) {
-  if (source === "unknown") return null;
-
-  if (source === "cache") {
-    return (
-      <span
-        className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-emerald-200"
-        title="Playing from disk cache"
-      >
-        <span className="text-[11px] leading-none">⚡</span>
-        Cached
-      </span>
-    );
-  }
+  // Only show a badge when streaming (not from cache)
+  if (source !== "s3") return null;
 
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full border border-sky-400/35 bg-sky-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-sky-200"
-      title="Streaming from S3"
+      title="Streaming from server"
     >
       <span className="text-[11px] leading-none">☁</span>
-      S3
+      Stream
     </span>
   );
 }
@@ -797,9 +786,6 @@ export default function Player() {
                   {artistLabel ? `${artistLabel} — ` : ""}{currentTrack.artistName ? "composer: " : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
-                <div className="mt-0.5 -translate-y-0.5">
-                  <AudioSourceBadge source={audioSource} state={audioSourceState} />
-                </div>
               </div>
             </div>
           ) : (
@@ -875,6 +861,14 @@ export default function Player() {
               <span className="text-xs text-white/40 w-8 tabular-nums">
                 {duration > 0 ? `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, "0")}` : "0:00"}
               </span>
+              {currentTrack && (
+                <>
+                  <AudioSourceBadge source={audioSource} state={audioSourceState} />
+                  <span className="inline-flex items-center rounded-full border border-white/12 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                    {(playHighestQuality && currentTrack.formatHd ? currentTrack.formatHd : currentTrack.format) ?? "mp3"}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
