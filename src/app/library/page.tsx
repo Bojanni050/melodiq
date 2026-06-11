@@ -194,10 +194,7 @@ export default function LibraryPage() {
     if (activeCheck && !activeCheck()) return;
     if (res.ok) {
       const data = await res.json();
-      const cleanedTracks = (data.tracks || []).map((t: any) => ({
-        ...t,
-        title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
-      }));
+      const cleanedTracks = (data.tracks || []).map((t: any) => ({ ...t }));
       setTracks(cleanedTracks);
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);

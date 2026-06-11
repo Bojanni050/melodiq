@@ -51,6 +51,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [lyricsDraft, setLyricsDraft] = useState(initialTrack.lyrics ?? "");
   const [lyricsEditing, setLyricsEditing] = useState(false);
   const [lyricsSaving, setLyricsSaving] = useState(false);
+  const [lyricsSaveError, setLyricsSaveError] = useState<string | null>(null);
   const { user, loadUser } = useUserStore();
   const { currentTrack, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -295,6 +296,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   async function handleSaveLyrics() {
     setLyricsSaving(true);
+    setLyricsSaveError(null);
     try {
       const trimmedLyrics = lyricsDraft.trim();
       const res = await fetch(`/api/tracks/${track.id}`, {
@@ -305,7 +307,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
       if (!res.ok) {
         const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : "Failed to update lyrics";
+        const message = payload && typeof payload.error === "string" ? payload.error : `Save failed (${res.status})`;
         throw new Error(message);
       }
 
@@ -317,7 +319,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       setLyricsEditing(false);
       setLyricsDraft(updatedTrack.lyrics ?? "");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save lyrics";
       console.error("Failed to update lyrics:", error);
+      setLyricsSaveError(message);
     } finally {
       setLyricsSaving(false);
     }
@@ -604,6 +608,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     >
                       {lyricsSaving ? "Saving..." : "Save"}
                     </button>
+                    {lyricsSaveError && (
+                      <span className="text-[11px] text-red-400" title={lyricsSaveError}>⚠ {lyricsSaveError}</span>
+                    )}
                   </>
                 )}
                 {track.lyrics && !lyricsEditing && (
