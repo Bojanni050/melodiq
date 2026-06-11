@@ -459,13 +459,18 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <p className="truncate text-xs leading-relaxed text-white/75">{promptFirstLine}</p>
             </div>
           )}
-          {isUploadedTrack && (
-            <div className="mt-2.5">
+          <div className="mt-2.5 flex items-end justify-between gap-2">
+            {isUploadedTrack ? (
               <span className="inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-emerald-100 uppercase tracking-wider">
                 Uploaded file
               </span>
-            </div>
-          )}
+            ) : <span />}
+            {currentWorkspace && (
+              <span className="inline-flex items-center rounded-full border border-white/20 bg-black/40 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium text-white/80 max-w-[160px] truncate">
+                {currentWorkspace.name}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -684,14 +689,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 No lyrics yet.
               </div>
             )}
-          </div>
-        )}
-
-        {/* Workspace */}
-        {currentWorkspace && (
-          <div className="shrink-0 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-white/35">Workspace</span>
-            <span className="text-xs font-medium text-white/65 truncate">{currentWorkspace.name}</span>
           </div>
         )}
 
