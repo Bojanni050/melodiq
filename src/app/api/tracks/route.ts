@@ -145,6 +145,9 @@ type UploadMetadata = {
 
 type UploadItemOverride = {
   title: string | null;
+  prompt: string | null;
+  lyrics: string | null;
+  instrumental: boolean | null;
 };
 
 function normalizeUploadText(value: FormDataEntryValue | null): string | null {
@@ -213,9 +216,12 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null };
+      if (!isJsonObject(item)) return { title: null, prompt: null, lyrics: null, instrumental: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
-      return { title };
+      const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : null;
+      const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
+      const instrumental = typeof item.instrumental === "boolean" ? item.instrumental : null;
+      return { title, prompt, lyrics, instrumental };
     });
   } catch {
     return [];
@@ -732,8 +738,9 @@ export async function POST(request: NextRequest) {
         const uploadHash = computeUploadAudioHash(audioBuffer, format);
         const sidecarMetadata = metadataByIndex.get(index) ?? metadataByBaseName.get(baseNameWithoutExtension(file.name));
         const itemOverride = uploadItemOverrides[index];
-        const uploadPrompt = sidecarMetadata?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
-        const uploadLyrics = sidecarMetadata?.lyrics ?? globalUploadLyrics ?? null;
+        const isInstrumental = itemOverride?.instrumental ?? globalUploadInstrumental;
+        const uploadPrompt = sidecarMetadata?.prompt ?? itemOverride?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
+        const uploadLyrics = isInstrumental ? null : (sidecarMetadata?.lyrics ?? itemOverride?.lyrics ?? globalUploadLyrics ?? null);
         const uploadLyricsTimestamps = sidecarMetadata?.lyricsTimestamps ?? null;
         const uploadTitle = itemOverride?.title ?? titleFromFilename(file.name);
 
@@ -790,7 +797,7 @@ export async function POST(request: NextRequest) {
             audioId: uploadHash,
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
-            instrumental: globalUploadInstrumental,
+            instrumental: isInstrumental,
             creditsUsed: 0,
             error: null,
           })

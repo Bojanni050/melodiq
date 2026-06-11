@@ -58,6 +58,9 @@ type QueuedUploadItem = {
   file: File;
   title: string;
   metadataFile: File | null;
+  prompt: string;
+  lyrics: string;
+  instrumental: boolean;
 };
 
 function hashString(value: string) {
@@ -498,6 +501,9 @@ export default function LibraryPage() {
         file,
         title: titleFromUploadFilename(file.name),
         metadataFile: null,
+        prompt: uploadPromptDraft,
+        lyrics: uploadLyricsDraft,
+        instrumental: uploadInstrumental,
       }));
 
       if (valid.length > room) {
@@ -592,23 +598,12 @@ export default function LibraryPage() {
         JSON.stringify(
           queuedUploads.map((item) => ({
             title: item.title.trim() || null,
+            prompt: item.prompt.trim() || null,
+            lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
+            instrumental: item.instrumental,
           }))
         )
       );
-
-      const trimmedPrompt = uploadPromptDraft.trim();
-      if (trimmedPrompt) {
-        formData.append("uploadPrompt", trimmedPrompt);
-      }
-
-      if (uploadInstrumental) {
-        formData.append("instrumental", "true");
-      }
-
-      const trimmedLyrics = uploadInstrumental ? "" : uploadLyricsDraft.trim();
-      if (trimmedLyrics) {
-        formData.append("uploadLyrics", trimmedLyrics);
-      }
 
       formData.append("workspaceId", targetWorkspaceId);
 
@@ -1699,6 +1694,63 @@ export default function LibraryPage() {
                             disabled={uploading}
                             className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                           />
+
+                          <div className="flex items-center justify-between gap-2 pt-0.5">
+                            <label className="text-xs text-white/50">Instrumental</label>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={item.instrumental}
+                              disabled={uploading}
+                              onClick={() => setQueuedUploads((current) =>
+                                current.map((upload) =>
+                                  upload.id === item.id ? { ...upload, instrumental: !upload.instrumental } : upload
+                                )
+                              )}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.instrumental ? "bg-primary-500" : "bg-white/15"}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.instrumental ? "translate-x-4" : "translate-x-0"}`} />
+                            </button>
+                          </div>
+
+                          <div className={`grid gap-2 ${item.instrumental ? "grid-cols-1" : "grid-cols-2"}`}>
+                            <div className="space-y-1">
+                              <label htmlFor={`upload-item-prompt-${item.id}`} className="text-xs text-white/50">Prompt</label>
+                              <textarea
+                                id={`upload-item-prompt-${item.id}`}
+                                value={item.prompt}
+                                onChange={(event) => {
+                                  const v = event.target.value;
+                                  setQueuedUploads((current) =>
+                                    current.map((upload) => upload.id === item.id ? { ...upload, prompt: v } : upload)
+                                  );
+                                }}
+                                rows={2}
+                                disabled={uploading}
+                                placeholder="Style / mood / context"
+                                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-xs text-white outline-none focus:border-white/25 resize-none"
+                              />
+                            </div>
+                            {!item.instrumental && (
+                              <div className="space-y-1">
+                                <label htmlFor={`upload-item-lyrics-${item.id}`} className="text-xs text-white/50">Lyrics</label>
+                                <textarea
+                                  id={`upload-item-lyrics-${item.id}`}
+                                  value={item.lyrics}
+                                  onChange={(event) => {
+                                    const v = event.target.value;
+                                    setQueuedUploads((current) =>
+                                      current.map((upload) => upload.id === item.id ? { ...upload, lyrics: v } : upload)
+                                    );
+                                  }}
+                                  rows={2}
+                                  disabled={uploading}
+                                  placeholder="Paste lyrics"
+                                  className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-xs text-white outline-none focus:border-white/25 resize-none"
+                                />
+                              </div>
+                            )}
+                          </div>
 
                           <div className="flex flex-wrap items-center gap-2">
                             <button
