@@ -35,6 +35,7 @@ const TrackCard = memo(function TrackCard({
   workspaceDisplayNameById: workspaceDisplayNameByIdProp,
   workspaceCoverById: workspaceCoverByIdProp,
   onToggleSelection,
+  onEditDetails,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
