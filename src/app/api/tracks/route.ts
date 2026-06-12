@@ -148,6 +148,7 @@ type UploadItemOverride = {
   prompt: string | null;
   lyrics: string | null;
   instrumental: boolean | null;
+  sourceProvider: string | null;
 };
 
 function normalizeUploadText(value: FormDataEntryValue | null): string | null {
@@ -221,7 +222,8 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
       const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : null;
       const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
       const instrumental = typeof item.instrumental === "boolean" ? item.instrumental : null;
-      return { title, prompt, lyrics, instrumental };
+      const sourceProvider = typeof item.sourceProvider === "string" && item.sourceProvider.trim() ? item.sourceProvider.trim() : null;
+      return { title, prompt, lyrics, instrumental, sourceProvider };
     });
   } catch {
     return [];
@@ -742,6 +744,7 @@ export async function POST(request: NextRequest) {
         const sidecarMetadata = metadataByIndex.get(index) ?? metadataByBaseName.get(baseNameWithoutExtension(file.name));
         const itemOverride = uploadItemOverrides[index];
         const isInstrumental = itemOverride?.instrumental ?? globalUploadInstrumental;
+        const resolvedProvider = itemOverride?.sourceProvider ?? "upload";
         const uploadPrompt = sidecarMetadata?.prompt ?? itemOverride?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
         const uploadLyrics = isInstrumental ? null : (sidecarMetadata?.lyrics ?? itemOverride?.lyrics ?? globalUploadLyrics ?? null);
         const uploadLyricsTimestamps = sidecarMetadata?.lyricsTimestamps ?? null;
@@ -753,7 +756,6 @@ export async function POST(request: NextRequest) {
           .where(
             and(
               eq(tracks.userId, userId),
-              eq(tracks.provider, "upload"),
               eq(tracks.audioId, uploadHash)
             )
           )
@@ -788,7 +790,7 @@ export async function POST(request: NextRequest) {
             id: trackId,
             userId,
             title: uploadTitle,
-            provider: "upload",
+            provider: resolvedProvider,
             providerModel: "manual-upload",
             prompt: uploadPrompt,
             lyrics: uploadLyrics,

@@ -53,6 +53,16 @@ const WORKSPACE_FOLDER_BG_CLASSES = [
   "bg-linear-135 from-blue-600 to-teal-500",
 ] as const;
 
+const UPLOAD_PROVIDERS = [
+  { value: "upload", label: "Unknown / Other" },
+  { value: "suno", label: "Suno" },
+  { value: "mureka", label: "Mureka" },
+  { value: "udio", label: "Udio" },
+  { value: "poyo", label: "PoYo" },
+  { value: "tempolor", label: "Tempolor" },
+  { value: "musicgpt", label: "MusicGPT" },
+] as const;
+
 type QueuedUploadItem = {
   id: string;
   file: File;
@@ -61,6 +71,7 @@ type QueuedUploadItem = {
   prompt: string;
   lyrics: string;
   instrumental: boolean;
+  sourceProvider: string;
 };
 
 function hashString(value: string) {
@@ -504,6 +515,7 @@ export default function LibraryPage() {
         prompt: uploadPromptDraft,
         lyrics: uploadLyricsDraft,
         instrumental: uploadInstrumental,
+        sourceProvider: "upload",
       }));
 
       if (valid.length > room) {
@@ -601,6 +613,7 @@ export default function LibraryPage() {
             prompt: item.prompt.trim() || null,
             lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
             instrumental: item.instrumental,
+            sourceProvider: item.sourceProvider || null,
           }))
         )
       );
@@ -1694,6 +1707,29 @@ export default function LibraryPage() {
                             disabled={uploading}
                             className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                           />
+
+                          <div className="space-y-1">
+                            <label htmlFor={`upload-item-provider-${item.id}`} className="text-xs text-white/50">Source</label>
+                            <select
+                              id={`upload-item-provider-${item.id}`}
+                              value={UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) ? item.sourceProvider : "__custom__"}
+                              onChange={(event) => {
+                                const v = event.target.value;
+                                setQueuedUploads((current) =>
+                                  current.map((upload) => upload.id === item.id ? { ...upload, sourceProvider: v === "__custom__" ? "" : v } : upload)
+                                );
+                              }}
+                              disabled={uploading}
+                              className="h-8 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-xs text-white outline-none focus:border-white/25"
+                            >
+                              {UPLOAD_PROVIDERS.map((p) => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
+                              ))}
+                              {!UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) && item.sourceProvider && (
+                                <option value="__custom__">{item.sourceProvider}</option>
+                              )}
+                            </select>
+                          </div>
 
                           <div className="flex items-center justify-between gap-2 pt-0.5">
                             <label className="text-xs text-white/50">Instrumental</label>
