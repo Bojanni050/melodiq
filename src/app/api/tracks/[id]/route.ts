@@ -406,8 +406,11 @@ export async function PATCH(
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
     const artistName = body.artistName;
+    const instrumental = body.instrumental;
+    const language = body.language;
+    const provider = body.provider;
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && instrumental === undefined && language === undefined && provider === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -450,10 +453,6 @@ export async function PATCH(
     }
 
     if (prompt !== undefined) {
-      const track = result[0];
-      if (track.provider !== "upload") {
-        return NextResponse.json({ error: "Prompt can only be edited for uploaded tracks" }, { status: 400 });
-      }
       if (typeof prompt !== "string") {
         return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
       }
@@ -497,6 +496,31 @@ export async function PATCH(
       } else {
         return NextResponse.json({ error: "Invalid artistName" }, { status: 400 });
       }
+    }
+
+    if (instrumental !== undefined) {
+      if (typeof instrumental !== "boolean") {
+        return NextResponse.json({ error: "Invalid instrumental value" }, { status: 400 });
+      }
+      updates.instrumental = instrumental;
+    }
+
+    if (language !== undefined) {
+      if (language === null) {
+        updates.language = null;
+      } else if (typeof language === "string") {
+        const trimmed = language.trim();
+        updates.language = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid language" }, { status: 400 });
+      }
+    }
+
+    if (provider !== undefined) {
+      if (typeof provider !== "string" || !provider.trim()) {
+        return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
+      }
+      updates.provider = provider.trim();
     }
 
     if (workspaceId !== undefined) {

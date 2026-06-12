@@ -56,6 +56,7 @@ const TrackCard = memo(function TrackCard({
   workspaceDisplayNameById?: Map<string, string>;
   workspaceCoverById?: Map<string, string | null>;
   onToggleSelection?: (trackId: string, shiftKey: boolean) => void;
+  onEditDetails?: (track: TrackItem) => void;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -790,6 +791,7 @@ const TrackCard = memo(function TrackCard({
               onCreatePlaylistClick={() => setShowCreatePlaylistDialog(true)}
               onAddToPlaylistClick={handleAddToPlaylistClick}
               onRemoveFromPlaylistClick={handleRemoveFromPlaylistClick}
+              onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
             />
           )}
           <button

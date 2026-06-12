@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   DEFAULT_WORKSPACE_ID,
@@ -167,6 +168,7 @@ export default function LibraryPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
+  const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -1033,6 +1035,14 @@ export default function LibraryPage() {
                     onTitleUpdate={(trackId, newTitle) =>
                       setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                     }
+                    onEditDetails={(track) =>
+                      setEditingTrack({
+                        ...track,
+                        coverUrl: track.coverUrl ?? null,
+                        s3KeyCover: track.s3KeyCover ?? null,
+                        rating: track.rating ?? null,
+                      })
+                    }
                   />
                 )}
               </section>
@@ -1519,6 +1529,23 @@ export default function LibraryPage() {
             })()}
           </div>
         </div>
+      )}
+
+      {editingTrack && (
+        <TrackEditPanel
+          track={editingTrack}
+          onClose={() => setEditingTrack(null)}
+          onSaved={(updated) => {
+            const normalized: LibraryTrack = {
+              ...updated,
+              coverUrl: updated.coverUrl ?? null,
+              s3KeyCover: updated.s3KeyCover ?? null,
+              rating: updated.rating ?? null,
+            };
+            setTracks((prev) => prev.map((t) => t.id === normalized.id ? { ...t, ...normalized } : t));
+            setSelectedTrack((prev) => prev?.id === normalized.id ? { ...prev, ...normalized } : prev);
+          }}
+        />
       )}
 
       {isUploadPanelOpen && (

@@ -15,6 +15,7 @@ interface TrackActionMenuProps {
   onCreatePlaylistClick: () => void;
   onAddToPlaylistClick: (playlistId: string, playlistName: string, isDuplicate: boolean) => void;
   onRemoveFromPlaylistClick: (playlistId: string, playlistName: string) => void;
+  onEditDetails?: () => void;
 }
 
 export default function TrackActionMenu({
@@ -28,6 +29,7 @@ export default function TrackActionMenu({
   onCreatePlaylistClick,
   onAddToPlaylistClick,
   onRemoveFromPlaylistClick,
+  onEditDetails,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -64,6 +66,17 @@ export default function TrackActionMenu({
 
       {menuOpen && (
         <div className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              onEditDetails?.();
+            }}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+          >
+            Edit Track Details
+          </button>
+          <div className="my-1 h-px bg-white/10" />
           <button
             onClick={(e) => {
               e.stopPropagation();

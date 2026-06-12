@@ -21,6 +21,8 @@ export interface TrackItem {
   playCount?: number | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
+  instrumental?: boolean | null;
+  language?: string | null;
 }
 
 export interface PlaylistOption {
