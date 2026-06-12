@@ -9,6 +9,7 @@ interface User {
   email: string;
   name: string | null;
   artistAlias: string | null;
+  composerAlias: string | null;
   createdAt: string;
 }
 
@@ -18,6 +19,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [artistAlias, setArtistAlias] = useState("");
+  const [composerAlias, setComposerAlias] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,6 +36,7 @@ export default function AccountPage() {
         setUser(data.user);
         setName(data.user?.name || "");
         setArtistAlias(data.user?.artistAlias || "");
+        setComposerAlias(data.user?.composerAlias || "");
       } else {
         router.push("/login");
       }
@@ -48,7 +51,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, artistAlias }),
+      body: JSON.stringify({ name, artistAlias, composerAlias }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -130,13 +133,25 @@ export default function AccountPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Composer alias</label>
+                  <label className="block text-xs font-medium text-white/50 mb-1">Artist alias</label>
                   <input
                     type="text"
                     value={artistAlias}
                     onChange={(e) => setArtistAlias(e.target.value)}
                     className="input-field font-mono text-sm"
                     placeholder="e.g. DJ Bojan"
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-white/25 mt-1">Your public artist name (optional).</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white/50 mb-1">Composer alias</label>
+                  <input
+                    type="text"
+                    value={composerAlias}
+                    onChange={(e) => setComposerAlias(e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder="e.g. Bojan van den Hoek"
                     maxLength={255}
                   />
                   <p className="text-xs text-white/25 mt-1">Used as the default composer on new tracks. Falls back to your name if empty.</p>

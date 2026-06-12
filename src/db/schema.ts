@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: varchar("name", { length: 255 }),
   artistAlias: varchar("artist_alias", { length: 255 }),
+  composerAlias: varchar("composer_alias", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

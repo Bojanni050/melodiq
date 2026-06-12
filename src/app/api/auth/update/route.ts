@@ -23,6 +23,7 @@ export async function PUT(request: NextRequest) {
 
   const name = body.name;
   const artistAlias = body.artistAlias;
+  const composerAlias = body.composerAlias;
   const currentPassword = body.currentPassword;
   const newPassword = body.newPassword;
 
@@ -60,6 +61,20 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  if (composerAlias !== undefined) {
+    if (composerAlias === null) {
+      updates.composerAlias = null;
+    } else if (typeof composerAlias === "string") {
+      const trimmed = composerAlias.trim();
+      if (trimmed.length > 255) {
+        return NextResponse.json({ error: "Composer alias too long (max 255 characters)" }, { status: 400 });
+      }
+      updates.composerAlias = trimmed ? trimmed : null;
+    } else {
+      return NextResponse.json({ error: "Invalid composerAlias" }, { status: 400 });
+    }
+  }
+
   if (newPassword) {
     if (!currentPassword || typeof currentPassword !== "string") {
       return NextResponse.json({ error: "Current password is required" }, { status: 400 });
@@ -90,6 +105,7 @@ export async function PUT(request: NextRequest) {
       email: users.email,
       name: users.name,
       artistAlias: users.artistAlias,
+      composerAlias: users.composerAlias,
       createdAt: users.createdAt,
     });
 

@@ -15,6 +15,7 @@ export async function GET() {
       email: users.email,
       name: users.name,
       artistAlias: users.artistAlias,
+      composerAlias: users.composerAlias,
       createdAt: users.createdAt,
     })
     .from(users)

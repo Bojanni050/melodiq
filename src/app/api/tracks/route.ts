@@ -666,8 +666,8 @@ export async function POST(request: NextRequest) {
     const globalUploadInstrumental = formData.get("instrumental") === "true";
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
 
-    const userRow = await db.select({ name: users.name, artistAlias: users.artistAlias }).from(users).where(eq(users.id, userId)).limit(1);
-    const defaultComposer = userRow[0]?.artistAlias?.trim() || userRow[0]?.name?.trim() || null;
+    const userRow = await db.select({ name: users.name, composerAlias: users.composerAlias }).from(users).where(eq(users.id, userId)).limit(1);
+    const defaultComposer = userRow[0]?.composerAlias?.trim() || userRow[0]?.name?.trim() || null;
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
       (entry): entry is File => entry instanceof File && isSupportedMetadataFilename(entry.name)
