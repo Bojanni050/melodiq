@@ -73,6 +73,7 @@ type QueuedUploadItem = {
   lyrics: string;
   instrumental: boolean;
   sourceProvider: string;
+  licenseFile: File | null;
 };
 
 function hashString(value: string) {
@@ -158,6 +159,7 @@ export default function LibraryPage() {
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const uploadMetadataInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadLicenseInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<LibraryView>("songs");
@@ -178,6 +180,7 @@ export default function LibraryPage() {
   const [isUploadDropzoneActive, setIsUploadDropzoneActive] = useState(false);
   const [queuedUploads, setQueuedUploads] = useState<QueuedUploadItem[]>([]);
   const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
+  const [pendingLicenseTargetId, setPendingLicenseTargetId] = useState<string | null>(null);
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
   const [uploadInstrumental, setUploadInstrumental] = useState(false);
@@ -518,6 +521,7 @@ export default function LibraryPage() {
         lyrics: uploadLyricsDraft,
         instrumental: uploadInstrumental,
         sourceProvider: "upload",
+        licenseFile: null,
       }));
 
       if (valid.length > room) {
@@ -553,6 +557,27 @@ export default function LibraryPage() {
 
     if (uploadMetadataInputRef.current) {
       uploadMetadataInputRef.current.value = "";
+    }
+  }
+
+  function handleLicenseAttachSelection(files: FileList | null) {
+    if (!pendingLicenseTargetId || !files || files.length === 0) return;
+    const file = files[0];
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      setUploadError("License file must be a PDF.");
+      return;
+    }
+
+    setQueuedUploads((current) =>
+      current.map((item) =>
+        item.id === pendingLicenseTargetId ? { ...item, licenseFile: file } : item
+      )
+    );
+    setPendingLicenseTargetId(null);
+
+    if (uploadLicenseInputRef.current) {
+      uploadLicenseInputRef.current.value = "";
     }
   }
 
@@ -604,6 +629,9 @@ export default function LibraryPage() {
         formData.append("files", item.file);
         if (item.metadataFile) {
           formData.append(`metadataFile:${index}`, item.metadataFile);
+        }
+        if (item.licenseFile) {
+          formData.append(`licenseFile:${index}`, item.licenseFile);
         }
       });
 
@@ -1664,6 +1692,16 @@ export default function LibraryPage() {
                     disabled={uploading}
                     onChange={(event) => handleMetadataAttachSelection(event.target.files)}
                   />
+                  <input
+                    ref={uploadLicenseInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    aria-label="Attach license PDF"
+                    title="Attach license PDF"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(event) => handleLicenseAttachSelection(event.target.files)}
+                  />
 
                   <button
                     type="button"
@@ -1841,7 +1879,39 @@ export default function LibraryPage() {
                                   }}
                                   className="text-xs text-red-300/85 hover:text-red-200"
                                 >
-                                  Remove metadata
+                                  Remove
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={uploading}
+                              onClick={() => {
+                                setPendingLicenseTargetId(item.id);
+                                uploadLicenseInputRef.current?.click();
+                              }}
+                              className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-xs font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
+                            >
+                              {item.licenseFile ? "Replace license PDF" : "Attach license PDF"}
+                            </button>
+                            {item.licenseFile && (
+                              <>
+                                <span className="truncate text-xs text-white/55">{item.licenseFile.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQueuedUploads((current) =>
+                                      current.map((upload) =>
+                                        upload.id === item.id ? { ...upload, licenseFile: null } : upload
+                                      )
+                                    );
+                                  }}
+                                  className="text-xs text-red-300/85 hover:text-red-200"
+                                >
+                                  Remove
                                 </button>
                               </>
                             )}

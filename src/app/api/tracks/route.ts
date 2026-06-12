@@ -686,6 +686,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const licenseFileByIndex = new Map<number, File>();
+    for (const [key, value] of formData.entries()) {
+      if (!key.startsWith("licenseFile:")) continue;
+      if (!(value instanceof File)) continue;
+      const index = Number.parseInt(key.slice("licenseFile:".length), 10);
+      if (Number.isFinite(index) && index >= 0) licenseFileByIndex.set(index, value);
+    }
+
     const metadataByIndex = new Map<number, UploadMetadata>();
     for (const [key, value] of formData.entries()) {
       if (!key.startsWith("metadataFile:")) continue;
@@ -784,6 +792,19 @@ export async function POST(request: NextRequest) {
 
         await uploadToS3(s3Key, uploadBuffer, contentTypeForFormat(uploadFormat));
 
+        let s3KeyLicense: string | null = null;
+        const licenseFile = licenseFileByIndex.get(index);
+        if (licenseFile) {
+          try {
+            const licenseBuffer = Buffer.from(await licenseFile.arrayBuffer());
+            s3KeyLicense = `tracks/${trackId}/license.pdf`;
+            await uploadToS3(s3KeyLicense, licenseBuffer, "application/pdf");
+          } catch (err: any) {
+            console.error(`[tracks/upload] Failed to upload license PDF for track ${trackId}:`, err?.message ?? err);
+            s3KeyLicense = null;
+          }
+        }
+
         const inserted = await db
           .insert(tracks)
           .values({
@@ -804,6 +825,7 @@ export async function POST(request: NextRequest) {
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: isInstrumental,
             artistName: defaultComposer,
+            s3KeyLicense,
             creditsUsed: 0,
             error: null,
           })
