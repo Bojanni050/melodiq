@@ -140,6 +140,39 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     };
   }, [localTrack.id, localTrack.lyricsTimestamps, mutate]);
 
+  // Poll for cover art when track has none yet
+  useEffect(() => {
+    if (localTrack.coverUrl || localTrack.s3KeyCover) return;
+    if (localTrack.status !== "done") return;
+
+    let active = true;
+    let pollCount = 0;
+    const maxPolls = 24; // 24 × 5s = 2 minutes
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const poll = async () => {
+      if (!active) return;
+      try {
+        const res = await fetch(`/api/tracks/${localTrack.id}`);
+        if (!res.ok) return;
+        const updated = await res.json();
+        if (!active) return;
+        if (updated?.coverUrl || updated?.s3KeyCover) {
+          setLocalTrack(updated);
+          onTrackUpdated?.(updated);
+          usePlayerStore.getState().syncTrackSnapshots([updated]);
+          void mutate("/api/tracks");
+          return;
+        }
+      } catch {}
+      pollCount++;
+      if (pollCount < maxPolls && active) timerId = setTimeout(poll, 5000);
+    };
+
+    timerId = setTimeout(poll, 3000);
+    return () => { active = false; clearTimeout(timerId); };
+  }, [localTrack.id, localTrack.coverUrl, localTrack.s3KeyCover, localTrack.status, onTrackUpdated, mutate]);
+
   // Shadow initialTrack with the active stateful localTrack
   const track = localTrack;
 
