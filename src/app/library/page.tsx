@@ -1250,7 +1250,6 @@ export default function LibraryPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold">Workspaces</h2>
-                    <p className="text-sm text-white/55">Each workspace keeps its own folder gradient and a seeded collage of covers.</p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1337,43 +1336,46 @@ export default function LibraryPage() {
                       const gradientClass = getWorkspaceGradientClass(workspace.id, workspace.folderGradient);
 
                       return (
-                        <article
-                          key={workspace.id}
-                          className="group overflow-hidden rounded-[28px] border border-white/10 bg-[#0f1017] shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
-                        >
+                        <article key={workspace.id} className="group">
                           <button
                             type="button"
                             onClick={() => openWorkspace(workspace.id)}
                             className="block w-full text-left"
                           >
-                            <div className={`relative aspect-4/3 overflow-hidden ${gradientClass}`}>
-                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_35%),linear-gradient(180deg,transparent,rgba(0,0,0,0.38))]" />
-                              {coverImages.length > 0 ? (
-                                <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
+                            {/* Square cover collage */}
+                            <div className="relative aspect-square overflow-hidden rounded-xl">
+                              {coverImages.length >= 4 ? (
+                                <div className="grid h-full w-full grid-cols-2 grid-rows-2">
                                   {coverImages.slice(0, 4).map((coverUrl, i) => (
-                                    <img key={`${workspace.id}-${i}`} src={coverUrl} alt={workspace.name} loading="lazy" className="h-full w-full rounded-2xl object-cover shadow-lg ring-1 ring-white/10" />
+                                    <img key={`${workspace.id}-${i}`} src={coverUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
                                   ))}
                                 </div>
+                              ) : coverImages.length > 0 ? (
+                                <img src={coverImages[0]} alt="" loading="lazy" className="h-full w-full object-cover" />
                               ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-3xl text-white/80 backdrop-blur-sm">+</div>
+                                <div className={`h-full w-full ${gradientClass} flex items-center justify-center`}>
+                                  <svg className="h-10 w-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                  </svg>
                                 </div>
                               )}
-                              <div className="absolute inset-x-0 bottom-0 p-4">
-                                <h3 className="truncate text-lg font-semibold text-white">{workspace.name}</h3>
-                                <p className="text-sm text-white/70">{wTracks.length} songs</p>
-                              </div>
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
                             </div>
                           </button>
 
-                          <div className="flex items-center justify-between gap-2 px-4 py-3">
-                            <button type="button" onClick={() => openWorkspace(workspace.id)} className="text-sm text-white/60 transition-colors hover:text-white">
-                              Open workspace
-                            </button>
-                            {workspace.id === DEFAULT_WORKSPACE_ID ? (
-                              <span className="text-sm text-white/35">Default</span>
-                            ) : (
-                              <button type="button" onClick={() => deleteWorkspace(workspace.id)} className="text-sm text-white/35 transition-colors hover:text-red-400">
+                          {/* Name row */}
+                          <div className="mt-2 flex items-start justify-between gap-1 px-0.5">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white leading-tight">{workspace.name}</p>
+                              <p className="text-xs text-white/45">{wTracks.length} songs</p>
+                            </div>
+                            {workspace.id !== DEFAULT_WORKSPACE_ID && (
+                              <button
+                                type="button"
+                                onClick={() => deleteWorkspace(workspace.id)}
+                                className="shrink-0 text-[11px] text-white/25 transition-colors hover:text-red-400 opacity-0 group-hover:opacity-100 mt-0.5"
+                              >
                                 Delete
                               </button>
                             )}

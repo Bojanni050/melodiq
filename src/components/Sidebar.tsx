@@ -21,7 +21,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
   const navItems = [
     { href: "/library", label: "Library", icon: "library" },
-    { href: "/", label: "Studio", icon: "studio" },
+    { href: "/studio", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
     { href: "/account", label: "Account", icon: "account" },
