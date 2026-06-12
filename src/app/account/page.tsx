@@ -130,16 +130,16 @@ export default function AccountPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Artist alias</label>
+                  <label className="block text-xs font-medium text-white/50 mb-1">Composer alias</label>
                   <input
                     type="text"
                     value={artistAlias}
                     onChange={(e) => setArtistAlias(e.target.value)}
                     className="input-field font-mono text-sm"
-                    placeholder="Shown in track view (optional)"
+                    placeholder="e.g. DJ Bojan"
                     maxLength={255}
                   />
-                  <p className="text-xs text-white/25 mt-1">If empty, your name is used.</p>
+                  <p className="text-xs text-white/25 mt-1">Used as the default composer on new tracks. Falls back to your name if empty.</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-white/50 mb-1">Email</label>
