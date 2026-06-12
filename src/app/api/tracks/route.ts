@@ -217,7 +217,7 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null, prompt: null, lyrics: null, instrumental: null };
+      if (!isJsonObject(item)) return { title: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
       const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : null;
       const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
