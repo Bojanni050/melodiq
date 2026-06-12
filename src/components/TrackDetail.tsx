@@ -45,6 +45,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
+  const [lyricsExpanded, setLyricsExpanded] = useState(true);
   const [promptDraft, setPromptDraft] = useState(initialTrack.prompt);
   const [promptEditing, setPromptEditing] = useState(false);
   const [promptSaving, setPromptSaving] = useState(false);
@@ -68,6 +69,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     setPromptEditing(false);
     setLyricsDraft(initialTrack.lyrics ?? "");
     setLyricsEditing(false);
+    setLyricsExpanded(true);
   }, [initialTrack]);
 
   // central self-healing polling loop
@@ -510,6 +512,135 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       {/* Details Container */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
 
+        {/* Lyrics */}
+        {(track.lyrics || allowLyricsEdit) && (
+          <div className={lyricsExpanded ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "shrink-0"}>
+            <div className="shrink-0 flex items-center justify-between mb-2">
+              <button
+                type="button"
+                onClick={() => setLyricsExpanded((v) => !v)}
+                className="flex items-center gap-2 text-xs font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+                title={lyricsExpanded ? "Collapse lyrics" : "Expand lyrics"}
+              >
+                <svg className={`w-3.5 h-3.5 transition-transform ${lyricsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
+              </button>
+              <div className="flex items-center gap-1">
+                {allowLyricsEdit && !lyricsEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLyricsDraft(track.lyrics ?? "");
+                      setLyricsEditing(true);
+                    }}
+                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
+                  >
+                    {track.lyrics ? "Edit" : "Add"}
+                  </button>
+                )}
+                {allowLyricsEdit && lyricsEditing && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLyricsDraft(track.lyrics ?? "");
+                        setLyricsEditing(false);
+                      }}
+                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                      disabled={lyricsSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLyrics}
+                      className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
+                      disabled={lyricsSaving}
+                    >
+                      {lyricsSaving ? "Saving..." : "Save"}
+                    </button>
+                    {lyricsSaveError && (
+                      <span className="text-[11px] text-red-400" title={lyricsSaveError}>⚠ {lyricsSaveError}</span>
+                    )}
+                  </>
+                )}
+                {track.lyrics && !lyricsEditing && (
+                  <button
+                    onClick={() => handleCopy(track.lyrics!, "lyrics")}
+                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                    title="Copy lyrics"
+                  >
+                    {copiedField === "lyrics" ? (
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+            {lyricsExpanded && (lyricsEditing ? (
+              <div className="relative flex-1 min-h-0 overflow-hidden">
+                <textarea
+                  value={lyricsDraft}
+                  onChange={(event) => setLyricsDraft(event.target.value)}
+                  placeholder="Add or edit lyrics here"
+                  className="h-full w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
+                  maxLength={20000}
+                  disabled={lyricsSaving}
+                />
+              </div>
+            ) : track.lyrics ? hasTimings ? (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <div
+                  ref={containerRef}
+                  className="h-full overflow-y-auto px-3 pt-3 pb-16 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
+                >
+                  {parsedLyrics.map((line, index) => {
+                    const isActive = index === activeLineIndex;
+                    const isPlayed = index < activeLineIndex;
+                    const isTrackPlaying = currentTrack?.id === track.id;
+
+                    return (
+                      <div
+                        key={index}
+                        ref={isActive ? sidebarActiveLineRef : null}
+                        onClick={() => handleLineClick(line.startTime)}
+                        className={`transition-all duration-300 leading-relaxed py-0.5 ${
+                          isTrackPlaying ? "cursor-pointer" : ""
+                        } ${
+                          isActive
+                            ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
+                            : isPlayed
+                            ? "text-white/50 font-medium"
+                            : "text-white/25 font-medium hover:text-white/50"
+                        }`}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
+                No lyrics yet.
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Prompt */}
         <div className="shrink-0">
           <div className="flex items-center justify-between mb-2">
@@ -603,127 +734,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </p>
           )}
         </div>
-
-        {/* Lyrics */}
-        {(track.lyrics || allowLyricsEdit) && (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <div className="shrink-0 flex items-center justify-between mb-2">
-              <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
-              </h4>
-              <div className="flex items-center gap-1">
-                {allowLyricsEdit && !lyricsEditing && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLyricsDraft(track.lyrics ?? "");
-                      setLyricsEditing(true);
-                    }}
-                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                    title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
-                  >
-                    {track.lyrics ? "Edit" : "Add"}
-                  </button>
-                )}
-                {allowLyricsEdit && lyricsEditing && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLyricsDraft(track.lyrics ?? "");
-                        setLyricsEditing(false);
-                      }}
-                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                      disabled={lyricsSaving}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveLyrics}
-                      className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
-                      disabled={lyricsSaving}
-                    >
-                      {lyricsSaving ? "Saving..." : "Save"}
-                    </button>
-                    {lyricsSaveError && (
-                      <span className="text-[11px] text-red-400" title={lyricsSaveError}>⚠ {lyricsSaveError}</span>
-                    )}
-                  </>
-                )}
-                {track.lyrics && !lyricsEditing && (
-                  <button
-                    onClick={() => handleCopy(track.lyrics!, "lyrics")}
-                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
-                    title="Copy lyrics"
-                  >
-                    {copiedField === "lyrics" ? (
-                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-            {lyricsEditing ? (
-              <div className="relative flex-1 min-h-0 overflow-hidden">
-                <textarea
-                  value={lyricsDraft}
-                  onChange={(event) => setLyricsDraft(event.target.value)}
-                  placeholder="Add or edit lyrics here"
-                  className="h-full w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
-                  maxLength={20000}
-                  disabled={lyricsSaving}
-                />
-              </div>
-            ) : track.lyrics ? hasTimings ? (
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <div
-                  ref={containerRef}
-                  className="h-full overflow-y-auto px-3 pt-3 pb-16 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
-                >
-                  {parsedLyrics.map((line, index) => {
-                    const isActive = index === activeLineIndex;
-                    const isPlayed = index < activeLineIndex;
-                    const isTrackPlaying = currentTrack?.id === track.id;
-
-                    return (
-                      <div
-                        key={index}
-                        ref={isActive ? sidebarActiveLineRef : null}
-                        onClick={() => handleLineClick(line.startTime)}
-                        className={`transition-all duration-300 leading-relaxed py-0.5 ${
-                          isTrackPlaying ? "cursor-pointer" : ""
-                        } ${
-                          isActive
-                            ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
-                            : isPlayed
-                            ? "text-white/50 font-medium"
-                            : "text-white/25 font-medium hover:text-white/50"
-                        }`}
-                      >
-                        {line.text}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
-                No lyrics yet.
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Error */}
         {track.error && (
