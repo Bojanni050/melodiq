@@ -96,20 +96,17 @@ const TrackListHeader = memo(function TrackListHeader({
           <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
         )}
       </button>
-      <span className="text-xs text-white/30">
-        {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
-      </span>
       {enableDragReorder && (
         <span className="text-[11px] text-white/25">Drag to reorder play order</span>
       )}
-      <div className="ml-auto flex items-center gap-2">
-        <div className="relative">
+      <div className="flex flex-1 items-center gap-2">
+        <div className="relative flex-1">
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search tracks"
-            className="h-7 w-44 rounded-md border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
+            className="h-7 w-full rounded-md border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
             aria-label="Search tracks"
           />
           {searchQuery.length > 0 && (
@@ -139,6 +136,9 @@ const TrackListHeader = memo(function TrackListHeader({
           <option value="title-asc" className="bg-[#161621]">A to Z</option>
           <option value="title-desc" className="bg-[#161621]">Z to A</option>
         </select>
+        <span className="shrink-0 text-xs text-white/30">
+          {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
+        </span>
       </div>
     </div>
   );
