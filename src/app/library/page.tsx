@@ -910,12 +910,14 @@ export default function LibraryPage() {
             {/* Header */}
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">Library</p>
-                  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}</h1>
-                  <p className="max-w-2xl text-sm sm:text-base text-white/60">
-                    Browse finished tracks, then move them into folders that keep their own gradient and cover collage.
-                  </p>
+                <div className="space-y-1">
+                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                    Library
+                    <span className="mx-2 text-white/25 font-light">/</span>
+                    <span className="text-white/60">
+                      {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}
+                    </span>
+                  </h1>
                   <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
                     {/* All Songs */}
                     <button
@@ -1026,12 +1028,7 @@ export default function LibraryPage() {
                           <p className="text-sm text-white/40 mt-1 max-w-xl">{selectedPlaylist.description}</p>
                         )}
                       </>
-                    ) : (
-                      <>
-                        <h2 className="text-lg font-semibold">All Songs</h2>
-                        <p className="text-sm text-white/55">Use track actions to move songs into workspaces or playlists.</p>
-                      </>
-                    )}
+                    ) : null}
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
                     {activeSongs.length} tracks{totalDuration ? ` (${totalDuration})` : ""}
