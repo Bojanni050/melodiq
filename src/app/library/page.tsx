@@ -1584,7 +1584,7 @@ export default function LibraryPage() {
             className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
           />
 
-          <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-140 border-l border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+          <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-140 border-r border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
             <div className="flex h-full flex-col">
               <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div>
