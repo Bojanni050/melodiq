@@ -3,11 +3,16 @@ import { db } from "@/db";
 import { pushSubscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+let vapidInitialized = false;
+function ensureVapid() {
+  if (vapidInitialized) return;
+  const email = process.env.VAPID_EMAIL;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!email || !publicKey || !privateKey) return;
+  webpush.setVapidDetails(email, publicKey, privateKey);
+  vapidInitialized = true;
+}
 
 export interface PushPayload {
   title: string;
@@ -17,6 +22,9 @@ export interface PushPayload {
 }
 
 export async function sendPushNotification(userId: string, payload: PushPayload) {
+  ensureVapid();
+  if (!vapidInitialized) return;
+
   const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
   if (subs.length === 0) return;
 
