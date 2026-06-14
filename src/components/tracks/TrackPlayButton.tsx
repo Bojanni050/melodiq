@@ -33,7 +33,7 @@ export default function TrackPlayButton({
       onDoubleClick={(e) => {
         e.stopPropagation();
       }}
-      className={`relative w-15 h-15 rounded-lg shrink-0 overflow-hidden transition-colors group/play ${
+      className={`relative w-[60px] h-[60px] rounded-lg shrink-0 overflow-hidden transition-colors group/play ${
         isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""
       }`}
       data-now-playing={isCurrentlyPlaying ? "true" : undefined}
@@ -106,7 +106,7 @@ export default function TrackPlayButton({
         </div>
       )}
       {track.status === "done" && track.duration && (
-        <span className="absolute bottom-0.5 right-1 text-[9px] font-medium tabular-nums text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] leading-none pointer-events-none">
+        <span className="absolute bottom-0.5 right-0.5 left-0.5 text-[11px] font-medium tabular-nums text-white/90 leading-none pointer-events-none text-center bg-black/40 rounded-sm px-0.5 py-px backdrop-blur-sm">
           {formatDuration(track.duration)}
         </span>
       )}
