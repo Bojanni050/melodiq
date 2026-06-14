@@ -55,7 +55,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [lyricsSaving, setLyricsSaving] = useState(false);
   const [lyricsSaveError, setLyricsSaveError] = useState<string | null>(null);
   const { user, loadUser } = useUserStore();
-  const { currentTrack, audioElement } = usePlayerStore();
+  const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const [currentTime, setCurrentTime] = useState(0);
   const { mutate } = useSWRConfig();
@@ -497,11 +497,23 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </div>
           )}
           <div className="mt-2.5 flex items-end justify-between gap-2">
-            {isUploadedTrack ? (
-              <span className="inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-emerald-100 uppercase tracking-wider">
-                Uploaded file
-              </span>
-            ) : <span />}
+            <div className="flex items-center gap-1.5">
+              {isUploadedTrack && (
+                <span className="inline-flex items-center rounded-full border border-emerald-300/35 bg-emerald-400/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-emerald-100 uppercase tracking-wider">
+                  Uploaded file
+                </span>
+              )}
+              {currentTrack?.id === track.id && (
+                <span className={`inline-flex items-center gap-1.5 rounded-full border backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+                  isPlaying
+                    ? "border-primary-500/40 bg-primary-500/20 text-primary-200"
+                    : "border-white/20 bg-black/40 text-white/60"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? "bg-primary-400 animate-[pulse_1.4s_ease-in-out_infinite]" : "bg-white/40"}`} />
+                  {isPlaying ? "Now playing" : "Paused"}
+                </span>
+              )}
+            </div>
             {currentWorkspace && (
               <span className="inline-flex items-center rounded-full border border-white/20 bg-black/40 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium text-white/80 max-w-[160px] truncate">
                 {currentWorkspace.name}
