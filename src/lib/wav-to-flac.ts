@@ -13,8 +13,10 @@ function resolveFfmpegPath(): string | null {
 
   // 2. System ffmpeg (works when ffmpeg is installed on the server)
   try {
-    const which = execFileSync("which", ["ffmpeg"], { encoding: "utf-8" }).trim();
-    if (which) return which;
+    const whichCmd = process.platform === "win32" ? "where" : "which";
+    const result = execFileSync(whichCmd, ["ffmpeg"], { encoding: "utf-8" }).trim();
+    const firstLine = result.split(/\r?\n/)[0].trim();
+    if (firstLine) return firstLine;
   } catch {}
 
   // 3. ffmpeg-static bundled binary — verify it actually exists before trusting it

@@ -128,7 +128,7 @@ export default function PlaylistPickerDialog({
                       </svg>
                     )}
                     {partial && (
-                      <svg className="shrink-0 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Some tracks already in playlist">
+                      <svg className="shrink-0 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Some tracks already in playlist">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                       </svg>
                     )}
