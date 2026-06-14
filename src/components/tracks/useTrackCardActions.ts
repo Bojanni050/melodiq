@@ -8,6 +8,7 @@ import type { PlaylistOption, TrackItem } from "./types";
 interface UseTrackCardActionsOptions {
   track: TrackItem;
   playlists?: PlaylistOption[];
+  tracksById?: Map<string, TrackItem>;
   onDelete?: (trackId: string) => void;
   onDeleteTracks?: (trackIds: string[]) => Promise<void> | void;
   onAddToPlaylist?: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
@@ -16,6 +17,7 @@ interface UseTrackCardActionsOptions {
 
 export function useTrackCardActions({
   track,
+  tracksById,
   onDelete,
   onDeleteTracks,
   onAddToPlaylist,
@@ -39,6 +41,13 @@ export function useTrackCardActions({
   const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
   const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
   const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
+  const [showAlreadyInPlaylistDialog, setShowAlreadyInPlaylistDialog] = useState(false);
+  const [alreadyInPlaylistInfo, setAlreadyInPlaylistInfo] = useState<{
+    playlistId: string;
+    playlistName: string;
+    duplicateIds: string[];
+    addedCount: number;
+  } | null>(null);
   const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
@@ -152,12 +161,51 @@ export function useTrackCardActions({
   }
 
   function handleAddToPlaylistClick(playlistId: string, playlistName: string, isDuplicate: boolean) {
+    const activeSelection = useSelectionStore.getState().selectedIds;
+    const isMultiSelect = activeSelection.size > 1 && activeSelection.has(track.id);
+
+    if (isMultiSelect) {
+      const allPlaylists = usePlaylistStore.getState().playlists;
+      const playlist = allPlaylists.find((p) => p.id === playlistId);
+      const existingIds = new Set(playlist?.trackIds ?? []);
+      const selectedIds = Array.from(activeSelection);
+      const duplicateIds = selectedIds.filter((id) => existingIds.has(id));
+      const newIds = selectedIds.filter((id) => !existingIds.has(id));
+
+      for (const id of newIds) {
+        if (onAddToPlaylist) {
+          onAddToPlaylist(id, playlistId);
+        } else {
+          addTrackToPlaylist(playlistId, id);
+        }
+      }
+
+      if (duplicateIds.length > 0) {
+        setAlreadyInPlaylistInfo({ playlistId, playlistName, duplicateIds, addedCount: newIds.length });
+        setShowAlreadyInPlaylistDialog(true);
+      }
+      return;
+    }
+
     if (isDuplicate) {
       setPendingPlaylistAdd({ id: playlistId, name: playlistName });
       setShowDuplicatePlaylistDialog(true);
       return;
     }
     executeAddToPlaylist(playlistId);
+  }
+
+  function confirmAlreadyInPlaylistAdd() {
+    if (!alreadyInPlaylistInfo) return;
+    for (const id of alreadyInPlaylistInfo.duplicateIds) {
+      if (onAddToPlaylist) {
+        onAddToPlaylist(id, alreadyInPlaylistInfo.playlistId, { allowDuplicate: true });
+      } else {
+        addTrackToPlaylist(alreadyInPlaylistInfo.playlistId, id, { allowDuplicate: true });
+      }
+    }
+    setAlreadyInPlaylistInfo(null);
+    setShowAlreadyInPlaylistDialog(false);
   }
 
   function handleRemoveFromPlaylistClick(playlistId: string) {
@@ -211,6 +259,8 @@ export function useTrackCardActions({
     showCreatePlaylistDialog, setShowCreatePlaylistDialog,
     showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog,
     pendingPlaylistAdd, setPendingPlaylistAdd,
+    showAlreadyInPlaylistDialog, setShowAlreadyInPlaylistDialog,
+    alreadyInPlaylistInfo,
     showMergeWorkspaceDialog, setShowMergeWorkspaceDialog,
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
@@ -222,6 +272,7 @@ export function useTrackCardActions({
     handleCreatePlaylist,
     confirmDuplicatePlaylistAdd,
     handleAddToPlaylistClick,
+    confirmAlreadyInPlaylistAdd,
     handleRemoveFromPlaylistClick,
     handleMoveToWorkspace,
     confirmWorkspaceMerge,

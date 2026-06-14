@@ -9,6 +9,7 @@ import { formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 // Extracted Sub-components
+import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
 import CreatePlaylistDialog from "./CreatePlaylistDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
@@ -30,6 +31,7 @@ const TrackCard = memo(function TrackCard({
   onAddToPlaylist,
   onMoveToWorkspace: onMoveToWorkspaceProp,
   playlists,
+  tracksById,
   onTitleUpdate,
   workspaceById: workspaceByIdProp,
   orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
@@ -53,6 +55,7 @@ const TrackCard = memo(function TrackCard({
   ) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
+  tracksById?: Map<string, TrackItem>;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
   workspaceById?: Map<string, Workspace>;
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
@@ -92,7 +95,7 @@ const TrackCard = memo(function TrackCard({
   }, [track.id]);
 
   const edit = useTrackInlineEdit(track, onTitleUpdate);
-  const actions = useTrackCardActions({ track, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
+  const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
   // Workspace derived data (computed once in TrackList and passed as props)
   const workspaces = useMemo(() => {
@@ -202,6 +205,17 @@ const TrackCard = memo(function TrackCard({
         }}
         playlistName={actions.pendingPlaylistAdd?.name || ""}
         onConfirm={actions.confirmDuplicatePlaylistAdd}
+      />
+
+      <AlreadyInPlaylistDialog
+        isOpen={actions.showAlreadyInPlaylistDialog}
+        onClose={() => actions.setShowAlreadyInPlaylistDialog(false)}
+        playlistName={actions.alreadyInPlaylistInfo?.playlistName ?? ""}
+        duplicateTitles={(actions.alreadyInPlaylistInfo?.duplicateIds ?? []).map(
+          (id) => tracksById?.get(id)?.title || id
+        )}
+        addedCount={actions.alreadyInPlaylistInfo?.addedCount ?? 0}
+        onAddAnyway={actions.confirmAlreadyInPlaylistAdd}
       />
 
       <MergeWorkspaceDialog

@@ -418,6 +418,11 @@ export default memo(function TrackList({
     displayedTracksRef.current = displayedTracks;
   }, [displayedTracks]);
 
+  const tracksById = useMemo(
+    () => new Map(displayedTracks.map((t) => [t.id, t])),
+    [displayedTracks]
+  );
+
   const paginatedTracks = useMemo(() => {
     return displayedTracks.slice(0, visibleCount);
   }, [displayedTracks, visibleCount]);
@@ -839,6 +844,7 @@ export default memo(function TrackList({
                     onAddToPlaylist={onAddToPlaylist}
                     onMoveToWorkspace={handleMoveToWorkspace}
                     playlists={playlists}
+                    tracksById={tracksById}
                     onTitleUpdate={onTitleUpdate}
                     workspaceById={workspaceById}
                     orderedWorkspaceOptions={orderedWorkspaceOptions}
