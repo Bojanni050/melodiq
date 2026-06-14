@@ -351,7 +351,17 @@ export default function Player() {
     };
 
     const handleLoadedMetadata = () => {
-      setDuration(audioRef.current?.duration || 0);
+      const secs = audioRef.current?.duration || 0;
+      setDuration(secs);
+      // Backfill duration in the DB if it's missing
+      const track = usePlayerStore.getState().currentTrack;
+      if (track && !track.duration && secs > 0) {
+        fetch(`/api/tracks/${track.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ duration: Math.round(secs) }),
+        }).catch(() => {});
+      }
     };
 
     const handleEnded = () => {

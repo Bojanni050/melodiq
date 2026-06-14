@@ -389,6 +389,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
   const promptDraftIsValid = promptDraft.trim().length > 0;
 
+  const displayDuration = track.duration
+    ?? (currentTrack?.id === track.id && audioElement && isFinite(audioElement.duration) && audioElement.duration > 0
+      ? Math.round(audioElement.duration)
+      : null);
+
   function formatDuration(seconds: number | null): string {
     if (!seconds || seconds <= 0) return "";
     const mins = Math.floor(seconds / 60);
@@ -468,8 +473,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
           <p className="text-xs text-white/80 mt-1.5 drop-shadow-sm font-medium">
             {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{providerLabel} • {providerModelLabel}
-            {track.duration && (
-              <span className="ml-1.5 text-white/60">• {formatDuration(track.duration)}</span>
+            {displayDuration && (
+              <span className="ml-1.5 text-white/60">• {formatDuration(displayDuration)}</span>
             )}
           </p>
           {mode === "overlay" && promptFirstLine && (
