@@ -17,7 +17,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
-  const buildVersion = "202606121600";
+  const buildVersion = "202606141700";
 
   const navItems = [
     { href: "/library", label: "Library", icon: "library" },
