@@ -353,6 +353,9 @@ const TrackCard = memo(function TrackCard({
             {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (
               <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">TCL</span>
             )}
+            {track.instrumental && (
+              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-violet-300/30 bg-violet-400/10 text-violet-200 shrink-0" title="No vocals">Instrumental</span>
+            )}
             {isUploadedTrack && (
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">Uploaded</span>
             )}
@@ -525,6 +528,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.rating === nextProps.track.rating &&
     prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&
     prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
+    prevProps.track.instrumental === nextProps.track.instrumental &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
     prevProps.workspaceById?.size === nextProps.workspaceById?.size
   );
