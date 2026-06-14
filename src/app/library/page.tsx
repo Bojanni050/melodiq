@@ -905,7 +905,7 @@ export default function LibraryPage() {
       <Sidebar credits={null} />
 
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+        <main className="relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
           <div className="max-w-400 mx-auto space-y-6">
 
             {/* Header */}
