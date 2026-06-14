@@ -219,7 +219,7 @@ const TrackCard = memo(function TrackCard({
           isCurrentlyPlaying
             ? "bg-primary-500/20 border border-primary-500/25 border-l-4 border-l-primary-400 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
             : isDetailSelected
-              ? "bg-white/[0.06] border border-white/10"
+              ? "bg-white/[0.11] border border-white/15"
               : track.status === "generating" || track.status === "pending"
                 ? "bg-primary-600/5 border border-primary-600/20"
                 : "hover:bg-white/5"
