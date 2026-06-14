@@ -33,7 +33,7 @@ export default function TrackPlayButton({
       onDoubleClick={(e) => {
         e.stopPropagation();
       }}
-      className={`relative w-[100px] h-[100px] rounded-lg shrink-0 overflow-hidden transition-colors group/play ${
+      className={`relative w-[90px] h-[90px] rounded-lg shrink-0 overflow-hidden transition-colors group/play ${
         isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""
       }`}
       data-now-playing={isCurrentlyPlaying ? "true" : undefined}
