@@ -637,7 +637,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
-                No lyrics yet.
+                {track.instrumental ? "Instrumental track — no lyrics." : "No lyrics yet."}
               </div>
             ))}
           </div>
