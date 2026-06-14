@@ -26,6 +26,7 @@ export function useTrackCardActions({
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
+  const clearSelection = useSelectionStore((state) => state.clearSelection);
   const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
     useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
   );
@@ -149,9 +150,10 @@ export function useTrackCardActions({
   function executeAddToPlaylist(playlistId: string, options?: { allowDuplicate?: boolean }) {
     if (onAddToPlaylist) {
       onAddToPlaylist(track.id, playlistId, options);
-      return;
+    } else {
+      addTrackToPlaylist(playlistId, track.id, options);
     }
-    addTrackToPlaylist(playlistId, track.id, options);
+    clearSelection();
   }
 
   function confirmDuplicatePlaylistAdd() {
@@ -184,6 +186,8 @@ export function useTrackCardActions({
       if (duplicateIds.length > 0) {
         setAlreadyInPlaylistInfo({ playlistId, playlistName, duplicateIds, addedCount: newIds.length });
         setShowAlreadyInPlaylistDialog(true);
+      } else {
+        clearSelection();
       }
       return;
     }
@@ -207,6 +211,7 @@ export function useTrackCardActions({
     }
     setAlreadyInPlaylistInfo(null);
     setShowAlreadyInPlaylistDialog(false);
+    clearSelection();
   }
 
   function handleRemoveFromPlaylistClick(playlistId: string) {
