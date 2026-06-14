@@ -11,6 +11,7 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 // Extracted Sub-components
 import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
 import CreatePlaylistDialog from "./CreatePlaylistDialog";
+import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
@@ -216,6 +217,17 @@ const TrackCard = memo(function TrackCard({
         )}
         addedCount={actions.alreadyInPlaylistInfo?.addedCount ?? 0}
         onAddAnyway={actions.confirmAlreadyInPlaylistAdd}
+      />
+
+      <PlaylistPickerDialog
+        isOpen={actions.showPlaylistPickerDialog}
+        onClose={() => actions.setShowPlaylistPickerDialog(false)}
+        track={track}
+        onAddToPlaylist={actions.handleAddToPlaylistClick}
+        onCreatePlaylistClick={() => {
+          actions.setShowPlaylistPickerDialog(false);
+          actions.setShowCreatePlaylistDialog(true);
+        }}
       />
 
       <MergeWorkspaceDialog
@@ -478,6 +490,7 @@ const TrackCard = memo(function TrackCard({
               onAddToQueue={onAddToQueue}
               onCreatePlaylistClick={() => actions.setShowCreatePlaylistDialog(true)}
               onAddToPlaylistClick={actions.handleAddToPlaylistClick}
+              onOpenPlaylistPicker={() => actions.setShowPlaylistPickerDialog(true)}
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
               onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
             />

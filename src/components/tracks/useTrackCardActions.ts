@@ -39,6 +39,7 @@ export function useTrackCardActions({
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
+  const [showPlaylistPickerDialog, setShowPlaylistPickerDialog] = useState(false);
   const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
   const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
   const [showAlreadyInPlaylistDialog, setShowAlreadyInPlaylistDialog] = useState(false);
@@ -257,6 +258,7 @@ export function useTrackCardActions({
     currentRating, ratingLoading,
     isRegeneratingCover,
     showCreatePlaylistDialog, setShowCreatePlaylistDialog,
+    showPlaylistPickerDialog, setShowPlaylistPickerDialog,
     showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog,
     pendingPlaylistAdd, setPendingPlaylistAdd,
     showAlreadyInPlaylistDialog, setShowAlreadyInPlaylistDialog,
