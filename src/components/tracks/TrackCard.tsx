@@ -37,6 +37,7 @@ const TrackCard = memo(function TrackCard({
   workspaceCoverById: workspaceCoverByIdProp,
   onToggleSelection,
   onEditDetails,
+  isDetailSelected = false,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -59,6 +60,7 @@ const TrackCard = memo(function TrackCard({
   workspaceCoverById?: Map<string, string | null>;
   onToggleSelection?: (trackId: string, shiftKey: boolean) => void;
   onEditDetails?: (track: TrackItem) => void;
+  isDetailSelected?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -216,9 +218,11 @@ const TrackCard = memo(function TrackCard({
         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
           isCurrentlyPlaying
             ? "bg-primary-500/20 border border-primary-500/25 border-l-4 border-l-primary-400 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
-            : track.status === "generating" || track.status === "pending"
-              ? "bg-primary-600/5 border border-primary-600/20"
-              : "hover:bg-white/5"
+            : isDetailSelected
+              ? "bg-white/[0.06] border border-white/10"
+              : track.status === "generating" || track.status === "pending"
+                ? "bg-primary-600/5 border border-primary-600/20"
+                : "hover:bg-white/5"
         } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}

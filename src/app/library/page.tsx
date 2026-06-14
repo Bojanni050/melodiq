@@ -1069,6 +1069,7 @@ export default function LibraryPage() {
                         rating: track.rating ?? null,
                       })
                     }
+                    selectedTrackId={selectedTrack?.id ?? null}
                   />
                 )}
               </section>

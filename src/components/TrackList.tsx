@@ -210,6 +210,7 @@ export default memo(function TrackList({
   onTitleUpdate,
   onManualOrderChange,
   onEditDetails,
+  selectedTrackId,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
@@ -229,6 +230,7 @@ export default memo(function TrackList({
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
   onManualOrderChange?: (orderedTrackIds: string[]) => void;
   onEditDetails?: (track: TrackItem) => void;
+  selectedTrackId?: string | null;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -844,6 +846,7 @@ export default memo(function TrackList({
                     workspaceCoverById={workspaceCoverById}
                     onToggleSelection={handleToggleSelection}
                     onEditDetails={onEditDetails}
+                    isDetailSelected={selectedTrackId === track.id}
                   />
                 </div>
               );
