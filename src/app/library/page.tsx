@@ -1572,7 +1572,7 @@ export default function LibraryPage() {
             };
             setTracks((prev) => prev.map((t) => t.id === normalized.id ? { ...t, ...normalized } : t));
             setSelectedTrack((prev) => prev?.id === normalized.id ? { ...prev, ...normalized } : prev);
-            usePlayerStore.getState().syncTrackSnapshots([normalized]);
+            usePlayerStore.getState().syncTrackSnapshots([{ ...normalized, s3Key: null }]);
           }}
         />
       )}
