@@ -133,6 +133,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name VARCHAR(255);
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");

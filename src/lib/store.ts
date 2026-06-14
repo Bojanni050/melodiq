@@ -70,6 +70,7 @@ export interface Track {
   lyricsTimestamps?: string | null;
   instrumental?: boolean | null;
   artistName?: string | null;
+  composerName?: string | null;
 }
 
 interface PlayerState {

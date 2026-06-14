@@ -317,6 +317,7 @@ export async function GET(request: NextRequest) {
     playCount: tracks.playCount,
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
+    composerName: tracks.composerName,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
   };
@@ -666,8 +667,9 @@ export async function POST(request: NextRequest) {
     const globalUploadInstrumental = formData.get("instrumental") === "true";
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
 
-    const userRow = await db.select({ name: users.name, composerAlias: users.composerAlias }).from(users).where(eq(users.id, userId)).limit(1);
+    const userRow = await db.select({ name: users.name, artistAlias: users.artistAlias, composerAlias: users.composerAlias }).from(users).where(eq(users.id, userId)).limit(1);
     const defaultComposer = userRow[0]?.composerAlias?.trim() || userRow[0]?.name?.trim() || null;
+    const defaultArtist = userRow[0]?.artistAlias?.trim() || userRow[0]?.name?.trim() || null;
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
       (entry): entry is File => entry instanceof File && isSupportedMetadataFilename(entry.name)
@@ -824,7 +826,8 @@ export async function POST(request: NextRequest) {
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: isInstrumental,
-            artistName: defaultComposer,
+            artistName: defaultArtist,
+            composerName: defaultComposer,
             s3KeyLicense,
             creditsUsed: 0,
             error: null,

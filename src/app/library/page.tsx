@@ -36,6 +36,7 @@ interface LibraryTrack {
   rating?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
+  composerName?: string | null;
 }
 
 type LibraryView = "songs" | "playlists" | "workspaces";
