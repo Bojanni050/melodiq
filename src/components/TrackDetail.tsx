@@ -27,6 +27,7 @@ export type TrackDetailTrack = {
   rating?: string | null;
   instrumental?: boolean | null;
   artistName?: string | null;
+  composerName?: string | null;
 };
 
 interface TrackDetailProps {
@@ -371,6 +372,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const wavLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const artistLabel = (track.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
+  const composerLabel = (track.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const providerLabelBase = isUploadedTrack ? "Upload" : track.provider;
   const providerLabel = (() => {
     const normalized = providerLabelBase.toLowerCase();
@@ -465,7 +467,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end z-10">
           <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
           <p className="text-xs text-white/80 mt-1.5 drop-shadow-sm font-medium">
-            {artistLabel ? `${artistLabel} — ` : ""}{track.artistName ? "composer: " : ""}{providerLabel} • {providerModelLabel}
+            {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{providerLabel} • {providerModelLabel}
             {track.duration && (
               <span className="ml-1.5 text-white/60">• {formatDuration(track.duration)}</span>
             )}

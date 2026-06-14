@@ -344,6 +344,7 @@ export interface UserProfile {
   email: string;
   name: string | null;
   artistAlias: string | null;
+  composerAlias: string | null;
   createdAt: string;
 }
 
