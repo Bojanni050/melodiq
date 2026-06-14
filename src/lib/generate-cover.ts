@@ -8,7 +8,7 @@ import sharp from "sharp";
 async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
   const [webpBuffer, thumbBuffer] = await Promise.all([
     sharp(rawBuffer).webp({ quality: 85 }).toBuffer(),
-    sharp(rawBuffer).resize(50, 50, { fit: "cover" }).webp({ quality: 80 }).toBuffer(),
+    sharp(rawBuffer).resize(120, 120, { fit: "cover" }).webp({ quality: 82 }).toBuffer(),
   ]);
 
   const s3KeyCover = `tracks/${trackId}/cover.webp`;
