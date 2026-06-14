@@ -4,9 +4,8 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import WaveformBars from "@/components/tracks/WaveformBars";
-import { usePlayerStore, usePlaylistStore, useWorkspaceStore, useSelectionStore, type Workspace } from "@/lib/store";
-import { useShallow } from "zustand/react/shallow";
-import { formatDuration, formatTrackDateTime } from "@/lib/track-utils";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, type Workspace } from "@/lib/store";
+import { formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 // Extracted Sub-components
@@ -17,6 +16,8 @@ import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
 import TrackActionMenu from "./TrackActionMenu";
+import { useTrackInlineEdit } from "./useTrackInlineEdit";
+import { useTrackCardActions } from "./useTrackCardActions";
 
 const TrackCard = memo(function TrackCard({
   track,
@@ -65,97 +66,9 @@ const TrackCard = memo(function TrackCard({
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
   const setIsFullscreen = usePlayerStore((state) => state.setIsFullscreen);
   const isCurrentlyPlaying = currentTrack?.id === track.id;
-  const [downloading, setDownloading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitle, setEditTitle] = useState(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
-  const [isEditingArtist, setIsEditingArtist] = useState(false);
-  const [editArtist, setEditArtist] = useState(track.artistName ?? "");
-  const artistInputRef = useRef<HTMLInputElement | null>(null);
-  const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
-  const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
-  const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
-  const [ratingLoading, setRatingLoading] = useState(false);
-  const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
-  const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
-  const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
-  const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
-  const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
-  const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const playClickCooldownRef = useRef(0);
-  const titleInputRef = useRef<HTMLInputElement | null>(null);
-  const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
-  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
-  const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
-  const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
-    useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
-  );
 
-  // workspaces is derived from props passed by TrackList (computed once there, not per card)
-  const workspaces = useMemo(() => {
-    return workspaceByIdProp ? Array.from(workspaceByIdProp.values()) : [];
-  }, [workspaceByIdProp]);
-  const workspaceById = useMemo(
-    () => workspaceByIdProp ?? new Map(workspaces.map((workspace) => [workspace.id, workspace])),
-    [workspaceByIdProp, workspaces]
-  );
-  const orderedWorkspaceOptions = useMemo(() => {
-    if (orderedWorkspaceOptionsProp) return orderedWorkspaceOptionsProp;
-    const roots = workspaces.filter((workspace) => !workspace.parentWorkspaceId);
-    const childrenByParent = new Map<string, typeof workspaces>();
-    workspaces
-      .filter((workspace) => Boolean(workspace.parentWorkspaceId))
-      .forEach((workspace) => {
-        const parentId = workspace.parentWorkspaceId as string;
-        const list = childrenByParent.get(parentId) ?? [];
-        childrenByParent.set(parentId, [...list, workspace]);
-      });
-    return roots.flatMap((root) => {
-      const children = childrenByParent.get(root.id) ?? [];
-      return [{ workspace: root, depth: 0 }, ...children.map((child) => ({ workspace: child, depth: 1 }))];
-    });
-  }, [orderedWorkspaceOptionsProp, workspaces]);
-
-  const workspaceDisplayNameById = useMemo(() => {
-    if (workspaceDisplayNameByIdProp) return workspaceDisplayNameByIdProp;
-    const map = new Map<string, string>();
-    workspaces.forEach((workspace) => {
-      if (!workspace.parentWorkspaceId) {
-        map.set(workspace.id, workspace.name);
-        return;
-      }
-      const parentName = workspaceById.get(workspace.parentWorkspaceId)?.name;
-      map.set(workspace.id, parentName ? `${parentName} / ${workspace.name}` : workspace.name);
-    });
-    return map;
-  }, [workspaceDisplayNameByIdProp, workspaceById, workspaces]);
-
-  const assignedWorkspaceName = useMemo(() => {
-    const assignedWorkspace = workspaces.find((workspace) => !workspace.isDefault && workspaceById.get(workspace.id)?.trackIds.includes(track.id));
-    if (!assignedWorkspace) return null;
-    return workspaceDisplayNameById.get(assignedWorkspace.id) ?? assignedWorkspace.name;
-  }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
-
-  useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [isEditingTitle]);
-
-  useEffect(() => {
-    if (isEditingArtist && artistInputRef.current) {
-      artistInputRef.current.focus();
-      artistInputRef.current.select();
-    }
-  }, [isEditingArtist]);
-
-  useEffect(() => {
-    if (!isEditingArtist) setEditArtist(track.artistName ?? "");
-  }, [track.artistName, isEditingArtist]);
+  const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
 
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
@@ -163,251 +76,61 @@ const TrackCard = memo(function TrackCard({
 
   useEffect(() => {
     function handleTrackPlayed(event: Event) {
-      const customEvent = event as CustomEvent<{ trackId?: string; playCount?: number }>;
-      if (customEvent.detail?.trackId !== track.id) return;
-      const nextCount = customEvent.detail?.playCount;
+      const e = event as CustomEvent<{ trackId?: string; playCount?: number }>;
+      if (e.detail?.trackId !== track.id) return;
+      const nextCount = e.detail?.playCount;
       if (typeof nextCount === "number" && Number.isFinite(nextCount)) {
         setOptimisticPlayCount(nextCount);
         return;
       }
       setOptimisticPlayCount((count) => Math.max(1, count + 1));
     }
-
     window.addEventListener("melodiq:track-played", handleTrackPlayed);
     return () => window.removeEventListener("melodiq:track-played", handleTrackPlayed);
   }, [track.id]);
 
-  useEffect(() => {
-    function handleCoverRegenerated(event: Event) {
-      const customEvent = event as CustomEvent<{ trackIds?: string[]; ts?: number }>;
-      const ids = customEvent.detail?.trackIds;
-      if (!Array.isArray(ids) || !ids.includes(track.id)) return;
-      const ts = typeof customEvent.detail?.ts === "number" ? customEvent.detail.ts : Date.now();
-      setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${ts}`);
-    }
+  const edit = useTrackInlineEdit(track, onTitleUpdate);
+  const actions = useTrackCardActions({ track, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
-    window.addEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
-    return () => window.removeEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
-  }, [track.id]);
-
-  async function executeDelete() {
-    setConfirmDelete(false);
-    setDeleting(true);
-    try {
-      const ids = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds : [track.id];
-
-      if (onDeleteTracks) {
-        await onDeleteTracks(ids);
-      } else {
-        for (const id of ids) {
-          const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
-          if (res.ok) onDelete?.(id);
-        }
-      }
-    } catch {
-      // silently fail
-    }
-    setDeleting(false);
-    setPendingDeleteIds(null);
-  }
-
-  async function handleDelete(e: React.MouseEvent) {
-    e.stopPropagation();
-    const activeSelection = useSelectionStore.getState().selectedIds;
-    if (activeSelection.size > 0 && activeSelection.has(track.id)) {
-      setPendingDeleteIds(Array.from(activeSelection));
-    } else {
-      setPendingDeleteIds([track.id]);
-    }
-    setConfirmDelete(true);
-  }
-
-  async function handleRegenerateCover() {
-    if (isRegeneratingCover) return;
-
-    setIsRegeneratingCover(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ regenerateCoverArt: true }),
-      });
-
-      if (res.ok) {
-        setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setIsRegeneratingCover(false);
-    }
-  }
-
-  function discardTitle() {
-    setIsEditingTitle(false);
-    setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
-  }
-
-  function saveArtist() {
-    const trimmed = editArtist.trim();
-    setIsEditingArtist(false);
-    const next = trimmed || null;
-    if (next === (track.artistName ?? null)) return;
-    fetch(`/api/tracks/${track.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artistName: next }),
-    }).catch(() => {});
-  }
-
-  function discardArtist() {
-    setIsEditingArtist(false);
-    setEditArtist(track.artistName ?? "");
-  }
-
-  function handleArtistKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") { e.preventDefault(); saveArtist(); }
-    else if (e.key === "Escape") { discardArtist(); }
-  }
-
-  function saveTitle() {
-    const trimmedTitle = editTitle.trim();
-    setIsEditingTitle(false);
-    if (!trimmedTitle || trimmedTitle === track.title) return;
-    onTitleUpdate?.(track.id, trimmedTitle);
-    fetch(`/api/tracks/${track.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: trimmedTitle }),
-    }).catch(() => {});
-  }
-
-  function handleTitleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      saveTitle();
-    } else if (e.key === "Escape") {
-      discardTitle();
-    }
-  }
-
-  function handleTitleDoubleClick(e: React.MouseEvent) {
-    e.stopPropagation();
-    setIsEditingTitle(true);
-    setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : track.prompt.substring(0, 50));
-  }
-
-  function handleDownload(url: string, hd = false) {
-    setDownloading(true);
-    const a = document.createElement("a");
-    a.href = url;
-    const fmt = hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3");
-    a.download = `${(track.title || "track").replace(/\s*\(2\)\s*$/, "")}${hd ? "_hd" : ""}.${fmt}`;
-    a.click();
-    setTimeout(() => setDownloading(false), 1000);
-  }
-
-  async function handleRating(newRating: "up" | "down") {
-    const rating = currentRating === newRating ? null : newRating;
-    
-    setRatingLoading(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/rating`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating }),
-      });
-
-      if (res.ok) {
-        setCurrentRating(rating);
-      }
-    } catch (error) {
-      console.error("Failed to update rating:", error);
-    } finally {
-      setRatingLoading(false);
-    }
-  }
-
-  function handleCreatePlaylist(name: string) {
-    const playlistId = createPlaylist(name);
-    if (playlistId) {
-      addTrackToPlaylist(playlistId, track.id);
-    }
-    setShowCreatePlaylistDialog(false);
-  }
-
-  function executeAddToPlaylist(playlistId: string, options?: { allowDuplicate?: boolean }) {
-    if (onAddToPlaylist) {
-      onAddToPlaylist(track.id, playlistId, options);
-      return;
-    }
-
-    addTrackToPlaylist(playlistId, track.id, options);
-  }
-
-  function confirmDuplicatePlaylistAdd() {
-    if (!pendingPlaylistAdd) return;
-    executeAddToPlaylist(pendingPlaylistAdd.id, { allowDuplicate: true });
-    setPendingPlaylistAdd(null);
-    setShowDuplicatePlaylistDialog(false);
-  }
-
-  function handleAddToPlaylistClick(playlistId: string, playlistName: string, isDuplicate: boolean) {
-    if (isDuplicate) {
-      setPendingPlaylistAdd({ id: playlistId, name: playlistName });
-      setShowDuplicatePlaylistDialog(true);
-      return;
-    }
-
-    executeAddToPlaylist(playlistId);
-  }
-
-  function handleRemoveFromPlaylistClick(playlistId: string) {
-    removeTrackFromPlaylist(playlistId, track.id);
-  }
-
-  function handleMoveToWorkspace(workspaceId: string) {
-    if (onMoveToWorkspaceProp) {
-      onMoveToWorkspaceProp(track.id, workspaceId);
-    } else {
-      moveTrackToWorkspace(workspaceId, track.id);
-    }
-    setWorkspaceMenuOpen(false);
-  }
-
-  function confirmWorkspaceMerge() {
-    if (!pendingWorkspaceMerge) return;
-
-    if (onMoveToWorkspaceProp) {
-      onMoveToWorkspaceProp(track.id, pendingWorkspaceMerge.id);
-    } else {
-      moveTrackToWorkspace(pendingWorkspaceMerge.id, track.id);
-    }
-
-    setPendingWorkspaceMerge(null);
-    setShowMergeWorkspaceDialog(false);
-    setWorkspaceMenuOpen(false);
-  }
-
-  function handleMergeWorkspaceTrigger(existingWorkspace: { id: string; name: string }) {
-    setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
-    setShowMergeWorkspaceDialog(true);
-  }
-
-  function handleCreateWorkspace(name: string) {
-    const workspaceId = createWorkspace(name);
-    if (workspaceId) {
-      if (onMoveToWorkspaceProp) {
-        onMoveToWorkspaceProp(track.id, workspaceId);
-      } else {
-        moveTrackToWorkspace(workspaceId, track.id);
-      }
-    }
-    setWorkspaceMenuOpen(false);
-  }
-
+  // Workspace derived data (computed once in TrackList and passed as props)
+  const workspaces = useMemo(() => {
+    return workspaceByIdProp ? Array.from(workspaceByIdProp.values()) : [];
+  }, [workspaceByIdProp]);
+  const workspaceById = useMemo(
+    () => workspaceByIdProp ?? new Map(workspaces.map((w) => [w.id, w])),
+    [workspaceByIdProp, workspaces]
+  );
+  const orderedWorkspaceOptions = useMemo(() => {
+    if (orderedWorkspaceOptionsProp) return orderedWorkspaceOptionsProp;
+    const roots = workspaces.filter((w) => !w.parentWorkspaceId);
+    const childrenByParent = new Map<string, typeof workspaces>();
+    workspaces.filter((w) => Boolean(w.parentWorkspaceId)).forEach((w) => {
+      const parentId = w.parentWorkspaceId as string;
+      childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), w]);
+    });
+    return roots.flatMap((root) => {
+      const children = childrenByParent.get(root.id) ?? [];
+      return [{ workspace: root, depth: 0 }, ...children.map((child) => ({ workspace: child, depth: 1 }))];
+    });
+  }, [orderedWorkspaceOptionsProp, workspaces]);
+  const workspaceDisplayNameById = useMemo(() => {
+    if (workspaceDisplayNameByIdProp) return workspaceDisplayNameByIdProp;
+    const map = new Map<string, string>();
+    workspaces.forEach((w) => {
+      if (!w.parentWorkspaceId) { map.set(w.id, w.name); return; }
+      const parentName = workspaceById.get(w.parentWorkspaceId)?.name;
+      map.set(w.id, parentName ? `${parentName} / ${w.name}` : w.name);
+    });
+    return map;
+  }, [workspaceDisplayNameByIdProp, workspaceById, workspaces]);
+  const assignedWorkspaceName = useMemo(() => {
+    const assigned = workspaces.find((w) => !w.isDefault && workspaceById.get(w.id)?.trackIds.includes(track.id));
+    if (!assigned) return null;
+    return workspaceDisplayNameById.get(assigned.id) ?? assigned.name;
+  }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
   const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
 
+  // Derived display values
   const statusConfig = {
     pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },
     generating: { color: "bg-blue-500/20 text-blue-300", label: "Creating" },
@@ -421,7 +144,6 @@ const TrackCard = memo(function TrackCard({
       : { color: "bg-white/5 text-white/60 border border-white/10", label: "Paused" }
     : baseStatus;
   const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
-
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
   const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
@@ -430,65 +152,64 @@ const TrackCard = memo(function TrackCard({
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
-  const effectiveCoverUrl = coverOverrideUrl ?? track.coverUrl ?? null;
-  const effectiveThumbUrl = coverOverrideUrl
-    ? `${coverOverrideUrl}&thumb=1`
+  const effectiveCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
+  const effectiveThumbUrl = actions.coverOverrideUrl
+    ? `${actions.coverOverrideUrl}&thumb=1`
     : track.s3KeyCoverThumb
       ? `/api/tracks/${track.id}/cover?thumb=1`
       : effectiveCoverUrl;
-  const deleteCount = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds.length : 1;
-  const deleteMessage =
-    deleteCount === 1
-      ? "Delete this song? This cannot be undone."
-      : `Delete ${deleteCount} selected songs? This cannot be undone.`;
+  const deleteCount = actions.pendingDeleteIds && actions.pendingDeleteIds.length > 0 ? actions.pendingDeleteIds.length : 1;
+  const deleteMessage = deleteCount === 1
+    ? "Delete this song? This cannot be undone."
+    : `Delete ${deleteCount} selected songs? This cannot be undone.`;
 
   return (
     <>
-      {confirmDelete && (
+      {actions.confirmDelete && (
         <ConfirmDialog
           message={deleteMessage}
-          onConfirm={executeDelete}
-          onCancel={() => setConfirmDelete(false)}
+          onConfirm={actions.executeDelete}
+          onCancel={() => actions.setConfirmDelete(false)}
         />
       )}
-      
+
       <CreatePlaylistDialog
-        isOpen={showCreatePlaylistDialog}
-        onClose={() => setShowCreatePlaylistDialog(false)}
-        onCreate={handleCreatePlaylist}
+        isOpen={actions.showCreatePlaylistDialog}
+        onClose={() => actions.setShowCreatePlaylistDialog(false)}
+        onCreate={actions.handleCreatePlaylist}
       />
 
       <MoveToWorkspaceDialog
-        isOpen={workspaceMenuOpen}
-        onClose={() => setWorkspaceMenuOpen(false)}
+        isOpen={actions.workspaceMenuOpen}
+        onClose={() => actions.setWorkspaceMenuOpen(false)}
         track={track}
         orderedWorkspaceOptions={orderedWorkspaceOptions}
         workspaceCoverById={workspaceCoverById}
         workspaceDisplayNameById={workspaceDisplayNameById}
         workspaces={workspaces}
-        onMoveToWorkspace={handleMoveToWorkspace}
-        onCreateWorkspace={handleCreateWorkspace}
-        onMergeWorkspaceTrigger={handleMergeWorkspaceTrigger}
+        onMoveToWorkspace={actions.handleMoveToWorkspace}
+        onCreateWorkspace={actions.handleCreateWorkspace}
+        onMergeWorkspaceTrigger={actions.handleMergeWorkspaceTrigger}
       />
 
       <DuplicatePlaylistDialog
-        isOpen={showDuplicatePlaylistDialog}
+        isOpen={actions.showDuplicatePlaylistDialog}
         onClose={() => {
-          setShowDuplicatePlaylistDialog(false);
-          setPendingPlaylistAdd(null);
+          actions.setShowDuplicatePlaylistDialog(false);
+          actions.setPendingPlaylistAdd(null);
         }}
-        playlistName={pendingPlaylistAdd?.name || ""}
-        onConfirm={confirmDuplicatePlaylistAdd}
+        playlistName={actions.pendingPlaylistAdd?.name || ""}
+        onConfirm={actions.confirmDuplicatePlaylistAdd}
       />
 
       <MergeWorkspaceDialog
-        isOpen={showMergeWorkspaceDialog}
+        isOpen={actions.showMergeWorkspaceDialog}
         onClose={() => {
-          setShowMergeWorkspaceDialog(false);
-          setPendingWorkspaceMerge(null);
+          actions.setShowMergeWorkspaceDialog(false);
+          actions.setPendingWorkspaceMerge(null);
         }}
-        workspaceName={pendingWorkspaceMerge?.name || ""}
-        onConfirm={confirmWorkspaceMerge}
+        workspaceName={actions.pendingWorkspaceMerge?.name || ""}
+        onConfirm={actions.confirmWorkspaceMerge}
       />
 
       <div
@@ -502,10 +223,7 @@ const TrackCard = memo(function TrackCard({
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={(e) => {
-          if (e.shiftKey) {
-            onToggleSelection?.(track.id, true);
-            return;
-          }
+          if (e.shiftKey) { onToggleSelection?.(track.id, true); return; }
           onSelect(track);
         }}
         onDoubleClick={(e) => {
@@ -517,13 +235,8 @@ const TrackCard = memo(function TrackCard({
       >
         {/* Selection dot */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSelection?.(track.id, e.shiftKey);
-          }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-          }}
+          onClick={(e) => { e.stopPropagation(); onToggleSelection?.(track.id, e.shiftKey); }}
+          onDoubleClick={(e) => e.stopPropagation()}
           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
           title="Select track"
         >
@@ -542,7 +255,7 @@ const TrackCard = memo(function TrackCard({
           )}
         </button>
 
-        {/* Play button / artwork placeholder */}
+        {/* Play button / artwork */}
         <TrackPlayButton
           track={track}
           isCurrentlyPlaying={isCurrentlyPlaying}
@@ -571,15 +284,15 @@ const TrackCard = memo(function TrackCard({
                 aria-label="New unplayed track"
               />
             )}
-            {isEditingTitle ? (
+            {edit.isEditingTitle ? (
               <div className="flex items-center gap-1 min-w-0 max-w-full" onClick={(e) => e.stopPropagation()}>
                 <input
-                  ref={titleInputRef}
+                  ref={edit.titleInputRef}
                   type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onKeyDown={handleTitleKeyDown}
-                  onBlur={discardTitle}
+                  value={edit.editTitle}
+                  onChange={(e) => edit.setEditTitle(e.target.value)}
+                  onKeyDown={edit.handleTitleKeyDown}
+                  onBlur={edit.discardTitle}
                   aria-label="Edit track title"
                   placeholder="Track title"
                   className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
@@ -587,32 +300,18 @@ const TrackCard = memo(function TrackCard({
                   draggable={false}
                   onDragStart={(e) => e.stopPropagation()}
                 />
-                <button
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); saveTitle(); }}
-                  className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors"
-                  title="Save title (Enter)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); edit.saveTitle(); }} className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors" title="Save title (Enter)">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                 </button>
-                <button
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); discardTitle(); }}
-                  className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors"
-                  title="Discard changes (Esc)"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                <button type="button" onMouseDown={(e) => { e.preventDefault(); edit.discardTitle(); }} className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors" title="Discard changes (Esc)">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             ) : (
               <h3
                 className={`text-sm font-medium truncate cursor-text flex-1 min-w-0 ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
                 onClick={(e) => e.stopPropagation()}
-                onDoubleClick={handleTitleDoubleClick}
+                onDoubleClick={edit.handleTitleDoubleClick}
                 title="Double-click to edit"
               >
                 {title}
@@ -622,14 +321,10 @@ const TrackCard = memo(function TrackCard({
               {status.label}
             </span>
             {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (
-              <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">
-                TCL
-              </span>
+              <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">TCL</span>
             )}
             {isUploadedTrack && (
-              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">
-                Uploaded
-              </span>
+              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">Uploaded</span>
             )}
             {assignedWorkspaceName && (
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px] shrink-0" title={assignedWorkspaceName}>
@@ -639,15 +334,15 @@ const TrackCard = memo(function TrackCard({
           </div>
 
           {/* Artist name row */}
-          {isEditingArtist ? (
+          {edit.isEditingArtist ? (
             <div className="flex items-center gap-1 mt-0.5 min-w-0" onClick={(e) => e.stopPropagation()}>
               <input
-                ref={artistInputRef}
+                ref={edit.artistInputRef}
                 type="text"
-                value={editArtist}
-                onChange={(e) => setEditArtist(e.target.value)}
-                onKeyDown={handleArtistKeyDown}
-                onBlur={discardArtist}
+                value={edit.editArtist}
+                onChange={(e) => edit.setEditArtist(e.target.value)}
+                onKeyDown={edit.handleArtistKeyDown}
+                onBlur={edit.discardArtist}
                 aria-label="Edit artist name"
                 placeholder="Artist name"
                 className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-xs bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 text-white/80"
@@ -655,32 +350,18 @@ const TrackCard = memo(function TrackCard({
                 draggable={false}
                 onDragStart={(e) => e.stopPropagation()}
               />
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveArtist(); }}
-                className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors"
-                title="Save (Enter)"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
+              <button type="button" onMouseDown={(e) => { e.preventDefault(); edit.saveArtist(); }} className="shrink-0 p-0.5 text-green-400 hover:text-green-300 transition-colors" title="Save (Enter)">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
               </button>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); discardArtist(); }}
-                className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors"
-                title="Discard (Esc)"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+              <button type="button" onMouseDown={(e) => { e.preventDefault(); edit.discardArtist(); }} className="shrink-0 p-0.5 text-red-400 hover:text-red-300 transition-colors" title="Discard (Esc)">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
           ) : (
             <p
               className="text-[10px] text-white/40 mt-0.5 truncate cursor-text select-none"
               onClick={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => { e.stopPropagation(); setIsEditingArtist(true); }}
+              onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
               title={track.artistName ? "Double-click to edit artist" : "Double-click to add artist name"}
             >
               {track.artistName ?? <span className="italic opacity-50">no artist — double-click to add</span>}
@@ -691,11 +372,8 @@ const TrackCard = memo(function TrackCard({
           {track.status === "done" && track.audioUrl && (
             <div className="flex sm:hidden items-center gap-2 mt-1.5">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(track.audioUrl!);
-                }}
-                disabled={downloading}
+                onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
+                disabled={actions.downloading}
                 className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
                 title={`Download ${mp3Label}`}
               >
@@ -703,11 +381,8 @@ const TrackCard = memo(function TrackCard({
               </button>
               {track.s3KeyHd && track.audioUrlHd && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(track.audioUrlHd!, true);
-                  }}
-                  disabled={downloading}
+                  onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrlHd!, true); }}
+                  disabled={actions.downloading}
                   className="px-2 py-0.5 text-[10px] font-medium rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shrink-0"
                   title={`Download ${hdLabel}`}
                 >
@@ -747,19 +422,16 @@ const TrackCard = memo(function TrackCard({
           </div>
           {track.status === "done" && (
             <TrackRating
-              rating={currentRating}
-              ratingLoading={ratingLoading}
-              onRate={handleRating}
+              rating={actions.currentRating}
+              ratingLoading={actions.ratingLoading}
+              onRate={actions.handleRating}
             />
           )}
           {track.status === "done" && track.audioUrl && (
             <>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(track.audioUrl!);
-                }}
-                disabled={downloading}
+                onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
+                disabled={actions.downloading}
                 className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
                 title={`Download ${mp3Label}`}
               >
@@ -767,11 +439,8 @@ const TrackCard = memo(function TrackCard({
               </button>
               {track.s3KeyHd && track.audioUrlHd && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(track.audioUrlHd!, true);
-                  }}
-                  disabled={downloading}
+                  onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrlHd!, true); }}
+                  disabled={actions.downloading}
                   className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
                   title={`Download ${hdLabel}`}
                 >
@@ -785,23 +454,23 @@ const TrackCard = memo(function TrackCard({
               track={track}
               playlists={playlists}
               onReusePrompt={onReusePrompt}
-              onRegenerateCover={handleRegenerateCover}
-              isRegeneratingCover={isRegeneratingCover}
-              onMoveToWorkspaceClick={() => setWorkspaceMenuOpen(true)}
+              onRegenerateCover={actions.handleRegenerateCover}
+              isRegeneratingCover={actions.isRegeneratingCover}
+              onMoveToWorkspaceClick={() => actions.setWorkspaceMenuOpen(true)}
               onAddToQueue={onAddToQueue}
-              onCreatePlaylistClick={() => setShowCreatePlaylistDialog(true)}
-              onAddToPlaylistClick={handleAddToPlaylistClick}
-              onRemoveFromPlaylistClick={handleRemoveFromPlaylistClick}
+              onCreatePlaylistClick={() => actions.setShowCreatePlaylistDialog(true)}
+              onAddToPlaylistClick={actions.handleAddToPlaylistClick}
+              onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
               onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
             />
           )}
           <button
-            onClick={handleDelete}
-            disabled={deleting}
+            onClick={actions.handleDelete}
+            disabled={actions.deleting}
             className="p-1.5 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-            title={deleting ? "Deleting..." : "Delete track"}
+            title={actions.deleting ? "Deleting..." : "Delete track"}
           >
-            {deleting ? (
+            {actions.deleting ? (
               <div className="w-4 h-4 rounded-full border-2 border-red-400/30 border-t-red-400 animate-spin" />
             ) : (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

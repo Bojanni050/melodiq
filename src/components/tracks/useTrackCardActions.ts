@@ -1,0 +1,231 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePlaylistStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import type { PlaylistOption, TrackItem } from "./types";
+
+interface UseTrackCardActionsOptions {
+  track: TrackItem;
+  playlists?: PlaylistOption[];
+  onDelete?: (trackId: string) => void;
+  onDeleteTracks?: (trackIds: string[]) => Promise<void> | void;
+  onAddToPlaylist?: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
+  onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
+}
+
+export function useTrackCardActions({
+  track,
+  onDelete,
+  onDeleteTracks,
+  onAddToPlaylist,
+  onMoveToWorkspace: onMoveToWorkspaceProp,
+}: UseTrackCardActionsOptions) {
+  const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
+  const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
+  const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
+  const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
+    useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
+  );
+
+  const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
+  const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
+  const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
+  const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
+  const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
+  const [pendingPlaylistAdd, setPendingPlaylistAdd] = useState<{ id: string; name: string } | null>(null);
+  const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
+  const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function handleCoverRegenerated(event: Event) {
+      const e = event as CustomEvent<{ trackIds?: string[]; ts?: number }>;
+      const ids = e.detail?.trackIds;
+      if (!Array.isArray(ids) || !ids.includes(track.id)) return;
+      const ts = typeof e.detail?.ts === "number" ? e.detail.ts : Date.now();
+      setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${ts}`);
+    }
+    window.addEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
+    return () => window.removeEventListener("melodiq:cover-regenerated", handleCoverRegenerated);
+  }, [track.id]);
+
+  async function executeDelete() {
+    setConfirmDelete(false);
+    setDeleting(true);
+    try {
+      const ids = pendingDeleteIds && pendingDeleteIds.length > 0 ? pendingDeleteIds : [track.id];
+      if (onDeleteTracks) {
+        await onDeleteTracks(ids);
+      } else {
+        for (const id of ids) {
+          const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
+          if (res.ok) onDelete?.(id);
+        }
+      }
+    } catch {
+      // silently fail
+    }
+    setDeleting(false);
+    setPendingDeleteIds(null);
+  }
+
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    const activeSelection = useSelectionStore.getState().selectedIds;
+    if (activeSelection.size > 0 && activeSelection.has(track.id)) {
+      setPendingDeleteIds(Array.from(activeSelection));
+    } else {
+      setPendingDeleteIds([track.id]);
+    }
+    setConfirmDelete(true);
+  }
+
+  async function handleRegenerateCover() {
+    if (isRegeneratingCover) return;
+    setIsRegeneratingCover(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateCoverArt: true }),
+      });
+      if (res.ok) setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+    } catch {
+      // silently fail
+    } finally {
+      setIsRegeneratingCover(false);
+    }
+  }
+
+  async function handleRating(newRating: "up" | "down") {
+    const rating = currentRating === newRating ? null : newRating;
+    setRatingLoading(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/rating`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+      if (res.ok) setCurrentRating(rating);
+    } catch (error) {
+      console.error("Failed to update rating:", error);
+    } finally {
+      setRatingLoading(false);
+    }
+  }
+
+  function handleDownload(url: string, hd = false) {
+    setDownloading(true);
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3");
+    a.download = `${(track.title || "track").replace(/\s*\(2\)\s*$/, "")}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
+    setTimeout(() => setDownloading(false), 1000);
+  }
+
+  function handleCreatePlaylist(name: string) {
+    const playlistId = createPlaylist(name);
+    if (playlistId) addTrackToPlaylist(playlistId, track.id);
+    setShowCreatePlaylistDialog(false);
+  }
+
+  function executeAddToPlaylist(playlistId: string, options?: { allowDuplicate?: boolean }) {
+    if (onAddToPlaylist) {
+      onAddToPlaylist(track.id, playlistId, options);
+      return;
+    }
+    addTrackToPlaylist(playlistId, track.id, options);
+  }
+
+  function confirmDuplicatePlaylistAdd() {
+    if (!pendingPlaylistAdd) return;
+    executeAddToPlaylist(pendingPlaylistAdd.id, { allowDuplicate: true });
+    setPendingPlaylistAdd(null);
+    setShowDuplicatePlaylistDialog(false);
+  }
+
+  function handleAddToPlaylistClick(playlistId: string, playlistName: string, isDuplicate: boolean) {
+    if (isDuplicate) {
+      setPendingPlaylistAdd({ id: playlistId, name: playlistName });
+      setShowDuplicatePlaylistDialog(true);
+      return;
+    }
+    executeAddToPlaylist(playlistId);
+  }
+
+  function handleRemoveFromPlaylistClick(playlistId: string) {
+    removeTrackFromPlaylist(playlistId, track.id);
+  }
+
+  function handleMoveToWorkspace(workspaceId: string) {
+    if (onMoveToWorkspaceProp) {
+      onMoveToWorkspaceProp(track.id, workspaceId);
+    } else {
+      moveTrackToWorkspace(workspaceId, track.id);
+    }
+    setWorkspaceMenuOpen(false);
+  }
+
+  function confirmWorkspaceMerge() {
+    if (!pendingWorkspaceMerge) return;
+    if (onMoveToWorkspaceProp) {
+      onMoveToWorkspaceProp(track.id, pendingWorkspaceMerge.id);
+    } else {
+      moveTrackToWorkspace(pendingWorkspaceMerge.id, track.id);
+    }
+    setPendingWorkspaceMerge(null);
+    setShowMergeWorkspaceDialog(false);
+    setWorkspaceMenuOpen(false);
+  }
+
+  function handleMergeWorkspaceTrigger(existingWorkspace: { id: string; name: string }) {
+    setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
+    setShowMergeWorkspaceDialog(true);
+  }
+
+  function handleCreateWorkspace(name: string) {
+    const workspaceId = createWorkspace(name);
+    if (workspaceId) {
+      if (onMoveToWorkspaceProp) {
+        onMoveToWorkspaceProp(track.id, workspaceId);
+      } else {
+        moveTrackToWorkspace(workspaceId, track.id);
+      }
+    }
+    setWorkspaceMenuOpen(false);
+  }
+
+  return {
+    // state
+    downloading, deleting, confirmDelete, setConfirmDelete,
+    pendingDeleteIds, coverOverrideUrl,
+    currentRating, ratingLoading,
+    isRegeneratingCover,
+    showCreatePlaylistDialog, setShowCreatePlaylistDialog,
+    showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog,
+    pendingPlaylistAdd, setPendingPlaylistAdd,
+    showMergeWorkspaceDialog, setShowMergeWorkspaceDialog,
+    pendingWorkspaceMerge, setPendingWorkspaceMerge,
+    workspaceMenuOpen, setWorkspaceMenuOpen,
+    // handlers
+    executeDelete, handleDelete,
+    handleRegenerateCover,
+    handleRating,
+    handleDownload,
+    handleCreatePlaylist,
+    confirmDuplicatePlaylistAdd,
+    handleAddToPlaylistClick,
+    handleRemoveFromPlaylistClick,
+    handleMoveToWorkspace,
+    confirmWorkspaceMerge,
+    handleMergeWorkspaceTrigger,
+    handleCreateWorkspace,
+  };
+}
