@@ -406,11 +406,12 @@ export async function PATCH(
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
     const artistName = body.artistName;
+    const composerName = body.composerName;
     const instrumental = body.instrumental;
     const language = body.language;
     const provider = body.provider;
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && instrumental === undefined && language === undefined && provider === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -495,6 +496,20 @@ export async function PATCH(
         updates.artistName = trimmed || null;
       } else {
         return NextResponse.json({ error: "Invalid artistName" }, { status: 400 });
+      }
+    }
+
+    if (composerName !== undefined) {
+      if (composerName === null) {
+        updates.composerName = null;
+      } else if (typeof composerName === "string") {
+        const trimmed = composerName.trim();
+        if (trimmed.length > 255) {
+          return NextResponse.json({ error: "Composer name too long (max 255 characters)" }, { status: 400 });
+        }
+        updates.composerName = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid composerName" }, { status: 400 });
       }
     }
 

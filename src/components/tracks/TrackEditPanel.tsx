@@ -22,6 +22,7 @@ interface TrackEditPanelProps {
 export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPanelProps) {
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? "");
+  const [composerName, setComposerName] = useState(track.composerName ?? "");
   const [provider, setProvider] = useState(track.provider ?? "upload");
   const [language, setLanguage] = useState(track.language ?? "");
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
@@ -38,6 +39,7 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
       const body: Record<string, unknown> = {
         title: title.trim() || null,
         artistName: artistName.trim() || null,
+        composerName: composerName.trim() || null,
         provider: provider.trim() || "upload",
         language: language.trim() || null,
         instrumental,
@@ -112,16 +114,28 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
             />
           </div>
 
-          {/* Artist Name */}
-          <div className="space-y-1">
-            <label className="text-xs text-white/60">Artist / Composer</label>
-            <input
-              type="text"
-              value={artistName}
-              onChange={(e) => setArtistName(e.target.value)}
-              placeholder="Artist or composer name"
-              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-            />
+          {/* Artist + Composer side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Artist</label>
+              <input
+                type="text"
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                placeholder="Artist name"
+                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Composer</label>
+              <input
+                type="text"
+                value={composerName}
+                onChange={(e) => setComposerName(e.target.value)}
+                placeholder="Composer name"
+                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+              />
+            </div>
           </div>
 
           {/* Source + Language side by side */}
