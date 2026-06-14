@@ -69,6 +69,32 @@ export async function getPresignedUrl(key: string, expiresIn = 3600) {
   return getSignedUrl(s3, command, { expiresIn });
 }
 
+export async function downloadFromS3(key: string): Promise<Buffer> {
+  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
+  const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
+  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
+  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
+  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "melodiq-tracks";
+
+  const s3 = new S3({
+    endpoint: endpoint || undefined,
+    region,
+    credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
+    forcePathStyle: true,
+    requestHandler: new NodeHttpHandler({
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    }),
+  });
+
+  const { GetObjectCommand } = await import("@aws-sdk/client-s3");
+  const response = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 export async function deleteFromS3(key: string) {
   const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
   const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
