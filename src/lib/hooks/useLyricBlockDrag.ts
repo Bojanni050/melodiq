@@ -8,6 +8,7 @@ export function useLyricBlockDrag(setBlocks: React.Dispatch<React.SetStateAction
   const [dropTarget, setDropTarget] = useState<{ id: string; position: "before" | "after" } | null>(null);
   const dragStateRef = useRef<{ pointerId?: number; blockId: string; kind: "pointer" | "mouse" } | null>(null);
   const dropTargetRef = useRef<{ id: string; position: "before" | "after" } | null>(null);
+  const dragHandleActiveRef = useRef<string | null>(null);
 
   function updateDragTarget(clientX: number, clientY: number, draggingId: string) {
     const all = Array.from(document.querySelectorAll("[data-lyric-block-id]")) as HTMLElement[];
@@ -114,8 +115,16 @@ export function useLyricBlockDrag(setBlocks: React.Dispatch<React.SetStateAction
     beginDrag(blockId, "pointer", event.pointerId);
   }
 
+  function onDragHandleMouseDown(blockId: string) {
+    dragHandleActiveRef.current = blockId;
+  }
+
   function startBlockMouseDrag(event: React.DragEvent<HTMLElement>, blockId: string) {
-    if (shouldIgnoreDragStart(event.target)) return;
+    if (dragHandleActiveRef.current !== blockId) {
+      event.preventDefault();
+      return;
+    }
+    dragHandleActiveRef.current = null;
     event.stopPropagation();
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", blockId);
@@ -168,5 +177,5 @@ export function useLyricBlockDrag(setBlocks: React.Dispatch<React.SetStateAction
     };
   }, [draggedBlockId, setBlocks]);
 
-  return { draggedBlockId, dropTarget, startBlockDrag, startBlockDragFromCard, startBlockMouseDrag, handleBlockMouseDragOver, handleBlockMouseDrop, handleBlockMouseDragEnd };
+  return { draggedBlockId, dropTarget, startBlockDrag, startBlockDragFromCard, startBlockMouseDrag, handleBlockMouseDragOver, handleBlockMouseDrop, handleBlockMouseDragEnd, onDragHandleMouseDown };
 }

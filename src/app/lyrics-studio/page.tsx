@@ -142,6 +142,7 @@ export default function LyricsStudioPage() {
     handleBlockMouseDragOver,
     handleBlockMouseDrop,
     handleBlockMouseDragEnd,
+    onDragHandleMouseDown,
   } = useLyricBlockDrag(setBlocks);
 
   const isCustomLanguage = language === "Other...";
@@ -714,6 +715,7 @@ export default function LyricsStudioPage() {
                     onStartBlockDrag={startBlockDrag}
                     onStartBlockDragFromCard={startBlockDragFromCard}
                     onStartBlockMouseDrag={startBlockMouseDrag}
+                    onDragHandleMouseDown={onDragHandleMouseDown}
                     onBlockMouseDragOver={handleBlockMouseDragOver}
                     onBlockMouseDrop={handleBlockMouseDrop}
                     onBlockMouseDragEnd={handleBlockMouseDragEnd}

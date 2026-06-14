@@ -16,6 +16,7 @@ export default function LyricBlockEditor({
   onStartBlockDrag,
   onStartBlockDragFromCard,
   onStartBlockMouseDrag,
+  onDragHandleMouseDown,
   onBlockMouseDragOver,
   onBlockMouseDrop,
   onBlockMouseDragEnd,
@@ -38,6 +39,7 @@ export default function LyricBlockEditor({
   translatingBlockId: string | null;
   effectiveTranslationLanguage: string;
   onStartBlockDrag: (event: React.PointerEvent<HTMLButtonElement>, blockId: string) => void;
+  onDragHandleMouseDown: (blockId: string) => void;
   onStartBlockDragFromCard: (event: React.PointerEvent<HTMLElement>, blockId: string) => void;
   onStartBlockMouseDrag: (event: React.DragEvent<HTMLElement>, blockId: string) => void;
   onBlockMouseDragOver: (event: React.DragEvent<HTMLElement>, blockId: string) => void;
@@ -99,14 +101,7 @@ export default function LyricBlockEditor({
                   onStartBlockDragFromCard(event, block.id);
                 }}
                 draggable
-                onDragStart={(event) => {
-                  const target = event.target as HTMLElement;
-                  if (!target.closest("[data-drag-handle]")) {
-                    event.preventDefault();
-                    return;
-                  }
-                  onStartBlockMouseDrag(event, block.id);
-                }}
+                onDragStart={(event) => onStartBlockMouseDrag(event, block.id)}
                 onDragOver={(event) => onBlockMouseDragOver(event, block.id)}
                 onDrop={(event) => onBlockMouseDrop(event, block.id)}
                 onDragEnd={onBlockMouseDragEnd}
@@ -118,6 +113,7 @@ export default function LyricBlockEditor({
                   <button
                     type="button"
                     data-drag-handle
+                    onMouseDown={() => onDragHandleMouseDown(block.id)}
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
                     aria-label={`Drag ${block.label || blockLabels[block.type]} block`}
                     className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
