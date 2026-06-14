@@ -176,3 +176,15 @@ export const settings = pgTable("settings", {
   key: varchar("key", { length: 255 }).notNull().unique(),
   value: text("value").notNull(),
 });
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("push_subscriptions_user_id_idx").on(table.userId),
+  uniqueIndex("push_subscriptions_endpoint_unique").on(table.endpoint),
+]);

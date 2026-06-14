@@ -7,6 +7,7 @@ import { extractPoYoErrorMessage, getPoYoStatusValue } from "@/lib/providers/poy
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
+import { sendPushNotification } from "@/lib/push";
 
 type JsonObject = Record<string, unknown>;
 
@@ -168,6 +169,11 @@ export async function POST(request: NextRequest) {
         statusCode: 200,
       });
       console.log(`[webhook/poyo] task ${taskId} synced (${syncResult.variantCount} variants)`);
+      sendPushNotification(track.userId, {
+        title: "Track klaar",
+        body: track.title ? `"${track.title}" is klaar met genereren.` : "Je track is klaar met genereren.",
+        url: "/library",
+      }).catch(() => {});
       return NextResponse.json({ success: true });
     } catch (error: any) {
       console.error("[webhook/poyo] S3 upload failed:", error.message);
@@ -192,6 +198,11 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ taskId, error: errorMessage }),
       statusCode: 200,
     });
+    sendPushNotification(track.userId, {
+      title: "Generatie mislukt",
+      body: track.title ? `"${track.title}" kon niet worden gegenereerd.` : "Een track kon niet worden gegenereerd.",
+      url: "/library",
+    }).catch(() => {});
     return NextResponse.json({ success: true });
   }
 

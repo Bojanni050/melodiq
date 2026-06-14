@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
+import { sendPushNotification } from "@/lib/push";
 import {
   contentTypeForFormat,
   detectFormatFromContentType,
@@ -106,6 +107,11 @@ export async function POST(request: NextRequest) {
       });
 
       console.log(`[webhook/tempolor] track ${track.id} done`);
+      sendPushNotification(track.userId, {
+        title: "Track klaar",
+        body: track.title ? `"${track.title}" is klaar met genereren.` : "Je track is klaar met genereren.",
+        url: "/library",
+      }).catch(() => {});
       return new Response("success", { status: 200 });
     } catch (error: any) {
       console.error("[webhook/tempolor] S3 upload failed:", error.message);
@@ -116,6 +122,11 @@ export async function POST(request: NextRequest) {
 
   if (status === "failed") {
     await db.update(tracks).set({ status: "failed", error: "Generation failed" }).where(eq(tracks.id, track.id!));
+    sendPushNotification(track.userId, {
+      title: "Generatie mislukt",
+      body: track.title ? `"${track.title}" kon niet worden gegenereerd.` : "Een track kon niet worden gegenereerd.",
+      url: "/library",
+    }).catch(() => {});
     return new Response("success", { status: 200 });
   }
 

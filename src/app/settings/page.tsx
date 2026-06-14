@@ -10,6 +10,7 @@ import ModelDetailModal from "@/components/settings/ModelDetailModal";
 import MusicGptRecoverySection from "@/components/settings/MusicGptRecoverySection";
 import WavRecoverySection from "@/components/settings/WavRecoverySection";
 import ProviderSection from "@/components/settings/ProviderSection";
+import PushNotificationsSection from "@/components/settings/PushNotificationsSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS } from "@/lib/settings-constants";
@@ -350,6 +351,8 @@ export default function SettingsPage() {
                 onToggle={() => updateField("ENABLE_API_LOGGING", values.ENABLE_API_LOGGING === "true" ? "false" : "true")}
                 onSave={saveApiLogging}
               />
+
+              <PushNotificationsSection />
 
               <section className="section-card">
                 <h2 className="text-sm font-semibold mb-3">Export</h2>

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, or } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
+import { sendPushNotification } from "@/lib/push";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { createHmac } from "crypto";
 
@@ -130,6 +131,13 @@ export async function POST(request: NextRequest) {
         db.update(tracks).set({ status: "failed", error: errorMsg }).where(eq(tracks.id, t.id!))
       )
     );
+    if (variantTracks[0]) {
+      sendPushNotification(variantTracks[0].userId, {
+        title: "Generatie mislukt",
+        body: variantTracks[0].title ? `"${variantTracks[0].title}" kon niet worden gegenereerd.` : "Een track kon niet worden gegenereerd.",
+        url: "/library",
+      }).catch(() => {});
+    }
     return new Response("success", { status: 200 });
   }
 
@@ -176,6 +184,13 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`[webhook/mureka] ${variantTracks.length} tracks marked done (requestId=${requestId})`);
+    if (variantTracks[0]) {
+      sendPushNotification(variantTracks[0].userId, {
+        title: "Track klaar",
+        body: variantTracks[0].title ? `"${variantTracks[0].title}" is klaar met genereren.` : "Je track is klaar met genereren.",
+        url: "/library",
+      }).catch(() => {});
+    }
   }
 
   return new Response("success", { status: 200 });

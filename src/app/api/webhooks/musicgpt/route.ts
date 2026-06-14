@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { sendPushNotification } from "@/lib/push";
 
 type MusicGptWebhookPayload = Record<string, unknown>;
 
@@ -168,6 +169,11 @@ export async function POST(request: NextRequest) {
       });
 
       console.log(`[webhook/musicgpt] track ${track.id} done (matchedBy=${matchedBy}), uploading to S3 in background`);
+      sendPushNotification(track.userId, {
+        title: "Track klaar",
+        body: track.title ? `"${track.title}" is klaar met genereren.` : "Je track is klaar met genereren.",
+        url: "/library",
+      }).catch(() => {});
 
       // Upload to S3 in background and swap URL when done
       (async () => {
@@ -283,6 +289,12 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ trackId: track.id, status: "failed" }),
       statusCode: 200,
     });
+
+    sendPushNotification(track.userId, {
+      title: "Generatie mislukt",
+      body: track.title ? `"${track.title}" kon niet worden gegenereerd.` : "Een track kon niet worden gegenereerd.",
+      url: "/library",
+    }).catch(() => {});
 
     return new Response("success", { status: 200 });
   }

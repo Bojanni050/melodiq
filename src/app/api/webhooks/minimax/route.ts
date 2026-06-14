@@ -4,6 +4,7 @@ import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
+import { sendPushNotification } from "@/lib/push";
 import {
   contentTypeForFormat,
   detectFormatFromContentType,
@@ -95,6 +96,11 @@ export async function POST(request: NextRequest) {
         statusCode: 200,
       });
       console.log(`[webhook/minimax] track ${track.id} done`);
+      sendPushNotification(track.userId, {
+        title: "Track klaar",
+        body: track.title ? `"${track.title}" is klaar met genereren.` : "Je track is klaar met genereren.",
+        url: "/library",
+      }).catch(() => {});
       return NextResponse.json({ success: true });
     } catch (error: any) {
       console.error("[webhook/minimax] S3 upload failed:", error.message);
@@ -108,6 +114,11 @@ export async function POST(request: NextRequest) {
       status: "failed",
       error: body.error_message || "Generation failed",
     }).where(eq(tracks.id, track.id!));
+    sendPushNotification(track.userId, {
+      title: "Generatie mislukt",
+      body: track.title ? `"${track.title}" kon niet worden gegenereerd.` : "Een track kon niet worden gegenereerd.",
+      url: "/library",
+    }).catch(() => {});
     return NextResponse.json({ success: true });
   }
 
