@@ -236,6 +236,8 @@ export default memo(function StudioForm({
     vocalGender,
     weirdness,
     styleInfluence,
+    savedLyrics,
+    savedLyricsLoaded,
     setSongIdea,
     setLyrics,
     setLyricsContext,
@@ -248,8 +250,18 @@ export default memo(function StudioForm({
     setVocalGender,
     setWeirdness,
     setStyleInfluence,
+    fetchSavedLyrics,
+    saveLyric,
+    loadSavedLyric,
+    deleteSavedLyric,
     reset,
   } = useStudioStore();
+
+  useEffect(() => {
+    if (!savedLyricsLoaded) {
+      void fetchSavedLyrics();
+    }
+  }, [savedLyricsLoaded, fetchSavedLyrics]);
 
   const [optimizing, setOptimizing] = useState(false);
   const [generatingLyrics, setGeneratingLyrics] = useState(false);
@@ -259,11 +271,22 @@ export default memo(function StudioForm({
   const [showProTips, setShowProTips] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
   const [lyricsExpanded, setLyricsExpanded] = useState(false);
+  const [showSavedLyrics, setShowSavedLyrics] = useState(false);
+  const [lyricsSaved, setLyricsSaved] = useState(false);
 
   // Saved presets store hooks and local UI states
   const presets = usePresetsStore((state) => state.presets);
+  const presetsLoaded = usePresetsStore((state) => state.presetsLoaded);
+  const fetchPresets = usePresetsStore((state) => state.fetchPresets);
   const addPreset = usePresetsStore((state) => state.addPreset);
   const deletePreset = usePresetsStore((state) => state.deletePreset);
+
+  useEffect(() => {
+    if (!presetsLoaded) {
+      void fetchPresets();
+    }
+  }, [presetsLoaded, fetchPresets]);
+
   const [showSavePresetForm, setShowSavePresetForm] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [presetNotes, setPresetNotes] = useState("");
@@ -537,6 +560,32 @@ Your chorus here`}
                 </button>
                 <button
                   type="button"
+                  onClick={async () => {
+                    if (!lyrics.trim()) return;
+                    const result = await saveLyric();
+                    if (result) {
+                      setLyricsSaved(true);
+                      setTimeout(() => setLyricsSaved(false), 1500);
+                    }
+                  }}
+                  disabled={!lyrics.trim()}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Save lyrics"
+                  aria-label="Save lyrics"
+                >
+                  {lyricsSaved ? (
+                    <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h6l4 4v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 3v4h-6V3" />
+                    </svg>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setLyrics("")}
                   disabled={!lyrics.trim()}
                   className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -555,6 +604,53 @@ Your chorus here`}
                 </span>
               </div>
             </div>
+
+            {/* Saved lyrics panel */}
+            {savedLyrics.length > 0 && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSavedLyrics((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/65 transition-colors"
+                >
+                  <svg className={`w-3 h-3 transition-transform ${showSavedLyrics ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Saved lyrics ({savedLyrics.length})
+                </button>
+                {showSavedLyrics && (
+                  <div className="mt-1.5 space-y-1 max-h-48 overflow-y-auto rounded-lg border border-white/8 bg-[#0d0d12] p-1.5">
+                    {savedLyrics.map((entry) => (
+                      <div key={entry.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5 group">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-white/75 truncate">{entry.title}</p>
+                          <p className="text-[10px] text-white/30">{new Date(entry.savedAt).toLocaleDateString()}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => loadSavedLyric(entry.id)}
+                          className="shrink-0 text-[10px] text-white/40 hover:text-white/80 transition-colors px-1.5 py-0.5 rounded hover:bg-white/10"
+                          title="Load these lyrics"
+                        >
+                          Load
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteSavedLyric(entry.id)}
+                          className="shrink-0 opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all p-0.5 rounded hover:bg-red-500/10"
+                          title="Delete"
+                          aria-label="Delete saved lyrics"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -782,12 +878,14 @@ Your chorus here`}
               <button
                 type="button"
                 disabled={!presetName.trim()}
-                onClick={() => {
-                  addPreset(presetName, songIdea, presetNotes);
-                  setShowSavePresetForm(false);
-                  setShowSavedPresetsList(true);
-                  setPresetName("");
-                  setPresetNotes("");
+                onClick={async () => {
+                  const result = await addPreset(presetName, songIdea, presetNotes);
+                  if (result) {
+                    setShowSavePresetForm(false);
+                    setShowSavedPresetsList(true);
+                    setPresetName("");
+                    setPresetNotes("");
+                  }
                 }}
                 className="px-3 py-1.5 rounded-lg bg-primary-500/80 hover:bg-primary-500 text-xs text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -843,7 +941,7 @@ Your chorus here`}
                         </button>
                         <button
                           type="button"
-                          onClick={() => deletePreset(preset.id)}
+                          onClick={() => void deletePreset(preset.id)}
                           className="p-1 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
                           title="Delete Preset"
                         >

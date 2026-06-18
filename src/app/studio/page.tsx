@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePlaylistStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
 import TrackDetail from "@/components/TrackDetail";
+import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import NoticeBar from "@/components/studio/NoticeBar";
 import StudioTabBar from "@/components/studio/StudioTabBar";
 import WorkspacePanel from "@/components/studio/WorkspacePanel";
 import RecentTracksPanel from "@/components/studio/RecentTracksPanel";
-import { useTrackManager } from "@/hooks/useTrackManager";
+import { useTrackManager, type Track } from "@/hooks/useTrackManager";
 import { useStudioActions } from "@/hooks/useStudioActions";
 import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 
 export default function StudioPage() {
-  const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate } = useTrackManager();
+  const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate, handleTrackUpdate } = useTrackManager();
+  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
 
   const {
     generating,
@@ -146,6 +148,7 @@ export default function StudioPage() {
                       onAddToPlaylist={handleAddToPlaylist}
                       onMoveToWorkspace={handleMoveTrackToWorkspace}
                       onTitleUpdate={handleTitleUpdate}
+                      onEditDetails={setEditingTrack}
                       playlists={memoizedPlaylists}
                     />
                   )}
@@ -161,6 +164,7 @@ export default function StudioPage() {
                       onAddToPlaylist={handleAddToPlaylist}
                       onMoveToWorkspace={handleMoveTrackToWorkspace}
                       onTitleUpdate={handleTitleUpdate}
+                      onEditDetails={setEditingTrack}
                       playlists={memoizedPlaylists}
                     />
                   )}
@@ -217,6 +221,17 @@ export default function StudioPage() {
             mode="overlay"
           />
         </div>
+      )}
+
+      {editingTrack && (
+        <TrackEditPanel
+          track={editingTrack}
+          onClose={() => setEditingTrack(null)}
+          onSaved={(updated) => {
+            handleTrackUpdate(updated);
+            setEditingTrack(null);
+          }}
+        />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ const PROVIDERS = [
   { value: "poyo", label: "PoYo" },
   { value: "tempolor", label: "Tempolor" },
   { value: "musicgpt", label: "MusicGPT" },
+  { value: "lyria", label: "Lyria 3" },
 ];
 
 interface TrackEditPanelProps {

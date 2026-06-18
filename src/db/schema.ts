@@ -177,6 +177,41 @@ export const settings = pgTable("settings", {
   value: text("value").notNull(),
 });
 
+export const savedLyrics = pgTable("saved_lyrics", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  lyrics: text("lyrics").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("saved_lyrics_user_id_idx").on(table.userId),
+]);
+
+export const savedLyricsRelations = relations(savedLyrics, ({ one }) => ({
+  user: one(users, {
+    fields: [savedLyrics.userId],
+    references: [users.id],
+  }),
+}));
+
+export const stylePresets = pgTable("style_presets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  prompt: text("prompt").notNull(),
+  notes: text("notes").default("").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("style_presets_user_id_idx").on(table.userId),
+]);
+
+export const stylePresetsRelations = relations(stylePresets, ({ one }) => ({
+  user: one(users, {
+    fields: [stylePresets.userId],
+    references: [users.id],
+  }),
+}));
+
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),

@@ -114,6 +114,27 @@ CREATE TABLE IF NOT EXISTS "settings" (
   "key" varchar(255) NOT NULL UNIQUE,
   "value" text NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS "saved_lyrics" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "title" varchar(255) NOT NULL,
+  "lyrics" text NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "saved_lyrics_user_id_idx" ON "saved_lyrics"("user_id");
+
+CREATE TABLE IF NOT EXISTS "style_presets" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "name" varchar(255) NOT NULL,
+  "prompt" text NOT NULL,
+  "notes" text NOT NULL DEFAULT '',
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "style_presets_user_id_idx" ON "style_presets"("user_id");
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,

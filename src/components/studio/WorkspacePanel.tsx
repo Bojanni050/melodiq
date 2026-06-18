@@ -49,6 +49,7 @@ interface WorkspacePanelProps {
   onAddToPlaylist: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;
   onTitleUpdate: (trackId: string, newTitle: string) => void;
+  onEditDetails?: (track: Track) => void;
   playlists: { id: string; name: string }[];
 }
 
@@ -85,6 +86,7 @@ export default function WorkspacePanel({
   onAddToPlaylist,
   onMoveToWorkspace,
   onTitleUpdate,
+  onEditDetails,
   playlists,
 }: WorkspacePanelProps) {
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
@@ -413,6 +415,7 @@ export default function WorkspacePanel({
             onMoveToWorkspace={onMoveToWorkspace}
             playlists={playlists}
             onTitleUpdate={onTitleUpdate}
+            onEditDetails={onEditDetails}
           />
         ) : (
           <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">

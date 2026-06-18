@@ -27,6 +27,10 @@ export interface Track {
   rating?: string | null;
   playCount?: number | null;
   lyricsTimestamps?: string | null;
+  artistName?: string | null;
+  composerName?: string | null;
+  instrumental?: boolean | null;
+  language?: string | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
@@ -91,6 +95,10 @@ export function useTrackManager() {
     const next: Track[] = (Array.isArray(data.tracks) ? data.tracks : []).map((t) => ({
       ...t,
       title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
+      artistName: t.artistName ?? null,
+      composerName: t.composerName ?? null,
+      instrumental: t.instrumental ?? null,
+      language: t.language ?? null,
     }));
 
     const playerSnapshots: PlayerTrack[] = next.map((track) => ({
@@ -232,11 +240,34 @@ export function useTrackManager() {
     );
   }, [mutateTracksResponse]);
 
+  const handleTrackUpdate = useCallback((updated: Partial<Track> & { id: string }) => {
+    setTracks((prev) => {
+      const idx = prev.findIndex((t) => t.id === updated.id);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...updated };
+      return next;
+    });
+
+    void mutateTracksResponse(
+      (current) => {
+        if (!current) return current;
+        const incomingTracks = Array.isArray(current.tracks) ? current.tracks : [];
+        return {
+          ...current,
+          tracks: incomingTracks.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)),
+        };
+      },
+      { revalidate: false }
+    );
+  }, [mutateTracksResponse]);
+
   return {
     tracks,
     tracksRef,
     fetchTracks,
     handleDeleteTrack,
     handleTitleUpdate,
+    handleTrackUpdate,
   };
 }

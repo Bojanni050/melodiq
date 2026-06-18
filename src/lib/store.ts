@@ -1008,6 +1008,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
 // Persisting track workspace assignments is handled directly in moveTrackToWorkspace / moveTracksToWorkspace actions
 
+export interface SavedLyric {
+  id: string;
+  title: string;
+  lyrics: string;
+  savedAt: string;
+}
+
 interface StudioState {
   songIdea: string;
   lyrics: string;
@@ -1023,6 +1030,8 @@ interface StudioState {
   customStructure: string;
   weirdness: number;
   styleInfluence: number;
+  savedLyrics: SavedLyric[];
+  savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
@@ -1039,12 +1048,16 @@ interface StudioState {
   setCustomStructure: (val: string) => void;
   setWeirdness: (val: number) => void;
   setStyleInfluence: (val: number) => void;
+  fetchSavedLyrics: () => Promise<void>;
+  saveLyric: () => Promise<SavedLyric | null>;
+  loadSavedLyric: (id: string) => void;
+  deleteSavedLyric: (id: string) => Promise<void>;
   reset: () => void;
 }
 
 export const useStudioStore = create<StudioState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       songIdea: "",
       lyrics: "",
       lyricsContext: "",
@@ -1059,6 +1072,8 @@ export const useStudioStore = create<StudioState>()(
       customStructure: "",
       weirdness: 50,
       styleInfluence: 50,
+      savedLyrics: [],
+      savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
@@ -1088,6 +1103,45 @@ export const useStudioStore = create<StudioState>()(
       setCustomStructure: (val) => set({ customStructure: val }),
       setWeirdness: (val) => set({ weirdness: val }),
       setStyleInfluence: (val) => set({ styleInfluence: val }),
+      fetchSavedLyrics: async () => {
+        if (typeof window === "undefined") return;
+        try {
+          const res = await fetch("/api/saved-lyrics");
+          if (!res.ok) return;
+          const data = await res.json();
+          set({ savedLyrics: data.savedLyrics ?? [], savedLyricsLoaded: true });
+        } catch {}
+      },
+      saveLyric: async () => {
+        const state = get();
+        const title = state.title.trim() || state.lyrics.trim().split("\n")[0].slice(0, 60) || "Untitled";
+        try {
+          const res = await fetch("/api/saved-lyrics", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, lyrics: state.lyrics }),
+          });
+          if (!res.ok) return null;
+          const data = await res.json();
+          const entry: SavedLyric = data.savedLyric;
+          set((s) => ({ savedLyrics: [entry, ...s.savedLyrics] }));
+          return entry;
+        } catch {
+          return null;
+        }
+      },
+      loadSavedLyric: (id) =>
+        set((state) => {
+          const entry = state.savedLyrics.find((s) => s.id === id);
+          if (!entry) return state;
+          return { lyrics: entry.lyrics, title: entry.title };
+        }),
+      deleteSavedLyric: async (id) => {
+        set((state) => ({ savedLyrics: state.savedLyrics.filter((s) => s.id !== id) }));
+        try {
+          await fetch(`/api/saved-lyrics/${id}`, { method: "DELETE" });
+        } catch {}
+      },
       reset: () =>
         set({
           songIdea: "",
@@ -1110,6 +1164,10 @@ export const useStudioStore = create<StudioState>()(
       name: "melodiq-studio",
       storage: createDebouncedStorage(500),
       skipHydration: true,
+      partialize: (state) => {
+        const { savedLyrics: _sl, savedLyricsLoaded: _sll, ...rest } = state as any;
+        return rest;
+      },
       merge: (persistedState: any, currentState) => {
         const merged = { ...currentState, ...persistedState };
         if (!merged.selectedProviders) {
@@ -1217,38 +1275,45 @@ export interface SavedPreset {
 
 interface PresetsState {
   presets: SavedPreset[];
-  addPreset: (name: string, prompt: string, notes: string) => void;
-  deletePreset: (id: string) => void;
+  presetsLoaded: boolean;
+  fetchPresets: () => Promise<void>;
+  addPreset: (name: string, prompt: string, notes: string) => Promise<SavedPreset | null>;
+  deletePreset: (id: string) => Promise<void>;
 }
 
-export const usePresetsStore = create<PresetsState>()(
-  persist(
-    (set) => ({
-      presets: [],
-      addPreset: (name, prompt, notes) =>
-        set((state) => ({
-          presets: [
-            ...state.presets,
-            {
-              id: typeof crypto !== "undefined" && "randomUUID" in crypto
-                ? crypto.randomUUID()
-                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              name: name.trim() || `Style ${new Date().toLocaleDateString()}`,
-              prompt,
-              notes: notes.trim(),
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
-      deletePreset: (id) =>
-        set((state) => ({
-          presets: state.presets.filter((p) => p.id !== id),
-        })),
-    }),
-    {
-      name: "melodiq-presets",
-      storage: createDebouncedStorage(500),
+export const usePresetsStore = create<PresetsState>()((set) => ({
+  presets: [],
+  presetsLoaded: false,
+  fetchPresets: async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const res = await fetch("/api/style-presets");
+      if (!res.ok) return;
+      const data = await res.json();
+      set({ presets: data.presets ?? [], presetsLoaded: true });
+    } catch {}
+  },
+  addPreset: async (name, prompt, notes) => {
+    try {
+      const res = await fetch("/api/style-presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, prompt, notes }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const preset: SavedPreset = data.preset;
+      set((state) => ({ presets: [...state.presets, preset] }));
+      return preset;
+    } catch {
+      return null;
     }
-  )
-);
+  },
+  deletePreset: async (id) => {
+    set((state) => ({ presets: state.presets.filter((p) => p.id !== id) }));
+    try {
+      await fetch(`/api/style-presets/${id}`, { method: "DELETE" });
+    } catch {}
+  },
+}));
 
