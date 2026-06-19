@@ -43,6 +43,7 @@ export default function FullscreenPlayer({
     try { return localStorage.getItem("melodiq-fs-bgzoom") !== "off"; } catch { return true; }
   });
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [lyricsVisible, setLyricsVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioElement = usePlayerStore((state) => state.audioElement);
 
@@ -300,7 +301,7 @@ export default function FullscreenPlayer({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/90" />
       <div className="relative h-full flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className={`flex items-center justify-between px-6 py-4 transition-opacity duration-700 ${controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsFullscreen(false)}
@@ -321,6 +322,17 @@ export default function FullscreenPlayer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
               </svg>
             </button>
+            {showLyrics && (
+              <button
+                onClick={() => setLyricsVisible((v) => !v)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+                </svg>
+              </button>
+            )}
             <div>
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
@@ -337,7 +349,7 @@ export default function FullscreenPlayer({
           </div>
         </div>
         <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden">
-          {showLyrics ? (
+          {showLyrics && lyricsVisible ? (
             <div className="flex flex-col lg:flex-row items-center gap-8 w-full max-w-6xl">
               {/* Cover art - rendered above lyrics on mobile, right of lyrics on desktop */}
               <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] lg:shrink-0 order-1 lg:order-2 flex items-center justify-center">
