@@ -47,9 +47,13 @@ async function extractCoverColors(src: string): Promise<string[]> {
 export default function AudioVisualizer({ audioElement, mode, gradient, enabled, coverUrl }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const analyzerRef = useRef<any>(null);
-  const coverGradientRegistered = useRef<string | null>(null);
-  // Track which element the analyzer was created with so we don't re-init unnecessarily
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const connectedElementRef = useRef<HTMLAudioElement | null>(null);
+  const coverGradientRegistered = useRef<string | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 5;
 
   async function registerCoverGradient(analyzer: any, url: string) {
     if (coverGradientRegistered.current === url) return;
@@ -64,20 +68,17 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         })),
       });
       coverGradientRegistered.current = url;
-      if (analyzer.gradient === "cover") analyzer.gradient = "cover";
     } catch (e) {
       console.warn("[AudioVisualizer] cover gradient error:", e);
     }
   }
 
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryCountRef = useRef(0);
-  const MAX_RETRIES = 5;
-
-  // Create analyzer once per audio element — never destroy while mounted
+  // One-time setup per audio element: create AudioContext + MediaElementSource ourselves.
+  // Retries and re-creations of AudioMotionAnalyzer reuse the same source node,
+  // so "already connected to a different AudioContext" never happens.
   useEffect(() => {
     if (!audioElement || !containerRef.current) return;
-    if (connectedElementRef.current === audioElement) return; // already connected
+    if (connectedElementRef.current === audioElement) return;
 
     connectedElementRef.current = audioElement;
     retryCountRef.current = 0;
@@ -88,7 +89,18 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const { default: AudioMotionAnalyzer } = await import("audiomotion-analyzer");
         if (cancelled || !containerRef.current) return;
 
-        // If a previous analyzer exists from a different element, destroy it first
+        // Create AudioContext once per audio element
+        if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+          audioCtxRef.current = new AudioContext();
+        }
+
+        // Create MediaElementSource once — reused on every retry/recreate
+        if (!sourceNodeRef.current) {
+          sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(audioElement!);
+          // Connect directly to speakers so audio plays through this context
+          sourceNodeRef.current.connect(audioCtxRef.current.destination);
+        }
+
         if (analyzerRef.current) {
           try { analyzerRef.current.destroy(); } catch {}
           analyzerRef.current = null;
@@ -98,7 +110,9 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const safeGradient = gradient === "cover" ? "prism" : gradient;
 
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
-          source: audioElement!,
+          audioCtx: audioCtxRef.current,
+          source: sourceNodeRef.current,
+          connectSpeakers: false, // we already connected source → destination directly
           mode,
           gradient: safeGradient,
           showBgColor: false,
@@ -117,7 +131,6 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         analyzerRef.current = analyzer;
         retryCountRef.current = 0;
 
-        // Register cover gradient then apply if that's the selected gradient
         if (coverUrl) {
           await registerCoverGradient(analyzer, coverUrl);
         }
@@ -126,14 +139,6 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         }
       } catch (e: any) {
         console.warn("[AudioVisualizer] init error:", e);
-
-        // "already connected" is unrecoverable for this audio element — stop retrying
-        if (e?.message?.includes("already connected")) {
-          console.warn("[AudioVisualizer] audio element already connected to another AudioContext — cannot recover");
-          return;
-        }
-
-        connectedElementRef.current = null;
 
         if (!cancelled && retryCountRef.current < MAX_RETRIES) {
           const delay = Math.min(1000 * 2 ** retryCountRef.current, 16000);
@@ -155,7 +160,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     };
   }, [audioElement]);
 
-  // Destroy only on final unmount
+  // On unmount: destroy analyzer but leave source + AudioContext alive (audio keeps playing)
   useEffect(() => {
     return () => {
       if (analyzerRef.current) {
@@ -194,7 +199,6 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     void registerCoverGradient(analyzerRef.current, coverUrl);
   }, [coverUrl]);
 
-  // Always render the container — toggle visibility via CSS to avoid recreating MediaElementSource
   return (
     <div
       ref={containerRef}
