@@ -92,7 +92,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
           source: audioElement!,
           mode,
-          gradient,
+          gradient: gradient === "cover" && !coverUrl ? "prism" : gradient,
           showBgColor: false,
           bgAlpha: 0,
           overlay: true,
@@ -141,14 +141,20 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
 
   useEffect(() => {
     if (!analyzerRef.current) return;
-    if (gradient === "cover" && coverUrl && coverGradientRegistered.current !== coverUrl) {
-      void registerCoverGradient(analyzerRef.current, coverUrl).then(() => {
-        if (analyzerRef.current) analyzerRef.current.gradient = "cover";
-      });
+    if (gradient === "cover") {
+      if (!coverUrl) {
+        analyzerRef.current.gradient = "prism";
+      } else if (coverGradientRegistered.current !== coverUrl) {
+        void registerCoverGradient(analyzerRef.current, coverUrl).then(() => {
+          if (analyzerRef.current) analyzerRef.current.gradient = "cover";
+        });
+      } else {
+        analyzerRef.current.gradient = "cover";
+      }
     } else {
       analyzerRef.current.gradient = gradient;
     }
-  }, [gradient]);
+  }, [gradient, coverUrl]);
 
   useEffect(() => {
     if (!analyzerRef.current || !coverUrl) return;
