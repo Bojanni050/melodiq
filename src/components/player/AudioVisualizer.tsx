@@ -93,6 +93,10 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
           audioCtxRef.current = new AudioContext();
         }
+        // Resume if suspended — browsers suspend new AudioContexts until user interaction
+        if (audioCtxRef.current.state === "suspended") {
+          await audioCtxRef.current.resume();
+        }
 
         // Create MediaElementSource once — reused on every retry/recreate
         if (!sourceNodeRef.current) {
@@ -128,6 +132,13 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
 
         analyzerRef.current = analyzer;
         retryCountRef.current = 0;
+
+        // Auto-resume if browser suspends the AudioContext (tab switch, etc.)
+        const ctx = audioCtxRef.current!;
+        const handleStateChange = () => {
+          if (ctx.state === "suspended") void ctx.resume();
+        };
+        ctx.addEventListener("statechange", handleStateChange);
 
         if (coverUrl) {
           await registerCoverGradient(analyzer, coverUrl);
@@ -204,7 +215,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none transition-opacity duration-500 z-10"
+      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none transition-opacity duration-500 z-20"
       style={{ opacity: enabled ? 0.55 : 0 }}
     />
   );
