@@ -355,7 +355,7 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden ${visualizerEnabled ? "pb-36" : ""}`}>
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden">
           {showLyrics && lyricsVisible ? (
             <div className="flex flex-col lg:flex-row items-center gap-8 w-full max-w-6xl">
               {/* Cover art - rendered above lyrics on mobile, right of lyrics on desktop */}
@@ -376,7 +376,7 @@ export default function FullscreenPlayer({
               </div>
 
               {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
-              <div className="flex-1 w-full order-2 lg:order-1 flex items-center justify-center h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]">
+              <div className={`flex-1 w-full order-2 lg:order-1 flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[336px] lg:h-[436px] xl:h-[496px]" : "h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]"}`}>
                 {hasTimings ? (
                   <div
                     ref={containerRef}
@@ -425,7 +425,7 @@ export default function FullscreenPlayer({
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+            <div className={`flex-1 flex flex-col items-center justify-center text-center px-4 ${visualizerEnabled ? "pb-36" : ""}`}>
               {coverUrl ? (
                 <img
                   src={coverUrl}
