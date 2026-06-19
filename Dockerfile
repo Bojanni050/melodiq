@@ -29,6 +29,7 @@ COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/src/db ./src/db
 COPY --from=builder /app/node_modules ./node_modules
 
+RUN apk add --no-cache ffmpeg
 RUN mkdir -p /data/audio-cache /data/cover-cache && chown nextjs:nodejs /data/audio-cache /data/cover-cache
 
 USER nextjs
