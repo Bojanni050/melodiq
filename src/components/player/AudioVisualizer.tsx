@@ -70,12 +70,17 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     }
   }
 
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 5;
+
   // Create analyzer once per audio element — never destroy while mounted
   useEffect(() => {
     if (!audioElement || !containerRef.current) return;
     if (connectedElementRef.current === audioElement) return; // already connected
 
     connectedElementRef.current = audioElement;
+    retryCountRef.current = 0;
     let cancelled = false;
 
     async function init() {
@@ -107,19 +112,33 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         });
 
         analyzerRef.current = analyzer;
+        retryCountRef.current = 0; // success — reset counter
 
         if (coverUrl) {
           void registerCoverGradient(analyzer, coverUrl);
         }
       } catch (e) {
         console.warn("[AudioVisualizer] init error:", e);
-        connectedElementRef.current = null; // allow retry
+        connectedElementRef.current = null;
+
+        if (!cancelled && retryCountRef.current < MAX_RETRIES) {
+          const delay = Math.min(1000 * 2 ** retryCountRef.current, 16000);
+          retryCountRef.current++;
+          console.log(`[AudioVisualizer] retrying in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRIES})`);
+          retryTimerRef.current = setTimeout(() => { if (!cancelled) void init(); }, delay);
+        }
       }
     }
 
     void init();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
   }, [audioElement]);
 
   // Destroy only on final unmount
