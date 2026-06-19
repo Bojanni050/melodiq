@@ -103,10 +103,16 @@ interface PlayerState {
   setShowTrackDetailsPanel: (enabled: boolean) => void;
   setRightPanelWidth: (width: number) => void;
   playHighestQuality: boolean;
+  visualizerEnabled: boolean;
+  visualizerMode: number;
+  visualizerGradient: string;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
   setIsFullscreen: (fullscreen: boolean) => void;
   setPlayHighestQuality: (enabled: boolean) => void;
+  setVisualizerEnabled: (enabled: boolean) => void;
+  setVisualizerMode: (mode: number) => void;
+  setVisualizerGradient: (gradient: string) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -125,6 +131,9 @@ export const usePlayerStore = create<PlayerState>()(
       playContext: null,
       isFullscreen: false,
       playHighestQuality: false,
+      visualizerEnabled: false,
+      visualizerMode: 2,
+      visualizerGradient: "prism",
       setCurrentTrack: (track) => {
         if (!track) {
           set({
@@ -311,6 +320,9 @@ export const usePlayerStore = create<PlayerState>()(
       setProgress: (progress) => set({ progress }),
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
       setPlayHighestQuality: (enabled) => set({ playHighestQuality: enabled }),
+      setVisualizerEnabled: (enabled) => set({ visualizerEnabled: enabled }),
+      setVisualizerMode: (mode) => set({ visualizerMode: mode }),
+      setVisualizerGradient: (gradient) => set({ visualizerGradient: gradient }),
     }),
     {
       name: "melodiq-player",
@@ -333,6 +345,9 @@ export const usePlayerStore = create<PlayerState>()(
           isFullscreen: state.isFullscreen,
           progress: state.progress,
           playHighestQuality: state.playHighestQuality,
+          visualizerEnabled: state.visualizerEnabled,
+          visualizerMode: state.visualizerMode,
+          visualizerGradient: state.visualizerGradient,
         };
       },
     }

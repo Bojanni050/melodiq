@@ -4,6 +4,9 @@ import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import { usePlayerStore, useUserStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { useSWRConfig } from "swr";
+import dynamic from "next/dynamic";
+
+const AudioVisualizer = dynamic(() => import("./AudioVisualizer"), { ssr: false });
 import {
   AudioSource,
   AudioSourceState,
@@ -25,11 +28,17 @@ export default function FullscreenPlayer({
     volume,
     setIsFullscreen,
     setVolume,
+    visualizerEnabled,
+    visualizerMode,
+    visualizerGradient,
   } = usePlayerStore();
   const { user, loadUser } = useUserStore();
   
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [bgZoom, setBgZoom] = useState(() => {
+    try { return localStorage.getItem("melodiq-fs-bgzoom") !== "off"; } catch { return true; }
+  });
   const audioElement = usePlayerStore((state) => state.audioElement);
   const playToggleCooldownRef = useRef(0);
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
@@ -212,12 +221,30 @@ export default function FullscreenPlayer({
     return lyricsLines.slice(start, end);
   });
 
+  const toggleBgZoom = () => {
+    setBgZoom((v) => {
+      const next = !v;
+      try { localStorage.setItem("melodiq-fs-bgzoom", next ? "on" : "off"); } catch {}
+      return next;
+    });
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 bottom-16 z-[50] bg-black overflow-hidden">
+      <style>{`
+        @keyframes fsZoom {
+          0%, 100% { transform: scale(1.15); }
+          50% { transform: scale(1.32); }
+        }
+      `}</style>
       {coverUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center scale-115 blur-[90px] opacity-45 saturate-150"
-          style={{ backgroundImage: `url(${coverUrl})` }}
+          className="absolute inset-0 bg-cover bg-center blur-[90px] opacity-45 saturate-150"
+          style={{
+            backgroundImage: `url(${coverUrl})`,
+            transform: bgZoom ? undefined : "scale(1.15)",
+            animation: bgZoom ? "fsZoom 22s ease-in-out infinite" : undefined,
+          }}
         />
       )}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70" />
@@ -232,6 +259,16 @@ export default function FullscreenPlayer({
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <button
+              onClick={toggleBgZoom}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" strokeWidth={2} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
               </svg>
             </button>
             <div>
@@ -340,6 +377,12 @@ export default function FullscreenPlayer({
           )}
         </div>
       </div>
+      <AudioVisualizer
+        audioElement={audioElement}
+        mode={visualizerMode}
+        gradient={visualizerGradient}
+        enabled={visualizerEnabled}
+      />
     </div>
   );
 }

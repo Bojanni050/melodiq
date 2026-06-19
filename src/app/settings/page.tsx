@@ -11,6 +11,7 @@ import MusicGptRecoverySection from "@/components/settings/MusicGptRecoverySecti
 import WavRecoverySection from "@/components/settings/WavRecoverySection";
 import ProviderSection from "@/components/settings/ProviderSection";
 import PushNotificationsSection from "@/components/settings/PushNotificationsSection";
+import VisualizerSection from "@/components/settings/VisualizerSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS } from "@/lib/settings-constants";
@@ -353,6 +354,8 @@ export default function SettingsPage() {
               />
 
               <PushNotificationsSection />
+
+              <VisualizerSection />
 
               <section className="section-card">
                 <h2 className="text-sm font-semibold mb-3">Export</h2>
