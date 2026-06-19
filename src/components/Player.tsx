@@ -385,15 +385,25 @@ export default function Player() {
     // long-lived connection timeout). Saves the current position, reloads the
     // src, and resumes from where it left off.
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+
     const handleAudioError = () => {
       const audioEl = audioRef.current;
       const track = currentTrackRef.current;
       if (!audioEl || !track) return;
-      // Only attempt reconnect if we were actually playing
       if (!usePlayerStore.getState().isPlaying) return;
 
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.warn(`[Player] Audio error — giving up after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+        usePlayerStore.getState().setIsPlaying(false);
+        return;
+      }
+
       const resumeAt = audioEl.currentTime || 0;
-      console.warn(`[Player] Audio error — reconnecting at ${resumeAt.toFixed(1)}s`);
+      const delay = Math.min(1500 * 2 ** reconnectAttempts, 30000);
+      reconnectAttempts++;
+      console.warn(`[Player] Audio error — reconnecting at ${resumeAt.toFixed(1)}s (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, delay ${delay}ms)`);
 
       if (reconnectTimer) clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(async () => {
@@ -401,23 +411,32 @@ export default function Player() {
         if (!audioRef.current || currentTrackRef.current?.id !== track.id) return;
         const el = audioRef.current;
         el.pause();
-        // Force browser to re-request the stream from the server
         const currentSrc = el.src;
+        // Temporarily remove error listener to avoid re-triggering during reload
+        el.removeEventListener("error", handleAudioError);
         el.src = "";
         el.load();
         el.src = currentSrc;
         el.load();
+        el.addEventListener("error", handleAudioError);
         try {
-          await new Promise<void>((resolve) => {
-            const onReady = () => { el.removeEventListener("canplay", onReady); resolve(); };
+          await new Promise<void>((resolve, reject) => {
+            const onReady = () => { cleanup(); resolve(); };
+            const onErr = () => { cleanup(); reject(new Error("stream error")); };
+            const cleanup = () => {
+              el.removeEventListener("canplay", onReady);
+              el.removeEventListener("error", onErr);
+            };
             el.addEventListener("canplay", onReady, { once: true });
+            el.addEventListener("error", onErr, { once: true });
           });
           el.currentTime = resumeAt;
           await el.play();
+          reconnectAttempts = 0; // reset on success
         } catch {
-          // If reconnect also fails, leave paused — don't loop forever
+          // next error event will trigger another attempt
         }
-      }, 1500);
+      }, delay);
     };
 
     // Register MediaSession so iOS/Android treat this as active media and
