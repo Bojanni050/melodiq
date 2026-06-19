@@ -16,6 +16,7 @@ export type PushState = "unsupported" | "denied" | "granted" | "default";
 export function usePushNotifications() {
   const [state, setState] = useState<PushState>("default");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!("Notification" in window) || !("serviceWorker" in navigator)) {
@@ -28,16 +29,20 @@ export function usePushNotifications() {
     }
 
     // Check if already subscribed
-    navigator.serviceWorker.ready.then((reg) =>
-      reg.pushManager.getSubscription().then((sub) => {
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => {
         if (sub) setState("granted");
-      }),
-    ).catch(() => {});
+      })
+      .catch((err) => {
+        console.warn("[push] subscription check failed:", err);
+      });
   }, []);
 
   async function subscribe() {
     if (!("serviceWorker" in navigator)) return;
     setLoading(true);
+    setError(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
@@ -45,24 +50,33 @@ export function usePushNotifications() {
         return;
       }
 
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        setError("Push notifications are not configured (missing VAPID key).");
+        return;
+      }
+
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-        ),
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
       const json = sub.toJSON();
-      await fetch("/api/push", {
+      const res = await fetch("/api/push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
       });
 
+      if (!res.ok) {
+        throw new Error(`Server error ${res.status}`);
+      }
+
       setState("granted");
-    } catch (err) {
+    } catch (err: any) {
       console.error("[push] subscribe failed:", err);
+      setError(err?.message ?? "Failed to enable push notifications.");
     } finally {
       setLoading(false);
     }
@@ -71,6 +85,7 @@ export function usePushNotifications() {
   async function unsubscribe() {
     if (!("serviceWorker" in navigator)) return;
     setLoading(true);
+    setError(null);
     try {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -83,12 +98,13 @@ export function usePushNotifications() {
         await sub.unsubscribe();
       }
       setState("default");
-    } catch (err) {
+    } catch (err: any) {
       console.error("[push] unsubscribe failed:", err);
+      setError(err?.message ?? "Failed to disable push notifications.");
     } finally {
       setLoading(false);
     }
   }
 
-  return { state, loading, subscribe, unsubscribe };
+  return { state, loading, error, subscribe, unsubscribe };
 }

@@ -3,7 +3,7 @@
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export default function PushNotificationsSection() {
-  const { state, loading, subscribe, unsubscribe } = usePushNotifications();
+  const { state, loading, error, subscribe, unsubscribe } = usePushNotifications();
 
   return (
     <div className="bg-white/5 rounded-xl p-6 space-y-4">
@@ -24,6 +24,10 @@ export default function PushNotificationsSection() {
         <p className="text-sm text-red-400">
           Notificaties zijn geblokkeerd. Wijzig dit in je browserinstellingen.
         </p>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-400">{error}</p>
       )}
 
       {(state === "default" || state === "granted") && (
