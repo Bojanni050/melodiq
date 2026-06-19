@@ -15,6 +15,7 @@ const GRADIENTS = [
   { value: "rainbow",   label: "Rainbow" },
   { value: "orangered", label: "Orange Red" },
   { value: "steelblue", label: "Steel Blue" },
+  { value: "cover",     label: "Cover Art" },
 ];
 
 export default function VisualizerSection() {

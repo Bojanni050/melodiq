@@ -31,6 +31,9 @@ export default function FullscreenPlayer({
     visualizerEnabled,
     visualizerMode,
     visualizerGradient,
+    setVisualizerEnabled,
+    setVisualizerMode,
+    setVisualizerGradient,
   } = usePlayerStore();
   const { user, loadUser } = useUserStore();
   
@@ -39,7 +42,26 @@ export default function FullscreenPlayer({
   const [bgZoom, setBgZoom] = useState(() => {
     try { return localStorage.getItem("melodiq-fs-bgzoom") !== "off"; } catch { return true; }
   });
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioElement = usePlayerStore((state) => state.audioElement);
+
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 10000);
+  }, []);
+
+  useEffect(() => {
+    showControls();
+    window.addEventListener("mousemove", showControls);
+    window.addEventListener("keydown", showControls);
+    return () => {
+      window.removeEventListener("mousemove", showControls);
+      window.removeEventListener("keydown", showControls);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, [showControls]);
   const playToggleCooldownRef = useRef(0);
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
@@ -221,6 +243,34 @@ export default function FullscreenPlayer({
     return lyricsLines.slice(start, end);
   });
 
+  const VIZ_MODES = [
+    { value: 0,  label: "Discrete" },
+    { value: 2,  label: "Bars" },
+    { value: 6,  label: "Wide Bars" },
+    { value: 10, label: "Line" },
+  ];
+  const VIZ_GRADIENTS = [
+    { value: "prism",     label: "Prism" },
+    { value: "classic",   label: "Classic" },
+    { value: "rainbow",   label: "Rainbow" },
+    { value: "orangered", label: "Orange Red" },
+    { value: "steelblue", label: "Steel Blue" },
+    { value: "cover",     label: "Cover Art" },
+  ];
+
+  const cycleMode = (dir: 1 | -1) => {
+    const idx = VIZ_MODES.findIndex((m) => m.value === visualizerMode);
+    const next = VIZ_MODES[(idx + dir + VIZ_MODES.length) % VIZ_MODES.length];
+    setVisualizerMode(next.value);
+  };
+  const cycleGradient = (dir: 1 | -1) => {
+    const idx = VIZ_GRADIENTS.findIndex((g) => g.value === visualizerGradient);
+    const next = VIZ_GRADIENTS[(idx + dir + VIZ_GRADIENTS.length) % VIZ_GRADIENTS.length];
+    setVisualizerGradient(next.value);
+  };
+  const currentModeLabel = VIZ_MODES.find((m) => m.value === visualizerMode)?.label ?? "Bars";
+  const currentGradientLabel = VIZ_GRADIENTS.find((g) => g.value === visualizerGradient)?.label ?? "Prism";
+
   const toggleBgZoom = () => {
     setBgZoom((v) => {
       const next = !v;
@@ -377,11 +427,37 @@ export default function FullscreenPlayer({
           )}
         </div>
       </div>
+      {visualizerEnabled && (
+        <div className={`absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 pb-3 pointer-events-none z-10 transition-opacity duration-700 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
+          <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 pointer-events-auto">
+            <button onClick={() => cycleMode(-1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentModeLabel}</span>
+            <button onClick={() => cycleMode(1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <span className="w-px h-4 bg-white/15" />
+            <button onClick={() => cycleGradient(-1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentGradientLabel}</span>
+            <button onClick={() => cycleGradient(1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <span className="w-px h-4 bg-white/15" />
+            <button onClick={() => setVisualizerEnabled(false)} className="text-white/35 hover:text-white/70 transition-colors p-0.5">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
       <AudioVisualizer
         audioElement={audioElement}
         mode={visualizerMode}
         gradient={visualizerGradient}
         enabled={visualizerEnabled}
+        coverUrl={coverUrl}
       />
     </div>
   );
