@@ -106,7 +106,7 @@ const TrackListHeader = memo(function TrackListHeader({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search tracks"
-            className="h-7 w-full rounded-md border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
+            className="h-7 w-full rounded-[20px] border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
             aria-label="Search tracks"
           />
           {searchQuery.length > 0 && (

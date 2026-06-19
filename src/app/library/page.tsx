@@ -912,13 +912,20 @@ export default function LibraryPage() {
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-1">
-                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                    Library
-                    <span className="mx-2 text-white/25 font-light">/</span>
-                    <span className="text-white/60">
-                      {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}
-                    </span>
-                  </h1>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                      Library
+                      <span className="mx-2 text-white/25 font-light">/</span>
+                      <span className="text-white/60">
+                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}
+                      </span>
+                    </h1>
+                    {activeSongs.length > 0 && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                        {activeSongs.length} tracks{totalDuration ? ` (${totalDuration})` : ""}
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
                     {/* All Songs */}
                     <button
@@ -1030,9 +1037,6 @@ export default function LibraryPage() {
                         )}
                       </>
                     ) : null}
-                  </div>
-                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {activeSongs.length} tracks{totalDuration ? ` (${totalDuration})` : ""}
                   </div>
                 </div>
 
