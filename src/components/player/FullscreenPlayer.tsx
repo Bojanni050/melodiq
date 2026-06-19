@@ -324,16 +324,16 @@ export default function FullscreenPlayer({
                 <img
                   src={coverUrl}
                   alt="Album art"
-                  className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl shadow-2xl shadow-black/60 object-cover animate-[pulse_4s_ease-in-out_infinite]"
+                  className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl shadow-2xl shadow-black/60 object-cover"
                 />
               ) : (
-                <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10 animate-[pulse_4s_ease-in-out_infinite]">
+                <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10">
                   <svg className="w-20 h-20 lg:w-32 lg:h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                   </svg>
                 </div>
               )}
-              <h3 className="mt-4 sm:mt-6 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90 animate-[pulse_4s_ease-in-out_infinite]">
+              <h3 className="mt-4 sm:mt-6 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h3>
             </div>

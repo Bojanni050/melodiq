@@ -255,7 +255,7 @@ export default function WorkspacePanel({
                     onClick={() => setSelectedWorkspaceId(workspace.id)}
                     className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""}`}
                   >
-                    <div className="relative aspect-[4/4.2] overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                    <div className="relative aspect-square overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
                       <div className="pointer-events-none absolute inset-0 bg-black/10" />
                       {coverUrls.length > 0 ? (
                         <div className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"}`}>
