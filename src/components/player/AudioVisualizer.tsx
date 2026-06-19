@@ -97,8 +97,6 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         // Create MediaElementSource once — reused on every retry/recreate
         if (!sourceNodeRef.current) {
           sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(audioElement!);
-          // Connect directly to speakers so audio plays through this context
-          sourceNodeRef.current.connect(audioCtxRef.current.destination);
         }
 
         if (analyzerRef.current) {
@@ -112,7 +110,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
           audioCtx: audioCtxRef.current,
           source: sourceNodeRef.current,
-          connectSpeakers: false, // we already connected source → destination directly
+          // connectSpeakers: true (default) — audioMotion owns source → analyzer → destination
           mode,
           gradient: safeGradient,
           showBgColor: false,
@@ -160,12 +158,16 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     };
   }, [audioElement]);
 
-  // On unmount: destroy analyzer but leave source + AudioContext alive (audio keeps playing)
+  // On unmount: destroy analyzer then reconnect source → destination so audio keeps playing
   useEffect(() => {
     return () => {
       if (analyzerRef.current) {
         try { analyzerRef.current.destroy(); } catch {}
         analyzerRef.current = null;
+      }
+      // Restore direct audio path after analyzer is gone
+      if (sourceNodeRef.current && audioCtxRef.current) {
+        try { sourceNodeRef.current.connect(audioCtxRef.current.destination); } catch {}
       }
       connectedElementRef.current = null;
       coverGradientRegistered.current = null;
@@ -202,7 +204,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none transition-opacity duration-500"
+      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none transition-opacity duration-500 z-10"
       style={{ opacity: enabled ? 0.55 : 0 }}
     />
   );

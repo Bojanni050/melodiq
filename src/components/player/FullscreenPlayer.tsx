@@ -355,7 +355,7 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden">
+        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden ${visualizerEnabled ? "pb-36" : ""}`}>
           {showLyrics && lyricsVisible ? (
             <div className="flex flex-col lg:flex-row items-center gap-8 w-full max-w-6xl">
               {/* Cover art - rendered above lyrics on mobile, right of lyrics on desktop */}
