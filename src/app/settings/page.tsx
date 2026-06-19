@@ -254,6 +254,25 @@ export default function SettingsPage() {
               <MinimaxSection values={values} onFieldChange={updateField} />
               <MusicGptRecoverySection />
               <WavRecoverySection />
+
+              <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white">ffmpeg</p>
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {values.FFMPEG_AVAILABLE === "true"
+                      ? "WAV uploads are automatically converted to FLAC."
+                      : "WAV uploads are stored as-is. Install ffmpeg to enable FLAC conversion."}
+                  </p>
+                </div>
+                <span className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                  values.FFMPEG_AVAILABLE === "true"
+                    ? "bg-green-500/15 text-green-400"
+                    : "bg-red-500/15 text-red-400"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${values.FFMPEG_AVAILABLE === "true" ? "bg-green-400" : "bg-red-400"}`} />
+                  {values.FFMPEG_AVAILABLE === "true" ? "Installed" : "Not found"}
+                </span>
+              </div>
               <WebhooksSection values={values} onFieldChange={updateField} />
             </div>
 

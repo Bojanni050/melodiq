@@ -4,6 +4,7 @@ import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { access, readdir, stat } from "node:fs/promises";
+import { ffmpegAvailable } from "@/lib/wav-to-flac";
 import { join } from "node:path";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,7 @@ export async function GET() {
   }
 
   settingsMap.DISK_CACHE_SIZE_BYTES = String(await getDiskCacheSizeBytes());
+  settingsMap.FFMPEG_AVAILABLE = ffmpegAvailable() ? "true" : "false";
 
   return NextResponse.json(settingsMap);
 }
