@@ -94,10 +94,13 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
           analyzerRef.current = null;
         }
 
+        // Never pass "cover" to the constructor — it isn't registered yet
+        const safeGradient = gradient === "cover" ? "prism" : gradient;
+
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
           source: audioElement!,
           mode,
-          gradient: gradient === "cover" && !coverUrl ? "prism" : gradient,
+          gradient: safeGradient,
           showBgColor: false,
           bgAlpha: 0,
           overlay: true,
@@ -112,13 +115,24 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         });
 
         analyzerRef.current = analyzer;
-        retryCountRef.current = 0; // success — reset counter
+        retryCountRef.current = 0;
 
+        // Register cover gradient then apply if that's the selected gradient
         if (coverUrl) {
-          void registerCoverGradient(analyzer, coverUrl);
+          await registerCoverGradient(analyzer, coverUrl);
         }
-      } catch (e) {
+        if (gradient === "cover" && coverGradientRegistered.current) {
+          analyzer.gradient = "cover";
+        }
+      } catch (e: any) {
         console.warn("[AudioVisualizer] init error:", e);
+
+        // "already connected" is unrecoverable for this audio element — stop retrying
+        if (e?.message?.includes("already connected")) {
+          console.warn("[AudioVisualizer] audio element already connected to another AudioContext — cannot recover");
+          return;
+        }
+
         connectedElementRef.current = null;
 
         if (!cancelled && retryCountRef.current < MAX_RETRIES) {
