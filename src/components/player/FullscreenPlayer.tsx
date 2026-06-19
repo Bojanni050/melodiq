@@ -323,6 +323,15 @@ export default function FullscreenPlayer({
               </svg>
             </button>
             <button
+              onClick={() => setVisualizerEnabled(!visualizerEnabled)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l2 3 2-6 2 8 2-4 2 6" />
+              </svg>
+            </button>
+            <button
               onClick={() => { if (showLyrics) setLyricsVisible((v) => !v); }}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
                 !showLyrics
