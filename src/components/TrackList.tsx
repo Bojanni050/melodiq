@@ -74,7 +74,7 @@ const TrackListHeader = memo(function TrackListHeader({
   });
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-[#0a0a0f] border-b border-white/6 mb-1">
+    <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-white/[0.04] backdrop-blur-md border-b border-white/8 mb-1">
       <button
         onClick={() => toggleSelectAll(displayedTracks.map((t) => t.id))}
         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
