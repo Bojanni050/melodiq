@@ -410,8 +410,9 @@ export async function PATCH(
     const instrumental = body.instrumental;
     const language = body.language;
     const provider = body.provider;
+    const duration = body.duration;
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -528,6 +529,14 @@ export async function PATCH(
         updates.language = trimmed || null;
       } else {
         return NextResponse.json({ error: "Invalid language" }, { status: 400 });
+      }
+    }
+
+    if (duration !== undefined) {
+      if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+        updates.duration = Math.round(duration);
+      } else if (duration !== null) {
+        return NextResponse.json({ error: "Invalid duration" }, { status: 400 });
       }
     }
 
