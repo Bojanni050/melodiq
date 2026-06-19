@@ -332,15 +332,9 @@ export default function FullscreenPlayer({
               </svg>
             </button>
             <button
-              onClick={() => { if (showLyrics) setLyricsVisible((v) => !v); }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                !showLyrics
-                  ? "bg-white/5 text-white/20 cursor-default"
-                  : lyricsVisible
-                  ? "bg-white/20 text-white"
-                  : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"
-              }`}
-              title={!showLyrics ? "No lyrics" : lyricsVisible ? "Hide lyrics" : "Show lyrics"}
+              onClick={() => setLyricsVisible((v) => !v)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />

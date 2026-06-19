@@ -23,7 +23,6 @@ async function extractCoverColors(src: string): Promise<string[]> {
         const ctx = canvas.getContext("2d");
         if (!ctx) { resolve([]); return; }
         ctx.drawImage(img, 0, 0, size, size);
-        // Sample 5 points spread across the image
         const pts = [
           [size * 0.2, size * 0.2],
           [size * 0.8, size * 0.2],
@@ -32,12 +31,8 @@ async function extractCoverColors(src: string): Promise<string[]> {
           [size * 0.8, size * 0.8],
         ];
         const colors = pts.map(([x, y]) => {
-          const d = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
-          // Boost saturation slightly for visual impact
-          const r = Math.min(255, d[0] + 30);
-          const g = Math.min(255, d[1] + 20);
-          const b = Math.min(255, d[2] + 30);
-          return `rgb(${r},${g},${b})`;
+          const d = ctx.getImageData(Math.floor(x!), Math.floor(y!), 1, 1).data;
+          return `rgb(${Math.min(255, d[0]! + 30)},${Math.min(255, d[1]! + 20)},${Math.min(255, d[2]! + 30)})`;
         });
         resolve(colors);
       } catch {
@@ -53,16 +48,46 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
   const containerRef = useRef<HTMLDivElement>(null);
   const analyzerRef = useRef<any>(null);
   const coverGradientRegistered = useRef<string | null>(null);
+  // Track which element the analyzer was created with so we don't re-init unnecessarily
+  const connectedElementRef = useRef<HTMLAudioElement | null>(null);
 
+  async function registerCoverGradient(analyzer: any, url: string) {
+    if (coverGradientRegistered.current === url) return;
+    const colors = await extractCoverColors(url);
+    if (!analyzer || colors.length < 2) return;
+    try {
+      analyzer.registerGradient("cover", {
+        bgColor: "#000011",
+        colorStops: colors.map((color: string, i: number) => ({
+          color,
+          pos: i / (colors.length - 1),
+        })),
+      });
+      coverGradientRegistered.current = url;
+      if (analyzer.gradient === "cover") analyzer.gradient = "cover";
+    } catch (e) {
+      console.warn("[AudioVisualizer] cover gradient error:", e);
+    }
+  }
+
+  // Create analyzer once per audio element — never destroy while mounted
   useEffect(() => {
-    if (!enabled || !audioElement || !containerRef.current) return;
+    if (!audioElement || !containerRef.current) return;
+    if (connectedElementRef.current === audioElement) return; // already connected
 
-    let destroyed = false;
+    connectedElementRef.current = audioElement;
+    let cancelled = false;
 
     async function init() {
       try {
         const { default: AudioMotionAnalyzer } = await import("audiomotion-analyzer");
-        if (destroyed || !containerRef.current) return;
+        if (cancelled || !containerRef.current) return;
+
+        // If a previous analyzer exists from a different element, destroy it first
+        if (analyzerRef.current) {
+          try { analyzerRef.current.destroy(); } catch {}
+          analyzerRef.current = null;
+        }
 
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
           source: audioElement!,
@@ -83,48 +108,31 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
 
         analyzerRef.current = analyzer;
 
-        // Register cover gradient if we have a URL
         if (coverUrl) {
           void registerCoverGradient(analyzer, coverUrl);
         }
       } catch (e) {
         console.warn("[AudioVisualizer] init error:", e);
+        connectedElementRef.current = null; // allow retry
       }
     }
 
     void init();
 
+    return () => { cancelled = true; };
+  }, [audioElement]);
+
+  // Destroy only on final unmount
+  useEffect(() => {
     return () => {
-      destroyed = true;
-      coverGradientRegistered.current = null;
       if (analyzerRef.current) {
         try { analyzerRef.current.destroy(); } catch {}
         analyzerRef.current = null;
       }
+      connectedElementRef.current = null;
+      coverGradientRegistered.current = null;
     };
-  }, [enabled, audioElement]);
-
-  async function registerCoverGradient(analyzer: any, url: string) {
-    if (coverGradientRegistered.current === url) return;
-    const colors = await extractCoverColors(url);
-    if (!analyzerRef.current || colors.length < 2) return;
-    try {
-      analyzer.registerGradient("cover", {
-        bgColor: "#000011",
-        colorStops: colors.map((color, i) => ({
-          color,
-          pos: i / (colors.length - 1),
-        })),
-      });
-      coverGradientRegistered.current = url;
-      // If currently using cover gradient, re-apply to pick up new colors
-      if (analyzerRef.current.gradient === "cover") {
-        analyzerRef.current.gradient = "cover";
-      }
-    } catch (e) {
-      console.warn("[AudioVisualizer] cover gradient error:", e);
-    }
-  }
+  }, []);
 
   useEffect(() => {
     if (!analyzerRef.current) return;
@@ -147,13 +155,12 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     void registerCoverGradient(analyzerRef.current, coverUrl);
   }, [coverUrl]);
 
-  if (!enabled) return null;
-
+  // Always render the container — toggle visibility via CSS to avoid recreating MediaElementSource
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none"
-      style={{ opacity: 0.55 }}
+      className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none transition-opacity duration-500"
+      style={{ opacity: enabled ? 0.55 : 0 }}
     />
   );
 }
