@@ -37,9 +37,10 @@ interface LibraryTrack {
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;
+  deletedAt?: string | null;
 }
 
-type LibraryView = "songs" | "playlists" | "workspaces";
+type LibraryView = "songs" | "playlists" | "workspaces" | "trash";
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
@@ -164,6 +165,8 @@ export default function LibraryPage() {
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<LibraryView>("songs");
+  const [trashedTracks, setTrashedTracks] = useState<LibraryTrack[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
@@ -222,6 +225,19 @@ export default function LibraryPage() {
       }
     }
     setLoading(false);
+  }, []);
+
+  const fetchTrash = useCallback(async () => {
+    setTrashLoading(true);
+    try {
+      const res = await fetch("/api/tracks?trash=true");
+      if (res.ok) {
+        const data = await res.json();
+        setTrashedTracks((data.tracks || []).map((t: any) => ({ ...t })));
+      }
+    } finally {
+      setTrashLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -917,7 +933,7 @@ export default function LibraryPage() {
                       Library
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : "Songs"}
+                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : "Songs"}
                       </span>
                     </h1>
                     {activeSongs.length > 0 && (
@@ -977,6 +993,18 @@ export default function LibraryPage() {
                         {selectedWorkspace?.name ?? "songs"}
                       </button>
                     </div>
+
+                    {/* Recycle Bin */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlaylistId(null); setSelectedWorkspaceId(null); setView("trash"); void fetchTrash(); }}
+                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors flex items-center gap-1.5 ${view === "trash" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Bin
+                    </button>
                   </div>
                 </div>
                 <div>
@@ -1449,6 +1477,80 @@ export default function LibraryPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                       </svg>
                     </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Recycle Bin view */}
+            {view === "trash" && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Recycle Bin</h2>
+                    <p className="text-xs text-white/40 mt-0.5">Deleted tracks — restore or permanently delete them.</p>
+                  </div>
+                </div>
+
+                {trashLoading ? (
+                  <div className="flex items-center justify-center py-20 text-white/30 text-sm">Loading…</div>
+                ) : trashedTracks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3 text-white/30">
+                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <p className="text-sm">Recycle bin is empty</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
+                    {trashedTracks.map((track) => (
+                      <div key={track.id} className="flex items-center gap-3 px-4 py-3 bg-white/2 hover:bg-white/5 transition-colors">
+                        {/* Cover */}
+                        <div className="w-10 h-10 rounded-md shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
+                          {track.s3KeyCover ? (
+                            <img src={`/api/tracks/${track.id}/cover`} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white/80 truncate">{track.title || track.prompt?.substring(0, 60) || "Untitled"}</p>
+                          <p className="text-xs text-white/35 mt-0.5">
+                            Deleted {track.deletedAt ? new Date(track.deletedAt).toLocaleDateString() : "recently"}
+                          </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await fetch(`/api/tracks/${track.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }) });
+                              setTrashedTracks((prev) => prev.filter((t) => t.id !== track.id));
+                              await fetchTracks();
+                            }}
+                            className="text-xs text-white/50 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/10"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!confirm(`Permanently delete "${track.title || "this track"}"? This cannot be undone.`)) return;
+                              await fetch(`/api/tracks/${track.id}?permanent=true`, { method: "DELETE" });
+                              setTrashedTracks((prev) => prev.filter((t) => t.id !== track.id));
+                            }}
+                            className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
+                          >
+                            Delete forever
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </section>

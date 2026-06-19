@@ -506,14 +506,15 @@ export default memo(function TrackList({
   const deleteTrackIds = useCallback(async (trackIds: string[]) => {
     if (trackIds.length === 0) return;
     setDeleting(true);
+    // Optimistic: remove from UI immediately
+    trackIds.forEach((id) => onDelete?.(id));
+    setSelectedIds(new Set());
     try {
       for (const id of trackIds) {
-        const res = await fetch(`/api/tracks/${id}`, { method: "DELETE" });
-        if (res.ok) onDelete?.(id);
+        await fetch(`/api/tracks/${id}`, { method: "DELETE" });
       }
-      setSelectedIds(new Set());
     } catch {
-      // silently fail
+      // silently fail — track will reappear on next refresh if server failed
     } finally {
       setDeleting(false);
     }

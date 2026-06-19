@@ -71,6 +71,7 @@ export interface Track {
   instrumental?: boolean | null;
   artistName?: string | null;
   composerName?: string | null;
+  deletedAt?: string | null;
 }
 
 interface PlayerState {

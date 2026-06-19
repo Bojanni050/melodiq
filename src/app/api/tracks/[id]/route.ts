@@ -411,6 +411,12 @@ export async function PATCH(
     const language = body.language;
     const provider = body.provider;
     const duration = body.duration;
+    const restore = body.restore;
+
+    if (restore === true) {
+      await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
+      return NextResponse.json({ success: true });
+    }
 
     if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
@@ -616,20 +622,19 @@ export async function DELETE(
 
   const track = result[0];
 
-  try {
-    if (track.s3Key) {
-      await deleteFromS3(track.s3Key);
-    }
-    if (track.s3KeyHd) {
-      await deleteFromS3(track.s3KeyHd);
-    }
-    if (track.s3KeyCover) {
-      await deleteFromS3(track.s3KeyCover);
-    }
+  // Permanent hard delete (already in trash)
+  const permanent = new URL(request.url).searchParams.get("permanent") === "true";
 
-    await db
-      .delete(tracks)
-      .where(eq(tracks.id, id));
+  try {
+    if (permanent) {
+      if (track.s3Key) await deleteFromS3(track.s3Key);
+      if (track.s3KeyHd) await deleteFromS3(track.s3KeyHd);
+      if (track.s3KeyCover) await deleteFromS3(track.s3KeyCover);
+      await db.delete(tracks).where(eq(tracks.id, id));
+    } else {
+      // Soft delete — move to recycle bin
+      await db.update(tracks).set({ deletedAt: new Date() }).where(eq(tracks.id, id));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

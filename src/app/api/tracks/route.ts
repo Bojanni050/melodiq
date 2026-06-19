@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
-import { eq, desc, and, inArray, ne, lt } from "drizzle-orm";
+import { eq, desc, and, inArray, ne, lt, isNull, isNotNull } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
@@ -318,17 +318,23 @@ export async function GET(request: NextRequest) {
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
     composerName: tracks.composerName,
+    deletedAt: tracks.deletedAt,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
   };
 
-  const statusFilter = new URL(request.url).searchParams.get("status");
-  const baseWhere = statusFilter
-    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter))
-    : eq(tracks.userId, userId);
+  const url = new URL(request.url);
+  const statusFilter = url.searchParams.get("status");
+  const trashOnly = url.searchParams.get("trash") === "true";
+
+  const baseWhere = trashOnly
+    ? and(eq(tracks.userId, userId), isNotNull(tracks.deletedAt))
+    : statusFilter
+    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter), isNull(tracks.deletedAt))
+    : and(eq(tracks.userId, userId), isNull(tracks.deletedAt));
 
   // Run database timeout check before fetching tracks
-  if (!statusFilter) {
+  if (!statusFilter && !trashOnly) {
     const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
     await db.update(tracks)
       .set({ status: "failed", error: "Generation timed out. Please try again." })
@@ -337,20 +343,22 @@ export async function GET(request: NextRequest) {
           eq(tracks.userId, userId),
           inArray(tracks.status, ["pending", "generating"]),
           ne(tracks.provider, "musicgpt"),
-          lt(tracks.createdAt, timeoutCutoff)
+          lt(tracks.createdAt, timeoutCutoff),
+          isNull(tracks.deletedAt)
         )
       );
   }
 
   // Active-polling fallback: Check status of active (pending/generating) tracks
-  if (!statusFilter) {
+  if (!statusFilter && !trashOnly) {
     const activeTracks = await db
       .select()
       .from(tracks)
       .where(
         and(
           eq(tracks.userId, userId),
-          inArray(tracks.status, ["pending", "generating"])
+          inArray(tracks.status, ["pending", "generating"]),
+          isNull(tracks.deletedAt)
         )
       );
 
