@@ -236,7 +236,7 @@ export default function SettingsPage() {
           </div>
         </div>
         <main className="p-4">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 max-w-[1600px]">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 max-w-[2000px]">
 
             {/* Column 1 — Music Providers */}
             <div className="space-y-4">
@@ -254,25 +254,6 @@ export default function SettingsPage() {
               <MinimaxSection values={values} onFieldChange={updateField} />
               <MusicGptRecoverySection />
               <WavRecoverySection />
-
-              <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-white">ffmpeg</p>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {values.FFMPEG_AVAILABLE === "true"
-                      ? "WAV uploads are automatically converted to FLAC."
-                      : "WAV uploads are stored as-is. Install ffmpeg to enable FLAC conversion."}
-                  </p>
-                </div>
-                <span className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
-                  values.FFMPEG_AVAILABLE === "true"
-                    ? "bg-green-500/15 text-green-400"
-                    : "bg-red-500/15 text-red-400"
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${values.FFMPEG_AVAILABLE === "true" ? "bg-green-400" : "bg-red-400"}`} />
-                  {values.FFMPEG_AVAILABLE === "true" ? "Installed" : "Not found"}
-                </span>
-              </div>
               <WebhooksSection values={values} onFieldChange={updateField} />
             </div>
 
@@ -363,6 +344,35 @@ export default function SettingsPage() {
                     />
                   </button>
                 </label>
+              </section>
+
+              <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white">ffmpeg</p>
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {values.FFMPEG_AVAILABLE === "true"
+                      ? "WAV uploads are automatically converted to FLAC."
+                      : "WAV uploads are stored as-is. Install ffmpeg to enable FLAC conversion."}
+                  </p>
+                </div>
+                <span className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+                  values.FFMPEG_AVAILABLE === "true"
+                    ? "bg-green-500/15 text-green-400"
+                    : "bg-red-500/15 text-red-400"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${values.FFMPEG_AVAILABLE === "true" ? "bg-green-400" : "bg-red-400"}`} />
+                  {values.FFMPEG_AVAILABLE === "true" ? "Installed" : "Not found"}
+                </span>
+              </div>
+            </div>
+
+            {/* Column 4 — App & System */}
+            <div className="space-y-4">
+              <section className="section-card">
+                <div className="mb-2">
+                  <h2 className="text-sm font-semibold">App & System</h2>
+                  <p className="text-xs text-white/30">Notifications, player, and data management.</p>
+                </div>
               </section>
 
               <ApiLoggingCard
