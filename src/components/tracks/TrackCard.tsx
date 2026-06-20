@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import WaveformBars from "@/components/tracks/WaveformBars";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, type Workspace } from "@/lib/store";
 import { formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
@@ -67,6 +67,7 @@ const TrackCard = memo(function TrackCard({
   isDetailSelected?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
+  const artistAlias = useUserStore((state) => state.user?.artistAlias);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
@@ -397,7 +398,7 @@ const TrackCard = memo(function TrackCard({
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
               title={track.artistName ? "Double-click to edit artist" : "Double-click to add artist name"}
             >
-              {track.artistName ?? <span className="italic opacity-50">no artist — double-click to add</span>}
+              {track.artistName || artistAlias || <span className="italic opacity-50">no artist — double-click to add</span>}
             </p>
           )}
 
