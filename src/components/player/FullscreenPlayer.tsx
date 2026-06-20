@@ -364,25 +364,37 @@ export default function FullscreenPlayer({
           </div>
         </div>
         <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"} ${showLyrics && lyricsVisible ? "flex-col lg:flex-row gap-6 lg:gap-8" : "flex-col gap-0"}`}>
-          {/* Cover art — always mounted so CSS transition animates the resize */}
-          <div className={`shrink-0 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2 w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
-            {coverUrl ? (
-              <img
-                src={coverUrl}
-                alt="Album art"
-                className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50"
-              />
-            ) : (
-              <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                <svg className="w-16 h-16 lg:w-24 lg:h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-              </div>
-            )}
+          {/* Cover art + title/artist — always mounted so CSS transition animates the resize */}
+          <div className={`shrink-0 flex flex-col items-center gap-4 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2" : ""}`}>
+            <div className={`transition-all duration-500 ${showLyrics && lyricsVisible ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
+              {coverUrl ? (
+                <img
+                  src={coverUrl}
+                  alt="Album art"
+                  className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50"
+                />
+              ) : (
+                <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
+                  <svg className="w-16 h-16 lg:w-24 lg:h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <div className="text-center">
+              <h3 className={`font-semibold text-white/90 leading-snug transition-all duration-500 ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
+                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
+              </h3>
+              {(artistLabel || composerLabel) && (
+                <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-xs sm:text-sm" : "text-sm sm:text-base"}`}>
+                  {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Lyrics — shown when visible, left of cover on desktop / below on mobile */}
-          {showLyrics && lyricsVisible ? (
+          {/* Lyrics — shown when visible, left of cover on desktop / above on mobile */}
+          {showLyrics && lyricsVisible && (
             <div className={`flex-1 w-full order-2 lg:order-1 flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[336px] lg:h-[436px] xl:h-[496px]" : "h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]"}`}>
               {hasTimings ? (
                 <div
@@ -412,14 +424,14 @@ export default function FullscreenPlayer({
                   })}
                 </div>
               ) : (
-                <div className="w-full h-full overflow-y-auto px-4 pr-2 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [-ms-overflow-style:none]">
-                  <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                <div className="w-full h-full overflow-y-auto flex justify-center px-4 pr-2 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [-ms-overflow-style:none]">
+                  <div className={`grid gap-4 lg:gap-8 w-fit max-w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
                     {columns.map((column, colIndex) => (
-                      <div key={colIndex} className="space-y-2 text-center lg:text-left">
+                      <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
                         {column.map((line, lineIndex) => (
                           <p
                             key={lineIndex}
-                            className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+                            className="text-white/80 text-xs sm:text-sm leading-relaxed"
                           >
                             {line}
                           </p>
@@ -428,17 +440,6 @@ export default function FullscreenPlayer({
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="mt-6 text-center">
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">
-                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
-              </h3>
-              {(artistLabel || composerLabel) && (
-                <p className="mt-1.5 text-sm sm:text-base text-white/50">
-                  {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
-                </p>
               )}
             </div>
           )}
