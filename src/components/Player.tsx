@@ -791,9 +791,9 @@ export default function Player() {
         <FullscreenPlayer audioSource={audioSource} audioSourceState={audioSourceState} />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-[#161621] border-t border-white/5 z-[60] overflow-hidden">
+      <div className="fixed bottom-0 left-0 right-0 h-20 bg-[#161621] border-t border-white/5 z-[60]">
         {playerCoverUrl ? (
-          <div aria-hidden="true" className="absolute inset-0">
+          <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
             <img
               src={playerCoverUrl}
               alt=""
