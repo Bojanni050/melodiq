@@ -4,7 +4,8 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import WaveformBars from "@/components/tracks/WaveformBars";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, type Workspace } from "@/lib/store";
+import { useRouter } from "next/navigation";
 import { formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
@@ -68,6 +69,13 @@ const TrackCard = memo(function TrackCard({
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const artistAlias = useUserStore((state) => state.user?.artistAlias);
+  const allPlaylists = usePlaylistStore((state) => state.playlists);
+  const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
+  const router = useRouter();
+  const trackPlaylist = useMemo(
+    () => allPlaylists.find((p) => p.trackIds.includes(track.id)) ?? null,
+    [allPlaylists, track.id]
+  );
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
@@ -438,9 +446,19 @@ const TrackCard = memo(function TrackCard({
               </p>
             </>
           )}
-          {assignedWorkspaceName && (
+          {trackPlaylist && (
             <p className="text-[10px] text-white/30 mt-0.5 truncate">
-              <span className="opacity-60">in</span> {assignedWorkspaceName}
+              <span className="opacity-60">in</span>{" "}
+              <button
+                className="hover:text-white/70 transition-colors underline-offset-2 hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPlaylistId(trackPlaylist.id);
+                  router.push("/library");
+                }}
+              >
+                {trackPlaylist.name}
+              </button>
             </p>
           )}
           {track.error && (
