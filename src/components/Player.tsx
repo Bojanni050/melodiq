@@ -8,6 +8,7 @@ import { useShallow } from "zustand/react/shallow";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import FullscreenPlayer from "@/components/player/FullscreenPlayer";
 import ChromecastButton from "@/components/ChromecastButton";
+import { useChromecast } from "@/hooks/useChromecast";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -109,6 +110,7 @@ export default function Player() {
     }))
   );
   const { user, loadUser } = useUserStore();
+  const { castState } = useChromecast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playToggleCooldownRef = useRef(0);
   const currentTrackRef = useRef<Track | null>(null);
@@ -632,13 +634,13 @@ export default function Player() {
 
   useEffect(() => {
     if (audioRef.current) {
-      if (isPlaying) {
+      if (isPlaying && castState !== "connected") {
         void tryPlay();
       } else {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, tryPlay]);
+  }, [isPlaying, tryPlay, castState]);
 
   useEffect(() => {
     if (audioRef.current) {
