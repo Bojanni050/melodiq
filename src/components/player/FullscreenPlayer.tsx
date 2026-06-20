@@ -365,8 +365,8 @@ export default function FullscreenPlayer({
         </div>
         <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"} ${showLyrics && lyricsVisible ? "flex-col lg:flex-row gap-6 lg:gap-8" : "flex-col gap-0"}`}>
           {/* Cover art + title/artist — always mounted so CSS transition animates the resize */}
-          <div className={`shrink-0 flex flex-col items-center gap-4 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2" : ""}`}>
-            <div className={`transition-all duration-500 ${showLyrics && lyricsVisible ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
+          <div className={`shrink-0 flex flex-col items-center justify-center gap-4 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2 lg:self-center" : ""}`}>
+            <div className={`transition-all duration-500 ${showLyrics && lyricsVisible ? "w-52 h-52 sm:w-64 sm:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
               {coverUrl ? (
                 <img
                   src={coverUrl}
