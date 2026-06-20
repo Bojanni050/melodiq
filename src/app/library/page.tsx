@@ -1075,6 +1075,7 @@ export default function LibraryPage() {
                     tracks={activeSongs}
                     autoQueueAfterPlay
                     enableDragReorder={!!selectedPlaylist}
+                    dragOrderKey={selectedPlaylist?.id}
                     onManualOrderChange={(orderedTrackIds) => {
                       if (!selectedPlaylist) return;
                       reorderPlaylistTracks(selectedPlaylist.id, orderedTrackIds);

@@ -8,13 +8,13 @@ import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/stor
 
 type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
 type DropPosition = "before" | "after";
-const TRACK_ORDER_STORAGE_KEY = "melodiq.track-manual-order.v1";
+const TRACK_ORDER_STORAGE_PREFIX = "melodiq.track-manual-order.v2.";
 
-function readPersistedTrackOrder(): string[] | null {
+function readPersistedTrackOrder(key: string): string[] | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.localStorage.getItem(TRACK_ORDER_STORAGE_KEY);
+    const raw = window.localStorage.getItem(TRACK_ORDER_STORAGE_PREFIX + key);
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as unknown;
@@ -26,11 +26,11 @@ function readPersistedTrackOrder(): string[] | null {
   }
 }
 
-function writePersistedTrackOrder(order: string[]) {
+function writePersistedTrackOrder(key: string, order: string[]) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(TRACK_ORDER_STORAGE_KEY, JSON.stringify(order));
+    window.localStorage.setItem(TRACK_ORDER_STORAGE_PREFIX + key, JSON.stringify(order));
   } catch {
     // Ignore storage failures (private mode/quota), keep runtime order in memory.
   }
@@ -211,11 +211,13 @@ export default memo(function TrackList({
   onManualOrderChange,
   onEditDetails,
   selectedTrackId,
+  dragOrderKey,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
   autoQueueAfterPlay?: boolean;
   enableDragReorder?: boolean;
+  dragOrderKey?: string;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
   onReusePrompt?: (track: TrackItem) => void;
@@ -350,10 +352,18 @@ export default memo(function TrackList({
       return;
     }
 
-    const persistedOrder = readPersistedTrackOrder();
-    setManualOrderIds(persistedOrder ?? []);
-    setHasLoadedPersistedManualOrder(true);
-  }, [enableDragReorder]);
+    // When a dragOrderKey is provided (playlist mode), seed from the incoming tracks order
+    // (which comes from the server) so the server is the source of truth.
+    // localStorage is only a fallback for the generic non-playlist drag case.
+    if (dragOrderKey) {
+      setManualOrderIds(null); // will be seeded from sortedTracks via the next effect
+      setHasLoadedPersistedManualOrder(true);
+    } else {
+      const persistedOrder = readPersistedTrackOrder("default");
+      setManualOrderIds(persistedOrder ?? []);
+      setHasLoadedPersistedManualOrder(true);
+    }
+  }, [enableDragReorder, dragOrderKey]);
 
   useEffect(() => {
     if (!enableDragReorder) {
@@ -384,12 +394,12 @@ export default memo(function TrackList({
   }, [enableDragReorder, hasLoadedPersistedManualOrder, sortedTracks]);
 
   useEffect(() => {
-    if (!enableDragReorder || !hasLoadedPersistedManualOrder || !manualOrderIds) {
+    if (!enableDragReorder || !hasLoadedPersistedManualOrder || !manualOrderIds || dragOrderKey) {
       return;
     }
 
-    writePersistedTrackOrder(manualOrderIds);
-  }, [enableDragReorder, hasLoadedPersistedManualOrder, manualOrderIds]);
+    writePersistedTrackOrder("default", manualOrderIds);
+  }, [enableDragReorder, hasLoadedPersistedManualOrder, manualOrderIds, dragOrderKey]);
 
   const displayedTracks = useMemo(() => {
     const list = [...orderedTracks];
