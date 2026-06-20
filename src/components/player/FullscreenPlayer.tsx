@@ -44,6 +44,7 @@ export default function FullscreenPlayer({
   });
   const [controlsVisible, setControlsVisible] = useState(true);
   const [lyricsVisible, setLyricsVisible] = useState(true);
+  const [contentVisible, setContentVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioElement = usePlayerStore((state) => state.audioElement);
 
@@ -188,6 +189,13 @@ export default function FullscreenPlayer({
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: "instant" });
     }
+  }, [currentTrack?.id]);
+
+  useEffect(() => {
+    if (!currentTrack?.id) return;
+    setContentVisible(false);
+    const t = setTimeout(() => setContentVisible(true), 250);
+    return () => clearTimeout(t);
   }, [currentTrack?.id]);
 
   const handleLineClick = useCallback((startTime: number) => {
@@ -340,7 +348,7 @@ export default function FullscreenPlayer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
               </svg>
             </button>
-            <div>
+            <div className={`transition-opacity duration-300 ${contentVisible ? "opacity-100" : "opacity-0"}`}>
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
@@ -355,7 +363,7 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden ${visualizerEnabled ? "pb-36" : ""}`}>
+        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"}`}>
           {/* Cover art — always mounted so CSS transition animates the resize */}
           <div className={`shrink-0 transition-all duration-500 order-1 lg:order-2 ${showLyrics && lyricsVisible ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-64 h-64 sm:w-80 sm:h-80 lg:w-[calc(var(--spacing)_*_96)] lg:h-[calc(var(--spacing)_*_96)]"}`}>
             {coverUrl ? (
