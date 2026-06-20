@@ -363,10 +363,10 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"} ${showLyrics && lyricsVisible ? "flex-col lg:flex-row gap-6 lg:gap-8" : "flex-col gap-0"}`}>
+        <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"} ${showLyrics && lyricsVisible && !hasTimings ? "flex-col lg:flex-row gap-6 lg:gap-8" : "flex-col gap-6"}`}>
           {/* Cover art + title/artist — always mounted so CSS transition animates the resize */}
-          <div className={`shrink-0 flex flex-col items-center justify-center gap-4 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2 lg:self-center" : ""}`}>
-            <div className={`transition-all duration-500 ${showLyrics && lyricsVisible ? "w-52 h-52 sm:w-64 sm:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
+          <div className={`shrink-0 flex flex-col items-center justify-center gap-4 transition-all duration-500`}>
+            <div className={`transition-all duration-500 ${showLyrics && lyricsVisible ? "w-52 h-52 sm:w-64 sm:h-64 lg:w-72 lg:h-72" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
               {coverUrl ? (
                 <img
                   src={coverUrl}
@@ -395,11 +395,11 @@ export default function FullscreenPlayer({
 
           {/* Lyrics — shown when visible, left of cover on desktop / above on mobile */}
           {showLyrics && lyricsVisible && (
-            <div className={`flex-1 w-full order-2 lg:order-1 flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[336px] lg:h-[436px] xl:h-[496px]" : "h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]"}`}>
+            <div className={`w-full flex items-center justify-center ${hasTimings ? "" : "flex-1 order-2 lg:order-1"} ${visualizerEnabled ? "h-[176px] sm:h-[280px] lg:h-[320px]" : "h-[240px] sm:h-[360px] lg:h-[420px]"}`}>
               {hasTimings ? (
                 <div
                   ref={containerRef}
-                  className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  className="w-full max-w-2xl h-full overflow-y-auto px-4 py-24 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 >
                   {parsedLyrics.map((line, index) => {
                     const isActive = index === activeLineIndex;
@@ -410,7 +410,7 @@ export default function FullscreenPlayer({
                         key={index}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.startTime)}
-                        className={`cursor-pointer transition-all duration-500 origin-center lg:origin-left py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
+                        className={`cursor-pointer transition-all duration-500 origin-center py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
                           isActive
                             ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
                             : isPlayed
