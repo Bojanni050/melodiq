@@ -355,94 +355,77 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden">
+        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden ${visualizerEnabled ? "pb-36" : ""}`}>
+          {/* Cover art — always mounted so CSS transition animates the resize */}
+          <div className={`shrink-0 transition-all duration-500 order-1 lg:order-2 ${showLyrics && lyricsVisible ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-64 h-64 sm:w-80 sm:h-80 lg:w-[calc(var(--spacing)_*_96)] lg:h-[calc(var(--spacing)_*_96)]"}`}>
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt="Album art"
+                className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50"
+              />
+            ) : (
+              <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
+                <svg className="w-16 h-16 lg:w-24 lg:h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Lyrics — shown when visible, left of cover on desktop / below on mobile */}
           {showLyrics && lyricsVisible ? (
-            <div className="flex flex-col lg:flex-row items-center gap-8 w-full max-w-6xl">
-              {/* Cover art - rendered above lyrics on mobile, right of lyrics on desktop */}
-              <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] lg:shrink-0 order-1 lg:order-2 flex items-center justify-center">
-                {coverUrl ? (
-                  <img
-                    src={coverUrl}
-                    alt="Album art"
-                    className="w-full aspect-square rounded-2xl shadow-2xl shadow-black/50 object-cover"
-                  />
-                ) : (
-                  <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                    <svg className="w-20 h-20 lg:w-32 lg:h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+            <div className={`flex-1 w-full order-2 lg:order-1 flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[336px] lg:h-[436px] xl:h-[496px]" : "h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]"}`}>
+              {hasTimings ? (
+                <div
+                  ref={containerRef}
+                  className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                >
+                  {parsedLyrics.map((line, index) => {
+                    const isActive = index === activeLineIndex;
+                    const isPlayed = index < activeLineIndex;
 
-              {/* Lyrics - rendered below cover on mobile, left of cover on desktop */}
-              <div className={`flex-1 w-full order-2 lg:order-1 flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[336px] lg:h-[436px] xl:h-[496px]" : "h-[320px] sm:h-[480px] lg:h-[580px] xl:h-[640px]"}`}>
-                {hasTimings ? (
-                  <div
-                    ref={containerRef}
-                    className="w-full h-full overflow-y-auto px-4 py-32 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center lg:items-start text-center lg:text-left relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                  >
-                    {parsedLyrics.map((line, index) => {
-                      const isActive = index === activeLineIndex;
-                      const isPlayed = index < activeLineIndex;
-
-                      return (
-                        <div
-                          key={index}
-                          ref={isActive ? activeLineRef : null}
-                          onClick={() => handleLineClick(line.startTime)}
-                          className={`cursor-pointer transition-all duration-500 origin-center lg:origin-left py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
-                            isActive
-                              ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
-                              : isPlayed
-                              ? "text-white/45 font-medium hover:text-white/80"
-                              : "text-white/20 font-medium hover:text-white/60"
-                          }`}
-                        >
-                          {line.text}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="w-full h-full overflow-y-auto px-4 pr-2 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [-ms-overflow-style:none]">
-                    <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-                      {columns.map((column, colIndex) => (
-                        <div key={colIndex} className="space-y-2 text-center lg:text-left">
-                          {column.map((line, lineIndex) => (
-                            <p
-                              key={lineIndex}
-                              className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
-                            >
-                              {line}
-                            </p>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className={`flex-1 flex flex-col items-center justify-center text-center px-4 ${visualizerEnabled ? "pb-36" : ""}`}>
-              {coverUrl ? (
-                <img
-                  src={coverUrl}
-                  alt="Album art"
-                  className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl shadow-2xl shadow-black/60 object-cover"
-                />
+                    return (
+                      <div
+                        key={index}
+                        ref={isActive ? activeLineRef : null}
+                        onClick={() => handleLineClick(line.startTime)}
+                        className={`cursor-pointer transition-all duration-500 origin-center lg:origin-left py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
+                          isActive
+                            ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
+                            : isPlayed
+                            ? "text-white/45 font-medium hover:text-white/80"
+                            : "text-white/20 font-medium hover:text-white/60"
+                        }`}
+                      >
+                        {line.text}
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <div className="w-48 h-48 sm:w-64 sm:h-64 lg:w-[calc(var(--spacing)_*_150)] lg:h-[calc(var(--spacing)_*_150)] rounded-3xl bg-gradient-to-br from-primary-600/25 to-primary-800/25 flex items-center justify-center border border-white/10">
-                  <svg className="w-20 h-20 lg:w-32 lg:h-32 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                  </svg>
+                <div className="w-full h-full overflow-y-auto px-4 pr-2 scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [-ms-overflow-style:none]">
+                  <div className={`grid gap-6 lg:gap-12 w-full ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                    {columns.map((column, colIndex) => (
+                      <div key={colIndex} className="space-y-2 text-center lg:text-left">
+                        {column.map((line, lineIndex) => (
+                          <p
+                            key={lineIndex}
+                            className="text-white/80 text-xs sm:text-sm md:text-base leading-relaxed"
+                          >
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              <h3 className="mt-4 sm:mt-6 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90">
-                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
-              </h3>
             </div>
+          ) : (
+            <h3 className="order-2 lg:order-1 mt-2 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90 text-center">
+              {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
+            </h3>
           )}
         </div>
       </div>
