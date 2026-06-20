@@ -363,9 +363,9 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-8 px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"}`}>
+        <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"} ${showLyrics && lyricsVisible ? "flex-col lg:flex-row gap-6 lg:gap-8" : "flex-col gap-0"}`}>
           {/* Cover art — always mounted so CSS transition animates the resize */}
-          <div className={`shrink-0 transition-all duration-500 order-1 lg:order-2 ${showLyrics && lyricsVisible ? "w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-64 h-64 sm:w-80 sm:h-80 lg:w-[calc(var(--spacing)_*_96)] lg:h-[calc(var(--spacing)_*_96)]"}`}>
+          <div className={`shrink-0 transition-all duration-500 ${showLyrics && lyricsVisible ? "order-1 lg:order-2 w-36 h-36 sm:w-48 sm:h-48 lg:w-72 lg:h-72" : "w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"}`}>
             {coverUrl ? (
               <img
                 src={coverUrl}
@@ -431,9 +431,16 @@ export default function FullscreenPlayer({
               )}
             </div>
           ) : (
-            <h3 className="order-2 lg:order-1 mt-2 text-lg sm:text-2xl md:text-3xl font-semibold text-white/90 text-center">
-              {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
-            </h3>
+            <div className="mt-6 text-center">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">
+                {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
+              </h3>
+              {(artistLabel || composerLabel) && (
+                <p className="mt-1.5 text-sm sm:text-base text-white/50">
+                  {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
