@@ -398,7 +398,7 @@ export default function FullscreenPlayer({
 
           {/* Lyrics */}
           {showLyrics && lyricsVisible && (
-            <div className="flex-1 w-full flex items-center justify-center min-h-0">
+            <div className="flex-1 w-full flex items-center justify-center min-h-0 h-full">
               {hasTimings ? (
                 /* Timed: cover art on top, lyrics scrolling below — all centered */
                 <div className="flex flex-col items-center gap-4 w-full h-full">
@@ -453,22 +453,24 @@ export default function FullscreenPlayer({
                   </div>
                 </div>
               ) : (
-                /* Static: lyrics left + cover art right, centered as a unit, independent heights */
-                <div className="flex flex-col lg:flex-row items-start justify-center gap-10 mx-auto w-full overflow-y-auto py-6 px-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
-                  {/* Lyrics columns — height is independent from cover art */}
-                  <div className={`grid gap-4 lg:gap-8 w-fit mx-auto lg:mx-0 ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-                    {columns.map((column, colIndex) => (
-                      <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
-                        {column.map((line, lineIndex) => (
-                          <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
-                            {line}
-                          </p>
-                        ))}
-                      </div>
-                    ))}
+                /* Static: lyrics left (scrollable) + cover art right (fixed), centered as a unit */
+                <div className="flex flex-col lg:flex-row items-start justify-center gap-10 w-full h-full px-4">
+                  {/* Lyrics columns — scrollable, fills available height */}
+                  <div className="flex-1 min-w-0 h-full overflow-y-auto py-6 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                    <div className={`grid gap-4 lg:gap-8 w-fit mx-auto ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                      {columns.map((column, colIndex) => (
+                        <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
+                          {column.map((line, lineIndex) => (
+                            <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  {/* Cover art to the right — own size, doesn't constrain lyrics */}
-                  <div className="shrink-0 flex flex-col items-center gap-3 mx-auto lg:mx-0 lg:sticky lg:top-6">
+                  {/* Cover art to the right — stays put while lyrics scroll */}
+                  <div className="shrink-0 flex flex-col items-center gap-3 py-6 self-start lg:self-center">
                     <div className="w-60 h-60 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
                       {coverUrl ? (
                         <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
