@@ -363,7 +363,7 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 flex-col gap-6 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"}`}>
+        <div className={`flex-1 min-h-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 gap-6 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"}`}>
 
           {/* Cover art when no lyrics or lyrics hidden */}
           {(!showLyrics || !lyricsVisible) && (
@@ -398,28 +398,28 @@ export default function FullscreenPlayer({
 
           {/* Lyrics */}
           {showLyrics && lyricsVisible && (
-            <div className={`w-full flex items-center justify-center ${visualizerEnabled ? "h-[176px] sm:h-[280px] lg:h-[320px]" : "h-[240px] sm:h-[360px] lg:h-[420px]"}`}>
+            <div className="flex-1 w-full flex items-center justify-center min-h-0">
               {hasTimings ? (
-                /* Timed: cover art on top, lyrics below — all centered */
-                <div className="flex flex-col items-center gap-6 w-full h-full">
-                  <div className="shrink-0 flex flex-col items-center gap-3">
-                    <div className="w-52 h-52 sm:w-64 sm:h-64 lg:w-72 lg:h-72 transition-all duration-500">
+                /* Timed: cover art on top, lyrics scrolling below — all centered */
+                <div className="flex flex-col items-center gap-4 w-full h-full">
+                  <div className="shrink-0 flex flex-col items-center gap-3 pt-2">
+                    <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 transition-all duration-500">
                       {coverUrl ? (
                         <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
                       ) : (
                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                          <svg className="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                         </div>
                       )}
                     </div>
                     <div className="text-center">
-                      <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-white/90 leading-snug">
+                      <h3 className="text-base sm:text-lg font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
                       {(artistLabel || composerLabel) && (
-                        <p className="mt-1 text-xs sm:text-sm text-white/50">
+                        <p className="mt-0.5 text-xs sm:text-sm text-white/50">
                           {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
                         </p>
                       )}
@@ -453,40 +453,39 @@ export default function FullscreenPlayer({
                   </div>
                 </div>
               ) : (
-                /* Static: lyrics left + cover art right, both centered as a unit */
-                <div className="flex flex-col lg:flex-row items-center gap-8 mx-auto overflow-y-auto max-h-full py-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
-                  <div className="overflow-y-auto max-h-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    <div className={`grid gap-4 lg:gap-8 w-fit ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-                      {columns.map((column, colIndex) => (
-                        <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
-                          {column.map((line, lineIndex) => (
-                            <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
-                              {line}
-                            </p>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
+                /* Static: lyrics left + cover art right, centered as a unit, independent heights */
+                <div className="flex flex-col lg:flex-row items-start justify-center gap-10 mx-auto w-full overflow-y-auto py-6 px-4 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  {/* Lyrics columns — height is independent from cover art */}
+                  <div className={`grid gap-4 lg:gap-8 w-fit mx-auto lg:mx-0 ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+                    {columns.map((column, colIndex) => (
+                      <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
+                        {column.map((line, lineIndex) => (
+                          <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
                   </div>
-                  {/* Cover art to the right of lyrics */}
-                  <div className="shrink-0 flex flex-col items-center gap-3">
-                    <div className="w-52 h-52 sm:w-60 sm:h-60 lg:w-72 lg:h-72">
+                  {/* Cover art to the right — own size, doesn't constrain lyrics */}
+                  <div className="shrink-0 flex flex-col items-center gap-3 mx-auto lg:mx-0 lg:sticky lg:top-6">
+                    <div className="w-60 h-60 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
                       {coverUrl ? (
                         <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
                       ) : (
                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                          <svg className="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-20 h-20 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                         </div>
                       )}
                     </div>
                     <div className="text-center">
-                      <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-white/90 leading-snug">
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
                       {(artistLabel || composerLabel) && (
-                        <p className="mt-1 text-xs sm:text-sm text-white/50">
+                        <p className="mt-1 text-sm text-white/50">
                           {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
                         </p>
                       )}
