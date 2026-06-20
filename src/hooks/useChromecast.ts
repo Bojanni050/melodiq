@@ -22,6 +22,12 @@ declare global {
           CONNECTING: string;
           CONNECTED: string;
         };
+        RemotePlayer: new () => RemotePlayer;
+        RemotePlayerController: new (player: RemotePlayer) => RemotePlayerController;
+        RemotePlayerEventType: {
+          IS_PAUSED_CHANGED: string;
+          CURRENT_TIME_CHANGED: string;
+        };
       };
     };
     chrome?: {
@@ -38,6 +44,19 @@ declare global {
       };
     };
   }
+}
+
+interface RemotePlayer {
+  isPaused: boolean;
+  currentTime: number;
+  duration: number;
+  isConnected: boolean;
+}
+
+interface RemotePlayerController {
+  playOrPause(): void;
+  addEventListener(type: string, handler: () => void): void;
+  removeEventListener(type: string, handler: () => void): void;
 }
 
 interface CastContext {
@@ -138,7 +157,10 @@ function loadCastSdk(): Promise<void> {
 
 export function useChromecast() {
   const [castState, setCastState] = useState<CastState>("unavailable");
+  const [isRemotePaused, setIsRemotePaused] = useState(true);
   const contextRef = useRef<CastContext | null>(null);
+  const remotePlayerRef = useRef<RemotePlayer | null>(null);
+  const remoteControllerRef = useRef<RemotePlayerController | null>(null);
 
   // Initialize Cast SDK
   useEffect(() => {
@@ -158,6 +180,15 @@ export function useChromecast() {
           castMediaElements: false,
         } as CastOptions);
         contextRef.current = ctx;
+
+        // RemotePlayer + Controller track live cast playback state
+        const { RemotePlayer, RemotePlayerController, RemotePlayerEventType } = window.cast.framework;
+        const rp = new RemotePlayer();
+        const rc = new RemotePlayerController(rp);
+        remotePlayerRef.current = rp;
+        remoteControllerRef.current = rc;
+        const handlePauseChange = () => setIsRemotePaused(rp.isPaused);
+        rc.addEventListener(RemotePlayerEventType.IS_PAUSED_CHANGED, handlePauseChange);
 
         const syncState = () => {
           const state = ctx.getCastState();
@@ -264,6 +295,10 @@ export function useChromecast() {
     }
   }, []);
 
+  const togglePlayCast = useCallback(() => {
+    remoteControllerRef.current?.playOrPause();
+  }, []);
+
   const stopCasting = useCallback(() => {
     contextRef.current?.endCurrentSession(true);
   }, []);
@@ -276,5 +311,5 @@ export function useChromecast() {
     }
   }, []);
 
-  return { castState, requestCastSession, loadCastMedia, stopCasting, seekCast };
+  return { castState, isRemotePaused, requestCastSession, loadCastMedia, togglePlayCast, stopCasting, seekCast };
 }

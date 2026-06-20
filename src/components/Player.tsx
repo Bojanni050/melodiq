@@ -110,7 +110,7 @@ export default function Player() {
     }))
   );
   const { user, loadUser } = useUserStore();
-  const { castState } = useChromecast();
+  const { castState, isRemotePaused, togglePlayCast, loadCastMedia, seekCast } = useChromecast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playToggleCooldownRef = useRef(0);
   const currentTrackRef = useRef<Track | null>(null);
@@ -673,18 +673,21 @@ export default function Player() {
 
   const togglePlay = useCallback(() => {
     if (!allowWithDelay(playToggleCooldownRef, 350)) return;
+    if (castState === "connected") {
+      togglePlayCast();
+      return;
+    }
     if (!currentTrack && queue.length > 0) {
       usePlayerStore.getState().playNext();
       return;
     }
-
     if (!currentTrack) return;
     const nextPlaying = !isPlaying;
     usePlayerStore.getState().setIsPlaying(nextPlaying);
     if (nextPlaying && audioRef.current) {
       void tryPlay();
     }
-  }, [currentTrack, isPlaying, queue.length]);
+  }, [currentTrack, isPlaying, queue.length, castState, togglePlayCast]);
 
   const handlePrevious = useCallback(() => {
     if (audioRef.current && audioRef.current.currentTime > 3) {
@@ -703,12 +706,15 @@ export default function Player() {
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const time = parseFloat(e.target.value);
-      if (audioRef.current) {
+      if (castState === "connected") {
+        seekCast(time);
+        setCurrentTime(time);
+      } else if (audioRef.current) {
         audioRef.current.currentTime = time;
         setCurrentTime(time);
       }
     },
-    [audioRef]
+    [castState, seekCast]
   );
 
   const handleVolume = useCallback(
@@ -736,6 +742,32 @@ export default function Player() {
   const castHd = currentTrack
     ? resolveStreamSuffix(currentTrack, playHighestQuality) === "?hd=true"
     : false;
+
+  // When casting and the track changes (next/prev), auto-load the new track on the cast device
+  useEffect(() => {
+    if (castState !== "connected" || !currentTrack) return;
+    let cancelled = false;
+    const fetchAndLoad = async () => {
+      try {
+        const res = await fetch(`/api/tracks/${currentTrack.id}/cast-url${castHd ? "?hd=true" : ""}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json() as { url: string; contentType: string };
+        if (cancelled) return;
+        await loadCastMedia({
+          streamUrl: data.url,
+          contentType: data.contentType,
+          title: currentTrack.title || currentTrack.prompt.substring(0, 80) || undefined,
+          coverUrl: playerCoverUrl ?? undefined,
+          currentTime: 0,
+        });
+      } catch (err) {
+        console.error("[Cast] auto-load on track change error:", err);
+      }
+    };
+    void fetchAndLoad();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.id, castState]);
 
   // Metadata passed to ChromecastButton (URL is fetched server-side via /cast-url)
   const castMeta = useMemo(() => {
@@ -848,11 +880,11 @@ export default function Player() {
               onClick={togglePlay}
               disabled={!currentTrack}
               className="p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all active:scale-95"
-              title={isPlaying ? "Pause" : "Play"}
+              title={castState === "connected" ? (isRemotePaused ? "Play" : "Pause") : (isPlaying ? "Pause" : "Play")}
             >
               {resolvingUrl ? (
                 <div className="w-5 h-5 rounded-full border-2 border-white/50 border-t-white animate-spin" />
-              ) : isPlaying ? (
+              ) : (castState === "connected" ? !isRemotePaused : isPlaying) ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />
