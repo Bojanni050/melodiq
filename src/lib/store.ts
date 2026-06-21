@@ -107,6 +107,7 @@ interface PlayerState {
   visualizerEnabled: boolean;
   visualizerMode: number;
   visualizerGradient: string;
+  shuffleEnabled: boolean;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
   setIsFullscreen: (fullscreen: boolean) => void;
@@ -114,6 +115,7 @@ interface PlayerState {
   setVisualizerEnabled: (enabled: boolean) => void;
   setVisualizerMode: (mode: number) => void;
   setVisualizerGradient: (gradient: string) => void;
+  setShuffleEnabled: (enabled: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -135,6 +137,7 @@ export const usePlayerStore = create<PlayerState>()(
       visualizerEnabled: false,
       visualizerMode: 2,
       visualizerGradient: "prism",
+      shuffleEnabled: false,
       setCurrentTrack: (track) => {
         if (!track) {
           set({
@@ -187,7 +190,15 @@ export const usePlayerStore = create<PlayerState>()(
           if (state.queue.length === 0) {
             return { currentTrack: null, isPlaying: false };
           }
-          const [nextTrack, ...rest] = state.queue;
+          let nextTrack: Track;
+          let rest: Track[];
+          if (state.shuffleEnabled && state.queue.length > 1) {
+            const randomIndex = Math.floor(Math.random() * state.queue.length);
+            nextTrack = state.queue[randomIndex];
+            rest = state.queue.filter((_, i) => i !== randomIndex);
+          } else {
+            [nextTrack, ...rest] = state.queue;
+          }
           return {
             currentTrack: nextTrack,
             queue: rest,
@@ -324,6 +335,7 @@ export const usePlayerStore = create<PlayerState>()(
       setVisualizerEnabled: (enabled) => set({ visualizerEnabled: enabled }),
       setVisualizerMode: (mode) => set({ visualizerMode: mode }),
       setVisualizerGradient: (gradient) => set({ visualizerGradient: gradient }),
+      setShuffleEnabled: (enabled) => set({ shuffleEnabled: enabled }),
     }),
     {
       name: "melodiq-player",
@@ -349,6 +361,7 @@ export const usePlayerStore = create<PlayerState>()(
           visualizerEnabled: state.visualizerEnabled,
           visualizerMode: state.visualizerMode,
           visualizerGradient: state.visualizerGradient,
+          shuffleEnabled: state.shuffleEnabled,
         };
       },
     }
