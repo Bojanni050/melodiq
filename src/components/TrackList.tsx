@@ -319,6 +319,9 @@ export default memo(function TrackList({
   }, []);
 
   const sortedTracks = useMemo(() => {
+    // In playlist mode the tracks prop arrives pre-ordered by server position — don't re-sort.
+    if (dragOrderKey) return tracks;
+
     const withTime = tracks.map((t) => ({ t, time: Number(new Date(t.createdAt)) }));
 
     withTime.sort(({ t: left, time: leftTime }, { t: right, time: rightTime }) => {
@@ -335,7 +338,7 @@ export default memo(function TrackList({
     });
 
     return withTime.map(({ t }) => t);
-  }, [sortOrder, tracks]);
+  }, [sortOrder, tracks, dragOrderKey]);
 
   const orderedTracks = useMemo(() => {
     if (!manualOrderIds) {

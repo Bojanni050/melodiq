@@ -519,16 +519,14 @@ function persistMovePlaylistTrack(input: { playlistId: string; trackId: string; 
 function persistReorderPlaylistTracks(input: { playlistId: string; trackIds: string[] }) {
   if (typeof window === "undefined") return;
 
-  console.log("[store] persistReorderPlaylistTracks sending", input.trackIds);
   void fetch(`/api/playlists/${input.playlistId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "reorder-tracks", trackIds: input.trackIds }),
   })
     .then(async (res) => {
-      const data = await res.json().catch(() => null);
-      console.log("[store] persistReorderPlaylistTracks response", res.status, data?.playlist?.trackIds);
       if (!res.ok) return;
+      const data = await res.json().catch(() => null);
       const playlist = data?.playlist;
       if (playlist) {
         usePlaylistStore.getState().hydratePlaylistsFromServer(

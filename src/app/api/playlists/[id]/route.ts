@@ -145,7 +145,6 @@ export async function PATCH(
 
     if (action === "reorder-tracks") {
       const orderedTrackIds = normalizeTrackIds(body?.trackIds);
-      console.log("[reorder-tracks] received", orderedTrackIds.length, "trackIds for playlist", id);
 
       const currentRows = await db
         .select({ id: playlistTracks.id, trackId: playlistTracks.trackId })
@@ -171,12 +170,10 @@ export async function PATCH(
 
       nextRows.push(...remainingRows);
 
-      console.log("[reorder-tracks] applying order", nextRows.map(r => r.trackId));
       await normalizePlaylistOrder(id, nextRows);
 
       const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
       const playlist = hydrated.find((item) => item.id === id);
-      console.log("[reorder-tracks] saved, returning", playlist?.trackIds);
       return NextResponse.json({ playlist });
     }
 
