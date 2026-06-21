@@ -141,7 +141,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, movePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, localMovePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -1104,7 +1104,7 @@ export default function LibraryPage() {
                     dragOrderKey={selectedPlaylist?.id}
                     onTrackMoved={(trackId, toIndex) => {
                       if (!selectedPlaylist) return;
-                      movePlaylistTrack(selectedPlaylist.id, trackId, toIndex);
+                      localMovePlaylistTrack(selectedPlaylist.id, trackId, toIndex);
                     }}
                     onSelect={(track) => {
                       setSelectedTrack({
