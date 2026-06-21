@@ -177,6 +177,38 @@ export async function PATCH(
       return NextResponse.json({ playlist });
     }
 
+    if (action === "move-track") {
+      // Delta reorder: move one track to a specific index, applied to current DB state.
+      // Safe for multi-device: server reads its own current order before applying.
+      const trackId = typeof body?.trackId === "string" ? body.trackId : "";
+      const toIndex = typeof body?.toIndex === "number" ? body.toIndex : -1;
+
+      if (!trackId || toIndex < 0) {
+        return NextResponse.json({ error: "trackId and toIndex are required" }, { status: 400 });
+      }
+
+      const currentRows = await db
+        .select({ id: playlistTracks.id, trackId: playlistTracks.trackId })
+        .from(playlistTracks)
+        .where(eq(playlistTracks.playlistId, id))
+        .orderBy(asc(playlistTracks.position), asc(playlistTracks.createdAt));
+
+      const fromIndex = currentRows.findIndex((row) => row.trackId === trackId);
+      if (fromIndex === -1) {
+        return NextResponse.json({ error: "Track not in playlist" }, { status: 404 });
+      }
+
+      const reordered = [...currentRows];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(Math.min(toIndex, reordered.length), 0, moved);
+
+      await normalizePlaylistOrder(id, reordered);
+
+      const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
+      const playlist = hydrated.find((item) => item.id === id);
+      return NextResponse.json({ playlist });
+    }
+
     if (action === "rename") {
       const rawName = typeof body?.name === "string" ? body.name : "";
       const name = rawName.trim();

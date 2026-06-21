@@ -441,6 +441,7 @@ interface PlaylistState {
     options?: { allowDuplicate?: boolean }
   ) => void;
   reorderPlaylistTracks: (playlistId: string, trackIds: string[]) => void;
+  movePlaylistTrack: (playlistId: string, trackId: string, toIndex: number) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   deletePlaylist: (playlistId: string) => void;
   setSelectedPlaylistId: (playlistId: string | null) => void;
@@ -491,6 +492,27 @@ function persistRemoveTrackFromPlaylist(input: { playlistId: string; trackId: st
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "remove-track", trackId: input.trackId }),
   }).catch((error) => console.error("[store] persistRemoveTrackFromPlaylist failed", error));
+}
+
+function persistMovePlaylistTrack(input: { playlistId: string; trackId: string; toIndex: number }) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/playlists/${input.playlistId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "move-track", trackId: input.trackId, toIndex: input.toIndex }),
+  })
+    .then(async (res) => {
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      const playlist = data?.playlist;
+      if (playlist) {
+        usePlaylistStore.getState().hydratePlaylistsFromServer(
+          usePlaylistStore.getState().playlists.map((p) => (p.id === playlist.id ? playlist : p))
+        );
+      }
+    })
+    .catch((error) => console.error("[store] persistMovePlaylistTrack failed", error));
 }
 
 function persistReorderPlaylistTracks(input: { playlistId: string; trackIds: string[] }) {
@@ -593,6 +615,22 @@ export const usePlaylistStore = create<PlaylistState>()(
         }));
 
         persistReorderPlaylistTracks({ playlistId, trackIds });
+      },
+      movePlaylistTrack: (playlistId, trackId, toIndex) => {
+        // Optimistic local update
+        set((state) => ({
+          playlists: state.playlists.map((playlist) => {
+            if (playlist.id !== playlistId) return playlist;
+            const ids = [...playlist.trackIds];
+            const fromIndex = ids.indexOf(trackId);
+            if (fromIndex === -1) return playlist;
+            ids.splice(fromIndex, 1);
+            ids.splice(Math.min(toIndex, ids.length), 0, trackId);
+            return { ...playlist, trackIds: ids };
+          }),
+        }));
+        // Send delta to server — server applies to its own current state
+        persistMovePlaylistTrack({ playlistId, trackId, toIndex });
       },
       removeTrackFromPlaylist: (playlistId, trackId) => {
         set((state) => ({

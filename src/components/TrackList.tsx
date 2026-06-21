@@ -209,6 +209,7 @@ export default memo(function TrackList({
   playlists,
   onTitleUpdate,
   onManualOrderChange,
+  onTrackMoved,
   onEditDetails,
   selectedTrackId,
   dragOrderKey,
@@ -231,6 +232,7 @@ export default memo(function TrackList({
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
   onManualOrderChange?: (orderedTrackIds: string[]) => void;
+  onTrackMoved?: (trackId: string, toIndex: number) => void;
   onEditDetails?: (track: TrackItem) => void;
   selectedTrackId?: string | null;
 }) {
@@ -624,6 +626,7 @@ export default memo(function TrackList({
 
   function moveTrackInManualOrder(sourceId: string, targetId: string, position: DropPosition) {
     let nextOrder: string[] | null = null;
+    let finalIndex = -1;
 
     setManualOrderIds((current) => {
       const source = current ?? sortedTracks.map((track) => track.id);
@@ -649,11 +652,15 @@ export default memo(function TrackList({
       const clampedIndex = Math.max(0, Math.min(insertIndex, next.length));
       next.splice(clampedIndex, 0, moved);
       nextOrder = next;
+      finalIndex = clampedIndex;
       return next;
     });
 
     if (nextOrder) {
       onManualOrderChange?.(nextOrder);
+      if (finalIndex >= 0) {
+        onTrackMoved?.(sourceId, finalIndex);
+      }
     }
   }
 

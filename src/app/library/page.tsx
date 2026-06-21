@@ -141,7 +141,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
-  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
+  const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, movePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
@@ -252,6 +252,13 @@ export default function LibraryPage() {
   useEffect(() => {
     useWorkspaceStore.persist.rehydrate();
   }, []);
+
+  // Poll for playlist updates every 30s when a playlist is open — keeps multi-device in sync.
+  useEffect(() => {
+    if (!selectedPlaylistId) return;
+    const interval = setInterval(() => void loadPlaylists(), 30_000);
+    return () => clearInterval(interval);
+  }, [selectedPlaylistId, loadPlaylists]);
 
   useEffect(() => {
     if (useWorkspaceStore.persist.hasHydrated()) {
@@ -1076,9 +1083,9 @@ export default function LibraryPage() {
                     autoQueueAfterPlay
                     enableDragReorder={!!selectedPlaylist}
                     dragOrderKey={selectedPlaylist?.id}
-                    onManualOrderChange={(orderedTrackIds) => {
+                    onTrackMoved={(trackId, toIndex) => {
                       if (!selectedPlaylist) return;
-                      reorderPlaylistTracks(selectedPlaylist.id, orderedTrackIds);
+                      movePlaylistTrack(selectedPlaylist.id, trackId, toIndex);
                     }}
                     onSelect={(track) => {
                       setSelectedTrack({
