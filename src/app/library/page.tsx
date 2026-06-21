@@ -173,6 +173,7 @@ export default function LibraryPage() {
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
+  const [isEditingPlaylistOrder, setIsEditingPlaylistOrder] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
@@ -466,11 +467,13 @@ export default function LibraryPage() {
   function openPlaylist(playlistId: string) {
     setSelectedWorkspaceId(null);
     setSelectedPlaylistId(playlistId);
+    setIsEditingPlaylistOrder(false);
     setView("songs");
   }
 
   function backToPlaylists() {
     setSelectedPlaylistId(null);
+    setIsEditingPlaylistOrder(false);
     setView("playlists");
   }
 
@@ -1073,6 +1076,17 @@ export default function LibraryPage() {
                       </>
                     ) : null}
                   </div>
+                  {selectedPlaylist && (
+                    <div className="shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingPlaylistOrder((v) => !v)}
+                        className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingPlaylistOrder ? "border-white bg-white text-black hover:bg-white/90" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
+                      >
+                        {isEditingPlaylistOrder ? "Save order" : "Edit order"}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {loading ? (
@@ -1081,7 +1095,7 @@ export default function LibraryPage() {
                   <TrackList
                     tracks={activeSongs}
                     autoQueueAfterPlay
-                    enableDragReorder={!!selectedPlaylist}
+                    enableDragReorder={isEditingPlaylistOrder}
                     dragOrderKey={selectedPlaylist?.id}
                     onTrackMoved={(trackId, toIndex) => {
                       if (!selectedPlaylist) return;
