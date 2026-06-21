@@ -44,6 +44,7 @@ const TrackListHeader = memo(function TrackListHeader({
   searchQuery,
   setSearchQuery,
   enableDragReorder,
+  hideSortOptions,
 }: {
   displayedTracks: TrackItem[];
   sortOrder: SortOrder;
@@ -51,6 +52,7 @@ const TrackListHeader = memo(function TrackListHeader({
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   enableDragReorder: boolean;
+  hideSortOptions?: boolean;
 }) {
   const toggleSelectAll = useSelectionStore((state) => state.toggleSelectAll);
 
@@ -123,6 +125,7 @@ const TrackListHeader = memo(function TrackListHeader({
             </button>
           )}
         </div>
+        {!hideSortOptions && (<>
         <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
         <select
           id="track-sort"
@@ -136,6 +139,7 @@ const TrackListHeader = memo(function TrackListHeader({
           <option value="title-asc" className="bg-[#161621]">A to Z</option>
           <option value="title-desc" className="bg-[#161621]">Z to A</option>
         </select>
+        </>)}
         <span className="shrink-0 text-xs text-white/30">
           {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
         </span>
@@ -804,6 +808,7 @@ export default memo(function TrackList({
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           enableDragReorder={enableDragReorder}
+          hideSortOptions={!!dragOrderKey}
         />
 
         <div ref={sentinelRef} className="h-0 w-full" />
