@@ -338,7 +338,7 @@ export default memo(function TrackList({
   }, [sortOrder, tracks]);
 
   const orderedTracks = useMemo(() => {
-    if (!enableDragReorder || !manualOrderIds) {
+    if (!manualOrderIds) {
       return sortedTracks;
     }
 
@@ -369,7 +369,6 @@ export default memo(function TrackList({
 
   useEffect(() => {
     if (!enableDragReorder) {
-      setManualOrderIds(null);
       return;
     }
 
