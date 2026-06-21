@@ -1080,7 +1080,12 @@ export default function LibraryPage() {
                     <div className="shrink-0">
                       <button
                         type="button"
-                        onClick={() => setIsEditingPlaylistOrder((v) => !v)}
+                        onClick={() => {
+                          if (isEditingPlaylistOrder && selectedPlaylist) {
+                            reorderPlaylistTracks(selectedPlaylist.id, selectedPlaylist.trackIds);
+                          }
+                          setIsEditingPlaylistOrder((v) => !v);
+                        }}
                         className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingPlaylistOrder ? "border-white bg-white text-black hover:bg-white/90" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
                       >
                         {isEditingPlaylistOrder ? "Save order" : "Edit order"}
