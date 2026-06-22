@@ -139,6 +139,7 @@ type QueuedUploadItem = {
   title: string;
   artistName: string;
   composerName: string;
+  coverFile: File | null;
   metadataFile: File | null;
   prompt: string;
   lyrics: string;
@@ -626,6 +627,7 @@ export default function LibraryPage() {
         title: titleFromUploadFilename(file.name),
         artistName: "",
         composerName: "",
+        coverFile: null,
         metadataFile: null,
         prompt: uploadPromptDraft,
         lyrics: uploadLyricsDraft,
@@ -739,6 +741,9 @@ export default function LibraryPage() {
         formData.append("files", item.file);
         if (item.metadataFile) {
           formData.append(`metadataFile:${index}`, item.metadataFile);
+        }
+        if (item.coverFile) {
+          formData.append(`coverFile:${index}`, item.coverFile);
         }
         if (item.licenseFile) {
           formData.append(`licenseFile:${index}`, item.licenseFile);
@@ -2021,6 +2026,58 @@ export default function LibraryPage() {
                                 suggestions={knownComposerNames}
                                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                               />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs text-white/60">Cover art</label>
+                            <div className="flex items-center gap-3">
+                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
+                                {item.coverFile ? (
+                                  <img
+                                    src={URL.createObjectURL(item.coverFile)}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <label
+                                  htmlFor={`upload-item-cover-${item.id}`}
+                                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                                >
+                                  {item.coverFile ? "Change" : "Upload image"}
+                                </label>
+                                <input
+                                  id={`upload-item-cover-${item.id}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={uploading}
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0] ?? null;
+                                    setQueuedUploads((current) =>
+                                      current.map((upload) => upload.id === item.id ? { ...upload, coverFile: f } : upload)
+                                    );
+                                    e.target.value = "";
+                                  }}
+                                />
+                                {item.coverFile && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setQueuedUploads((current) =>
+                                      current.map((upload) => upload.id === item.id ? { ...upload, coverFile: null } : upload)
+                                    )}
+                                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
 

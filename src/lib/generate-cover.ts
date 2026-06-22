@@ -5,7 +5,7 @@ import { generateCoverArt } from "@/lib/providers/cover-art";
 import { uploadToS3 } from "@/lib/s3";
 import sharp from "sharp";
 
-async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
+export async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
   const [webpBuffer, thumbBuffer] = await Promise.all([
     sharp(rawBuffer).webp({ quality: 85 }).toBuffer(),
     sharp(rawBuffer).resize(120, 120, { fit: "cover" }).webp({ quality: 82 }).toBuffer(),

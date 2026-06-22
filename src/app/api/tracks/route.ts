@@ -17,7 +17,7 @@ import {
   ensureWorkspaceSchema,
   getUserWorkspacesWithTrackIds,
 } from "@/lib/workspaces";
-import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUploadCover } from "@/lib/generate-cover";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { parseLyrics } from "@/lib/parse-lyrics";
@@ -708,6 +708,14 @@ export async function POST(request: NextRequest) {
       if (Number.isFinite(index) && index >= 0) licenseFileByIndex.set(index, value);
     }
 
+    const coverFileByIndex = new Map<number, File>();
+    for (const [key, value] of formData.entries()) {
+      if (!key.startsWith("coverFile:")) continue;
+      if (!(value instanceof File)) continue;
+      const index = Number.parseInt(key.slice("coverFile:".length), 10);
+      if (Number.isFinite(index) && index >= 0) coverFileByIndex.set(index, value);
+    }
+
     const metadataByIndex = new Map<number, UploadMetadata>();
     for (const [key, value] of formData.entries()) {
       if (!key.startsWith("metadataFile:")) continue;
@@ -847,6 +855,32 @@ export async function POST(request: NextRequest) {
           .returning();
 
         if (inserted[0]) {
+          const coverFile = coverFileByIndex.get(index);
+          if (coverFile) {
+            try {
+              const coverBuffer = Buffer.from(await coverFile.arrayBuffer());
+              const { s3KeyCover, s3KeyCoverThumb } = await processAndUploadCover(coverBuffer, trackId);
+              await db.update(tracks).set({
+                s3KeyCover,
+                s3KeyCoverThumb,
+                coverUrl: `/api/tracks/${trackId}/cover`,
+              }).where(eq(tracks.id, trackId));
+              inserted[0].s3KeyCover = s3KeyCover;
+              inserted[0].s3KeyCoverThumb = s3KeyCoverThumb;
+              inserted[0].coverUrl = `/api/tracks/${trackId}/cover`;
+            } catch (err: any) {
+              console.error(`[tracks/upload] Failed to upload cover for track ${trackId}:`, err?.message ?? err);
+            }
+          } else {
+            generateAndSaveCoverArt({
+              id: trackId,
+              userId,
+              title: uploadTitle,
+              prompt: uploadPrompt,
+              instrumental: isInstrumental,
+              lyrics: uploadLyrics ?? undefined,
+            });
+          }
           uploadedTracks.push(inserted[0]);
         }
       } catch (error) {
