@@ -1,6 +1,73 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+function AutocompleteInput({
+  id,
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  suggestions,
+  className,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  suggestions: string[];
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    return suggestions.filter((s) => s.toLowerCase().includes(q) && s !== value);
+  }, [value, suggestions]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        disabled={disabled}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={className}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-white/12 bg-[#1a1b27] shadow-lg overflow-hidden">
+          {filtered.map((s) => (
+            <li key={s}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
+                className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 transition-colors"
+              >
+                {s}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
@@ -166,6 +233,18 @@ export default function LibraryPage() {
   const uploadLicenseInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const knownArtistNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.artistName) names.add(t.artistName); });
+    return Array.from(names).sort();
+  }, [tracks]);
+
+  const knownComposerNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    return Array.from(names).sort();
+  }, [tracks]);
   const [view, setView] = useState<LibraryView>("songs");
   const [trashedTracks, setTrashedTracks] = useState<LibraryTrack[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
@@ -1917,35 +1996,29 @@ export default function LibraryPage() {
                           <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-1">
                               <label htmlFor={`upload-item-artist-${item.id}`} className="text-xs text-white/60">Artist</label>
-                              <input
+                              <AutocompleteInput
                                 id={`upload-item-artist-${item.id}`}
-                                type="text"
                                 value={item.artistName}
-                                onChange={(event) => {
-                                  const v = event.target.value;
-                                  setQueuedUploads((current) =>
-                                    current.map((upload) => upload.id === item.id ? { ...upload, artistName: v } : upload)
-                                  );
-                                }}
+                                onChange={(v) => setQueuedUploads((current) =>
+                                  current.map((upload) => upload.id === item.id ? { ...upload, artistName: v } : upload)
+                                )}
                                 disabled={uploading}
                                 placeholder="Artist name"
+                                suggestions={knownArtistNames}
                                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                               />
                             </div>
                             <div className="space-y-1">
                               <label htmlFor={`upload-item-composer-${item.id}`} className="text-xs text-white/60">Composer</label>
-                              <input
+                              <AutocompleteInput
                                 id={`upload-item-composer-${item.id}`}
-                                type="text"
                                 value={item.composerName}
-                                onChange={(event) => {
-                                  const v = event.target.value;
-                                  setQueuedUploads((current) =>
-                                    current.map((upload) => upload.id === item.id ? { ...upload, composerName: v } : upload)
-                                  );
-                                }}
+                                onChange={(v) => setQueuedUploads((current) =>
+                                  current.map((upload) => upload.id === item.id ? { ...upload, composerName: v } : upload)
+                                )}
                                 disabled={uploading}
                                 placeholder="Composer name"
+                                suggestions={knownComposerNames}
                                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                               />
                             </div>
