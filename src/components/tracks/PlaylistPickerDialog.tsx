@@ -31,11 +31,12 @@ export default function PlaylistPickerDialog({
   const isMultiSelect = activeSelection.size > 1 && activeSelection.has(track.id);
 
   function getPlaylistCoverUrl(trackIds: string[]): string | null {
-    if (!tracksById || trackIds.length === 0) return null;
-    const withCover = trackIds.filter((id) => tracksById.get(id)?.coverUrl);
-    if (withCover.length === 0) return null;
-    const picked = withCover[Math.floor(Math.random() * withCover.length)];
-    return tracksById.get(picked)?.coverUrl ?? null;
+    if (!tracksById) return null;
+    for (const id of trackIds) {
+      const cover = tracksById.get(id)?.coverUrl;
+      if (cover) return cover;
+    }
+    return null;
   }
 
   function alreadyInPlaylist(playlistId: string) {
