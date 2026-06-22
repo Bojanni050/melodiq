@@ -193,8 +193,8 @@ type QueuedUploadItem = {
   lyrics: string;
   instrumental: boolean;
   sourceProvider: string;
-  sunoStyleInfluence: number;
-  sunoWeirdness: number;
+  sunoStyleInfluence: number | null;
+  sunoWeirdness: number | null;
   licenseFile: File | null;
 };
 
