@@ -390,19 +390,37 @@ export default function Player() {
     // On Android, audio focus interruptions (calls, notifications, screen-off)
     // pause the audio element directly without updating our isPlaying state.
     // When focus returns the browser does not auto-resume, so we do it here.
+    // We do NOT call tryPlay() here because its NotAllowedError handler would
+    // set isPlaying=false if Android hasn't restored focus yet — killing playback
+    // permanently. Instead we attempt play() silently and let visibilitychange
+    // handle the foreground-return case.
     let unexpectedPauseTimer: ReturnType<typeof setTimeout> | null = null;
 
+    const resumeIfNeeded = () => {
+      if (!audioRef.current || !usePlayerStore.getState().isPlaying) return;
+      if (!audioRef.current.paused) return;
+      audioRef.current.play().catch(() => {
+        // Audio focus not yet restored — visibilitychange will retry on return
+      });
+    };
+
     const handleUnexpectedPause = () => {
-      // If the store says we should be playing, this pause was system-initiated.
       if (!usePlayerStore.getState().isPlaying) return;
       if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
       unexpectedPauseTimer = setTimeout(() => {
         unexpectedPauseTimer = null;
-        if (!audioRef.current || !usePlayerStore.getState().isPlaying) return;
-        if (!audioRef.current.paused) return; // already recovered
-        void tryPlay();
-      }, 800);
+        resumeIfNeeded();
+      }, 1500);
     };
+
+    // When the user brings the app back to the foreground (screen-on, app switch),
+    // the page becomes visible again — use this as a reliable resume trigger.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        resumeIfNeeded();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Auto-reconnect when the audio stream drops (e.g. mobile network switch or
     // long-lived connection timeout). Saves the current position, reloads the
@@ -550,6 +568,7 @@ export default function Player() {
         audioRef.current.removeEventListener("error", handleAudioError);
       }
       if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
       clearStallTimer();
