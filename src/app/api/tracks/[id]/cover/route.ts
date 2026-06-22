@@ -4,6 +4,7 @@ import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { getCachedCover } from "@/lib/cover-cache";
+import { processAndUploadCover } from "@/lib/generate-cover";
 
 export async function GET(
   request: NextRequest,
@@ -53,6 +54,48 @@ export async function GET(
         headers: { "Cache-Control": "private, max-age=300" },
       }
     );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
+
+  const result = await db
+    .select({ id: tracks.id })
+    .from(tracks)
+    .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
+
+  if (result.length === 0) {
+    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get("cover");
+    if (!(file instanceof File) || file.size === 0) {
+      return NextResponse.json({ error: "No cover file provided" }, { status: 400 });
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { s3KeyCover, s3KeyCoverThumb } = await processAndUploadCover(buffer, id);
+
+    await db.update(tracks).set({
+      s3KeyCover,
+      s3KeyCoverThumb,
+      coverUrl: `/api/tracks/${id}/cover`,
+      updatedAt: new Date(),
+    }).where(eq(tracks.id, id));
+
+    return NextResponse.json({ coverUrl: `/api/tracks/${id}/cover` });
+  } catch (error: any) {
+    console.error(`[cover/POST] failed for track ${id}:`, error?.message ?? error);
+    return NextResponse.json({ error: "Failed to upload cover" }, { status: 500 });
   }
 }
 

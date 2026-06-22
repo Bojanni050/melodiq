@@ -137,14 +137,32 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
   const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? null);
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleCoverFileChange(file: File | null) {
+    setCoverFile(file);
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverPreview(file ? URL.createObjectURL(file) : null);
+  }
 
   async function handleSave() {
     setSaving(true);
     setError(null);
     try {
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append("cover", coverFile);
+        const coverRes = await fetch(`/api/tracks/${track.id}/cover`, { method: "POST", body: fd });
+        if (!coverRes.ok) {
+          const payload = await coverRes.json().catch(() => null);
+          throw new Error(payload?.error ?? "Cover upload failed");
+        }
+      }
+
       const body: Record<string, unknown> = {
         title: title.trim() || null,
         artistName: artistName.trim() || null,
@@ -170,6 +188,11 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
       }
 
       const updated = await res.json();
+      if (coverFile) {
+        const ts = Date.now();
+        updated.coverUrl = `/api/tracks/${track.id}/cover?t=${ts}`;
+        window.dispatchEvent(new CustomEvent("melodiq:cover-regenerated", { detail: { trackIds: [track.id], ts } }));
+      }
       onSaved(updated);
       onClose();
     } catch (err) {
@@ -223,6 +246,48 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               placeholder="Track title"
               className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
             />
+          </div>
+
+          {/* Cover art */}
+          <div className="space-y-1">
+            <label className="text-xs text-white/60">Cover art</label>
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
+                {coverPreview ? (
+                  <img src={coverPreview} alt="" className="h-full w-full object-cover" />
+                ) : track.coverUrl ? (
+                  <img src={track.coverUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <label
+                  htmlFor="edit-cover-input"
+                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                >
+                  {coverFile ? "Change" : "Upload image"}
+                </label>
+                <input
+                  id="edit-cover-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleCoverFileChange(e.target.files?.[0] ?? null)}
+                />
+                {coverFile && (
+                  <button
+                    type="button"
+                    onClick={() => handleCoverFileChange(null)}
+                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Artist + Composer side by side */}
