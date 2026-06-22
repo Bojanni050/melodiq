@@ -394,31 +394,18 @@ export default function Player() {
     let reconnectAttempts = 0;
     const MAX_RECONNECT_ATTEMPTS = 5;
 
-    const handleAudioError = () => {
-      const audioEl = audioRef.current;
-      const track = currentTrackRef.current;
-      if (!audioEl || !track) return;
-      if (!usePlayerStore.getState().isPlaying) return;
-
-      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        console.warn(`[Player] Audio error — giving up after ${MAX_RECONNECT_ATTEMPTS} attempts`);
-        usePlayerStore.getState().setIsPlaying(false);
-        return;
-      }
-
-      const resumeAt = audioEl.currentTime || 0;
+    const doReconnect = async (audioEl: HTMLAudioElement, track: { id: string }, resumeAt: number) => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       const delay = Math.min(1500 * 2 ** reconnectAttempts, 30000);
       reconnectAttempts++;
-      console.warn(`[Player] Audio error — reconnecting at ${resumeAt.toFixed(1)}s (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, delay ${delay}ms)`);
+      console.warn(`[Player] Stream stall/error — reconnecting at ${resumeAt.toFixed(1)}s (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, delay ${delay}ms)`);
 
-      if (reconnectTimer) clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(async () => {
         reconnectTimer = null;
         if (!audioRef.current || currentTrackRef.current?.id !== track.id) return;
         const el = audioRef.current;
         el.pause();
         const currentSrc = el.src;
-        // Temporarily remove error listener to avoid re-triggering during reload
         el.removeEventListener("error", handleAudioError);
         el.src = "";
         el.load();
@@ -438,11 +425,52 @@ export default function Player() {
           });
           el.currentTime = resumeAt;
           await el.play();
-          reconnectAttempts = 0; // reset on success
+          reconnectAttempts = 0;
         } catch {
-          // next error event will trigger another attempt
+          // next error/stall event will trigger another attempt
         }
       }, delay);
+    };
+
+    const handleAudioError = () => {
+      const audioEl = audioRef.current;
+      const track = currentTrackRef.current;
+      if (!audioEl || !track) return;
+      if (!usePlayerStore.getState().isPlaying) return;
+
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.warn(`[Player] Audio error — giving up after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+        usePlayerStore.getState().setIsPlaying(false);
+        return;
+      }
+
+      void doReconnect(audioEl, track, audioEl.currentTime || 0);
+    };
+
+    // On Android, the browser can fire `stalled`/`waiting` when the stream
+    // buffer runs dry (e.g. background throttling, network hiccup) without
+    // ever firing `error`. We wait 5 s then force a reload if still stuck.
+    let stallTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearStallTimer = () => {
+      if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; }
+    };
+
+    const handleStalled = () => {
+      if (!usePlayerStore.getState().isPlaying) return;
+      if (stallTimer) return; // already waiting
+      stallTimer = setTimeout(() => {
+        stallTimer = null;
+        const audioEl = audioRef.current;
+        const track = currentTrackRef.current;
+        if (!audioEl || !track || !usePlayerStore.getState().isPlaying) return;
+        if (!audioEl.paused && audioEl.readyState >= 3) return; // recovered on its own
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          usePlayerStore.getState().setIsPlaying(false);
+          return;
+        }
+        void doReconnect(audioEl, track, audioEl.currentTime || 0);
+      }, 5000);
     };
 
     // Register MediaSession so iOS/Android treat this as active media and
@@ -469,8 +497,12 @@ export default function Player() {
     audioRef.current.addEventListener("ended", handleEnded);
     audioRef.current.addEventListener("playing", countPlayIfNeeded);
     audioRef.current.addEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
+    audioRef.current.addEventListener("playing", clearStallTimer);
     audioRef.current.addEventListener("pause", clearPlayTimer);
     audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
+    audioRef.current.addEventListener("pause", clearStallTimer);
+    audioRef.current.addEventListener("stalled", handleStalled);
+    audioRef.current.addEventListener("waiting", handleStalled);
     audioRef.current.addEventListener("error", handleAudioError);
 
     setCurrentTime(audioRef.current.currentTime || 0);
@@ -490,12 +522,17 @@ export default function Player() {
         audioRef.current.removeEventListener("ended", handleEnded);
         audioRef.current.removeEventListener("playing", countPlayIfNeeded);
         audioRef.current.removeEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
+        audioRef.current.removeEventListener("playing", clearStallTimer);
         audioRef.current.removeEventListener("pause", clearPlayTimer);
         audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
+        audioRef.current.removeEventListener("pause", clearStallTimer);
+        audioRef.current.removeEventListener("stalled", handleStalled);
+        audioRef.current.removeEventListener("waiting", handleStalled);
         audioRef.current.removeEventListener("error", handleAudioError);
       }
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
+      clearStallTimer();
     };
   }, [volume]);
 
