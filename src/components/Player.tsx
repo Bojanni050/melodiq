@@ -853,7 +853,7 @@ export default function Player() {
         <div className="relative max-w-screen-2xl mx-auto h-full px-4 flex items-center gap-3">
           {/* Now Playing Info */}
           {currentTrack ? (
-            <div className="flex items-center gap-2.5 min-w-0 flex-shrink-0" style={{ width: "240px" }}>
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[240px]">
               <button
                 onClick={() => setIsFullscreen(true)}
                 className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/5"
@@ -894,7 +894,7 @@ export default function Player() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 min-w-0 flex-shrink-0" style={{ width: "240px" }}>
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[240px]">
               <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
                 <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -905,10 +905,10 @@ export default function Player() {
           )}
 
           {/* Center Controls */}
-          <div className="flex-1 flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 sm:flex-1">
             <button
               onClick={() => setShuffleEnabled(!shuffleEnabled)}
-              className={`p-2 rounded-full transition-colors ${shuffleEnabled ? "text-white" : "text-white/30 hover:text-white/60"}`}
+              className={`hidden sm:block p-2 rounded-full transition-colors ${shuffleEnabled ? "text-white" : "text-white/30 hover:text-white/60"}`}
               title={shuffleEnabled ? "Shuffle on" : "Shuffle off"}
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -918,7 +918,7 @@ export default function Player() {
             <button
               onClick={handlePrevious}
               disabled={!currentTrack}
-              className="p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
+              className="hidden sm:block p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
               title="Previous"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -987,7 +987,7 @@ export default function Player() {
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center gap-1 flex-shrink-0" style={{ width: "240px" }}>
+          <div className="hidden sm:flex items-center gap-1 flex-shrink-0 sm:w-[240px]">
             {/* Queue info */}
             {queue.length > 0 && (
               <div className="hidden md:flex items-center gap-1 text-xs text-white/40 px-2 py-1 rounded-full bg-white/5" title={`${queue.length} tracks in queue`}>
