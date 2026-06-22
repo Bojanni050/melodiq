@@ -70,6 +70,8 @@ type QueuedUploadItem = {
   id: string;
   file: File;
   title: string;
+  artistName: string;
+  composerName: string;
   metadataFile: File | null;
   prompt: string;
   lyrics: string;
@@ -543,6 +545,8 @@ export default function LibraryPage() {
           : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         file,
         title: titleFromUploadFilename(file.name),
+        artistName: "",
+        composerName: "",
         metadataFile: null,
         prompt: uploadPromptDraft,
         lyrics: uploadLyricsDraft,
@@ -667,6 +671,8 @@ export default function LibraryPage() {
         JSON.stringify(
           queuedUploads.map((item) => ({
             title: item.title.trim() || null,
+            artistName: item.artistName.trim() || null,
+            composerName: item.composerName.trim() || null,
             prompt: item.prompt.trim() || null,
             lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
             instrumental: item.instrumental,
@@ -1907,6 +1913,43 @@ export default function LibraryPage() {
                             disabled={uploading}
                             className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                           />
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label htmlFor={`upload-item-artist-${item.id}`} className="text-xs text-white/60">Artist</label>
+                              <input
+                                id={`upload-item-artist-${item.id}`}
+                                type="text"
+                                value={item.artistName}
+                                onChange={(event) => {
+                                  const v = event.target.value;
+                                  setQueuedUploads((current) =>
+                                    current.map((upload) => upload.id === item.id ? { ...upload, artistName: v } : upload)
+                                  );
+                                }}
+                                disabled={uploading}
+                                placeholder="Artist name"
+                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label htmlFor={`upload-item-composer-${item.id}`} className="text-xs text-white/60">Composer</label>
+                              <input
+                                id={`upload-item-composer-${item.id}`}
+                                type="text"
+                                value={item.composerName}
+                                onChange={(event) => {
+                                  const v = event.target.value;
+                                  setQueuedUploads((current) =>
+                                    current.map((upload) => upload.id === item.id ? { ...upload, composerName: v } : upload)
+                                  );
+                                }}
+                                disabled={uploading}
+                                placeholder="Composer name"
+                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                              />
+                            </div>
+                          </div>
 
                           <div className="space-y-1">
                             <label htmlFor={`upload-item-provider-${item.id}`} className="text-xs text-white/50">Source</label>

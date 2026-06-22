@@ -145,6 +145,8 @@ type UploadMetadata = {
 
 type UploadItemOverride = {
   title: string | null;
+  artistName: string | null;
+  composerName: string | null;
   prompt: string | null;
   lyrics: string | null;
   instrumental: boolean | null;
@@ -217,13 +219,15 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null };
+      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
+      const artistName = typeof item.artistName === "string" && item.artistName.trim() ? item.artistName.trim() : null;
+      const composerName = typeof item.composerName === "string" && item.composerName.trim() ? item.composerName.trim() : null;
       const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : null;
       const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
       const instrumental = typeof item.instrumental === "boolean" ? item.instrumental : null;
       const sourceProvider = typeof item.sourceProvider === "string" && item.sourceProvider.trim() ? item.sourceProvider.trim() : null;
-      return { title, prompt, lyrics, instrumental, sourceProvider };
+      return { title, artistName, composerName, prompt, lyrics, instrumental, sourceProvider };
     });
   } catch {
     return [];
@@ -834,8 +838,8 @@ export async function POST(request: NextRequest) {
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
             instrumental: isInstrumental,
-            artistName: defaultArtist,
-            composerName: defaultComposer,
+            artistName: itemOverride?.artistName ?? defaultArtist,
+            composerName: itemOverride?.composerName ?? defaultComposer,
             s3KeyLicense,
             creditsUsed: 0,
             error: null,
