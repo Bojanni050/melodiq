@@ -97,7 +97,7 @@ function SliderWithInput({
             value={value ?? ""}
             placeholder="—"
             onChange={(e) => {
-              if (e.target.value === "") { onChange(null); return; }
+              if (e.target.value === "") { onChange(50); return; }
               const n = parseInt(e.target.value, 10);
               if (!isNaN(n)) onChange(Math.min(100, Math.max(1, n)));
             }}
@@ -135,8 +135,8 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
   const [prompt, setPrompt] = useState(track.prompt ?? "");
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
-  const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? null);
-  const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? null);
+  const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? 50);
+  const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 

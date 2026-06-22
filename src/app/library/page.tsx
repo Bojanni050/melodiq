@@ -95,7 +95,7 @@ function SliderWithInput({
             disabled={disabled}
             onChange={(e) => {
               const n = parseInt(e.target.value, 10);
-              if (e.target.value === "") { onChange(null); return; }
+              if (e.target.value === "") { onChange(50); return; }
               if (!isNaN(n)) onChange(Math.min(100, Math.max(1, n)));
             }}
             className="w-12 rounded-lg border border-white/12 bg-[#11121a] px-2 py-0.5 text-center text-xs text-white outline-none focus:border-white/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -193,8 +193,8 @@ type QueuedUploadItem = {
   lyrics: string;
   instrumental: boolean;
   sourceProvider: string;
-  sunoStyleInfluence: number | null;
-  sunoWeirdness: number | null;
+  sunoStyleInfluence: number;
+  sunoWeirdness: number;
   licenseFile: File | null;
 };
 
@@ -683,8 +683,8 @@ export default function LibraryPage() {
         lyrics: uploadLyricsDraft,
         instrumental: uploadInstrumental,
         sourceProvider: "upload",
-        sunoStyleInfluence: null,
-        sunoWeirdness: null,
+        sunoStyleInfluence: 50,
+        sunoWeirdness: 50,
         licenseFile: null,
       }));
 
