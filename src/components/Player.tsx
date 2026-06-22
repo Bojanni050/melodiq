@@ -124,6 +124,7 @@ export default function Player() {
   const coverAutoRequestedTrackIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
+  const activeBlobUrlRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -640,7 +641,6 @@ export default function Player() {
       }
 
       const normalizedTargetUrl = new URL(resolvedUrl, window.location.href).toString();
-      const alreadyPlayingThisStream = typeof audioEl.src === "string" && audioEl.src === normalizedTargetUrl;
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
@@ -650,7 +650,11 @@ export default function Player() {
         : (isInitialLoad && storedProgress > 0 ? storedProgress : 0);
       const shouldResume = usePlayerStore.getState().isPlaying && !audioEl.paused;
 
-      if (alreadyPlayingThisStream) {
+      // Check if we're already playing this exact blob or stream URL
+      const alreadyPlayingThisTrack = lastLoadedTrackIdRef.current === trackId &&
+        audioEl.src && audioEl.src !== "" && !audioEl.error;
+
+      if (alreadyPlayingThisTrack) {
         lastLoadedTrackIdRef.current = trackId;
         setResolvingUrl(false);
         if (usePlayerStore.getState().isPlaying || shouldResume) {
@@ -659,9 +663,34 @@ export default function Player() {
         return;
       }
 
+      // Download the full audio file as a Blob so playback is network-independent.
+      // This prevents mid-song stops on flaky mobile connections.
+      let playUrl = normalizedTargetUrl;
+      try {
+        const blobResponse = await fetch(normalizedTargetUrl);
+        if (blobResponse.ok && !cancelled && requestId === requestIdRef.current) {
+          const blob = await blobResponse.blob();
+          if (!cancelled && requestId === requestIdRef.current) {
+            // Revoke previous blob URL to free memory
+            if (activeBlobUrlRef.current) {
+              URL.revokeObjectURL(activeBlobUrlRef.current);
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            activeBlobUrlRef.current = blobUrl;
+            playUrl = blobUrl;
+          }
+        }
+      } catch {
+        // Network failed — fall back to streaming URL
+      }
+
+      if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
+        return;
+      }
+
       audioEl.pause();
       audioEl.currentTime = 0;
-      audioEl.src = normalizedTargetUrl;
+      audioEl.src = playUrl;
       audioEl.load();
 
       await new Promise<void>((resolve) => {
@@ -669,7 +698,6 @@ export default function Player() {
           resolve();
           return;
         }
-
         const done = () => resolve();
         audioEl.addEventListener("loadedmetadata", done, { once: true });
         audioEl.addEventListener("canplay", done, { once: true });
