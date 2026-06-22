@@ -387,6 +387,23 @@ export default function Player() {
       setIsPlaying(false);
     };
 
+    // On Android, audio focus interruptions (calls, notifications, screen-off)
+    // pause the audio element directly without updating our isPlaying state.
+    // When focus returns the browser does not auto-resume, so we do it here.
+    let unexpectedPauseTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleUnexpectedPause = () => {
+      // If the store says we should be playing, this pause was system-initiated.
+      if (!usePlayerStore.getState().isPlaying) return;
+      if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
+      unexpectedPauseTimer = setTimeout(() => {
+        unexpectedPauseTimer = null;
+        if (!audioRef.current || !usePlayerStore.getState().isPlaying) return;
+        if (!audioRef.current.paused) return; // already recovered
+        void tryPlay();
+      }, 800);
+    };
+
     // Auto-reconnect when the audio stream drops (e.g. mobile network switch or
     // long-lived connection timeout). Saves the current position, reloads the
     // src, and resumes from where it left off.
@@ -501,6 +518,7 @@ export default function Player() {
     audioRef.current.addEventListener("pause", clearPlayTimer);
     audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
     audioRef.current.addEventListener("pause", clearStallTimer);
+    audioRef.current.addEventListener("pause", handleUnexpectedPause);
     audioRef.current.addEventListener("stalled", handleStalled);
     audioRef.current.addEventListener("waiting", handleStalled);
     audioRef.current.addEventListener("error", handleAudioError);
@@ -526,10 +544,12 @@ export default function Player() {
         audioRef.current.removeEventListener("pause", clearPlayTimer);
         audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
         audioRef.current.removeEventListener("pause", clearStallTimer);
+        audioRef.current.removeEventListener("pause", handleUnexpectedPause);
         audioRef.current.removeEventListener("stalled", handleStalled);
         audioRef.current.removeEventListener("waiting", handleStalled);
         audioRef.current.removeEventListener("error", handleAudioError);
       }
+      if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
       clearStallTimer();
