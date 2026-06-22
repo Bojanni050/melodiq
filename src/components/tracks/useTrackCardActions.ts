@@ -106,10 +106,36 @@ export function useTrackCardActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ regenerateCoverArt: true }),
       });
-      if (res.ok) setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+      if (res.status === 202) {
+        const { requestedAt } = await res.json().catch(() => ({ requestedAt: Date.now() }));
+        // Poll track until updatedAt is after requestedAt (cover replaced), max ~2 min
+        const started = Date.now();
+        const poll = async () => {
+          if (Date.now() - started > 120_000) { setIsRegeneratingCover(false); return; }
+          try {
+            const r = await fetch(`/api/tracks/${track.id}`);
+            if (r.ok) {
+              const data = await r.json();
+              const updatedAt = data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+              if (data.s3KeyCover && updatedAt >= requestedAt) {
+                const ts = Date.now();
+                setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${ts}`);
+                window.dispatchEvent(new CustomEvent("melodiq:cover-regenerated", { detail: { trackIds: [track.id], ts } }));
+                setIsRegeneratingCover(false);
+                return;
+              }
+            }
+          } catch { /* ignore */ }
+          setTimeout(poll, 3000);
+        };
+        setTimeout(poll, 3000);
+      } else if (res.ok) {
+        setCoverOverrideUrl(`/api/tracks/${track.id}/cover?t=${Date.now()}`);
+        setIsRegeneratingCover(false);
+      } else {
+        setIsRegeneratingCover(false);
+      }
     } catch {
-      // silently fail
-    } finally {
       setIsRegeneratingCover(false);
     }
   }

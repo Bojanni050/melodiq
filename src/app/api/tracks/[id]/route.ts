@@ -424,7 +424,8 @@ export async function PATCH(
 
     if (regenerateCoverArt === true) {
       const track = result[0];
-      await generateAndSaveCoverArt(
+      // Fire-and-forget — don't await so the request returns before Vercel timeout
+      generateAndSaveCoverArt(
         {
           id: track.id,
           userId: track.userId,
@@ -435,13 +436,7 @@ export async function PATCH(
         },
         { forceNew: true }
       );
-
-      const refreshed = await db
-        .select()
-        .from(tracks)
-        .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
-
-      return NextResponse.json(refreshed[0]);
+      return NextResponse.json({ accepted: true, requestedAt: Date.now() }, { status: 202 });
     }
 
     const updates: Partial<typeof tracks.$inferInsert> = {};

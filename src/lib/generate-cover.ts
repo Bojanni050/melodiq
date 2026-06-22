@@ -50,6 +50,7 @@ export async function generateAndSaveCoverArt(track: {
         .set({
           s3KeyCover: existing.s3KeyCover,
           coverUrl: `/api/tracks/${track.id}/cover`,
+          updatedAt: new Date(),
         })
         .where(eq(tracks.id, track.id));
 
@@ -72,6 +73,7 @@ export async function generateAndSaveCoverArt(track: {
         s3KeyCover,
         s3KeyCoverThumb,
         coverUrl: `/api/tracks/${track.id}/cover`,
+        updatedAt: new Date(),
       })
       .where(eq(tracks.id, track.id));
 
