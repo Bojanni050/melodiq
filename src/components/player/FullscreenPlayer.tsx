@@ -288,8 +288,30 @@ export default function FullscreenPlayer({
     });
   };
 
+  const swipeTouchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    swipeTouchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeTouchStartX.current;
+    swipeTouchStartX.current = null;
+    if (Math.abs(dx) < 60) return; // minimum swipe distance
+    if (dx < 0) {
+      usePlayerStore.getState().playNext();
+    } else {
+      usePlayerStore.getState().playPrevious();
+    }
+  }, []);
+
   return (
-    <div className="fixed top-0 left-0 right-0 bottom-16 z-[50] bg-black overflow-hidden">
+    <div
+      className="fixed top-0 left-0 right-0 bottom-16 z-[50] bg-black overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <style>{`
         @keyframes fsZoom {
           0%, 100% { transform: scale(1.15); }
