@@ -11,6 +11,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { transcodeToMp3 } from "@/lib/transcode";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -70,10 +71,23 @@ export async function POST(request: NextRequest) {
       // Extract duration
       const duration = await extractAudioDuration(audioBuffer);
 
+      // For non-MP3 formats (e.g. WAV), also produce an MP3 for default playback
+      let s3KeyMp3: string | null = null;
+      if (format !== "mp3") {
+        try {
+          const mp3Buffer = await transcodeToMp3(audioBuffer);
+          s3KeyMp3 = `tracks/${track.id}/audio.mp3`;
+          await uploadToS3(s3KeyMp3, mp3Buffer, "audio/mpeg");
+        } catch (err) {
+          console.error("[webhook/minimax] MP3 transcode failed:", err);
+        }
+      }
+
       await db.update(tracks).set({
         status: "done",
         s3Key,
         format,
+        ...(s3KeyMp3 ? { s3KeyMp3 } : {}),
         duration,
         audioUrl: `/api/tracks/${track.id}/download`,
       }).where(eq(tracks.id, track.id!));

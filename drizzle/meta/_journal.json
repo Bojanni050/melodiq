@@ -57,6 +57,13 @@
       "when": 1781455853272,
       "tag": "0007_misty_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782146738278,
+      "tag": "0008_motionless_overlord",
+      "breakpoints": true
     }
   ]
 }

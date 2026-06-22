@@ -36,8 +36,9 @@ export async function GET(
     return NextResponse.json({ error: "No audio available" }, { status: 404 });
   }
 
-  const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
-  const fmt = hd && track.formatHd ? track.formatHd : track.format ?? "mp3";
+  // Prefer the MP3 transcoded version for default (non-HD) playback when available
+  const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : (!hd && track.s3KeyMp3 ? track.s3KeyMp3 : track.s3Key);
+  const fmt = hd && track.formatHd ? track.formatHd : (!hd && track.s3KeyMp3 ? "mp3" : track.format ?? "mp3");
 
   try {
     // Get audio from cache (downloads from S3 on first request)
