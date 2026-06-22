@@ -237,6 +237,7 @@ const TrackCard = memo(function TrackCard({
           actions.setShowPlaylistPickerDialog(false);
           actions.setShowCreatePlaylistDialog(true);
         }}
+        tracksById={tracksById}
       />
 
       <MergeWorkspaceDialog

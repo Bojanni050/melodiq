@@ -11,6 +11,7 @@ interface PlaylistPickerDialogProps {
   track: TrackItem;
   onAddToPlaylist: (playlistId: string, playlistName: string, isDuplicate: boolean) => void;
   onCreatePlaylistClick: () => void;
+  tracksById?: Map<string, TrackItem>;
 }
 
 export default function PlaylistPickerDialog({
@@ -19,6 +20,7 @@ export default function PlaylistPickerDialog({
   track,
   onAddToPlaylist,
   onCreatePlaylistClick,
+  tracksById,
 }: PlaylistPickerDialogProps) {
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -27,6 +29,14 @@ export default function PlaylistPickerDialog({
 
   const activeSelection = useSelectionStore.getState().selectedIds;
   const isMultiSelect = activeSelection.size > 1 && activeSelection.has(track.id);
+
+  function getPlaylistCoverUrl(trackIds: string[]): string | null {
+    if (!tracksById || trackIds.length === 0) return null;
+    const withCover = trackIds.filter((id) => tracksById.get(id)?.coverUrl);
+    if (withCover.length === 0) return null;
+    const picked = withCover[Math.floor(Math.random() * withCover.length)];
+    return tracksById.get(picked)?.coverUrl ?? null;
+  }
 
   function alreadyInPlaylist(playlistId: string) {
     const playlist = allPlaylists.find((p) => p.id === playlistId);
@@ -103,6 +113,7 @@ export default function PlaylistPickerDialog({
                 const partial = !fully && partiallyInPlaylist(playlist.id);
                 const isChecked = selected.has(playlist.id);
 
+                const coverUrl = getPlaylistCoverUrl(playlist.trackIds);
                 return (
                   <button
                     key={playlist.id}
@@ -112,9 +123,13 @@ export default function PlaylistPickerDialog({
                   >
                     {/* Thumbnail */}
                     <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-white/8 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                      </svg>
+                      {coverUrl ? (
+                        <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <svg className="w-5 h-5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                      )}
                     </div>
 
                     {/* Name + track count */}
