@@ -323,6 +323,8 @@ export default function LibraryPage() {
   const [uploadInstrumental, setUploadInstrumental] = useState(false);
   const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
   const [coverPickerPlaylistId, setCoverPickerPlaylistId] = useState<string | null>(null);
+  const [uploadingPlaylistCover, setUploadingPlaylistCover] = useState(false);
+  const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
   const [editingDescriptionPlaylistId, setEditingDescriptionPlaylistId] = useState<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
 
@@ -1005,6 +1007,8 @@ export default function LibraryPage() {
   function getPlaylistCover(playlistId: string) {
     const override = playlistCoverOverrides[playlistId];
     if (override) return override;
+    const playlist = playlists.find((p) => p.id === playlistId);
+    if (playlist?.coverUrl) return playlist.coverUrl;
     return getPlaylistRandomCover(playlistId);
   }
 
@@ -1018,6 +1022,26 @@ export default function LibraryPage() {
       delete next[playlistId];
       return next;
     });
+  }
+
+  async function handleUploadPlaylistCover(playlistId: string, file: File) {
+    setUploadingPlaylistCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("cover", file);
+      const res = await fetch(`/api/playlists/${playlistId}/cover`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { coverUrl } = await res.json() as { coverUrl: string };
+      const bustedUrl = `${coverUrl}?t=${Date.now()}`;
+      handleSetPlaylistCover(playlistId, bustedUrl);
+      // Update the store so getPlaylistCover() picks up the DB-backed URL too
+      const { hydratePlaylistsFromServer, playlists: storePlaylists } = usePlaylistStore.getState();
+      hydratePlaylistsFromServer(storePlaylists.map((p) => p.id === playlistId ? { ...p, coverUrl: bustedUrl } : p));
+    } catch (err) {
+      console.error("[playlist-cover] upload error", err);
+    } finally {
+      setUploadingPlaylistCover(false);
+    }
   }
 
   function getWorkspaceGradientClass(workspaceId: string, folderGradient?: string | null) {
@@ -1759,7 +1783,7 @@ export default function LibraryPage() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-white">Change Playlist Cover</h3>
-                <p className="text-sm text-white/55">Pick a cover from playlist songs or randomize it.</p>
+                <p className="text-sm text-white/55">Pick a cover from playlist songs, upload your own, or randomize it.</p>
               </div>
               <button
                 type="button"
@@ -1793,11 +1817,30 @@ export default function LibraryPage() {
                     </button>
                     <button
                       type="button"
+                      disabled={uploadingPlaylistCover}
+                      onClick={() => playlistCoverInputRef.current?.click()}
+                      className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                    >
+                      {uploadingPlaylistCover ? "Uploading…" : "Upload image"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleResetPlaylistCover(coverPickerPlaylistId)}
                       className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                     >
                       Reset to auto
                     </button>
+                    <input
+                      ref={playlistCoverInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleUploadPlaylistCover(coverPickerPlaylistId, file);
+                        e.target.value = "";
+                      }}
+                    />
                   </div>
 
                   {candidates.length === 0 ? (

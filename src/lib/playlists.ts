@@ -7,6 +7,7 @@ export type PlaylistPayload = {
   id: string;
   name: string;
   description: string | null;
+  coverUrl: string | null;
   trackIds: string[];
   createdAt: string;
 };
@@ -17,6 +18,7 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
       id: playlists.id,
       name: playlists.name,
       description: playlists.description,
+      s3KeyCover: playlists.s3KeyCover,
       createdAt: playlists.createdAt,
     })
     .from(playlists)
@@ -47,6 +49,7 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
     id: row.id,
     name: row.name,
     description: row.description ?? null,
+    coverUrl: row.s3KeyCover ? `/api/playlists/${row.id}/cover` : null,
     trackIds: tracksByPlaylistId.get(row.id) ?? [],
     createdAt: row.createdAt.toISOString(),
   }));

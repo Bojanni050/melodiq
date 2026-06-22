@@ -413,6 +413,7 @@ export interface Playlist {
   id: string;
   name: string;
   description?: string | null;
+  coverUrl?: string | null;
   trackIds: string[];
   createdAt: string;
 }

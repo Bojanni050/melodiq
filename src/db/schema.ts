@@ -116,6 +116,8 @@ export const playlists = pgTable("playlists", {
   userId: uuid("user_id").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: varchar("description", { length: 500 }),
+  s3KeyCover: varchar("s3_key_cover", { length: 512 }),
+  s3KeyCoverThumb: varchar("s3_key_cover_thumb", { length: 512 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
