@@ -345,9 +345,6 @@ export default memo(function TrackList({
   }, [sortOrder, tracks, dragOrderKey]);
 
   const orderedTracks = useMemo(() => {
-    // In playlist mode sortedTracks is already the authoritative order — skip manualOrderIds entirely.
-    if (dragOrderKey) return sortedTracks;
-
     if (!manualOrderIds) {
       return sortedTracks;
     }
@@ -356,7 +353,7 @@ export default memo(function TrackList({
     return manualOrderIds
       .map((id) => trackMap.get(id))
       .filter((track): track is TrackItem => Boolean(track));
-  }, [enableDragReorder, manualOrderIds, sortedTracks, dragOrderKey]);
+  }, [enableDragReorder, manualOrderIds, sortedTracks]);
 
   useEffect(() => {
     if (!enableDragReorder) {
