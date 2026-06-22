@@ -899,13 +899,18 @@ export default function Player() {
                   </div>
                 )}
               </button>
-              <div className="min-w-0">
+              <div className="min-w-0 overflow-hidden">
                 <button
                   onClick={() => setIsFullscreen(true)}
-                  className="block text-sm font-medium text-white/90 truncate w-full text-left hover:underline"
+                  className="block text-sm font-medium text-white/90 w-full text-left hover:underline overflow-hidden"
                   title={cleanTitle || currentTrack.prompt}
+                  style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 4%, black 85%, transparent 100%)" }}
                 >
-                  {cleanTitle || currentTrack.prompt.substring(0, 50)}
+                  <span className="inline-block whitespace-nowrap animate-[marquee_12s_linear_infinite] hover:[animation-play-state:paused]">
+                    {cleanTitle || currentTrack.prompt.substring(0, 50)}
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    {cleanTitle || currentTrack.prompt.substring(0, 50)}
+                  </span>
                 </button>
                 <p className="text-xs text-white/40 truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
@@ -938,7 +943,7 @@ export default function Player() {
             <button
               onClick={handlePrevious}
               disabled={!currentTrack}
-              className="hidden sm:block p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
+              className="p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
               title="Previous"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
