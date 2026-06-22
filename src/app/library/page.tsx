@@ -386,12 +386,6 @@ export default function LibraryPage() {
     useWorkspaceStore.persist.rehydrate();
   }, []);
 
-  // Poll for playlist updates every 30s when a playlist is open — keeps multi-device in sync.
-  useEffect(() => {
-    if (!selectedPlaylistId) return;
-    const interval = setInterval(() => void loadPlaylists(), 30_000);
-    return () => clearInterval(interval);
-  }, [selectedPlaylistId, loadPlaylists]);
 
   useEffect(() => {
     if (useWorkspaceStore.persist.hasHydrated()) {
