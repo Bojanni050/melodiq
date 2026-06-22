@@ -1840,6 +1840,8 @@ export default function LibraryPage() {
       {editingTrack && (
         <TrackEditPanel
           track={editingTrack}
+          knownArtistNames={knownArtistNames}
+          knownComposerNames={knownComposerNames}
           onClose={() => setEditingTrack(null)}
           onSaved={(updated) => {
             const normalized: LibraryTrack = {

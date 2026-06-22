@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackItem } from "./types";
 
 const PROVIDERS = [
@@ -14,13 +14,119 @@ const PROVIDERS = [
   { value: "lyria", label: "Lyria 3" },
 ];
 
+function AutocompleteInput({
+  value,
+  onChange,
+  placeholder,
+  suggestions,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  suggestions: string[];
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    return suggestions.filter((s) => s.toLowerCase().includes(q) && s !== value);
+  }, [value, suggestions]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={className}
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-white/12 bg-[#1a1b27] shadow-lg overflow-hidden">
+          {filtered.map((s) => (
+            <li key={s}>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
+                className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 transition-colors"
+              >
+                {s}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SliderWithInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  const display = value ?? 50;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-white/60">{label}</label>
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={value ?? ""}
+            placeholder="—"
+            onChange={(e) => {
+              if (e.target.value === "") { onChange(null); return; }
+              const n = parseInt(e.target.value, 10);
+              if (!isNaN(n)) onChange(Math.min(100, Math.max(1, n)));
+            }}
+            className="w-12 rounded-lg border border-white/12 bg-[#11121a] px-2 py-0.5 text-center text-xs text-white outline-none focus:border-white/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <span className="text-xs text-white/40">%</span>
+        </div>
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={100}
+        value={display}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary-500"
+      />
+    </div>
+  );
+}
+
 interface TrackEditPanelProps {
   track: TrackItem;
   onClose: () => void;
   onSaved: (updated: TrackItem) => void;
+  knownArtistNames?: string[];
+  knownComposerNames?: string[];
 }
 
-export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPanelProps) {
+export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [] }: TrackEditPanelProps) {
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? "");
   const [composerName, setComposerName] = useState(track.composerName ?? "");
@@ -29,6 +135,8 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
   const [prompt, setPrompt] = useState(track.prompt ?? "");
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
+  const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? null);
+  const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +154,8 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
         instrumental,
         prompt: prompt.trim(),
         lyrics: instrumental ? null : (lyrics.trim() || null),
+        sunoStyleInfluence: provider === "suno" ? sunoStyleInfluence : null,
+        sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
       };
 
       const res = await fetch(`/api/tracks/${track.id}`, {
@@ -119,21 +229,21 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-white/60">Artist</label>
-              <input
-                type="text"
+              <AutocompleteInput
                 value={artistName}
-                onChange={(e) => setArtistName(e.target.value)}
+                onChange={setArtistName}
                 placeholder="Artist name"
+                suggestions={knownArtistNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>
             <div className="space-y-1">
               <label className="text-xs text-white/60">Composer</label>
-              <input
-                type="text"
+              <AutocompleteInput
                 value={composerName}
-                onChange={(e) => setComposerName(e.target.value)}
+                onChange={setComposerName}
                 placeholder="Composer name"
+                suggestions={knownComposerNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>
@@ -170,6 +280,22 @@ export default function TrackEditPanel({ track, onClose, onSaved }: TrackEditPan
               />
             </div>
           </div>
+
+          {/* Suno sliders */}
+          {provider === "suno" && (
+            <div className="space-y-3 rounded-xl border border-white/8 bg-white/3 px-3 py-3">
+              <SliderWithInput
+                label="Style Influence"
+                value={sunoStyleInfluence}
+                onChange={setSunoStyleInfluence}
+              />
+              <SliderWithInput
+                label="Weirdness"
+                value={sunoWeirdness}
+                onChange={setSunoWeirdness}
+              />
+            </div>
+          )}
 
           {/* Instrumental toggle */}
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">

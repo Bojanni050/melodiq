@@ -412,13 +412,15 @@ export async function PATCH(
     const provider = body.provider;
     const duration = body.duration;
     const restore = body.restore;
+    const sunoStyleInfluence = body.sunoStyleInfluence;
+    const sunoWeirdness = body.sunoWeirdness;
 
     if (restore === true) {
       await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -580,6 +582,26 @@ export async function PATCH(
     if (regenerateCoverArt !== undefined && regenerateCoverArt !== true) {
       if (typeof regenerateCoverArt !== "boolean") {
         return NextResponse.json({ error: "Invalid regenerateCoverArt" }, { status: 400 });
+      }
+    }
+
+    if (sunoStyleInfluence !== undefined) {
+      if (sunoStyleInfluence === null) {
+        updates.sunoStyleInfluence = null;
+      } else if (typeof sunoStyleInfluence === "number" && Number.isFinite(sunoStyleInfluence)) {
+        updates.sunoStyleInfluence = Math.min(100, Math.max(1, Math.round(sunoStyleInfluence)));
+      } else {
+        return NextResponse.json({ error: "Invalid sunoStyleInfluence" }, { status: 400 });
+      }
+    }
+
+    if (sunoWeirdness !== undefined) {
+      if (sunoWeirdness === null) {
+        updates.sunoWeirdness = null;
+      } else if (typeof sunoWeirdness === "number" && Number.isFinite(sunoWeirdness)) {
+        updates.sunoWeirdness = Math.min(100, Math.max(1, Math.round(sunoWeirdness)));
+      } else {
+        return NextResponse.json({ error: "Invalid sunoWeirdness" }, { status: 400 });
       }
     }
 
