@@ -151,6 +151,8 @@ type UploadItemOverride = {
   lyrics: string | null;
   instrumental: boolean | null;
   sourceProvider: string | null;
+  sunoStyleInfluence: number | null;
+  sunoWeirdness: number | null;
 };
 
 function normalizeUploadText(value: FormDataEntryValue | null): string | null {
@@ -219,7 +221,7 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null };
+      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null, sunoStyleInfluence: null, sunoWeirdness: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
       const artistName = typeof item.artistName === "string" && item.artistName.trim() ? item.artistName.trim() : null;
       const composerName = typeof item.composerName === "string" && item.composerName.trim() ? item.composerName.trim() : null;
@@ -227,7 +229,9 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
       const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
       const instrumental = typeof item.instrumental === "boolean" ? item.instrumental : null;
       const sourceProvider = typeof item.sourceProvider === "string" && item.sourceProvider.trim() ? item.sourceProvider.trim() : null;
-      return { title, artistName, composerName, prompt, lyrics, instrumental, sourceProvider };
+      const sunoStyleInfluence = typeof item.sunoStyleInfluence === "number" ? Math.min(100, Math.max(1, Math.round(item.sunoStyleInfluence))) : null;
+      const sunoWeirdness = typeof item.sunoWeirdness === "number" ? Math.min(100, Math.max(1, Math.round(item.sunoWeirdness))) : null;
+      return { title, artistName, composerName, prompt, lyrics, instrumental, sourceProvider, sunoStyleInfluence, sunoWeirdness };
     });
   } catch {
     return [];
@@ -848,6 +852,8 @@ export async function POST(request: NextRequest) {
             instrumental: isInstrumental,
             artistName: itemOverride?.artistName ?? defaultArtist,
             composerName: itemOverride?.composerName ?? defaultComposer,
+            sunoStyleInfluence: itemOverride?.sunoStyleInfluence ?? null,
+            sunoWeirdness: itemOverride?.sunoWeirdness ?? null,
             s3KeyLicense,
             creditsUsed: 0,
             error: null,
