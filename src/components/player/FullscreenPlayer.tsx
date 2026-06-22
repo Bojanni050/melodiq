@@ -10,8 +10,10 @@ import {
   AudioSourceState,
   allowWithDelay,
   formatProviderLabel,
-  AudioSourceBadge
+  AudioSourceBadge,
+  resolveStreamSuffix,
 } from "../Player";
+import ChromecastButton from "../ChromecastButton";
 
 const AudioVisualizer = dynamic(() => import("./AudioVisualizer"), { ssr: false });
 
@@ -34,6 +36,7 @@ export default function FullscreenPlayer({
     setVisualizerEnabled,
     setVisualizerMode,
     setVisualizerGradient,
+    playHighestQuality,
   } = usePlayerStore();
   const { user, loadUser } = useUserStore();
   
@@ -370,6 +373,18 @@ export default function FullscreenPlayer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
               </svg>
             </button>
+            <ChromecastButton
+              trackId={currentTrack?.id ?? null}
+              hd={currentTrack ? resolveStreamSuffix(currentTrack, playHighestQuality) === "?hd=true" : false}
+              meta={currentTrack ? {
+                title: currentTrack.title || currentTrack.prompt.substring(0, 80) || undefined,
+                coverUrl: coverUrl ?? undefined,
+                currentTime,
+                duration,
+              } : null}
+              disabled={!currentTrack}
+              onCastConnected={() => usePlayerStore.getState().setIsPlaying(false)}
+            />
             <div className={`transition-opacity duration-300 ${contentVisible ? "opacity-100" : "opacity-0"}`}>
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}

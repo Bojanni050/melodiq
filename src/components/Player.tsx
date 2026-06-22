@@ -13,7 +13,7 @@ import { useChromecast } from "@/hooks/useChromecast";
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
-function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
+export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
   if (!playHighestQuality) return "";
 
   // Prefer FLAC, then WAV — check HD slot first, then primary slot
