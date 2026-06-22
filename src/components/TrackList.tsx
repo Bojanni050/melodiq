@@ -345,6 +345,13 @@ export default memo(function TrackList({
   }, [sortOrder, tracks, dragOrderKey]);
 
   const orderedTracks = useMemo(() => {
+    // In playlist mode the store is authoritative — sortedTracks already carries
+    // the correct order (updated synchronously by localMovePlaylistTrack on drop).
+    // Using manualOrderIds here causes a race: Zustand re-renders before React
+    // applies the setManualOrderIds update, so the effect fires with stale state
+    // and overwrites the drag order.
+    if (dragOrderKey) return sortedTracks;
+
     if (!manualOrderIds) {
       return sortedTracks;
     }
@@ -353,7 +360,7 @@ export default memo(function TrackList({
     return manualOrderIds
       .map((id) => trackMap.get(id))
       .filter((track): track is TrackItem => Boolean(track));
-  }, [enableDragReorder, manualOrderIds, sortedTracks]);
+  }, [enableDragReorder, manualOrderIds, sortedTracks, dragOrderKey]);
 
   useEffect(() => {
     if (!enableDragReorder) {
@@ -631,6 +638,27 @@ export default memo(function TrackList({
   }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
   function moveTrackInManualOrder(sourceId: string, targetId: string, position: DropPosition) {
+    // In playlist mode orderedTracks follows sortedTracks (the Zustand store), not
+    // manualOrderIds. Compute reorder from sortedTracks directly and skip the
+    // setManualOrderIds call to avoid the race where Zustand re-renders before React
+    // applies the state update, causing the effect to overwrite the drag order.
+    if (dragOrderKey) {
+      const source = sortedTracks.map((t) => t.id);
+      const fromIndex = source.indexOf(sourceId);
+      const toIndex = source.indexOf(targetId);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+      const next = [...source];
+      const [moved] = next.splice(fromIndex, 1);
+      let insertIndex = toIndex;
+      if (fromIndex < toIndex) insertIndex -= 1;
+      if (position === "after") insertIndex += 1;
+      const clampedIndex = Math.max(0, Math.min(insertIndex, next.length));
+      next.splice(clampedIndex, 0, moved);
+      onManualOrderChange?.(next);
+      onTrackMoved?.(sourceId, clampedIndex);
+      return;
+    }
+
     let nextOrder: string[] | null = null;
     let finalIndex = -1;
 
