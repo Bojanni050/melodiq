@@ -251,7 +251,9 @@ const TrackCard = memo(function TrackCard({
       />
 
       <div
-        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
+        role="button"
+        tabIndex={0}
+        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 focus-visible:outline-offset-1 ${
           isCurrentlyPlaying
             ? "bg-primary-500/20 border border-primary-500/25 border-l-4 border-l-primary-400 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
             : isDetailSelected
@@ -271,6 +273,13 @@ const TrackCard = memo(function TrackCard({
           if (track.status !== "done") return;
           if (!isCurrentlyPlaying) onPlay(track);
           setIsFullscreen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (track.status === "done") onPlay(track);
+            else onSelect(track);
+          }
         }}
       >
         {/* Selection dot */}
