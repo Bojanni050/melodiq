@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 function AutocompleteInput({
   id,
@@ -120,12 +121,14 @@ import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
+import type { TrackItem } from "@/components/tracks/types";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   DEFAULT_WORKSPACE_ID,
   WORKSPACE_FOLDER_GRADIENTS,
   usePlayerStore,
   usePlaylistStore,
+  useStudioStore,
   useWorkspaceStore,
 } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
@@ -261,6 +264,8 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
+  const router = useRouter();
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, localMovePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
@@ -625,6 +630,23 @@ export default function LibraryPage() {
   function handleCloseTrackDetails() {
     setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
+  }
+
+  function performReusePrompt(track: TrackItem) {
+    sessionStorage.setItem(
+      "melodiq-reuse-prompt-payload",
+      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+    );
+    router.push("/studio");
+  }
+
+  function handleReusePrompt(track: TrackItem) {
+    const { songIdea, lyrics } = useStudioStore.getState();
+    if (songIdea.trim() || lyrics.trim()) {
+      setReuseConfirmTrack(track);
+      return;
+    }
+    performReusePrompt(track);
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -1262,6 +1284,7 @@ export default function LibraryPage() {
                   <TrackList
                     tracks={activeSongs}
                     autoQueueAfterPlay
+                    onReusePrompt={handleReusePrompt}
                     enableDragReorder={isEditingPlaylistOrder}
                     dragOrderKey={selectedPlaylist?.id}
                     onTrackMoved={(trackId, toIndex) => {
@@ -2396,6 +2419,49 @@ export default function LibraryPage() {
             allowLyricsEdit
             onTrackUpdated={handleTrackUpdated}
           />
+        </div>
+      )}
+
+      {reuseConfirmTrack && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+          onClick={() => setReuseConfirmTrack(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-amber-100">
+                  De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const track = reuseConfirmTrack;
+                      setReuseConfirmTrack(null);
+                      if (track) performReusePrompt(track);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
+                  >
+                    Doorgaan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReuseConfirmTrack(null)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

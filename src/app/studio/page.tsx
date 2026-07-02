@@ -74,6 +74,15 @@ export default function StudioPage() {
         studio.setSongIdea(payload.style);
         studio.setTitle(payload.title);
       }
+
+      const reuseRaw = sessionStorage.getItem("melodiq-reuse-prompt-payload");
+      if (reuseRaw) {
+        sessionStorage.removeItem("melodiq-reuse-prompt-payload");
+        const payload = JSON.parse(reuseRaw) as { songIdea: string; lyrics: string };
+        const studio = useStudioStore.getState();
+        studio.setSongIdea(payload.songIdea);
+        studio.setLyrics(payload.lyrics);
+      }
     } catch {
       // ignore
     }
