@@ -52,6 +52,7 @@ export async function POST() {
           id: track.id!,
           jobId: track.jobId!,
           audioId: track.audioId!,
+          userId: track.userId,
         });
 
         if (wavTaskId) {

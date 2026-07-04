@@ -12,6 +12,7 @@ import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { getPoYoTimestampedLyrics, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
+import { convertWavToFlac } from "@/lib/wav-to-flac";
 
 function pickAudioUrl(body: any): string | null {
   const files: any[] = body?.files ?? body?.data?.files ?? [];
@@ -73,6 +74,14 @@ export async function POST(request: NextRequest) {
     console.error(
       `[webhook/poyo-wav] track not found for taskId: ${taskId ?? "(none)"} audioId: ${audioId ?? "(none)"}`
     );
+    await logApi({
+      type: "webhook",
+      provider: "poyo",
+      endpoint: "/api/webhooks/poyo-wav",
+      request: JSON.stringify(body),
+      response: JSON.stringify({ error: "Track not found", taskId, audioId }),
+      statusCode: 404,
+    });
     return NextResponse.json({ success: true });
   }
 
@@ -94,6 +103,15 @@ export async function POST(request: NextRequest) {
       .update(tracks)
       .set({ status: "failed", error: "No WAV audio URL in webhook" })
       .where(eq(tracks.id, track.id!));
+    await logApi({
+      userId: track.userId,
+      type: "webhook",
+      provider: "poyo",
+      endpoint: "/api/webhooks/poyo-wav",
+      request: JSON.stringify(body),
+      response: JSON.stringify({ error: "No WAV audio URL in webhook", trackId: track.id, matchedBy }),
+      statusCode: 400,
+    });
     return NextResponse.json({ error: "No audio URL" }, { status: 400 });
   }
 
@@ -104,12 +122,22 @@ export async function POST(request: NextRequest) {
     const audioRes = await axios.get(audioUrl, { responseType: "arraybuffer" });
     const audioBuffer = Buffer.from(audioRes.data);
     const headerType = String(audioRes.headers?.["content-type"] || "");
-    const formatHd = detectFormatFromUrl(audioUrl) === "wav"
+    let formatHd = detectFormatFromUrl(audioUrl) === "wav"
       ? "wav"
       : detectFormatFromContentType(headerType || "audio/wav");
 
+    let uploadBuffer = audioBuffer;
+    if (formatHd === "wav") {
+      const flacBuffer = await convertWavToFlac(audioBuffer);
+      if (flacBuffer) {
+        uploadBuffer = flacBuffer;
+        formatHd = "flac";
+      }
+      // If ffmpeg unavailable, uploadBuffer/formatHd stay as WAV — upload as-is
+    }
+
     const s3KeyHd = track.s3KeyHd ?? `tracks/${track.id}/audio_hd.${formatHd}`;
-    await uploadToS3(s3KeyHd, audioBuffer, contentTypeForFormat(formatHd));
+    await uploadToS3(s3KeyHd, uploadBuffer, contentTypeForFormat(formatHd));
 
     // Extract duration if not already set
     let duration = track.duration;
@@ -224,6 +252,15 @@ export async function POST(request: NextRequest) {
       .update(tracks)
       .set({ status: "failed", error: `S3 upload failed: ${error.message}` })
       .where(eq(tracks.id, track.id!));
+    await logApi({
+      userId: track.userId,
+      type: "webhook",
+      provider: "poyo",
+      endpoint: "/api/webhooks/poyo-wav",
+      request: JSON.stringify(body),
+      response: JSON.stringify({ error: error.message, trackId: track.id, matchedBy }),
+      statusCode: 500,
+    });
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

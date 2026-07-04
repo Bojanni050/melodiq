@@ -10,6 +10,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { convertWavToFlac } from "@/lib/wav-to-flac";
 
 interface SyncPoYoTaskResult {
   found: boolean;
@@ -140,8 +141,19 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
           formatHd = /\.wav(\?|$)/i.test(variant.audioUrlHd)
             ? detectFormatFromUrl(variant.audioUrlHd)
             : detectFormatFromContentType(hdHeaderType || "audio/mpeg");
+
+          let hdBuffer = Buffer.from(hdRes.data);
+          if (formatHd === "wav") {
+            const flacBuffer = await convertWavToFlac(hdBuffer);
+            if (flacBuffer) {
+              hdBuffer = flacBuffer;
+              formatHd = "flac";
+            }
+            // If ffmpeg unavailable, hdBuffer/formatHd stay as WAV — upload as-is
+          }
+
           s3KeyHd = targetTrack.s3KeyHd ?? `tracks/${targetTrack.id}/audio_hd.${formatHd}`;
-          await uploadToS3(s3KeyHd, Buffer.from(hdRes.data), contentTypeForFormat(formatHd));
+          await uploadToS3(s3KeyHd, hdBuffer, contentTypeForFormat(formatHd));
         }
 
         await db
