@@ -5,6 +5,27 @@ import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { useSWRConfig } from "swr";
 
+const TRANSLATE_LANGUAGES = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Italian",
+  "Portuguese",
+  "Dutch",
+  "Polish",
+  "Swedish",
+  "Norwegian",
+  "Danish",
+  "Russian",
+  "Turkish",
+  "Arabic",
+  "Hindi",
+  "Japanese",
+  "Korean",
+  "Chinese",
+];
+
 export type TrackDetailTrack = {
   id: string;
   title: string | null;
@@ -13,6 +34,9 @@ export type TrackDetailTrack = {
   prompt: string;
   lyrics: string | null;
   lyricsTimestamps?: string | null;
+  language?: string | null;
+  translatedLyrics?: string | null;
+  translatedLanguage?: string | null;
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;
@@ -54,6 +78,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [lyricsEditing, setLyricsEditing] = useState(false);
   const [lyricsSaving, setLyricsSaving] = useState(false);
   const [lyricsSaveError, setLyricsSaveError] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
+  const [showingTranslation, setShowingTranslation] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -71,6 +99,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     setLyricsDraft(initialTrack.lyrics ?? "");
     setLyricsEditing(false);
     setLyricsExpanded(true);
+    setShowingTranslation(false);
+    setTranslateMenuOpen(false);
+    setTranslateError(null);
   }, [initialTrack]);
 
   // central self-healing polling loop
@@ -363,6 +394,38 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     }
   }
 
+  async function handleTranslateLyrics(targetLanguage: string) {
+    setTranslateMenuOpen(false);
+    setTranslating(true);
+    setTranslateError(null);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/translate-lyrics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetLanguage }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = payload && typeof payload.error === "string" ? payload.error : `Translation failed (${res.status})`;
+        throw new Error(message);
+      }
+
+      const updatedTrack = await res.json();
+      setLocalTrack(updatedTrack);
+      onTrackUpdated?.(updatedTrack);
+      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+      void mutate("/api/tracks");
+      setShowingTranslation(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to translate lyrics";
+      console.error("Failed to translate lyrics:", error);
+      setTranslateError(message);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   const title = (track.title || track.prompt.substring(0, 60)).replace(/\s*\(2\)\s*$/, "");
   const promptFirstLine = track.prompt
     .split("\n")
@@ -475,6 +538,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{providerLabel} • {providerModelLabel}
             {displayDuration && (
               <span className="ml-1.5 text-white/60">• {formatDuration(displayDuration)}</span>
+            )}
+            {track.language && (
+              <span className="ml-1.5 text-white/60">• {track.language}</span>
             )}
           </p>
           {mode === "overlay" && promptFirstLine && (
@@ -603,8 +669,48 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     )}
                   </button>
                 )}
+                {track.lyrics && !lyricsEditing && track.translatedLyrics && (
+                  <button
+                    type="button"
+                    onClick={() => setShowingTranslation((v) => !v)}
+                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    title={showingTranslation ? "Show original lyrics" : `Show ${track.translatedLanguage ?? "translated"} lyrics`}
+                  >
+                    {showingTranslation ? "Original" : track.translatedLanguage ?? "Translated"}
+                  </button>
+                )}
+                {track.lyrics && !lyricsEditing && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => track.language && setTranslateMenuOpen((v) => !v)}
+                      disabled={!track.language || translating}
+                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                      title={track.language ? "Translate lyrics" : "Set a language first (see the auto-detected language above, or edit the track)"}
+                    >
+                      {translating ? "Translating..." : "Translate"}
+                    </button>
+                    {translateMenuOpen && (
+                      <div className="absolute right-0 top-full mt-1 z-20 w-40 max-h-56 overflow-y-auto rounded-lg border border-white/12 bg-[#181920] shadow-xl py-1">
+                        {TRANSLATE_LANGUAGES.filter((lang) => lang !== track.language).map((lang) => (
+                          <button
+                            key={lang}
+                            type="button"
+                            onClick={() => handleTranslateLyrics(lang)}
+                            className="block w-full px-3 py-1.5 text-left text-[12px] text-white/70 hover:bg-white/10 hover:text-white/90 transition-colors"
+                          >
+                            {lang}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+            {translateError && (
+              <p className="shrink-0 mb-2 text-[11px] text-red-400">⚠ {translateError}</p>
+            )}
             {lyricsExpanded && (lyricsEditing ? (
               <div className="relative flex-1 min-h-0 overflow-hidden">
                 <textarea
@@ -616,7 +722,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   disabled={lyricsSaving}
                 />
               </div>
-            ) : track.lyrics ? hasTimings ? (
+            ) : track.lyrics ? (showingTranslation && track.translatedLyrics) ? (
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.translatedLyrics}</pre>
+              </div>
+            ) : hasTimings ? (
               <div className="flex-1 min-h-0 overflow-hidden">
                 <div
                   ref={containerRef}

@@ -10,6 +10,7 @@ import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { generateMinimax } from "@/lib/providers/minimax";
 import { generateMureka } from "@/lib/providers/mureka";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
@@ -551,6 +552,15 @@ export async function POST(request: NextRequest) {
         instrumental: instrumental || false,
       }).catch((error) => console.error("[generate] cover art generation failed (lyria)", error));
 
+      if (!track.language) {
+        detectAndSaveLanguageIfMissing({
+          id: track.id!,
+          language: track.language,
+          lyrics,
+          instrumental: instrumental || false,
+        }).catch((error) => console.error("[generate] language detection failed (lyria)", error));
+      }
+
       await logApi({
         userId: userId,
         type: "generation",
@@ -697,6 +707,15 @@ export async function POST(request: NextRequest) {
           prompt,
           instrumental: instrumental || false,
         }).catch((error) => console.error("[generate] cover art generation failed (minimax)", error));
+
+        if (!track.language) {
+          detectAndSaveLanguageIfMissing({
+            id: track.id!,
+            language: track.language,
+            lyrics,
+            instrumental: instrumental || false,
+          }).catch((error) => console.error("[generate] language detection failed (minimax)", error));
+        }
 
         await logApi({
           userId: userId,

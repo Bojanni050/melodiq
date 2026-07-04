@@ -196,6 +196,41 @@ Rules:
   return callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
 }
 
+export async function detectLanguageFromLyrics(lyrics: string): Promise<string | null> {
+  const systemPrompt = `You are a language identification tool.
+
+Read the lyrics and identify the language they are written in.
+
+Rules:
+- Return ONLY the language name in English (e.g. "English", "Dutch", "Spanish") — no explanation, no punctuation
+- If the lyrics mix multiple languages, return the dominant one
+- If you cannot determine a language, return exactly "unknown"`;
+
+  const result = await callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
+  const trimmed = result.trim().replace(/^["'.]+|["'.]+$/g, "");
+  if (!trimmed || trimmed.length > 50 || /unknown/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+export async function translateLyrics(
+  lyrics: string,
+  sourceLanguage: string,
+  targetLanguage: string
+): Promise<string> {
+  const systemPrompt = `You are a professional song lyrics translator.
+
+Translate the given lyrics from ${sourceLanguage} to ${targetLanguage}.
+
+Rules:
+- Preserve section tags exactly as-is (e.g. [Verse], [Chorus], [Bridge], [Outro])
+- Preserve line breaks and overall structure
+- Preserve meaning and emotional tone over literal word-for-word translation
+- Keep it natural and singable in the target language
+- Return ONLY the translated lyrics — no explanation, no preamble, no quotes around the result`;
+
+  return callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
+}
+
 export async function optimizePrompt(idea: string, provider: string): Promise<string> {
   const systemPrompt = `You are an expert music prompt engineer. Rewrite the user's rough song idea into a detailed, provider-optimized prompt for AI music generation. 
 

@@ -6,6 +6,7 @@ import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { logApi } from "@/lib/logger";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { sendPushNotification } from "@/lib/push";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 
 type MusicGptWebhookPayload = Record<string, unknown>;
 
@@ -156,6 +157,15 @@ export async function POST(request: NextRequest) {
           instrumental: track.instrumental,
           lyrics: track.lyrics,
         }).catch((error) => console.error("[webhook/musicgpt] cover art generation failed", error));
+      }
+
+      if (!track.language) {
+        detectAndSaveLanguageIfMissing({
+          id: track.id,
+          language: track.language,
+          lyrics: track.lyrics,
+          instrumental: track.instrumental,
+        }).catch((error) => console.error("[webhook/musicgpt] language detection failed", error));
       }
 
       await logApi({

@@ -64,6 +64,13 @@
       "when": 1782146738278,
       "tag": "0008_motionless_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783170295039,
+      "tag": "0009_add_translated_lyrics",
+      "breakpoints": true
     }
   ]
 }

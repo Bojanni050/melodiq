@@ -24,6 +24,8 @@ export interface TrackItem {
   composerName?: string | null;
   instrumental?: boolean | null;
   language?: string | null;
+  translatedLyrics?: string | null;
+  translatedLanguage?: string | null;
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
 }

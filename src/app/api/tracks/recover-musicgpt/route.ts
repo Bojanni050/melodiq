@@ -20,6 +20,7 @@ import { getSetting } from "@/lib/settings";
 import { uploadToS3 } from "@/lib/s3";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { logApi } from "@/lib/logger";
 import axios from "axios";
 
@@ -237,6 +238,15 @@ export async function POST() {
             prompt: track.prompt,
             instrumental: track.instrumental,
           }).catch((error) => console.error("[recover-musicgpt] cover art generation failed", error));
+        }
+
+        if (!track.language) {
+          detectAndSaveLanguageIfMissing({
+            id: track.id!,
+            language: track.language,
+            lyrics: track.lyrics,
+            instrumental: track.instrumental,
+          }).catch((error) => console.error("[recover-musicgpt] language detection failed", error));
         }
 
         await logApi({

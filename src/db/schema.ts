@@ -39,6 +39,8 @@ export const tracks = pgTable("tracks", {
   lyrics: text("lyrics"),
   lyricsTimestamps: text("lyrics_timestamps"),
   language: varchar("language", { length: 50 }),
+  translatedLyrics: text("translated_lyrics"),
+  translatedLanguage: varchar("translated_language", { length: 50 }),
   instrumental: boolean("instrumental").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),

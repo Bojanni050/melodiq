@@ -17,6 +17,8 @@ import {
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { detectLanguageFromLyrics } from "@/lib/providers/llm";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
@@ -226,6 +228,15 @@ export async function GET(
           .where(eq(tracks.id, track.id!))
           .returning();
 
+        if (!track.language) {
+          detectAndSaveLanguageIfMissing({
+            id: track.id!,
+            language: track.language,
+            lyrics: track.lyrics,
+            instrumental: track.instrumental,
+          }).catch((error) => console.error("[tracks/[id]] language detection failed (tempolor)", error));
+        }
+
         return NextResponse.json(updated[0]);
       }
 
@@ -338,6 +349,15 @@ export async function GET(
             }).catch((error) => console.error("[tracks/[id]] cover art generation failed", error));
           }
 
+          if (!track.language) {
+            detectAndSaveLanguageIfMissing({
+              id: track.id!,
+              language: track.language,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }).catch((error) => console.error("[tracks/[id]] language detection failed (musicgpt)", error));
+          }
+
           return NextResponse.json(updated[0]);
         }
 
@@ -414,13 +434,14 @@ export async function PATCH(
     const restore = body.restore;
     const sunoStyleInfluence = body.sunoStyleInfluence;
     const sunoWeirdness = body.sunoWeirdness;
+    const detectLanguage = body.detectLanguage;
 
     if (restore === true) {
       await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -535,6 +556,22 @@ export async function PATCH(
       }
     }
 
+    if (detectLanguage === true) {
+      const track = result[0];
+      if (!track.language && !track.instrumental && track.lyrics?.trim()) {
+        try {
+          const detected = await detectLanguageFromLyrics(track.lyrics);
+          if (detected) {
+            updates.language = detected;
+          }
+        } catch (error) {
+          console.error(`[tracks/[id]] language detection failed for track ${track.id}:`, error);
+        }
+      }
+    } else if (detectLanguage !== undefined && typeof detectLanguage !== "boolean") {
+      return NextResponse.json({ error: "Invalid detectLanguage" }, { status: 400 });
+    }
+
     if (duration !== undefined) {
       if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
         updates.duration = Math.round(duration);
@@ -603,6 +640,10 @@ export async function PATCH(
       } else {
         return NextResponse.json({ error: "Invalid sunoWeirdness" }, { status: 400 });
       }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(result[0]);
     }
 
     const updated = await db

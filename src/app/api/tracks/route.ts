@@ -18,6 +18,7 @@ import {
   getUserWorkspacesWithTrackIds,
 } from "@/lib/workspaces";
 import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUploadCover } from "@/lib/generate-cover";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { parseLyrics } from "@/lib/parse-lyrics";
@@ -303,6 +304,8 @@ export async function GET(request: NextRequest) {
     prompt: tracks.prompt,
     lyrics: tracks.lyrics,
     language: tracks.language,
+    translatedLyrics: tracks.translatedLyrics,
+    translatedLanguage: tracks.translatedLanguage,
     instrumental: tracks.instrumental,
     status: tracks.status,
     audioUrl: tracks.audioUrl,
@@ -887,6 +890,14 @@ export async function POST(request: NextRequest) {
               lyrics: uploadLyrics ?? undefined,
             });
           }
+
+          detectAndSaveLanguageIfMissing({
+            id: trackId,
+            language: inserted[0].language,
+            lyrics: uploadLyrics,
+            instrumental: isInstrumental,
+          }).catch((error) => console.error("[tracks/upload] language detection failed", error));
+
           uploadedTracks.push(inserted[0]);
         }
       } catch (error) {

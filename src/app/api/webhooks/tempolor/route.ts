@@ -10,6 +10,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -95,6 +96,15 @@ export async function POST(request: NextRequest) {
         audioUrl: `/api/tracks/${track.id}/download`,
         audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
       }).where(eq(tracks.id, track.id!));
+
+      if (!track.language) {
+        detectAndSaveLanguageIfMissing({
+          id: track.id!,
+          language: track.language,
+          lyrics: track.lyrics,
+          instrumental: track.instrumental,
+        }).catch((error) => console.error("[webhook/tempolor] language detection failed", error));
+      }
 
       await logApi({
         userId: track.userId,

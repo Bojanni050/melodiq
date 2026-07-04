@@ -11,6 +11,7 @@ import {
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { convertWavToFlac } from "@/lib/wav-to-flac";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 
 interface SyncPoYoTaskResult {
   found: boolean;
@@ -118,6 +119,15 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
         error: null,
       })
       .where(eq(tracks.id, targetTrack.id));
+
+    if (!targetTrack.language) {
+      detectAndSaveLanguageIfMissing({
+        id: targetTrack.id,
+        language: targetTrack.language,
+        lyrics: targetTrack.lyrics,
+        instrumental: targetTrack.instrumental,
+      }).catch((error) => console.error("[poyo-sync] language detection failed", error));
+    }
 
     // Upload to S3 in the background — swap the URL when done
     (async () => {

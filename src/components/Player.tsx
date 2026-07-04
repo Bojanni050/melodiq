@@ -122,6 +122,8 @@ export default function Player() {
   const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coverAutoGenerateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coverAutoRequestedTrackIdsRef = useRef<Set<string>>(new Set());
+  const languageDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const languageDetectRequestedTrackIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
@@ -240,6 +242,13 @@ export default function Player() {
       }
     };
 
+    const clearLanguageDetectTimer = () => {
+      if (languageDetectTimerRef.current) {
+        clearTimeout(languageDetectTimerRef.current);
+        languageDetectTimerRef.current = null;
+      }
+    };
+
     const trackHasCover = (track: Track | null | undefined) => {
       if (!track) return false;
       return Boolean(track.coverUrl || track.s3KeyCover || track.s3KeyCoverThumb);
@@ -304,6 +313,50 @@ export default function Player() {
           }
         })();
       }, 30_000);
+    };
+
+    const scheduleLanguageDetectionIfNeeded = () => {
+      const track = currentTrackRef.current;
+      if (!track || track.status !== "done") return;
+      if (track.language || track.instrumental || !track.lyrics?.trim()) return;
+      if (languageDetectRequestedTrackIdsRef.current.has(track.id)) return;
+      if (languageDetectTimerRef.current) return;
+
+      languageDetectTimerRef.current = setTimeout(() => {
+        languageDetectTimerRef.current = null;
+
+        const latestTrack = currentTrackRef.current;
+        const audioEl = audioRef.current;
+        if (!latestTrack || latestTrack.id !== track.id) return;
+        if (!audioEl || audioEl.paused) return;
+        if (latestTrack.language) return;
+        if (languageDetectRequestedTrackIdsRef.current.has(track.id)) return;
+
+        languageDetectRequestedTrackIdsRef.current.add(track.id);
+
+        void (async () => {
+          try {
+            const response = await fetch(`/api/tracks/${track.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ detectLanguage: true }),
+            });
+
+            if (!response.ok) return;
+
+            const refreshedTrack = await response.json().catch(() => null) as Partial<Track> | null;
+            if (!refreshedTrack?.language) return;
+
+            usePlayerStore.setState((state) =>
+              state.currentTrack?.id === track.id
+                ? { currentTrack: { ...state.currentTrack, language: refreshedTrack.language } }
+                : {}
+            );
+          } catch (error) {
+            console.error("Failed to auto-detect language:", error);
+          }
+        })();
+      }, 15_000);
     };
 
     const countPlayIfNeeded = () => {
@@ -374,6 +427,7 @@ export default function Player() {
     const handleEnded = () => {
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
+      clearLanguageDetectTimer();
       const { autoPlayNext, queue, playNext, setIsPlaying, setProgress } = usePlayerStore.getState();
       if (autoPlayNext && queue.length > 0) {
         playNext();
@@ -533,9 +587,11 @@ export default function Player() {
     audioRef.current.addEventListener("ended", handleEnded);
     audioRef.current.addEventListener("playing", countPlayIfNeeded);
     audioRef.current.addEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
+    audioRef.current.addEventListener("playing", scheduleLanguageDetectionIfNeeded);
     audioRef.current.addEventListener("playing", clearStallTimer);
     audioRef.current.addEventListener("pause", clearPlayTimer);
     audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
+    audioRef.current.addEventListener("pause", clearLanguageDetectTimer);
     audioRef.current.addEventListener("pause", clearStallTimer);
     audioRef.current.addEventListener("pause", handleUnexpectedPause);
     audioRef.current.addEventListener("stalled", handleStalled);
@@ -559,9 +615,11 @@ export default function Player() {
         audioRef.current.removeEventListener("ended", handleEnded);
         audioRef.current.removeEventListener("playing", countPlayIfNeeded);
         audioRef.current.removeEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
+        audioRef.current.removeEventListener("playing", scheduleLanguageDetectionIfNeeded);
         audioRef.current.removeEventListener("playing", clearStallTimer);
         audioRef.current.removeEventListener("pause", clearPlayTimer);
         audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
+        audioRef.current.removeEventListener("pause", clearLanguageDetectTimer);
         audioRef.current.removeEventListener("pause", clearStallTimer);
         audioRef.current.removeEventListener("pause", handleUnexpectedPause);
         audioRef.current.removeEventListener("stalled", handleStalled);
@@ -572,6 +630,7 @@ export default function Player() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
+      clearLanguageDetectTimer();
       clearStallTimer();
     };
   }, [volume]);

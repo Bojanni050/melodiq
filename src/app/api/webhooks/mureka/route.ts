@@ -5,6 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
 import { sendPushNotification } from "@/lib/push";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { createHmac } from "crypto";
 
 function verifySignature(request: NextRequest, rawBody: string): boolean {
@@ -153,6 +154,15 @@ export async function POST(request: NextRequest) {
 
         // Mark done immediately with CDN URL
         await db.update(tracks).set({ status: "done", audioUrl, format: "mp3" }).where(eq(tracks.id, track.id!));
+
+        if (!track.language) {
+          detectAndSaveLanguageIfMissing({
+            id: track.id!,
+            language: track.language,
+            lyrics: track.lyrics,
+            instrumental: track.instrumental,
+          }).catch((error) => console.error("[webhook/mureka] language detection failed", error));
+        }
 
         // Upload to S3 in background
         (async () => {

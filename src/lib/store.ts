@@ -61,6 +61,9 @@ export interface Track {
   formatHd?: string | null;
   duration: number | null;
   lyrics: string | null;
+  language?: string | null;
+  translatedLyrics?: string | null;
+  translatedLanguage?: string | null;
   createdAt: string;
   error: string | null;
   rating?: string | null;

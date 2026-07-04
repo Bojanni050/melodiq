@@ -12,6 +12,7 @@ import {
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { transcodeToMp3 } from "@/lib/transcode";
+import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -99,6 +100,15 @@ export async function POST(request: NextRequest) {
         prompt: track.prompt,
         instrumental: track.instrumental,
       }).catch((error) => console.error("[webhook/minimax] cover art generation failed", error));
+
+      if (!track.language) {
+        detectAndSaveLanguageIfMissing({
+          id: track.id,
+          language: track.language,
+          lyrics: track.lyrics,
+          instrumental: track.instrumental,
+        }).catch((error) => console.error("[webhook/minimax] language detection failed", error));
+      }
 
       await logApi({
         userId: track.userId,
