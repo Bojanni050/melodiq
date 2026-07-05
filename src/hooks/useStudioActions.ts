@@ -122,6 +122,14 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
       return;
     }
 
+    if (selectedProviders.heartmula && !lyrics.trim()) {
+      setNotice({
+        type: "error",
+        message: "HeartMuLa vereist lyrics met structuurtags (bijv. [Verse], [Chorus], [intro-short]).",
+      });
+      return;
+    }
+
     setGenerating(true);
     // Yield to the browser main thread so it paints the button's loading state instantly at 60fps
     await new Promise((resolve) => setTimeout(resolve, 50));

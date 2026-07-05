@@ -9,6 +9,7 @@ import { generateTempolor } from "@/lib/providers/tempolor";
 import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { generateMinimax } from "@/lib/providers/minimax";
 import { generateMureka } from "@/lib/providers/mureka";
+import { generateHeartMula } from "@/lib/providers/heartmula";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { uploadToS3 } from "@/lib/s3";
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
   const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
-  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
@@ -146,6 +147,9 @@ export async function POST(request: NextRequest) {
   }
   if (provider === "mureka" && !instrumental && !lyrics?.trim()) {
     return NextResponse.json({ error: "Mureka requires lyrics" }, { status: 400 });
+  }
+  if (provider === "heartmula" && !lyrics?.trim()) {
+    return NextResponse.json({ error: "HeartMuLa requires lyrics with structure tags (e.g. [Verse], [Chorus], [intro-short])" }, { status: 400 });
   }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
@@ -912,6 +916,47 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json({ tracks: allTracks });
+    }
+
+    if (provider === "heartmula") {
+      if (!lyrics?.trim()) {
+        throw new Error("HeartMuLa requires lyrics with structure tags");
+      }
+
+      const heartmulaWebhookUrl = await getWebhookUrl("heartmula");
+      const genResult = await generateHeartMula({
+        lyrics,
+        tags: prompt || undefined,
+        webhookUrl: heartmulaWebhookUrl || undefined,
+      });
+
+      const updated = await db
+        .update(tracks)
+        .set({ status: "generating", jobId: genResult.requestId })
+        .where(eq(tracks.id, track.id!))
+        .returning();
+
+      generateAndSaveCoverArt({
+        id: track.id,
+        userId: track.userId,
+        title: resolvedTitle,
+        prompt,
+        instrumental: instrumental || false,
+        lyrics: lyrics || undefined,
+      }).catch((error) => console.error("[generate] cover art generation failed (heartmula)", error));
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "heartmula",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, prompt, lyrics: lyrics?.slice(0, 100) }),
+        response: JSON.stringify({ status: "generating", requestId: genResult.requestId }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ track: updated[0] });
     }
 
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });

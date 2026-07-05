@@ -85,7 +85,7 @@ export const PROVIDERS: ProviderConfig[] = [
   {
     id: "mureka",
     name: "Mureka V9 (WaveSpeed)",
-    description: "High-quality song generation with lyrics via WaveSpeed AI",
+    description: "High-quality song generation with lyrics via WaveSpeed AI. Also powers HeartMuLa (same API key).",
     fields: [
       {
         key: "WAVESPEED_API_KEY",
@@ -145,4 +145,5 @@ export const WEBHOOK_DEFAULTS = [
   { key: "MUSICGPT_WEBHOOK_URL", path: "/api/webhooks/musicgpt" },
   { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
   { key: "MUREKA_WEBHOOK_URL", path: "/api/webhooks/mureka" },
+  { key: "HEARTMULA_WEBHOOK_URL", path: "/api/webhooks/heartmula" },
 ] as const;

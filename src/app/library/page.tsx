@@ -178,6 +178,7 @@ const UPLOAD_PROVIDERS = [
   { value: "upload", label: "Unknown / Other" },
   { value: "suno", label: "Suno" },
   { value: "mureka", label: "Mureka" },
+  { value: "heartmula", label: "HeartMuLa" },
   { value: "udio", label: "Udio" },
   { value: "poyo", label: "PoYo" },
   { value: "tempolor", label: "Tempolor" },

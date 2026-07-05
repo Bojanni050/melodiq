@@ -11,6 +11,7 @@ const PROVIDERS = {
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
   minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
   mureka: { name: "Mureka", fullName: "Mureka V9 (WaveSpeed)", models: ["mureka-v9"], icon: "W" },
+  heartmula: { name: "HeartMuLa", fullName: "HeartMuLa (WaveSpeed)", models: ["heartmula"], icon: "H" },
 };
 
 const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
@@ -315,6 +316,7 @@ export default memo(function StudioForm({
     }
   }, [providersCollapsed]);
 
+  const isHeartMulaSelected = Object.keys(selectedProviders)[0] === "heartmula";
   const promptCharCount = songIdea.length;
   const styleMaxChars = 1000;
   const lyricsCharCount = lyrics.length;
@@ -482,7 +484,12 @@ export default memo(function StudioForm({
           </div>
         </div>
 
-        {!instrumental && (
+        {isHeartMulaSelected && (
+          <p className="text-xs text-white/30 italic mb-2">
+            HeartMuLa reads structure directly from your lyrics — write your own tags: <span className="text-white/50 font-mono">[Verse]</span>, <span className="text-white/50 font-mono">[Chorus]</span>, <span className="text-white/50 font-mono">[Bridge]</span>, plus instrumental sections like <span className="text-white/50 font-mono">[intro-short]</span>, <span className="text-white/50 font-mono">[inst-medium]</span>, <span className="text-white/50 font-mono">[outro-short]</span>.
+          </p>
+        )}
+        {(!instrumental || isHeartMulaSelected) && (
           <>
             <div className="mb-3">
               <label className="block text-xs text-white/50 mb-1.5">Lyrics Topic & Mood</label>
@@ -498,7 +505,16 @@ export default memo(function StudioForm({
               <textarea
                 value={lyrics}
                 onChange={(e) => setLyrics(e.target.value)}
-                placeholder={`Write your lyrics here...
+                placeholder={isHeartMulaSelected ? `Write your lyrics here, including structure tags...
+
+[Verse]
+Your lyrics here
+
+[Chorus]
+Your chorus here
+
+[intro-short]
+[outro-short]` : `Write your lyrics here...
 
 [Verse]
 Your lyrics here
@@ -654,7 +670,7 @@ Your chorus here`}
           </>
         )}
 
-        {instrumental && (
+        {instrumental && !isHeartMulaSelected && (
           <p className="text-xs text-white/30 italic">
             🎵 <span className="text-white/50">Instrumental mode</span> — no lyrics needed, focus on the style prompt
           </p>
@@ -686,7 +702,9 @@ Your chorus here`}
           <textarea
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
-            placeholder={`Write your lyrics here...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here`}
+            placeholder={isHeartMulaSelected
+              ? `Write your lyrics here, including structure tags...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here\n\n[intro-short]\n[outro-short]`
+              : `Write your lyrics here...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here`}
             className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-sm leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
             autoFocus
           />
@@ -696,14 +714,21 @@ Your chorus here`}
       {/* Style Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">Style & Prompt</h3>
+          <h3 className="text-sm font-semibold text-white/80">{isHeartMulaSelected ? "Style Tags" : "Style & Prompt"}</h3>
         </div>
+        {isHeartMulaSelected && (
+          <p className="text-xs text-white/30 italic mb-2">
+            Comma-separated style descriptors — gender, timbre, genre, emotion, instruments, tempo (e.g. 85bpm)
+          </p>
+        )}
 
         <div className="relative">
           <textarea
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
-            placeholder={`Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
+            placeholder={isHeartMulaSelected
+              ? `e.g. "female, warm, indie folk, bittersweet, acoustic guitar and piano, 85bpm"`
+              : `Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
             className="input-field min-h-[120px] resize-y text-sm leading-relaxed"
           />
         </div>

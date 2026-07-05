@@ -60,6 +60,7 @@ export function formatProviderLabel(provider: string) {
   if (normalized === "musicgpt") return "MusicGPT";
   if (normalized === "lyria") return "Lyria";
   if (normalized === "minimax") return "MiniMax";
+  if (normalized === "heartmula") return "HeartMuLa";
   if (!provider) return "";
   return provider[0].toUpperCase() + provider.slice(1);
 }
