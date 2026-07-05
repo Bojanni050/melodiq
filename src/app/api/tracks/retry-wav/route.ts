@@ -56,10 +56,11 @@ export async function POST() {
         });
 
         if (wavTaskId) {
-          // Save the new WAV job ID
+          // Save the new WAV job ID and reset the auto-retry budget so the
+          // self-healing loop gets a fresh cooldown/attempt count if this one fails too.
           await db
             .update(tracks)
-            .set({ wavJobId: wavTaskId })
+            .set({ wavJobId: wavTaskId, wavRetryAt: null, wavRetryCount: 0 })
             .where(eq(tracks.id, track.id!));
 
           results.push({ trackId: track.id!, success: true, wavJobId: wavTaskId });

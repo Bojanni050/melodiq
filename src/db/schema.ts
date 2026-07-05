@@ -55,6 +55,8 @@ export const tracks = pgTable("tracks", {
   conversionId: varchar("conversion_id", { length: 255 }),
   audioId: varchar("audio_id", { length: 255 }),
   wavJobId: varchar("wav_job_id", { length: 255 }),
+  wavRetryAt: timestamp("wav_retry_at"),
+  wavRetryCount: integer("wav_retry_count").default(0).notNull(),
   creditsUsed: integer("credits_used").default(0).notNull(),
   error: text("error"),
   coverUrl: text("cover_url"),

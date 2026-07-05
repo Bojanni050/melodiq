@@ -99,9 +99,13 @@ export async function POST(request: NextRequest) {
         : "fallback-first";
 
   if (!audioUrl) {
+    // The main track (mp3) already succeeded before this HD-only webhook fires —
+    // a failed WAV conversion must not demote an otherwise-working track to
+    // "failed". Clear wavJobId so the /api/tracks polling loop's self-healing
+    // retry can pick it up again after the cooldown.
     await db
       .update(tracks)
-      .set({ status: "failed", error: "No WAV audio URL in webhook" })
+      .set({ wavJobId: null })
       .where(eq(tracks.id, track.id!));
     await logApi({
       userId: track.userId,
@@ -248,9 +252,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[webhook/poyo-wav] S3 upload failed:", error.message);
+    // Same reasoning as above: this is an HD-only failure, the main mp3 track
+    // already succeeded, so don't demote its status. Clear wavJobId so the
+    // self-healing retry in /api/tracks can try again after the cooldown.
     await db
       .update(tracks)
-      .set({ status: "failed", error: `S3 upload failed: ${error.message}` })
+      .set({ wavJobId: null })
       .where(eq(tracks.id, track.id!));
     await logApi({
       userId: track.userId,

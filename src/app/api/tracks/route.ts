@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
-import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
+import { getOriginalPoYoTaskId, requestMissingWavConversion, retryStaleWavConversions } from "@/lib/request-wav-conversion";
 import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
@@ -528,6 +528,13 @@ export async function GET(request: NextRequest) {
         })
       );
     }
+
+    // Self-healing retry for "done" PoYo tracks whose WAV/FLAC never arrived
+    // (lost callback, PoYo-side failure, rate limit at submit time). Cooldown +
+    // attempt cap are enforced inside so repeated polling can't spam PoYo.
+    await retryStaleWavConversions(userId).catch((e: any) =>
+      console.error("[tracks-api] retryStaleWavConversions failed:", e?.message ?? e)
+    );
   }
 
   const finalTracks = await db
