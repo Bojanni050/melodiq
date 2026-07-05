@@ -3,7 +3,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
-import WaveformBars from "@/components/tracks/WaveformBars";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime } from "@/lib/track-utils";
@@ -444,11 +443,7 @@ const TrackCard = memo(function TrackCard({
             </div>
           )}
 
-          {track.status === "generating" || track.status === "pending" ? (
-            <div className="mt-1.5 text-primary-500/40 w-full">
-              <WaveformBars count={32} className="h-2 w-full" />
-            </div>
-          ) : (
+          {track.status !== "generating" && track.status !== "pending" && (
             <>
               <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
               <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">

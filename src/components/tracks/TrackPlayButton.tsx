@@ -1,7 +1,6 @@
 "use client";
 
 import type { TrackItem } from "./types";
-import WaveformBars from "./WaveformBars";
 import { formatDuration } from "@/lib/track-utils";
 
 interface TrackPlayButtonProps {
@@ -94,15 +93,11 @@ export default function TrackPlayButton({
             </svg>
           )}
         </div>
-      ) : track.status === "failed" ? (
+      ) : (
         <div className="w-full h-full bg-red-500/10 flex items-center justify-center">
           <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </div>
-      ) : (
-        <div className="w-full h-full bg-white/5 flex items-center justify-center text-primary-400/60">
-          <WaveformBars count={4} className="h-3" />
         </div>
       )}
       {track.status === "done" && track.duration && (
