@@ -7,6 +7,9 @@ const TEMPOLOR_VALID_MODELS = [
   "TemPolor v3",
   "TemPolor i3.5",
   "TemPolor i3",
+  "MK",
+  "MM",
+  "LY",
 ];
 
 // Map legacy/short names → full API model names
@@ -18,6 +21,15 @@ const TEMPOLOR_MODEL_ALIASES: Record<string, string> = {
   "v3":   "TemPolor v3",
   "i3.5": "TemPolor i3.5",
   "i3":   "TemPolor i3",
+  "mureka (mk)": "MK",
+  "minimax music (mm)": "MM",
+  "google lyria 3 pro (ly)": "LY",
+  "mureka": "MK",
+  "minimax": "MM",
+  "lyria": "LY",
+  "mk": "MK",
+  "mm": "MM",
+  "ly": "LY",
 };
 
 function normalizeTempolorModel(model?: string): string {
