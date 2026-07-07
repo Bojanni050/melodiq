@@ -513,6 +513,20 @@ export default memo(function TrackList({
   }, [currentTrack, tracks]);
 
   useEffect(() => {
+    function handleScrollToTrack(event: Event) {
+      const trackId = (event as CustomEvent<{ trackId: string }>).detail?.trackId;
+      if (!trackId) return;
+      const el = document.querySelector(`[data-track-id="${trackId}"]`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary-500/40", "rounded-xl");
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-primary-500/40", "rounded-xl"), 1500);
+    }
+    window.addEventListener("melodiq:scroll-to-track", handleScrollToTrack);
+    return () => window.removeEventListener("melodiq:scroll-to-track", handleScrollToTrack);
+  }, []);
+
+  useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));
     const current = useSelectionStore.getState().selectedIds;
     const next = new Set(Array.from(current).filter((id) => availableIds.has(id)));

@@ -382,6 +382,24 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    function consumeJumpToTrack() {
+      const trackId = sessionStorage.getItem("melodiq-jump-to-track");
+      if (!trackId) return;
+      sessionStorage.removeItem("melodiq-jump-to-track");
+      setSelectedPlaylistId(null);
+      setSelectedWorkspaceId(null);
+      setView("songs");
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("melodiq:scroll-to-track", { detail: { trackId } }));
+      }, 300);
+    }
+
+    consumeJumpToTrack();
+    window.addEventListener("melodiq:jump-to-now-playing", consumeJumpToTrack);
+    return () => window.removeEventListener("melodiq:jump-to-now-playing", consumeJumpToTrack);
+  }, [setSelectedPlaylistId, setSelectedWorkspaceId]);
+
+  useEffect(() => {
     let active = true;
     fetchTracks(() => active);
     void loadPlaylists();

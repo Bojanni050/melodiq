@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { usePlayerStore, useUserStore, usePlaylistStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 import { useState } from "react";
@@ -114,6 +115,8 @@ export default function Player() {
       setShuffleEnabled: s.setShuffleEnabled,
     }))
   );
+  const router = useRouter();
+  const pathname = usePathname();
   const { user, loadUser } = useUserStore();
   const { castState, isRemotePaused, togglePlayCast, loadCastMedia, seekCast } = useChromecast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -893,6 +896,16 @@ export default function Player() {
     [setVolume]
   );
 
+  const handleJumpToNowPlaying = useCallback(() => {
+    if (!currentTrack) return;
+    sessionStorage.setItem("melodiq-jump-to-track", currentTrack.id);
+    if (pathname === "/library") {
+      window.dispatchEvent(new CustomEvent("melodiq:jump-to-now-playing"));
+    } else {
+      router.push("/library");
+    }
+  }, [currentTrack, pathname, router]);
+
   function getStatusString() {
     if (resolvingUrl) return "Loading audio...";
     if (!currentTrack) return "";
@@ -1007,18 +1020,32 @@ export default function Player() {
                 )}
               </button>
               <div className="min-w-0 overflow-hidden">
-                <button
-                  onClick={() => setIsFullscreen(true)}
-                  className="block text-sm font-medium text-white/90 w-full text-left hover:underline overflow-hidden"
-                  title={cleanTitle || currentTrack.prompt}
-                  style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 4%, black 85%, transparent 100%)" }}
-                >
-                  <span className="inline-block whitespace-nowrap animate-[marquee_12s_linear_infinite] hover:[animation-play-state:paused]">
-                    {cleanTitle || currentTrack.prompt.substring(0, 50)}
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    {cleanTitle || currentTrack.prompt.substring(0, 50)}
-                  </span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setIsFullscreen(true)}
+                    className="block min-w-0 flex-1 text-sm font-medium text-white/90 text-left hover:underline overflow-hidden"
+                    title={cleanTitle || currentTrack.prompt}
+                    style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 4%, black 85%, transparent 100%)" }}
+                  >
+                    <span className="inline-block whitespace-nowrap animate-[marquee_12s_linear_infinite] hover:[animation-play-state:paused]">
+                      {cleanTitle || currentTrack.prompt.substring(0, 50)}
+                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                      {cleanTitle || currentTrack.prompt.substring(0, 50)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleJumpToNowPlaying}
+                    className="shrink-0 p-1 rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
+                    title="Jump to now playing in track list"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="7" strokeWidth={2} />
+                      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                      <path strokeLinecap="round" strokeWidth={2} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                    </svg>
+                  </button>
+                </div>
                 <p className="text-xs text-white/40 truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
