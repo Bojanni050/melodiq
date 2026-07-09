@@ -98,6 +98,12 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "GET",
   },
+  apiframe: {
+    url: "https://api.apiframe.ai/v2/me",
+    keyPrefix: "",
+    method: "GET",
+    authHeader: "X-API-Key",
+  },
 };
 
 export async function POST(request: Request) {
@@ -148,6 +154,8 @@ export async function POST(request: Request) {
     } else if (provider === "mureka") {
       const credits = response.data?.data?.credits ?? response.data?.credits;
       info = credits !== undefined ? `Connected — ${credits} credits` : "Connected — WaveSpeed API is active";
+    } else if (provider === "apiframe") {
+      info = `Connected — APIFrame is active (Max concurrent jobs: ${response.data?.maxConcurrentJobs ?? "unknown"})`;
     } else if (provider === "openrouter") {
       info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {

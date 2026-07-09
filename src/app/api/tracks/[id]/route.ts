@@ -6,6 +6,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
+import { getApiframeStatus } from "@/lib/providers/apiframe";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -35,6 +36,46 @@ function isJsonObject(value: unknown): value is JsonObject {
 
 function isUuid(value: string): boolean {
   return UUID_REGEX.test(value);
+}
+
+function extractAudioUrls(body: any): string[] {
+  if (!body || typeof body !== "object") return [];
+  const urls: string[] = [];
+
+  const tracksList = body.result?.tracks || body.tracks;
+  if (Array.isArray(tracksList)) {
+    for (const t of tracksList) {
+      if (t?.audioUrl) urls.push(t.audioUrl);
+      else if (t?.url) urls.push(t.url);
+      else if (t?.audio_url) urls.push(t.audio_url);
+    }
+  }
+
+  const songs = body.result?.songs || body.songs;
+  if (Array.isArray(songs)) {
+    for (const s of songs) {
+      if (s?.audioUrl) urls.push(s.audioUrl);
+      else if (s?.audio_url) urls.push(s.audio_url);
+      else if (s?.url) urls.push(s.url);
+    }
+  }
+
+  if (urls.length === 0) {
+    const scan = (val: any) => {
+      if (typeof val === "string") {
+        if (val.startsWith("http") && (val.includes(".mp3") || val.includes(".wav") || val.includes("/audio/"))) {
+          urls.push(val);
+        }
+      } else if (Array.isArray(val)) {
+        val.forEach(scan);
+      } else if (typeof val === "object" && val !== null) {
+        Object.values(val).forEach(scan);
+      }
+    };
+    scan(body);
+  }
+
+  return urls;
 }
 
 export async function GET(
@@ -251,6 +292,67 @@ export async function GET(
 
       return NextResponse.json(track);
     } catch {
+      return NextResponse.json(track);
+    }
+  }
+
+  if (track.provider === "apiframe" && track.jobId) {
+    try {
+      const parentJobId = track.jobId.split(":")[0];
+      const status = await getApiframeStatus(parentJobId);
+      const statusStr = (status.status || "").toLowerCase();
+
+      if (statusStr === "completed" || statusStr === "succeeded" || statusStr === "done" || statusStr === "finished") {
+        const outputs = extractAudioUrls(status);
+        const isSecond = track.jobId.endsWith(":1");
+        const audioUrl = isSecond ? outputs[1] : outputs[0];
+
+        if (audioUrl) {
+          const mp3Res = await axios.get(audioUrl, { responseType: "arraybuffer", timeout: 60000 });
+          const mp3Buffer = Buffer.from(mp3Res.data);
+          const format = "mp3";
+          const s3Key = `tracks/${track.id}/audio.${format}`;
+          const duration = await extractAudioDuration(mp3Buffer);
+
+          await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
+
+          const updated = await db
+            .update(tracks)
+            .set({
+              status: "done",
+              s3Key,
+              format,
+              duration,
+              audioUrl: `/api/tracks/${track.id}/download`,
+            })
+            .where(eq(tracks.id, track.id!))
+            .returning();
+
+          if (!track.language) {
+            detectAndSaveLanguageIfMissing({
+              id: track.id!,
+              language: track.language,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }).catch((error) => console.error("[tracks/[id]] language detection failed (apiframe)", error));
+          }
+
+          return NextResponse.json(updated[0]);
+        }
+      }
+
+      if (statusStr === "failed" || statusStr === "error") {
+        const updated = await db
+          .update(tracks)
+          .set({ status: "failed", error: status.error || "Generation failed" })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+        return NextResponse.json(updated[0]);
+      }
+
+      return NextResponse.json(track);
+    } catch (e: any) {
+      console.error(`[tracks/[id]] active polling failed for APIFrame track ${track.id}:`, e?.message ?? e);
       return NextResponse.json(track);
     }
   }

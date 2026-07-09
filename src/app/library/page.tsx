@@ -182,6 +182,7 @@ const UPLOAD_PROVIDERS = [
   { value: "udio", label: "Udio" },
   { value: "poyo", label: "PoYo" },
   { value: "tempolor", label: "Tempolor" },
+  { value: "apiframe", label: "APIFrame" },
   { value: "musicgpt", label: "MusicGPT" },
 ] as const;
 

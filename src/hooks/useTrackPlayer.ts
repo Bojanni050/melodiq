@@ -10,6 +10,7 @@ type CreditsResponse = {
   poyo: number | null;
   tempolor: number | null;
   minimax: number | null;
+  apiframe: number | null;
 };
 
 async function jsonFetcher<T>(url: string): Promise<T> {
@@ -36,6 +37,7 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
     poyo: null as number | null,
     tempolor: null as number | null,
     minimax: null as number | null,
+    apiframe: null as number | null,
   });
 
   const { data: creditsResponse } = useSWR<CreditsResponse>("/api/credits", jsonFetcher, {
@@ -247,7 +249,9 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
       ? credits.poyo
       : typeof credits.tempolor === "number"
         ? credits.tempolor
-        : null;
+        : typeof credits.apiframe === "number"
+          ? credits.apiframe
+          : null;
 
   return {
     credits,

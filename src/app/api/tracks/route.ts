@@ -20,6 +20,7 @@ import {
 import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUploadCover } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
+import { getApiframeStatus } from "@/lib/providers/apiframe";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import axios from "axios";
@@ -33,6 +34,46 @@ const MAX_TRACKS_PER_COVER_REGEN = 50;
 const MAX_UPLOAD_REQUEST_BYTES = 200 * 1024 * 1024;
 const MAX_UPLOAD_REQUEST_MB = Math.round(MAX_UPLOAD_REQUEST_BYTES / (1024 * 1024));
 const DEFAULT_WORKSPACE_SENTINEL = "workspace-default";
+
+function extractAudioUrls(body: any): string[] {
+  if (!body || typeof body !== "object") return [];
+  const urls: string[] = [];
+
+  const tracksList = body.result?.tracks || body.tracks;
+  if (Array.isArray(tracksList)) {
+    for (const t of tracksList) {
+      if (t?.audioUrl) urls.push(t.audioUrl);
+      else if (t?.url) urls.push(t.url);
+      else if (t?.audio_url) urls.push(t.audio_url);
+    }
+  }
+
+  const songs = body.result?.songs || body.songs;
+  if (Array.isArray(songs)) {
+    for (const s of songs) {
+      if (s?.audioUrl) urls.push(s.audioUrl);
+      else if (s?.audio_url) urls.push(s.audio_url);
+      else if (s?.url) urls.push(s.url);
+    }
+  }
+
+  if (urls.length === 0) {
+    const scan = (val: any) => {
+      if (typeof val === "string") {
+        if (val.startsWith("http") && (val.includes(".mp3") || val.includes(".wav") || val.includes("/audio/"))) {
+          urls.push(val);
+        }
+      } else if (Array.isArray(val)) {
+        val.forEach(scan);
+      } else if (typeof val === "object" && val !== null) {
+        Object.values(val).forEach(scan);
+      }
+    };
+    scan(body);
+  }
+
+  return urls;
+}
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type JsonObject = Record<string, unknown>;
@@ -462,6 +503,58 @@ export async function GET(request: NextRequest) {
               }
             } catch (e: any) {
               console.error(`[tracks-api] Failed active polling for Tempolor track ${track.id}:`, e?.message ?? e);
+            }
+          }
+
+          // 2b. APIFrame active polling fallback
+          else if (track.provider === "apiframe" && track.jobId) {
+            try {
+              const parentJobId = track.jobId.split(":")[0];
+              const status = await getApiframeStatus(parentJobId);
+              const statusStr = (status.status || "").toLowerCase();
+
+              if (statusStr === "completed" || statusStr === "succeeded" || statusStr === "done" || statusStr === "finished") {
+                const outputs = extractAudioUrls(status);
+                const isSecond = track.jobId.endsWith(":1");
+                const audioUrl = isSecond ? outputs[1] : outputs[0];
+
+                if (audioUrl) {
+                  const mp3Res = await axios.get(audioUrl, { responseType: "arraybuffer", timeout: 60000 });
+                  const mp3Buffer = Buffer.from(mp3Res.data);
+                  const format = "mp3";
+                  const s3Key = `tracks/${track.id}/audio.${format}`;
+                  const duration = await extractAudioDuration(mp3Buffer);
+
+                  await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
+
+                  await db
+                    .update(tracks)
+                    .set({
+                      status: "done",
+                      s3Key,
+                      format,
+                      duration,
+                      audioUrl: `/api/tracks/${track.id}/download`,
+                    })
+                    .where(eq(tracks.id, track.id));
+
+                  if (!track.language) {
+                    detectAndSaveLanguageIfMissing({
+                      id: track.id!,
+                      language: track.language,
+                      lyrics: track.lyrics,
+                      instrumental: track.instrumental,
+                    }).catch((error) => console.error("[tracks-api] language detection failed (apiframe)", error));
+                  }
+                }
+              } else if (statusStr === "failed" || statusStr === "error") {
+                await db
+                  .update(tracks)
+                  .set({ status: "failed", error: status.error || "Generation failed" })
+                  .where(eq(tracks.id, track.id));
+              }
+            } catch (e: any) {
+              console.error(`[tracks-api] Failed active polling for APIFrame track ${track.id}:`, e?.message ?? e);
             }
           }
 

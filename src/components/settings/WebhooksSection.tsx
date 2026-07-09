@@ -18,7 +18,7 @@ export default function WebhooksSection({
   async function handleSave() {
     setSaving(true);
     const appUrl = values.APP_URL?.trim();
-    const webhookFields = ["APP_URL", "POYO_WEBHOOK_URL", "POYO_WAV_WEBHOOK_URL", "TEMPOLOR_WEBHOOK_URL", "MUSICGPT_WEBHOOK_URL", "MINIMAX_WEBHOOK_URL"];
+    const webhookFields = ["APP_URL", "POYO_WEBHOOK_URL", "POYO_WAV_WEBHOOK_URL", "TEMPOLOR_WEBHOOK_URL", "MUSICGPT_WEBHOOK_URL", "MINIMAX_WEBHOOK_URL", "APIFRAME_WEBHOOK_URL"];
 
     for (const key of webhookFields) {
       const value =
@@ -86,6 +86,12 @@ export default function WebhooksSection({
           value={values.MINIMAX_WEBHOOK_URL || ""}
           onChange={(v) => onFieldChange("MINIMAX_WEBHOOK_URL", v)}
           placeholder={appUrl ? `${appUrl.replace(/\/$/, "")}/api/webhooks/minimax` : "Leave empty to auto-derive"}
+        />
+        <WebhookRow
+          label="APIFrame Webhook URL"
+          value={values.APIFRAME_WEBHOOK_URL || ""}
+          onChange={(v) => onFieldChange("APIFRAME_WEBHOOK_URL", v)}
+          placeholder={appUrl ? `${appUrl.replace(/\/$/, "")}/api/webhooks/apiframe` : "Leave empty to auto-derive"}
         />
         <div className="flex items-center gap-2 pt-1">
           <button onClick={handleSave} disabled={saving} className="btn-primary text-xs px-3 py-1.5">

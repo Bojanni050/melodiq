@@ -58,6 +58,7 @@ export function formatProviderLabel(provider: string) {
   const normalized = (provider || "").toLowerCase();
   if (normalized === "poyo") return "PoYo";
   if (normalized === "tempolor") return "Tempolor";
+  if (normalized === "apiframe") return "APIFrame";
   if (normalized === "musicgpt") return "MusicGPT";
   if (normalized === "lyria") return "Lyria";
   if (normalized === "minimax") return "MiniMax";

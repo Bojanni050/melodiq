@@ -441,6 +441,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     const normalized = providerLabelBase.toLowerCase();
     if (normalized === "poyo") return "PoYo";
     if (normalized === "tempolor") return "Tempolor";
+    if (normalized === "apiframe") return "APIFrame";
     if (normalized === "musicgpt") return "MusicGPT";
     if (normalized === "lyria") return "Lyria";
     if (normalized === "minimax") return "MiniMax";

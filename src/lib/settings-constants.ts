@@ -136,6 +136,20 @@ export const PROVIDERS: ProviderConfig[] = [
     ],
     testEndpoint: "openai",
   },
+  {
+    id: "apiframe",
+    name: "APIFrame",
+    description: "Unified AI music generation (Suno, Udio, Lyria, Mureka, ElevenLabs)",
+    fields: [
+      {
+        key: "APIFRAME_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "afk_...",
+      },
+    ],
+    testEndpoint: "apiframe",
+  },
 ];
 
 export const WEBHOOK_DEFAULTS = [
@@ -146,4 +160,5 @@ export const WEBHOOK_DEFAULTS = [
   { key: "MINIMAX_WEBHOOK_URL", path: "/api/webhooks/minimax" },
   { key: "MUREKA_WEBHOOK_URL", path: "/api/webhooks/mureka" },
   { key: "HEARTMULA_WEBHOOK_URL", path: "/api/webhooks/heartmula" },
+  { key: "APIFRAME_WEBHOOK_URL", path: "/api/webhooks/apiframe" },
 ] as const;

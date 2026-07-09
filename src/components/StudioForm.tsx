@@ -12,6 +12,7 @@ const PROVIDERS = {
   minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
   mureka: { name: "Mureka", fullName: "Mureka V9 (WaveSpeed)", models: ["mureka-v9"], icon: "W" },
   heartmula: { name: "HeartMuLa", fullName: "HeartMuLa (WaveSpeed)", models: ["heartmula"], icon: "H" },
+  apiframe: { name: "APIFrame", fullName: "APIFrame AI", models: ["Suno (suno)", "Udio (udio)", "Mureka (mureka)", "Google Lyria 3 Pro (lyria-3-pro)", "ElevenLabs Music (elevenlabs-music)"], icon: "A" },
 };
 
 const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
@@ -219,7 +220,7 @@ export default memo(function StudioForm({
   onGenerateLyrics,
   onGenerateTitle,
 }: {
-  credits: { lyria: string | number; poyo: number | null; tempolor: number | null };
+  credits: { lyria: string | number; poyo: number | null; tempolor: number | null; apiframe: number | null };
   isGenerating: boolean;
   onGenerate: () => void;
   onOptimize: () => void;

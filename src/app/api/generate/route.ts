@@ -10,6 +10,7 @@ import { generateMusicGpt } from "@/lib/providers/musicgpt";
 import { generateMinimax } from "@/lib/providers/minimax";
 import { generateMureka } from "@/lib/providers/mureka";
 import { generateHeartMula } from "@/lib/providers/heartmula";
+import { generateApiframe } from "@/lib/providers/apiframe";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { uploadToS3 } from "@/lib/s3";
@@ -957,6 +958,78 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json({ track: updated[0] });
+    }
+
+    if (provider === "apiframe") {
+      const genResult = await generateApiframe({
+        prompt,
+        lyrics: instrumental ? undefined : (lyrics || undefined),
+        instrumental: instrumental || false,
+        model: providerModel,
+        title: resolvedTitle || undefined,
+      });
+
+      const modelCode = providerModel?.toLowerCase() || "";
+      const isMultiSong = modelCode.includes("suno") || modelCode.includes("udio");
+
+      let allTracks: any[] = [];
+
+      if (isMultiSong) {
+        // Suno/Udio on APIFrame return 2 tracks per request
+        const [t1, t2] = await Promise.all([
+          db
+            .update(tracks)
+            .set({ status: "generating", jobId: genResult.jobId })
+            .where(eq(tracks.id, track.id!))
+            .returning(),
+          db
+            .insert(tracks)
+            .values({
+              userId,
+              provider: "apiframe",
+              providerModel,
+              prompt,
+              lyrics: instrumental ? null : (lyrics || null),
+              instrumental: instrumental || false,
+              title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+              status: "generating",
+              jobId: `${genResult.jobId}:1`,
+            })
+            .returning(),
+        ]);
+        allTracks = [t1[0], t2[0]];
+      } else {
+        // For other models, assume 1 track
+        const updated = await db
+          .update(tracks)
+          .set({ status: "generating", jobId: genResult.jobId })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+        allTracks = [updated[0]];
+      }
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch((err) => console.error("[generate] cover art batch failed (apiframe)", err));
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "apiframe",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ tracks: allTracks });
     }
 
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
