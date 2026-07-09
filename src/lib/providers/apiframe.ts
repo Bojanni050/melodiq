@@ -91,11 +91,19 @@ export async function generateApiframe({
       duration: Date.now() - startTime,
     };
   } catch (error: any) {
+    console.error("[apiframe] Generation failed:", JSON.stringify(error.response?.data || {}));
     const isCopyright =
       error.response?.status === 400 &&
       /copyright|policy|blocked/i.test(error.response?.data?.error || error.response?.data?.message || "");
+    
+    const responseError = error.response?.data?.error || error.response?.data?.message;
+    const responseDetails = error.response?.data?.details || error.response?.data;
+    const errorDetails = responseDetails 
+      ? `${responseError || "Validation failed"}: ${typeof responseDetails === "object" ? JSON.stringify(responseDetails) : String(responseDetails)}`
+      : responseError;
+
     throw {
-      message: isCopyright ? "COPYRIGHT" : error.response?.data?.error || error.response?.data?.message || error.message,
+      message: isCopyright ? "COPYRIGHT" : errorDetails || error.message,
       duration: Date.now() - startTime,
       statusCode: error.response?.status,
     };
