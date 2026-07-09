@@ -57,11 +57,12 @@ export async function generateApiframe({
     const lyricsType = instrumental ? "instrumental" : lyrics ? "user" : "generate";
     requestBody.udioParams = {
       lyrics_type: lyricsType,
-      style: prompt,
     };
     if (title) requestBody.udioParams.title = title;
     if (lyricsType === "user") {
+      requestBody.lyrics = lyrics;
       requestBody.udioParams.lyrics = lyrics;
+      requestBody.udioParams.style = prompt;
     }
   }
 
