@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
   const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
-  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
