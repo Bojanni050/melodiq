@@ -447,7 +447,13 @@ export default memo(function StudioForm({
             {(() => {
               const key = Object.keys(selectedProviders)[0];
               const currentCredits = credits[key as keyof typeof credits];
-              return key === "lyria" ? "Pay-per-use" : currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured";
+              if (key === "lyria") return "Pay-per-use";
+              if (key === "apiframe") {
+                return currentCredits !== null && currentCredits !== undefined
+                  ? `Active (Limit: ${currentCredits} concurrent jobs)`
+                  : "Not configured";
+              }
+              return currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured";
             })()}
           </div>
         )}

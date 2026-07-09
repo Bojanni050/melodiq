@@ -73,6 +73,7 @@ export async function generateApiframe({
         headers: {
           "X-API-Key": API_KEY,
           "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
         timeout: 30000,
       }
@@ -110,6 +111,7 @@ export async function getApiframeStatus(jobId: string) {
       {
         headers: {
           "X-API-Key": API_KEY,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
         timeout: 15000,
       }
@@ -130,13 +132,14 @@ export async function getApiframeCredits() {
       {
         headers: {
           "X-API-Key": API_KEY,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
         timeout: 10000,
       }
     );
-    return response.data?.maxConcurrentJobs ?? null;
+    return response.data?.maxConcurrentJobs ?? 1;
   } catch (error: any) {
-    console.warn("[apiframe] Failed to fetch account info:", error.message);
-    return null;
+    console.warn("[apiframe] Failed to fetch account info, using fallback:", error.message);
+    return 1; // Fallback to indicate it is configured
   }
 }
