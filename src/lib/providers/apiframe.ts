@@ -60,8 +60,7 @@ export async function generateApiframe({
     };
     if (title) requestBody.udioParams.title = title;
     if (lyricsType === "user") {
-      requestBody.lyrics = lyrics;
-      requestBody.udioParams.lyrics = lyrics;
+      requestBody.prompt = lyrics;
       requestBody.udioParams.style = prompt;
     }
   }
