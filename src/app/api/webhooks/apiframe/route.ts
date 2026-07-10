@@ -123,13 +123,13 @@ export async function POST(request: NextRequest) {
     await Promise.allSettled(
       variantTracks.map(async (track, idx) => {
         const audioUrl = outputs[idx] ?? outputs[0];
-        if (!audioUrl) return;
-
-        // Set status done immediately with CDN URL
-        await db
-          .update(tracks)
-          .set({ status: "done", audioUrl, format: "mp3" })
-          .where(eq(tracks.id, track.id!));
+        if (!audioUrl) {
+          await db
+            .update(tracks)
+            .set({ status: "failed", error: "No audio URL returned by provider" })
+            .where(eq(tracks.id, track.id!));
+          return;
+        }
 
         if (!track.language) {
           detectAndSaveLanguageIfMissing({
@@ -140,23 +140,46 @@ export async function POST(request: NextRequest) {
           }).catch((error) => console.error("[webhook/apiframe] language detection failed", error));
         }
 
-        // Upload to S3 in background
+        // Process download and S3 upload in the background
         (async () => {
           try {
             const axios = (await import("axios")).default;
             const { uploadToS3 } = await import("@/lib/s3");
+            
+            // Check if file is downloadable
             const res = await axios.get(audioUrl, { responseType: "arraybuffer", timeout: 60000 });
             const buf = Buffer.from(res.data);
+            
+            if (buf.length < 100) {
+              throw new Error("Downloaded audio file is too small or invalid");
+            }
+
             const s3Key = `tracks/${track.id}/audio.mp3`;
             await uploadToS3(s3Key, buf, "audio/mpeg");
             const duration = await extractAudioDuration(buf);
+            
+            // Set done status only after successful download and upload
             await db
               .update(tracks)
-              .set({ s3Key, duration, audioUrl: `/api/tracks/${track.id}/download` })
+              .set({
+                status: "done",
+                s3Key,
+                duration,
+                format: "mp3",
+                audioUrl: `/api/tracks/${track.id}/download`,
+              })
               .where(eq(tracks.id, track.id!));
-            console.log(`[webhook/apiframe] track ${track.id} S3 upload complete`);
+              
+            console.log(`[webhook/apiframe] track ${track.id} downloaded and S3 upload complete`);
           } catch (err: any) {
-            console.error(`[webhook/apiframe] S3 upload failed for track ${track.id}:`, err?.message);
+            console.error(`[webhook/apiframe] download/upload failed for track ${track.id}:`, err?.message);
+            await db
+              .update(tracks)
+              .set({
+                status: "failed",
+                error: `Failed to download audio from provider: ${err?.message || "unknown error"}`,
+              })
+              .where(eq(tracks.id, track.id!));
           }
         })();
       })
