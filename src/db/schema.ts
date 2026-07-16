@@ -32,6 +32,7 @@ export const tracks = pgTable("tracks", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
   workspaceId: uuid("workspace_id"),
+  songId: uuid("song_id"),
   title: varchar("title", { length: 255 }),
   provider: varchar("provider", { length: 50 }).notNull(),
   providerModel: varchar("provider_model", { length: 50 }).notNull(),
@@ -77,6 +78,7 @@ export const tracks = pgTable("tracks", {
   index("tracks_user_id_status_idx").on(table.userId, table.status),
   index("tracks_status_idx").on(table.status),
   index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
+  index("tracks_song_id_idx").on(table.songId),
   uniqueIndex("tracks_user_provider_audio_id_unique").on(table.userId, table.provider, table.audioId),
 ]);
 
@@ -105,6 +107,41 @@ export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
   tracks: many(tracks),
 }));
 
+export const songs = pgTable("songs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  workspaceId: uuid("workspace_id"),
+  title: varchar("title", { length: 255 }),
+  prompt: text("prompt"),
+  lyrics: text("lyrics"),
+  lyricsTimestamps: text("lyrics_timestamps"),
+  language: varchar("language", { length: 50 }),
+  translatedLyrics: text("translated_lyrics"),
+  translatedLanguage: varchar("translated_language", { length: 50 }),
+  instrumental: boolean("instrumental").default(false).notNull(),
+  notes: text("notes").default("").notNull(),
+  songDna: text("song_dna"),
+  votingEnabled: boolean("voting_enabled").default(false).notNull(),
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("songs_user_id_idx").on(table.userId),
+  index("songs_workspace_id_idx").on(table.workspaceId),
+]);
+
+export const songsRelations = relations(songs, ({ one, many }) => ({
+  user: one(users, {
+    fields: [songs.userId],
+    references: [users.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [songs.workspaceId],
+    references: [workspaces.id],
+  }),
+  trackVersions: many(tracks),
+}));
+
 export const tracksRelations = relations(tracks, ({ one }) => ({
   user: one(users, {
     fields: [tracks.userId],
@@ -113,6 +150,10 @@ export const tracksRelations = relations(tracks, ({ one }) => ({
   workspace: one(workspaces, {
     fields: [tracks.workspaceId],
     references: [workspaces.id],
+  }),
+  song: one(songs, {
+    fields: [tracks.songId],
+    references: [songs.id],
   }),
 }));
 

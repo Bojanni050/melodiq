@@ -1147,7 +1147,7 @@ export default function LibraryPage() {
                       Library
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : "Songs"}
+                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : "Tracks"}
                       </span>
                     </h1>
                     {activeSongs.length > 0 && (
@@ -1157,13 +1157,13 @@ export default function LibraryPage() {
                     )}
                   </div>
                   <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
-                    {/* All Songs */}
+                    {/* All Tracks */}
                     <button
                       type="button"
                       onClick={() => { setSelectedPlaylistId(null); setSelectedWorkspaceId(null); setView("songs"); }}
                       className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "songs" && !selectedPlaylist && !selectedWorkspace ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                     >
-                      Songs
+                      Tracks
                     </button>
 
                     {/* Playlists + contextual sub-pill */}

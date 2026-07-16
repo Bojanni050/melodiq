@@ -135,6 +135,29 @@ CREATE TABLE IF NOT EXISTS "style_presets" (
 );
 
 CREATE INDEX IF NOT EXISTS "style_presets_user_id_idx" ON "style_presets"("user_id");
+
+CREATE TABLE IF NOT EXISTS "songs" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id"),
+  "workspace_id" uuid,
+  "title" varchar(255),
+  "prompt" text,
+  "lyrics" text,
+  "lyrics_timestamps" text,
+  "language" varchar(50),
+  "translated_lyrics" text,
+  "translated_language" varchar(50),
+  "instrumental" boolean NOT NULL DEFAULT false,
+  "notes" text NOT NULL DEFAULT '',
+  "song_dna" text,
+  "voting_enabled" boolean NOT NULL DEFAULT false,
+  "deleted_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "songs_user_id_idx" ON "songs"("user_id");
+CREATE INDEX IF NOT EXISTS "songs_workspace_id_idx" ON "songs"("workspace_id");
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,
@@ -155,6 +178,8 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name VARCHAR(255);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS song_id uuid;
+CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
@@ -176,6 +201,34 @@ BEGIN
       ADD CONSTRAINT tracks_workspace_id_workspaces_id_fk
       FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
       ON DELETE SET NULL;
+  END IF;
+END
+$$;
+`;
+
+const songsFkSql = `
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'songs_workspace_id_workspaces_id_fk'
+  ) THEN
+    ALTER TABLE songs
+      ADD CONSTRAINT songs_workspace_id_workspaces_id_fk
+      FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+      ON DELETE SET NULL;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'tracks_song_id_songs_id_fk'
+  ) THEN
+    ALTER TABLE tracks
+      ADD CONSTRAINT tracks_song_id_songs_id_fk
+      FOREIGN KEY (song_id) REFERENCES songs(id)
+      ON DELETE CASCADE;
   END IF;
 END
 $$;
@@ -232,6 +285,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
+    await targetClient.unsafe(songsFkSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
   } catch (error) {
     console.error("Error ensuring database schema:", error);
