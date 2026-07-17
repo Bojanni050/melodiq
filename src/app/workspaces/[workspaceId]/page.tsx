@@ -7,7 +7,7 @@ import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useWorkspaceStore, fetchAndHydrateSongs } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 
 function hashString(value: string) {
@@ -82,6 +82,7 @@ export default function WorkspaceDetailPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
+          void fetchAndHydrateSongs();
         }
       }
 
@@ -395,7 +396,7 @@ export default function WorkspaceDetailPage() {
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                  This workspace has no songs yet. Use track actions and choose Move To Workspace.
+                  This workspace has no tracks yet. Use track actions and choose Move To Workspace.
                 </div>
               )}
             </section>
@@ -403,7 +404,7 @@ export default function WorkspaceDetailPage() {
             {!selectedWorkspace.parentWorkspaceId && (
               <section className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold">Subfolders</h2>
+                  <h2 className="text-base font-semibold">Songs</h2>
                   {showCreateFolder ? (
                     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
                       <input
@@ -416,7 +417,7 @@ export default function WorkspaceDetailPage() {
                             setNewFolderName("");
                           }
                         }}
-                        placeholder="Subfolder name"
+                        placeholder="Song name"
                         className="h-9 w-44 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
                         autoFocus
                       />
@@ -444,7 +445,7 @@ export default function WorkspaceDetailPage() {
                       onClick={() => setShowCreateFolder(true)}
                       className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                     >
-                      + Add subfolder
+                      + Add Song
                     </button>
                   )}
                 </div>
@@ -470,7 +471,7 @@ export default function WorkspaceDetailPage() {
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
                             </div>
-                            <span className="text-xs text-white/45">{childTracks.length} songs</span>
+                            <span className="text-xs text-white/45">{childTracks.length} tracks</span>
                             <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
@@ -481,7 +482,7 @@ export default function WorkspaceDetailPage() {
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-5 text-sm text-white/55">
-                    No subfolders yet.
+                    No songs yet.
                   </div>
                 )}
               </section>

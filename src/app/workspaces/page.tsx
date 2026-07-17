@@ -6,7 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore, fetchAndHydrateSongs } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -203,6 +203,7 @@ export default function WorkspacesPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
+          void fetchAndHydrateSongs();
         }
       }
 
@@ -432,7 +433,7 @@ export default function WorkspacesPage() {
                                   {workspace.name}
                                 </h3>
                                 <p className="text-xs text-white/70">
-                                  {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
+                                  {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} songs` : ""}
                                 </p>
                               </div>
                             </div>
@@ -477,8 +478,8 @@ export default function WorkspacesPage() {
                             {workspace.name}
                           </p>
                           <p className="text-xs text-white/45">
-                            {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
-                            {childCount > 0 ? ` • ${childCount} folders` : ""}
+                            {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
+                            {childCount > 0 ? ` • ${childCount} songs` : ""}
                           </p>
                         </div>
 

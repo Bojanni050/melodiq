@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, workspaces } from "@/db/schema";
+import { tracks, workspaces, songs } from "@/db/schema";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
@@ -527,6 +527,7 @@ export async function PATCH(
     const lyrics = body.lyrics;
     const regenerateCoverArt = body.regenerateCoverArt;
     const workspaceId = body.workspaceId;
+    const songId = body.songId;
     const artistName = body.artistName;
     const composerName = body.composerName;
     const instrumental = body.instrumental;
@@ -543,7 +544,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -715,6 +716,31 @@ export async function PATCH(
         }
       } else {
         return NextResponse.json({ error: "Invalid workspaceId" }, { status: 400 });
+      }
+    }
+
+    if (songId !== undefined) {
+      if (songId === null) {
+        updates.songId = null;
+      } else if (typeof songId === "string" && songId.trim() && isUuid(songId.trim())) {
+        const normalizedSongId = songId.trim();
+
+        const targetSong = await db
+          .select({ id: songs.id, workspaceId: songs.workspaceId })
+          .from(songs)
+          .where(and(eq(songs.id, normalizedSongId), eq(songs.userId, userId)))
+          .limit(1);
+
+        if (!targetSong[0]) {
+          return NextResponse.json({ error: "Song not found" }, { status: 404 });
+        }
+
+        updates.songId = targetSong[0].id;
+        if (targetSong[0].workspaceId) {
+          updates.workspaceId = targetSong[0].workspaceId;
+        }
+      } else {
+        return NextResponse.json({ error: "Invalid songId" }, { status: 400 });
       }
     }
 

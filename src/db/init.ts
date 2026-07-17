@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS "songs" (
   "notes" text NOT NULL DEFAULT '',
   "song_dna" text,
   "voting_enabled" boolean NOT NULL DEFAULT false,
+  "folder_gradient" text,
   "deleted_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
@@ -158,6 +159,11 @@ CREATE TABLE IF NOT EXISTS "songs" (
 
 CREATE INDEX IF NOT EXISTS "songs_user_id_idx" ON "songs"("user_id");
 CREATE INDEX IF NOT EXISTS "songs_workspace_id_idx" ON "songs"("workspace_id");
+`;
+
+// Handles existing databases where the songs table was created before folder_gradient existed.
+const alterSongsSql = `
+ALTER TABLE songs ADD COLUMN IF NOT EXISTS folder_gradient text;
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,
@@ -220,16 +226,15 @@ BEGIN
       ON DELETE SET NULL;
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'tracks_song_id_songs_id_fk'
-  ) THEN
-    ALTER TABLE tracks
-      ADD CONSTRAINT tracks_song_id_songs_id_fk
-      FOREIGN KEY (song_id) REFERENCES songs(id)
-      ON DELETE CASCADE;
-  END IF;
+  -- Deleting a song must not delete its track versions (they fall back to
+  -- ungrouped tracks), so this is re-asserted as ON DELETE SET NULL every
+  -- boot rather than guarded by IF NOT EXISTS, to migrate any database that
+  -- still has the earlier ON DELETE CASCADE version of this constraint.
+  ALTER TABLE tracks DROP CONSTRAINT IF EXISTS tracks_song_id_songs_id_fk;
+  ALTER TABLE tracks
+    ADD CONSTRAINT tracks_song_id_songs_id_fk
+    FOREIGN KEY (song_id) REFERENCES songs(id)
+    ON DELETE SET NULL;
 END
 $$;
 `;
@@ -284,6 +289,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, createTablesSql);
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
+    await executeSqlStatements(targetClient, alterSongsSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     await targetClient.unsafe(songsFkSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");

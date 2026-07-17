@@ -122,6 +122,7 @@ export const songs = pgTable("songs", {
   notes: text("notes").default("").notNull(),
   songDna: text("song_dna"),
   votingEnabled: boolean("voting_enabled").default(false).notNull(),
+  folderGradient: text("folder_gradient"),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

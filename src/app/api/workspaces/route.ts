@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { workspaces } from "@/db/schema";
@@ -53,30 +53,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const parentWorkspaceId =
-      typeof body?.parentWorkspaceId === "string" && body.parentWorkspaceId.trim()
-        ? body.parentWorkspaceId.trim()
-        : null;
-
-    if (parentWorkspaceId) {
-      const parent = await db
-        .select()
-        .from(workspaces)
-        .where(and(eq(workspaces.id, parentWorkspaceId), eq(workspaces.userId, auth.userId)))
-        .limit(1);
-
-      if (!parent[0]) {
-        return NextResponse.json({ error: "Parent workspace not found" }, { status: 404 });
-      }
-
-      if (parent[0].parentWorkspaceId) {
-        return NextResponse.json(
-          { error: "Only one folder level is allowed (workspace > folder)." },
-          { status: 400 }
-        );
-      }
-    }
-
     const id = typeof body?.id === "string" && body.id.trim() ? body.id.trim() : randomUUID();
     const folderGradient =
       typeof body?.folderGradient === "string" && body.folderGradient.trim()
@@ -89,7 +65,7 @@ export async function POST(request: NextRequest) {
         id,
         userId: auth.userId,
         name,
-        parentWorkspaceId,
+        parentWorkspaceId: null,
         folderGradient,
         isDefault: false,
       })

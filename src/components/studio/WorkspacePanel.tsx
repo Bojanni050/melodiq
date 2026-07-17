@@ -196,7 +196,7 @@ export default function WorkspacePanel({
             onKeyDown={handleCreateWorkspaceKeyDown}
           />
 
-          {/* Create subfolder */}
+          {/* Create song */}
           {isWorkspaceFolderOpen && !selectedWorkspace?.parentWorkspaceId && (
             showCreateFolder ? (
               <div className="flex items-center gap-1">
@@ -204,9 +204,9 @@ export default function WorkspacePanel({
                   value={newFolderName}
                   onChange={(event) => setNewFolderName(event.target.value)}
                   onKeyDown={handleCreateFolderKeyDown}
-                  placeholder="Subfolder name"
+                  placeholder="Song name"
                   className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
-                  aria-label="Subfolder name"
+                  aria-label="Song name"
                 />
                 <button
                   type="button"
@@ -229,7 +229,7 @@ export default function WorkspacePanel({
                 onClick={() => setShowCreateFolder(true)}
                 className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
               >
-                + Add Subfolder
+                + Add Song
               </button>
             )
           )}
@@ -282,7 +282,7 @@ export default function WorkspacePanel({
                         <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
                           <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
                           <p className="text-xs text-white/65">
-                            {workspaceTracks.length} songs{childCount > 0 ? ` • ${childCount} folders` : ""}
+                            {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} songs` : ""}
                           </p>
                         </div>
                       </div>
@@ -317,8 +317,8 @@ export default function WorkspacePanel({
                       <p className="text-sm font-medium text-white truncate">{workspace.name}</p>
                     </div>
                     <span className="text-xs text-white/40 shrink-0">
-                      {workspaceTracks.length} {workspaceTracks.length === 1 ? "song" : "songs"}
-                      {childCount > 0 ? ` • ${childCount} folders` : ""}
+                      {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
+                      {childCount > 0 ? ` • ${childCount} songs` : ""}
                     </span>
                     <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -358,10 +358,10 @@ export default function WorkspacePanel({
         </span>
       </div>
 
-      {/* Subfolders */}
+      {/* Songs */}
       {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
         <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Subfolders</p>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Songs</p>
           <div className="space-y-1.5">
             {selectedWorkspaceChildren.map((childWorkspace) => {
               const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
@@ -389,7 +389,7 @@ export default function WorkspacePanel({
                     <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
                   </div>
                   <span className="text-[11px] text-white/45">
-                    {childTracks.length} {childTracks.length === 1 ? "song" : "songs"}
+                    {childTracks.length} {childTracks.length === 1 ? "track" : "tracks"}
                   </span>
                   <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

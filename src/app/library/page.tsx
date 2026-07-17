@@ -126,6 +126,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   DEFAULT_WORKSPACE_ID,
   WORKSPACE_FOLDER_GRADIENTS,
+  fetchAndHydrateSongs,
   usePlayerStore,
   usePlaylistStore,
   useStudioStore,
@@ -364,6 +365,7 @@ export default function LibraryPage() {
       setTracks(cleanedTracks);
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
+        void fetchAndHydrateSongs();
       }
     }
     setLoading(false);

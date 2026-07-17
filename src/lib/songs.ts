@@ -1,11 +1,58 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { songs, tracks } from "@/db/schema";
+import { songs, tracks, workspaces } from "@/db/schema";
+import { ensureDefaultWorkspaceForUser } from "@/lib/workspaces";
 
 export type SongWithTrackVersions = typeof songs.$inferSelect & {
   trackVersions: (typeof tracks.$inferSelect)[];
 };
+
+export type SongWithTrackIds = {
+  id: string;
+  title: string | null;
+  workspaceId: string;
+  folderGradient?: string;
+  trackIds: string[];
+  createdAt: string;
+};
+
+export async function getUserSongsWithTrackIds(userId: string): Promise<SongWithTrackIds[]> {
+  const defaultWorkspace = await ensureDefaultWorkspaceForUser(userId);
+
+  const [workspaceRows, songRows] = await Promise.all([
+    db.select({ id: workspaces.id }).from(workspaces).where(eq(workspaces.userId, userId)),
+    db.select().from(songs).where(eq(songs.userId, userId)).orderBy(desc(songs.createdAt)),
+  ]);
+
+  if (songRows.length === 0) return [];
+
+  const workspaceIds = new Set(workspaceRows.map((workspace) => workspace.id));
+
+  const songIds = songRows.map((song) => song.id);
+  const trackRows = await db
+    .select({ id: tracks.id, songId: tracks.songId })
+    .from(tracks)
+    .where(inArray(tracks.songId, songIds));
+
+  const trackIdsBySongId = new Map<string, string[]>();
+  for (const track of trackRows) {
+    if (!track.songId) continue;
+    const list = trackIdsBySongId.get(track.songId) ?? [];
+    list.push(track.id);
+    trackIdsBySongId.set(track.songId, list);
+  }
+
+  return songRows.map((song) => ({
+    id: song.id,
+    title: song.title,
+    workspaceId:
+      song.workspaceId && workspaceIds.has(song.workspaceId) ? song.workspaceId : defaultWorkspace.id,
+    folderGradient: song.folderGradient || undefined,
+    trackIds: trackIdsBySongId.get(song.id) ?? [],
+    createdAt: song.createdAt.toISOString(),
+  }));
+}
 
 export async function getUserSongsWithTrackVersions(
   userId: string,

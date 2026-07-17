@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { workspaces } from "@/db/schema";
@@ -29,16 +29,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Default workspace cannot be deleted" }, { status: 400 });
     }
 
-    const children = await db
-      .select({ id: workspaces.id })
-      .from(workspaces)
-      .where(and(eq(workspaces.userId, auth.userId), eq(workspaces.parentWorkspaceId, id)));
-
-    const idsToDelete = [id, ...children.map((child) => child.id)];
-
     await db
       .delete(workspaces)
-      .where(and(eq(workspaces.userId, auth.userId), inArray(workspaces.id, idsToDelete)));
+      .where(and(eq(workspaces.id, id), eq(workspaces.userId, auth.userId)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -747,6 +747,31 @@ interface WorkspaceState {
   ensureDefaultWorkspace: () => string;
   syncTracksToDefaultWorkspace: (trackIds: string[]) => void;
   hydrateWorkspacesFromServer: (workspaces: Workspace[]) => void;
+  hydrateSongsFromServer: (songs: SongFromServer[]) => void;
+}
+
+// A `songs` row disguised in the `Workspace` shape so the existing
+// root/child workspace UI (which already renders `parentWorkspaceId`
+// children as folder cards) can render songs without any changes.
+export interface SongFromServer {
+  id: string;
+  title: string | null;
+  workspaceId: string;
+  trackIds: string[];
+  folderGradient?: string;
+  createdAt: string;
+}
+
+function songToWorkspaceShape(song: SongFromServer): Workspace {
+  return {
+    id: song.id,
+    name: song.title || "Untitled Song",
+    trackIds: song.trackIds,
+    createdAt: song.createdAt,
+    folderGradient: song.folderGradient,
+    isDefault: false,
+    parentWorkspaceId: song.workspaceId,
+  };
 }
 
 function persistWorkspaceCreate(input: {
@@ -778,8 +803,41 @@ function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string | 
   void fetch(`/api/tracks/${trackId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspaceId }),
+    body: JSON.stringify({ workspaceId, songId: null }),
   }).catch((error) => console.error("[store] persistTrackWorkspaceAssignment failed", error));
+}
+
+function persistTrackSongAssignment(trackId: string, songId: string) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/tracks/${trackId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ songId }),
+  }).catch((error) => console.error("[store] persistTrackSongAssignment failed", error));
+}
+
+function persistSongCreate(input: {
+  id: string;
+  name: string;
+  workspaceId: string;
+  folderGradient?: string;
+}) {
+  if (typeof window === "undefined") return;
+
+  void fetch("/api/songs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).catch((error) => console.error("[store] persistSongCreate failed", error));
+}
+
+function persistSongDelete(songId: string) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/songs/${songId}`, {
+    method: "DELETE",
+  }).catch((error) => console.error("[store] persistSongDelete failed", error));
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -942,13 +1000,19 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ],
         }));
 
-        persistWorkspaceCreate({ id, name: trimmed, parentWorkspaceId, folderGradient });
+        persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
 
         return id;
       },
       moveTrackToWorkspace: (workspaceId, trackId) => {
-        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
-        persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
+        const targetEntry = get().workspaces.find((workspace) => workspace.id === workspaceId);
+
+        if (targetEntry?.parentWorkspaceId) {
+          persistTrackSongAssignment(trackId, workspaceId);
+        } else {
+          const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
+          persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
+        }
         set((state) => {
           const targetWorkspace = state.workspaces.find((workspace) => workspace.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -974,10 +1038,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         });
       },
       moveTracksToWorkspace: (workspaceId, trackIds) => {
-        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
-        trackIds.forEach((trackId) => {
-          persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
-        });
+        const targetEntry = get().workspaces.find((workspace) => workspace.id === workspaceId);
+
+        if (targetEntry?.parentWorkspaceId) {
+          trackIds.forEach((trackId) => {
+            persistTrackSongAssignment(trackId, workspaceId);
+          });
+        } else {
+          const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
+          trackIds.forEach((trackId) => {
+            persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
+          });
+        }
         set((state) => {
           const targetWorkspace = state.workspaces.find((w) => w.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -1020,7 +1092,11 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               : state.selectedWorkspaceId,
         }));
 
-        persistWorkspaceDelete(workspaceId);
+        if (target.parentWorkspaceId) {
+          persistSongDelete(workspaceId);
+        } else {
+          persistWorkspaceDelete(workspaceId);
+        }
       },
       setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),
       ensureDefaultWorkspace: () => {
@@ -1078,6 +1154,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             selectedWorkspaceId,
           };
         }),
+      hydrateSongsFromServer: (incomingSongs) =>
+        set((state) => ({
+          workspaces: [
+            ...state.workspaces.filter((workspace) => !workspace.parentWorkspaceId),
+            ...(incomingSongs || []).map(songToWorkspaceShape),
+          ],
+        })),
     }),
     {
       name: "melodiq-workspaces",
@@ -1104,6 +1187,21 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 );
 
 // Persisting track workspace assignments is handled directly in moveTrackToWorkspace / moveTracksToWorkspace actions
+
+export async function fetchAndHydrateSongs(): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  try {
+    const res = await fetch("/api/songs", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data.songs)) {
+      useWorkspaceStore.getState().hydrateSongsFromServer(data.songs);
+    }
+  } catch (error) {
+    console.error("[store] fetchAndHydrateSongs failed", error);
+  }
+}
 
 export interface SavedLyric {
   id: string;
