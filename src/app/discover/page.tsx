@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import { formatDuration } from "@/lib/track-utils";
+import { usePlayerStore } from "@/lib/store";
 
 interface PublicTrack {
   id: string;
@@ -25,8 +26,10 @@ export default function DiscoverPage() {
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
+  const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
+  const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
 
   useEffect(() => {
     let active = true;
@@ -71,22 +74,38 @@ export default function DiscoverPage() {
   }
 
   function handlePlay(track: PublicTrack) {
-    if (playingId === track.id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
+    if (currentTrack?.id === track.id) {
+      setGlobalIsPlaying(!globalIsPlaying);
       return;
     }
-    if (audioRef.current) {
-      audioRef.current.src = `/api/discover/${track.id}/stream`;
-      audioRef.current.play().catch(() => {});
-      void fetch(`/api/discover/${track.id}/play`, { method: "POST" });
-    }
-    setPlayingId(track.id);
+    playTrackFromGesture({
+      id: track.id,
+      title: track.title,
+      provider: "discover",
+      providerModel: "discover",
+      prompt: "",
+      status: "done",
+      audioUrl: null,
+      audioUrlHd: null,
+      s3Key: null,
+      s3KeyHd: null,
+      format: null,
+      formatHd: null,
+      duration: track.duration,
+      lyrics: null,
+      createdAt: new Date().toISOString(),
+      error: null,
+      coverUrl: coverSrc(track),
+      s3KeyCover: null,
+      artistName: track.artistName,
+      instrumental: track.instrumental,
+      publicSource: true,
+    });
   }
 
   function TrackCard({ track }: { track: PublicTrack }) {
     const cover = coverSrc(track);
-    const isPlaying = playingId === track.id;
+    const isPlaying = currentTrack?.id === track.id && globalIsPlaying;
     return (
       <Link
         href={`/discover/track/${track.id}`}
@@ -199,7 +218,6 @@ export default function DiscoverPage() {
           )}
         </div>
       </main>
-      <audio ref={audioRef} onEnded={() => setPlayingId(null)} className="hidden" />
     </div>
   );
 }
