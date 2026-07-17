@@ -217,8 +217,64 @@ export async function getTrackDnaAccess(trackId: string, viewerUserId: string | 
   return getPublishedTrackById(trackId);
 }
 
+// Bulk counterpart to getTrackDnaAccess: which of the given track ids the
+// viewer may see DNA for (owns it, or it's published) — used to filter a
+// batch request down before computing scores, never trusting the caller's
+// id list alone.
+export async function getAccessibleTrackIds(trackIds: string[], viewerUserId: string | null): Promise<Set<string>> {
+  if (trackIds.length === 0) return new Set();
+
+  const rows = await db
+    .select({ id: tracks.id })
+    .from(tracks)
+    .leftJoin(songs, eq(tracks.songId, songs.id))
+    .where(
+      and(
+        inArray(tracks.id, trackIds),
+        eq(tracks.status, "done"),
+        isNull(tracks.deletedAt),
+        viewerUserId ? or(eq(tracks.userId, viewerUserId), PUBLIC_TRACK_CONDITION) : PUBLIC_TRACK_CONDITION
+      )
+    );
+
+  return new Set(rows.map((r) => r.id));
+}
+
 export type TrackDnaCategory = "vocal" | "instrumental" | "atmosphere" | "lyrics";
 export type TrackDnaStats = Record<TrackDnaCategory, { average: number | null; count: number }>;
+
+// Bulk counterpart to getTrackDnaStats — one overall score (average of
+// whichever categories have votes) per track id, for a collapsed-row summary
+// display. Callers must pre-filter trackIds via getAccessibleTrackIds.
+export async function getTrackDnaOverallScores(trackIds: string[]): Promise<Map<string, number | null>> {
+  const result = new Map<string, number | null>(trackIds.map((id) => [id, null]));
+  if (trackIds.length === 0) return result;
+
+  const rows = await db
+    .select({
+      trackId: trackDnaVotes.trackId,
+      vocalAvg: sql<string | null>`avg(${trackDnaVotes.vocal})`,
+      instrumentalAvg: sql<string | null>`avg(${trackDnaVotes.instrumental})`,
+      atmosphereAvg: sql<string | null>`avg(${trackDnaVotes.atmosphere})`,
+      lyricsAvg: sql<string | null>`avg(${trackDnaVotes.lyrics})`,
+    })
+    .from(trackDnaVotes)
+    .where(inArray(trackDnaVotes.trackId, trackIds))
+    .groupBy(trackDnaVotes.trackId);
+
+  for (const row of rows) {
+    const categoryAverages = [row.vocalAvg, row.instrumentalAvg, row.atmosphereAvg, row.lyricsAvg]
+      .filter((avg): avg is string => avg != null)
+      .map(Number);
+    const overall =
+      categoryAverages.length > 0
+        ? Math.round((categoryAverages.reduce((sum, n) => sum + n, 0) / categoryAverages.length) * 10) / 10
+        : null;
+    result.set(row.trackId, overall);
+  }
+
+  return result;
+}
 
 export async function getTrackDnaStats(trackId: string): Promise<TrackDnaStats> {
   const [row] = await db

@@ -452,6 +452,45 @@ export default memo(function TrackList({
     return displayedTracks.slice(0, visibleCount);
   }, [displayedTracks, visibleCount]);
 
+  // Song DNA overall score shown next to play count on each collapsed row.
+  // Fetched in bulk for the currently-visible "done" tracks (never one
+  // request per row) and cached across pagination so a track's score is
+  // only ever fetched once.
+  const [dnaScoreByTrackId, setDnaScoreByTrackId] = useState<Map<string, number | null>>(new Map());
+  const visibleDoneTrackIdsKey = useMemo(
+    () => paginatedTracks.filter((t) => t.status === "done").map((t) => t.id).join(","),
+    [paginatedTracks]
+  );
+
+  useEffect(() => {
+    const visibleIds = visibleDoneTrackIdsKey ? visibleDoneTrackIdsKey.split(",") : [];
+    const missingIds = visibleIds.filter((id) => !dnaScoreByTrackId.has(id));
+    if (missingIds.length === 0) return;
+
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/discover/scores?ids=${missingIds.join(",")}`);
+        if (!active || !res.ok) return;
+        const data: { scores?: Record<string, number | null> } = await res.json();
+        setDnaScoreByTrackId((prev) => {
+          const next = new Map(prev);
+          for (const id of missingIds) {
+            next.set(id, data.scores?.[id] ?? null);
+          }
+          return next;
+        });
+      } catch {
+        // Non-critical — collapsed rows just show no score.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleDoneTrackIdsKey]);
+
   useEffect(() => {
     const sentinel = loadMoreSentinelRef.current;
     if (!sentinel) return;
@@ -920,6 +959,7 @@ export default memo(function TrackList({
                     onToggleSelection={handleToggleSelection}
                     onEditDetails={onEditDetails}
                     isDetailSelected={selectedTrackId === track.id}
+                    dnaScore={dnaScoreByTrackId.get(track.id) ?? null}
                   />
                 </div>
               );
