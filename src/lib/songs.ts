@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { songs, trackDnaVotes, tracks, users, workspaces } from "@/db/schema";
@@ -131,9 +131,11 @@ export type PublicTrackSummary = {
 
 function toPublicTrackSummary(
   track: typeof tracks.$inferSelect,
+  songPublishDate: Date | null,
   ownerById: Map<string, { artistAlias: string | null; name: string | null }>
 ): PublicTrackSummary {
   const owner = ownerById.get(track.userId);
+  const publishDate = track.publishDate ?? songPublishDate;
   return {
     id: track.id,
     songId: track.songId,
@@ -144,52 +146,57 @@ function toPublicTrackSummary(
     duration: track.duration,
     totalPlays: track.playCount,
     instrumental: track.instrumental,
-    publishDate: track.publishDate ? track.publishDate.toISOString() : null,
+    publishDate: publishDate ? publishDate.toISOString() : null,
   };
 }
 
-// Public, cross-user: every individually published track version, independent
-// of its song's own release status (tracks carry their own releaseStatus so a
-// single version of a song can be published on its own). Never includes
-// lyrics/prompt/trackDna — those stay private.
+// A track is publicly visible either because it's individually published, or
+// because it belongs to a song that's published (publishing a song does not
+// cascade releaseStatus down to its track rows — see api/songs/[id]/route.ts).
+const PUBLIC_TRACK_CONDITION = or(eq(tracks.releaseStatus, "published"), eq(songs.releaseStatus, "published"));
+
+// Public, cross-user: every published track version (individually, or via its
+// song). Never includes lyrics/prompt/trackDna — those stay private.
 export async function getPublishedTracksFeed(limit = 50): Promise<PublicTrackSummary[]> {
   const rows = await db
-    .select()
+    .select({ track: tracks, songPublishDate: songs.publishDate })
     .from(tracks)
-    .where(and(eq(tracks.releaseStatus, "published"), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
-    .orderBy(desc(tracks.publishDate))
+    .leftJoin(songs, eq(tracks.songId, songs.id))
+    .where(and(PUBLIC_TRACK_CONDITION, eq(tracks.status, "done"), isNull(tracks.deletedAt)))
+    .orderBy(desc(sql`coalesce(${tracks.publishDate}, ${songs.publishDate})`))
     .limit(limit);
 
   if (rows.length === 0) return [];
 
-  const ownerIds = Array.from(new Set(rows.map((t) => t.userId)));
+  const ownerIds = Array.from(new Set(rows.map((r) => r.track.userId)));
   const owners = await db
     .select({ id: users.id, artistAlias: users.artistAlias, name: users.name })
     .from(users)
     .where(inArray(users.id, ownerIds));
   const ownerById = new Map(owners.map((o) => [o.id, o]));
 
-  return rows.map((track) => toPublicTrackSummary(track, ownerById));
+  return rows.map((r) => toPublicTrackSummary(r.track, r.songPublishDate, ownerById));
 }
 
 // Public, no auth: the gate for every discover media/vote route. Re-verifies
-// a track is still individually published on every call — never trusts a
-// client-supplied id alone.
+// a track is still published (individually, or via its song) on every call —
+// never trusts a client-supplied id alone.
 export async function getPublishedTrackById(trackId: string) {
-  const [track] = await db
-    .select()
+  const [row] = await db
+    .select({ track: tracks })
     .from(tracks)
+    .leftJoin(songs, eq(tracks.songId, songs.id))
     .where(
       and(
         eq(tracks.id, trackId),
-        eq(tracks.releaseStatus, "published"),
+        PUBLIC_TRACK_CONDITION,
         eq(tracks.status, "done"),
         isNull(tracks.deletedAt)
       )
     )
     .limit(1);
 
-  return track ?? null;
+  return row?.track ?? null;
 }
 
 export type TrackDnaCategory = "vocal" | "instrumental" | "atmosphere" | "lyrics";
