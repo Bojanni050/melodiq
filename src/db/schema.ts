@@ -76,6 +76,7 @@ export const tracks = pgTable("tracks", {
   releaseStatus: varchar("release_status", { length: 20 }).default("concept").notNull(),
   publishDate: timestamp("publish_date"),
   trackDna: text("track_dna"),
+  pollsOpenAt: timestamp("polls_open_at"),
   pollsCloseAt: timestamp("polls_close_at"),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

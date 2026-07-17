@@ -141,6 +141,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
   const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
   const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
+  const [pollsOpenDate, setPollsOpenDate] = useState(track.pollsOpenAt ? track.pollsOpenAt.slice(0, 10) : "");
   const [pollsCloseDate, setPollsCloseDate] = useState(track.pollsCloseAt ? track.pollsCloseAt.slice(0, 10) : "");
   const [trackDna, setTrackDna] = useState(track.trackDna ?? "");
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -183,6 +184,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         releaseStatus,
         publishDate: publishDate ? new Date(publishDate).toISOString() : null,
         trackDna: trackDna.trim() || null,
+        pollsOpenAt: pollsOpenDate ? new Date(pollsOpenDate).toISOString() : null,
         pollsCloseAt: pollsCloseDate ? new Date(pollsCloseDate).toISOString() : null,
       };
 
@@ -283,16 +285,32 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             </div>
           </div>
 
-          {/* Polls closing date */}
+          {/* Polls opening + closing date */}
           <div className="space-y-1">
-            <label className="text-xs text-white/60">Polls Closing Date</label>
-            <input
-              type="date"
-              value={pollsCloseDate}
-              onChange={(e) => setPollsCloseDate(e.target.value)}
-              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
-            />
-            <p className="text-[11px] text-white/35">Voting on this track's DNA closes after this date. Leave blank to keep voting open.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-white/60">Polls Opening Date</label>
+                <input
+                  type="date"
+                  value={pollsOpenDate}
+                  onChange={(e) => setPollsOpenDate(e.target.value)}
+                  className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-white/60">Polls Closing Date</label>
+                <input
+                  type="date"
+                  value={pollsCloseDate}
+                  onChange={(e) => setPollsCloseDate(e.target.value)}
+                  className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-white/35">
+              Voting on this track's DNA is only open between these dates. A closing date is required for voting to
+              be open at all — leave both blank to keep voting disabled.
+            </p>
           </div>
 
           {/* Cover art */}

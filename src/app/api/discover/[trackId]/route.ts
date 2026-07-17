@@ -62,6 +62,7 @@ export async function GET(
       totalPlays: track.playCount,
       instrumental: track.instrumental,
       publishDate: publishDate ? publishDate.toISOString() : null,
+      pollsOpenAt: track.pollsOpenAt ? track.pollsOpenAt.toISOString() : null,
       pollsCloseAt: track.pollsCloseAt ? track.pollsCloseAt.toISOString() : null,
     },
     stats,

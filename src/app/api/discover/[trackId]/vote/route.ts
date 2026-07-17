@@ -28,7 +28,14 @@ export async function POST(
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 
-  if (track.pollsCloseAt && track.pollsCloseAt <= new Date()) {
+  const now = new Date();
+  if (!track.pollsCloseAt) {
+    return NextResponse.json({ error: "Voting isn't open for this track." }, { status: 403 });
+  }
+  if (track.pollsOpenAt && track.pollsOpenAt > now) {
+    return NextResponse.json({ error: "Voting hasn't opened yet for this track." }, { status: 403 });
+  }
+  if (track.pollsCloseAt <= now) {
     return NextResponse.json({ error: "Voting is closed for this track." }, { status: 403 });
   }
 

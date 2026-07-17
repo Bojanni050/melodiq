@@ -19,6 +19,7 @@ interface TrackDetail {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  pollsOpenAt: string | null;
   pollsCloseAt: string | null;
 }
 
@@ -215,8 +216,13 @@ export default function TrackDnaPage() {
       ? ratedCategories.reduce((sum, s) => sum + (s.average as number), 0) / ratedCategories.length
       : null;
 
+  const pollsOpenDate = track?.pollsOpenAt ? new Date(track.pollsOpenAt) : null;
   const pollsCloseDate = track?.pollsCloseAt ? new Date(track.pollsCloseAt) : null;
-  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= new Date());
+  const now = new Date();
+  const votingConfigured = Boolean(pollsCloseDate);
+  const votingNotYetOpen = Boolean(pollsOpenDate && pollsOpenDate > now);
+  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= now);
+  const votingOpen = votingConfigured && !votingNotYetOpen && !pollsClosed;
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
@@ -308,11 +314,15 @@ export default function TrackDnaPage() {
               <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-semibold">Vote</h2>
-                  {!pollsClosed && pollsCloseDate && (
+                  {votingOpen && pollsCloseDate && (
                     <span className="text-xs text-white/40">Voting closes {pollsCloseDate.toLocaleDateString()}</span>
                   )}
                 </div>
-                {pollsClosed ? (
+                {!votingConfigured ? (
+                  <p className="text-sm text-white/50">Voting isn&apos;t open for this track.</p>
+                ) : votingNotYetOpen ? (
+                  <p className="text-sm text-white/50">Voting opens {pollsOpenDate!.toLocaleDateString()}.</p>
+                ) : pollsClosed ? (
                   <p className="text-sm text-white/50">
                     Voting closed on {pollsCloseDate!.toLocaleDateString()}.
                   </p>

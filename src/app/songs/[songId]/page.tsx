@@ -136,7 +136,12 @@ export default function SongDnaPage() {
     const versions = song.trackVersions;
     const totalPlays = versions.reduce((sum, t) => sum + (t.playCount ?? 0), 0);
     const votedVersion = versions.find((t) => t.votedAt);
-    const publishedCount = versions.filter((t) => t.releaseStatus === "published").length;
+    // A version counts as published either individually, or because
+    // publishing the whole song (Release Status above) makes every version
+    // publicly reachable — mirrors PUBLIC_TRACK_CONDITION in lib/songs.ts,
+    // so this tile stays in sync with the Release Status control.
+    const songPublished = song.releaseStatus === "published";
+    const publishedCount = versions.filter((t) => t.releaseStatus === "published" || songPublished).length;
 
     // Best-version highlight (mirrors the "crown marks the best value" idea
     // from a compare view) — only meaningful with more than one version.
@@ -144,13 +149,19 @@ export default function SongDnaPage() {
       versions.length > 1
         ? versions.reduce((best, t) => ((t.playCount ?? 0) > (best.playCount ?? 0) ? t : best), versions[0])
         : null;
+    // versions is ordered oldest-first (see getUserSongWithTrackVersions),
+    // so index+1 gives a stable version number even when titles repeat.
+    const mostPlayedIndex = mostPlayed ? versions.findIndex((t) => t.id === mostPlayed.id) : -1;
 
     return {
       versionCount: versions.length,
       totalPlays,
       votedTitle: votedVersion ? votedVersion.title || "Untitled" : "None yet",
       publishedCount,
-      mostPlayedTitle: mostPlayed && (mostPlayed.playCount ?? 0) > 0 ? mostPlayed.title || "Untitled" : null,
+      mostPlayedTitle:
+        mostPlayed && (mostPlayed.playCount ?? 0) > 0
+          ? `${mostPlayed.title || "Untitled"} · v${mostPlayedIndex + 1}`
+          : null,
     };
   }, [song]);
 

@@ -25,6 +25,7 @@ export interface TrackItem {
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
+  pollsOpenAt?: string | null;
   pollsCloseAt?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;

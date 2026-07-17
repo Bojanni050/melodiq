@@ -542,6 +542,7 @@ export async function PATCH(
     const releaseStatus = body.releaseStatus;
     const publishDate = body.publishDate;
     const trackDna = body.trackDna;
+    const pollsOpenAt = body.pollsOpenAt;
     const pollsCloseAt = body.pollsCloseAt;
 
     if (restore === true) {
@@ -549,7 +550,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined && pollsCloseAt === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined && pollsOpenAt === undefined && pollsCloseAt === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -797,6 +798,16 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid trackDna" }, { status: 400 });
       }
       updates.trackDna = trackDna === null ? null : trackDna.trim() || null;
+    }
+
+    if (pollsOpenAt !== undefined) {
+      if (pollsOpenAt === null) {
+        updates.pollsOpenAt = null;
+      } else if (typeof pollsOpenAt === "string" && !isNaN(Date.parse(pollsOpenAt))) {
+        updates.pollsOpenAt = new Date(pollsOpenAt);
+      } else {
+        return NextResponse.json({ error: "Invalid pollsOpenAt" }, { status: 400 });
+      }
     }
 
     if (pollsCloseAt !== undefined) {

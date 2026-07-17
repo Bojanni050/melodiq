@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
   "publish_date" timestamp,
   "track_dna" text,
+  "polls_open_at" timestamp,
   "polls_close_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
@@ -243,6 +244,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_open_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");

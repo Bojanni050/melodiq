@@ -59,6 +59,7 @@ export default function TrackDnaPanel({
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [stats, setStats] = useState<DnaStats | null>(null);
+  const [pollsOpenAt, setPollsOpenAt] = useState<string | null>(null);
   const [pollsCloseAt, setPollsCloseAt] = useState<string | null>(null);
 
   const [scores, setScores] = useState<Record<Category, number>>({
@@ -84,6 +85,7 @@ export default function TrackDnaPanel({
       if (res.ok) {
         const data = await res.json();
         setStats(data.stats);
+        setPollsOpenAt(data.track?.pollsOpenAt ?? null);
         setPollsCloseAt(data.track?.pollsCloseAt ?? null);
         if (data.myVote) {
           setScores({
@@ -137,8 +139,13 @@ export default function TrackDnaPanel({
       ? ratedCategories.reduce((sum, s) => sum + (s.average as number), 0) / ratedCategories.length
       : null;
 
+  const pollsOpenDate = pollsOpenAt ? new Date(pollsOpenAt) : null;
   const pollsCloseDate = pollsCloseAt ? new Date(pollsCloseAt) : null;
-  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= new Date());
+  const now = new Date();
+  const votingConfigured = Boolean(pollsCloseDate);
+  const votingNotYetOpen = Boolean(pollsOpenDate && pollsOpenDate > now);
+  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= now);
+  const votingOpen = votingConfigured && !votingNotYetOpen && !pollsClosed;
 
   if (loading) {
     return (
@@ -182,12 +189,16 @@ export default function TrackDnaPanel({
       <div className="space-y-3 border-t border-white/10 pt-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-semibold text-white">Vote</h4>
-          {!pollsClosed && pollsCloseDate && (
+          {votingOpen && pollsCloseDate && (
             <span className="text-xs text-white/40">Voting closes {pollsCloseDate.toLocaleDateString()}</span>
           )}
         </div>
 
-        {pollsClosed ? (
+        {!votingConfigured ? (
+          <p className="text-sm text-white/50">Voting isn&apos;t open for this track.</p>
+        ) : votingNotYetOpen ? (
+          <p className="text-sm text-white/50">Voting opens {pollsOpenDate!.toLocaleDateString()}.</p>
+        ) : pollsClosed ? (
           <p className="text-sm text-white/50">Voting closed on {pollsCloseDate!.toLocaleDateString()}.</p>
         ) : (
           <div className="space-y-3">
