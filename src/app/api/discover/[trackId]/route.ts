@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { verifyToken } from "@/lib/auth";
-import { getPublishedTrackById, getTrackDnaStats, getUserTrackDnaVote } from "@/lib/songs";
+import { getTrackDnaAccess, getTrackDnaStats, getUserTrackDnaVote } from "@/lib/songs";
 import { db } from "@/db";
 import { songs, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,13 +10,18 @@ import { eq } from "drizzle-orm";
 // Public, no auth required to view: the Track DNA page's data — track
 // summary, aggregate DNA stats, and (only when a valid session cookie is
 // present) the caller's own existing vote so their sliders start prefilled.
+// The track's owner can always reach this for their own track regardless of
+// publish status (see getTrackDnaAccess); everyone else needs it published.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ trackId: string }> }
 ) {
   const { trackId } = await params;
 
-  const track = await getPublishedTrackById(trackId);
+  const token = (await cookies()).get("token")?.value;
+  const payload = token ? verifyToken(token) : null;
+
+  const track = await getTrackDnaAccess(trackId, payload?.userId ?? null);
   if (!track) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
@@ -24,8 +29,6 @@ export async function GET(
   const stats = await getTrackDnaStats(trackId);
 
   let myVote = null;
-  const token = (await cookies()).get("token")?.value;
-  const payload = token ? verifyToken(token) : null;
   if (payload) {
     myVote = await getUserTrackDnaVote(trackId, payload.userId);
   }
@@ -59,6 +62,7 @@ export async function GET(
       totalPlays: track.playCount,
       instrumental: track.instrumental,
       publishDate: publishDate ? publishDate.toISOString() : null,
+      pollsCloseAt: track.pollsCloseAt ? track.pollsCloseAt.toISOString() : null,
     },
     stats,
     myVote: myVote

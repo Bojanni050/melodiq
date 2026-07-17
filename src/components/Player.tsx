@@ -14,6 +14,13 @@ import { useChromecast } from "@/hooks/useChromecast";
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
+// Public Discover tracks may not be owned by the viewer — route their media
+// and side-effect calls through the public /api/discover/{id}/* endpoints
+// instead of the private, ownership-gated /api/tracks/{id}/* ones.
+export function mediaBase(track: Track): string {
+  return track.publicSource ? `/api/discover/${track.id}` : `/api/tracks/${track.id}`;
+}
+
 export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
   if (!playHighestQuality) return "";
 
@@ -262,6 +269,7 @@ export default function Player() {
     const scheduleAutoCoverGenerationIfNeeded = () => {
       const track = currentTrackRef.current;
       if (!track || track.status !== "done") return;
+      if (track.publicSource) return;
       if (trackHasCover(track)) return;
       if (coverAutoRequestedTrackIdsRef.current.has(track.id)) return;
       if (coverAutoGenerateTimerRef.current) return;
@@ -323,6 +331,7 @@ export default function Player() {
     const scheduleLanguageDetectionIfNeeded = () => {
       const track = currentTrackRef.current;
       if (!track || track.status !== "done") return;
+      if (track.publicSource) return;
       if (track.language || track.instrumental || !track.lyrics?.trim()) return;
       if (languageDetectRequestedTrackIdsRef.current.has(track.id)) return;
       if (languageDetectTimerRef.current) return;
@@ -365,23 +374,24 @@ export default function Player() {
     };
 
     const countPlayIfNeeded = () => {
-      const trackId = currentTrackRef.current?.id;
-      if (!trackId) return;
+      const track = currentTrackRef.current;
+      const trackId = track?.id;
+      if (!trackId || !track) return;
       if (playCountedTrackIdRef.current === trackId) return;
       if (playCountTimerRef.current) return;
 
       playCountTimerRef.current = setTimeout(() => {
         playCountTimerRef.current = null;
-        
+
         const currentId = currentTrackRef.current?.id;
         if (!currentId || currentId !== trackId) return;
         if (playCountedTrackIdRef.current === trackId) return;
-        
+
         playCountedTrackIdRef.current = trackId;
 
         void (async () => {
           try {
-            const res = await fetch(`/api/tracks/${trackId}/play`, { method: "POST" });
+            const res = await fetch(`${mediaBase(track)}/play`, { method: "POST" });
             if (!res.ok) return;
             const data: unknown = await res.json().catch(() => null);
             const playCount =
@@ -420,7 +430,7 @@ export default function Player() {
       setDuration(secs);
       // Backfill duration in the DB if it's missing
       const track = usePlayerStore.getState().currentTrack;
-      if (track && !track.duration && secs > 0) {
+      if (track && !track.duration && secs > 0 && !track.publicSource) {
         fetch(`/api/tracks/${track.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -655,7 +665,7 @@ export default function Player() {
       const audioEl = audioRef.current;
       if (!audioEl) return;
 
-      const streamUrl = `/api/tracks/${trackId}/stream${suffix}`;
+      const streamUrl = `${mediaBase(trackSnapshot)}/stream${suffix}`;
       let resolvedUrl = streamUrl;
 
       setResolvingUrl(true);
@@ -927,7 +937,7 @@ export default function Player() {
 
   // When casting and the track changes (next/prev), auto-load the new track on the cast device
   useEffect(() => {
-    if (castState !== "connected" || !currentTrack) return;
+    if (castState !== "connected" || !currentTrack || currentTrack.publicSource) return;
     let cancelled = false;
     const fetchAndLoad = async () => {
       try {
@@ -1034,18 +1044,20 @@ export default function Player() {
                       {cleanTitle || currentTrack.prompt.substring(0, 50)}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleJumpToNowPlaying}
-                    className="shrink-0 p-1 rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
-                    title="Jump to now playing in track list"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="7" strokeWidth={2} />
-                      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
-                      <path strokeLinecap="round" strokeWidth={2} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                    </svg>
-                  </button>
+                  {!currentTrack.publicSource && (
+                    <button
+                      type="button"
+                      onClick={handleJumpToNowPlaying}
+                      className="shrink-0 p-1 rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
+                      title="Jump to now playing in track list"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="7" strokeWidth={2} />
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                        <path strokeLinecap="round" strokeWidth={2} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 <p className="text-xs text-white/40 truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
@@ -1188,7 +1200,7 @@ export default function Player() {
               trackId={currentTrack?.id ?? null}
               hd={castHd}
               meta={castMeta}
-              disabled={!currentTrack}
+              disabled={!currentTrack || currentTrack.publicSource}
               onCastConnected={() => usePlayerStore.getState().setIsPlaying(false)}
             />
 
@@ -1205,7 +1217,7 @@ export default function Player() {
             </button>
 
             {/* Track actions menu */}
-            {currentTrack && (
+            {currentTrack && !currentTrack.publicSource && (
               <div className="relative" ref={actionsMenuRef}>
                 <button
                   type="button"

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import { formatDuration } from "@/lib/track-utils";
+import { usePlayerStore } from "@/lib/store";
 
 interface TrackDetail {
   id: string;
@@ -18,6 +19,7 @@ interface TrackDetail {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  pollsCloseAt: string | null;
 }
 
 interface DnaStat {
@@ -72,8 +74,12 @@ export default function TrackDnaPage() {
   const [stats, setStats] = useState<DnaStats | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
+  const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
+  const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
+  const isCurrentTrack = Boolean(track && currentTrack?.id === track.id);
+  const isPlaying = isCurrentTrack && globalIsPlaying;
 
   const [scores, setScores] = useState<Record<Category, number>>({
     vocal: 5,
@@ -142,19 +148,35 @@ export default function TrackDnaPage() {
     return null;
   }
 
-  function togglePlay() {
+  function handlePlayClick() {
     if (!track) return;
-    if (isPlaying) {
-      audioRef.current?.pause();
-      setIsPlaying(false);
+    if (isCurrentTrack) {
+      setGlobalIsPlaying(!globalIsPlaying);
       return;
     }
-    if (audioRef.current) {
-      audioRef.current.src = `/api/discover/${track.id}/stream`;
-      audioRef.current.play().catch(() => {});
-      void fetch(`/api/discover/${track.id}/play`, { method: "POST" });
-    }
-    setIsPlaying(true);
+    playTrackFromGesture({
+      id: track.id,
+      title: track.title,
+      provider: "discover",
+      providerModel: "discover",
+      prompt: "",
+      status: "done",
+      audioUrl: null,
+      audioUrlHd: null,
+      s3Key: null,
+      s3KeyHd: null,
+      format: null,
+      formatHd: null,
+      duration: track.duration,
+      lyrics: null,
+      createdAt: new Date().toISOString(),
+      error: null,
+      coverUrl: coverSrc(),
+      s3KeyCover: null,
+      artistName: track.artistName,
+      instrumental: track.instrumental,
+      publicSource: true,
+    });
   }
 
   async function submitVote() {
@@ -193,6 +215,9 @@ export default function TrackDnaPage() {
       ? ratedCategories.reduce((sum, s) => sum + (s.average as number), 0) / ratedCategories.length
       : null;
 
+  const pollsCloseDate = track?.pollsCloseAt ? new Date(track.pollsCloseAt) : null;
+  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= new Date());
+
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
       {isLoggedIn && <Sidebar credits={null} />}
@@ -219,7 +244,7 @@ export default function TrackDnaPage() {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={togglePlay}
+                  onClick={handlePlayClick}
                   className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl"
                   aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                 >
@@ -281,8 +306,17 @@ export default function TrackDnaPage() {
               </section>
 
               <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-                <h2 className="text-base font-semibold">Vote</h2>
-                {!authChecked ? null : !isLoggedIn ? (
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Vote</h2>
+                  {!pollsClosed && pollsCloseDate && (
+                    <span className="text-xs text-white/40">Voting closes {pollsCloseDate.toLocaleDateString()}</span>
+                  )}
+                </div>
+                {pollsClosed ? (
+                  <p className="text-sm text-white/50">
+                    Voting closed on {pollsCloseDate!.toLocaleDateString()}.
+                  </p>
+                ) : !authChecked ? null : !isLoggedIn ? (
                   <>
                     <p className="text-sm text-white/50">Sign in to vote on this track&apos;s DNA.</p>
                     <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />
@@ -293,13 +327,13 @@ export default function TrackDnaPage() {
                       <div key={category} className="space-y-1.5">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-white/70">{CATEGORY_LABELS[category]}</span>
-                          <span className="font-mono text-white/50">{scores[category]}/10</span>
+                          <span className="font-mono text-white/50">{scores[category].toFixed(1)}/10</span>
                         </div>
                         <input
                           type="range"
                           min={1}
                           max={10}
-                          step={1}
+                          step={0.1}
                           value={scores[category]}
                           onChange={(e) =>
                             setScores((prev) => ({ ...prev, [category]: Number(e.target.value) }))
@@ -327,7 +361,6 @@ export default function TrackDnaPage() {
           )}
         </div>
       </main>
-      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} className="hidden" />
     </div>
   );
 }

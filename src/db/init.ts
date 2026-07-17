@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
   "publish_date" timestamp,
   "track_dna" text,
+  "polls_close_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -185,13 +186,18 @@ CREATE TABLE IF NOT EXISTS "track_dna_votes" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
   "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
-  "vocal" integer NOT NULL,
-  "instrumental" integer NOT NULL,
-  "atmosphere" integer NOT NULL,
-  "lyrics" integer,
+  "vocal" real NOT NULL,
+  "instrumental" real NOT NULL,
+  "atmosphere" real NOT NULL,
+  "lyrics" real,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
+
+ALTER TABLE track_dna_votes ALTER COLUMN vocal TYPE real;
+ALTER TABLE track_dna_votes ALTER COLUMN instrumental TYPE real;
+ALTER TABLE track_dna_votes ALTER COLUMN atmosphere TYPE real;
+ALTER TABLE track_dna_votes ALTER COLUMN lyrics TYPE real;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "track_dna_votes_track_user_unique" ON "track_dna_votes"("track_id", "user_id");
 CREATE INDEX IF NOT EXISTS "track_dna_votes_track_id_idx" ON "track_dna_votes"("track_id");
@@ -237,6 +243,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");

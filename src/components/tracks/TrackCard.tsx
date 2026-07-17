@@ -20,6 +20,7 @@ import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
 import TrackVote from "./TrackVote";
 import TrackActionMenu from "./TrackActionMenu";
+import TrackDnaPanel from "./TrackDnaPanel";
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
 
@@ -85,6 +86,7 @@ const TrackCard = memo(function TrackCard({
   const playClickCooldownRef = useRef(0);
 
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
+  const [dnaOpen, setDnaOpen] = useState(false);
 
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
@@ -443,6 +445,24 @@ const TrackCard = memo(function TrackCard({
                 {assignedSongName}
               </span>
             )}
+            {track.status === "done" && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
+                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 shrink-0 transition-colors hover:bg-primary-500/20"
+                title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+              >
+                Track DNA
+                <svg
+                  className={`w-2.5 h-2.5 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Artist name row */}
@@ -607,6 +627,8 @@ const TrackCard = memo(function TrackCard({
           </button>
         </div>
       </div>
+
+      {dnaOpen && <TrackDnaPanel trackId={track.id} instrumental={Boolean(track.instrumental)} />}
     </>
   );
 }, (prevProps, nextProps) => {

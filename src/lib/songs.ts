@@ -199,6 +199,24 @@ export async function getPublishedTrackById(trackId: string) {
   return row?.track ?? null;
 }
 
+// Track DNA access for the app's own track rows (Song/Library/Workspaces
+// pages): the owner can always see/vote on their own track regardless of
+// publish status; everyone else falls back to the public published-only
+// gate above. Never trusts a client-supplied ownership claim — re-checks
+// tracks.userId against the caller's session on every call.
+export async function getTrackDnaAccess(trackId: string, viewerUserId: string | null) {
+  if (viewerUserId) {
+    const [owned] = await db
+      .select()
+      .from(tracks)
+      .where(and(eq(tracks.id, trackId), eq(tracks.userId, viewerUserId)))
+      .limit(1);
+    if (owned) return owned;
+  }
+
+  return getPublishedTrackById(trackId);
+}
+
 export type TrackDnaCategory = "vocal" | "instrumental" | "atmosphere" | "lyrics";
 export type TrackDnaStats = Record<TrackDnaCategory, { average: number | null; count: number }>;
 

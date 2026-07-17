@@ -141,6 +141,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
   const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
   const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
+  const [pollsCloseDate, setPollsCloseDate] = useState(track.pollsCloseAt ? track.pollsCloseAt.slice(0, 10) : "");
   const [trackDna, setTrackDna] = useState(track.trackDna ?? "");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -182,6 +183,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         releaseStatus,
         publishDate: publishDate ? new Date(publishDate).toISOString() : null,
         trackDna: trackDna.trim() || null,
+        pollsCloseAt: pollsCloseDate ? new Date(pollsCloseDate).toISOString() : null,
       };
 
       const res = await fetch(`/api/tracks/${track.id}`, {
@@ -279,6 +281,18 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
               />
             </div>
+          </div>
+
+          {/* Polls closing date */}
+          <div className="space-y-1">
+            <label className="text-xs text-white/60">Polls Closing Date</label>
+            <input
+              type="date"
+              value={pollsCloseDate}
+              onChange={(e) => setPollsCloseDate(e.target.value)}
+              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
+            />
+            <p className="text-[11px] text-white/35">Voting on this track's DNA closes after this date. Leave blank to keep voting open.</p>
           </div>
 
           {/* Cover art */}

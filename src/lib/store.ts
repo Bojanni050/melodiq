@@ -81,6 +81,11 @@ export interface Track {
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
+  // True for tracks loaded from the public Discover surface, which the
+  // viewer may not own — media/side-effects route through the public
+  // /api/discover/{id}/* endpoints instead of the private /api/tracks/{id}/*
+  // ones. See Player.tsx's mediaBase() helper.
+  publicSource?: boolean;
 }
 
 interface PlayerState {
@@ -254,7 +259,8 @@ export const usePlayerStore = create<PlayerState>()(
         } else {
           // Fallback naar MelodIQ API
           const wantsHd = (track.audioUrl || "").includes("hd=true");
-          url = `/api/tracks/${track.id}/stream${wantsHd ? "?hd=true" : ""}`;
+          const base = track.publicSource ? `/api/discover/${track.id}` : `/api/tracks/${track.id}`;
+          url = `${base}/stream${wantsHd ? "?hd=true" : ""}`;
         }
 
         // Debug logging

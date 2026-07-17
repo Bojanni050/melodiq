@@ -9,6 +9,11 @@ export async function middleware(request: NextRequest) {
   const isPublicApi = pathname.startsWith("/api/webhooks/");
   const isPwaAsset = pathname === "/manifest.webmanifest" || pathname.startsWith("/icons/");
   const isApi = pathname.startsWith("/api/");
+  // Song DNA (Discover) is the one page/section that stays browsable while
+  // logged out — see src/app/discover/page.tsx and getPublishedTrackById in
+  // src/lib/songs.ts. Its own API routes under /api/discover/* are already
+  // public (no auth) server-side and pass through via isApi above.
+  const isPublicDiscover = pathname === "/discover" || pathname.startsWith("/discover/");
 
   if (isAuthPage) {
     if (token && await verifyTokenEdge(token)) {
@@ -17,7 +22,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicDiscover) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
