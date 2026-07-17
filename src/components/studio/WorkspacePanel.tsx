@@ -374,13 +374,13 @@ export default function WorkspacePanel({
                   onClick={() => setSelectedWorkspaceId(childWorkspace.id)}
                   className="group flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
                 >
-                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-white/10 bg-[#11131f]">
+                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-amber-300/20 bg-[#11131f]">
                     {childCover ? (
                       <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
-                        <svg className="h-4 w-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        <svg className="h-4 w-4 text-amber-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
                     )}

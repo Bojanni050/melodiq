@@ -131,7 +131,9 @@ import {
   usePlaylistStore,
   useStudioStore,
   useWorkspaceStore,
+  type Workspace,
 } from "@/lib/store";
+import DeleteSongDialog from "@/components/tracks/DeleteSongDialog";
 import { formatTotalDuration } from "@/lib/track-utils";
 
 interface LibraryTrack {
@@ -269,6 +271,7 @@ async function readApiPayload(response: Response): Promise<unknown> {
 export default function LibraryPage() {
   const router = useRouter();
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const [pendingDeleteSong, setPendingDeleteSong] = useState<Workspace | null>(null);
   const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, localMovePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
@@ -1638,7 +1641,11 @@ export default function LibraryPage() {
                             {workspace.id !== DEFAULT_WORKSPACE_ID && (
                               <button
                                 type="button"
-                                onClick={() => deleteWorkspace(workspace.id)}
+                                onClick={() =>
+                                  workspace.parentWorkspaceId
+                                    ? setPendingDeleteSong(workspace)
+                                    : deleteWorkspace(workspace.id)
+                                }
                                 className="shrink-0 text-[11px] text-white/25 transition-colors hover:text-red-400 opacity-0 group-hover:opacity-100 mt-0.5"
                               >
                                 Delete
@@ -1683,7 +1690,15 @@ export default function LibraryPage() {
                               Open
                             </button>
                             {workspace.id !== DEFAULT_WORKSPACE_ID && (
-                              <button type="button" onClick={() => deleteWorkspace(workspace.id)} className="text-xs text-white/30 transition-colors hover:text-red-400">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  workspace.parentWorkspaceId
+                                    ? setPendingDeleteSong(workspace)
+                                    : deleteWorkspace(workspace.id)
+                                }
+                                className="text-xs text-white/30 transition-colors hover:text-red-400"
+                              >
                                 Delete
                               </button>
                             )}
@@ -2442,6 +2457,23 @@ export default function LibraryPage() {
             onTrackUpdated={handleTrackUpdated}
           />
         </div>
+      )}
+
+      {pendingDeleteSong && (
+        <DeleteSongDialog
+          songName={pendingDeleteSong.name}
+          trackCount={pendingDeleteSong.trackIds.length}
+          onCancel={() => setPendingDeleteSong(null)}
+          onDeleteSongOnly={() => {
+            deleteWorkspace(pendingDeleteSong.id);
+            setPendingDeleteSong(null);
+          }}
+          onDeleteSongAndTracks={() => {
+            deleteWorkspace(pendingDeleteSong.id, { deleteTracks: true });
+            setPendingDeleteSong(null);
+            void fetchTracks();
+          }}
+        />
       )}
 
       {reuseConfirmTrack && (

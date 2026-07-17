@@ -124,7 +124,13 @@ export default function MoveToWorkspaceDialog({
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 transition-colors hover:bg-white/10"
               >
-                {depth === 1 ? <span className="ml-2 text-[10px] text-white/30">-</span> : null}
+                {depth === 1 ? (
+                  <span className="ml-2 shrink-0" title="Song">
+                    <svg className="h-3.5 w-3.5 text-amber-300/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </span>
+                ) : null}
                 <div className={`h-11 w-11 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`}>
                   {workspaceCoverById.get(workspace.id) ? (
                     <img
@@ -139,7 +145,9 @@ export default function MoveToWorkspaceDialog({
                 >
                   {workspaceDisplayNameById.get(workspace.id) ?? workspace.name}
                 </span>
-                <span className="shrink-0 text-xs text-white/60">{workspace.trackIds.length} clips</span>
+                <span className="shrink-0 text-xs text-white/60">
+                  {workspace.trackIds.length} {depth === 1 ? "versions" : "clips"}
+                </span>
               </button>
             ))}
           </div>

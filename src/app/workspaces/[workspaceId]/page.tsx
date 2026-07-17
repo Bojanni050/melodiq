@@ -466,7 +466,13 @@ export default function WorkspaceDetailPage() {
                             <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
                               {childCover ? (
                                 <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
-                              ) : null}
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <svg className="h-4 w-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                </div>
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>

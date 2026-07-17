@@ -139,11 +139,20 @@ const TrackCard = memo(function TrackCard({
     });
     return map;
   }, [workspaceDisplayNameByIdProp, workspaceById, workspaces]);
+  // Unambiguous by construction: a workspace is only ever matched via
+  // track.workspaceId, a song only ever via track.songId — never by scanning
+  // trackIds membership, since a song-grouped track's id legitimately
+  // appears in both its containing workspace's and its song's trackIds.
   const assignedWorkspaceName = useMemo(() => {
-    const assigned = workspaces.find((w) => !w.isDefault && workspaceById.get(w.id)?.trackIds.includes(track.id));
-    if (!assigned) return null;
-    return workspaceDisplayNameById.get(assigned.id) ?? assigned.name;
-  }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
+    if (!track.workspaceId) return null;
+    const assigned = workspaces.find((w) => !w.parentWorkspaceId && !w.isDefault && w.id === track.workspaceId);
+    return assigned?.name ?? null;
+  }, [track.workspaceId, workspaces]);
+  const assignedSongName = useMemo(() => {
+    if (!track.songId) return null;
+    const assigned = workspaces.find((w) => Boolean(w.parentWorkspaceId) && w.id === track.songId);
+    return assigned?.name ?? null;
+  }, [track.songId, workspaces]);
   const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
   const songOptions = useMemo(() => workspaces.filter((w) => Boolean(w.parentWorkspaceId)), [workspaces]);
   const defaultWorkspaceId = useMemo(
@@ -397,8 +406,25 @@ const TrackCard = memo(function TrackCard({
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">Uploaded</span>
             )}
             {assignedWorkspaceName && (
-              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px] shrink-0" title={assignedWorkspaceName}>
+              <span
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px] shrink-0"
+                title={`Workspace: ${assignedWorkspaceName}`}
+              >
+                <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                </svg>
                 {assignedWorkspaceName}
+              </span>
+            )}
+            {assignedSongName && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-amber-300/25 bg-amber-400/10 text-amber-200/90 truncate max-w-[140px] shrink-0"
+                title={`Song: ${assignedSongName}`}
+              >
+                <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {assignedSongName}
               </span>
             )}
           </div>

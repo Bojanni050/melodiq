@@ -744,7 +744,7 @@ interface WorkspaceState {
   moveTrackToWorkspace: (workspaceId: string, trackId: string) => void;
   moveTracksToWorkspace: (workspaceId: string, trackIds: string[]) => void;
   removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
-  deleteWorkspace: (workspaceId: string) => void;
+  deleteWorkspace: (workspaceId: string, options?: { deleteTracks?: boolean }) => void;
   setSelectedWorkspaceId: (workspaceId: string | null) => void;
   ensureDefaultWorkspace: () => string;
   syncTracksToDefaultWorkspace: (trackIds: string[]) => void;
@@ -838,10 +838,11 @@ function persistSongCreate(input: {
   }).catch((error) => console.error("[store] persistSongCreate failed", error));
 }
 
-function persistSongDelete(songId: string) {
+function persistSongDelete(songId: string, options?: { deleteTracks?: boolean }) {
   if (typeof window === "undefined") return;
 
-  void fetch(`/api/songs/${songId}`, {
+  const query = options?.deleteTracks ? "?deleteTracks=true" : "";
+  void fetch(`/api/songs/${songId}${query}`, {
     method: "DELETE",
   }).catch((error) => console.error("[store] persistSongDelete failed", error));
 }
@@ -1082,7 +1083,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             };
           }),
         })),
-      deleteWorkspace: (workspaceId) => {
+      deleteWorkspace: (workspaceId, options) => {
         const target = get().workspaces.find((workspace) => workspace.id === workspaceId);
         if (!target || target.isDefault) return;
         const directChildren = get().workspaces
@@ -1099,7 +1100,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }));
 
         if (target.parentWorkspaceId) {
-          persistSongDelete(workspaceId);
+          persistSongDelete(workspaceId, { deleteTracks: options?.deleteTracks });
         } else {
           persistWorkspaceDelete(workspaceId);
         }
