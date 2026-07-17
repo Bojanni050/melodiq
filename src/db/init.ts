@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "wav_job_id" VARCHAR(255),
   "rating" VARCHAR(10),
   "play_count" integer NOT NULL DEFAULT 0,
+  "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
+  "publish_date" timestamp,
+  "track_dna" text,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -155,6 +158,8 @@ CREATE TABLE IF NOT EXISTS "songs" (
   "song_dna" text,
   "voting_enabled" boolean NOT NULL DEFAULT false,
   "folder_gradient" text,
+  "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
+  "publish_date" timestamp,
   "deleted_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
@@ -176,9 +181,11 @@ CREATE INDEX IF NOT EXISTS "push_subscriptions_user_id_idx" ON "push_subscriptio
 CREATE UNIQUE INDEX IF NOT EXISTS "push_subscriptions_endpoint_unique" ON "push_subscriptions"("endpoint");
 `;
 
-// Handles existing databases where the songs table was created before folder_gradient existed.
+// Handles existing databases where the songs table was created before these columns existed.
 const alterSongsSql = `
 ALTER TABLE songs ADD COLUMN IF NOT EXISTS folder_gradient text;
+ALTER TABLE songs ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
+ALTER TABLE songs ADD COLUMN IF NOT EXISTS publish_date timestamp;
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,
@@ -211,6 +218,9 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_weirdness integer;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
 CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");

@@ -33,6 +33,9 @@ export interface Track {
   composerName?: string | null;
   instrumental?: boolean | null;
   language?: string | null;
+  releaseStatus?: string | null;
+  publishDate?: string | null;
+  trackDna?: string | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };

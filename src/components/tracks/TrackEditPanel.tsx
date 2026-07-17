@@ -139,6 +139,9 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
   const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? 50);
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
+  const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
+  const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
+  const [trackDna, setTrackDna] = useState(track.trackDna ?? "");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
@@ -176,6 +179,9 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         lyrics: instrumental ? null : (lyrics.trim() || null),
         sunoStyleInfluence: provider === "suno" ? sunoStyleInfluence : null,
         sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
+        releaseStatus,
+        publishDate: publishDate ? new Date(publishDate).toISOString() : null,
+        trackDna: trackDna.trim() || null,
       };
 
       const res = await fetch(`/api/tracks/${track.id}`, {
@@ -248,6 +254,31 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               placeholder="Track title"
               className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
             />
+          </div>
+
+          {/* Release status + Publish date side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Release Status</label>
+              <select
+                value={releaseStatus}
+                onChange={(e) => setReleaseStatus(e.target.value)}
+                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+              >
+                <option value="concept">Concept</option>
+                <option value="published">Published</option>
+                <option value="unpublished">Unpublished</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Publish Date</label>
+              <input
+                type="date"
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
+                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
+              />
+            </div>
           </div>
 
           {/* Cover art */}
@@ -406,6 +437,18 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               />
             </div>
           )}
+
+          {/* Track DNA */}
+          <div className="space-y-1">
+            <label className="text-xs text-white/60">Track DNA</label>
+            <textarea
+              value={trackDna}
+              onChange={(e) => setTrackDna(e.target.value)}
+              rows={3}
+              placeholder="What makes this specific version distinct — arrangement, mix notes, take..."
+              className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+            />
+          </div>
 
           {error && (
             <p className="text-sm text-red-400">⚠ {error}</p>

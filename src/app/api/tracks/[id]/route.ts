@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, workspaces, songs } from "@/db/schema";
+import { RELEASE_STATUSES, type ReleaseStatus } from "@/lib/release-status";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
@@ -538,13 +539,16 @@ export async function PATCH(
     const sunoStyleInfluence = body.sunoStyleInfluence;
     const sunoWeirdness = body.sunoWeirdness;
     const detectLanguage = body.detectLanguage;
+    const releaseStatus = body.releaseStatus;
+    const publishDate = body.publishDate;
+    const trackDna = body.trackDna;
 
     if (restore === true) {
       await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -768,6 +772,30 @@ export async function PATCH(
       } else {
         return NextResponse.json({ error: "Invalid sunoWeirdness" }, { status: 400 });
       }
+    }
+
+    if (releaseStatus !== undefined) {
+      if (typeof releaseStatus !== "string" || !RELEASE_STATUSES.includes(releaseStatus as ReleaseStatus)) {
+        return NextResponse.json({ error: "Invalid releaseStatus" }, { status: 400 });
+      }
+      updates.releaseStatus = releaseStatus;
+    }
+
+    if (publishDate !== undefined) {
+      if (publishDate === null) {
+        updates.publishDate = null;
+      } else if (typeof publishDate === "string" && !isNaN(Date.parse(publishDate))) {
+        updates.publishDate = new Date(publishDate);
+      } else {
+        return NextResponse.json({ error: "Invalid publishDate" }, { status: 400 });
+      }
+    }
+
+    if (trackDna !== undefined) {
+      if (trackDna !== null && typeof trackDna !== "string") {
+        return NextResponse.json({ error: "Invalid trackDna" }, { status: 400 });
+      }
+      updates.trackDna = trackDna === null ? null : trackDna.trim() || null;
     }
 
     if (Object.keys(updates).length === 0) {

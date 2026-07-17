@@ -22,6 +22,9 @@ export interface TrackItem {
   votedAt?: string | null;
   songId?: string | null;
   workspaceId?: string | null;
+  releaseStatus?: string | null;
+  publishDate?: string | null;
+  trackDna?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;

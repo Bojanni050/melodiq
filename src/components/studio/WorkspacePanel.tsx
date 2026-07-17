@@ -388,6 +388,17 @@ export default function WorkspacePanel({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
                   </div>
+                  {childWorkspace.releaseStatus && childWorkspace.releaseStatus !== "concept" && (
+                    <span
+                      className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
+                        childWorkspace.releaseStatus === "published"
+                          ? "border border-green-300/30 bg-green-400/10 text-green-200"
+                          : "border border-red-300/30 bg-red-400/10 text-red-200"
+                      }`}
+                    >
+                      {childWorkspace.releaseStatus === "published" ? "Published" : "Unpublished"}
+                    </span>
+                  )}
                   <span className="text-[11px] text-white/45">
                     {childTracks.length} {childTracks.length === 1 ? "track" : "tracks"}
                   </span>

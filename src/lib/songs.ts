@@ -15,6 +15,8 @@ export type SongWithTrackIds = {
   folderGradient?: string;
   trackIds: string[];
   createdAt: string;
+  releaseStatus: string;
+  publishDate: string | null;
 };
 
 export async function getUserSongsWithTrackIds(userId: string): Promise<SongWithTrackIds[]> {
@@ -51,6 +53,8 @@ export async function getUserSongsWithTrackIds(userId: string): Promise<SongWith
     folderGradient: song.folderGradient || undefined,
     trackIds: trackIdsBySongId.get(song.id) ?? [],
     createdAt: song.createdAt.toISOString(),
+    releaseStatus: song.releaseStatus,
+    publishDate: song.publishDate ? song.publishDate.toISOString() : null,
   }));
 }
 

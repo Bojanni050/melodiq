@@ -78,6 +78,9 @@ export interface Track {
   artistName?: string | null;
   composerName?: string | null;
   deletedAt?: string | null;
+  releaseStatus?: string | null;
+  publishDate?: string | null;
+  trackDna?: string | null;
 }
 
 interface PlayerState {
@@ -432,6 +435,9 @@ export interface Workspace {
   folderGradient?: string;
   isDefault?: boolean;
   parentWorkspaceId?: string | null;
+  // Only meaningful when this entry disguises a song (parentWorkspaceId set).
+  releaseStatus?: string;
+  publishDate?: string | null;
 }
 
 export const DEFAULT_WORKSPACE_ID = "workspace-default";
@@ -762,6 +768,8 @@ export interface SongFromServer {
   trackIds: string[];
   folderGradient?: string;
   createdAt: string;
+  releaseStatus: string;
+  publishDate: string | null;
 }
 
 function songToWorkspaceShape(song: SongFromServer): Workspace {
@@ -773,6 +781,8 @@ function songToWorkspaceShape(song: SongFromServer): Workspace {
     folderGradient: song.folderGradient,
     isDefault: false,
     parentWorkspaceId: song.workspaceId,
+    releaseStatus: song.releaseStatus,
+    publishDate: song.publishDate,
   };
 }
 
