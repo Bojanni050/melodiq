@@ -187,6 +187,12 @@ export default function TrackDnaPage() {
     ? ["vocal", "instrumental", "atmosphere"]
     : ["vocal", "instrumental", "atmosphere", "lyrics"];
 
+  const ratedCategories = stats ? categories.map((c) => stats[c]).filter((s) => s.average != null) : [];
+  const overallScore =
+    ratedCategories.length > 0
+      ? ratedCategories.reduce((sum, s) => sum + (s.average as number), 0) / ratedCategories.length
+      : null;
+
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
       {isLoggedIn && <Sidebar credits={null} />}
@@ -256,7 +262,17 @@ export default function TrackDnaPage() {
               </div>
 
               <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-                <h2 className="text-base font-semibold">Stats</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Stats</h2>
+                  {overallScore != null ? (
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-white">{overallScore.toFixed(1)}</span>
+                      <span className="text-sm text-white/40">/10 overall</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-white/40">No votes yet</span>
+                  )}
+                </div>
                 <div className="space-y-4">
                   {categories.map((category) => (
                     <StatBar key={category} label={CATEGORY_LABELS[category]} stat={stats![category]} />
