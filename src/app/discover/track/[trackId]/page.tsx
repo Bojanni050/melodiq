@@ -331,7 +331,9 @@ export default function TrackDnaPage() {
                     <p className="text-sm text-white/50">Sign in to vote on this track&apos;s DNA.</p>
                     <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />
                   </>
-                ) : (
+                ) : null}
+
+                {votingConfigured && !(votingOpen && !isLoggedIn) && (
                   <div className="space-y-4">
                     {categories.map((category) => (
                       <div key={category} className="space-y-1.5">
@@ -345,25 +347,28 @@ export default function TrackDnaPage() {
                           max={10}
                           step={0.1}
                           value={scores[category]}
+                          disabled={!votingOpen}
                           onChange={(e) =>
                             setScores((prev) => ({ ...prev, [category]: Number(e.target.value) }))
                           }
-                          className="w-full"
+                          className="w-full disabled:opacity-40"
                         />
                       </div>
                     ))}
-                    <div className="flex items-center gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={submitVote}
-                        disabled={submitting}
-                        className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
-                      >
-                        {submitting ? "Saving…" : "Submit vote"}
-                      </button>
-                      {voteSaved && <span className="text-xs text-green-400">Vote saved</span>}
-                      {voteError && <span className="text-xs text-red-400">{voteError}</span>}
-                    </div>
+                    {votingOpen && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={submitVote}
+                          disabled={submitting}
+                          className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
+                        >
+                          {submitting ? "Saving…" : "Submit vote"}
+                        </button>
+                        {voteSaved && <span className="text-xs text-green-400">Vote saved</span>}
+                        {voteError && <span className="text-xs text-red-400">{voteError}</span>}
+                      </div>
+                    )}
                   </div>
                 )}
               </section>

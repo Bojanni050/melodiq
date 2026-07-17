@@ -200,7 +200,9 @@ export default function TrackDnaPanel({
           <p className="text-sm text-white/50">Voting opens {pollsOpenDate!.toLocaleDateString()}.</p>
         ) : pollsClosed ? (
           <p className="text-sm text-white/50">Voting closed on {pollsCloseDate!.toLocaleDateString()}.</p>
-        ) : (
+        ) : null}
+
+        {votingConfigured && (
           <div className="space-y-3">
             {categories.map((category) => (
               <div key={category} className="space-y-1">
@@ -214,25 +216,28 @@ export default function TrackDnaPanel({
                   max={10}
                   step={0.1}
                   value={scores[category]}
+                  disabled={!votingOpen}
                   onChange={(e) =>
                     setScores((prev) => ({ ...prev, [category]: Number(e.target.value) }))
                   }
-                  className="w-full"
+                  className="w-full disabled:opacity-40"
                 />
               </div>
             ))}
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="button"
-                onClick={submitVote}
-                disabled={submitting}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
-              >
-                {submitting ? "Saving…" : "Submit vote"}
-              </button>
-              {voteSaved && <span className="text-xs text-green-400">Vote saved</span>}
-              {voteError && <span className="text-xs text-red-400">{voteError}</span>}
-            </div>
+            {votingOpen && (
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={submitVote}
+                  disabled={submitting}
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
+                >
+                  {submitting ? "Saving…" : "Submit vote"}
+                </button>
+                {voteSaved && <span className="text-xs text-green-400">Vote saved</span>}
+                {voteError && <span className="text-xs text-red-400">{voteError}</span>}
+              </div>
+            )}
           </div>
         )}
       </div>
