@@ -44,6 +44,10 @@ export default function SongDnaPage() {
   const [notFound, setNotFound] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [editingTrackDnaId, setEditingTrackDnaId] = useState<string | null>(null);
+  const [trackDnaDraft, setTrackDnaDraft] = useState("");
+  const [savingTrackDnaId, setSavingTrackDnaId] = useState<string | null>(null);
+  const [trackDnaError, setTrackDnaError] = useState("");
 
   const [title, setTitle] = useState("");
   const [lyrics, setLyrics] = useState("");
@@ -128,6 +132,48 @@ export default function SongDnaPage() {
       setSong((prev) =>
         prev ? { ...prev, trackVersions: prev.trackVersions.filter((t) => t.id !== trackId) } : prev
       );
+    }
+  }
+
+  function beginTrackDnaEdit(track: TrackItem) {
+    setEditingTrackDnaId(track.id);
+    setTrackDnaDraft(track.trackDna ?? "");
+    setTrackDnaError("");
+  }
+
+  async function handleSaveTrackDna(trackId: string) {
+    setSavingTrackDnaId(trackId);
+    setTrackDnaError("");
+    try {
+      const normalizedTrackDna = trackDnaDraft.trim() || null;
+      const res = await fetch(`/api/tracks/${trackId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackDna: normalizedTrackDna }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setTrackDnaError(data.error || "Track DNA could not be saved.");
+        return;
+      }
+
+      setSong((prev) =>
+        prev
+          ? {
+              ...prev,
+              trackVersions: prev.trackVersions.map((track) =>
+                track.id === trackId ? { ...track, trackDna: normalizedTrackDna } : track
+              ),
+            }
+          : prev
+      );
+      setEditingTrackDnaId(null);
+      setTrackDnaDraft("");
+    } catch {
+      setTrackDnaError("Track DNA could not be saved.");
+    } finally {
+      setSavingTrackDnaId(null);
     }
   }
 
@@ -368,15 +414,51 @@ export default function SongDnaPage() {
                         <p className="text-[11px] uppercase tracking-[0.18em] text-white/35">Version {index + 1}</p>
                         <h3 className="mt-1 truncate text-sm font-medium text-white">{track.title || "Untitled track"}</h3>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditingTrack(track)}
-                        className="shrink-0 rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/25 hover:text-white"
-                      >
-                        Edit Track DNA
-                      </button>
+                      {editingTrackDnaId !== track.id && (
+                        <button
+                          type="button"
+                          onClick={() => beginTrackDnaEdit(track)}
+                          className="shrink-0 rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/25 hover:text-white"
+                        >
+                          Edit Track DNA
+                        </button>
+                      )}
                     </div>
-                    {track.trackDna ? (
+                    {editingTrackDnaId === track.id ? (
+                      <div className="mt-3 space-y-3">
+                        <textarea
+                          value={trackDnaDraft}
+                          onChange={(event) => setTrackDnaDraft(event.target.value)}
+                          rows={5}
+                          autoFocus
+                          placeholder="What makes this particular track version unique?"
+                          className="w-full resize-y rounded-xl border border-white/12 bg-black/25 px-3 py-2 text-sm leading-6 text-white outline-none focus:border-white/25"
+                        />
+                        {trackDnaError && <p className="text-xs text-red-400">{trackDnaError}</p>}
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTrackDnaId(null);
+                              setTrackDnaDraft("");
+                              setTrackDnaError("");
+                            }}
+                            disabled={savingTrackDnaId === track.id}
+                            className="h-8 rounded-full border border-white/12 px-4 text-xs text-white/60 hover:text-white disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveTrackDna(track.id)}
+                            disabled={savingTrackDnaId === track.id}
+                            className="h-8 rounded-full bg-white px-4 text-xs font-medium text-black hover:bg-white/90 disabled:opacity-60"
+                          >
+                            {savingTrackDnaId === track.id ? "Saving…" : "Save Track DNA"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : track.trackDna ? (
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/70">{track.trackDna}</p>
                     ) : (
                       <p className="mt-3 text-sm italic text-white/35">No Track DNA added yet.</p>
