@@ -78,6 +78,9 @@ CREATE TABLE IF NOT EXISTS "playlists" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
   "name" varchar(255) NOT NULL,
+  "description" varchar(500),
+  "s3_key_cover" varchar(512),
+  "s3_key_cover_thumb" varchar(512),
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -159,6 +162,18 @@ CREATE TABLE IF NOT EXISTS "songs" (
 
 CREATE INDEX IF NOT EXISTS "songs_user_id_idx" ON "songs"("user_id");
 CREATE INDEX IF NOT EXISTS "songs_workspace_id_idx" ON "songs"("workspace_id");
+
+CREATE TABLE IF NOT EXISTS "push_subscriptions" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id"),
+  "endpoint" text NOT NULL,
+  "p256dh" text NOT NULL,
+  "auth" text NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "push_subscriptions_user_id_idx" ON "push_subscriptions"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "push_subscriptions_endpoint_unique" ON "push_subscriptions"("endpoint");
 `;
 
 // Handles existing databases where the songs table was created before folder_gradient existed.
@@ -185,6 +200,16 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS song_id uuid;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_lyrics TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_language VARCHAR(50);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_mp3 TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_retry_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_retry_count integer NOT NULL DEFAULT 0;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS artist_name VARCHAR(255);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_style_influence integer;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_weirdness integer;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp;
 CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
@@ -193,6 +218,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON 
 
 const alterUsersSql = `
 ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255);
+`;
+
+// Handles existing databases where playlists was created before these columns existed.
+const alterPlaylistsSql = `
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS description varchar(500);
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover varchar(512);
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover_thumb varchar(512);
 `;
 
 const tracksWorkspaceFkSql = `
@@ -290,6 +323,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
     await executeSqlStatements(targetClient, alterSongsSql);
+    await executeSqlStatements(targetClient, alterPlaylistsSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     await targetClient.unsafe(songsFkSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
