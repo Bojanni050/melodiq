@@ -71,6 +71,8 @@ export interface Track {
   s3KeyCover?: string | null;
   s3KeyCoverThumb?: string | null;
   playCount?: number | null;
+  votedAt?: string | null;
+  songId?: string | null;
   lyricsTimestamps?: string | null;
   instrumental?: boolean | null;
   artistName?: string | null;

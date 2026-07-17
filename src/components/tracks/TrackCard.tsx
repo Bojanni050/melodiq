@@ -15,8 +15,10 @@ import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
+import AddToSongDialog from "./AddToSongDialog";
 import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
+import TrackVote from "./TrackVote";
 import TrackActionMenu from "./TrackActionMenu";
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
@@ -143,6 +145,11 @@ const TrackCard = memo(function TrackCard({
     return workspaceDisplayNameById.get(assigned.id) ?? assigned.name;
   }, [track.id, workspaces, workspaceById, workspaceDisplayNameById]);
   const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
+  const songOptions = useMemo(() => workspaces.filter((w) => Boolean(w.parentWorkspaceId)), [workspaces]);
+  const defaultWorkspaceId = useMemo(
+    () => workspaces.find((w) => w.isDefault)?.id ?? "",
+    [workspaces]
+  );
 
   // Derived display values
   const statusConfig = {
@@ -204,6 +211,18 @@ const TrackCard = memo(function TrackCard({
         onMoveToWorkspace={actions.handleMoveToWorkspace}
         onCreateWorkspace={actions.handleCreateWorkspace}
         onMergeWorkspaceTrigger={actions.handleMergeWorkspaceTrigger}
+      />
+
+      <AddToSongDialog
+        isOpen={actions.showAddToSongDialog}
+        onClose={() => actions.setShowAddToSongDialog(false)}
+        track={track}
+        songOptions={songOptions}
+        workspaceDisplayNameById={workspaceDisplayNameById}
+        workspaceCoverById={workspaceCoverById}
+        defaultWorkspaceId={defaultWorkspaceId}
+        onAddToSong={actions.handleAddToSong}
+        onCreateSong={actions.handleCreateSongAndAdd}
       />
 
       <DuplicatePlaylistDialog
@@ -484,6 +503,13 @@ const TrackCard = memo(function TrackCard({
               onRate={actions.handleRating}
             />
           )}
+          {track.status === "done" && track.songId && (
+            <TrackVote
+              voted={Boolean(actions.currentVotedAt)}
+              voteLoading={actions.voteLoading}
+              onVote={actions.handleVote}
+            />
+          )}
           {track.status === "done" && track.audioUrl && (
             <>
               <button
@@ -514,6 +540,7 @@ const TrackCard = memo(function TrackCard({
               onRegenerateCover={actions.handleRegenerateCover}
               isRegeneratingCover={actions.isRegeneratingCover}
               onMoveToWorkspaceClick={() => actions.setWorkspaceMenuOpen(true)}
+              onAddToSongClick={() => actions.setShowAddToSongDialog(true)}
               onAddToQueue={onAddToQueue}
               onCreatePlaylistClick={() => actions.setShowCreatePlaylistDialog(true)}
               onAddToPlaylistClick={actions.handleAddToPlaylistClick}

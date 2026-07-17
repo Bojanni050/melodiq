@@ -210,6 +210,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_style_influence integer;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_weirdness integer;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
 CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");

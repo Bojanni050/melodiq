@@ -70,6 +70,7 @@ export const tracks = pgTable("tracks", {
   s3KeyLicense: text("s3_key_license"),
   rating: varchar("rating", { length: 10 }),
   playCount: integer("play_count").default(0).notNull(),
+  votedAt: timestamp("voted_at"),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

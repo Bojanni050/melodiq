@@ -27,8 +27,12 @@ export function useTrackCardActions({
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
-  const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
-    useShallow((s) => ({ createWorkspace: s.createWorkspace, moveTrackToWorkspace: s.moveTrackToWorkspace }))
+  const { createWorkspace, createWorkspaceFolder, moveTrackToWorkspace } = useWorkspaceStore(
+    useShallow((s) => ({
+      createWorkspace: s.createWorkspace,
+      createWorkspaceFolder: s.createWorkspaceFolder,
+      moveTrackToWorkspace: s.moveTrackToWorkspace,
+    }))
   );
 
   const [downloading, setDownloading] = useState(false);
@@ -39,6 +43,8 @@ export function useTrackCardActions({
   const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [currentVotedAt, setCurrentVotedAt] = useState<string | null>(track.votedAt ?? null);
+  const [voteLoading, setVoteLoading] = useState(false);
   const [showCreatePlaylistDialog, setShowCreatePlaylistDialog] = useState(false);
   const [showPlaylistPickerDialog, setShowPlaylistPickerDialog] = useState(false);
   const [showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog] = useState(false);
@@ -53,6 +59,7 @@ export function useTrackCardActions({
   const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [showAddToSongDialog, setShowAddToSongDialog] = useState(false);
 
   useEffect(() => {
     function handleCoverRegenerated(event: Event) {
@@ -154,6 +161,21 @@ export function useTrackCardActions({
       console.error("Failed to update rating:", error);
     } finally {
       setRatingLoading(false);
+    }
+  }
+
+  async function handleVote() {
+    setVoteLoading(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/vote`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentVotedAt(data.track?.votedAt ?? null);
+      }
+    } catch (error) {
+      console.error("Failed to update vote:", error);
+    } finally {
+      setVoteLoading(false);
     }
   }
 
@@ -265,6 +287,17 @@ export function useTrackCardActions({
     setWorkspaceMenuOpen(false);
   }
 
+  function handleAddToSong(songId: string) {
+    moveTrackToWorkspace(songId, track.id);
+    setShowAddToSongDialog(false);
+  }
+
+  function handleCreateSongAndAdd(name: string, workspaceId: string) {
+    const songId = createWorkspaceFolder(workspaceId, name);
+    if (songId) moveTrackToWorkspace(songId, track.id);
+    setShowAddToSongDialog(false);
+  }
+
   function handleMergeWorkspaceTrigger(existingWorkspace: { id: string; name: string }) {
     setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
     setShowMergeWorkspaceDialog(true);
@@ -287,6 +320,7 @@ export function useTrackCardActions({
     downloading, deleting, confirmDelete, setConfirmDelete,
     pendingDeleteIds, coverOverrideUrl,
     currentRating, ratingLoading,
+    currentVotedAt, voteLoading,
     isRegeneratingCover,
     showCreatePlaylistDialog, setShowCreatePlaylistDialog,
     showPlaylistPickerDialog, setShowPlaylistPickerDialog,
@@ -297,10 +331,13 @@ export function useTrackCardActions({
     showMergeWorkspaceDialog, setShowMergeWorkspaceDialog,
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
+    showAddToSongDialog, setShowAddToSongDialog,
     // handlers
+    handleAddToSong, handleCreateSongAndAdd,
     executeDelete, handleDelete,
     handleRegenerateCover,
     handleRating,
+    handleVote,
     handleDownload,
     handleCreatePlaylist,
     confirmDuplicatePlaylistAdd,
