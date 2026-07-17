@@ -203,7 +203,7 @@ export default function WorkspacesPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
-          void fetchAndHydrateSongs();
+          await fetchAndHydrateSongs();
         }
       }
 

@@ -368,7 +368,7 @@ export default function LibraryPage() {
       setTracks(cleanedTracks);
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
-        void fetchAndHydrateSongs();
+        await fetchAndHydrateSongs();
       }
     }
     setLoading(false);

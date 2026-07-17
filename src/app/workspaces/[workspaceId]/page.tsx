@@ -82,11 +82,11 @@ export default function WorkspaceDetailPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
-          void fetchAndHydrateSongs();
+          await fetchAndHydrateSongs();
         }
       }
 
-      setLoading(false);
+      if (active) setLoading(false);
     }
 
     fetchTracks();
@@ -95,7 +95,7 @@ export default function WorkspaceDetailPage() {
     return () => {
       active = false;
     };
-  }, [loadPlaylists]);
+  }, [loadPlaylists, workspaceId]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
@@ -352,10 +352,12 @@ export default function WorkspaceDetailPage() {
 
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">Workspace</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+                    {selectedWorkspace.parentWorkspaceId ? "Song" : "Workspace"}
+                  </p>
                   <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight truncate">{selectedWorkspace.name}</h1>
                   <p className="text-sm text-white/60 mt-1">
-                    {selectedWorkspaceTracks.length} songs in this folder.
+                    {selectedWorkspaceTracks.length} {selectedWorkspaceTracks.length === 1 ? "track" : "tracks"} in this {selectedWorkspace.parentWorkspaceId ? "song" : "folder"}.
                   </p>
                 </div>
 
@@ -396,7 +398,7 @@ export default function WorkspaceDetailPage() {
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                  This workspace has no tracks yet. Use track actions and choose Move To Workspace.
+                  This {selectedWorkspace.parentWorkspaceId ? "song" : "workspace"} has no tracks yet. Use track actions and choose {selectedWorkspace.parentWorkspaceId ? "Add to Song" : "Move To Workspace"}.
                 </div>
               )}
             </section>
