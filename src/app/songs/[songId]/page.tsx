@@ -314,11 +314,14 @@ export default function SongDnaPage() {
             </div>
           </section>
 
-          {/* Track versions */}
+          {/* Tracks */}
           <section className="space-y-3">
-            <h2 className="text-base font-semibold">
-              Track Versions <span className="text-sm font-normal text-white/40">({song.trackVersions.length})</span>
-            </h2>
+            <div>
+              <h2 className="text-base font-semibold">
+                Tracks <span className="text-sm font-normal text-white/40">({song.trackVersions.length})</span>
+              </h2>
+              <p className="mt-1 text-sm text-white/45">Listen to and manage every generated version of this song.</p>
+            </div>
             {song.trackVersions.length > 0 ? (
               <TrackList
                 tracks={song.trackVersions}
@@ -342,7 +345,48 @@ export default function SongDnaPage() {
               />
             ) : (
               <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                No track versions yet.
+                No tracks yet.
+              </div>
+            )}
+          </section>
+
+          {/* Track DNA */}
+          <section className="space-y-3 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+            <div>
+              <h2 className="text-base font-semibold">Track DNA</h2>
+              <p className="mt-1 text-sm text-white/45">
+                Version-specific choices that differ from the shared Song DNA.
+              </p>
+            </div>
+
+            {song.trackVersions.length > 0 ? (
+              <div className="space-y-3">
+                {song.trackVersions.map((track, index) => (
+                  <article key={track.id} className="rounded-2xl border border-white/10 bg-[#11121a] p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-white/35">Version {index + 1}</p>
+                        <h3 className="mt-1 truncate text-sm font-medium text-white">{track.title || "Untitled track"}</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingTrack(track)}
+                        className="shrink-0 rounded-full border border-white/12 px-3 py-1.5 text-xs text-white/70 transition-colors hover:border-white/25 hover:text-white"
+                      >
+                        Edit Track DNA
+                      </button>
+                    </div>
+                    {track.trackDna ? (
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/70">{track.trackDna}</p>
+                    ) : (
+                      <p className="mt-3 text-sm italic text-white/35">No Track DNA added yet.</p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/12 p-6 text-sm text-white/45">
+                Track DNA becomes available when this song has a track version.
               </div>
             )}
           </section>
