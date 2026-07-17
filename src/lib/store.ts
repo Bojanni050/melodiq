@@ -802,10 +802,14 @@ function persistWorkspaceDelete(workspaceId: string) {
 function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string | null) {
   if (typeof window === "undefined") return;
 
+  // Note: this deliberately does NOT touch songId. moveTracksToWorkspace is
+  // called routinely right after every generation to place new tracks into
+  // the active workspace, which would otherwise immediately un-group every
+  // freshly generated song.
   void fetch(`/api/tracks/${trackId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspaceId, songId: null }),
+    body: JSON.stringify({ workspaceId }),
   }).catch((error) => console.error("[store] persistTrackWorkspaceAssignment failed", error));
 }
 
