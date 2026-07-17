@@ -160,6 +160,7 @@ interface LibraryTrack {
   artistName?: string | null;
   composerName?: string | null;
   deletedAt?: string | null;
+  uploadIndex?: number;
 }
 
 type LibraryView = "songs" | "mysongs" | "playlists" | "workspaces" | "trash";
@@ -199,6 +200,12 @@ const UPLOAD_PROVIDERS = [
   { value: "musicgpt", label: "MusicGPT" },
 ] as const;
 
+type QueuedUploadSongAction = {
+  mode: "none" | "existing" | "create";
+  songId: string;
+  newSongName: string;
+};
+
 type QueuedUploadItem = {
   id: string;
   file: File;
@@ -214,6 +221,7 @@ type QueuedUploadItem = {
   sunoStyleInfluence: number | null;
   sunoWeirdness: number | null;
   licenseFile: File | null;
+  songAction: QueuedUploadSongAction;
 };
 
 function hashString(value: string) {
@@ -288,6 +296,7 @@ export default function LibraryPage() {
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     createWorkspace,
+    createWorkspaceFolder,
     deleteWorkspace,
     moveTrackToWorkspace,
     moveTracksToWorkspace,
@@ -639,6 +648,11 @@ export default function LibraryPage() {
     [parentWorkspaceNameById, workspaces],
   );
 
+  const uploadSongOptions = useMemo(
+    () => workspaces.filter((workspace) => workspace.parentWorkspaceId === uploadWorkspaceId),
+    [workspaces, uploadWorkspaceId],
+  );
+
   function openWorkspace(id: string) {
     setSelectedPlaylistId(null);
     setSelectedWorkspaceId(id);
@@ -757,6 +771,7 @@ export default function LibraryPage() {
         sunoStyleInfluence: 50,
         sunoWeirdness: 50,
         licenseFile: null,
+        songAction: { mode: "none" as const, songId: "", newSongName: titleFromUploadFilename(file.name) },
       }));
 
       if (valid.length > room) {
@@ -937,6 +952,19 @@ export default function LibraryPage() {
       if (uploadedTracks.length > 0) {
         const uploadedTrackIds = uploadedTracks.map((track) => track.id);
         moveTracksToWorkspace(targetWorkspaceId, uploadedTrackIds);
+
+        uploadedTracks.forEach((track) => {
+          const queuedItem = typeof track.uploadIndex === "number" ? queuedUploads[track.uploadIndex] : undefined;
+          const songAction = queuedItem?.songAction;
+          if (!songAction || songAction.mode === "none") return;
+
+          if (songAction.mode === "existing" && songAction.songId) {
+            moveTrackToWorkspace(songAction.songId, track.id);
+          } else if (songAction.mode === "create" && songAction.newSongName.trim()) {
+            const songId = createWorkspaceFolder(targetWorkspaceId, songAction.newSongName.trim());
+            if (songId) moveTrackToWorkspace(songId, track.id);
+          }
+        });
 
         setTracks((current) => {
           const byId = new Map(current.map((track) => [track.id, track]));
@@ -2270,6 +2298,71 @@ export default function LibraryPage() {
                                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                               />
                             </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label htmlFor={`upload-item-song-mode-${item.id}`} className="text-xs text-white/60">Song</label>
+                            <select
+                              id={`upload-item-song-mode-${item.id}`}
+                              value={item.songAction.mode}
+                              onChange={(event) => {
+                                const mode = event.target.value as QueuedUploadSongAction["mode"];
+                                setQueuedUploads((current) =>
+                                  current.map((upload) =>
+                                    upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, mode } } : upload
+                                  )
+                                );
+                              }}
+                              disabled={uploading}
+                              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                            >
+                              <option value="none">None</option>
+                              <option value="existing">Add to existing song</option>
+                              <option value="create">Create new song</option>
+                            </select>
+
+                            {item.songAction.mode === "existing" && (
+                              <select
+                                aria-label="Existing song"
+                                value={item.songAction.songId}
+                                onChange={(event) => {
+                                  const songId = event.target.value;
+                                  setQueuedUploads((current) =>
+                                    current.map((upload) =>
+                                      upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, songId } } : upload
+                                    )
+                                  );
+                                }}
+                                disabled={uploading}
+                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                              >
+                                <option value="">
+                                  {uploadSongOptions.length === 0 ? "No songs in this workspace yet" : "Select a song…"}
+                                </option>
+                                {uploadSongOptions.map((song) => (
+                                  <option key={song.id} value={song.id}>{song.name}</option>
+                                ))}
+                              </select>
+                            )}
+
+                            {item.songAction.mode === "create" && (
+                              <input
+                                type="text"
+                                aria-label="New song name"
+                                value={item.songAction.newSongName}
+                                onChange={(event) => {
+                                  const newSongName = event.target.value;
+                                  setQueuedUploads((current) =>
+                                    current.map((upload) =>
+                                      upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, newSongName } } : upload
+                                    )
+                                  );
+                                }}
+                                disabled={uploading}
+                                placeholder="Song name"
+                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                              />
+                            )}
                           </div>
 
                           <div className="space-y-1">

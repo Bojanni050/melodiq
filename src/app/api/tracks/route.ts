@@ -864,7 +864,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const uploadedTracks: Array<typeof tracks.$inferSelect> = [];
+    const uploadedTracks: Array<typeof tracks.$inferSelect & { uploadIndex: number }> = [];
     const rejected: Array<{ filename: string; reason: string }> = [];
 
     for (const [index, file] of files.entries()) {
@@ -1003,7 +1003,7 @@ export async function POST(request: NextRequest) {
             instrumental: isInstrumental,
           }).catch((error) => console.error("[tracks/upload] language detection failed", error));
 
-          uploadedTracks.push(inserted[0]);
+          uploadedTracks.push({ ...inserted[0], uploadIndex: index });
         }
       } catch (error) {
         if (isUniqueConstraintViolation(error)) {

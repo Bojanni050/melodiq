@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 
-import { getPublishedSongPlayableTrack } from "@/lib/songs";
+import { getPublishedTrackById } from "@/lib/songs";
 import { getCachedAudioStream, getContentType } from "@/lib/audio-cache";
 import { getPresignedUrl } from "@/lib/s3";
 
-// Public, no auth: only ever serves audio for a track belonging to a song
-// with releaseStatus === "published" — re-verified on every request via
-// getPublishedSongPlayableTrack, never trusting client-supplied state.
+// Public, no auth: only ever serves audio for a track with
+// releaseStatus === "published" — re-verified on every request via
+// getPublishedTrackById, never trusting client-supplied state.
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ songId: string }> }
+  { params }: { params: Promise<{ trackId: string }> }
 ) {
-  const { songId } = await params;
+  const { trackId } = await params;
 
-  const track = await getPublishedSongPlayableTrack(songId);
+  const track = await getPublishedTrackById(trackId);
   if (!track || !track.s3Key) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }

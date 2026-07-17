@@ -271,6 +271,32 @@ export const stylePresetsRelations = relations(stylePresets, ({ one }) => ({
   }),
 }));
 
+export const trackDnaVotes = pgTable("track_dna_votes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  trackId: uuid("track_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  vocal: integer("vocal").notNull(),
+  instrumental: integer("instrumental").notNull(),
+  atmosphere: integer("atmosphere").notNull(),
+  lyrics: integer("lyrics"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("track_dna_votes_track_user_unique").on(table.trackId, table.userId),
+  index("track_dna_votes_track_id_idx").on(table.trackId),
+]);
+
+export const trackDnaVotesRelations = relations(trackDnaVotes, ({ one }) => ({
+  track: one(tracks, {
+    fields: [trackDnaVotes.trackId],
+    references: [tracks.id],
+  }),
+  user: one(users, {
+    fields: [trackDnaVotes.userId],
+    references: [users.id],
+  }),
+}));
+
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),

@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { songs, tracks, users, workspaces } from "@/db/schema";
+import { songs, trackDnaVotes, tracks, users, workspaces } from "@/db/schema";
 import { ensureDefaultWorkspaceForUser } from "@/lib/workspaces";
 
 export type SongWithTrackVersions = typeof songs.$inferSelect & {
@@ -116,109 +116,135 @@ export async function getUserSongWithTrackVersions(
   return { ...song, trackVersions };
 }
 
-export type PublicSongSummary = {
+export type PublicTrackSummary = {
   id: string;
+  songId: string | null;
   title: string;
   artistName: string | null;
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
   totalPlays: number;
+  instrumental: boolean;
   publishDate: string | null;
 };
 
-// Picks the track version a public listener actually hears for a published
-// song: prefer a version that's itself published, otherwise the earliest
-// finished, non-deleted version. Only ever called for songs already
-// confirmed to have releaseStatus === "published" by the caller.
-function pickRepresentativeTrack(versions: (typeof tracks.$inferSelect)[]) {
-  return versions.find((t) => t.releaseStatus === "published") ?? versions[0];
+function toPublicTrackSummary(
+  track: typeof tracks.$inferSelect,
+  ownerById: Map<string, { artistAlias: string | null; name: string | null }>
+): PublicTrackSummary {
+  const owner = ownerById.get(track.userId);
+  return {
+    id: track.id,
+    songId: track.songId,
+    title: track.title || "Untitled",
+    artistName: track.artistName || owner?.artistAlias || owner?.name || null,
+    coverUrl: track.coverUrl || null,
+    hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
+    duration: track.duration,
+    totalPlays: track.playCount,
+    instrumental: track.instrumental,
+    publishDate: track.publishDate ? track.publishDate.toISOString() : null,
+  };
 }
 
-async function getPlayableVersionsBySongId(songIds: string[]) {
-  if (songIds.length === 0) return new Map<string, (typeof tracks.$inferSelect)[]>();
-
-  const trackRows = await db
+// Public, cross-user: every individually published track version, independent
+// of its song's own release status (tracks carry their own releaseStatus so a
+// single version of a song can be published on its own). Never includes
+// lyrics/prompt/trackDna — those stay private.
+export async function getPublishedTracksFeed(limit = 50): Promise<PublicTrackSummary[]> {
+  const rows = await db
     .select()
     .from(tracks)
-    .where(and(inArray(tracks.songId, songIds), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
-    .orderBy(asc(tracks.createdAt));
+    .where(and(eq(tracks.releaseStatus, "published"), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
+    .orderBy(desc(tracks.publishDate))
+    .limit(limit);
 
-  const bySongId = new Map<string, (typeof tracks.$inferSelect)[]>();
-  for (const track of trackRows) {
-    if (!track.songId) continue;
-    const list = bySongId.get(track.songId) ?? [];
-    list.push(track);
-    bySongId.set(track.songId, list);
-  }
-  return bySongId;
-}
+  if (rows.length === 0) return [];
 
-// Public, cross-user: every published song with at least one playable track
-// version. Never includes lyrics/prompt/notes/songDna — those stay private.
-export async function getPublishedSongsFeed(limit = 50): Promise<PublicSongSummary[]> {
-  const publishedSongs = await db
-    .select()
-    .from(songs)
-    .where(eq(songs.releaseStatus, "published"))
-    .orderBy(desc(songs.publishDate));
-
-  if (publishedSongs.length === 0) return [];
-
-  const songIds = publishedSongs.map((s) => s.id);
-  const versionsBySongId = await getPlayableVersionsBySongId(songIds);
-
-  const ownerIds = Array.from(new Set(publishedSongs.map((s) => s.userId)));
-  const owners = ownerIds.length
-    ? await db
-        .select({ id: users.id, artistAlias: users.artistAlias, name: users.name })
-        .from(users)
-        .where(inArray(users.id, ownerIds))
-    : [];
+  const ownerIds = Array.from(new Set(rows.map((t) => t.userId)));
+  const owners = await db
+    .select({ id: users.id, artistAlias: users.artistAlias, name: users.name })
+    .from(users)
+    .where(inArray(users.id, ownerIds));
   const ownerById = new Map(owners.map((o) => [o.id, o]));
 
-  const results: PublicSongSummary[] = [];
-
-  for (const song of publishedSongs) {
-    const versions = versionsBySongId.get(song.id) ?? [];
-    if (versions.length === 0) continue;
-
-    const representative = pickRepresentativeTrack(versions);
-    const totalPlays = versions.reduce((sum, t) => sum + (t.playCount ?? 0), 0);
-    const owner = ownerById.get(song.userId);
-    const artistName = representative.artistName || owner?.artistAlias || owner?.name || null;
-
-    results.push({
-      id: song.id,
-      title: song.title || "Untitled",
-      artistName,
-      coverUrl: representative.coverUrl || null,
-      hasCoverProxy: Boolean(!representative.coverUrl && representative.s3KeyCover),
-      duration: representative.duration,
-      totalPlays,
-      publishDate: song.publishDate ? song.publishDate.toISOString() : null,
-    });
-
-    if (results.length >= limit) break;
-  }
-
-  return results;
+  return rows.map((track) => toPublicTrackSummary(track, ownerById));
 }
 
-// Returns the representative playable track for a song, but ONLY if the
-// song is currently published — used to gate the public stream/cover routes.
-export async function getPublishedSongPlayableTrack(songId: string) {
-  const [song] = await db
-    .select({ id: songs.id, releaseStatus: songs.releaseStatus })
-    .from(songs)
-    .where(eq(songs.id, songId))
+// Public, no auth: the gate for every discover media/vote route. Re-verifies
+// a track is still individually published on every call — never trusts a
+// client-supplied id alone.
+export async function getPublishedTrackById(trackId: string) {
+  const [track] = await db
+    .select()
+    .from(tracks)
+    .where(
+      and(
+        eq(tracks.id, trackId),
+        eq(tracks.releaseStatus, "published"),
+        eq(tracks.status, "done"),
+        isNull(tracks.deletedAt)
+      )
+    )
     .limit(1);
 
-  if (!song || song.releaseStatus !== "published") return null;
+  return track ?? null;
+}
 
-  const versionsBySongId = await getPlayableVersionsBySongId([songId]);
-  const versions = versionsBySongId.get(songId) ?? [];
-  if (versions.length === 0) return null;
+export type TrackDnaCategory = "vocal" | "instrumental" | "atmosphere" | "lyrics";
+export type TrackDnaStats = Record<TrackDnaCategory, { average: number | null; count: number }>;
 
-  return pickRepresentativeTrack(versions);
+export async function getTrackDnaStats(trackId: string): Promise<TrackDnaStats> {
+  const [row] = await db
+    .select({
+      vocalAvg: sql<string | null>`avg(${trackDnaVotes.vocal})`,
+      vocalCount: sql<number>`count(${trackDnaVotes.vocal})`,
+      instrumentalAvg: sql<string | null>`avg(${trackDnaVotes.instrumental})`,
+      instrumentalCount: sql<number>`count(${trackDnaVotes.instrumental})`,
+      atmosphereAvg: sql<string | null>`avg(${trackDnaVotes.atmosphere})`,
+      atmosphereCount: sql<number>`count(${trackDnaVotes.atmosphere})`,
+      lyricsAvg: sql<string | null>`avg(${trackDnaVotes.lyrics})`,
+      lyricsCount: sql<number>`count(${trackDnaVotes.lyrics})`,
+    })
+    .from(trackDnaVotes)
+    .where(eq(trackDnaVotes.trackId, trackId));
+
+  const toStat = (avg: string | null | undefined, count: number | undefined) => ({
+    average: avg != null ? Math.round(Number(avg) * 10) / 10 : null,
+    count: Number(count ?? 0),
+  });
+
+  return {
+    vocal: toStat(row?.vocalAvg, row?.vocalCount),
+    instrumental: toStat(row?.instrumentalAvg, row?.instrumentalCount),
+    atmosphere: toStat(row?.atmosphereAvg, row?.atmosphereCount),
+    lyrics: toStat(row?.lyricsAvg, row?.lyricsCount),
+  };
+}
+
+export async function getUserTrackDnaVote(trackId: string, userId: string) {
+  const [vote] = await db
+    .select()
+    .from(trackDnaVotes)
+    .where(and(eq(trackDnaVotes.trackId, trackId), eq(trackDnaVotes.userId, userId)))
+    .limit(1);
+  return vote ?? null;
+}
+
+export async function upsertTrackDnaVote(
+  trackId: string,
+  userId: string,
+  scores: { vocal: number; instrumental: number; atmosphere: number; lyrics: number | null }
+) {
+  const [vote] = await db
+    .insert(trackDnaVotes)
+    .values({ trackId, userId, ...scores })
+    .onConflictDoUpdate({
+      target: [trackDnaVotes.trackId, trackDnaVotes.userId],
+      set: { ...scores, updatedAt: new Date() },
+    })
+    .returning();
+
+  return vote;
 }

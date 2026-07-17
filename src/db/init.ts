@@ -180,6 +180,21 @@ CREATE TABLE IF NOT EXISTS "push_subscriptions" (
 
 CREATE INDEX IF NOT EXISTS "push_subscriptions_user_id_idx" ON "push_subscriptions"("user_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "push_subscriptions_endpoint_unique" ON "push_subscriptions"("endpoint");
+
+CREATE TABLE IF NOT EXISTS "track_dna_votes" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "vocal" integer NOT NULL,
+  "instrumental" integer NOT NULL,
+  "atmosphere" integer NOT NULL,
+  "lyrics" integer,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "track_dna_votes_track_user_unique" ON "track_dna_votes"("track_id", "user_id");
+CREATE INDEX IF NOT EXISTS "track_dna_votes_track_id_idx" ON "track_dna_votes"("track_id");
 `;
 
 // Handles existing databases where the songs table was created before these columns existed.

@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getPublishedSongPlayableTrack } from "@/lib/songs";
+import { getPublishedTrackById } from "@/lib/songs";
 import { getCachedCover } from "@/lib/cover-cache";
 
-// Public, no auth: only ever serves a cover for a track belonging to a song
-// with releaseStatus === "published" — re-verified on every request.
+// Public, no auth: only ever serves a cover for a track with
+// releaseStatus === "published" — re-verified on every request.
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ songId: string }> }
+  { params }: { params: Promise<{ trackId: string }> }
 ) {
-  const { songId } = await params;
+  const { trackId } = await params;
 
-  const track = await getPublishedSongPlayableTrack(songId);
+  const track = await getPublishedTrackById(trackId);
   if (!track || !track.s3KeyCover) {
     return NextResponse.json({ error: "No cover art available" }, { status: 404 });
   }
@@ -32,7 +32,7 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error(`[discover/cover] failed for song ${songId}:`, error?.message ?? error);
+    console.error(`[discover/cover] failed for track ${trackId}:`, error?.message ?? error);
     return NextResponse.json(
       { error: "Cover not found" },
       { status: 404, headers: { "Cache-Control": "public, max-age=300" } }
