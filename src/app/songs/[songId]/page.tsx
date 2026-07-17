@@ -137,11 +137,20 @@ export default function SongDnaPage() {
     const totalPlays = versions.reduce((sum, t) => sum + (t.playCount ?? 0), 0);
     const votedVersion = versions.find((t) => t.votedAt);
     const publishedCount = versions.filter((t) => t.releaseStatus === "published").length;
+
+    // Best-version highlight (mirrors the "crown marks the best value" idea
+    // from a compare view) — only meaningful with more than one version.
+    const mostPlayed =
+      versions.length > 1
+        ? versions.reduce((best, t) => ((t.playCount ?? 0) > (best.playCount ?? 0) ? t : best), versions[0])
+        : null;
+
     return {
       versionCount: versions.length,
       totalPlays,
       votedTitle: votedVersion ? votedVersion.title || "Untitled" : "None yet",
       publishedCount,
+      mostPlayedTitle: mostPlayed && (mostPlayed.playCount ?? 0) > 0 ? mostPlayed.title || "Untitled" : null,
     };
   }, [song]);
 
@@ -189,6 +198,7 @@ export default function SongDnaPage() {
             <StatTile label="Total Plays" value={stats!.totalPlays} />
             <StatTile label="Current Pick" value={stats!.votedTitle} />
             <StatTile label="Published Versions" value={stats!.publishedCount} />
+            {stats!.mostPlayedTitle && <StatTile label="🏆 Most Played" value={stats!.mostPlayedTitle} />}
           </div>
 
           {/* Song info */}

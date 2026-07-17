@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 function AutocompleteInput({
@@ -161,7 +162,16 @@ interface LibraryTrack {
   deletedAt?: string | null;
 }
 
-type LibraryView = "songs" | "playlists" | "workspaces" | "trash";
+type LibraryView = "songs" | "mysongs" | "playlists" | "workspaces" | "trash";
+
+interface LibrarySongSummary {
+  id: string;
+  title: string | null;
+  trackIds: string[];
+  releaseStatus: string;
+  publishDate: string | null;
+  createdAt: string;
+}
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
@@ -295,6 +305,9 @@ export default function LibraryPage() {
   const uploadLicenseInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mySongs, setMySongs] = useState<LibrarySongSummary[]>([]);
+  const [mySongsLoading, setMySongsLoading] = useState(false);
+  const [mySongsLoaded, setMySongsLoaded] = useState(false);
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -386,6 +399,21 @@ export default function LibraryPage() {
       setTrashLoading(false);
     }
   }, []);
+
+  const fetchMySongs = useCallback(async () => {
+    if (mySongsLoaded) return;
+    setMySongsLoading(true);
+    try {
+      const res = await fetch("/api/songs");
+      if (res.ok) {
+        const data = await res.json();
+        setMySongs(data.songs || []);
+        setMySongsLoaded(true);
+      }
+    } finally {
+      setMySongsLoading(false);
+    }
+  }, [mySongsLoaded]);
 
   useEffect(() => {
     function consumeJumpToTrack() {
@@ -1152,7 +1180,7 @@ export default function LibraryPage() {
                       Library
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : "Tracks"}
+                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : view === "mysongs" ? "Songs" : "Tracks"}
                       </span>
                     </h1>
                     {activeSongs.length > 0 && (
@@ -1169,6 +1197,15 @@ export default function LibraryPage() {
                       className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "songs" && !selectedPlaylist && !selectedWorkspace ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                     >
                       Tracks
+                    </button>
+
+                    {/* Songs */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPlaylistId(null); setSelectedWorkspaceId(null); setView("mysongs"); void fetchMySongs(); }}
+                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "mysongs" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                    >
+                      Songs
                     </button>
 
                     {/* Playlists + contextual sub-pill */}
@@ -1340,6 +1377,59 @@ export default function LibraryPage() {
                     }
                     selectedTrackId={selectedTrack?.id ?? null}
                   />
+                )}
+              </section>
+            )}
+
+            {/* Songs view (grouped, distinct from the flat Tracks list) */}
+            {view === "mysongs" && (
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold">Songs</h2>
+                    <p className="text-sm text-white/55">Your songs, each grouping its track versions.</p>
+                  </div>
+                </div>
+
+                {mySongsLoading ? (
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading songs...</div>
+                ) : mySongs.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {mySongs.map((song) => (
+                      <Link
+                        key={song.id}
+                        href={`/songs/${song.id}`}
+                        className="group flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
+                      >
+                        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border border-amber-300/20 bg-[#11131f]">
+                          <svg className="h-8 w-8 text-amber-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">{song.title || "Untitled Song"}</p>
+                          <p className="text-xs text-white/45">
+                            {song.trackIds.length} {song.trackIds.length === 1 ? "version" : "versions"}
+                          </p>
+                        </div>
+                        {song.releaseStatus !== "concept" && (
+                          <span
+                            className={`self-start text-[10px] px-1.5 py-0.5 rounded ${
+                              song.releaseStatus === "published"
+                                ? "border border-green-300/30 bg-green-400/10 text-green-200"
+                                : "border border-red-300/30 bg-red-400/10 text-red-200"
+                            }`}
+                          >
+                            {song.releaseStatus === "published" ? "Published" : "Unpublished"}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
+                    No songs yet. Generating a track automatically creates one, or use &ldquo;Add to Song&rdquo; from a track&apos;s menu.
+                  </div>
                 )}
               </section>
             )}

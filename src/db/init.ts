@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "password" text NOT NULL,
   "name" varchar(255),
   "artist_alias" varchar(255),
+  "role" varchar(20) NOT NULL DEFAULT 'user',
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -230,6 +231,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON 
 const alterUsersSql = `
 ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user';
 `;
 
 // Handles existing databases where playlists was created before these columns existed.
