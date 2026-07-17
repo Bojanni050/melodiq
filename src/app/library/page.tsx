@@ -296,7 +296,7 @@ export default function LibraryPage() {
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     createWorkspace,
-    createWorkspaceFolder,
+    createWorkspaceFolderAndAssign,
     deleteWorkspace,
     moveTrackToWorkspace,
     moveTracksToWorkspace,
@@ -953,18 +953,20 @@ export default function LibraryPage() {
         const uploadedTrackIds = uploadedTracks.map((track) => track.id);
         moveTracksToWorkspace(targetWorkspaceId, uploadedTrackIds);
 
-        uploadedTracks.forEach((track) => {
+        for (const track of uploadedTracks) {
           const queuedItem = typeof track.uploadIndex === "number" ? queuedUploads[track.uploadIndex] : undefined;
           const songAction = queuedItem?.songAction;
-          if (!songAction || songAction.mode === "none") return;
+          if (!songAction || songAction.mode === "none") continue;
 
           if (songAction.mode === "existing" && songAction.songId) {
             moveTrackToWorkspace(songAction.songId, track.id);
           } else if (songAction.mode === "create" && songAction.newSongName.trim()) {
-            const songId = createWorkspaceFolder(targetWorkspaceId, songAction.newSongName.trim());
-            if (songId) moveTrackToWorkspace(songId, track.id);
+            // Awaited (not fired in parallel) so a second queued item with the
+            // same new song name reliably finds the first one's just-created
+            // folder instead of racing to create a duplicate.
+            await createWorkspaceFolderAndAssign(targetWorkspaceId, songAction.newSongName.trim(), track.id);
           }
-        });
+        }
 
         setTracks((current) => {
           const byId = new Map(current.map((track) => [track.id, track]));

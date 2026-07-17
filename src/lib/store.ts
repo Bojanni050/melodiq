@@ -753,6 +753,7 @@ interface WorkspaceState {
   selectedWorkspaceId: string | null;
   createWorkspace: (name: string) => string;
   createWorkspaceFolder: (parentWorkspaceId: string, name: string) => string;
+  createWorkspaceFolderAndAssign: (parentWorkspaceId: string, name: string, trackId: string) => Promise<string>;
   moveTrackToWorkspace: (workspaceId: string, trackId: string) => void;
   moveTracksToWorkspace: (workspaceId: string, trackIds: string[]) => void;
   removeTrackFromWorkspace: (workspaceId: string, trackId: string) => void;
@@ -844,14 +845,16 @@ function persistSongCreate(input: {
   name: string;
   workspaceId: string;
   folderGradient?: string;
-}) {
-  if (typeof window === "undefined") return;
+}): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
 
-  void fetch("/api/songs", {
+  return fetch("/api/songs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-  }).catch((error) => console.error("[store] persistSongCreate failed", error));
+  })
+    .then(() => undefined)
+    .catch((error) => console.error("[store] persistSongCreate failed", error));
 }
 
 function persistSongDelete(songId: string, options?: { deleteTracks?: boolean }) {
@@ -1023,7 +1026,58 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ],
         }));
 
-        persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
+        void persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
+
+        return id;
+      },
+      // Same as createWorkspaceFolder, but for the "create a new song and
+      // attach this track to it in one step" flows (Add to Song dialog,
+      // upload panel's per-file song picker). Awaits the song actually
+      // existing server-side before assigning the track — createWorkspaceFolder
+      // fires its POST /api/songs fire-and-forget, so calling
+      // moveTrackToWorkspace right after it is a race: the track's
+      // PATCH { songId } can reach the server (and 404 "Song not found")
+      // before the song's own POST has committed.
+      createWorkspaceFolderAndAssign: async (parentWorkspaceId, name, trackId) => {
+        const trimmed = name.trim();
+        if (!trimmed) return "";
+
+        const existing = findWorkspaceByName(get().workspaces, trimmed);
+        if (existing) {
+          get().moveTrackToWorkspace(existing.id, trackId);
+          return existing.id;
+        }
+
+        const parent = get().workspaces.find((workspace) => workspace.id === parentWorkspaceId);
+        if (!parent) return "";
+
+        // Keep hierarchy one-level deep: only root workspaces can have child folders.
+        if (parent.parentWorkspaceId) return "";
+
+        const id =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const folderGradient =
+          WORKSPACE_FOLDER_GRADIENTS[Math.floor(Math.random() * WORKSPACE_FOLDER_GRADIENTS.length)];
+
+        set((state) => ({
+          workspaces: [
+            ...state.workspaces,
+            {
+              id,
+              name: trimmed,
+              trackIds: [],
+              createdAt: new Date().toISOString(),
+              folderGradient,
+              isDefault: false,
+              parentWorkspaceId,
+            },
+          ],
+        }));
+
+        await persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
+        get().moveTrackToWorkspace(id, trackId);
 
         return id;
       },

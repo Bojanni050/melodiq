@@ -27,10 +27,10 @@ export function useTrackCardActions({
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
-  const { createWorkspace, createWorkspaceFolder, moveTrackToWorkspace } = useWorkspaceStore(
+  const { createWorkspace, createWorkspaceFolderAndAssign, moveTrackToWorkspace } = useWorkspaceStore(
     useShallow((s) => ({
       createWorkspace: s.createWorkspace,
-      createWorkspaceFolder: s.createWorkspaceFolder,
+      createWorkspaceFolderAndAssign: s.createWorkspaceFolderAndAssign,
       moveTrackToWorkspace: s.moveTrackToWorkspace,
     }))
   );
@@ -293,8 +293,7 @@ export function useTrackCardActions({
   }
 
   function handleCreateSongAndAdd(name: string, workspaceId: string) {
-    const songId = createWorkspaceFolder(workspaceId, name);
-    if (songId) moveTrackToWorkspace(songId, track.id);
+    void createWorkspaceFolderAndAssign(workspaceId, name, track.id);
     setShowAddToSongDialog(false);
   }
 
