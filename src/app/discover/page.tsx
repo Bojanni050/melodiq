@@ -12,6 +12,7 @@ interface PublicSong {
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
+  trackCount: number;
   totalPlays: number;
   publishDate: string | null;
 }
@@ -159,13 +160,31 @@ export default function DiscoverPage() {
           </div>
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{song.title}</p>
+          {isLoggedIn ? (
+            <Link
+              href={`/songs/${song.id}`}
+              className="block truncate text-sm font-medium text-white transition-colors hover:text-primary-300"
+            >
+              {song.title}
+            </Link>
+          ) : (
+            <p className="truncate text-sm font-medium text-white">{song.title}</p>
+          )}
           <p className="truncate text-xs text-white/45">{song.artistName || "Unknown Artist"}</p>
         </div>
-        <div className="flex items-center justify-between text-[11px] text-white/35">
+        <div className="flex items-center justify-between gap-2 text-[11px] text-white/35">
           <span>{formatDuration(song.duration)}</span>
+          <span>{song.trackCount} {song.trackCount === 1 ? "track" : "tracks"}</span>
           <span>{song.totalPlays.toLocaleString()} plays</span>
         </div>
+        {isLoggedIn && (
+          <Link
+            href={`/songs/${song.id}`}
+            className="mt-1 inline-flex h-8 items-center justify-center rounded-full border border-white/12 px-3 text-xs font-medium text-white/70 transition-colors hover:border-white/25 hover:text-white"
+          >
+            Open Song DNA
+          </Link>
+        )}
       </div>
     );
   }
