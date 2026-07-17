@@ -123,6 +123,7 @@ export type PublicSongSummary = {
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
+  trackCount: number;
   totalPlays: number;
   publishDate: string | null;
 };
@@ -195,6 +196,7 @@ export async function getPublishedSongsFeed(limit = 50): Promise<PublicSongSumma
       coverUrl: representative.coverUrl || null,
       hasCoverProxy: Boolean(!representative.coverUrl && representative.s3KeyCover),
       duration: representative.duration,
+      trackCount: versions.length,
       totalPlays,
       publishDate: song.publishDate ? song.publishDate.toISOString() : null,
     });
