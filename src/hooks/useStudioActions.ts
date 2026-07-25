@@ -105,6 +105,7 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
       vocalGender,
       weirdness,
       styleInfluence,
+      usePersonaVoice,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -153,6 +154,18 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
       }
 
       const effectiveLanguage = getEffectiveLanguage();
+
+      let personaId: string | undefined;
+      if (usePersonaVoice && providerEntries.some(([provider]) => provider === "apimart")) {
+        try {
+          const voicesRes = await fetch("/api/voice");
+          if (voicesRes.ok) {
+            const { voices } = await voicesRes.json();
+            personaId = voices?.find((v: any) => v.status === "completed")?.personaId ?? undefined;
+          }
+        } catch {}
+      }
+
       const results = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
           fetch("/api/generate", {
@@ -169,6 +182,7 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
               vocalGender,
               weirdness,
               styleInfluence,
+              personaId: provider === "apimart" ? personaId : undefined,
             }),
           }).then(async (res) => {
             const data = await res.json();

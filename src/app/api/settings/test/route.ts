@@ -104,6 +104,13 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     method: "GET",
     authHeader: "X-API-Key",
   },
+  apimart: {
+    // No dedicated "whoami" endpoint is documented; a nonexistent task id returns
+    // 404 for a valid key and 401 for an invalid one, which is enough to test auth.
+    url: "https://api.apimart.ai/v1/music/tasks/melodiq-key-test",
+    keyPrefix: "",
+    method: "GET",
+  },
 };
 
 export async function POST(request: Request) {
@@ -196,6 +203,13 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         message: "Connected — MusicGPT API key is valid (test payload rejected with 422 validation, expected).",
+      });
+    }
+
+    if (provider === "apimart" && status === 404) {
+      return NextResponse.json({
+        success: true,
+        message: "Connected — APIMart API key is valid (test task id not found, as expected).",
       });
     }
 

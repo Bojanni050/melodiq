@@ -108,6 +108,9 @@ export async function validateProviderApiKeys(provider: string): Promise<{ valid
   } else if (provider === "apiframe") {
     const key = await getSetting("APIFRAME_API_KEY");
     if (!key) missing.push("APIFRAME_API_KEY");
+  } else if (provider === "apimart") {
+    const key = (await getSetting("APIMART_API_KEY")) || process.env.APIMART_API_KEY;
+    if (!key) missing.push("APIMART_API_KEY");
   }
 
   // Check S3 keys (required for uploads)

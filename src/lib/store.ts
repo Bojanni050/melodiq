@@ -273,6 +273,7 @@ export const usePlayerStore = create<PlayerState>()(
         audioElement.currentTime = 0;
         audioElement.src = url || "";
         audioElement.volume = get().volume;
+        audioElement.dataset.gestureTrackId = track.id;
         audioElement.load();
 
         const playPromise = audioElement.play();
@@ -1302,6 +1303,7 @@ interface StudioState {
   customStructure: string;
   weirdness: number;
   styleInfluence: number;
+  usePersonaVoice: boolean;
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
@@ -1320,6 +1322,7 @@ interface StudioState {
   setCustomStructure: (val: string) => void;
   setWeirdness: (val: number) => void;
   setStyleInfluence: (val: number) => void;
+  setUsePersonaVoice: (val: boolean) => void;
   fetchSavedLyrics: () => Promise<void>;
   saveLyric: () => Promise<SavedLyric | null>;
   loadSavedLyric: (id: string) => void;
@@ -1344,6 +1347,7 @@ export const useStudioStore = create<StudioState>()(
       customStructure: "",
       weirdness: 50,
       styleInfluence: 50,
+      usePersonaVoice: false,
       savedLyrics: [],
       savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
@@ -1375,6 +1379,7 @@ export const useStudioStore = create<StudioState>()(
       setCustomStructure: (val) => set({ customStructure: val }),
       setWeirdness: (val) => set({ weirdness: val }),
       setStyleInfluence: (val) => set({ styleInfluence: val }),
+      setUsePersonaVoice: (val) => set({ usePersonaVoice: val }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -1430,6 +1435,7 @@ export const useStudioStore = create<StudioState>()(
           customStructure: "",
           weirdness: 50,
           styleInfluence: 50,
+          usePersonaVoice: false,
         }),
     }),
     {

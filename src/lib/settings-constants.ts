@@ -150,6 +150,20 @@ export const PROVIDERS: ProviderConfig[] = [
     ],
     testEndpoint: "apiframe",
   },
+  {
+    id: "apimart",
+    name: "APIMart",
+    description: "Suno music generation via APIMart, with voice cloning support",
+    fields: [
+      {
+        key: "APIMART_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "apimart_...",
+      },
+    ],
+    testEndpoint: "apimart",
+  },
 ];
 
 export const WEBHOOK_DEFAULTS = [

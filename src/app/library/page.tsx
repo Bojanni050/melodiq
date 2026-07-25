@@ -197,6 +197,7 @@ const UPLOAD_PROVIDERS = [
   { value: "poyo", label: "PoYo" },
   { value: "tempolor", label: "Tempolor" },
   { value: "apiframe", label: "APIFrame" },
+  { value: "apimart", label: "APIMart" },
   { value: "musicgpt", label: "MusicGPT" },
 ] as const;
 

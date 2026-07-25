@@ -8,6 +8,7 @@ import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
+import { getApimartTaskStatus } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -354,6 +355,65 @@ export async function GET(
       return NextResponse.json(track);
     } catch (e: any) {
       console.error(`[tracks/[id]] active polling failed for APIFrame track ${track.id}:`, e?.message ?? e);
+      return NextResponse.json(track);
+    }
+  }
+
+  if (track.provider === "apimart" && track.jobId) {
+    try {
+      const parentJobId = track.jobId.split(":")[0];
+      const status = await getApimartTaskStatus(parentJobId);
+
+      if (status.status === "completed") {
+        const isSecond = track.jobId.endsWith(":1");
+        const result = isSecond ? status.tracks[1] : status.tracks[0];
+
+        if (result?.audioUrl) {
+          const mp3Res = await axios.get(result.audioUrl, { responseType: "arraybuffer", timeout: 60000 });
+          const mp3Buffer = Buffer.from(mp3Res.data);
+          const format = "mp3";
+          const s3Key = `tracks/${track.id}/audio.${format}`;
+          const duration = await extractAudioDuration(mp3Buffer);
+
+          await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
+
+          const updated = await db
+            .update(tracks)
+            .set({
+              status: "done",
+              s3Key,
+              format,
+              duration,
+              audioUrl: `/api/tracks/${track.id}/download`,
+            })
+            .where(eq(tracks.id, track.id!))
+            .returning();
+
+          if (!track.language) {
+            detectAndSaveLanguageIfMissing({
+              id: track.id!,
+              language: track.language,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }).catch((error) => console.error("[tracks/[id]] language detection failed (apimart)", error));
+          }
+
+          return NextResponse.json(updated[0]);
+        }
+      }
+
+      if (status.status === "failed") {
+        const updated = await db
+          .update(tracks)
+          .set({ status: "failed", error: status.error || "Generation failed" })
+          .where(eq(tracks.id, track.id!))
+          .returning();
+        return NextResponse.json(updated[0]);
+      }
+
+      return NextResponse.json(track);
+    } catch (e: any) {
+      console.error(`[tracks/[id]] active polling failed for APIMart track ${track.id}:`, e?.message ?? e);
       return NextResponse.json(track);
     }
   }

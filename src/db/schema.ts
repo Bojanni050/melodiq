@@ -28,6 +28,28 @@ export const usersRelations = relations(users, ({ many }) => ({
   tracks: many(tracks),
   playlists: many(playlists),
   apiLogs: many(apiLogs),
+  clonedVoices: many(clonedVoices),
+}));
+
+export const clonedVoices = pgTable("cloned_voices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  apimartTaskId: varchar("apimart_task_id", { length: 255 }).notNull(),
+  personaId: varchar("persona_id", { length: 255 }),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  sourceAudioUrl: text("source_audio_url").notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("cloned_voices_user_id_idx").on(table.userId),
+]);
+
+export const clonedVoicesRelations = relations(clonedVoices, ({ one }) => ({
+  user: one(users, {
+    fields: [clonedVoices.userId],
+    references: [users.id],
+  }),
 }));
 
 export const tracks = pgTable("tracks", {

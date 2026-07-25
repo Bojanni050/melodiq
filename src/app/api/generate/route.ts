@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, songs } from "@/db/schema";
+import { tracks, songs, clonedVoices } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
@@ -11,6 +11,7 @@ import { generateMinimax } from "@/lib/providers/minimax";
 import { generateMureka } from "@/lib/providers/mureka";
 import { generateHeartMula } from "@/lib/providers/heartmula";
 import { generateApiframe } from "@/lib/providers/apiframe";
+import { createApimartGeneration } from "@/lib/providers/apimart";
 import { generateAndSaveCoverArt, generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { uploadToS3 } from "@/lib/s3";
@@ -120,10 +121,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence } = body;
+  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence, personaId } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
-  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe"];
+  const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe", "apimart"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
   const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
@@ -151,6 +152,9 @@ export async function POST(request: NextRequest) {
   }
   if (provider === "heartmula" && !lyrics?.trim()) {
     return NextResponse.json({ error: "HeartMuLa requires lyrics with structure tags (e.g. [Verse], [Chorus], [intro-short])" }, { status: 400 });
+  }
+  if (provider === "apimart" && personaId && !lyrics?.trim()) {
+    return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
@@ -1045,6 +1049,87 @@ export async function POST(request: NextRequest) {
         endpoint: "/api/generate",
         request: JSON.stringify({ provider, providerModel, prompt }),
         response: JSON.stringify({ status: "generating", jobId: genResult.jobId }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ tracks: allTracks });
+    }
+
+    if (provider === "apimart") {
+      let verifiedPersonaId: string | undefined;
+      if (personaId) {
+        const [ownedVoice] = await db
+          .select({ id: clonedVoices.id })
+          .from(clonedVoices)
+          .where(
+            and(
+              eq(clonedVoices.userId, userId),
+              eq(clonedVoices.personaId, personaId),
+              eq(clonedVoices.status, "completed")
+            )
+          );
+        if (!ownedVoice) {
+          throw new Error("Cloned voice not found or not ready yet");
+        }
+        verifiedPersonaId = personaId;
+      }
+
+      const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId;
+      const genResult = await createApimartGeneration({
+        prompt,
+        custom: isCustom,
+        version: providerModel || "v5",
+        lyrics: isCustom ? lyrics : undefined,
+        title: resolvedTitle || undefined,
+        style: isCustom ? prompt : undefined,
+        instrumental: instrumental || false,
+        vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined,
+        personaId: verifiedPersonaId,
+      });
+
+      const [t1, t2] = await Promise.all([
+        db
+          .update(tracks)
+          .set({ status: "generating", jobId: genResult.taskId })
+          .where(eq(tracks.id, track.id!))
+          .returning(),
+        db
+          .insert(tracks)
+          .values({
+            userId,
+            songId,
+            provider: "apimart",
+            providerModel,
+            prompt,
+            lyrics: instrumental ? null : (lyrics || null),
+            instrumental: instrumental || false,
+            title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+            status: "generating",
+            jobId: `${genResult.taskId}:1`,
+          })
+          .returning(),
+      ]);
+
+      const allTracks = [t1[0], t2[0]];
+
+      generateAndSaveCoverArtForBatch({
+        tracks: allTracks.map((t) => ({
+          id: t.id!,
+          userId: t.userId,
+          prompt: t.prompt,
+          title: resolvedTitle,
+          instrumental: t.instrumental,
+        })),
+      }).catch((err) => console.error("[generate] cover art batch failed (apimart)", err));
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "apimart",
+        endpoint: "/api/generate",
+        request: JSON.stringify({ provider, providerModel, prompt }),
+        response: JSON.stringify({ status: "generating", taskId: genResult.taskId }),
         statusCode: 200,
         duration: Date.now() - startTime,
       });
