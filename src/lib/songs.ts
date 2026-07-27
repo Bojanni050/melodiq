@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { songs, trackDnaVotes, tracks, users, workspaces } from "@/db/schema";
+import { songs, tracks, users, workspaces } from "@/db/schema";
 import { ensureDefaultWorkspaceForUser } from "@/lib/workspaces";
 
 export type SongWithTrackVersions = typeof songs.$inferSelect & {
@@ -240,92 +240,55 @@ export async function getAccessibleTrackIds(trackIds: string[], viewerUserId: st
   return new Set(rows.map((r) => r.id));
 }
 
-export type TrackDnaCategory = "vocal" | "instrumental" | "atmosphere" | "lyrics";
-export type TrackDnaStats = Record<TrackDnaCategory, { average: number | null; count: number }>;
+// Auto-computed Track DNA, written once by the webhook handlers right after a
+// track finishes rendering (see src/lib/audio-features.ts and the
+// scoreLyricsQuality/extractAtmosphereTags helpers in providers/llm.ts).
+// Replaces the old vote-based track_dna_votes table, which stays in the
+// database untouched as a read-only archive but is no longer read or written.
+export type AudioDna = {
+  tempo: number | null;
+  key: string | null;
+  energy: number | null;
+  loudness: number | null;
+  atmosphereTags: string[] | null;
+  lyricsScore: number | null;
+  lyricsNotes: string | null;
+  computedAt: string;
+};
 
-// Bulk counterpart to getTrackDnaStats — one overall score (average of
-// whichever categories have votes) per track id, for a collapsed-row summary
-// display. Callers must pre-filter trackIds via getAccessibleTrackIds.
-export async function getTrackDnaOverallScores(trackIds: string[]): Promise<Map<string, number | null>> {
-  const result = new Map<string, number | null>(trackIds.map((id) => [id, null]));
+function parseAudioDna(raw: string | null): AudioDna | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AudioDna;
+  } catch {
+    return null;
+  }
+}
+
+export async function getAudioDna(trackId: string): Promise<AudioDna | null> {
+  const [row] = await db
+    .select({ audioDna: tracks.audioDna })
+    .from(tracks)
+    .where(eq(tracks.id, trackId))
+    .limit(1);
+
+  return parseAudioDna(row?.audioDna ?? null);
+}
+
+// Bulk counterpart to getAudioDna. Callers must pre-filter trackIds via
+// getAccessibleTrackIds.
+export async function getAudioDnaBulk(trackIds: string[]): Promise<Map<string, AudioDna | null>> {
+  const result = new Map<string, AudioDna | null>(trackIds.map((id) => [id, null]));
   if (trackIds.length === 0) return result;
 
   const rows = await db
-    .select({
-      trackId: trackDnaVotes.trackId,
-      vocalAvg: sql<string | null>`avg(${trackDnaVotes.vocal})`,
-      instrumentalAvg: sql<string | null>`avg(${trackDnaVotes.instrumental})`,
-      atmosphereAvg: sql<string | null>`avg(${trackDnaVotes.atmosphere})`,
-      lyricsAvg: sql<string | null>`avg(${trackDnaVotes.lyrics})`,
-    })
-    .from(trackDnaVotes)
-    .where(inArray(trackDnaVotes.trackId, trackIds))
-    .groupBy(trackDnaVotes.trackId);
+    .select({ id: tracks.id, audioDna: tracks.audioDna })
+    .from(tracks)
+    .where(inArray(tracks.id, trackIds));
 
   for (const row of rows) {
-    const categoryAverages = [row.vocalAvg, row.instrumentalAvg, row.atmosphereAvg, row.lyricsAvg]
-      .filter((avg): avg is string => avg != null)
-      .map(Number);
-    const overall =
-      categoryAverages.length > 0
-        ? Math.round((categoryAverages.reduce((sum, n) => sum + n, 0) / categoryAverages.length) * 10) / 10
-        : null;
-    result.set(row.trackId, overall);
+    result.set(row.id, parseAudioDna(row.audioDna));
   }
 
   return result;
-}
-
-export async function getTrackDnaStats(trackId: string): Promise<TrackDnaStats> {
-  const [row] = await db
-    .select({
-      vocalAvg: sql<string | null>`avg(${trackDnaVotes.vocal})`,
-      vocalCount: sql<number>`count(${trackDnaVotes.vocal})`,
-      instrumentalAvg: sql<string | null>`avg(${trackDnaVotes.instrumental})`,
-      instrumentalCount: sql<number>`count(${trackDnaVotes.instrumental})`,
-      atmosphereAvg: sql<string | null>`avg(${trackDnaVotes.atmosphere})`,
-      atmosphereCount: sql<number>`count(${trackDnaVotes.atmosphere})`,
-      lyricsAvg: sql<string | null>`avg(${trackDnaVotes.lyrics})`,
-      lyricsCount: sql<number>`count(${trackDnaVotes.lyrics})`,
-    })
-    .from(trackDnaVotes)
-    .where(eq(trackDnaVotes.trackId, trackId));
-
-  const toStat = (avg: string | null | undefined, count: number | undefined) => ({
-    average: avg != null ? Math.round(Number(avg) * 10) / 10 : null,
-    count: Number(count ?? 0),
-  });
-
-  return {
-    vocal: toStat(row?.vocalAvg, row?.vocalCount),
-    instrumental: toStat(row?.instrumentalAvg, row?.instrumentalCount),
-    atmosphere: toStat(row?.atmosphereAvg, row?.atmosphereCount),
-    lyrics: toStat(row?.lyricsAvg, row?.lyricsCount),
-  };
-}
-
-export async function getUserTrackDnaVote(trackId: string, userId: string) {
-  const [vote] = await db
-    .select()
-    .from(trackDnaVotes)
-    .where(and(eq(trackDnaVotes.trackId, trackId), eq(trackDnaVotes.userId, userId)))
-    .limit(1);
-  return vote ?? null;
-}
-
-export async function upsertTrackDnaVote(
-  trackId: string,
-  userId: string,
-  scores: { vocal: number; instrumental: number; atmosphere: number; lyrics: number | null }
-) {
-  const [vote] = await db
-    .insert(trackDnaVotes)
-    .values({ trackId, userId, ...scores })
-    .onConflictDoUpdate({
-      target: [trackDnaVotes.trackId, trackDnaVotes.userId],
-      set: { ...scores, updatedAt: new Date() },
-    })
-    .returning();
-
-  return vote;
 }

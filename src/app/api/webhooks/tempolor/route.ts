@@ -11,6 +11,7 @@ import {
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { computeAudioDna } from "@/lib/audio-dna";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -76,8 +77,16 @@ export async function POST(request: NextRequest) {
       const s3Key = `tracks/${track.id}/audio.${format}`;
       const s3KeyHd = audioUrlHd && formatHd ? `tracks/${track.id}/audio_hd.${formatHd}` : null;
 
-      // Extract duration from primary audio
-      const duration = await extractAudioDuration(mp3Buffer);
+      // Extract duration + Track DNA from primary audio
+      const [duration, audioDna] = await Promise.all([
+        extractAudioDuration(mp3Buffer),
+        computeAudioDna({
+          audioBuffer: mp3Buffer,
+          prompt: track.prompt,
+          lyrics: track.lyrics,
+          instrumental: track.instrumental,
+        }),
+      ]);
 
       await Promise.all([
         uploadToS3(s3Key, mp3Buffer, contentTypeForFormat(format)),
@@ -93,6 +102,7 @@ export async function POST(request: NextRequest) {
         format,
         formatHd,
         duration,
+        audioDna,
         audioUrl: `/api/tracks/${track.id}/download`,
         audioUrlHd: s3KeyHd ? `/api/tracks/${track.id}/download?hd=true` : null,
       }).where(eq(tracks.id, track.id!));

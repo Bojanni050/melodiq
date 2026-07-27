@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore } from "@/lib/store";
 
@@ -19,48 +18,24 @@ interface TrackDetail {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
-  pollsOpenAt: string | null;
-  pollsCloseAt: string | null;
 }
 
-interface DnaStat {
-  average: number | null;
-  count: number;
+interface AudioDna {
+  tempo: number | null;
+  key: string | null;
+  energy: number | null;
+  loudness: number | null;
+  atmosphereTags: string[] | null;
+  lyricsScore: number | null;
+  lyricsNotes: string | null;
+  computedAt: string;
 }
 
-interface DnaStats {
-  vocal: DnaStat;
-  instrumental: DnaStat;
-  atmosphere: DnaStat;
-  lyrics: DnaStat;
-}
-
-type Category = "vocal" | "instrumental" | "atmosphere" | "lyrics";
-
-const CATEGORY_LABELS: Record<Category, string> = {
-  vocal: "Vocal",
-  instrumental: "Instrumental",
-  atmosphere: "Atmosphere",
-  lyrics: "Lyrics",
-};
-
-function StatBar({ label, stat }: { label: string; stat: DnaStat }) {
-  const pct = stat.average != null ? (stat.average / 10) * 100 : 0;
+function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-white">{label}</span>
-        <span className="text-white/50">
-          {stat.average != null ? `${stat.average.toFixed(1)}/10` : "No votes yet"}
-          {stat.count > 0 && <span className="text-white/30"> · {stat.count} vote{stat.count === 1 ? "" : "s"}</span>}
-        </span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="space-y-0.5">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">{label}</div>
+      <div className="text-base font-medium text-white">{value}</div>
     </div>
   );
 }
@@ -69,10 +44,9 @@ export default function TrackDnaPage() {
   const params = useParams<{ trackId: string }>();
   const trackId = params?.trackId;
 
-  const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [track, setTrack] = useState<TrackDetail | null>(null);
-  const [stats, setStats] = useState<DnaStats | null>(null);
+  const [audioDna, setAudioDna] = useState<AudioDna | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -82,16 +56,6 @@ export default function TrackDnaPage() {
   const isCurrentTrack = Boolean(track && currentTrack?.id === track.id);
   const isPlaying = isCurrentTrack && globalIsPlaying;
 
-  const [scores, setScores] = useState<Record<Category, number>>({
-    vocal: 5,
-    instrumental: 5,
-    atmosphere: 5,
-    lyrics: 5,
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [voteError, setVoteError] = useState<string | null>(null);
-  const [voteSaved, setVoteSaved] = useState(false);
-
   useEffect(() => {
     let active = true;
     async function checkAuth() {
@@ -100,8 +64,6 @@ export default function TrackDnaPage() {
         if (active) setIsLoggedIn(res.ok);
       } catch {
         if (active) setIsLoggedIn(false);
-      } finally {
-        if (active) setAuthChecked(true);
       }
     }
     checkAuth();
@@ -124,15 +86,7 @@ export default function TrackDnaPage() {
       if (res.ok) {
         const data = await res.json();
         setTrack(data.track);
-        setStats(data.stats);
-        if (data.myVote) {
-          setScores({
-            vocal: data.myVote.vocal,
-            instrumental: data.myVote.instrumental,
-            atmosphere: data.myVote.atmosphere,
-            lyrics: data.myVote.lyrics ?? 5,
-          });
-        }
+        setAudioDna(data.audioDna ?? null);
       }
       setLoading(false);
     }
@@ -180,49 +134,9 @@ export default function TrackDnaPage() {
     });
   }
 
-  async function submitVote() {
-    if (!track) return;
-    setSubmitting(true);
-    setVoteError(null);
-    setVoteSaved(false);
-    try {
-      const res = await fetch(`/api/discover/${track.id}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scores),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setVoteError(data.error || "Failed to submit vote");
-        return;
-      }
-      setStats(data.stats);
-      setVoteSaved(true);
-      setTimeout(() => setVoteSaved(false), 2500);
-    } catch {
-      setVoteError("Network error — could not reach the server.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const categories: Category[] = track?.instrumental
-    ? ["vocal", "instrumental", "atmosphere"]
-    : ["vocal", "instrumental", "atmosphere", "lyrics"];
-
-  const ratedCategories = stats ? categories.map((c) => stats[c]).filter((s) => s.average != null) : [];
-  const overallScore =
-    ratedCategories.length > 0
-      ? ratedCategories.reduce((sum, s) => sum + (s.average as number), 0) / ratedCategories.length
-      : null;
-
-  const pollsOpenDate = track?.pollsOpenAt ? new Date(track.pollsOpenAt) : null;
-  const pollsCloseDate = track?.pollsCloseAt ? new Date(track.pollsCloseAt) : null;
-  const now = new Date();
-  const votingConfigured = Boolean(pollsCloseDate);
-  const votingNotYetOpen = Boolean(pollsOpenDate && pollsOpenDate > now);
-  const pollsClosed = Boolean(pollsCloseDate && pollsCloseDate <= now);
-  const votingOpen = votingConfigured && !votingNotYetOpen && !pollsClosed;
+  const hasAudioFacts =
+    audioDna &&
+    (audioDna.tempo != null || audioDna.key != null || audioDna.energy != null || audioDna.loudness != null);
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
@@ -292,84 +206,52 @@ export default function TrackDnaPage() {
                 </div>
               </div>
 
-              <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Stats</h2>
-                  {overallScore != null ? (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-white">{overallScore.toFixed(1)}</span>
-                      <span className="text-sm text-white/40">/10 overall</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-white/40">No votes yet</span>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {categories.map((category) => (
-                    <StatBar key={category} label={CATEGORY_LABELS[category]} stat={stats![category]} />
-                  ))}
-                </div>
-              </section>
+              <section className="space-y-5 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                <h2 className="text-base font-semibold">Stats</h2>
 
-              <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Vote</h2>
-                  {votingOpen && pollsCloseDate && (
-                    <span className="text-xs text-white/40">Voting closes {pollsCloseDate.toLocaleDateString()}</span>
-                  )}
-                </div>
-                {!votingConfigured ? (
-                  <p className="text-sm text-white/50">Voting isn&apos;t open for this track.</p>
-                ) : votingNotYetOpen ? (
-                  <p className="text-sm text-white/50">Voting opens {pollsOpenDate!.toLocaleDateString()}.</p>
-                ) : pollsClosed ? (
+                {!audioDna ? (
                   <p className="text-sm text-white/50">
-                    Voting closed on {pollsCloseDate!.toLocaleDateString()}.
+                    Analysis in progress — Track DNA will appear once the track finishes rendering.
                   </p>
-                ) : !authChecked ? null : !isLoggedIn ? (
+                ) : (
                   <>
-                    <p className="text-sm text-white/50">Sign in to vote on this track&apos;s DNA.</p>
-                    <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />
-                  </>
-                ) : null}
-
-                {votingConfigured && !(votingOpen && !isLoggedIn) && (
-                  <div className="space-y-4">
-                    {categories.map((category) => (
-                      <div key={category} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-white/70">{CATEGORY_LABELS[category]}</span>
-                          <span className="font-mono text-white/50">{scores[category].toFixed(1)}/10</span>
-                        </div>
-                        <input
-                          type="range"
-                          min={1}
-                          max={10}
-                          step={0.1}
-                          value={scores[category]}
-                          disabled={!votingOpen}
-                          onChange={(e) =>
-                            setScores((prev) => ({ ...prev, [category]: Number(e.target.value) }))
-                          }
-                          className="w-full disabled:opacity-40"
-                        />
-                      </div>
-                    ))}
-                    {votingOpen && (
-                      <div className="flex items-center gap-3 pt-1">
-                        <button
-                          type="button"
-                          onClick={submitVote}
-                          disabled={submitting}
-                          className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
-                        >
-                          {submitting ? "Saving…" : "Submit vote"}
-                        </button>
-                        {voteSaved && <span className="text-xs text-green-400">Vote saved</span>}
-                        {voteError && <span className="text-xs text-red-400">{voteError}</span>}
+                    {hasAudioFacts && (
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
+                        {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
+                        {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}
+                        {audioDna.loudness != null && (
+                          <Fact label="Loudness" value={`${audioDna.loudness.toFixed(1)} LUFS`} />
+                        )}
                       </div>
                     )}
-                  </div>
+
+                    {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Atmosphere</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {audioDna.atmosphereTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs text-white/80"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {audioDna.lyricsScore != null && (
+                      <div className="space-y-1 border-t border-white/10 pt-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-white">Lyrics</span>
+                          <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+                        </div>
+                        {audioDna.lyricsNotes && <p className="text-xs text-white/40">{audioDna.lyricsNotes}</p>}
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             </>

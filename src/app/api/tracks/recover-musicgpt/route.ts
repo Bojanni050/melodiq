@@ -19,6 +19,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
 import { uploadToS3 } from "@/lib/s3";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { computeAudioDna } from "@/lib/audio-dna";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { logApi } from "@/lib/logger";
@@ -170,7 +171,15 @@ export async function POST() {
         const s3Key = `tracks/${track.id}/audio.mp3`;
         await uploadToS3(s3Key, audioBuffer, "audio/mpeg");
 
-        const duration = await extractAudioDuration(audioBuffer);
+        const [duration, audioDna] = await Promise.all([
+          extractAudioDuration(audioBuffer),
+          computeAudioDna({
+            audioBuffer,
+            prompt: track.prompt,
+            lyrics: track.lyrics,
+            instrumental: track.instrumental,
+          }),
+        ]);
 
         // Retrieve WAV and timestamps from conversion details
         const isTrack1 = track.conversionId === conversion.conversion_id_1;
@@ -222,6 +231,7 @@ export async function POST() {
             status: "done",
             s3Key,
             duration,
+            audioDna,
             audioUrl: `/api/tracks/${track.id}/download`,
             error: null,
             ...(s3KeyHd ? { s3KeyHd, formatHd, audioUrlHd } : {}),

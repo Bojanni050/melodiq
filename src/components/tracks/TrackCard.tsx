@@ -44,7 +44,6 @@ const TrackCard = memo(function TrackCard({
   onToggleSelection,
   onEditDetails,
   isDetailSelected = false,
-  dnaScore = null,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -68,7 +67,6 @@ const TrackCard = memo(function TrackCard({
   workspaceCoverById?: Map<string, string | null>;
   onToggleSelection?: (trackId: string, shiftKey: boolean) => void;
   onEditDetails?: (track: TrackItem) => void;
-  dnaScore?: number | null;
   isDetailSelected?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
@@ -531,9 +529,6 @@ const TrackCard = memo(function TrackCard({
               <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
               <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
                 {playCount} {playCount === 1 ? "play" : "plays"}
-                {typeof dnaScore === "number" && (
-                  <span className="text-primary-300/80"> · DNA {dnaScore.toFixed(1)}/10</span>
-                )}
               </p>
             </>
           )}
@@ -633,7 +628,7 @@ const TrackCard = memo(function TrackCard({
         </div>
       </div>
 
-      {dnaOpen && <TrackDnaPanel trackId={track.id} instrumental={Boolean(track.instrumental)} />}
+      {dnaOpen && <TrackDnaPanel trackId={track.id} />}
     </>
   );
 }, (prevProps, nextProps) => {
@@ -650,8 +645,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
     prevProps.track.instrumental === nextProps.track.instrumental &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
-    prevProps.workspaceById?.size === nextProps.workspaceById?.size &&
-    prevProps.dnaScore === nextProps.dnaScore
+    prevProps.workspaceById?.size === nextProps.workspaceById?.size
   );
 });
 

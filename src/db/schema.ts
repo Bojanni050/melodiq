@@ -98,6 +98,9 @@ export const tracks = pgTable("tracks", {
   releaseStatus: varchar("release_status", { length: 20 }).default("concept").notNull(),
   publishDate: timestamp("publish_date"),
   trackDna: text("track_dna"),
+  // Auto-computed Track DNA (tempo/key/energy/loudness from audio-features.ts,
+  // atmosphere tags + lyrics score from LLM) — JSON, replaces track_dna_votes.
+  audioDna: text("audio_dna"),
   pollsOpenAt: timestamp("polls_open_at"),
   pollsCloseAt: timestamp("polls_close_at"),
   deletedAt: timestamp("deleted_at"),

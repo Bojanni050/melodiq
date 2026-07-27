@@ -19,6 +19,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { computeAudioDna } from "@/lib/audio-dna";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { detectLanguageFromLyrics } from "@/lib/providers/llm";
@@ -314,7 +315,15 @@ export async function GET(
           const mp3Buffer = Buffer.from(mp3Res.data);
           const format = "mp3";
           const s3Key = `tracks/${track.id}/audio.${format}`;
-          const duration = await extractAudioDuration(mp3Buffer);
+          const [duration, audioDna] = await Promise.all([
+            extractAudioDuration(mp3Buffer),
+            computeAudioDna({
+              audioBuffer: mp3Buffer,
+              prompt: track.prompt,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }),
+          ]);
 
           await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
 
@@ -325,6 +334,7 @@ export async function GET(
               s3Key,
               format,
               duration,
+              audioDna,
               audioUrl: `/api/tracks/${track.id}/download`,
             })
             .where(eq(tracks.id, track.id!))
@@ -373,7 +383,15 @@ export async function GET(
           const mp3Buffer = Buffer.from(mp3Res.data);
           const format = "mp3";
           const s3Key = `tracks/${track.id}/audio.${format}`;
-          const duration = await extractAudioDuration(mp3Buffer);
+          const [duration, audioDna] = await Promise.all([
+            extractAudioDuration(mp3Buffer),
+            computeAudioDna({
+              audioBuffer: mp3Buffer,
+              prompt: track.prompt,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }),
+          ]);
 
           await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
 
@@ -384,6 +402,7 @@ export async function GET(
               s3Key,
               format,
               duration,
+              audioDna,
               audioUrl: `/api/tracks/${track.id}/download`,
             })
             .where(eq(tracks.id, track.id!))
@@ -440,7 +459,15 @@ export async function GET(
           const s3Key = `tracks/${track.id}/audio.mp3`;
           await uploadToS3(s3Key, audioBuffer, "audio/mpeg");
 
-          const duration = await extractAudioDuration(audioBuffer);
+          const [duration, audioDna] = await Promise.all([
+            extractAudioDuration(audioBuffer),
+            computeAudioDna({
+              audioBuffer,
+              prompt: track.prompt,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }),
+          ]);
 
           // Retrieve WAV and timestamps from conversion details
           const isTrack1 = track.conversionId === conversion.conversion_id_1;
@@ -493,6 +520,7 @@ export async function GET(
               s3Key,
               format: "mp3",
               duration,
+              audioDna,
               audioUrl: `/api/tracks/${track.id}/download`,
               error: null,
               ...(s3KeyHd ? { s3KeyHd, formatHd, audioUrlHd } : {}),
@@ -602,15 +630,13 @@ export async function PATCH(
     const releaseStatus = body.releaseStatus;
     const publishDate = body.publishDate;
     const trackDna = body.trackDna;
-    const pollsOpenAt = body.pollsOpenAt;
-    const pollsCloseAt = body.pollsCloseAt;
 
     if (restore === true) {
       await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined && pollsOpenAt === undefined && pollsCloseAt === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && songId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -858,26 +884,6 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid trackDna" }, { status: 400 });
       }
       updates.trackDna = trackDna === null ? null : trackDna.trim() || null;
-    }
-
-    if (pollsOpenAt !== undefined) {
-      if (pollsOpenAt === null) {
-        updates.pollsOpenAt = null;
-      } else if (typeof pollsOpenAt === "string" && !isNaN(Date.parse(pollsOpenAt))) {
-        updates.pollsOpenAt = new Date(pollsOpenAt);
-      } else {
-        return NextResponse.json({ error: "Invalid pollsOpenAt" }, { status: 400 });
-      }
-    }
-
-    if (pollsCloseAt !== undefined) {
-      if (pollsCloseAt === null) {
-        updates.pollsCloseAt = null;
-      } else if (typeof pollsCloseAt === "string" && !isNaN(Date.parse(pollsCloseAt))) {
-        updates.pollsCloseAt = new Date(pollsCloseAt);
-      } else {
-        return NextResponse.json({ error: "Invalid pollsCloseAt" }, { status: 400 });
-      }
     }
 
     if (Object.keys(updates).length === 0) {

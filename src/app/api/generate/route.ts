@@ -21,6 +21,7 @@ import { getSetting, getWebhookUrl, validateProviderApiKeys } from "@/lib/settin
 import { callLLM } from "@/lib/providers/llm";
 import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { computeAudioDna } from "@/lib/audio-dna";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 // Note: this resets on container restart. For multi-container setups, use Redis instead.
@@ -551,8 +552,16 @@ export async function POST(request: NextRequest) {
           : []),
       ]);
 
-      // Extract actual audio duration
-      const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+      // Extract actual audio duration + Track DNA
+      const [audioDuration, audioDna] = await Promise.all([
+        extractAudioDuration(genResult.audioBuffer),
+        computeAudioDna({
+          audioBuffer: genResult.audioBuffer,
+          prompt,
+          lyrics: lyrics || null,
+          instrumental: instrumental || false,
+        }),
+      ]);
 
       const updated = await db
         .update(tracks)
@@ -565,6 +574,7 @@ export async function POST(request: NextRequest) {
           audioUrl: `/api/tracks/${track.id}/download`,
           audioUrlHd,
           duration: audioDuration,
+          audioDna,
         })
         .where(eq(tracks.id, track.id!))
         .returning();
@@ -711,7 +721,15 @@ export async function POST(request: NextRequest) {
         const s3Key = `tracks/${track.id}/audio.${format}`;
         await uploadToS3(s3Key, genResult.audioBuffer, contentTypeForFormat(format));
 
-        const audioDuration = await extractAudioDuration(genResult.audioBuffer);
+        const [audioDuration, audioDna] = await Promise.all([
+          extractAudioDuration(genResult.audioBuffer),
+          computeAudioDna({
+            audioBuffer: genResult.audioBuffer,
+            prompt,
+            lyrics: lyrics || null,
+            instrumental: instrumental || false,
+          }),
+        ]);
 
         const updated = await db
           .update(tracks)
@@ -721,6 +739,7 @@ export async function POST(request: NextRequest) {
             format,
             audioUrl: `/api/tracks/${track.id}/download`,
             duration: audioDuration,
+            audioDna,
           })
           .where(eq(tracks.id, track.id!))
           .returning();

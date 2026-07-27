@@ -199,7 +199,16 @@ export async function POST(request: NextRequest) {
           const audioBuffer = Buffer.from(audioRes.data);
           const s3Key = `tracks/${track.id}/audio.mp3`;
           await uploadToS3(s3Key, audioBuffer);
-          const duration = await extractAudioDuration(audioBuffer);
+          const { computeAudioDna } = await import("@/lib/audio-dna");
+          const [duration, audioDna] = await Promise.all([
+            extractAudioDuration(audioBuffer),
+            computeAudioDna({
+              audioBuffer,
+              prompt: track.prompt,
+              lyrics: track.lyrics,
+              instrumental: track.instrumental,
+            }),
+          ]);
 
           // Retrieve WAV and timestamps from full conversion details
           let s3KeyHd: string | null = null;
@@ -259,6 +268,7 @@ export async function POST(request: NextRequest) {
             .set({
               s3Key,
               duration,
+              audioDna,
               audioUrl: `/api/tracks/${track.id}/download`,
               ...(s3KeyHd ? { s3KeyHd, formatHd, audioUrlHd } : {}),
               ...(lyricsTimestamps ? { lyricsTimestamps } : {}),

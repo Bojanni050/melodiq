@@ -12,6 +12,7 @@ import {
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { convertWavToFlac } from "@/lib/wav-to-flac";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { computeAudioDna } from "@/lib/audio-dna";
 
 interface SyncPoYoTaskResult {
   found: boolean;
@@ -141,7 +142,15 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
         const s3Key = targetTrack.s3Key ?? `tracks/${targetTrack.id}/audio.${resolvedFormat}`;
         await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(resolvedFormat));
 
-        const duration = await extractAudioDuration(audioBuffer);
+        const [duration, audioDna] = await Promise.all([
+          extractAudioDuration(audioBuffer),
+          computeAudioDna({
+            audioBuffer,
+            prompt: targetTrack.prompt,
+            lyrics: targetTrack.lyrics,
+            instrumental: targetTrack.instrumental,
+          }),
+        ]);
 
         let s3KeyHd: string | null = null;
         let formatHd: "mp3" | "wav" | "flac" | null = null;
@@ -174,6 +183,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
             format: resolvedFormat,
             formatHd,
             duration,
+            audioDna,
             audioUrl: `/api/tracks/${targetTrack.id}/download`,
             audioUrlHd: s3KeyHd ? `/api/tracks/${targetTrack.id}/download?hd=true` : null,
           })

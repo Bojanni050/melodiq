@@ -13,6 +13,7 @@ import {
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { transcodeToMp3 } from "@/lib/transcode";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { computeAudioDna } from "@/lib/audio-dna";
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -69,8 +70,16 @@ export async function POST(request: NextRequest) {
       const s3Key = `tracks/${track.id}/audio.${format}`;
       await uploadToS3(s3Key, audioBuffer, contentTypeForFormat(format));
 
-      // Extract duration
-      const duration = await extractAudioDuration(audioBuffer);
+      // Extract duration + Track DNA
+      const [duration, audioDna] = await Promise.all([
+        extractAudioDuration(audioBuffer),
+        computeAudioDna({
+          audioBuffer,
+          prompt: track.prompt,
+          lyrics: track.lyrics,
+          instrumental: track.instrumental,
+        }),
+      ]);
 
       // For non-MP3 formats (e.g. WAV), also produce an MP3 for default playback
       let s3KeyMp3: string | null = null;
@@ -90,6 +99,7 @@ export async function POST(request: NextRequest) {
         format,
         ...(s3KeyMp3 ? { s3KeyMp3 } : {}),
         duration,
+        audioDna,
         audioUrl: `/api/tracks/${track.id}/download`,
       }).where(eq(tracks.id, track.id!));
 

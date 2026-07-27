@@ -6,6 +6,7 @@ import { logApi } from "@/lib/logger";
 import { sendPushNotification } from "@/lib/push";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { computeAudioDna } from "@/lib/audio-dna";
 import { createHmac } from "crypto";
 
 function verifySignature(request: NextRequest, rawBody: string): boolean {
@@ -163,8 +164,16 @@ export async function POST(request: NextRequest) {
         const buf = Buffer.from(res.data);
         const s3Key = `tracks/${track.id}/audio.mp3`;
         await uploadToS3(s3Key, buf, "audio/mpeg");
-        const duration = await extractAudioDuration(buf);
-        await db.update(tracks).set({ s3Key, duration, audioUrl: `/api/tracks/${track.id}/download` }).where(eq(tracks.id, track.id!));
+        const [duration, audioDna] = await Promise.all([
+          extractAudioDuration(buf),
+          computeAudioDna({
+            audioBuffer: buf,
+            prompt: track.prompt,
+            lyrics: track.lyrics,
+            instrumental: track.instrumental,
+          }),
+        ]);
+        await db.update(tracks).set({ s3Key, duration, audioDna, audioUrl: `/api/tracks/${track.id}/download` }).where(eq(tracks.id, track.id!));
         console.log(`[webhook/heartmula] track ${track.id} S3 upload complete`);
       } catch (err: any) {
         console.error(`[webhook/heartmula] S3 upload failed for track ${track.id}:`, err?.message);

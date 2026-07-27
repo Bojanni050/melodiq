@@ -6,6 +6,7 @@ import { logApi } from "@/lib/logger";
 import { sendPushNotification } from "@/lib/push";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
+import { computeAudioDna } from "@/lib/audio-dna";
 
 function extractAudioUrls(body: any): string[] {
   if (!body || typeof body !== "object") return [];
@@ -156,8 +157,16 @@ export async function POST(request: NextRequest) {
 
             const s3Key = `tracks/${track.id}/audio.mp3`;
             await uploadToS3(s3Key, buf, "audio/mpeg");
-            const duration = await extractAudioDuration(buf);
-            
+            const [duration, audioDna] = await Promise.all([
+              extractAudioDuration(buf),
+              computeAudioDna({
+                audioBuffer: buf,
+                prompt: track.prompt,
+                lyrics: track.lyrics,
+                instrumental: track.instrumental,
+              }),
+            ]);
+
             // Set done status only after successful download and upload
             await db
               .update(tracks)
@@ -165,6 +174,7 @@ export async function POST(request: NextRequest) {
                 status: "done",
                 s3Key,
                 duration,
+                audioDna,
                 format: "mp3",
                 audioUrl: `/api/tracks/${track.id}/download`,
               })

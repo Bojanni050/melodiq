@@ -261,6 +261,84 @@ Rules:
   return callLLM(idea, systemPrompt, { purpose: "lyrics" });
 }
 
+function parseJsonObject(raw: string): Record<string, unknown> | null {
+  const cleaned = raw.replace(/^```[a-zA-Z]*\s*/g, "").replace(/\s*```$/g, "").trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    return JSON.parse(cleaned.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+export interface LyricsQualityScore {
+  score: number;
+  notes: string;
+}
+
+// Automated Track DNA "Lyrics" signal — replaces the human 1-10 vote with an
+// LLM judge, since lyrics quality (unlike tempo/key) can't be measured from audio.
+export async function scoreLyricsQuality(lyrics: string): Promise<LyricsQualityScore | null> {
+  if (!lyrics?.trim()) return null;
+
+  const systemPrompt = `You are a professional song lyrics critic.
+
+Rate the given lyrics on a scale of 1-10 for overall quality (rhyme, structure, coherence, imagery, emotional impact).
+
+Rules:
+- Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
+- Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
+
+  try {
+    const raw = await callLLM(lyrics.slice(0, 6000), systemPrompt, { purpose: "lyrics" });
+    const parsed = parseJsonObject(raw);
+    if (!parsed) return null;
+
+    const score = Number(parsed.score);
+    if (!Number.isFinite(score) || score < 1 || score > 10) return null;
+    const notes = typeof parsed.notes === "string" ? parsed.notes.slice(0, 300) : "";
+
+    return { score: Math.round(score * 10) / 10, notes };
+  } catch (error) {
+    console.warn("[llm] Failed to score lyrics quality:", error);
+    return null;
+  }
+}
+
+// Automated Track DNA "Atmosphere" signal — turns the generation prompt/style
+// text (already stored, no extra input needed) into a few clean mood/genre tags.
+export async function extractAtmosphereTags(prompt: string): Promise<string[] | null> {
+  if (!prompt?.trim()) return null;
+
+  const systemPrompt = `You are a music mood/genre tagger.
+
+Read the style/prompt description and extract 2-4 short mood/genre labels that capture its atmosphere (e.g. "Melancholic", "Lo-fi", "Synthwave", "Uplifting").
+
+Rules:
+- Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
+- Format exactly: {"tags": ["Tag1", "Tag2"]}
+- Each tag: 1-2 words, capitalized, no punctuation.
+- Minimum 1 tag, maximum 4 tags.`;
+
+  try {
+    const raw = await callLLM(prompt.slice(0, 2000), systemPrompt, { purpose: "prompt" });
+    const parsed = parseJsonObject(raw);
+    if (!parsed || !Array.isArray(parsed.tags)) return null;
+
+    const tags = parsed.tags
+      .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+      .map((tag) => tag.trim().slice(0, 30))
+      .slice(0, 4);
+
+    return tags.length > 0 ? tags : null;
+  } catch (error) {
+    console.warn("[llm] Failed to extract atmosphere tags:", error);
+    return null;
+  }
+}
+
 export async function generateImagePrompt(
   songContent: string,
   title: string,

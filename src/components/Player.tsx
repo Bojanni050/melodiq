@@ -717,7 +717,14 @@ export default function Player() {
       const normalizedTargetUrl = new URL(resolvedUrl, window.location.href).toString();
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
-      const shouldResumeTime = lastLoadedTrackIdRef.current === trackId;
+      // playTrackFromGesture (store.ts) may have already loaded and started
+      // playing this track directly on the <audio> element, ahead of this
+      // effect. Recognize that via the shared dataset marker so we resume
+      // from the current position instead of restarting from 0 once this
+      // effect's blob fetch completes and swaps the src.
+      const gestureLoadedThisTrack = audioEl.dataset.gestureTrackId === trackId &&
+        !!audioEl.src && audioEl.src !== "" && !audioEl.error;
+      const shouldResumeTime = lastLoadedTrackIdRef.current === trackId || gestureLoadedThisTrack;
       const storedProgress = usePlayerStore.getState().progress;
       const resumeTime = shouldResumeTime
         ? (audioEl.currentTime || 0)

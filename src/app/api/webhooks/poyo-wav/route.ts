@@ -9,6 +9,7 @@ import {
   detectFormatFromUrl,
 } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { computeAudioDna } from "@/lib/audio-dna";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { getPoYoTimestampedLyrics, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
@@ -143,10 +144,19 @@ export async function POST(request: NextRequest) {
     const s3KeyHd = track.s3KeyHd ?? `tracks/${track.id}/audio_hd.${formatHd}`;
     await uploadToS3(s3KeyHd, uploadBuffer, contentTypeForFormat(formatHd));
 
-    // Extract duration if not already set
+    // Extract duration / Track DNA if not already set by the main mp3 flow
     let duration = track.duration;
     if (!duration) {
       duration = await extractAudioDuration(audioBuffer);
+    }
+    let audioDna = track.audioDna;
+    if (!audioDna) {
+      audioDna = await computeAudioDna({
+        audioBuffer,
+        prompt: track.prompt,
+        lyrics: track.lyrics,
+        instrumental: track.instrumental,
+      });
     }
 
     await db
@@ -157,6 +167,7 @@ export async function POST(request: NextRequest) {
         s3KeyHd,
         formatHd,
         duration,
+        audioDna,
         audioUrlHd: `/api/tracks/${track.id}/download?hd=true`,
       })
       .where(eq(tracks.id, track.id!));

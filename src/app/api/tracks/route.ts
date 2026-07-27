@@ -11,6 +11,7 @@ import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
 import { extractAudioDuration } from "@/lib/audio-duration";
+import { computeAudioDna } from "@/lib/audio-dna";
 import { workspaces } from "@/db/schema";
 import {
   ensureDefaultWorkspaceForUser,
@@ -529,7 +530,15 @@ export async function GET(request: NextRequest) {
                   const mp3Buffer = Buffer.from(mp3Res.data);
                   const format = "mp3";
                   const s3Key = `tracks/${track.id}/audio.${format}`;
-                  const duration = await extractAudioDuration(mp3Buffer);
+                  const [duration, audioDna] = await Promise.all([
+                    extractAudioDuration(mp3Buffer),
+                    computeAudioDna({
+                      audioBuffer: mp3Buffer,
+                      prompt: track.prompt,
+                      lyrics: track.lyrics,
+                      instrumental: track.instrumental,
+                    }),
+                  ]);
 
                   await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
 
@@ -540,6 +549,7 @@ export async function GET(request: NextRequest) {
                       s3Key,
                       format,
                       duration,
+                      audioDna,
                       audioUrl: `/api/tracks/${track.id}/download`,
                     })
                     .where(eq(tracks.id, track.id));
@@ -579,7 +589,15 @@ export async function GET(request: NextRequest) {
                   const mp3Buffer = Buffer.from(mp3Res.data);
                   const format = "mp3";
                   const s3Key = `tracks/${track.id}/audio.${format}`;
-                  const duration = await extractAudioDuration(mp3Buffer);
+                  const [duration, audioDna] = await Promise.all([
+                    extractAudioDuration(mp3Buffer),
+                    computeAudioDna({
+                      audioBuffer: mp3Buffer,
+                      prompt: track.prompt,
+                      lyrics: track.lyrics,
+                      instrumental: track.instrumental,
+                    }),
+                  ]);
 
                   await uploadToS3(s3Key, mp3Buffer, "audio/mpeg");
 
@@ -590,6 +608,7 @@ export async function GET(request: NextRequest) {
                       s3Key,
                       format,
                       duration,
+                      audioDna,
                       audioUrl: `/api/tracks/${track.id}/download`,
                     })
                     .where(eq(tracks.id, track.id));
@@ -637,7 +656,15 @@ export async function GET(request: NextRequest) {
                   const s3Key = `tracks/${track.id}/audio.mp3`;
                   await uploadToS3(s3Key, audioBuffer, "audio/mpeg");
 
-                  const duration = await extractAudioDuration(audioBuffer);
+                  const [duration, audioDna] = await Promise.all([
+                    extractAudioDuration(audioBuffer),
+                    computeAudioDna({
+                      audioBuffer,
+                      prompt: track.prompt,
+                      lyrics: track.lyrics,
+                      instrumental: track.instrumental,
+                    }),
+                  ]);
 
                   await db
                     .update(tracks)
@@ -646,6 +673,7 @@ export async function GET(request: NextRequest) {
                       s3Key,
                       format: "mp3",
                       duration,
+                      audioDna,
                       audioUrl: `/api/tracks/${track.id}/download`,
                       error: null,
                     })
@@ -973,7 +1001,15 @@ export async function POST(request: NextRequest) {
         }
 
         const s3Key = `tracks/${trackId}/audio.${uploadFormat}`;
-        const duration = await extractAudioDuration(audioBuffer);
+        const [duration, audioDna] = await Promise.all([
+          extractAudioDuration(audioBuffer),
+          computeAudioDna({
+            audioBuffer,
+            prompt: uploadPrompt,
+            lyrics: uploadLyrics,
+            instrumental: isInstrumental,
+          }),
+        ]);
 
         await uploadToS3(s3Key, uploadBuffer, contentTypeForFormat(uploadFormat));
 
@@ -1005,6 +1041,7 @@ export async function POST(request: NextRequest) {
             s3Key,
             format: uploadFormat,
             duration,
+            audioDna,
             audioId: uploadHash,
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
