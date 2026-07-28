@@ -14,7 +14,7 @@ const PROVIDERS = {
   mureka: { name: "Mureka", fullName: "Mureka V9 (WaveSpeed)", models: ["mureka-v9"], icon: "W" },
   heartmula: { name: "HeartMuLa", fullName: "HeartMuLa (WaveSpeed)", models: ["heartmula"], icon: "H" },
   apiframe: { name: "APIFrame", fullName: "APIFrame AI", models: ["Suno (suno)", "Udio (udio)", "Mureka (mureka)", "Google Lyria 3 Pro (lyria-3-pro)", "ElevenLabs Music (elevenlabs-music)"], icon: "A" },
-  apimart: { name: "APIMart", fullName: "APIMart (Suno)", models: ["v5", "v4.5+"], icon: "AM" },
+  apimart: { name: "APIMart", fullName: "APIMart (Suno)", models: ["v5.5", "v5", "v4.5-all", "v4.5+", "v4.5", "v4", "v3.5"], icon: "AM" },
 };
 
 const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [

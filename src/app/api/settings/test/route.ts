@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (provider === "apimart" && status === 404) {
+    if (provider === "apimart" && (status === 404 || status === 400)) {
       return NextResponse.json({
         success: true,
         message: "Connected — APIMart API key is valid (test task id not found, as expected).",
