@@ -145,32 +145,6 @@ CREATE TABLE IF NOT EXISTS "style_presets" (
 
 CREATE INDEX IF NOT EXISTS "style_presets_user_id_idx" ON "style_presets"("user_id");
 
-CREATE TABLE IF NOT EXISTS "songs" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id" uuid NOT NULL REFERENCES "users"("id"),
-  "workspace_id" uuid,
-  "title" varchar(255),
-  "prompt" text,
-  "lyrics" text,
-  "lyrics_timestamps" text,
-  "language" varchar(50),
-  "translated_lyrics" text,
-  "translated_language" varchar(50),
-  "instrumental" boolean NOT NULL DEFAULT false,
-  "notes" text NOT NULL DEFAULT '',
-  "song_dna" text,
-  "voting_enabled" boolean NOT NULL DEFAULT false,
-  "folder_gradient" text,
-  "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
-  "publish_date" timestamp,
-  "deleted_at" timestamp,
-  "created_at" timestamp NOT NULL DEFAULT now(),
-  "updated_at" timestamp NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS "songs_user_id_idx" ON "songs"("user_id");
-CREATE INDEX IF NOT EXISTS "songs_workspace_id_idx" ON "songs"("workspace_id");
-
 CREATE TABLE IF NOT EXISTS "push_subscriptions" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id"),
@@ -204,13 +178,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS "track_dna_votes_track_user_unique" ON "track_
 CREATE INDEX IF NOT EXISTS "track_dna_votes_track_id_idx" ON "track_dna_votes"("track_id");
 `;
 
-// Handles existing databases where the songs table was created before these columns existed.
-const alterSongsSql = `
-ALTER TABLE songs ADD COLUMN IF NOT EXISTS folder_gradient text;
-ALTER TABLE songs ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
-ALTER TABLE songs ADD COLUMN IF NOT EXISTS publish_date timestamp;
-`;
-
 // These ALTER TABLE statements handle existing databases. On fresh installs,
 // the columns above are already in createTablesSql. IF NOT EXISTS makes this safe either way.
 const alterTracksSql = `
@@ -229,7 +196,6 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name VARCHAR(255);
-ALTER TABLE tracks ADD COLUMN IF NOT EXISTS song_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_lyrics TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_language VARCHAR(50);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_mp3 TEXT;
@@ -246,7 +212,6 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_open_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
-CREATE INDEX IF NOT EXISTS "tracks_song_id_idx" ON "tracks"("song_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
@@ -282,31 +247,13 @@ END
 $$;
 `;
 
-const songsFkSql = `
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'songs_workspace_id_workspaces_id_fk'
-  ) THEN
-    ALTER TABLE songs
-      ADD CONSTRAINT songs_workspace_id_workspaces_id_fk
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
-      ON DELETE SET NULL;
-  END IF;
-
-  -- Deleting a song must not delete its track versions (they fall back to
-  -- ungrouped tracks), so this is re-asserted as ON DELETE SET NULL every
-  -- boot rather than guarded by IF NOT EXISTS, to migrate any database that
-  -- still has the earlier ON DELETE CASCADE version of this constraint.
-  ALTER TABLE tracks DROP CONSTRAINT IF EXISTS tracks_song_id_songs_id_fk;
-  ALTER TABLE tracks
-    ADD CONSTRAINT tracks_song_id_songs_id_fk
-    FOREIGN KEY (song_id) REFERENCES songs(id)
-    ON DELETE SET NULL;
-END
-$$;
+// The "songs" concept (grouping track variants for the old voting/Song-DNA
+// feature) has been removed in favor of per-track DNA — subfolders now live
+// entirely on the "workspaces" table via parent_workspace_id. Drop the
+// leftover table/column on every boot so existing databases catch up.
+const dropSongsSql = `
+DROP TABLE IF EXISTS songs CASCADE;
+ALTER TABLE tracks DROP COLUMN IF EXISTS song_id;
 `;
 
 async function executeSqlStatements(client: postgres.Sql, sqlBlob: string) {
@@ -359,10 +306,9 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, createTablesSql);
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
-    await executeSqlStatements(targetClient, alterSongsSql);
     await executeSqlStatements(targetClient, alterPlaylistsSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
-    await targetClient.unsafe(songsFkSql);
+    await executeSqlStatements(targetClient, dropSongsSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
   } catch (error) {
     console.error("Error ensuring database schema:", error);

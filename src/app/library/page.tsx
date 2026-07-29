@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 function AutocompleteInput({
@@ -127,14 +126,13 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   DEFAULT_WORKSPACE_ID,
   WORKSPACE_FOLDER_GRADIENTS,
-  fetchAndHydrateSongs,
   usePlayerStore,
   usePlaylistStore,
   useStudioStore,
   useWorkspaceStore,
   type Workspace,
 } from "@/lib/store";
-import DeleteSongDialog from "@/components/tracks/DeleteSongDialog";
+import DeleteWorkspaceDialog from "@/components/tracks/DeleteWorkspaceDialog";
 import { formatTotalDuration } from "@/lib/track-utils";
 
 interface LibraryTrack {
@@ -163,16 +161,8 @@ interface LibraryTrack {
   uploadIndex?: number;
 }
 
-type LibraryView = "songs" | "mysongs" | "playlists" | "workspaces" | "trash";
+type LibraryView = "songs" | "playlists" | "workspaces" | "trash";
 
-interface LibrarySongSummary {
-  id: string;
-  title: string | null;
-  trackIds: string[];
-  releaseStatus: string;
-  publishDate: string | null;
-  createdAt: string;
-}
 type WorkspaceDisplayMode = "grid" | "list";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
@@ -201,12 +191,6 @@ const UPLOAD_PROVIDERS = [
   { value: "musicgpt", label: "MusicGPT" },
 ] as const;
 
-type QueuedUploadSongAction = {
-  mode: "none" | "existing" | "create";
-  songId: string;
-  newSongName: string;
-};
-
 type QueuedUploadItem = {
   id: string;
   file: File;
@@ -222,7 +206,6 @@ type QueuedUploadItem = {
   sunoStyleInfluence: number | null;
   sunoWeirdness: number | null;
   licenseFile: File | null;
-  songAction: QueuedUploadSongAction;
 };
 
 function hashString(value: string) {
@@ -290,16 +273,14 @@ async function readApiPayload(response: Response): Promise<unknown> {
 export default function LibraryPage() {
   const router = useRouter();
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
-  const [pendingDeleteSong, setPendingDeleteSong] = useState<Workspace | null>(null);
+  const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState<Workspace | null>(null);
   const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, localMovePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
   const {
     workspaces,
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     createWorkspace,
-    createWorkspaceFolderAndAssign,
     deleteWorkspace,
-    moveTrackToWorkspace,
     moveTracksToWorkspace,
     ensureDefaultWorkspace,
     hydrateWorkspacesFromServer,
@@ -315,9 +296,6 @@ export default function LibraryPage() {
   const uploadLicenseInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mySongs, setMySongs] = useState<LibrarySongSummary[]>([]);
-  const [mySongsLoading, setMySongsLoading] = useState(false);
-  const [mySongsLoaded, setMySongsLoaded] = useState(false);
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -391,7 +369,6 @@ export default function LibraryPage() {
       setTracks(cleanedTracks);
       if (Array.isArray(data.workspaces)) {
         hydrateWorkspacesFromServer(data.workspaces);
-        await fetchAndHydrateSongs();
       }
     }
     setLoading(false);
@@ -409,21 +386,6 @@ export default function LibraryPage() {
       setTrashLoading(false);
     }
   }, []);
-
-  const fetchMySongs = useCallback(async () => {
-    if (mySongsLoaded) return;
-    setMySongsLoading(true);
-    try {
-      const res = await fetch("/api/songs");
-      if (res.ok) {
-        const data = await res.json();
-        setMySongs(data.songs || []);
-        setMySongsLoaded(true);
-      }
-    } finally {
-      setMySongsLoading(false);
-    }
-  }, [mySongsLoaded]);
 
   useEffect(() => {
     function consumeJumpToTrack() {
@@ -649,11 +611,6 @@ export default function LibraryPage() {
     [parentWorkspaceNameById, workspaces],
   );
 
-  const uploadSongOptions = useMemo(
-    () => workspaces.filter((workspace) => workspace.parentWorkspaceId === uploadWorkspaceId),
-    [workspaces, uploadWorkspaceId],
-  );
-
   function openWorkspace(id: string) {
     setSelectedPlaylistId(null);
     setSelectedWorkspaceId(id);
@@ -772,7 +729,6 @@ export default function LibraryPage() {
         sunoStyleInfluence: 50,
         sunoWeirdness: 50,
         licenseFile: null,
-        songAction: { mode: "none" as const, songId: "", newSongName: titleFromUploadFilename(file.name) },
       }));
 
       if (valid.length > room) {
@@ -953,21 +909,6 @@ export default function LibraryPage() {
       if (uploadedTracks.length > 0) {
         const uploadedTrackIds = uploadedTracks.map((track) => track.id);
         moveTracksToWorkspace(targetWorkspaceId, uploadedTrackIds);
-
-        for (const track of uploadedTracks) {
-          const queuedItem = typeof track.uploadIndex === "number" ? queuedUploads[track.uploadIndex] : undefined;
-          const songAction = queuedItem?.songAction;
-          if (!songAction || songAction.mode === "none") continue;
-
-          if (songAction.mode === "existing" && songAction.songId) {
-            moveTrackToWorkspace(songAction.songId, track.id);
-          } else if (songAction.mode === "create" && songAction.newSongName.trim()) {
-            // Awaited (not fired in parallel) so a second queued item with the
-            // same new song name reliably finds the first one's just-created
-            // folder instead of racing to create a duplicate.
-            await createWorkspaceFolderAndAssign(targetWorkspaceId, songAction.newSongName.trim(), track.id);
-          }
-        }
 
         setTracks((current) => {
           const byId = new Map(current.map((track) => [track.id, track]));
@@ -1211,7 +1152,7 @@ export default function LibraryPage() {
                       Library
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : view === "mysongs" ? "Songs" : "Tracks"}
+                        {selectedPlaylist ? selectedPlaylist.name : selectedWorkspace ? selectedWorkspace.name : view === "playlists" ? "Playlists" : view === "workspaces" ? "Workspaces" : view === "trash" ? "Recycle Bin" : "Tracks"}
                       </span>
                     </h1>
                     {activeSongs.length > 0 && (
@@ -1228,15 +1169,6 @@ export default function LibraryPage() {
                       className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "songs" && !selectedPlaylist && !selectedWorkspace ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                     >
                       Tracks
-                    </button>
-
-                    {/* Songs */}
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedPlaylistId(null); setSelectedWorkspaceId(null); setView("mysongs"); void fetchMySongs(); }}
-                      className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${view === "mysongs" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
-                    >
-                      Songs
                     </button>
 
                     {/* Playlists + contextual sub-pill */}
@@ -1408,59 +1340,6 @@ export default function LibraryPage() {
                     }
                     selectedTrackId={selectedTrack?.id ?? null}
                   />
-                )}
-              </section>
-            )}
-
-            {/* Songs view (grouped, distinct from the flat Tracks list) */}
-            {view === "mysongs" && (
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">Songs</h2>
-                    <p className="text-sm text-white/55">Your songs, each grouping its track versions.</p>
-                  </div>
-                </div>
-
-                {mySongsLoading ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading songs...</div>
-                ) : mySongs.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                    {mySongs.map((song) => (
-                      <Link
-                        key={song.id}
-                        href={`/songs/${song.id}`}
-                        className="group flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
-                      >
-                        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border border-amber-300/20 bg-[#11131f]">
-                          <svg className="h-8 w-8 text-amber-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-white">{song.title || "Untitled Song"}</p>
-                          <p className="text-xs text-white/45">
-                            {song.trackIds.length} {song.trackIds.length === 1 ? "version" : "versions"}
-                          </p>
-                        </div>
-                        {song.releaseStatus !== "concept" && (
-                          <span
-                            className={`self-start text-[10px] px-1.5 py-0.5 rounded ${
-                              song.releaseStatus === "published"
-                                ? "border border-green-300/30 bg-green-400/10 text-green-200"
-                                : "border border-red-300/30 bg-red-400/10 text-red-200"
-                            }`}
-                          >
-                            {song.releaseStatus === "published" ? "Published" : "Unpublished"}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
-                    No songs yet. Generating a track automatically creates one, or use &ldquo;Add to Song&rdquo; from a track&apos;s menu.
-                  </div>
                 )}
               </section>
             )}
@@ -1764,7 +1643,7 @@ export default function LibraryPage() {
                                 type="button"
                                 onClick={() =>
                                   workspace.parentWorkspaceId
-                                    ? setPendingDeleteSong(workspace)
+                                    ? setPendingDeleteWorkspace(workspace)
                                     : deleteWorkspace(workspace.id)
                                 }
                                 className="shrink-0 text-[11px] text-white/25 transition-colors hover:text-red-400 opacity-0 group-hover:opacity-100 mt-0.5"
@@ -1815,7 +1694,7 @@ export default function LibraryPage() {
                                 type="button"
                                 onClick={() =>
                                   workspace.parentWorkspaceId
-                                    ? setPendingDeleteSong(workspace)
+                                    ? setPendingDeleteWorkspace(workspace)
                                     : deleteWorkspace(workspace.id)
                                 }
                                 className="text-xs text-white/30 transition-colors hover:text-red-400"
@@ -2304,71 +2183,6 @@ export default function LibraryPage() {
                           </div>
 
                           <div className="space-y-1">
-                            <label htmlFor={`upload-item-song-mode-${item.id}`} className="text-xs text-white/60">Song</label>
-                            <select
-                              id={`upload-item-song-mode-${item.id}`}
-                              value={item.songAction.mode}
-                              onChange={(event) => {
-                                const mode = event.target.value as QueuedUploadSongAction["mode"];
-                                setQueuedUploads((current) =>
-                                  current.map((upload) =>
-                                    upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, mode } } : upload
-                                  )
-                                );
-                              }}
-                              disabled={uploading}
-                              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                            >
-                              <option value="none">None</option>
-                              <option value="existing">Add to existing song</option>
-                              <option value="create">Create new song</option>
-                            </select>
-
-                            {item.songAction.mode === "existing" && (
-                              <select
-                                aria-label="Existing song"
-                                value={item.songAction.songId}
-                                onChange={(event) => {
-                                  const songId = event.target.value;
-                                  setQueuedUploads((current) =>
-                                    current.map((upload) =>
-                                      upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, songId } } : upload
-                                    )
-                                  );
-                                }}
-                                disabled={uploading}
-                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                              >
-                                <option value="">
-                                  {uploadSongOptions.length === 0 ? "No songs in this workspace yet" : "Select a song…"}
-                                </option>
-                                {uploadSongOptions.map((song) => (
-                                  <option key={song.id} value={song.id}>{song.name}</option>
-                                ))}
-                              </select>
-                            )}
-
-                            {item.songAction.mode === "create" && (
-                              <input
-                                type="text"
-                                aria-label="New song name"
-                                value={item.songAction.newSongName}
-                                onChange={(event) => {
-                                  const newSongName = event.target.value;
-                                  setQueuedUploads((current) =>
-                                    current.map((upload) =>
-                                      upload.id === item.id ? { ...upload, songAction: { ...upload.songAction, newSongName } } : upload
-                                    )
-                                  );
-                                }}
-                                disabled={uploading}
-                                placeholder="Song name"
-                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                              />
-                            )}
-                          </div>
-
-                          <div className="space-y-1">
                             <label className="text-xs text-white/60">Cover art</label>
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
@@ -2645,18 +2459,18 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {pendingDeleteSong && (
-        <DeleteSongDialog
-          songName={pendingDeleteSong.name}
-          trackCount={pendingDeleteSong.trackIds.length}
-          onCancel={() => setPendingDeleteSong(null)}
-          onDeleteSongOnly={() => {
-            deleteWorkspace(pendingDeleteSong.id);
-            setPendingDeleteSong(null);
+      {pendingDeleteWorkspace && (
+        <DeleteWorkspaceDialog
+          workspaceName={pendingDeleteWorkspace.name}
+          trackCount={pendingDeleteWorkspace.trackIds.length}
+          onCancel={() => setPendingDeleteWorkspace(null)}
+          onDeleteFolderOnly={() => {
+            deleteWorkspace(pendingDeleteWorkspace.id);
+            setPendingDeleteWorkspace(null);
           }}
-          onDeleteSongAndTracks={() => {
-            deleteWorkspace(pendingDeleteSong.id, { deleteTracks: true });
-            setPendingDeleteSong(null);
+          onDeleteFolderAndTracks={() => {
+            deleteWorkspace(pendingDeleteWorkspace.id, { deleteTracks: true });
+            setPendingDeleteWorkspace(null);
             void fetchTracks();
           }}
         />

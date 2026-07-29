@@ -27,10 +27,9 @@ export function useTrackCardActions({
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
-  const { createWorkspace, createWorkspaceFolderAndAssign, moveTrackToWorkspace } = useWorkspaceStore(
+  const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
     useShallow((s) => ({
       createWorkspace: s.createWorkspace,
-      createWorkspaceFolderAndAssign: s.createWorkspaceFolderAndAssign,
       moveTrackToWorkspace: s.moveTrackToWorkspace,
     }))
   );
@@ -59,7 +58,6 @@ export function useTrackCardActions({
   const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
-  const [showAddToSongDialog, setShowAddToSongDialog] = useState(false);
 
   useEffect(() => {
     function handleCoverRegenerated(event: Event) {
@@ -287,16 +285,6 @@ export function useTrackCardActions({
     setWorkspaceMenuOpen(false);
   }
 
-  function handleAddToSong(songId: string) {
-    moveTrackToWorkspace(songId, track.id);
-    setShowAddToSongDialog(false);
-  }
-
-  function handleCreateSongAndAdd(name: string, workspaceId: string) {
-    void createWorkspaceFolderAndAssign(workspaceId, name, track.id);
-    setShowAddToSongDialog(false);
-  }
-
   function handleMergeWorkspaceTrigger(existingWorkspace: { id: string; name: string }) {
     setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
     setShowMergeWorkspaceDialog(true);
@@ -330,9 +318,7 @@ export function useTrackCardActions({
     showMergeWorkspaceDialog, setShowMergeWorkspaceDialog,
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
-    showAddToSongDialog, setShowAddToSongDialog,
     // handlers
-    handleAddToSong, handleCreateSongAndAdd,
     executeDelete, handleDelete,
     handleRegenerateCover,
     handleRating,

@@ -9,7 +9,6 @@ import { usePlayerStore } from "@/lib/store";
 
 interface TrackDetail {
   id: string;
-  songId: string | null;
   title: string;
   artistName: string | null;
   coverUrl: string | null;

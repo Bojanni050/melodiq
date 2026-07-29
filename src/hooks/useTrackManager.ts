@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import useSWR from "swr";
-import { usePlayerStore, useWorkspaceStore, fetchAndHydrateSongs, type Track as PlayerTrack, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, type Track as PlayerTrack, type Workspace } from "@/lib/store";
 
 export interface Track {
   id: string;
@@ -27,7 +27,6 @@ export interface Track {
   rating?: string | null;
   playCount?: number | null;
   votedAt?: string | null;
-  songId?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;
@@ -181,7 +180,6 @@ export function useTrackManager() {
 
     if (Array.isArray(data.workspaces)) {
       useWorkspaceStore.getState().hydrateWorkspacesFromServer(data.workspaces);
-      void fetchAndHydrateSongs();
     }
     useWorkspaceStore.getState().syncTracksToDefaultWorkspace(next.map((track) => track.id));
   }, []);

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { workspaces } from "@/db/schema";
@@ -24,9 +24,28 @@ export async function POST(request: NextRequest) {
     const rawName = typeof body?.name === "string" ? body.name : "";
     const name = rawName.trim();
     const normalizedName = name.toLowerCase();
+    const rawParentWorkspaceId = typeof body?.parentWorkspaceId === "string" ? body.parentWorkspaceId.trim() : "";
 
     if (!name) {
       return NextResponse.json({ error: "Workspace name is required" }, { status: 400 });
+    }
+
+    let parentWorkspaceId: string | null = null;
+    if (rawParentWorkspaceId) {
+      const parent = await db
+        .select({ id: workspaces.id, parentWorkspaceId: workspaces.parentWorkspaceId })
+        .from(workspaces)
+        .where(and(eq(workspaces.id, rawParentWorkspaceId), eq(workspaces.userId, auth.userId)))
+        .limit(1);
+
+      if (!parent[0]) {
+        return NextResponse.json({ error: "Parent workspace not found" }, { status: 404 });
+      }
+      // Keep hierarchy one-level deep: only root workspaces can have subfolders.
+      if (parent[0].parentWorkspaceId) {
+        return NextResponse.json({ error: "Subfolders cannot be nested further" }, { status: 400 });
+      }
+      parentWorkspaceId = parent[0].id;
     }
 
     const existingWorkspaces = await db
@@ -35,7 +54,9 @@ export async function POST(request: NextRequest) {
       .where(eq(workspaces.userId, auth.userId));
 
     const existingByName = existingWorkspaces.find(
-      (workspace) => workspace.name.trim().toLowerCase() === normalizedName
+      (workspace) =>
+        workspace.name.trim().toLowerCase() === normalizedName &&
+        workspace.parentWorkspaceId === parentWorkspaceId
     );
 
     if (existingByName) {
@@ -65,7 +86,7 @@ export async function POST(request: NextRequest) {
         id,
         userId: auth.userId,
         name,
-        parentWorkspaceId: null,
+        parentWorkspaceId,
         folderGradient,
         isDefault: false,
       })

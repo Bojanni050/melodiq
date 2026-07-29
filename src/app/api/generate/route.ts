@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, songs, clonedVoices } from "@/db/schema";
+import { tracks, clonedVoices } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
@@ -194,24 +194,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const [song] = await db
-    .insert(songs)
-    .values({
-      userId,
-      prompt,
-      lyrics: lyrics || null,
-      instrumental: instrumental || false,
-      title: resolvedTitle,
-    })
-    .returning({ id: songs.id });
-  const songId = song.id;
-
   if (isMinimaxViaPoYo) {
     const insertResult = await db
       .insert(tracks)
       .values({
         userId,
-        songId,
         provider,
         providerModel,
         prompt,
@@ -331,7 +318,6 @@ export async function POST(request: NextRequest) {
         .insert(tracks)
         .values({
           userId,
-          songId,
           provider,
           providerModel,
           prompt,
@@ -345,7 +331,6 @@ export async function POST(request: NextRequest) {
         .insert(tracks)
         .values({
           userId,
-          songId,
           provider,
           providerModel,
           prompt,
@@ -509,7 +494,6 @@ export async function POST(request: NextRequest) {
     .insert(tracks)
     .values({
       userId: userId,
-      songId,
       provider,
       providerModel,
       prompt,
@@ -798,7 +782,6 @@ export async function POST(request: NextRequest) {
             .insert(tracks)
             .values({
               userId,
-              songId,
               provider,
               providerModel,
               prompt,
@@ -865,7 +848,6 @@ export async function POST(request: NextRequest) {
         .insert(tracks)
         .values({
           userId,
-          songId,
           provider: "musicgpt",
           providerModel,
           prompt,
@@ -923,7 +905,6 @@ export async function POST(request: NextRequest) {
         db.update(tracks).set({ status: "generating", jobId: genResult.requestId }).where(eq(tracks.id, track.id!)).returning(),
         db.insert(tracks).values({
           userId,
-          songId,
           provider: "mureka",
           providerModel: "mureka-v9",
           prompt,
@@ -1028,7 +1009,6 @@ export async function POST(request: NextRequest) {
             .insert(tracks)
             .values({
               userId,
-              songId,
               provider: "apiframe",
               providerModel,
               prompt,
@@ -1117,7 +1097,6 @@ export async function POST(request: NextRequest) {
           .insert(tracks)
           .values({
             userId,
-            songId,
             provider: "apimart",
             providerModel,
             prompt,

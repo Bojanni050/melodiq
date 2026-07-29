@@ -11,7 +11,6 @@ interface TrackActionMenuProps {
   onRegenerateCover: () => void;
   isRegeneratingCover: boolean;
   onMoveToWorkspaceClick: () => void;
-  onAddToSongClick: () => void;
   onAddToQueue?: (track: TrackItem) => void;
   onCreatePlaylistClick: () => void;
   onAddToPlaylistClick: (playlistId: string, playlistName: string, isDuplicate: boolean) => void;
@@ -26,7 +25,6 @@ export default function TrackActionMenu({
   onRegenerateCover,
   isRegeneratingCover,
   onMoveToWorkspaceClick,
-  onAddToSongClick,
   onAddToQueue,
   onRemoveFromPlaylistClick,
   onOpenPlaylistPicker,
@@ -108,17 +106,6 @@ export default function TrackActionMenu({
             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
           >
             <span>Move To Workspace</span>
-            <span className="text-white/30">›</span>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToSongClick();
-              setMenuOpen(false);
-            }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
-          >
-            <span>Add to Song</span>
             <span className="text-white/30">›</span>
           </button>
           <button

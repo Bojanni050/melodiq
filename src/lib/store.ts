@@ -72,7 +72,6 @@ export interface Track {
   s3KeyCoverThumb?: string | null;
   playCount?: number | null;
   votedAt?: string | null;
-  songId?: string | null;
   lyricsTimestamps?: string | null;
   instrumental?: boolean | null;
   artistName?: string | null;
@@ -442,9 +441,6 @@ export interface Workspace {
   folderGradient?: string;
   isDefault?: boolean;
   parentWorkspaceId?: string | null;
-  // Only meaningful when this entry disguises a song (parentWorkspaceId set).
-  releaseStatus?: string;
-  publishDate?: string | null;
 }
 
 export const DEFAULT_WORKSPACE_ID = "workspace-default";
@@ -763,35 +759,6 @@ interface WorkspaceState {
   ensureDefaultWorkspace: () => string;
   syncTracksToDefaultWorkspace: (trackIds: string[]) => void;
   hydrateWorkspacesFromServer: (workspaces: Workspace[]) => void;
-  hydrateSongsFromServer: (songs: SongFromServer[]) => void;
-}
-
-// A `songs` row disguised in the `Workspace` shape so the existing
-// root/child workspace UI (which already renders `parentWorkspaceId`
-// children as folder cards) can render songs without any changes.
-export interface SongFromServer {
-  id: string;
-  title: string | null;
-  workspaceId: string;
-  trackIds: string[];
-  folderGradient?: string;
-  createdAt: string;
-  releaseStatus: string;
-  publishDate: string | null;
-}
-
-function songToWorkspaceShape(song: SongFromServer): Workspace {
-  return {
-    id: song.id,
-    name: song.title || "Untitled Song",
-    trackIds: song.trackIds,
-    createdAt: song.createdAt,
-    folderGradient: song.folderGradient,
-    isDefault: false,
-    parentWorkspaceId: song.workspaceId,
-    releaseStatus: song.releaseStatus,
-    publishDate: song.publishDate,
-  };
 }
 
 function persistWorkspaceCreate(input: {
@@ -799,20 +766,23 @@ function persistWorkspaceCreate(input: {
   name: string;
   parentWorkspaceId: string | null;
   folderGradient?: string;
-}) {
-  if (typeof window === "undefined") return;
+}): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
 
-  void fetch("/api/workspaces", {
+  return fetch("/api/workspaces", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-  }).catch((error) => console.error("[store] persistWorkspaceCreate failed", error));
+  })
+    .then(() => undefined)
+    .catch((error) => console.error("[store] persistWorkspaceCreate failed", error));
 }
 
-function persistWorkspaceDelete(workspaceId: string) {
+function persistWorkspaceDelete(workspaceId: string, options?: { deleteTracks?: boolean }) {
   if (typeof window === "undefined") return;
 
-  void fetch(`/api/workspaces/${workspaceId}`, {
+  const query = options?.deleteTracks ? "?deleteTracks=true" : "";
+  void fetch(`/api/workspaces/${workspaceId}${query}`, {
     method: "DELETE",
   }).catch((error) => console.error("[store] persistWorkspaceDelete failed", error));
 }
@@ -820,51 +790,11 @@ function persistWorkspaceDelete(workspaceId: string) {
 function persistTrackWorkspaceAssignment(trackId: string, workspaceId: string | null) {
   if (typeof window === "undefined") return;
 
-  // Note: this deliberately does NOT touch songId. moveTracksToWorkspace is
-  // called routinely right after every generation to place new tracks into
-  // the active workspace, which would otherwise immediately un-group every
-  // freshly generated song.
   void fetch(`/api/tracks/${trackId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ workspaceId }),
   }).catch((error) => console.error("[store] persistTrackWorkspaceAssignment failed", error));
-}
-
-function persistTrackSongAssignment(trackId: string, songId: string) {
-  if (typeof window === "undefined") return;
-
-  void fetch(`/api/tracks/${trackId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ songId }),
-  }).catch((error) => console.error("[store] persistTrackSongAssignment failed", error));
-}
-
-function persistSongCreate(input: {
-  id: string;
-  name: string;
-  workspaceId: string;
-  folderGradient?: string;
-}): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-
-  return fetch("/api/songs", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  })
-    .then(() => undefined)
-    .catch((error) => console.error("[store] persistSongCreate failed", error));
-}
-
-function persistSongDelete(songId: string, options?: { deleteTracks?: boolean }) {
-  if (typeof window === "undefined") return;
-
-  const query = options?.deleteTracks ? "?deleteTracks=true" : "";
-  void fetch(`/api/songs/${songId}${query}`, {
-    method: "DELETE",
-  }).catch((error) => console.error("[store] persistSongDelete failed", error));
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1027,18 +957,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ],
         }));
 
-        void persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
+        void persistWorkspaceCreate({ id, name: trimmed, parentWorkspaceId, folderGradient });
 
         return id;
       },
-      // Same as createWorkspaceFolder, but for the "create a new song and
-      // attach this track to it in one step" flows (Add to Song dialog,
-      // upload panel's per-file song picker). Awaits the song actually
-      // existing server-side before assigning the track — createWorkspaceFolder
-      // fires its POST /api/songs fire-and-forget, so calling
-      // moveTrackToWorkspace right after it is a race: the track's
-      // PATCH { songId } can reach the server (and 404 "Song not found")
-      // before the song's own POST has committed.
+      // Same as createWorkspaceFolder, but for "create a new subfolder and
+      // move this track into it in one step" flows (upload panel's per-file
+      // picker). Awaits the subfolder actually existing server-side before
+      // assigning the track — createWorkspaceFolder fires its POST
+      // /api/workspaces fire-and-forget, so calling moveTrackToWorkspace
+      // right after it is a race: the track's PATCH { workspaceId } can
+      // reach the server (and 404 "Workspace not found") before the
+      // subfolder's own POST has committed.
       createWorkspaceFolderAndAssign: async (parentWorkspaceId, name, trackId) => {
         const trimmed = name.trim();
         if (!trimmed) return "";
@@ -1077,20 +1007,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ],
         }));
 
-        await persistSongCreate({ id, name: trimmed, workspaceId: parentWorkspaceId, folderGradient });
+        await persistWorkspaceCreate({ id, name: trimmed, parentWorkspaceId, folderGradient });
         get().moveTrackToWorkspace(id, trackId);
 
         return id;
       },
       moveTrackToWorkspace: (workspaceId, trackId) => {
-        const targetEntry = get().workspaces.find((workspace) => workspace.id === workspaceId);
-
-        if (targetEntry?.parentWorkspaceId) {
-          persistTrackSongAssignment(trackId, workspaceId);
-        } else {
-          const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
-          persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
-        }
+        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
+        persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
         set((state) => {
           const targetWorkspace = state.workspaces.find((workspace) => workspace.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -1116,18 +1040,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         });
       },
       moveTracksToWorkspace: (workspaceId, trackIds) => {
-        const targetEntry = get().workspaces.find((workspace) => workspace.id === workspaceId);
-
-        if (targetEntry?.parentWorkspaceId) {
-          trackIds.forEach((trackId) => {
-            persistTrackSongAssignment(trackId, workspaceId);
-          });
-        } else {
-          const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
-          trackIds.forEach((trackId) => {
-            persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
-          });
-        }
+        const persistedWorkspaceId = toPersistedWorkspaceId(workspaceId, get().workspaces);
+        trackIds.forEach((trackId) => {
+          persistTrackWorkspaceAssignment(trackId, persistedWorkspaceId);
+        });
         set((state) => {
           const targetWorkspace = state.workspaces.find((w) => w.id === workspaceId);
           if (!targetWorkspace) return state;
@@ -1170,11 +1086,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               : state.selectedWorkspaceId,
         }));
 
-        if (target.parentWorkspaceId) {
-          persistSongDelete(workspaceId, { deleteTracks: options?.deleteTracks });
-        } else {
-          persistWorkspaceDelete(workspaceId);
-        }
+        persistWorkspaceDelete(workspaceId, { deleteTracks: options?.deleteTracks });
       },
       setSelectedWorkspaceId: (workspaceId) => set({ selectedWorkspaceId: workspaceId }),
       ensureDefaultWorkspace: () => {
@@ -1232,13 +1144,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
             selectedWorkspaceId,
           };
         }),
-      hydrateSongsFromServer: (incomingSongs) =>
-        set((state) => ({
-          workspaces: [
-            ...state.workspaces.filter((workspace) => !workspace.parentWorkspaceId),
-            ...(incomingSongs || []).map(songToWorkspaceShape),
-          ],
-        })),
     }),
     {
       name: "melodiq-workspaces",
@@ -1265,21 +1170,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 );
 
 // Persisting track workspace assignments is handled directly in moveTrackToWorkspace / moveTracksToWorkspace actions
-
-export async function fetchAndHydrateSongs(): Promise<void> {
-  if (typeof window === "undefined") return;
-
-  try {
-    const res = await fetch("/api/songs", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (Array.isArray(data.songs)) {
-      useWorkspaceStore.getState().hydrateSongsFromServer(data.songs);
-    }
-  } catch (error) {
-    console.error("[store] fetchAndHydrateSongs failed", error);
-  }
-}
 
 export interface SavedLyric {
   id: string;

@@ -196,7 +196,7 @@ export default function WorkspacePanel({
             onKeyDown={handleCreateWorkspaceKeyDown}
           />
 
-          {/* Create song */}
+          {/* Create subfolder */}
           {isWorkspaceFolderOpen && !selectedWorkspace?.parentWorkspaceId && (
             showCreateFolder ? (
               <div className="flex items-center gap-1">
@@ -204,9 +204,9 @@ export default function WorkspacePanel({
                   value={newFolderName}
                   onChange={(event) => setNewFolderName(event.target.value)}
                   onKeyDown={handleCreateFolderKeyDown}
-                  placeholder="Song name"
+                  placeholder="Subfolder name"
                   className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
-                  aria-label="Song name"
+                  aria-label="Subfolder name"
                 />
                 <button
                   type="button"
@@ -229,7 +229,7 @@ export default function WorkspacePanel({
                 onClick={() => setShowCreateFolder(true)}
                 className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
               >
-                + Add Song
+                + Add Subfolder
               </button>
             )
           )}
@@ -282,7 +282,7 @@ export default function WorkspacePanel({
                         <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
                           <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
                           <p className="text-xs text-white/65">
-                            {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} songs` : ""}
+                            {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} subfolders` : ""}
                           </p>
                         </div>
                       </div>
@@ -318,7 +318,7 @@ export default function WorkspacePanel({
                     </div>
                     <span className="text-xs text-white/40 shrink-0">
                       {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
-                      {childCount > 0 ? ` • ${childCount} songs` : ""}
+                      {childCount > 0 ? ` • ${childCount} subfolders` : ""}
                     </span>
                     <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -358,10 +358,10 @@ export default function WorkspacePanel({
         </span>
       </div>
 
-      {/* Songs */}
+      {/* Subfolders */}
       {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
         <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Songs</p>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Subfolders</p>
           <div className="space-y-1.5">
             {selectedWorkspaceChildren.map((childWorkspace) => {
               const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
@@ -388,17 +388,6 @@ export default function WorkspacePanel({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
                   </div>
-                  {childWorkspace.releaseStatus && childWorkspace.releaseStatus !== "concept" && (
-                    <span
-                      className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
-                        childWorkspace.releaseStatus === "published"
-                          ? "border border-green-300/30 bg-green-400/10 text-green-200"
-                          : "border border-red-300/30 bg-red-400/10 text-red-200"
-                      }`}
-                    >
-                      {childWorkspace.releaseStatus === "published" ? "Published" : "Unpublished"}
-                    </span>
-                  )}
                   <span className="text-[11px] text-white/45">
                     {childTracks.length} {childTracks.length === 1 ? "track" : "tracks"}
                   </span>

@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useWorkspaceStore, fetchAndHydrateSongs } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useWorkspaceStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 
 function hashString(value: string) {
@@ -58,9 +57,6 @@ export default function WorkspaceDetailPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
-  const [songReleaseStatus, setSongReleaseStatus] = useState("concept");
-  const [songPublishDate, setSongPublishDate] = useState("");
-  const [savingSongStatus, setSavingSongStatus] = useState(false);
 
   useEffect(() => {
     if (workspaceId) {
@@ -86,7 +82,6 @@ export default function WorkspaceDetailPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
-          await fetchAndHydrateSongs();
         }
       }
 
@@ -109,35 +104,6 @@ export default function WorkspaceDetailPage() {
     () => (workspaceId ? workspaces.find((workspace) => workspace.id === workspaceId) ?? null : null),
     [workspaceId, workspaces],
   );
-
-  useEffect(() => {
-    if (selectedWorkspace?.parentWorkspaceId) {
-      setSongReleaseStatus(selectedWorkspace.releaseStatus ?? "concept");
-      setSongPublishDate(selectedWorkspace.publishDate ? selectedWorkspace.publishDate.slice(0, 10) : "");
-    }
-  }, [selectedWorkspace?.id, selectedWorkspace?.parentWorkspaceId, selectedWorkspace?.releaseStatus, selectedWorkspace?.publishDate]);
-
-  async function handleSaveSongStatus(nextReleaseStatus: string, nextPublishDate: string) {
-    if (!selectedWorkspace?.parentWorkspaceId) return;
-    setSavingSongStatus(true);
-    try {
-      const res = await fetch(`/api/songs/${selectedWorkspace.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          releaseStatus: nextReleaseStatus,
-          publishDate: nextPublishDate ? new Date(nextPublishDate).toISOString() : null,
-        }),
-      });
-      if (res.ok) {
-        await fetchAndHydrateSongs();
-      }
-    } catch (error) {
-      console.error("[song-status] update failed", error);
-    } finally {
-      setSavingSongStatus(false);
-    }
-  }
 
   const childWorkspacesByParent = useMemo(() => {
     const grouped = new Map<string, typeof workspaces>();
@@ -386,54 +352,17 @@ export default function WorkspaceDetailPage() {
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.28em] text-white/35">
-                    {selectedWorkspace.parentWorkspaceId ? "Song" : "Workspace"}
+                    {selectedWorkspace.parentWorkspaceId ? "Subfolder" : "Workspace"}
                   </p>
                   <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight truncate">{selectedWorkspace.name}</h1>
                   <p className="text-sm text-white/60 mt-1">
-                    {selectedWorkspaceTracks.length} {selectedWorkspaceTracks.length === 1 ? "track" : "tracks"} in this {selectedWorkspace.parentWorkspaceId ? "song" : "folder"}.
+                    {selectedWorkspaceTracks.length} {selectedWorkspaceTracks.length === 1 ? "track" : "tracks"} in this folder.
                   </p>
                 </div>
 
                 {selectedWorkspace.id === DEFAULT_WORKSPACE_ID ? (
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/45">Default workspace</span>
                 ) : null}
-
-                {selectedWorkspace.parentWorkspaceId && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/songs/${selectedWorkspace.id}`}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-400/10 px-3 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-400/20"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Song DNA
-                    </Link>
-                    <select
-                      value={songReleaseStatus}
-                      disabled={savingSongStatus}
-                      onChange={(e) => {
-                        setSongReleaseStatus(e.target.value);
-                        void handleSaveSongStatus(e.target.value, songPublishDate);
-                      }}
-                      className="h-9 rounded-full border border-white/12 bg-white/5 px-3 text-xs text-white outline-none focus:border-white/25 disabled:opacity-60"
-                    >
-                      <option value="concept">Concept</option>
-                      <option value="published">Published</option>
-                      <option value="unpublished">Unpublished</option>
-                    </select>
-                    <input
-                      type="date"
-                      value={songPublishDate}
-                      disabled={savingSongStatus}
-                      onChange={(e) => {
-                        setSongPublishDate(e.target.value);
-                        void handleSaveSongStatus(songReleaseStatus, e.target.value);
-                      }}
-                      className="h-9 rounded-full border border-white/12 bg-white/5 px-3 text-xs text-white outline-none focus:border-white/25 disabled:opacity-60 [color-scheme:dark]"
-                    />
-                  </div>
-                )}
               </div>
             </section>
 
@@ -468,7 +397,7 @@ export default function WorkspaceDetailPage() {
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                  This {selectedWorkspace.parentWorkspaceId ? "song" : "workspace"} has no tracks yet. Use track actions and choose {selectedWorkspace.parentWorkspaceId ? "Add to Song" : "Move To Workspace"}.
+                  This {selectedWorkspace.parentWorkspaceId ? "subfolder" : "workspace"} has no tracks yet. Use track actions and choose Move To Workspace.
                 </div>
               )}
             </section>
@@ -476,7 +405,7 @@ export default function WorkspaceDetailPage() {
             {!selectedWorkspace.parentWorkspaceId && (
               <section className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold">Songs</h2>
+                  <h2 className="text-base font-semibold">Subfolders</h2>
                   {showCreateFolder ? (
                     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
                       <input
@@ -489,7 +418,7 @@ export default function WorkspaceDetailPage() {
                             setNewFolderName("");
                           }
                         }}
-                        placeholder="Song name"
+                        placeholder="Subfolder name"
                         className="h-9 w-44 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
                         autoFocus
                       />
@@ -517,7 +446,7 @@ export default function WorkspaceDetailPage() {
                       onClick={() => setShowCreateFolder(true)}
                       className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                     >
-                      + Add Song
+                      + Add Subfolder
                     </button>
                   )}
                 </div>
@@ -549,17 +478,6 @@ export default function WorkspaceDetailPage() {
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
                             </div>
-                            {childWorkspace.releaseStatus && childWorkspace.releaseStatus !== "concept" && (
-                              <span
-                                className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
-                                  childWorkspace.releaseStatus === "published"
-                                    ? "border border-green-300/30 bg-green-400/10 text-green-200"
-                                    : "border border-red-300/30 bg-red-400/10 text-red-200"
-                                }`}
-                              >
-                                {childWorkspace.releaseStatus === "published" ? "Published" : "Unpublished"}
-                              </span>
-                            )}
                             <span className="text-xs text-white/45">{childTracks.length} tracks</span>
                             <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -571,7 +489,7 @@ export default function WorkspaceDetailPage() {
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-5 text-sm text-white/55">
-                    No songs yet.
+                    No subfolders yet.
                   </div>
                 )}
               </section>
@@ -592,7 +510,7 @@ export default function WorkspaceDetailPage() {
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
                 <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+                <p className="text-sm mt-3">Select a track to show track info and lyrics.</p>
               </div>
             )}
           </div>

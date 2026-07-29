@@ -6,7 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore, fetchAndHydrateSongs } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -203,7 +203,6 @@ export default function WorkspacesPage() {
         setTracks(cleanedTracks);
         if (Array.isArray(data.workspaces)) {
           hydrateWorkspacesFromServer(data.workspaces);
-          await fetchAndHydrateSongs();
         }
       }
 
@@ -433,7 +432,7 @@ export default function WorkspacesPage() {
                                   {workspace.name}
                                 </h3>
                                 <p className="text-xs text-white/70">
-                                  {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} songs` : ""}
+                                  {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} subfolders` : ""}
                                 </p>
                               </div>
                             </div>
@@ -479,7 +478,7 @@ export default function WorkspacesPage() {
                           </p>
                           <p className="text-xs text-white/45">
                             {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
-                            {childCount > 0 ? ` • ${childCount} songs` : ""}
+                            {childCount > 0 ? ` • ${childCount} subfolders` : ""}
                           </p>
                         </div>
 
@@ -528,7 +527,7 @@ export default function WorkspacesPage() {
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
                 <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+                <p className="text-sm mt-3">Select a track or press play to show track info and lyrics.</p>
               </div>
             )}
           </div>

@@ -5,8 +5,6 @@ import Sidebar from "@/components/Sidebar";
 
 interface AdminStats {
   totalUsers: number;
-  totalSongs: number;
-  publishedSongs: number;
   totalTracks: number;
   totalPlays: number;
 }
@@ -102,9 +100,7 @@ export default function AdminPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
               <StatTile label="Users" value={stats.totalUsers} />
-              <StatTile label="Songs" value={stats.totalSongs} />
-              <StatTile label="Published Songs" value={stats.publishedSongs} />
-              <StatTile label="Track Versions" value={stats.totalTracks} />
+              <StatTile label="Tracks" value={stats.totalTracks} />
               <StatTile label="Total Plays" value={stats.totalPlays} />
             </div>
           )}

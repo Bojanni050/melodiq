@@ -20,7 +20,6 @@ export interface TrackItem {
   rating?: string | null;
   playCount?: number | null;
   votedAt?: string | null;
-  songId?: string | null;
   workspaceId?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;

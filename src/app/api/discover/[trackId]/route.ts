@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { getAudioDna, getTrackDnaAccess } from "@/lib/songs";
 import { db } from "@/db";
-import { songs, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 // Public, no auth required to view: the Track DNA page's data — track
@@ -34,21 +34,9 @@ export async function GET(
     .where(eq(users.id, track.userId))
     .limit(1);
 
-  let songPublishDate: Date | null = null;
-  if (track.songId) {
-    const [song] = await db
-      .select({ publishDate: songs.publishDate })
-      .from(songs)
-      .where(eq(songs.id, track.songId))
-      .limit(1);
-    songPublishDate = song?.publishDate ?? null;
-  }
-  const publishDate = track.publishDate ?? songPublishDate;
-
   return NextResponse.json({
     track: {
       id: track.id,
-      songId: track.songId,
       title: track.title || "Untitled",
       artistName: track.artistName || owner?.artistAlias || owner?.name || null,
       coverUrl: track.coverUrl || null,
@@ -56,7 +44,7 @@ export async function GET(
       duration: track.duration,
       totalPlays: track.playCount,
       instrumental: track.instrumental,
-      publishDate: publishDate ? publishDate.toISOString() : null,
+      publishDate: track.publishDate ? track.publishDate.toISOString() : null,
     },
     audioDna,
     loggedIn: Boolean(payload),

@@ -15,9 +15,6 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "script:backfill-covers": "tsx --tsconfig tsconfig.json scripts/backfill-cover-webp.ts",
-    "script:backfill-songs": "tsx --tsconfig tsconfig.json scripts/backfill-songs.ts",
-    "script:migrate-subfolders": "tsx --tsconfig tsconfig.json scripts/migrate-subfolders-to-songs.ts",
-    "script:cleanup-empty-songs": "tsx --tsconfig tsconfig.json scripts/cleanup-empty-songs.ts",
     "script:grant-first-admin": "tsx --tsconfig tsconfig.json scripts/grant-first-admin.ts"
   },
   "dependencies": {

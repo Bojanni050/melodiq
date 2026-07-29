@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
@@ -15,7 +15,7 @@ export async function POST(
   const { userId } = auth;
 
   const result = await db
-    .select({ id: tracks.id, songId: tracks.songId, votedAt: tracks.votedAt })
+    .select({ id: tracks.id, votedAt: tracks.votedAt })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
@@ -33,15 +33,6 @@ export async function POST(
         .returning();
 
       return NextResponse.json({ track: updated });
-    }
-
-    if (track.songId) {
-      await db
-        .update(tracks)
-        .set({ votedAt: null })
-        .where(
-          and(eq(tracks.songId, track.songId), eq(tracks.userId, userId), ne(tracks.id, id))
-        );
     }
 
     const [updated] = await db

@@ -1,18 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { workspaces } from "@/db/schema";
+import { tracks, workspaces } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
+  const deleteTracks = request.nextUrl.searchParams.get("deleteTracks") === "true";
 
   try {
     const target = await db
@@ -27,6 +28,24 @@ export async function DELETE(
 
     if (target[0].isDefault) {
       return NextResponse.json({ error: "Default workspace cannot be deleted" }, { status: 400 });
+    }
+
+    if (deleteTracks) {
+      // Cascades to subfolders too (workspaces.parent_workspace_id is ON DELETE
+      // CASCADE), so this catches direct tracks in a root workspace and in any
+      // of its subfolders in one pass.
+      const childIds = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(and(eq(workspaces.parentWorkspaceId, id), eq(workspaces.userId, auth.userId)));
+      const workspaceIds = [id, ...childIds.map((w) => w.id)];
+
+      for (const workspaceId of workspaceIds) {
+        await db
+          .update(tracks)
+          .set({ deletedAt: new Date() })
+          .where(and(eq(tracks.workspaceId, workspaceId), eq(tracks.userId, auth.userId)));
+      }
     }
 
     await db

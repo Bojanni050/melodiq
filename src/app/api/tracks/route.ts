@@ -343,7 +343,6 @@ export async function GET(request: NextRequest) {
     id: tracks.id,
     userId: tracks.userId,
     workspaceId: tracks.workspaceId,
-    songId: tracks.songId,
     title: tracks.title,
     provider: tracks.provider,
     providerModel: tracks.providerModel,

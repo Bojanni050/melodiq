@@ -1,16 +1,16 @@
 "use client";
 
-export default function DeleteSongDialog({
-  songName,
+export default function DeleteWorkspaceDialog({
+  workspaceName,
   trackCount,
-  onDeleteSongOnly,
-  onDeleteSongAndTracks,
+  onDeleteFolderOnly,
+  onDeleteFolderAndTracks,
   onCancel,
 }: {
-  songName: string;
+  workspaceName: string;
   trackCount: number;
-  onDeleteSongOnly: () => void;
-  onDeleteSongAndTracks: () => void;
+  onDeleteFolderOnly: () => void;
+  onDeleteFolderAndTracks: () => void;
   onCancel: () => void;
 }) {
   return (
@@ -24,23 +24,23 @@ export default function DeleteSongDialog({
             </svg>
           </div>
           <p className="text-sm text-white/80 leading-relaxed">
-            Delete &ldquo;{songName}&rdquo;? {trackCount > 0 ? `It has ${trackCount} track version${trackCount === 1 ? "" : "s"}.` : ""}
+            Delete &ldquo;{workspaceName}&rdquo;? {trackCount > 0 ? `It has ${trackCount} track${trackCount === 1 ? "" : "s"}.` : ""}
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <button
-            onClick={onDeleteSongOnly}
+            onClick={onDeleteFolderOnly}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-left text-sm text-white/80 transition-colors hover:bg-white/10"
           >
-            <span className="block font-medium">Delete song only</span>
-            <span className="block text-xs text-white/40">Track versions stay, just ungrouped</span>
+            <span className="block font-medium">Delete folder only</span>
+            <span className="block text-xs text-white/40">Tracks stay, just moved back to the parent workspace</span>
           </button>
           <button
-            onClick={onDeleteSongAndTracks}
+            onClick={onDeleteFolderAndTracks}
             className="w-full rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-2 text-left text-sm text-red-200 transition-colors hover:bg-red-500/20"
           >
-            <span className="block font-medium">Delete song and tracks</span>
-            <span className="block text-xs text-red-300/60">Track versions move to the recycle bin</span>
+            <span className="block font-medium">Delete folder and tracks</span>
+            <span className="block text-xs text-red-300/60">Tracks move to the recycle bin</span>
           </button>
         </div>
         <div className="flex justify-end">
