@@ -124,6 +124,15 @@ export default function DiscoverPage() {
     .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0))
     .slice(0, 10);
 
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const tracksThisWeek = myTracks.filter(
+    (track) => now - new Date(track.createdAt).getTime() <= 7 * DAY_MS
+  ).length;
+  const tracksThisMonth = myTracks.filter(
+    (track) => now - new Date(track.createdAt).getTime() <= 30 * DAY_MS
+  ).length;
+
   function myTrackCoverSrc(track: MyTrack) {
     return track.coverUrl || (track.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
   }
@@ -333,9 +342,17 @@ export default function DiscoverPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-base font-semibold">Your Tracks</h2>
                 {!myTracksLoading && (
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
-                    {totalTrackCount} generated
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                      {totalTrackCount} generated
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                      {tracksThisWeek} this week
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                      {tracksThisMonth} this month
+                    </span>
+                  </div>
                 )}
               </div>
               {myTracksLoading ? (
