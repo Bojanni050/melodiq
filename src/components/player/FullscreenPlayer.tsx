@@ -80,7 +80,7 @@ export default function FullscreenPlayer({
 
   // central self-healing polling loop inside FullscreenPlayer
   useEffect(() => {
-    if (!currentTrack || currentTrack.status !== "done" || currentTrack.provider !== "poyo") return;
+    if (!currentTrack || currentTrack.status !== "done" || (currentTrack.provider !== "poyo" && currentTrack.provider !== "apimart") || currentTrack.instrumental) return;
 
     const hasTimings = currentTrack.lyricsTimestamps && !isLyricsTaskSubmission(currentTrack.lyricsTimestamps)
       ? parseLyrics(currentTrack.lyrics ?? null, currentTrack.lyricsTimestamps).some((line) => line.startTime >= 0)

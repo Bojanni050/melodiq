@@ -106,7 +106,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   // central self-healing polling loop
   useEffect(() => {
-    if (localTrack.status !== "done" || localTrack.provider !== "poyo" || localTrack.instrumental) return;
+    if (localTrack.status !== "done" || (localTrack.provider !== "poyo" && localTrack.provider !== "apimart") || localTrack.instrumental) return;
 
     const hasTimings = localTrack.lyricsTimestamps && !isLyricsTaskSubmission(localTrack.lyricsTimestamps)
       ? parseLyrics(localTrack.lyrics, localTrack.lyricsTimestamps).some((line) => line.startTime >= 0)

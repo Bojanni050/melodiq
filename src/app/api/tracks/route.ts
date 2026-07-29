@@ -22,7 +22,7 @@ import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUpl
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import axios from "axios";
@@ -620,6 +620,18 @@ export async function GET(request: NextRequest) {
                       lyrics: track.lyrics,
                       instrumental: track.instrumental,
                     }).catch((error) => console.error("[tracks-api] language detection failed (apimart)", error));
+                  }
+
+                  if (!track.instrumental) {
+                    const audioIndex = isSecond ? 2 : 1;
+                    createApimartAlignedLyrics(parentJobId, audioIndex)
+                      .then((submitRes) =>
+                        db
+                          .update(tracks)
+                          .set({ lyricsTimestamps: JSON.stringify({ task_id: submitRes.taskId }) })
+                          .where(eq(tracks.id, track.id))
+                      )
+                      .catch((error) => console.error("[tracks-api] aligned lyrics submit failed (apimart)", error));
                   }
                 }
               } else if (status.status === "failed") {
