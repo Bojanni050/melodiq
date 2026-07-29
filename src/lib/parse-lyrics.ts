@@ -90,11 +90,11 @@ export function isLyricsTaskSubmission(lyricsTimestamps: string | null | undefin
       const hasTaskId = !!(parsed.task_id || parsed.taskId || (parsed.data && (parsed.data.task_id || parsed.data.taskId)));
       const hasActualTimings = !!(
         Array.isArray(parsed) ||
-        parsed.lines || parsed.words || parsed.segments || parsed.lyrics || parsed.lrc || parsed.lyrics_timestamped || parsed.timestamped_lyrics || parsed.lyricsTimestamped || parsed.timestampedLyrics || parsed.alignedWords || parsed.aligned_words ||
+        parsed.lines || parsed.words || parsed.segments || parsed.lyrics || parsed.lrc || parsed.lyrics_timestamped || parsed.timestamped_lyrics || parsed.lyricsTimestamped || parsed.timestampedLyrics || parsed.alignedWords || parsed.aligned_words || parsed.alignment ||
         (parsed.data && (
-          parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics || parsed.data.lrc || parsed.data.lyrics_timestamped || parsed.data.timestamped_lyrics || parsed.data.lyricsTimestamped || parsed.data.timestampedLyrics || parsed.data.alignedWords || parsed.data.aligned_words ||
-          parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics || parsed.data.result?.lrc || parsed.data.result?.lyrics_timestamped || parsed.data.result?.timestamped_lyrics || parsed.data.result?.lyricsTimestamped || parsed.data.result?.timestampedLyrics || parsed.data.result?.alignedWords || parsed.data.result?.aligned_words ||
-          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics || parsed.data.output?.lrc || parsed.data.output?.lyrics_timestamped || parsed.data.output?.timestamped_lyrics || parsed.data.output?.lyricsTimestamped || parsed.data.output?.timestampedLyrics || parsed.data.output?.alignedWords || parsed.data.output?.aligned_words ||
+          parsed.data.lines || parsed.data.words || parsed.data.segments || parsed.data.lyrics || parsed.data.lrc || parsed.data.lyrics_timestamped || parsed.data.timestamped_lyrics || parsed.data.lyricsTimestamped || parsed.data.timestampedLyrics || parsed.data.alignedWords || parsed.data.aligned_words || parsed.data.alignment ||
+          parsed.data.result?.lines || parsed.data.result?.words || parsed.data.result?.segments || parsed.data.result?.lyrics || parsed.data.result?.lrc || parsed.data.result?.lyrics_timestamped || parsed.data.result?.timestamped_lyrics || parsed.data.result?.lyricsTimestamped || parsed.data.result?.timestampedLyrics || parsed.data.result?.alignedWords || parsed.data.result?.aligned_words || parsed.data.result?.alignment ||
+          parsed.data.output?.lines || parsed.data.output?.words || parsed.data.output?.segments || parsed.data.output?.lyrics || parsed.data.output?.lrc || parsed.data.output?.lyrics_timestamped || parsed.data.output?.timestamped_lyrics || parsed.data.output?.lyricsTimestamped || parsed.data.output?.timestampedLyrics || parsed.data.output?.alignedWords || parsed.data.output?.aligned_words || parsed.data.output?.alignment ||
           (Array.isArray(parsed.data.files) && parsed.data.files[0] && (parsed.data.files[0].timestampe_lyrics?.aligned_words || parsed.data.files[0].timestamped_lyrics?.aligned_words))
         )) ||
         parsed.result || parsed.output
@@ -161,6 +161,8 @@ export function parseLyrics(
           items = rawData.alignedWords;
         } else if (Array.isArray(rawData.aligned_words)) {
           items = rawData.aligned_words;
+        } else if (Array.isArray(rawData.alignment)) {
+          items = rawData.alignment;
         } else if (Array.isArray(rawData.segments)) {
           items = rawData.segments;
         } else if (Array.isArray(rawData.lyrics)) {
@@ -169,16 +171,16 @@ export function parseLyrics(
           items = rawData.data;
         } else if (rawData.data && typeof rawData.data === "object") {
           const d = rawData.data;
-          items = d.lines || d.words || d.alignedWords || d.aligned_words || d.segments || d.lyrics ||
-                  d.result?.lines || d.result?.words || d.result?.alignedWords || d.result?.aligned_words || d.result?.segments || d.result?.lyrics ||
-                  d.output?.lines || d.output?.words || d.output?.alignedWords || d.output?.aligned_words || d.output?.segments || d.output?.lyrics ||
+          items = d.lines || d.words || d.alignedWords || d.aligned_words || d.alignment || d.segments || d.lyrics ||
+                  d.result?.lines || d.result?.words || d.result?.alignedWords || d.result?.aligned_words || d.result?.alignment || d.result?.segments || d.result?.lyrics ||
+                  d.output?.lines || d.output?.words || d.output?.alignedWords || d.output?.aligned_words || d.output?.alignment || d.output?.segments || d.output?.lyrics ||
                   (Array.isArray(d.files) && d.files[0] && (d.files[0].timestampe_lyrics?.aligned_words || d.files[0].timestamped_lyrics?.aligned_words)) || [];
         } else if (rawData.result && typeof rawData.result === "object") {
           const r = rawData.result;
-          items = r.lines || r.words || r.alignedWords || r.aligned_words || r.segments || r.lyrics || [];
+          items = r.lines || r.words || r.alignedWords || r.aligned_words || r.alignment || r.segments || r.lyrics || [];
         } else if (rawData.output && typeof rawData.output === "object") {
           const o = rawData.output;
-          items = o.lines || o.words || o.alignedWords || o.aligned_words || o.segments || o.lyrics || [];
+          items = o.lines || o.words || o.alignedWords || o.aligned_words || o.alignment || o.segments || o.lyrics || [];
         }
 
         // Some providers return timestamped lyrics as an embedded LRC-like string
