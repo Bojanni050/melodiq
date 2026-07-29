@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
-import { usePlayerStore, useWorkspaceStore } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import type { Track } from "./useTrackManager";
 
 type CreditsResponse = {
@@ -246,16 +246,28 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
     useWorkspaceStore.getState().setSelectedWorkspaceId(workspaceId);
   }, []);
 
+  // Prefer the credits of whichever provider is actually selected in Studio —
+  // a hardcoded priority chain would let a stale/exhausted provider (e.g. a
+  // PoYo account sitting at 0) permanently mask a healthy one (e.g. an
+  // unlimited-quota APIMart account) just because it came first in the list.
+  const selectedProviderKey = useStudioStore((state) => Object.keys(state.selectedProviders)[0]);
+  const selectedProviderCredits =
+    selectedProviderKey && typeof credits[selectedProviderKey as keyof typeof credits] === "number"
+      ? (credits[selectedProviderKey as keyof typeof credits] as number)
+      : null;
+
   const creditValue =
-    typeof credits.poyo === "number"
-      ? credits.poyo
-      : typeof credits.tempolor === "number"
-        ? credits.tempolor
-        : typeof credits.apiframe === "number"
-          ? credits.apiframe
-          : typeof credits.apimart === "number"
-            ? credits.apimart
-            : null;
+    selectedProviderCredits !== null
+      ? selectedProviderCredits
+      : typeof credits.poyo === "number"
+        ? credits.poyo
+        : typeof credits.tempolor === "number"
+          ? credits.tempolor
+          : typeof credits.apiframe === "number"
+            ? credits.apiframe
+            : typeof credits.apimart === "number"
+              ? credits.apimart
+              : null;
 
   return {
     credits,
