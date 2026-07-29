@@ -289,9 +289,16 @@ export default memo(function TrackList({
   const [visibleCount, setVisibleCount] = useState(30);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
+  // Only reset the "load more" window when the set of tracks actually changes
+  // (added/removed/reordered) — not on every background poll where individual
+  // fields (cover art, lyrics timing, status) update but the id sequence
+  // doesn't. Keying on `tracks` itself reset the scroll position on every
+  // such poll, causing the list to visibly jump back to the top.
+  const trackIdsKey = useMemo(() => tracks.map((t) => t.id).join(","), [tracks]);
+
   useEffect(() => {
     setVisibleCount(30);
-  }, [searchQuery, tracks]);
+  }, [searchQuery, trackIdsKey]);
 
   // Sentinel and Intersection Observer for detecting when generating tracks scroll out of view
   const sentinelRef = useRef<HTMLDivElement | null>(null);
