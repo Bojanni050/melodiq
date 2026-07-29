@@ -8,7 +8,7 @@ import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus, getApimartRawTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, getApimartRawTaskStatus, createApimartAlignedLyrics, createApimartWav } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -467,6 +467,18 @@ export async function GET(
                   .where(eq(tracks.id, track.id!))
               )
               .catch((error) => console.error("[tracks/[id]] aligned lyrics submit failed (apimart)", error));
+          }
+
+          {
+            const audioIndex = isSecond ? 2 : 1;
+            createApimartWav(parentJobId, audioIndex)
+              .then((submitRes) =>
+                db
+                  .update(tracks)
+                  .set({ wavJobId: submitRes.taskId })
+                  .where(eq(tracks.id, track.id!))
+              )
+              .catch((error) => console.error("[tracks/[id]] wav export submit failed (apimart)", error));
           }
 
           return NextResponse.json(updated[0]);

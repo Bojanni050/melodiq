@@ -7,6 +7,8 @@ import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId, requestMissingWavConversion, retryStaleWavConversions } from "@/lib/request-wav-conversion";
+import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
+import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
 import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
@@ -22,7 +24,7 @@ import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUpl
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, createApimartAlignedLyrics, createApimartWav } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import axios from "axios";
@@ -633,6 +635,18 @@ export async function GET(request: NextRequest) {
                       )
                       .catch((error) => console.error("[tracks-api] aligned lyrics submit failed (apimart)", error));
                   }
+
+                  {
+                    const audioIndex = isSecond ? 2 : 1;
+                    createApimartWav(parentJobId, audioIndex)
+                      .then((submitRes) =>
+                        db
+                          .update(tracks)
+                          .set({ wavJobId: submitRes.taskId })
+                          .where(eq(tracks.id, track.id))
+                      )
+                      .catch((error) => console.error("[tracks-api] wav export submit failed (apimart)", error));
+                  }
                 }
               } else if (status.status === "failed") {
                 await db
@@ -723,6 +737,17 @@ export async function GET(request: NextRequest) {
     // attempt cap are enforced inside so repeated polling can't spam PoYo.
     await retryStaleWavConversions(userId).catch((e: any) =>
       console.error("[tracks-api] retryStaleWavConversions failed:", e?.message ?? e)
+    );
+
+    // Same idea for APIMart, but active polling instead of a webhook callback.
+    await retryStaleApimartWavConversions(userId).catch((e: any) =>
+      console.error("[tracks-api] retryStaleApimartWavConversions failed:", e?.message ?? e)
+    );
+
+    // Resolve APIMart aligned-lyrics receipts that outlived the in-component
+    // poller's ~75s window (see apimart-lyrics.ts for why that's needed).
+    await retryStaleApimartAlignedLyrics(userId).catch((e: any) =>
+      console.error("[tracks-api] retryStaleApimartAlignedLyrics failed:", e?.message ?? e)
     );
   }
 

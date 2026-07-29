@@ -2,6 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
 const APIMART_BASE_URL = "https://api.apimart.ai/v1/music";
+const APIMART_ROOT_URL = "https://api.apimart.ai";
 
 export interface ApimartGenerationParams {
   prompt: string;
@@ -162,6 +163,61 @@ export async function createApimartAlignedLyrics(
   } catch (error: any) {
     if (error.response) throw mapApimartError(error);
     throw error;
+  }
+}
+
+export async function createApimartWav(
+  taskId: string,
+  audioIndex: number
+): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.post(
+      `${APIMART_BASE_URL}/generations/wav`,
+      { model: "suno", task_id: taskId, audio_index: audioIndex },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const wavTaskId = response.data?.data?.[0]?.task_id;
+    if (!wavTaskId) {
+      throw new Error(`APIMart returned no task_id for wav export. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] wav export submitted — taskId=${wavTaskId}`);
+    return { taskId: wavTaskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
+export async function getApimartCredits(): Promise<number | null> {
+  try {
+    const apiKey = await getApimartApiKey();
+    const response = await axios.get(`${APIMART_ROOT_URL}/v1/balance`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      timeout: 10000,
+    });
+
+    const data = response.data;
+    if (data?.unlimited_quota) return null;
+    if (typeof data?.remain_credits === "number" && data.remain_credits >= 0) {
+      return Math.round(data.remain_credits);
+    }
+    if (typeof data?.remain_balance === "number" && data.remain_balance >= 0) {
+      return Math.round(data.remain_balance);
+    }
+    return null;
+  } catch (error: any) {
+    console.warn("[apimart] Failed to fetch credits:", error?.message ?? error);
+    return null;
   }
 }
 

@@ -222,7 +222,7 @@ export default memo(function StudioForm({
   onGenerateLyrics,
   onGenerateTitle,
 }: {
-  credits: { lyria: string | number; poyo: number | null; tempolor: number | null; apiframe: number | null };
+  credits: { lyria: string | number; poyo: number | null; tempolor: number | null; apiframe: number | null; apimart: number | null };
   isGenerating: boolean;
   onGenerate: () => void;
   onOptimize: () => void;
