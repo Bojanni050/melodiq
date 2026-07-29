@@ -740,13 +740,16 @@ export async function GET(request: NextRequest) {
     );
 
     // Same idea for APIMart, but active polling instead of a webhook callback.
-    await retryStaleApimartWavConversions(userId).catch((e: any) =>
+    // Fire-and-forget: these call out to APIMart per stale track and would
+    // otherwise add unpredictable latency to every list poll. Any resulting
+    // row updates get picked up on the *next* poll instead of blocking this one.
+    void retryStaleApimartWavConversions(userId).catch((e: any) =>
       console.error("[tracks-api] retryStaleApimartWavConversions failed:", e?.message ?? e)
     );
 
     // Resolve APIMart aligned-lyrics receipts that outlived the in-component
     // poller's ~75s window (see apimart-lyrics.ts for why that's needed).
-    await retryStaleApimartAlignedLyrics(userId).catch((e: any) =>
+    void retryStaleApimartAlignedLyrics(userId).catch((e: any) =>
       console.error("[tracks-api] retryStaleApimartAlignedLyrics failed:", e?.message ?? e)
     );
   }
