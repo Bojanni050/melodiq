@@ -457,6 +457,18 @@ export async function GET(
             }).catch((error) => console.error("[tracks/[id]] language detection failed (apimart)", error));
           }
 
+          if (!track.instrumental) {
+            const audioIndex = isSecond ? 2 : 1;
+            createApimartAlignedLyrics(parentJobId, audioIndex)
+              .then((submitRes) =>
+                db
+                  .update(tracks)
+                  .set({ lyricsTimestamps: JSON.stringify({ task_id: submitRes.taskId }) })
+                  .where(eq(tracks.id, track.id!))
+              )
+              .catch((error) => console.error("[tracks/[id]] aligned lyrics submit failed (apimart)", error));
+          }
+
           return NextResponse.json(updated[0]);
         }
       }
