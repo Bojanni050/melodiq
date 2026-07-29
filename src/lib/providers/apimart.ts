@@ -201,13 +201,16 @@ export async function createApimartWav(
 export async function getApimartCredits(): Promise<number | null> {
   try {
     const apiKey = await getApimartApiKey();
-    const response = await axios.get(`${APIMART_ROOT_URL}/v1/balance`, {
+    // /v1/balance is token-level (quota on this specific key — often
+    // "unlimited" even when the underlying account balance isn't).
+    // /v1/user/balance is the actual account-wide remaining balance, which
+    // is what should be shown as "credits" here.
+    const response = await axios.get(`${APIMART_ROOT_URL}/v1/user/balance`, {
       headers: { Authorization: `Bearer ${apiKey}` },
       timeout: 10000,
     });
 
     const data = response.data;
-    if (data?.unlimited_quota) return null;
     if (typeof data?.remain_credits === "number" && data.remain_credits >= 0) {
       return Math.round(data.remain_credits);
     }
