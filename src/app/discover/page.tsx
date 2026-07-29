@@ -19,12 +19,40 @@ interface PublicTrack {
   publishDate: string | null;
 }
 
+interface MyTrack {
+  id: string;
+  title: string | null;
+  prompt: string;
+  provider: string;
+  providerModel: string;
+  status: string;
+  audioUrl: string | null;
+  audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
+  s3Key: string | null;
+  s3KeyHd: string | null;
+  duration: number | null;
+  lyrics: string | null;
+  lyricsTimestamps: string | null;
+  createdAt: string;
+  error: string | null;
+  coverUrl: string | null;
+  s3KeyCover: string | null;
+  artistName: string | null;
+  instrumental: boolean | null;
+  playCount: number | null;
+  rating: string | null;
+}
+
 export default function DiscoverPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myTracks, setMyTracks] = useState<MyTrack[]>([]);
+  const [myTracksLoading, setMyTracksLoading] = useState(true);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
@@ -65,6 +93,122 @@ export default function DiscoverPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!authChecked || !isLoggedIn) {
+      setMyTracksLoading(false);
+      return;
+    }
+    let active = true;
+    async function fetchMyTracks() {
+      try {
+        const res = await fetch("/api/tracks?status=done", { cache: "no-store" });
+        if (!active) return;
+        if (res.ok) {
+          const data = await res.json();
+          setMyTracks(Array.isArray(data.tracks) ? data.tracks : []);
+        }
+      } finally {
+        if (active) setMyTracksLoading(false);
+      }
+    }
+    fetchMyTracks();
+    return () => {
+      active = false;
+    };
+  }, [authChecked, isLoggedIn]);
+
+  const totalTrackCount = myTracks.length;
+  const topPlayedTracks = [...myTracks]
+    .filter((track) => track.status === "done")
+    .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0))
+    .slice(0, 10);
+
+  function myTrackCoverSrc(track: MyTrack) {
+    return track.coverUrl || (track.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
+  }
+
+  function handlePlayMyTrack(track: MyTrack) {
+    if (currentTrack?.id === track.id) {
+      setGlobalIsPlaying(!globalIsPlaying);
+      return;
+    }
+    playTrackFromGesture({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      status: track.status as "pending" | "generating" | "done" | "failed",
+      audioUrl: track.audioUrl,
+      audioUrlHd: track.audioUrlHd,
+      s3Key: track.s3Key,
+      s3KeyHd: track.s3KeyHd,
+      format: track.format,
+      formatHd: track.formatHd,
+      duration: track.duration,
+      lyrics: track.lyrics,
+      lyricsTimestamps: track.lyricsTimestamps,
+      createdAt: track.createdAt,
+      error: track.error,
+      coverUrl: myTrackCoverSrc(track),
+      s3KeyCover: track.s3KeyCover,
+      artistName: track.artistName,
+      instrumental: track.instrumental,
+      playCount: track.playCount,
+      rating: track.rating,
+    });
+  }
+
+  function MyTrackCard({ track }: { track: MyTrack }) {
+    const cover = myTrackCoverSrc(track);
+    const isPlaying = currentTrack?.id === track.id && globalIsPlaying;
+    return (
+      <button
+        type="button"
+        onClick={() => handlePlayMyTrack(track)}
+        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-white/20"
+      >
+        <div className="group relative aspect-square w-full overflow-hidden rounded-xl">
+          {cover ? (
+            <img src={cover} alt={track.title ?? "Track"} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
+              <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
+                isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+            >
+              {isPlaying ? (
+                <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-white">{track.title || track.prompt.substring(0, 40)}</p>
+          <p className="truncate text-xs text-white/45">{track.artistName || "Untitled artist"}</p>
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-white/35">
+          <span>{formatDuration(track.duration)}</span>
+          <span>{(track.playCount ?? 0).toLocaleString()} plays</span>
+        </div>
+      </button>
+    );
+  }
 
   function coverSrc(track: PublicTrack) {
     if (track.coverUrl) return track.coverUrl;
@@ -177,12 +321,41 @@ export default function DiscoverPage() {
 
         <div className="mx-auto max-w-5xl space-y-8 pb-16">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/35">Song DNA</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-white/35">Overview</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Discover</h1>
-            <p className="mt-1 text-sm text-white/55">Published tracks from the MelodIQ community.</p>
+            <p className="mt-1 text-sm text-white/55">Your tracks, and published tracks from the MelodIQ community.</p>
           </div>
 
           {authChecked && !isLoggedIn && <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />}
+
+          {isLoggedIn && (
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-base font-semibold">Your Tracks</h2>
+                {!myTracksLoading && (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                    {totalTrackCount} generated
+                  </span>
+                )}
+              </div>
+              {myTracksLoading ? (
+                <p className="text-sm text-white/50">Loading…</p>
+              ) : topPlayedTracks.length > 0 ? (
+                <>
+                  <p className="text-xs text-white/40">Top {topPlayedTracks.length} most played</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                    {topPlayedTracks.map((track) => (
+                      <MyTrackCard key={track.id} track={track} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-white/45">
+                  No tracks yet. Head to <Link href="/studio" className="text-primary-400 hover:underline">Studio</Link> to generate your first one.
+                </p>
+              )}
+            </section>
+          )}
 
           {loading ? (
             <p className="text-sm text-white/50">Loading…</p>

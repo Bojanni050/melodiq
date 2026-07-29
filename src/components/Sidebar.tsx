@@ -34,11 +34,11 @@ export default function Sidebar({ credits }: SidebarProps) {
   }, []);
 
   const navItems = [
+    { href: "/discover", label: "Discover", icon: "discover" },
     { href: "/library", label: "Library", icon: "library" },
     { href: "/studio", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
-    { href: "/discover", label: "Song DNA", icon: "discover" },
     { href: "/account", label: "Account", icon: "account" },
     { href: "/settings", label: "Settings", icon: "settings" },
     { href: "/logs", label: "Logs", icon: "logs" },
