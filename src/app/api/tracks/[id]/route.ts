@@ -8,7 +8,7 @@ import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, getApimartRawTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -110,16 +110,30 @@ export async function GET(
         const taskId = parsed.task_id || parsed.taskId || parsed.data?.task_id;
         if (taskId) {
           console.log(`[GET tracks/[id]] self-healing task_id submission detected: ${taskId}`);
-          const status = await getPoYoStatus(taskId);
-          const statusValue = getPoYoStatusValue(status);
-          if (statusValue === "completed" || statusValue === "finished") {
-            const finalTimestamps = JSON.stringify(status);
-            await db
-              .update(tracks)
-              .set({ lyricsTimestamps: finalTimestamps })
-              .where(eq(tracks.id, track.id!));
-            track.lyricsTimestamps = finalTimestamps;
-            console.log(`[GET tracks/[id]] self-healed lyricsTimestamps for track ${track.id}`);
+          if (track.provider === "apimart") {
+            const raw: any = await getApimartRawTaskStatus(taskId);
+            const statusValue = String(raw?.data?.status ?? "").toLowerCase();
+            if (statusValue === "completed" || statusValue === "done") {
+              const finalTimestamps = JSON.stringify(raw);
+              await db
+                .update(tracks)
+                .set({ lyricsTimestamps: finalTimestamps })
+                .where(eq(tracks.id, track.id!));
+              track.lyricsTimestamps = finalTimestamps;
+              console.log(`[GET tracks/[id]] self-healed lyricsTimestamps for track ${track.id}`);
+            }
+          } else {
+            const status = await getPoYoStatus(taskId);
+            const statusValue = getPoYoStatusValue(status);
+            if (statusValue === "completed" || statusValue === "finished") {
+              const finalTimestamps = JSON.stringify(status);
+              await db
+                .update(tracks)
+                .set({ lyricsTimestamps: finalTimestamps })
+                .where(eq(tracks.id, track.id!));
+              track.lyricsTimestamps = finalTimestamps;
+              console.log(`[GET tracks/[id]] self-healed lyricsTimestamps for track ${track.id}`);
+            }
           }
         }
       } catch (err: any) {
@@ -159,6 +173,32 @@ export async function GET(
         }
       } catch (err: any) {
         console.error(`[GET tracks/[id]] self-healing lyrics submit failed:`, err?.message ?? err);
+      }
+    }
+
+    if (
+      track.status === "done" &&
+      track.provider === "apimart" &&
+      !track.instrumental &&
+      track.jobId &&
+      !hasTimings &&
+      !isLyricsTaskSubmission(track.lyricsTimestamps) // avoid double submission if already in progress
+    ) {
+      try {
+        const parentJobId = track.jobId.split(":")[0];
+        const audioIndex = track.jobId.endsWith(":1") ? 2 : 1;
+        console.log(`[GET tracks/[id]] self-healing: triggering missing aligned lyrics task for track ${track.id}`);
+        const submitRes = await createApimartAlignedLyrics(parentJobId, audioIndex);
+        const serializedReceipt = JSON.stringify({ task_id: submitRes.taskId });
+        await db
+          .update(tracks)
+          .set({ lyricsTimestamps: serializedReceipt })
+          .where(eq(tracks.id, track.id!));
+
+        track.lyricsTimestamps = serializedReceipt;
+        console.log(`[GET tracks/[id]] self-healing: successfully submitted aligned lyrics task ${submitRes.taskId} for track ${track.id}`);
+      } catch (err: any) {
+        console.error(`[GET tracks/[id]] self-healing aligned lyrics submit failed:`, err?.message ?? err);
       }
     }
 

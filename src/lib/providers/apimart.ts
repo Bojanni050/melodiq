@@ -133,6 +133,53 @@ export async function createApimartVoice(audioUrl: string): Promise<{ taskId: st
   }
 }
 
+export async function createApimartAlignedLyrics(
+  taskId: string,
+  audioIndex: number
+): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.post(
+      `${APIMART_BASE_URL}/generations/alignedLyrics`,
+      { model: "suno", task_id: taskId, audio_index: audioIndex },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const lyricsTaskId = response.data?.data?.[0]?.task_id;
+    if (!lyricsTaskId) {
+      throw new Error(`APIMart returned no task_id for alignedLyrics. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] aligned lyrics submitted — taskId=${lyricsTaskId}`);
+    return { taskId: lyricsTaskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
+export async function getApimartRawTaskStatus(taskId: string): Promise<any> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.get(`${APIMART_BASE_URL}/tasks/${taskId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      timeout: 15000,
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
 export async function getApimartTaskStatus(taskId: string): Promise<ApimartTaskStatus> {
   const apiKey = await getApimartApiKey();
 
