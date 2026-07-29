@@ -21,9 +21,21 @@ export default function PlayerWindowPage() {
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [lyricsVisible, setLyricsVisible] = useState(true);
+  const [bgZoom, setBgZoom] = useState(() => {
+    try { return localStorage.getItem("melodiq-fs-bgzoom") !== "off"; } catch { return true; }
+  });
   const channelRef = useRef<BroadcastChannel | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
+
+  function toggleBgZoom() {
+    setBgZoom((v) => {
+      const next = !v;
+      try { localStorage.setItem("melodiq-fs-bgzoom", next ? "on" : "off"); } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
@@ -114,10 +126,20 @@ export default function PlayerWindowPage() {
 
   return (
     <div className="fixed inset-0 z-0 bg-black text-white overflow-hidden">
+      <style>{`
+        @keyframes fsZoom {
+          0%, 100% { transform: scale(1.15); }
+          50% { transform: scale(1.32); }
+        }
+      `}</style>
       {coverUrl && (
         <div
           className="absolute inset-0 bg-cover bg-center blur-[90px] opacity-45 saturate-150"
-          style={{ backgroundImage: `url(${coverUrl})` }}
+          style={{
+            backgroundImage: `url(${coverUrl})`,
+            transform: bgZoom ? undefined : "scale(1.15)",
+            animation: bgZoom ? "fsZoom 22s ease-in-out infinite" : undefined,
+          }}
         />
       )}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70" />
@@ -137,6 +159,27 @@ export default function PlayerWindowPage() {
         ) : (
           <>
             <div className="px-6 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <button
+                  onClick={toggleBgZoom}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7" strokeWidth={2} />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setLyricsVisible((v) => !v)}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+                  </svg>
+                </button>
+              </div>
               <h2 className="text-lg font-semibold">{cleanTitle || track.prompt.substring(0, 50)}</h2>
               <p className="text-sm text-white/60">
                 {artistLabel ? `${artistLabel} — ` : ""}
@@ -149,7 +192,7 @@ export default function PlayerWindowPage() {
             </div>
 
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden gap-6">
-              {(!showLyrics) && (
+              {(!showLyrics || !lyricsVisible) && (
                 <div className="shrink-0 flex flex-col items-center justify-center gap-4">
                   <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96">
                     {coverUrl ? (
@@ -161,7 +204,7 @@ export default function PlayerWindowPage() {
                 </div>
               )}
 
-              {showLyrics && (
+              {showLyrics && lyricsVisible && (
                 <div className="flex-1 w-full flex items-center justify-center min-h-0 h-full">
                   {hasTimings ? (
                     <div className="flex flex-col items-center gap-4 w-full h-full">
