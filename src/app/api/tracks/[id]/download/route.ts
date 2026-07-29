@@ -33,7 +33,14 @@ export async function GET(
 
   const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
   const fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
-  const filename = `${track.title ?? "track"}.${fmt}`;
+  const rawName = track.title ?? "track";
+  // HTTP header values must stay within Latin-1 — a title with e.g. Polish,
+  // Turkish, or Cyrillic characters (ł, ş, я, ...) throws ERR_INVALID_CHAR
+  // if used raw, which surfaced as a 500 on this route. Send an ASCII-safe
+  // fallback in `filename` and the real name via the RFC 5987 `filename*`.
+  const asciiName = rawName.replace(/[^\x20-\x7E]/g, "_");
+  const filename = `${asciiName}.${fmt}`;
+  const encodedFilename = encodeURIComponent(`${rawName}.${fmt}`);
 
   // Fetch the presigned URL then proxy the content server-side
   const presignedUrl = await getPresignedUrl(s3Key);
@@ -49,7 +56,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`,
       "Cache-Control": "private, no-store",
     },
   });
