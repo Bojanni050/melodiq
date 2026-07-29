@@ -10,6 +10,12 @@ import { parseLyrics } from "@/lib/parse-lyrics";
 import FullscreenPlayer from "@/components/player/FullscreenPlayer";
 import ChromecastButton from "@/components/ChromecastButton";
 import { useChromecast } from "@/hooks/useChromecast";
+import {
+  PLAYER_POPUP_CHANNEL,
+  PLAYER_POPUP_WINDOW_NAME,
+  type PlayerPopupMessage,
+  type PlayerPopupStateMessage,
+} from "@/lib/playerPopupSync";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -146,6 +152,10 @@ export default function Player() {
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const popupChannelRef = useRef<BroadcastChannel | null>(null);
+  const popupWindowRef = useRef<Window | null>(null);
+  const audioSourceRef = useRef<AudioSource>("unknown");
+  const audioSourceStateRef = useRef<AudioSourceState>("unknown");
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
@@ -423,6 +433,25 @@ export default function Player() {
       const time = audioRef.current?.currentTime || 0;
       setCurrentTime(time);
       usePlayerStore.getState().setProgress(time);
+
+      const channel = popupChannelRef.current;
+      if (channel) {
+        const state = usePlayerStore.getState();
+        const message: PlayerPopupStateMessage = {
+          type: "state",
+          payload: {
+            track: state.currentTrack,
+            isPlaying: state.isPlaying,
+            currentTime: time,
+            duration: audioRef.current?.duration || 0,
+            audioSource: audioSourceRef.current,
+            audioSourceState: audioSourceStateRef.current,
+            hasNext: state.queue.length > 0,
+            hasPrevious: state.history.length > 0 || time > 3,
+          },
+        };
+        channel.postMessage(message);
+      }
     };
 
     const handleLoadedMetadata = () => {
@@ -892,6 +921,91 @@ export default function Player() {
     playNext();
   }, [playNext]);
 
+  const broadcastPopupState = useCallback(() => {
+    const channel = popupChannelRef.current;
+    if (!channel) return;
+    const state = usePlayerStore.getState();
+    const message: PlayerPopupStateMessage = {
+      type: "state",
+      payload: {
+        track: state.currentTrack,
+        isPlaying: state.isPlaying,
+        currentTime: audioRef.current?.currentTime || 0,
+        duration: audioRef.current?.duration || 0,
+        audioSource: audioSourceRef.current,
+        audioSourceState: audioSourceStateRef.current,
+        hasNext: state.queue.length > 0,
+        hasPrevious: state.history.length > 0 || (audioRef.current?.currentTime || 0) > 3,
+      },
+    };
+    channel.postMessage(message);
+  }, []);
+
+  const controlHandlersRef = useRef({ togglePlay, handleNext, handlePrevious, broadcastPopupState });
+  useEffect(() => {
+    controlHandlersRef.current = { togglePlay, handleNext, handlePrevious, broadcastPopupState };
+  });
+
+  useEffect(() => {
+    audioSourceRef.current = audioSource;
+  }, [audioSource]);
+
+  useEffect(() => {
+    audioSourceStateRef.current = audioSourceState;
+  }, [audioSourceState]);
+
+  // Popup ("pop out to second screen") sync: the audio element and playback
+  // state stay owned by this window; the popup window is a read-only mirror
+  // driven by BroadcastChannel messages, and sends control commands back.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    const channel = new BroadcastChannel(PLAYER_POPUP_CHANNEL);
+    popupChannelRef.current = channel;
+
+    channel.onmessage = (event: MessageEvent<PlayerPopupMessage>) => {
+      const data = event.data;
+      if (!data) return;
+      const handlers = controlHandlersRef.current;
+
+      if (data.type === "request-state") {
+        handlers.broadcastPopupState();
+        return;
+      }
+
+      if (data.type === "control") {
+        if (data.action === "toggle-play") handlers.togglePlay();
+        else if (data.action === "next") handlers.handleNext();
+        else if (data.action === "previous") handlers.handlePrevious();
+        else if (data.action === "seek" && typeof data.value === "number" && audioRef.current) {
+          audioRef.current.currentTime = data.value;
+          setCurrentTime(data.value);
+        }
+      }
+    };
+
+    return () => {
+      channel.close();
+      popupChannelRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    broadcastPopupState();
+  }, [currentTrack, isPlaying, queue.length, history.length, audioSource, audioSourceState, broadcastPopupState]);
+
+  const handlePopOutPlayer = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const popup = window.open(
+      "/player-window",
+      PLAYER_POPUP_WINDOW_NAME,
+      "width=1100,height=720,menubar=no,toolbar=no,location=no,status=no"
+    );
+    if (popup) {
+      popupWindowRef.current = popup;
+      popup.focus();
+    }
+  }, []);
+
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const time = parseFloat(e.target.value);
@@ -1220,6 +1334,18 @@ export default function Player() {
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePopOutPlayer}
+              disabled={!currentTrack}
+              className="p-2 rounded-full text-white/40 hover:text-white/80 disabled:opacity-20 transition-colors"
+              title="Open player in a second window (drag to another monitor)"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3h8v8m0-8L11 13M19 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6" />
               </svg>
             </button>
 
