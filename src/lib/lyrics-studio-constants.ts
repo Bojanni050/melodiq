@@ -92,7 +92,7 @@ export const BLOCK_COLORS: Record<BlockType, string> = {
   intro: "rgba(255,255,255,0.15)",
   verse: "#3b82f6",
   "pre-chorus": "#eab308",
-  chorus: "#ff530c",
+  chorus: "#ff007f",
   "post-chorus": "#22c55e",
   bridge: "#a855f7",
   intrumental: "#06b6d4",

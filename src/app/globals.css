@@ -22,16 +22,16 @@ body {
 }
 
 @theme {
-  --color-primary-50: #fff5f0;
-  --color-primary-100: #ffe8dc;
-  --color-primary-200: #ffd1b8;
-  --color-primary-300: #ffb894;
-  --color-primary-400: #ff8550;
-  --color-primary-500: #ff530c;
-  --color-primary-600: #e64a0b;
-  --color-primary-700: #cc4109;
-  --color-primary-800: #b33808;
-  --color-primary-900: #992f07;
+  --color-primary-50: #fff0f7;
+  --color-primary-100: #ffe0ef;
+  --color-primary-200: #ffb8da;
+  --color-primary-300: #ff8fc4;
+  --color-primary-400: #ff47a0;
+  --color-primary-500: #ff007f;
+  --color-primary-600: #e6006f;
+  --color-primary-700: #cc0062;
+  --color-primary-800: #b30055;
+  --color-primary-900: #990048;
 
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-soundwave: soundwave 1.2s ease-in-out infinite;
@@ -75,12 +75,12 @@ body {
   .aurora {
     background: linear-gradient(
       135deg,
-      #cc4109,
-      #e64a0b,
-      #ff530c,
-      #ff8550,
-      #e64a0b,
-      #b33808
+      #cc0062,
+      #e6006f,
+      #ff007f,
+      #ff47a0,
+      #e6006f,
+      #b30055
     );
     background-size: 300% 300%;
     animation: aurora-move 8s ease infinite;
@@ -104,7 +104,7 @@ body {
 
 @layer components {
   .btn-primary {
-    background: linear-gradient(135deg, #ff8550 0%, #ff530c 50%, #e64a0b 100%);
+    background: linear-gradient(135deg, #ff47a0 0%, #ff007f 50%, #e6006f 100%);
     background-size: 200% 200%;
     padding: 0.5rem 1rem;
     border-radius: 0.75rem;
@@ -112,89 +112,89 @@ body {
     color: white;
     transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
     /* Neumorphic shadows */
-    box-shadow: 
-      -4px -4px 12px rgba(255, 133, 80, 0.15),
+    box-shadow:
+      -4px -4px 12px rgba(255, 71, 160, 0.15),
       4px 4px 12px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 133, 80, 0.2);
+    border: 1px solid rgba(255, 71, 160, 0.2);
     position: relative;
   }
   .btn-primary:hover:not(:disabled) {
     background-position: 100% 50%;
     /* Elevated hover state */
-    box-shadow: 
-      -6px -6px 16px rgba(255, 133, 80, 0.2),
+    box-shadow:
+      -6px -6px 16px rgba(255, 71, 160, 0.2),
       6px 6px 16px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    border-color: rgba(255, 133, 80, 0.3);
+    border-color: rgba(255, 71, 160, 0.3);
   }
   .btn-primary:active:not(:disabled) {
     /* Pressed into surface */
-    box-shadow: 
-      inset -2px -2px 8px rgba(255, 133, 80, 0.1),
+    box-shadow:
+      inset -2px -2px 8px rgba(255, 71, 160, 0.1),
       inset 2px 2px 8px rgba(0, 0, 0, 0.4);
     transform: translateY(0);
   }
   .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    box-shadow: 
-      -2px -2px 6px rgba(255, 133, 80, 0.1),
+    box-shadow:
+      -2px -2px 6px rgba(255, 71, 160, 0.1),
       2px 2px 6px rgba(0, 0, 0, 0.3);
   }
 
   .btn-secondary {
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, rgba(255, 133, 80, 0.15) 0%, rgba(255, 83, 12, 0.15) 100%);
-    border: 1px solid rgba(255, 83, 12, 0.3);
+    background: linear-gradient(135deg, rgba(255, 71, 160, 0.15) 0%, rgba(255, 0, 127, 0.15) 100%);
+    border: 1px solid rgba(255, 0, 127, 0.3);
     border-radius: 0.5rem;
     font-weight: 500;
     color: white;
     transition: all 150ms;
   }
   .btn-secondary:hover {
-    background: linear-gradient(135deg, rgba(255, 133, 80, 0.25) 0%, rgba(255, 83, 12, 0.25) 100%);
-    border-color: rgba(255, 83, 12, 0.5);
+    background: linear-gradient(135deg, rgba(255, 71, 160, 0.25) 0%, rgba(255, 0, 127, 0.25) 100%);
+    border-color: rgba(255, 0, 127, 0.5);
   }
 
   .btn-ghost {
     padding: 0.4rem 0.75rem;
-    background: linear-gradient(135deg, rgba(255, 133, 80, 0.1) 0%, rgba(255, 83, 12, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(255, 71, 160, 0.1) 0%, rgba(255, 0, 127, 0.1) 100%);
     border-radius: 0.5rem;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.6);
     transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
     /* Subtle neumorphic effect for secondary CTAs */
-    box-shadow: 
-      -2px -2px 6px rgba(255, 133, 80, 0.08),
+    box-shadow:
+      -2px -2px 6px rgba(255, 71, 160, 0.08),
       2px 2px 6px rgba(0, 0, 0, 0.3),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 133, 80, 0.15);
+    border: 1px solid rgba(255, 71, 160, 0.15);
   }
   .btn-ghost:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(255, 133, 80, 0.2) 0%, rgba(255, 83, 12, 0.2) 100%);
+    background: linear-gradient(135deg, rgba(255, 71, 160, 0.2) 0%, rgba(255, 0, 127, 0.2) 100%);
     color: white;
     /* Subtle lift */
-    box-shadow: 
-      -3px -3px 8px rgba(255, 133, 80, 0.12),
+    box-shadow:
+      -3px -3px 8px rgba(255, 71, 160, 0.12),
       3px 3px 8px rgba(0, 0, 0, 0.4),
       inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
     transform: translateY(-1px);
-    border-color: rgba(255, 133, 80, 0.25);
+    border-color: rgba(255, 71, 160, 0.25);
   }
   .btn-ghost:active:not(:disabled) {
     /* Pressed effect */
-    box-shadow: 
-      inset -1px -1px 4px rgba(255, 133, 80, 0.08),
+    box-shadow:
+      inset -1px -1px 4px rgba(255, 71, 160, 0.08),
       inset 1px 1px 4px rgba(0, 0, 0, 0.3);
     transform: translateY(0);
   }
   .btn-ghost:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-    box-shadow: 
-      -1px -1px 4px rgba(255, 133, 80, 0.05),
+    box-shadow:
+      -1px -1px 4px rgba(255, 71, 160, 0.05),
       1px 1px 4px rgba(0, 0, 0, 0.2);
   }
 
@@ -212,8 +212,8 @@ body {
   }
   .input-field:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 83, 12, 0.3);
-    border-color: rgba(255, 83, 12, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 0, 127, 0.3);
+    border-color: rgba(255, 0, 127, 0.5);
   }
 
   .select-field {
@@ -228,8 +228,8 @@ body {
   }
   .select-field:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 83, 12, 0.3);
-    border-color: rgba(255, 83, 12, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 0, 127, 0.3);
+    border-color: rgba(255, 0, 127, 0.5);
   }
 
   .section-card {
@@ -291,7 +291,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ff530c;
+  background: #ff007f;
   cursor: pointer;
 }
 
