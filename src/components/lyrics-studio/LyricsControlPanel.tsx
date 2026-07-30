@@ -576,7 +576,7 @@ export default function LyricsControlPanel({
           onClick={onGenerateSong}
           disabled={!canGenerateBlocks || generatingSong}
           title={canGenerateBlocks ? "Generate complete song lyrics" : "Add topic and mood first"}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-45"
         >
           {generatingSong ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

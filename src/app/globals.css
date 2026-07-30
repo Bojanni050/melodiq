@@ -65,6 +65,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer utilities {
+  .bg-primary-gradient {
+    background: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-500) 55%, var(--color-primary-600) 100%);
+  }
+  .bg-primary-gradient:hover {
+    background: linear-gradient(135deg, var(--color-primary-300) 0%, var(--color-primary-400) 55%, var(--color-primary-500) 100%);
+  }
+
   .shimmer {
     background: linear-gradient(
       90deg,

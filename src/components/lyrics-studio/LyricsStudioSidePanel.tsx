@@ -79,7 +79,7 @@ export default function LyricsStudioSidePanel({
             type="button"
             onClick={onUseLyricsAndStyleInStudio}
             disabled={!combinedLyrics.trim() || !(styleSuggestion.trim() || style.trim())}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-3 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
             title="Copy lyrics and style to Studio"
           >
             Use lyrics + style in Studio
