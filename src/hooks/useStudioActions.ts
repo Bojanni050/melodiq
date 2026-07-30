@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { mutate } from "swr";
 import { useStudioStore, useWorkspaceStore, DEFAULT_WORKSPACE_ID } from "@/lib/store";
 import type { Track, TracksResponse } from "./useTrackManager";
 
@@ -258,6 +259,10 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
       setNotice({ type: "error", message: "Failed to generate track" });
     } finally {
       setGenerating(false);
+      // Generating consumes provider credits server-side — refresh the
+      // cached balance so the sidebar reflects it immediately instead of
+      // waiting out the SWR dedupe window.
+      void mutate("/api/credits");
     }
   }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks, tracksRef]);
 

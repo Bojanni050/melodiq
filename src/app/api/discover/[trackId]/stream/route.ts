@@ -23,13 +23,12 @@ export async function GET(
   const fmt = track.s3KeyMp3 ? "mp3" : track.format ?? "mp3";
 
   try {
-    const { filePath, stream, cached } = await getCachedAudioStream(s3Key, fmt);
-    const stats = fs.statSync(filePath);
+    const { filePath, stream, cached, size } = await getCachedAudioStream(s3Key, fmt);
     const contentType = getContentType(fmt);
     const cacheState = cached ? "hit" : "miss";
 
     const rangeHeader = request.headers.get("range");
-    const fileSize = stats.size;
+    const fileSize = size;
 
     if (rangeHeader) {
       stream.destroy();
@@ -37,8 +36,30 @@ export async function GET(
       const parts = rangeHeader.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      const chunkSize = end - start + 1;
 
+      if (!cached) {
+        // The disk copy may still be mid-write in the background — proxy
+        // the ranged request straight from S3 instead of racing it.
+        const presignedUrl = await getPresignedUrl(s3Key);
+        const s3Response = await fetch(presignedUrl, { headers: { Range: rangeHeader } });
+        if (!s3Response.ok || !s3Response.body) {
+          return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
+        }
+        return new NextResponse(s3Response.body, {
+          status: s3Response.status === 206 ? 206 : 200,
+          headers: {
+            "Content-Type": s3Response.headers.get("content-type") || contentType,
+            ...(s3Response.headers.get("content-length") ? { "Content-Length": s3Response.headers.get("content-length")! } : {}),
+            ...(s3Response.headers.get("content-range") ? { "Content-Range": s3Response.headers.get("content-range")! } : {}),
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "x-melodiq-audio-source": "s3",
+            "x-melodiq-audio-cache-state": "miss",
+          },
+        });
+      }
+
+      const chunkSize = end - start + 1;
       const readStream = fs.createReadStream(filePath, { start, end });
       const readable = new ReadableStream({
         start(controller) {

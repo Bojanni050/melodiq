@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { Readable } from "stream";
+import { pipeline } from "stream/promises";
 import { getPresignedUrl } from "@/lib/s3";
 
 /**
@@ -10,7 +12,8 @@ import { getPresignedUrl } from "@/lib/s3";
  * In production (Docker), mount a volume there so cached audio survives restarts.
  *
  * Flow:
- *   1. First play of a track → download from S3 → write to disk → stream
+ *   1. First play of a track → stream from S3 to the client and to disk at
+ *      the same time (tee'd), so playback isn't blocked on a full download
  *   2. Subsequent plays     → stream directly from disk (no S3 request)
  */
 
@@ -48,43 +51,51 @@ export function isCached(s3Key: string, format: string): boolean {
 /**
  * Get a readable stream for a cached (or freshly cached) audio file.
  *
- * If the file isn't cached yet it is downloaded from S3 first and written
- * to the cache directory. Subsequent calls serve directly from disk.
+ * If the file is already cached, it's served straight from disk. Otherwise
+ * the S3 response body is tee'd: one branch streams to the caller right
+ * away, the other is written to disk in the background so the *next* play
+ * is served from disk. The first play is therefore no longer blocked on a
+ * full S3 download + disk write before any bytes reach the client.
  *
- * Returns the local file path so the caller can create a proper response
- * with content-type and content-length headers.
+ * `size` is the total byte length of the audio (from disk stats when
+ * cached, from the S3 response's Content-Length otherwise) — use it for the
+ * response's Content-Length instead of `fs.statSync`, since the on-disk
+ * file may still be mid-write when `cached` is false.
  */
 export async function getCachedAudioStream(
   s3Key: string,
   format: string,
-): Promise<{ filePath: string; stream: fs.ReadStream; cached: boolean }> {
+): Promise<{ filePath: string; stream: Readable; cached: boolean; size: number }> {
   ensureCacheDir();
   const dest = cachePath(s3Key, format);
-  const cached = isCached(s3Key, format);
 
-  if (!cached) {
-    // Download from S3 and cache locally
-    const presignedUrl = await getPresignedUrl(s3Key);
-    const response = await fetch(presignedUrl);
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch from S3: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-
-    // Write atomically: write to a temp file then rename
-    const tmp = dest + ".tmp";
-    fs.writeFileSync(tmp, buffer);
-    fs.renameSync(tmp, dest);
+  if (isCached(s3Key, format)) {
+    const stat = fs.statSync(dest);
+    return { filePath: dest, stream: fs.createReadStream(dest), cached: true, size: stat.size };
   }
 
-  const stat = fs.statSync(dest);
-  const stream = fs.createReadStream(dest);
+  const presignedUrl = await getPresignedUrl(s3Key);
+  const response = await fetch(presignedUrl);
 
-  return { filePath: dest, stream, cached };
+  if (!response.ok || !response.body) {
+    throw new Error(
+      `Failed to fetch from S3: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const size = Number(response.headers.get("content-length") || 0);
+  const [clientSide, diskSide] = response.body.tee();
+
+  // Write atomically: write to a temp file then rename, in the background.
+  const tmp = dest + ".tmp";
+  void pipeline(Readable.fromWeb(diskSide as any), fs.createWriteStream(tmp))
+    .then(() => fs.renameSync(tmp, dest))
+    .catch((err) => {
+      console.error(`[audio-cache] background caching failed for ${s3Key}:`, err);
+      try { fs.unlinkSync(tmp); } catch {}
+    });
+
+  return { filePath: dest, stream: Readable.fromWeb(clientSide as any), cached: false, size };
 }
 
 /**
