@@ -24,11 +24,19 @@ export interface PlayerPopupRequestStateMessage {
 
 export interface PlayerPopupControlMessage {
   type: "control";
-  action: "toggle-play" | "next" | "previous" | "seek";
+  action: "toggle-play" | "next" | "previous" | "seek" | "viz-subscribe" | "viz-unsubscribe";
   value?: number;
+}
+
+export interface PlayerPopupVizMessage {
+  type: "viz";
+  payload: {
+    data: number[];
+  };
 }
 
 export type PlayerPopupMessage =
   | PlayerPopupStateMessage
   | PlayerPopupRequestStateMessage
-  | PlayerPopupControlMessage;
+  | PlayerPopupControlMessage
+  | PlayerPopupVizMessage;

@@ -15,7 +15,9 @@ import {
   PLAYER_POPUP_WINDOW_NAME,
   type PlayerPopupMessage,
   type PlayerPopupStateMessage,
+  type PlayerPopupVizMessage,
 } from "@/lib/playerPopupSync";
+import { getSharedAudioGraph } from "@/lib/sharedAudioGraph";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
@@ -154,6 +156,8 @@ export default function Player() {
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const popupChannelRef = useRef<BroadcastChannel | null>(null);
   const popupWindowRef = useRef<Window | null>(null);
+  const vizAnalyserRef = useRef<AnalyserNode | null>(null);
+  const vizIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioSourceRef = useRef<AudioSource>("unknown");
   const audioSourceStateRef = useRef<AudioSourceState>("unknown");
   const playlists = usePlaylistStore((state) => state.playlists);
@@ -941,9 +945,44 @@ export default function Player() {
     channel.postMessage(message);
   }, []);
 
-  const controlHandlersRef = useRef({ togglePlay, handleNext, handlePrevious, broadcastPopupState });
+  // Streams frequency data to the pop-out window so it can render its own
+  // visualizer — the audio element (and its Web Audio graph) never leaves
+  // this window, so raw analyser bytes are pushed over the channel instead.
+  const startVizBroadcast = useCallback(() => {
+    if (vizIntervalRef.current || !audioRef.current) return;
+    try {
+      const { sourceNode } = getSharedAudioGraph(audioRef.current);
+      if (!vizAnalyserRef.current) {
+        const analyser = sourceNode.context.createAnalyser();
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.7;
+        sourceNode.connect(analyser);
+        vizAnalyserRef.current = analyser;
+      }
+      const analyser = vizAnalyserRef.current;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      vizIntervalRef.current = setInterval(() => {
+        const channel = popupChannelRef.current;
+        if (!channel) return;
+        analyser.getByteFrequencyData(data);
+        const message: PlayerPopupVizMessage = { type: "viz", payload: { data: Array.from(data) } };
+        channel.postMessage(message);
+      }, 50);
+    } catch (e) {
+      console.warn("[Player] viz broadcast start error:", e);
+    }
+  }, []);
+
+  const stopVizBroadcast = useCallback(() => {
+    if (vizIntervalRef.current) {
+      clearInterval(vizIntervalRef.current);
+      vizIntervalRef.current = null;
+    }
+  }, []);
+
+  const controlHandlersRef = useRef({ togglePlay, handleNext, handlePrevious, broadcastPopupState, startVizBroadcast, stopVizBroadcast });
   useEffect(() => {
-    controlHandlersRef.current = { togglePlay, handleNext, handlePrevious, broadcastPopupState };
+    controlHandlersRef.current = { togglePlay, handleNext, handlePrevious, broadcastPopupState, startVizBroadcast, stopVizBroadcast };
   });
 
   useEffect(() => {
@@ -979,15 +1018,17 @@ export default function Player() {
         else if (data.action === "seek" && typeof data.value === "number" && audioRef.current) {
           audioRef.current.currentTime = data.value;
           setCurrentTime(data.value);
-        }
+        } else if (data.action === "viz-subscribe") handlers.startVizBroadcast();
+        else if (data.action === "viz-unsubscribe") handlers.stopVizBroadcast();
       }
     };
 
     return () => {
       channel.close();
       popupChannelRef.current = null;
+      stopVizBroadcast();
     };
-  }, []);
+  }, [stopVizBroadcast]);
 
   useEffect(() => {
     broadcastPopupState();

@@ -25,14 +25,28 @@ export default function PlayerWindowPage() {
   const [bgZoom, setBgZoom] = useState(() => {
     try { return localStorage.getItem("melodiq-fs-bgzoom") !== "off"; } catch { return true; }
   });
+  const [visualizerEnabled, setVisualizerEnabled] = useState(() => {
+    try { return localStorage.getItem("melodiq-popup-visualizer") === "on"; } catch { return false; }
+  });
   const channelRef = useRef<BroadcastChannel | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const vizDataRef = useRef<number[] | null>(null);
+  const vizFrameRef = useRef<number | null>(null);
 
   function toggleBgZoom() {
     setBgZoom((v) => {
       const next = !v;
       try { localStorage.setItem("melodiq-fs-bgzoom", next ? "on" : "off"); } catch {}
+      return next;
+    });
+  }
+
+  function toggleVisualizer() {
+    setVisualizerEnabled((v) => {
+      const next = !v;
+      try { localStorage.setItem("melodiq-popup-visualizer", next ? "on" : "off"); } catch {}
       return next;
     });
   }
@@ -44,7 +58,12 @@ export default function PlayerWindowPage() {
 
     channel.onmessage = (event: MessageEvent<PlayerPopupMessage>) => {
       const data = event.data;
-      if (!data || data.type !== "state") return;
+      if (!data) return;
+      if (data.type === "viz") {
+        vizDataRef.current = data.payload.data;
+        return;
+      }
+      if (data.type !== "state") return;
       setConnected(true);
       setTrack(data.payload.track);
       setIsPlaying(data.payload.isPlaying);
@@ -66,6 +85,53 @@ export default function PlayerWindowPage() {
       channelRef.current = null;
     };
   }, []);
+
+  // Ask the main window to start/stop streaming frequency data whenever the
+  // visualizer toggle changes (and re-subscribe if the channel reconnects).
+  useEffect(() => {
+    if (!visualizerEnabled) return;
+    sendControl({ action: "viz-subscribe" });
+    return () => sendControl({ action: "viz-unsubscribe" });
+  }, [visualizerEnabled, connected]);
+
+  // Canvas bar renderer driven by whatever frequency data last arrived.
+  useEffect(() => {
+    if (!visualizerEnabled) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    function draw() {
+      const { width, height } = canvas!.getBoundingClientRect();
+      if (canvas!.width !== width || canvas!.height !== height) {
+        canvas!.width = width;
+        canvas!.height = height;
+      }
+      ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
+      const data = vizDataRef.current;
+      if (data && data.length) {
+        const barCount = data.length;
+        const barWidth = canvas!.width / barCount;
+        for (let i = 0; i < barCount; i++) {
+          const value = data[i] / 255;
+          const barHeight = value * canvas!.height;
+          const gradient = ctx!.createLinearGradient(0, canvas!.height - barHeight, 0, canvas!.height);
+          gradient.addColorStop(0, "rgba(255,133,80,0.95)");
+          gradient.addColorStop(1, "rgba(255,83,12,0.4)");
+          ctx!.fillStyle = gradient;
+          ctx!.fillRect(i * barWidth, canvas!.height - barHeight, barWidth * 0.8, barHeight);
+        }
+      }
+      vizFrameRef.current = requestAnimationFrame(draw);
+    }
+    vizFrameRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      if (vizFrameRef.current) cancelAnimationFrame(vizFrameRef.current);
+      vizFrameRef.current = null;
+    };
+  }, [visualizerEnabled]);
 
   useEffect(() => {
     if (connected) return;
@@ -179,6 +245,15 @@ export default function PlayerWindowPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
                   </svg>
                 </button>
+                <button
+                  onClick={toggleVisualizer}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l2 3 2-6 2 8 2-4 2 6" />
+                  </svg>
+                </button>
               </div>
               <h2 className="text-lg font-semibold">{cleanTitle || track.prompt.substring(0, 50)}</h2>
               <p className="text-sm text-white/60">
@@ -271,6 +346,13 @@ export default function PlayerWindowPage() {
                 </div>
               )}
             </div>
+
+            {visualizerEnabled && (
+              <canvas
+                ref={canvasRef}
+                className="absolute bottom-24 left-0 right-0 h-36 pointer-events-none opacity-55 z-10"
+              />
+            )}
 
             <div className="px-6 py-4 border-t border-white/5">
               <div className="flex items-center gap-2 max-w-2xl mx-auto">

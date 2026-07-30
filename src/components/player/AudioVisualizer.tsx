@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getSharedAudioGraph } from "@/lib/sharedAudioGraph";
 
 interface Props {
   audioElement: HTMLAudioElement | null;
@@ -89,19 +90,11 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const { default: AudioMotionAnalyzer } = await import("audiomotion-analyzer");
         if (cancelled || !containerRef.current) return;
 
-        // Create AudioContext once per audio element
-        if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
-          audioCtxRef.current = new AudioContext();
-        }
-        // Resume if suspended — browsers suspend new AudioContexts until user interaction
-        if (audioCtxRef.current.state === "suspended") {
-          await audioCtxRef.current.resume();
-        }
-
-        // Create MediaElementSource once — reused on every retry/recreate
-        if (!sourceNodeRef.current) {
-          sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(audioElement!);
-        }
+        // Audio graph (AudioContext + MediaElementSource) is shared across
+        // every consumer of this audio element — see sharedAudioGraph.ts.
+        const { audioCtx, sourceNode } = getSharedAudioGraph(audioElement!);
+        audioCtxRef.current = audioCtx;
+        sourceNodeRef.current = sourceNode;
 
         if (analyzerRef.current) {
           try { analyzerRef.current.destroy(); } catch {}
@@ -114,7 +107,10 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
         const analyzer = new AudioMotionAnalyzer(containerRef.current, {
           audioCtx: audioCtxRef.current,
           source: sourceNodeRef.current,
-          // connectSpeakers: true (default) — audioMotion owns source → analyzer → destination
+          // The shared graph already connects source → destination directly;
+          // audioMotion must not also connect its internal analyser →
+          // destination, or the two paths would sum and double the volume.
+          connectSpeakers: false,
           mode,
           gradient: safeGradient,
           showBgColor: false,
@@ -169,16 +165,13 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     };
   }, [audioElement]);
 
-  // On unmount: destroy analyzer then reconnect source → destination so audio keeps playing
+  // On unmount: destroy analyzer. The shared graph's direct source →
+  // destination connection is untouched, so audio keeps playing regardless.
   useEffect(() => {
     return () => {
       if (analyzerRef.current) {
         try { analyzerRef.current.destroy(); } catch {}
         analyzerRef.current = null;
-      }
-      // Restore direct audio path after analyzer is gone
-      if (sourceNodeRef.current && audioCtxRef.current) {
-        try { sourceNodeRef.current.connect(audioCtxRef.current.destination); } catch {}
       }
       connectedElementRef.current = null;
       coverGradientRegistered.current = null;
