@@ -5,6 +5,10 @@
   100% { transform: translateX(-50%); }
 }
 
+html {
+  font-size: 17px;
+}
+
 :root {
   --background: #0a0a0f;
   --foreground: #ededed;
