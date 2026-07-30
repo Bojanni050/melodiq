@@ -350,7 +350,7 @@ export default function PlayerWindowPage() {
             {visualizerEnabled && (
               <canvas
                 ref={canvasRef}
-                className="absolute bottom-24 left-0 right-0 h-36 pointer-events-none opacity-55 z-10"
+                className="absolute bottom-24 left-0 right-0 w-full h-36 pointer-events-none opacity-55 z-10"
               />
             )}
 
