@@ -108,7 +108,7 @@ const TrackListHeader = memo(function TrackListHeader({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search tracks"
-            className="h-7 w-full rounded-[20px] border border-white/10 bg-white/5 pl-2.5 pr-7 text-xs text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
+            className="h-7 w-full rounded-[20px] border border-white/10 bg-white/5 pl-2.5 pr-7 text-sm text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
             aria-label="Search tracks"
           />
           {searchQuery.length > 0 && (
@@ -131,7 +131,7 @@ const TrackListHeader = memo(function TrackListHeader({
           id="track-sort"
           value={sortOrder}
           onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-          className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/75 outline-none hover:border-white/20"
+          className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white/75 outline-none hover:border-white/20"
           aria-label="Sort tracks"
         >
           <option value="newest" className="bg-[#161621]">New to old</option>
@@ -177,7 +177,7 @@ const SelectionActionPill = memo(function SelectionActionPill({
       <span className="text-sm text-blue-300">{visibleSelectedCount} selected</span>
       <button
         onClick={clearSelection}
-        className="ml-auto text-xs text-white/40 hover:text-white/70 transition-colors"
+        className="ml-auto text-sm text-white/40 hover:text-white/70 transition-colors"
       >
         Clear
       </button>
@@ -868,7 +868,7 @@ export default memo(function TrackList({
             <button
               type="button"
               onClick={scrollToTop}
-              className="pointer-events-auto flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary-500 text-white text-xs font-semibold shadow-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 border border-primary-400/40"
+              className="pointer-events-auto flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary-500 text-white text-sm font-semibold shadow-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 border border-primary-400/40"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>

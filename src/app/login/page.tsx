@@ -75,14 +75,14 @@ export default function LoginPage() {
         {/* Form card */}
         <div className="section-card">
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-300">
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-300">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-white/50 mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
@@ -95,7 +95,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-white/50 mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}

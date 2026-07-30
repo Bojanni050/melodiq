@@ -47,7 +47,7 @@ export default function ProviderSection({
     <ProviderAccordion title={provider.name} description={provider.description} status={status}>
       {provider.fields.map((field) => (
         <div key={field.key}>
-          <label className="block text-xs font-medium text-white/50 mb-1">{field.label}</label>
+          <label className="block text-sm font-medium text-white/50 mb-1">{field.label}</label>
           <input
             type={field.type}
             value={values[field.key] || ""}
@@ -59,18 +59,18 @@ export default function ProviderSection({
       ))}
 
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={handleTest} disabled={testing} className="btn-secondary text-xs px-3 py-1.5">
+        <button onClick={handleTest} disabled={testing} className="btn-secondary text-sm px-3 py-1.5">
           {testing ? "Testing..." : "Test Connection"}
         </button>
         {provider.id === "openrouter" && onGetModels && (
-          <button onClick={onGetModels} disabled={testingModels} className="btn-secondary text-xs px-3 py-1.5">
+          <button onClick={onGetModels} disabled={testingModels} className="btn-secondary text-sm px-3 py-1.5">
             {testingModels ? "Loading Models..." : "Retrieve Models"}
           </button>
         )}
       </div>
 
       {testResult && (
-        <p className={`text-xs ${testResult.success ? "text-green-400" : "text-red-400"}`}>
+        <p className={`text-sm ${testResult.success ? "text-green-400" : "text-red-400"}`}>
           {testResult.message}
         </p>
       )}

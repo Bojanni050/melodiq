@@ -45,21 +45,21 @@ export default function WavRecoverySection() {
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">PoYo (Suno) — Herstel Ontbrekende WAV Bestanden</h2>
-      <p className="text-xs text-white/40 mb-3">
-        Vraag WAV-conversie opnieuw aan voor tracks die wel succesvol zijn gegenereerd (Ready/Done), 
+      <p className="text-sm text-white/40 mb-3">
+        Vraag WAV-conversie opnieuw aan voor tracks die wel succesvol zijn gegenereerd (Ready/Done),
         maar waarvan het WAV-bestand ontbreekt (bijvoorbeeld door eerdere S3 SSL-fouten). 
         Veilig om meerdere keren uit te voeren.
       </p>
       <div className="flex items-center gap-2">
-        <button onClick={handleRecover} disabled={recovering} className="btn-secondary text-xs px-3 py-1.5">
+        <button onClick={handleRecover} disabled={recovering} className="btn-secondary text-sm px-3 py-1.5">
           {recovering ? "Bezig met herstellen..." : "Herstel Ontbrekende WAV Tracks"}
         </button>
       </div>
       {result && (
         <div className="mt-3 space-y-2">
-          <p className={`text-xs ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
+          <p className={`text-sm ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
           {result.success && result.total !== undefined && (
-            <p className="text-xs text-white/30">
+            <p className="text-sm text-white/30">
               {result.retried} van de {result.total} in aanmerking komende tracks opnieuw aangevraagd
             </p>
           )}

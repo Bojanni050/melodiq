@@ -21,7 +21,7 @@ export default function ModelSelector({
 }) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-medium text-white/50 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-white/50 mb-1">{label}</label>
       <input
         type="text"
         placeholder="Search models..."
@@ -31,7 +31,7 @@ export default function ModelSelector({
       />
       <div className="max-h-64 overflow-y-auto border border-white/10 rounded-lg bg-[#1a1a24]">
         {options.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-white/40">No models found</p>
+          <p className="px-3 py-2 text-sm text-white/40">No models found</p>
         ) : (
           options.map((model) => {
             const isSelected = selected?.id === model.id;
@@ -50,7 +50,7 @@ export default function ModelSelector({
                       <button
                         type="button"
                         onClick={() => onReadMore(model)}
-                        className="text-xs text-primary-400 hover:text-primary-300"
+                        className="text-sm text-primary-400 hover:text-primary-300"
                       >
                         Read more
                       </button>
@@ -58,7 +58,7 @@ export default function ModelSelector({
                     <button
                       type="button"
                       onClick={() => onSelect(model)}
-                      className={`text-xs px-2 py-1 rounded ${isSelected ? "bg-primary-500 text-white" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
+                      className={`text-sm px-2 py-1 rounded ${isSelected ? "bg-primary-500 text-white" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
                     >
                       {isSelected ? "Selected" : "Select"}
                     </button>

@@ -59,7 +59,7 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
 
   if (loading) {
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/40">
+      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40">
         Loading Track DNA…
       </div>
     );
@@ -67,7 +67,7 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
 
   if (notFound) {
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/40">
+      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40">
         Track DNA isn&apos;t available for this track.
       </div>
     );
@@ -76,7 +76,7 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
   if (!audioDna) {
     return (
       <div
-        className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/40"
+        className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40"
         onClick={(e) => e.stopPropagation()}
       >
         Analysis in progress — Track DNA will appear once the track finishes rendering.
@@ -124,7 +124,7 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
             <span className="font-medium text-white">Lyrics</span>
             <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
           </div>
-          {audioDna.lyricsNotes && <p className="text-xs text-white/40">{audioDna.lyricsNotes}</p>}
+          {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
         </div>
       )}
     </div>

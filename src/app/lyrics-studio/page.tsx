@@ -583,7 +583,7 @@ export default function LyricsStudioPage() {
             type="button"
             onClick={copyAllLyrics}
             disabled={!combinedLyrics}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
           >
             {copied ? "Copied!" : "Copy"}
           </button>

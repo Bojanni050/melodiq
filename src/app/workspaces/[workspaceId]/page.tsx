@@ -444,7 +444,7 @@ export default function WorkspaceDetailPage() {
                     <button
                       type="button"
                       onClick={() => setShowCreateFolder(true)}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                     >
                       + Add Subfolder
                     </button>

@@ -213,7 +213,7 @@ export default function PlayerWindowPage() {
 
       <div className="relative h-full flex flex-col">
         {!connected && (
-          <div className="px-6 py-3 text-xs text-white/40">
+          <div className="px-6 py-3 text-sm text-white/40">
             Waiting for the MelodIQ tab to connect…
           </div>
         )}
@@ -324,7 +324,7 @@ export default function PlayerWindowPage() {
                           {columns.map((column, colIndex) => (
                             <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
                               {column.map((line, lineIndex) => (
-                                <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                                <p key={lineIndex} className="text-white/80 text-sm leading-relaxed">
                                   {line}
                                 </p>
                               ))}

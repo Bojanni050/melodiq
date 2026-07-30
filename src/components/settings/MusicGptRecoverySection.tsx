@@ -41,20 +41,20 @@ export default function MusicGptRecoverySection() {
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">MusicGPT — Track Recovery</h2>
-      <p className="text-xs text-white/40 mb-3">
+      <p className="text-sm text-white/40 mb-3">
         Haal tracks op die vastzitten op &ldquo;generating&rdquo; door de MusicGPT API
         rechtstreeks te pollen op status. Veilig om meerdere keren aan te roepen.
       </p>
       <div className="flex items-center gap-2">
-        <button onClick={handleRecover} disabled={recovering} className="btn-secondary text-xs px-3 py-1.5">
+        <button onClick={handleRecover} disabled={recovering} className="btn-secondary text-sm px-3 py-1.5">
           {recovering ? "Recovering..." : "Recover Stuck Tracks"}
         </button>
       </div>
       {result && (
         <div className="mt-3 space-y-2">
-          <p className={`text-xs ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
+          <p className={`text-sm ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
           {result.success && result.total !== undefined && (
-            <p className="text-xs text-white/30">
+            <p className="text-sm text-white/30">
               {result.recovered} recovered · {result.still_processing} still processing · {result.total} total
             </p>
           )}

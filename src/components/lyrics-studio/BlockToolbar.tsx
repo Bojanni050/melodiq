@@ -30,7 +30,7 @@ export default function BlockToolbar({
             type="button"
             onClick={onCopyAll}
             disabled={!combinedLyrics}
-            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
             title="Combine + copy lyrics"
           >
             {copied ? "Copied!" : "Combine"}
@@ -38,7 +38,7 @@ export default function BlockToolbar({
           <button
             type="button"
             onClick={onClearAll}
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs text-red-200 transition hover:bg-red-500/20"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
             title="Clear all lyric studio data"
           >
             Clear

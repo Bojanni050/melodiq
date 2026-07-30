@@ -22,7 +22,7 @@ export default function CreateWorkspaceDialog({
       <button
         type="button"
         onClick={onOpen}
-        className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
+        className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
       >
         + Create Workspace
       </button>
@@ -36,20 +36,20 @@ export default function CreateWorkspaceDialog({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Workspace name"
-        className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
+        className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
         aria-label="Workspace name"
       />
       <button
         type="button"
         onClick={onSubmit}
-        className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
+        className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
       >
         Add
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
+        className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
       >
         Cancel
       </button>

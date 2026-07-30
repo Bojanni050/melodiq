@@ -92,7 +92,7 @@ export default function VoiceCloneToggle() {
     <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-white/70">Mijn gekloonde stem</p>
+          <p className="text-sm font-medium text-white/70">Mijn gekloonde stem</p>
           <p className="text-[10px] text-white/40 mt-0.5">
             {!loaded && "Laden…"}
             {loaded && !activeVoice && "Nog geen stem geüpload"}
@@ -105,7 +105,7 @@ export default function VoiceCloneToggle() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="text-xs px-3 py-1.5 rounded-md bg-primary-500/20 text-primary-300 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
+          className="text-sm px-3 py-1.5 rounded-md bg-primary-500/20 text-primary-300 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
         >
           {uploading ? "Uploaden…" : activeVoice ? "Opnieuw uploaden" : "Upload stem"}
         </button>
@@ -132,7 +132,7 @@ export default function VoiceCloneToggle() {
           onChange={(e) => setUsePersonaVoice(e.target.checked)}
           className="accent-primary-500 disabled:opacity-40"
         />
-        <span className={`text-xs ${completedVoice ? "text-white/70" : "text-white/30"}`}>
+        <span className={`text-sm ${completedVoice ? "text-white/70" : "text-white/30"}`}>
           Gebruik mijn stem voor dit nummer
         </span>
       </label>

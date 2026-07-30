@@ -98,7 +98,7 @@ export default function WorkspacePanel({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
-          <p className="text-xs text-white/40">
+          <p className="text-sm text-white/40">
             {isWorkspaceFolderOpen
               ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
               : workspaceViewMode === "grid"
@@ -205,20 +205,20 @@ export default function WorkspacePanel({
                   onChange={(event) => setNewFolderName(event.target.value)}
                   onKeyDown={handleCreateFolderKeyDown}
                   placeholder="Subfolder name"
-                  className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-xs text-white placeholder:text-white/30"
+                  className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
                   aria-label="Subfolder name"
                 />
                 <button
                   type="button"
                   onClick={handleCreateFolder}
-                  className="h-8 rounded-md bg-primary-500/80 px-3 text-xs text-white hover:bg-primary-500"
+                  className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
                 >
                   Add
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowCreateFolder(false); setNewFolderName(""); }}
-                  className="h-8 rounded-md bg-white/5 px-3 text-xs text-white/60 hover:text-white/80"
+                  className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
                 >
                   Cancel
                 </button>
@@ -227,7 +227,7 @@ export default function WorkspacePanel({
               <button
                 type="button"
                 onClick={() => setShowCreateFolder(true)}
-                className="rounded-md bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:text-white/90"
+                className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
               >
                 + Add Subfolder
               </button>
@@ -386,7 +386,7 @@ export default function WorkspacePanel({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-white">{childWorkspace.name}</p>
+                    <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
                   </div>
                   <span className="text-[11px] text-white/45">
                     {childTracks.length} {childTracks.length === 1 ? "track" : "tracks"}

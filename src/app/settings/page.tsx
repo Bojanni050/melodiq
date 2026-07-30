@@ -306,7 +306,7 @@ export default function SettingsPage() {
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="px-4 py-3">
             <h1 className="text-lg font-bold">Settings</h1>
-            <p className="text-xs text-white/40 mt-0.5">Configure your API providers</p>
+            <p className="text-sm text-white/40 mt-0.5">Configure your API providers</p>
           </div>
         </div>
         <main className="p-4">
@@ -377,7 +377,7 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <section className="section-card">
                     <h2 className="text-sm font-semibold mb-1">Disk Cache</h2>
-                    <p className="text-xs text-white/40 mb-2">Current size of the local Next.js disk cache folder.</p>
+                    <p className="text-sm text-white/40 mb-2">Current size of the local Next.js disk cache folder.</p>
                     <p className="text-base font-semibold text-white/90">{formatBytes(diskCacheSizeBytes)}</p>
                   </section>
 
@@ -406,11 +406,11 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <section className="section-card">
                     <h2 className="text-sm font-semibold mb-1">Playback Quality</h2>
-                    <p className="text-xs text-white/40 mb-3">
+                    <p className="text-sm text-white/40 mb-3">
                       When enabled, FLAC is preferred over WAV, then MP3 as fallback. Off always uses MP3 when available.
                     </p>
                     <label className="flex items-center justify-between gap-3">
-                      <span className="text-xs text-white/70">Play highest quality</span>
+                      <span className="text-sm text-white/70">Play highest quality</span>
                       <button
                         type="button"
                         aria-label="Toggle highest quality playback"
@@ -439,24 +439,24 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <section className="section-card">
                     <h2 className="text-sm font-semibold mb-3">Export</h2>
-                    <p className="text-xs text-white/40 mb-3">
+                    <p className="text-sm text-white/40 mb-3">
                       Download your track listing or a full database backup.
                     </p>
                     <div className="space-y-2">
                       <div>
-                        <p className="text-xs text-white/60 font-medium mb-1.5">Track listing</p>
+                        <p className="text-sm text-white/60 font-medium mb-1.5">Track listing</p>
                         <div className="flex items-center gap-2">
                           <a
                             href="/api/export/tracks?format=csv"
                             download
-                            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                           >
                             Export CSV
                           </a>
                           <a
                             href="/api/export/tracks?format=json"
                             download
-                            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                           >
                             Export JSON
                           </a>
@@ -464,14 +464,14 @@ export default function SettingsPage() {
                       </div>
                       <div className="h-px bg-white/10" />
                       <div>
-                        <p className="text-xs text-white/60 font-medium mb-1.5">Database backup</p>
+                        <p className="text-sm text-white/60 font-medium mb-1.5">Database backup</p>
                         <p className="text-xs text-white/30 mb-2">
                           Volledig JSON backup — tracks, workspaces, playlists en volgorde.
                         </p>
                         <a
                           href="/api/export/db"
                           download
-                          className="inline-block rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                          className="inline-block rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                         >
                           Download backup
                         </a>
@@ -481,7 +481,7 @@ export default function SettingsPage() {
 
                   <section className="section-card">
                     <h2 className="text-sm font-semibold mb-2">Import Data</h2>
-                    <p className="text-xs text-white/40 mb-3">
+                    <p className="text-sm text-white/40 mb-3">
                       Import tracks and workspaces from another MelodIQ/MelodIQ PostgreSQL database.
                     </p>
                     <div className="space-y-2">
@@ -504,16 +504,16 @@ export default function SettingsPage() {
                         type="file"
                         accept=".sql,.txt"
                         onChange={(e) => setImportSqlFile(e.target.files?.[0] ?? null)}
-                        className="block w-full text-xs text-white/70 file:mr-3 file:rounded-lg file:border file:border-white/10 file:bg-white/5 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white/70 hover:file:bg-white/10"
+                        className="block w-full text-sm text-white/70 file:mr-3 file:rounded-lg file:border file:border-white/10 file:bg-white/5 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white/70 hover:file:bg-white/10"
                       />
                       {importSqlFile ? <p className="text-xs text-white/40">Selected: {importSqlFile.name}</p> : null}
-                      {importNotice ? <p className="text-xs text-white/50">{importNotice}</p> : null}
+                      {importNotice ? <p className="text-sm text-white/50">{importNotice}</p> : null}
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={runImport}
                           disabled={importingData}
-                          className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="btn-primary text-sm px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {importingData ? "Importing..." : "Import"}
                         </button>
@@ -521,7 +521,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={runImportSql}
                           disabled={importingData}
-                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {importingData ? "Importing..." : "Import SQL"}
                         </button>
@@ -533,7 +533,7 @@ export default function SettingsPage() {
                             setImportSqlFile(null);
                             setImportNotice(null);
                           }}
-                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                         >
                           Clear
                         </button>

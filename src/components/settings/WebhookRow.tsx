@@ -13,7 +13,7 @@ export default function WebhookRow({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-white/50 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-white/50 mb-1">{label}</label>
       <input
         type="text"
         value={value}

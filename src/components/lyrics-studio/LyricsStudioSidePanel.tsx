@@ -49,7 +49,7 @@ export default function LyricsStudioSidePanel({
               type="button"
               onClick={onGenerateStyleSuggestion}
               disabled={!topic.trim() || !mood.trim() || !combinedLyrics.trim() || generatingStyleSuggestion}
-              className="inline-flex items-center justify-center rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
               title="Generate style suggestion from topic, mood and lyrics"
             >
               {generatingStyleSuggestion ? "Generating..." : "AI Fill"}
@@ -60,7 +60,7 @@ export default function LyricsStudioSidePanel({
             value={styleSuggestion}
             onChange={(event) => onStyleSuggestionChange(event.target.value)}
             placeholder="AI style direction verschijnt hier met genre, instrumentation, production/mix en vocal direction"
-            className="min-h-[180px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-xs leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
+            className="min-h-[180px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-3 py-2 text-sm leading-5 text-white/90 outline-none transition placeholder:text-white/25 focus:border-primary-500/60"
           />
 
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -69,7 +69,7 @@ export default function LyricsStudioSidePanel({
               type="button"
               onClick={onCopyStyleSuggestion}
               disabled={!styleSuggestion.trim()}
-              className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+              className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
             >
               {copiedStyleSuggestion ? "Copied" : "Copy"}
             </button>
@@ -79,7 +79,7 @@ export default function LyricsStudioSidePanel({
             type="button"
             onClick={onUseLyricsAndStyleInStudio}
             disabled={!combinedLyrics.trim() || !(styleSuggestion.trim() || style.trim())}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
             title="Copy lyrics and style to Studio"
           >
             Use lyrics + style in Studio

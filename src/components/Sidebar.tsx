@@ -181,7 +181,7 @@ export default function Sidebar({ credits }: SidebarProps) {
         <div className="px-3 pb-24 space-y-3 border-t border-white/5 pt-3">
           {credits !== null && (
             <div className="px-3 py-2 bg-white/5 rounded-lg">
-              <p className="text-xs text-white/40">Credits</p>
+              <p className="text-sm text-white/40">Credits</p>
               <p className="text-sm font-medium text-white">{credits.toLocaleString()}</p>
             </div>
           )}

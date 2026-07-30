@@ -227,7 +227,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4 shrink-0">
           <div>
             <h3 className="text-lg font-semibold">Edit Track Details</h3>
-            <p className="text-xs text-white/50 mt-0.5 truncate max-w-[260px]">
+            <p className="text-sm text-white/50 mt-0.5 truncate max-w-[260px]">
               {track.title ?? track.prompt.substring(0, 60)}
             </p>
           </div>
@@ -247,7 +247,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Title */}
           <div className="space-y-1">
-            <label className="text-xs text-white/60">Title</label>
+            <label className="text-sm text-white/60">Title</label>
             <input
               type="text"
               value={title}
@@ -260,7 +260,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Release status + Publish date side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Release Status</label>
+              <label className="text-sm text-white/60">Release Status</label>
               <select
                 value={releaseStatus}
                 onChange={(e) => setReleaseStatus(e.target.value)}
@@ -272,7 +272,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Publish Date</label>
+              <label className="text-sm text-white/60">Publish Date</label>
               <input
                 type="date"
                 value={publishDate}
@@ -284,7 +284,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
 
           {/* Cover art */}
           <div className="space-y-1">
-            <label className="text-xs text-white/60">Cover art</label>
+            <label className="text-sm text-white/60">Cover art</label>
             <div className="flex items-center gap-3">
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
                 {coverPreview ? (
@@ -300,7 +300,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               <div className="flex gap-2">
                 <label
                   htmlFor="edit-cover-input"
-                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
                 >
                   {coverFile ? "Change" : "Upload image"}
                 </label>
@@ -315,7 +315,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                   <button
                     type="button"
                     onClick={() => handleCoverFileChange(null)}
-                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
                   >
                     Remove
                   </button>
@@ -327,7 +327,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Artist + Composer side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Artist</label>
+              <label className="text-sm text-white/60">Artist</label>
               <AutocompleteInput
                 value={artistName}
                 onChange={setArtistName}
@@ -337,7 +337,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Composer</label>
+              <label className="text-sm text-white/60">Composer</label>
               <AutocompleteInput
                 value={composerName}
                 onChange={setComposerName}
@@ -351,7 +351,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Source + Language side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Source</label>
+              <label className="text-sm text-white/60">Source</label>
               <select
                 value={knownProvider ? provider : "__custom__"}
                 onChange={(e) => {
@@ -369,7 +369,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Language</label>
+              <label className="text-sm text-white/60">Language</label>
               <input
                 type="text"
                 value={language}
@@ -415,7 +415,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
 
           {/* Prompt */}
           <div className="space-y-1">
-            <label className="text-xs text-white/60">Prompt / Style</label>
+            <label className="text-sm text-white/60">Prompt / Style</label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -428,7 +428,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Lyrics */}
           {!instrumental && (
             <div className="space-y-1">
-              <label className="text-xs text-white/60">Lyrics</label>
+              <label className="text-sm text-white/60">Lyrics</label>
               <textarea
                 value={lyrics}
                 onChange={(e) => setLyrics(e.target.value)}
@@ -441,7 +441,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
 
           {/* Track DNA */}
           <div className="space-y-1">
-            <label className="text-xs text-white/60">Track DNA</label>
+            <label className="text-sm text-white/60">Track DNA</label>
             <textarea
               value={trackDna}
               onChange={(e) => setTrackDna(e.target.value)}

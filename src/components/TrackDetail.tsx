@@ -535,7 +535,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         {/* Info Overlay (Bottom) */}
         <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end z-10">
           <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
-          <p className="text-xs text-white/80 mt-1.5 drop-shadow-sm font-medium">
+          <p className="text-sm text-white/80 mt-1.5 drop-shadow-sm font-medium">
             {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{providerLabel} • {providerModelLabel}
             {displayDuration && (
               <span className="ml-1.5 text-white/60">• {formatDuration(displayDuration)}</span>
@@ -565,7 +565,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   )}
                 </button>
               </div>
-              <p className="truncate text-xs leading-relaxed text-white/75">{promptFirstLine}</p>
+              <p className="truncate text-sm leading-relaxed text-white/75">{promptFirstLine}</p>
             </div>
           )}
           <div className="mt-2.5 flex items-end justify-between gap-2">
@@ -605,7 +605,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <button
                 type="button"
                 onClick={() => setLyricsExpanded((v) => !v)}
-                className="flex items-center gap-2 text-xs font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+                className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
                 title={lyricsExpanded ? "Collapse lyrics" : "Expand lyrics"}
               >
                 <svg className={`w-3.5 h-3.5 transition-transform ${lyricsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -777,7 +777,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             <button
               type="button"
               onClick={() => setPromptExpanded((value) => !value)}
-              className="flex items-center gap-2 text-xs font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
               title={promptExpanded ? "Collapse prompt" : "Expand prompt"}
             >
               <svg className={`w-3.5 h-3.5 transition-transform ${promptExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -853,7 +853,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 disabled={promptSaving}
               />
               {!promptDraftIsValid && (
-                <p className="text-xs text-red-300/80">Prompt is required for uploaded tracks.</p>
+                <p className="text-sm text-red-300/80">Prompt is required for uploaded tracks.</p>
               )}
             </div>
           ) : promptExpanded ? (

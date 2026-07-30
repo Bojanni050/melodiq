@@ -48,7 +48,7 @@ export default function LyricsSnapshotModals({
               </button>
             </div>
             {savedSnapshots.length === 0 ? (
-              <p className="text-xs text-white/45">No saved snapshots yet.</p>
+              <p className="text-sm text-white/45">No saved snapshots yet.</p>
             ) : (
               <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
                 {savedSnapshots.map((snapshot) => (
@@ -64,7 +64,7 @@ export default function LyricsSnapshotModals({
                     <button
                       type="button"
                       onClick={() => onDeleteSnapshot(snapshot.id)}
-                      className="px-2 py-1 text-xs text-red-300/80 hover:text-red-200"
+                      className="px-2 py-1 text-sm text-red-300/80 hover:text-red-200"
                       title="Delete snapshot"
                     >
                       Delete
@@ -92,7 +92,7 @@ export default function LyricsSnapshotModals({
               </button>
             </div>
             {titleMode ? (
-              <p className="mb-3 text-xs text-white/45">
+              <p className="mb-3 text-sm text-white/45">
                 No title set yet. Generate one from the current lyrics, or enter a title manually.
               </p>
             ) : null}
@@ -109,7 +109,7 @@ export default function LyricsSnapshotModals({
                   type="button"
                   onClick={onGenerateTitle}
                   disabled={generatingTitle}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {generatingTitle ? "Generating..." : "Generate title"}
                 </button>
@@ -117,14 +117,14 @@ export default function LyricsSnapshotModals({
               <button
                 type="button"
                 onClick={onSaveSnapshot}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10"
               >
                 {titleMode ? "Save lyrics" : "Save"}
               </button>
               <button
                 type="button"
                 onClick={onCloseSave}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/50 transition hover:bg-white/5 hover:text-white/80"
               >
                 Cancel
               </button>

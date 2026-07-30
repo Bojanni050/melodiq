@@ -1,6 +1,6 @@
 import clsx from "clsx";
 
-const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-xs font-medium transition";
+const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-sm font-medium transition";
 const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
 const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
 

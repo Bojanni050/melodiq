@@ -30,14 +30,14 @@ export default function LyricsConfirmModal({
               <button
                 type="button"
                 onClick={onConfirm}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-amber-500/25"
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
               >
                 Bevestigen
               </button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
               >
                 Annuleren
               </button>

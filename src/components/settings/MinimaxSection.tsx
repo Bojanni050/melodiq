@@ -70,7 +70,7 @@ export default function MinimaxSection({
 
       {!usesPoyo && (
         <div>
-          <label className="block text-xs font-medium text-white/50 mb-1">API Key</label>
+          <label className="block text-sm font-medium text-white/50 mb-1">API Key</label>
           <input
             type="password"
             value={values.MINIMAX_API_KEY || ""}
@@ -82,21 +82,21 @@ export default function MinimaxSection({
       )}
 
       {usesPoyo && (
-        <p className="text-xs text-white/30">
+        <p className="text-sm text-white/30">
           Using PoYo API key for Minimax generation. Ensure PoYo is configured above.
         </p>
       )}
 
       <div className="flex items-center gap-2 pt-1">
         {!usesPoyo && (
-          <button onClick={handleTest} disabled={testing} className="btn-secondary text-xs px-3 py-1.5">
+          <button onClick={handleTest} disabled={testing} className="btn-secondary text-sm px-3 py-1.5">
             {testing ? "Testing..." : "Test Connection"}
           </button>
         )}
       </div>
 
       {testResult && (
-        <p className={`text-xs ${testResult.success ? "text-green-400" : "text-red-400"}`}>
+        <p className={`text-sm ${testResult.success ? "text-green-400" : "text-red-400"}`}>
           {testResult.message}
         </p>
       )}

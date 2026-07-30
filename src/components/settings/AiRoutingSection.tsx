@@ -49,11 +49,11 @@ export default function AiRoutingSection({
       <section className="section-card">
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Routing</h2>
-          <p className="text-xs text-white/30">Choose which provider handles prompt generation and lyric generation.</p>
+          <p className="text-sm text-white/30">Choose which provider handles prompt generation and lyric generation.</p>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-white/50 mb-1">Prompt provider</label>
+            <label className="block text-sm font-medium text-white/50 mb-1">Prompt provider</label>
             <select
               value={values.PROMPT_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("PROMPT_LLM_PROVIDER", e.target.value)}
@@ -65,7 +65,7 @@ export default function AiRoutingSection({
             <p className="text-xs text-white/25 mt-1">Used by Generate Style / prompt optimization.</p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-white/50 mb-1">Lyrics provider</label>
+            <label className="block text-sm font-medium text-white/50 mb-1">Lyrics provider</label>
             <select
               value={values.LYRICS_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("LYRICS_LLM_PROVIDER", e.target.value)}
@@ -82,7 +82,7 @@ export default function AiRoutingSection({
       <section className="section-card">
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Models</h2>
-          <p className="text-xs text-white/30">
+          <p className="text-sm text-white/30">
             OpenRouter models used for prompt optimization, lyrics, and image prompts. Retrieve models from the
             OpenRouter provider card under Providers &rarr; LLM.
           </p>

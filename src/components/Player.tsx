@@ -1221,7 +1221,7 @@ export default function Player() {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-white/40 truncate">
+                <p className="text-sm text-white/40 truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>

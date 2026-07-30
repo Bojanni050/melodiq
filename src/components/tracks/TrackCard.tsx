@@ -440,7 +440,7 @@ const TrackCard = memo(function TrackCard({
                 onBlur={edit.discardArtist}
                 aria-label="Edit artist name"
                 placeholder="Artist name"
-                className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-xs bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 text-white/80"
+                className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 text-white/80"
                 maxLength={255}
                 draggable={false}
                 onDragStart={(e) => e.stopPropagation()}
@@ -511,7 +511,7 @@ const TrackCard = memo(function TrackCard({
             </p>
           )}
           {track.error && (
-            <p className="text-xs text-red-400 mt-0.5">{track.error}</p>
+            <p className="text-sm text-red-400 mt-0.5">{track.error}</p>
           )}
         </div>
 

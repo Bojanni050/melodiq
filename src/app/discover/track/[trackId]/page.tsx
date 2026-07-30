@@ -247,7 +247,7 @@ export default function TrackDnaPage() {
                           <span className="font-medium text-white">Lyrics</span>
                           <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
                         </div>
-                        {audioDna.lyricsNotes && <p className="text-xs text-white/40">{audioDna.lyricsNotes}</p>}
+                        {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
                       </div>
                     )}
                   </>

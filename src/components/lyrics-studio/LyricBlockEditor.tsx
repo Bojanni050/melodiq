@@ -178,7 +178,7 @@ export default function LyricBlockEditor({
                 </div>
 
                 {block.type === "chorus" && (
-                  <label className="mb-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/75">
+                  <label className="mb-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75">
                     <input
                       type="checkbox"
                       checked={block.uniqueChorusOverride}

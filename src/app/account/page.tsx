@@ -113,7 +113,7 @@ export default function AccountPage() {
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="px-4 py-3">
             <h1 className="text-lg font-bold">Account</h1>
-            <p className="text-xs text-white/40 mt-0.5">Manage your profile and security settings</p>
+            <p className="text-sm text-white/40 mt-0.5">Manage your profile and security settings</p>
           </div>
         </div>
         <main className="p-4 max-w-2xl">
@@ -123,7 +123,7 @@ export default function AccountPage() {
               <h2 className="text-sm font-semibold mb-4">Profile</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Name</label>
                   <input
                     type="text"
                     value={name}
@@ -133,7 +133,7 @@ export default function AccountPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Artist alias</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Artist alias</label>
                   <input
                     type="text"
                     value={artistAlias}
@@ -145,7 +145,7 @@ export default function AccountPage() {
                   <p className="text-xs text-white/25 mt-1">Your public artist name (optional).</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Composer alias</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Composer alias</label>
                   <input
                     type="text"
                     value={composerAlias}
@@ -157,7 +157,7 @@ export default function AccountPage() {
                   <p className="text-xs text-white/25 mt-1">Used as the default composer on new tracks. Falls back to your name if empty.</p>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Email</label>
                   <input
                     type="text"
                     value={user?.email || ""}
@@ -167,14 +167,14 @@ export default function AccountPage() {
                   <p className="text-xs text-white/25 mt-1">Email cannot be changed</p>
                 </div>
                 {profileMessage && (
-                  <p className={`text-xs ${profileMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`text-sm ${profileMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
                     {profileMessage}
                   </p>
                 )}
                 <button
                   onClick={saveProfile}
                   disabled={savingProfile}
-                  className="btn-primary text-xs px-3 py-1.5"
+                  className="btn-primary text-sm px-3 py-1.5"
                 >
                   {savingProfile ? "Saving..." : "Save Profile"}
                 </button>
@@ -186,7 +186,7 @@ export default function AccountPage() {
               <h2 className="text-sm font-semibold mb-4">Security</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Current Password</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Current Password</label>
                   <input
                     type="password"
                     value={currentPassword}
@@ -196,7 +196,7 @@ export default function AccountPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">New Password</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">New Password</label>
                   <input
                     type="password"
                     value={newPassword}
@@ -206,7 +206,7 @@ export default function AccountPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/50 mb-1">Confirm New Password</label>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Confirm New Password</label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -216,14 +216,14 @@ export default function AccountPage() {
                   />
                 </div>
                 {securityMessage && (
-                  <p className={`text-xs ${securityMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`text-sm ${securityMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
                     {securityMessage}
                   </p>
                 )}
                 <button
                   onClick={savePassword}
                   disabled={savingSecurity || !currentPassword || !newPassword || !confirmPassword}
-                  className="btn-primary text-xs px-3 py-1.5"
+                  className="btn-primary text-sm px-3 py-1.5"
                 >
                   {savingSecurity ? "Saving..." : "Change Password"}
                 </button>

@@ -425,7 +425,7 @@ export default function FullscreenPlayer({
                   {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                 </h3>
                 {(artistLabel || composerLabel) && (
-                  <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-xs sm:text-sm" : "text-sm sm:text-base"}`}>
+                  <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>
                     {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
                   </p>
                 )}
@@ -456,7 +456,7 @@ export default function FullscreenPlayer({
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
                       {(artistLabel || composerLabel) && (
-                        <p className="mt-0.5 text-xs sm:text-sm text-white/50">
+                        <p className="mt-0.5 text-sm text-white/50">
                           {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
                         </p>
                       )}
@@ -498,7 +498,7 @@ export default function FullscreenPlayer({
                       {columns.map((column, colIndex) => (
                         <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
                           {column.map((line, lineIndex) => (
-                            <p key={lineIndex} className="text-white/80 text-xs sm:text-sm leading-relaxed">
+                            <p key={lineIndex} className="text-white/80 text-sm leading-relaxed">
                               {line}
                             </p>
                           ))}

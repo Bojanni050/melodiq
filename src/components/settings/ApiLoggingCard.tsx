@@ -7,11 +7,11 @@ export default function ApiLoggingCard({ enabled, onToggle }: ApiLoggingCardProp
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">API Logging</h2>
-      <p className="text-xs text-white/40 mb-3">
+      <p className="text-sm text-white/40 mb-3">
         Store provider requests and responses in Logs for debugging.
       </p>
       <label className="flex items-center justify-between gap-3">
-        <span className="text-xs text-white/70">Enable API logging</span>
+        <span className="text-sm text-white/70">Enable API logging</span>
         <button
           type="button"
           aria-label="Toggle API logging"

@@ -93,7 +93,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           autoComplete={authMode === "login" ? "current-password" : "new-password"}
           className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
         />
-        {authError && <p className="text-xs text-red-400">{authError}</p>}
+        {authError && <p className="text-sm text-red-400">{authError}</p>}
         <button
           type="submit"
           disabled={authLoading || !email || !password}
@@ -102,7 +102,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           {authLoading ? "…" : authMode === "login" ? "Sign In" : "Sign Up"}
         </button>
       </form>
-      <p className="mt-3 text-center text-xs text-white/35">
+      <p className="mt-3 text-center text-sm text-white/35">
         {authMode === "login" ? (
           <>
             New here?{" "}

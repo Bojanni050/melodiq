@@ -15,7 +15,7 @@ export default function CoverArtSection({
   return (
     <ProviderAccordion title="Cover Art (Pixazo)" description="AI-generated cover art via Pixazo Flux 1 Schnell (free)" status={status}>
       <div>
-        <label className="text-xs text-white/50 mb-1 block">Pixazo API Key</label>
+        <label className="text-sm text-white/50 mb-1 block">Pixazo API Key</label>
         <input
           type="password"
           value={value}

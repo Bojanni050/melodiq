@@ -399,7 +399,7 @@ export default memo(function StudioForm({
         <button
           type="button"
           onClick={reset}
-          className="btn-secondary text-xs px-3 py-1.5"
+          className="btn-secondary text-sm px-3 py-1.5"
         >
           Clear All
         </button>
@@ -494,14 +494,14 @@ export default memo(function StudioForm({
         </div>
 
         {isHeartMulaSelected && (
-          <p className="text-xs text-white/30 italic mb-2">
+          <p className="text-sm text-white/30 italic mb-2">
             HeartMuLa reads structure directly from your lyrics — write your own tags: <span className="text-white/50 font-mono">[Verse]</span>, <span className="text-white/50 font-mono">[Chorus]</span>, <span className="text-white/50 font-mono">[Bridge]</span>, plus instrumental sections like <span className="text-white/50 font-mono">[intro-short]</span>, <span className="text-white/50 font-mono">[inst-medium]</span>, <span className="text-white/50 font-mono">[outro-short]</span>.
           </p>
         )}
         {(!instrumental || isHeartMulaSelected) && (
           <>
             <div className="mb-3">
-              <label className="block text-xs text-white/50 mb-1.5">Lyrics Topic & Mood</label>
+              <label className="block text-sm text-white/50 mb-1.5">Lyrics Topic & Mood</label>
               <input
                 type="text"
                 value={lyricsContext}
@@ -539,7 +539,7 @@ Your chorus here`}
                   type="button"
                   onClick={handleGenerateLyrics}
                   disabled={!lyricsContext || generatingLyrics}
-                  className="btn-ghost text-xs flex items-center gap-1.5"
+                  className="btn-ghost text-sm flex items-center gap-1.5"
                 >
                   {generatingLyrics ? (
                     <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -553,7 +553,7 @@ Your chorus here`}
                 <button
                   type="button"
                   onClick={() => setLyricsExpanded(true)}
-                  className="btn-ghost text-xs flex items-center gap-1.5"
+                  className="btn-ghost text-sm flex items-center gap-1.5"
                   title="Expand lyrics editor"
                   aria-label="Expand lyrics editor"
                 >
@@ -636,7 +636,7 @@ Your chorus here`}
                 <button
                   type="button"
                   onClick={() => setShowSavedLyrics((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/65 transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/65 transition-colors"
                 >
                   <svg className={`w-3 h-3 transition-transform ${showSavedLyrics ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -648,7 +648,7 @@ Your chorus here`}
                     {savedLyrics.map((entry) => (
                       <div key={entry.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-white/5 group">
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-white/75 truncate">{entry.title}</p>
+                          <p className="text-sm font-medium text-white/75 truncate">{entry.title}</p>
                           <p className="text-[10px] text-white/30">{new Date(entry.savedAt).toLocaleDateString()}</p>
                         </div>
                         <button
@@ -680,7 +680,7 @@ Your chorus here`}
         )}
 
         {instrumental && !isHeartMulaSelected && (
-          <p className="text-xs text-white/30 italic">
+          <p className="text-sm text-white/30 italic">
             🎵 <span className="text-white/50">Instrumental mode</span> — no lyrics needed, focus on the style prompt
           </p>
         )}
@@ -699,7 +699,7 @@ Your chorus here`}
             <button
               type="button"
               onClick={() => setLyricsExpanded(false)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
               title="Collapse lyrics editor"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -726,7 +726,7 @@ Your chorus here`}
           <h3 className="text-sm font-semibold text-white/80">{isHeartMulaSelected ? "Style Tags" : "Style & Prompt"}</h3>
         </div>
         {isHeartMulaSelected && (
-          <p className="text-xs text-white/30 italic mb-2">
+          <p className="text-sm text-white/30 italic mb-2">
             Comma-separated style descriptors — gender, timbre, genre, emotion, instruments, tempo (e.g. 85bpm)
           </p>
         )}
@@ -746,7 +746,7 @@ Your chorus here`}
           <button
             type="button"
             onClick={() => setShowTags(!showTags)}
-            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/60 transition-colors"
           >
             <svg
               className={`w-3 h-3 transition-transform duration-200 ${showTags ? "rotate-90" : ""}`}
@@ -772,7 +772,7 @@ Your chorus here`}
                         key={tag}
                         type="button"
                         onClick={() => addStyleTag(tag)}
-                        className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
+                        className="px-2.5 py-1 text-sm rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
                       >
                         + {tag}
                       </button>
@@ -789,7 +789,7 @@ Your chorus here`}
             <button
               onClick={handleOptimize}
               disabled={!songIdea || optimizing}
-              className="btn-ghost text-xs flex items-center gap-1.5"
+              className="btn-ghost text-sm flex items-center gap-1.5"
             >
               {optimizing ? (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -809,7 +809,7 @@ Your chorus here`}
                 setPresetName("");
                 setPresetNotes("");
               }}
-              className="btn-secondary text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Sla huidige stijl op als preset"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -822,7 +822,7 @@ Your chorus here`}
               <button
                 type="button"
                 onClick={() => setShowSavedPresetsList(!showSavedPresetsList)}
-                className={`btn-ghost text-xs flex items-center gap-1.5 ${showSavedPresetsList ? "text-primary-300 font-semibold" : "text-white/60 hover:text-white"}`}
+                className={`btn-ghost text-sm flex items-center gap-1.5 ${showSavedPresetsList ? "text-primary-300 font-semibold" : "text-white/60 hover:text-white"}`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -877,7 +877,7 @@ Your chorus here`}
         {/* Save Preset Form */}
         {showSavePresetForm && (
           <div className="mt-4 p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
-            <p className="text-xs font-semibold text-primary-300">Save Style & Prompt Preset</p>
+            <p className="text-sm font-semibold text-primary-300">Save Style & Prompt Preset</p>
             <div className="space-y-2">
               <div>
                 <label className="block text-[10px] text-white/50 mb-1">Preset Name</label>
@@ -886,7 +886,7 @@ Your chorus here`}
                   value={presetName}
                   onChange={(e) => setPresetName(e.target.value)}
                   placeholder="e.g. Dutch Melancholy, Summer Uplifting"
-                  className="input-field text-xs py-1.5 focus:border-primary-500/50 outline-none"
+                  className="input-field text-sm py-1.5 focus:border-primary-500/50 outline-none"
                   maxLength={100}
                 />
               </div>
@@ -896,7 +896,7 @@ Your chorus here`}
                   value={presetNotes}
                   onChange={(e) => setPresetNotes(e.target.value)}
                   placeholder="Notes down specific ideas, instruments, or details..."
-                  className="input-field text-xs py-1.5 min-h-[60px] resize-y focus:border-primary-500/50 outline-none"
+                  className="input-field text-sm py-1.5 min-h-[60px] resize-y focus:border-primary-500/50 outline-none"
                   maxLength={500}
                 />
               </div>
@@ -905,7 +905,7 @@ Your chorus here`}
               <button
                 type="button"
                 onClick={() => setShowSavePresetForm(false)}
-                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/60 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-white/60 transition-colors"
               >
                 Cancel
               </button>
@@ -921,7 +921,7 @@ Your chorus here`}
                     setPresetNotes("");
                   }
                 }}
-                className="px-3 py-1.5 rounded-lg bg-primary-500/80 hover:bg-primary-500 text-xs text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded-lg bg-primary-500/80 hover:bg-primary-500 text-sm text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save
               </button>
@@ -933,7 +933,7 @@ Your chorus here`}
         {showSavedPresetsList && presets.length > 0 && (
           <div className="mt-4 border-t border-white/10 pt-4 space-y-2.5">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-white/60">My Saved Presets</p>
+              <p className="text-sm font-semibold text-white/60">My Saved Presets</p>
               <button
                 type="button"
                 onClick={() => setShowSavedPresetsList(false)}
@@ -952,7 +952,7 @@ Your chorus here`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-white/95 truncate">{preset.name}</p>
+                        <p className="text-sm font-semibold text-white/95 truncate">{preset.name}</p>
                         <p className="text-[10px] text-white/30 truncate mt-0.5" title={preset.prompt}>
                           Prompt: {preset.prompt}
                         </p>
@@ -1004,11 +1004,11 @@ Your chorus here`}
             <div className="my-4 h-px bg-white/10" />
 
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Sliders</h4>
+              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Sliders</h4>
               <button
                 type="button"
                 onClick={() => setShowProTips(!showProTips)}
-                className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                className="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300 transition-colors"
               >
                 <svg className={`w-3 h-3 transition-transform duration-200 ${showProTips ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -1019,8 +1019,8 @@ Your chorus here`}
 
             {showProTips && (
               <div className="mb-4 p-3 rounded-lg bg-primary-500/5 border border-primary-500/20 space-y-2">
-                <p className="text-xs text-primary-300 font-medium">Pro Tips for Best Results</p>
-                <ul className="text-xs text-white/40 space-y-1.5 list-disc list-inside">
+                <p className="text-sm text-primary-300 font-medium">Pro Tips for Best Results</p>
+                <ul className="text-sm text-white/40 space-y-1.5 list-disc list-inside">
                   <li><span className="text-white/60">Tweak One at a Time:</span> Altering all sliders at once makes it hard to trace what caused a specific output.</li>
                   <li><span className="text-white/60">Detailed Prompts Need Lower Weirdness:</span> Keep Weirdness below 40% with hyper-specific prompts to avoid the AI tripping over itself.</li>
                   <li><span className="text-white/60">Vocal Glitches:</span> If your singer stumbles or hallucinates lyrics, drop Weirdness and Style Influence down to correct the flow.</li>
@@ -1031,8 +1031,8 @@ Your chorus here`}
             {/* Weirdness Slider */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-white/60">Weirdness</label>
-                <span className="text-xs text-white/40 font-mono">{weirdness}%</span>
+                <label className="text-sm font-medium text-white/60">Weirdness</label>
+                <span className="text-sm text-white/40 font-mono">{weirdness}%</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-white/25 uppercase tracking-wider">Safe</span>
@@ -1057,8 +1057,8 @@ Your chorus here`}
             {/* Style Influence Slider */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-white/60">Style Influence</label>
-                <span className="text-xs text-white/40 font-mono">{styleInfluence}%</span>
+                <label className="text-sm font-medium text-white/60">Style Influence</label>
+                <span className="text-sm text-white/40 font-mono">{styleInfluence}%</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-white/25 uppercase tracking-wider">Loose</span>
@@ -1098,7 +1098,7 @@ Your chorus here`}
             <button
               type="button"
               onClick={() => setVocalGender(vocalGender === "female" ? "auto" : "female")}
-              className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 vocalGender === "female"
                   ? "bg-pink-500/30 text-pink-300"
                   : "bg-white/5 text-white/40 hover:bg-white/10"
@@ -1109,7 +1109,7 @@ Your chorus here`}
             <button
               type="button"
               onClick={() => setVocalGender(vocalGender === "male" ? "auto" : "male")}
-              className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 vocalGender === "male"
                   ? "bg-blue-500/30 text-blue-300"
                   : "bg-white/5 text-white/40 hover:bg-white/10"
@@ -1129,7 +1129,7 @@ Your chorus here`}
             <button
               onClick={handleGenerateTitle}
               disabled={generatingTitle || !lyrics.trim()}
-              className="btn-ghost text-xs flex items-center gap-1.5"
+              className="btn-ghost text-sm flex items-center gap-1.5"
             >
               {generatingTitle ? (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1165,7 +1165,7 @@ Your chorus here`}
 
       {/* Generate Button */}
       <div className="sticky bottom-0 z-10 space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
-        <label className="flex items-start gap-2.5 text-xs text-white/70">
+        <label className="flex items-start gap-2.5 text-sm text-white/70">
           <input
             type="checkbox"
             checked={autoCreateWorkspaceFromGeneratedTitle}
@@ -1188,7 +1188,7 @@ Your chorus here`}
 
         {/* Validation hint when button is disabled */}
         {!canGenerate && (
-          <p className="text-center text-xs text-red-400/60">
+          <p className="text-center text-sm text-red-400/60">
             {Object.keys(selectedProviders).length === 0
               ? "Select at least one provider"
               : "Describe a style or prompt to continue"}

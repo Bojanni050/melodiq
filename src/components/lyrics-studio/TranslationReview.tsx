@@ -52,21 +52,21 @@ export default function TranslationReview({
               <button
                 type="button"
                 onClick={() => onUseTranslation(block.id, translated)}
-                className="text-xs rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
+                className="text-sm rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
               >
                 ✓ Use translation
               </button>
               <button
                 type="button"
                 onClick={() => onKeepOriginal(block.id)}
-                className="text-xs rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-blue-200 hover:bg-blue-500/20 transition-colors"
+                className="text-sm rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-blue-200 hover:bg-blue-500/20 transition-colors"
               >
                 ✓ Keep original
               </button>
               <button
                 type="button"
                 onClick={() => onKeepBoth(block.id, block.content, translated)}
-                className="text-xs rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-purple-200 hover:bg-purple-500/20 transition-colors"
+                className="text-sm rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-purple-200 hover:bg-purple-500/20 transition-colors"
               >
                 ✓ Keep both
               </button>

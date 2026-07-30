@@ -15,7 +15,7 @@ export default function WebhooksSection({
   return (
     <ProviderAccordion title="Webhooks" description="Auto-derive webhook URLs from your app URL, or override individually">
       <div>
-        <label className="block text-xs font-medium text-white/50 mb-1">App URL</label>
+        <label className="block text-sm font-medium text-white/50 mb-1">App URL</label>
         <input
           type="text"
           value={appUrl}

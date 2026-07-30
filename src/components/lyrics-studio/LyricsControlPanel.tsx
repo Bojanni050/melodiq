@@ -177,7 +177,7 @@ export default function LyricsControlPanel({
       <section className="section-card">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-white/80">Song Metadata</h3>
-          <p className="mt-1 text-xs text-white/35">Used as context for each generated block.</p>
+          <p className="mt-1 text-sm text-white/35">Used as context for each generated block.</p>
         </div>
 
         <div className="space-y-3">
@@ -219,7 +219,7 @@ export default function LyricsControlPanel({
                       key={tag}
                       type="button"
                       onClick={() => onMoodChange(toggleTag(mood, tag))}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs transition duration-200 cursor-pointer ${
+                      className={`rounded-full border px-2.5 py-0.5 text-sm transition duration-200 cursor-pointer ${
                         isActive
                           ? "border-primary-500 bg-primary-500/20 text-white font-medium shadow-[0_0_10px_rgba(255,83,12,0.15)]"
                           : "border-white/5 bg-white/5 text-white/40 hover:border-white/15 hover:bg-white/10 hover:text-white"
@@ -288,7 +288,7 @@ export default function LyricsControlPanel({
                       key={tag}
                       type="button"
                       onClick={() => onStyleChange(toggleTag(style, tag))}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs transition duration-200 cursor-pointer ${
+                      className={`rounded-full border px-2.5 py-0.5 text-sm transition duration-200 cursor-pointer ${
                         isActive
                           ? "border-primary-500 bg-primary-500/20 text-white font-medium shadow-[0_0_10px_rgba(255,83,12,0.15)]"
                           : "border-white/5 bg-white/5 text-white/40 hover:border-white/15 hover:bg-white/10 hover:text-white"
@@ -452,7 +452,7 @@ export default function LyricsControlPanel({
                 setIsSavingPreset(true);
                 setNewPresetName("");
               }}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/0 px-3 py-2 text-xs font-semibold text-white/55 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 bg-white/0 px-3 py-2 text-sm font-semibold text-white/55 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -467,14 +467,14 @@ export default function LyricsControlPanel({
                 value={newPresetName}
                 onChange={(e) => setNewPresetName(e.target.value)}
                 placeholder="Bijv. Pop Met Dubbel Refrein"
-                className="input-field text-xs py-1.5"
+                className="input-field text-sm py-1.5"
                 autoFocus
               />
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setIsSavingPreset(false)}
-                  className="rounded px-2.5 py-1 text-xs font-medium text-white/60 hover:text-white transition"
+                  className="rounded px-2.5 py-1 text-sm font-medium text-white/60 hover:text-white transition"
                 >
                   Annuleren
                 </button>
@@ -488,7 +488,7 @@ export default function LyricsControlPanel({
                     }
                   }}
                   disabled={!newPresetName.trim()}
-                  className="rounded bg-primary-500 px-3 py-1 text-xs font-semibold text-white hover:bg-primary-400 disabled:opacity-45 disabled:cursor-not-allowed transition"
+                  className="rounded bg-primary-500 px-3 py-1 text-sm font-semibold text-white hover:bg-primary-400 disabled:opacity-45 disabled:cursor-not-allowed transition"
                 >
                   Opslaan
                 </button>
