@@ -18,7 +18,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
-  const buildVersion = "202607301617";
+  const buildVersion = "202607311430";
 
   useEffect(() => {
     let active = true;
@@ -52,7 +52,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   }
 
   function Icon({ name, active }: { name: string; active: boolean }) {
-    const cls = active ? "text-white" : "text-white/50";
+    const cls = active ? "text-white" : "text-white/70";
     switch (name) {
       case "studio":
         return (
@@ -169,7 +169,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   active
                     ? "bg-white/10 text-white font-medium"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
+                    : "text-white/70 font-medium hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Icon name={item.icon} active={active} />
@@ -278,7 +278,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                     className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors ${
                       active
                         ? "bg-white/10 text-white font-medium"
-                        : "text-white/50 hover:text-white hover:bg-white/5"
+                        : "text-white/70 font-medium hover:text-white hover:bg-white/5"
                     }`}
                   >
                     <Icon name={item.icon} active={active} />
