@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { STEM_TYPES } from "@/lib/stem-types";
+import { formatGenerationTime } from "@/lib/track-utils";
 import { useSWRConfig } from "swr";
 
 type TrackStem = {
@@ -12,6 +13,8 @@ type TrackStem = {
   status: "pending" | "completed" | "failed";
   audioUrl: string | null;
   error: string | null;
+  createdAt: string;
+  completedAt: string | null;
 };
 
 const TRANSLATE_LANGUAGES = [
@@ -53,6 +56,7 @@ export type TrackDetailTrack = {
   format: string | null;
   formatHd: string | null;
   duration: number | null;
+  completedAt?: string | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
@@ -528,6 +532,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       ? Math.round(audioElement.duration)
       : null);
 
+  const generationTime = formatGenerationTime(track.createdAt, track.completedAt);
+
   function formatDuration(seconds: number | null): string {
     if (!seconds || seconds <= 0) return "";
     const mins = Math.floor(seconds / 60);
@@ -612,6 +618,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             )}
             {track.language && (
               <span className="ml-1.5 text-white/60">• {track.language}</span>
+            )}
+            {generationTime && (
+              <span className="ml-1.5 text-white/60" title="Time from generation start to completion">
+                • generated in {generationTime}
+              </span>
             )}
           </p>
           {mode === "overlay" && promptFirstLine && (
@@ -957,7 +968,14 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   const isExtracting = stem?.status === "pending" || extractingStemType === stemDef.value;
                   return (
                     <div key={stemDef.value} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                      <span className="text-sm text-white/70">{stemDef.label}</span>
+                      <span className="text-sm text-white/70">
+                        {stemDef.label}
+                        {stem?.status === "completed" && stem.completedAt && (
+                          <span className="ml-1.5 text-[11px] text-white/30" title="Time from extraction start to completion">
+                            ({formatGenerationTime(stem.createdAt, stem.completedAt)})
+                          </span>
+                        )}
+                      </span>
                       {stem?.status === "completed" && stem.audioUrl ? (
                         <a
                           href={stem.audioUrl}

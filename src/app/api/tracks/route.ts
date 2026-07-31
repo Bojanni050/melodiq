@@ -379,6 +379,7 @@ export async function GET(request: NextRequest) {
     artistName: tracks.artistName,
     composerName: tracks.composerName,
     deletedAt: tracks.deletedAt,
+    completedAt: tracks.completedAt,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
   };

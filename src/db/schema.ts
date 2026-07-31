@@ -103,6 +103,9 @@ export const tracks = pgTable("tracks", {
   pollsOpenAt: timestamp("polls_open_at"),
   pollsCloseAt: timestamp("polls_close_at"),
   deletedAt: timestamp("deleted_at"),
+  // Stamped by a DB trigger (see init.ts) the moment status first transitions
+  // into "done"/"failed" — createdAt to completedAt is the generation time.
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -124,6 +127,7 @@ export const trackStems = pgTable("track_stems", {
   s3Key: text("s3_key"),
   format: varchar("format", { length: 10 }).default("mp3"),
   error: text("error"),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

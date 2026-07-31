@@ -5,7 +5,7 @@ import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import { formatTrackDateTime } from "@/lib/track-utils";
+import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 
 // Extracted Sub-components
@@ -168,6 +168,7 @@ const TrackCard = memo(function TrackCard({
     : baseStatus;
   const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
+  const generationTime = formatGenerationTime(track.createdAt, track.completedAt);
   const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
   const playCount = optimisticPlayCount;
@@ -391,6 +392,17 @@ const TrackCard = memo(function TrackCard({
             <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
               {status.label}
             </span>
+            {track.status === "done" && generationTime && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] text-white/30 shrink-0"
+                title="Time from generation start to completion"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {generationTime}
+              </span>
+            )}
             {track.status === "done" && track.releaseStatus && track.releaseStatus !== "concept" && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${

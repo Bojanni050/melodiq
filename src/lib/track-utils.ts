@@ -79,3 +79,12 @@ export function formatTotalDuration(totalSeconds: number): string {
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
 }
+
+// How long a generation job (track, stem, or any future job with the same
+// createdAt/completedAt shape) took from submission to completion.
+export function formatGenerationTime(createdAt: string, completedAt: string | null | undefined): string | null {
+  if (!completedAt) return null;
+  const seconds = (new Date(completedAt).getTime() - new Date(createdAt).getTime()) / 1000;
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  return formatTotalDuration(Math.round(seconds));
+}

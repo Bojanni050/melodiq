@@ -60,9 +60,29 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "track_dna" text,
   "polls_open_at" timestamp,
   "polls_close_at" timestamp,
+  "completed_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS "track_stems" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "stem_type" varchar(50) NOT NULL,
+  "status" varchar(20) NOT NULL DEFAULT 'pending',
+  "job_id" varchar(255),
+  "audio_url" text,
+  "s3_key" text,
+  "format" varchar(10) DEFAULT 'mp3',
+  "error" text,
+  "completed_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "track_stems_track_id_idx" ON "track_stems"("track_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "track_stems_track_id_stem_type_unique" ON "track_stems"("track_id", "stem_type");
 
 CREATE TABLE IF NOT EXISTS "workspaces" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -230,6 +250,8 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_open_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;
+ALTER TABLE track_stems ADD COLUMN IF NOT EXISTS completed_at timestamp;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
@@ -272,6 +294,37 @@ $$;
 const dropSongsSql = `
 DROP TABLE IF EXISTS songs CASCADE;
 ALTER TABLE tracks DROP COLUMN IF EXISTS song_id;
+`;
+
+// Stamps completed_at the moment a generation job (track or stem — and any
+// future job table with the same status/completed_at shape, e.g. mastering)
+// first transitions into a terminal status, so "generation duration" is just
+// completed_at - created_at with no per-webhook bookkeeping required. Resets
+// completed_at to NULL if a retry moves the row back out of a terminal
+// status, so the next completion gets a fresh duration.
+const completedAtTriggerSql = `
+CREATE OR REPLACE FUNCTION set_completed_at() RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status IN ('done', 'completed', 'failed') AND OLD.status IS DISTINCT FROM NEW.status THEN
+    NEW.completed_at := now();
+  ELSIF NEW.status NOT IN ('done', 'completed', 'failed') AND OLD.status IN ('done', 'completed', 'failed') THEN
+    NEW.completed_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tracks_set_completed_at ON tracks;
+CREATE TRIGGER tracks_set_completed_at
+  BEFORE UPDATE ON tracks
+  FOR EACH ROW
+  EXECUTE FUNCTION set_completed_at();
+
+DROP TRIGGER IF EXISTS track_stems_set_completed_at ON track_stems;
+CREATE TRIGGER track_stems_set_completed_at
+  BEFORE UPDATE ON track_stems
+  FOR EACH ROW
+  EXECUTE FUNCTION set_completed_at();
 `;
 
 async function executeSqlStatements(client: postgres.Sql, sqlBlob: string) {
@@ -327,6 +380,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterPlaylistsSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     await executeSqlStatements(targetClient, dropSongsSql);
+    await targetClient.unsafe(completedAtTriggerSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
   } catch (error) {
     console.error("Error ensuring database schema:", error);

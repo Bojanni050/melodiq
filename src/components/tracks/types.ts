@@ -11,6 +11,7 @@ export interface TrackItem {
   format: string | null;
   formatHd: string | null;
   duration: number | null;
+  completedAt?: string | null;
   createdAt: string;
   error: string | null;
   s3KeyHd: string | null;
