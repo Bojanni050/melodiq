@@ -111,10 +111,19 @@ export default function PlayerWindowPage() {
       ctx!.clearRect(0, 0, canvas!.width, canvas!.height);
       const data = vizDataRef.current;
       if (data && data.length) {
-        const barCount = data.length;
+        // Raw FFT bins are linearly spaced, so most of a song's energy sits in
+        // the first third of them — rendering one bar per bin leaves the
+        // right side of the canvas visually empty. Group bins on a log scale
+        // instead, so each visual bar gets a frequency range like a real EQ.
+        const bins = data.length;
+        const barCount = 48;
         const barWidth = canvas!.width / barCount;
         for (let i = 0; i < barCount; i++) {
-          const value = data[i] / 255;
+          const from = Math.min(bins - 1, Math.floor(Math.pow(bins, i / barCount)));
+          const to = Math.max(from + 1, Math.min(bins, Math.floor(Math.pow(bins, (i + 1) / barCount))));
+          let sum = 0;
+          for (let b = from; b < to; b++) sum += data[b];
+          const value = sum / (to - from) / 255;
           const barHeight = value * canvas!.height;
           const gradient = ctx!.createLinearGradient(0, canvas!.height - barHeight, 0, canvas!.height);
           gradient.addColorStop(0, "rgba(255,133,80,0.95)");

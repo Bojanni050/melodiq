@@ -954,7 +954,7 @@ export default function Player() {
       const { sourceNode } = getSharedAudioGraph(audioRef.current);
       if (!vizAnalyserRef.current) {
         const analyser = sourceNode.context.createAnalyser();
-        analyser.fftSize = 128;
+        analyser.fftSize = 1024;
         analyser.smoothingTimeConstant = 0.7;
         sourceNode.connect(analyser);
         vizAnalyserRef.current = analyser;
