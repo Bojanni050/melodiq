@@ -1485,3 +1485,36 @@ export const usePresetsStore = create<PresetsState>()((set) => ({
   },
 }));
 
+// Badges tracks that are linked from the Song Archive: "original" (the
+// definitive source-of-truth lyrics+prompt) vs. "translation". Fetched once
+// and shared across every TrackCard instead of one request per card.
+type ArchiveLinkKind = "original" | "translation";
+
+interface ArchiveLinksState {
+  links: Record<string, ArchiveLinkKind>;
+  loaded: boolean;
+  loading: boolean;
+  load: () => Promise<void>;
+}
+
+export const useArchiveLinksStore = create<ArchiveLinksState>()((set, get) => ({
+  links: {},
+  loaded: false,
+  loading: false,
+  load: async () => {
+    if (get().loaded || get().loading) return;
+    set({ loading: true });
+    try {
+      const res = await fetch("/api/archive/track-links");
+      if (!res.ok) {
+        set({ loading: false, loaded: true });
+        return;
+      }
+      const data = await res.json();
+      set({ links: data.links ?? {}, loaded: true, loading: false });
+    } catch {
+      set({ loading: false, loaded: true });
+    }
+  },
+}));
+

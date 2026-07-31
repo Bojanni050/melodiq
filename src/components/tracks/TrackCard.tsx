@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
@@ -78,6 +78,11 @@ const TrackCard = memo(function TrackCard({
   );
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const archiveLinkKind = useArchiveLinksStore((state) => state.links[track.id]);
+  const loadArchiveLinks = useArchiveLinksStore((state) => state.load);
+  useEffect(() => {
+    loadArchiveLinks();
+  }, [loadArchiveLinks]);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
   const setIsFullscreen = usePlayerStore((state) => state.setIsFullscreen);
   const isCurrentlyPlaying = currentTrack?.id === track.id;
@@ -368,6 +373,20 @@ const TrackCard = memo(function TrackCard({
               >
                 {title}
               </h3>
+            )}
+            {archiveLinkKind && (
+              <span
+                className="shrink-0"
+                title={archiveLinkKind === "original" ? "Archive: single source of truth" : "Archive: translation"}
+              >
+                <svg
+                  className={`w-3.5 h-3.5 ${archiveLinkKind === "original" ? "text-amber-400" : "text-sky-400"}`}
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M5 18h14l1.5-9-4.5 3-4-5-4 5-4.5-3L5 18zm-.5 2h15a.5.5 0 010 1h-15a.5.5 0 010-1z" />
+                </svg>
+              </span>
             )}
             <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
               {status.label}
