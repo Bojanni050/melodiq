@@ -548,7 +548,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       </div>
 
       {/* Artwork with Overlay */}
-      <div className="shrink-0 aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ff007f]/20 overflow-hidden">
+      <div className="shrink-0 aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ec4899]/20 overflow-hidden">
         {track.coverUrl ? (
           <img
             src={track.coverUrl}
