@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import GenerateButton from "@/components/studio/GenerateButton";
 import VoiceCloneToggle from "@/components/studio/VoiceCloneToggle";
 import { useStudioStore, usePresetsStore } from "@/lib/store";
@@ -407,10 +408,10 @@ export default memo(function StudioForm({
         </button>
       </div>
 
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {showClearConfirm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setShowClearConfirm(false)}
           />
           <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4">
@@ -444,7 +445,8 @@ export default memo(function StudioForm({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
