@@ -47,6 +47,7 @@ export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: s
   }
 
   function handleTitleKeyDown(e: React.KeyboardEvent) {
+    e.stopPropagation();
     if (e.key === "Enter") { e.preventDefault(); saveTitle(); }
     else if (e.key === "Escape") { discardTitle(); }
   }
@@ -75,6 +76,7 @@ export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: s
   }
 
   function handleArtistKeyDown(e: React.KeyboardEvent) {
+    e.stopPropagation();
     if (e.key === "Enter") { e.preventDefault(); saveArtist(); }
     else if (e.key === "Escape") { discardArtist(); }
   }
