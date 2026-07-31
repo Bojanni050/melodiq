@@ -123,6 +123,10 @@ export default function DiscoverPage() {
     .filter((track) => track.status === "done")
     .sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0))
     .slice(0, 10);
+  const recentTracks = [...myTracks]
+    .filter((track) => track.status === "done")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10);
 
   const now = Date.now();
   const DAY_MS = 24 * 60 * 60 * 1000;
@@ -371,6 +375,23 @@ export default function DiscoverPage() {
                   No tracks yet. Head to <Link href="/studio" className="text-primary-400 hover:underline">Studio</Link> to generate your first one.
                 </p>
               )}
+            </section>
+          )}
+
+          {isLoggedIn && recentTracks.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">Recently Generated</h2>
+                <Link href="/library" className="text-xs text-white/40 hover:text-white/70 transition-colors">
+                  View all
+                </Link>
+              </div>
+              <p className="text-xs text-white/40">Your {recentTracks.length} latest track{recentTracks.length !== 1 ? "s" : ""}</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                {recentTracks.map((track) => (
+                  <MyTrackCard key={track.id} track={track} />
+                ))}
+              </div>
             </section>
           )}
 
