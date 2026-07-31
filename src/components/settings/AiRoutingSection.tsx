@@ -12,16 +12,20 @@ export default function AiRoutingSection({
   selectedPromptModel,
   selectedLyricsModel,
   selectedImageModel,
+  selectedTrackDnaModel,
   showPromptDropdown,
   showLyricsDropdown,
   showImageDropdown,
+  showTrackDnaDropdown,
   onSearchQueryChange,
   onPromptModelSelect,
   onLyricsModelSelect,
   onImageModelSelect,
+  onTrackDnaModelSelect,
   onTogglePromptDropdown,
   onToggleLyricsDropdown,
   onToggleImageDropdown,
+  onToggleTrackDnaDropdown,
   onReadMore,
 }: {
   values: Record<string, string>;
@@ -32,16 +36,20 @@ export default function AiRoutingSection({
   selectedPromptModel: LLMModel | null;
   selectedLyricsModel: LLMModel | null;
   selectedImageModel: LLMModel | null;
+  selectedTrackDnaModel: LLMModel | null;
   showPromptDropdown: boolean;
   showLyricsDropdown: boolean;
   showImageDropdown: boolean;
+  showTrackDnaDropdown: boolean;
   onSearchQueryChange: (query: string) => void;
   onPromptModelSelect: (model: LLMModel) => void;
   onLyricsModelSelect: (model: LLMModel) => void;
   onImageModelSelect: (model: LLMModel) => void;
+  onTrackDnaModelSelect: (model: LLMModel) => void;
   onTogglePromptDropdown: () => void;
   onToggleLyricsDropdown: () => void;
   onToggleImageDropdown: () => void;
+  onToggleTrackDnaDropdown: () => void;
   onReadMore: (model: LLMModel) => void;
 }) {
   return (
@@ -75,6 +83,22 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">Used by Generate Lyrics and Lyric Studio block generation.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Track DNA provider</label>
+            <select
+              value={values.TRACKDNA_LLM_PROVIDER || "openrouter"}
+              onChange={(e) => onFieldChange("TRACKDNA_LLM_PROVIDER", e.target.value)}
+              className="select-field font-mono text-sm"
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="openai">OpenAI</option>
+            </select>
+            <p className="text-xs text-white/25 mt-1">
+              Used by the automatic Track DNA analysis (atmosphere tags &amp; lyrics quality score) that runs once
+              per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
+              creative writing.
+            </p>
           </div>
         </div>
       </section>
@@ -121,6 +145,18 @@ export default function AiRoutingSection({
             searchQuery={modelSearchQuery}
             onToggle={onToggleImageDropdown}
             onSelect={onImageModelSelect}
+            onSearchQueryChange={onSearchQueryChange}
+            onReadMore={onReadMore}
+          />
+          <OpenRouterModelDropdown
+            label="Track DNA Model"
+            selected={selectedTrackDnaModel}
+            open={showTrackDnaDropdown}
+            options={filteredModels}
+            allModelsLoaded={allModels.length > 0}
+            searchQuery={modelSearchQuery}
+            onToggle={onToggleTrackDnaDropdown}
+            onSelect={onTrackDnaModelSelect}
             onSearchQueryChange={onSearchQueryChange}
             onReadMore={onReadMore}
           />

@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
 export type LLMProvider = "openrouter" | "openai";
-export type LLMPurpose = "prompt" | "lyrics" | "image" | "default";
+export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "default";
 
 interface CallLLMOptions {
   purpose?: LLMPurpose;
@@ -28,6 +28,9 @@ async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""
   if (purpose === "image") {
     return "openrouter";
   }
+  if (purpose === "trackdna") {
+    return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
+  }
   return normalizeProvider(await getSetting("LLM_PROVIDER"));
 }
 
@@ -51,6 +54,7 @@ export async function callLLM(
     normalizedOptions.openRouterModelOverride ||
     (purpose === "prompt" ? await getSetting("OPENROUTER_PROMPT_MODEL") : "") ||
     (purpose === "lyrics" ? await getSetting("OPENROUTER_LYRICS_MODEL") : "") ||
+    (purpose === "trackdna" ? await getSetting("OPENROUTER_TRACKDNA_MODEL") : "") ||
     (await getSetting("OPENROUTER_MODEL")) ||
     process.env.OPENROUTER_MODEL ||
     "openai/gpt-5";
@@ -59,6 +63,7 @@ export async function callLLM(
     normalizedOptions.openAiModelOverride ||
     (purpose === "prompt" ? await getSetting("OPENAI_PROMPT_MODEL") : "") ||
     (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
+    (purpose === "trackdna" ? await getSetting("OPENAI_TRACKDNA_MODEL") : "") ||
     (await getSetting("OPENAI_MODEL")) ||
     process.env.OPENAI_MODEL ||
     "gpt-4o";
@@ -292,7 +297,7 @@ Rules:
 - Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
 
   try {
-    const raw = await callLLM(lyrics.slice(0, 6000), systemPrompt, { purpose: "lyrics" });
+    const raw = await callLLM(lyrics.slice(0, 6000), systemPrompt, { purpose: "trackdna" });
     const parsed = parseJsonObject(raw);
     if (!parsed) return null;
 
@@ -323,7 +328,7 @@ Rules:
 - Minimum 1 tag, maximum 4 tags.`;
 
   try {
-    const raw = await callLLM(prompt.slice(0, 2000), systemPrompt, { purpose: "prompt" });
+    const raw = await callLLM(prompt.slice(0, 2000), systemPrompt, { purpose: "trackdna" });
     const parsed = parseJsonObject(raw);
     if (!parsed || !Array.isArray(parsed.tags)) return null;
 
