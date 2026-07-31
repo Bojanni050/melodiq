@@ -198,6 +198,39 @@ export async function createApimartWav(
   }
 }
 
+export async function createApimartStems(
+  taskId: string,
+  audioIndex: number,
+  stemType: string
+): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.post(
+      `${APIMART_BASE_URL}/generations/stems`,
+      { model: "suno", task_id: taskId, audio_index: audioIndex, stem_type: stemType },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const stemTaskId = response.data?.data?.[0]?.task_id;
+    if (!stemTaskId) {
+      throw new Error(`APIMart returned no task_id for stem extraction. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] stem extraction submitted — taskId=${stemTaskId}`);
+    return { taskId: stemTaskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
 export async function getApimartCredits(): Promise<number | null> {
   try {
     const apiKey = await getApimartApiKey();

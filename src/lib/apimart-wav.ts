@@ -12,7 +12,7 @@ import { uploadToS3 } from "@/lib/s3";
 export const APIMART_WAV_RETRY_COOLDOWN_MS = 10 * 60 * 1000;
 export const MAX_AUTO_APIMART_WAV_RETRIES = 8;
 
-function extractApimartAudioUrl(raw: any): string | null {
+export function extractApimartAudioUrl(raw: any): string | null {
   const data = raw?.data;
   const result = data?.result;
   const candidates = [

@@ -3,7 +3,16 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { STEM_TYPES } from "@/lib/stem-types";
 import { useSWRConfig } from "swr";
+
+type TrackStem = {
+  id: string;
+  stemType: string;
+  status: "pending" | "completed" | "failed";
+  audioUrl: string | null;
+  error: string | null;
+};
 
 const TRANSLATE_LANGUAGES = [
   "English",
@@ -31,6 +40,7 @@ export type TrackDetailTrack = {
   title: string | null;
   provider: string;
   providerModel: string;
+  jobId?: string | null;
   prompt: string;
   lyrics: string | null;
   lyricsTimestamps?: string | null;
@@ -82,6 +92,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
   const [showingTranslation, setShowingTranslation] = useState(false);
+  const [stemsExpanded, setStemsExpanded] = useState(false);
+  const [stems, setStems] = useState<TrackStem[]>([]);
+  const [extractingStemType, setExtractingStemType] = useState<string | null>(null);
+  const [stemsError, setStemsError] = useState<string | null>(null);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -423,6 +437,62 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       setTranslateError(message);
     } finally {
       setTranslating(false);
+    }
+  }
+
+  const canExtractStems = track.provider === "apimart" && !!track.jobId;
+
+  async function fetchStemsOnce() {
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/stems`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setStems(Array.isArray(data) ? data : []);
+    } catch {
+      // best-effort — the user can just re-expand the section to retry
+    }
+  }
+
+  // Initial load whenever the section is opened.
+  useEffect(() => {
+    if (!stemsExpanded || !canExtractStems) return;
+    void fetchStemsOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stemsExpanded, track.id]);
+
+  // Keep polling every 4s while any stem is still extracting; this effect
+  // re-runs each time `stems` updates, so it naturally chains itself until
+  // nothing is pending anymore.
+  useEffect(() => {
+    if (!stemsExpanded) return;
+    if (!stems.some((s) => s.status === "pending")) return;
+    const timerId = setTimeout(() => { void fetchStemsOnce(); }, 4000);
+    return () => clearTimeout(timerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stems, stemsExpanded]);
+
+  async function handleExtractStem(stemType: string) {
+    setExtractingStemType(stemType);
+    setStemsError(null);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/stems`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stemType }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = payload && typeof payload.error === "string" ? payload.error : `Stem extraction failed (${res.status})`;
+        throw new Error(message);
+      }
+      const stem = await res.json();
+      setStems((prev) => [...prev.filter((s) => s.stemType !== stemType), stem]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start stem extraction";
+      console.error("Failed to extract stem:", error);
+      setStemsError(message);
+    } finally {
+      setExtractingStemType(null);
     }
   }
 
@@ -864,6 +934,57 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </p>
           )}
         </div>
+
+        {/* Stems */}
+        {canExtractStems && (
+          <div className="shrink-0">
+            <button
+              type="button"
+              onClick={() => setStemsExpanded((value) => !value)}
+              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+              title={stemsExpanded ? "Collapse stems" : "Expand stems"}
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform ${stemsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Stems
+            </button>
+            {stemsExpanded && (
+              <div className="mt-2 space-y-1.5">
+                {stemsError && <p className="text-sm text-red-300/80">{stemsError}</p>}
+                {STEM_TYPES.map((stemDef) => {
+                  const stem = stems.find((s) => s.stemType === stemDef.value);
+                  const isExtracting = stem?.status === "pending" || extractingStemType === stemDef.value;
+                  return (
+                    <div key={stemDef.value} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <span className="text-sm text-white/70">{stemDef.label}</span>
+                      {stem?.status === "completed" && stem.audioUrl ? (
+                        <a
+                          href={stem.audioUrl}
+                          download
+                          className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 hover:text-primary-200 transition-colors"
+                        >
+                          Download
+                        </a>
+                      ) : isExtracting ? (
+                        <span className="text-[11px] text-white/40">Extracting…</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleExtractStem(stemDef.value)}
+                          disabled={extractingStemType !== null}
+                          className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
+                        >
+                          {stem?.status === "failed" ? "Retry" : "Extract"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Error */}
         {track.error && (
