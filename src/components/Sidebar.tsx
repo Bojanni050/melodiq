@@ -39,6 +39,7 @@ export default function Sidebar({ credits }: SidebarProps) {
     { href: "/studio", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
+    { href: "/archive", label: "Archive", icon: "archive" },
     { href: "/account", label: "Account", icon: "account" },
     { href: "/settings", label: "Settings", icon: "settings" },
     { href: "/logs", label: "Logs", icon: "logs" },
@@ -100,6 +101,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0zM3 13l6-1.5M3 13v-2l6-1.5" />
+          </svg>
+        );
+      case "archive":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M3 7v12a1 1 0 001 1h16a1 1 0 001-1V7M3 7l1.5-3h15L21 7M10 12h4" />
           </svg>
         );
       case "admin":

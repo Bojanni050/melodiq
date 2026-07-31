@@ -176,6 +176,24 @@ ALTER TABLE track_dna_votes ALTER COLUMN lyrics TYPE real;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "track_dna_votes_track_user_unique" ON "track_dna_votes"("track_id", "user_id");
 CREATE INDEX IF NOT EXISTS "track_dna_votes_track_id_idx" ON "track_dna_votes"("track_id");
+
+CREATE TABLE IF NOT EXISTS "song_archive" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "parent_id" uuid REFERENCES "song_archive"("id") ON DELETE CASCADE,
+  "language" varchar(50),
+  "title" varchar(255) NOT NULL,
+  "lyrics" text NOT NULL DEFAULT '',
+  "prompt" text NOT NULL DEFAULT '',
+  "notes" text NOT NULL DEFAULT '',
+  "track_id" uuid REFERENCES "tracks"("id") ON DELETE SET NULL,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "song_archive_user_id_idx" ON "song_archive"("user_id");
+CREATE INDEX IF NOT EXISTS "song_archive_track_id_idx" ON "song_archive"("track_id");
+CREATE INDEX IF NOT EXISTS "song_archive_parent_id_idx" ON "song_archive"("parent_id");
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,

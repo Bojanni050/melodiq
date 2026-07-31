@@ -284,6 +284,48 @@ export const stylePresetsRelations = relations(stylePresets, ({ one }) => ({
   }),
 }));
 
+// Single source of truth for a song's definitive lyrics + prompt, independent
+// of where it was actually generated (MelodIQ or directly in Suno). Optionally
+// links back to a MelodIQ track for reference.
+export const songArchive = pgTable("song_archive", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // Self-reference: a translation is just another entry pointing back at the
+  // original song, with its own lyrics/prompt/track and a language label.
+  parentId: uuid("parent_id").references((): any => songArchive.id, { onDelete: "cascade" }),
+  language: varchar("language", { length: 50 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  lyrics: text("lyrics").default("").notNull(),
+  prompt: text("prompt").default("").notNull(),
+  notes: text("notes").default("").notNull(),
+  trackId: uuid("track_id").references(() => tracks.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("song_archive_user_id_idx").on(table.userId),
+  index("song_archive_track_id_idx").on(table.trackId),
+  index("song_archive_parent_id_idx").on(table.parentId),
+]);
+
+export const songArchiveRelations = relations(songArchive, ({ one, many }) => ({
+  user: one(users, {
+    fields: [songArchive.userId],
+    references: [users.id],
+  }),
+  track: one(tracks, {
+    fields: [songArchive.trackId],
+    references: [tracks.id],
+  }),
+  parent: one(songArchive, {
+    fields: [songArchive.parentId],
+    references: [songArchive.id],
+    relationName: "songArchiveTranslations",
+  }),
+  translations: many(songArchive, {
+    relationName: "songArchiveTranslations",
+  }),
+}));
+
 export const trackDnaVotes = pgTable("track_dna_votes", {
   id: uuid("id").primaryKey().defaultRandom(),
   trackId: uuid("track_id").notNull(),
