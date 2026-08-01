@@ -1495,12 +1495,14 @@ interface ArchiveLinksState {
   loaded: boolean;
   loading: boolean;
   load: () => Promise<void>;
+  setLink: (trackId: string, kind: ArchiveLinkKind) => void;
 }
 
 export const useArchiveLinksStore = create<ArchiveLinksState>()((set, get) => ({
   links: {},
   loaded: false,
   loading: false,
+  setLink: (trackId, kind) => set((state) => ({ links: { ...state.links, [trackId]: kind } })),
   load: async () => {
     if (get().loaded || get().loading) return;
     set({ loading: true });

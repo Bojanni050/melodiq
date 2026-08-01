@@ -13,6 +13,7 @@ import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
 import CreatePlaylistDialog from "./CreatePlaylistDialog";
 import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
+import LinkToArchiveDialog from "./LinkToArchiveDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import TrackPlayButton from "./TrackPlayButton";
@@ -90,6 +91,7 @@ const TrackCard = memo(function TrackCard({
 
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const [dnaOpen, setDnaOpen] = useState(false);
+  const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
 
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
@@ -247,6 +249,12 @@ const TrackCard = memo(function TrackCard({
           actions.setShowCreatePlaylistDialog(true);
         }}
         tracksById={tracksById}
+      />
+
+      <LinkToArchiveDialog
+        isOpen={showLinkToArchiveDialog}
+        track={track}
+        onClose={() => setShowLinkToArchiveDialog(false)}
       />
 
       <MergeWorkspaceDialog
@@ -595,6 +603,7 @@ const TrackCard = memo(function TrackCard({
               onOpenPlaylistPicker={() => actions.setShowPlaylistPickerDialog(true)}
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
               onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
+              onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
             />
           )}
           <button

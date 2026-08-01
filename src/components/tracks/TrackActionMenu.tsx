@@ -17,6 +17,7 @@ interface TrackActionMenuProps {
   onRemoveFromPlaylistClick: (playlistId: string, playlistName: string) => void;
   onOpenPlaylistPicker: () => void;
   onEditDetails?: () => void;
+  onLinkToArchiveClick?: () => void;
 }
 
 export default function TrackActionMenu({
@@ -29,6 +30,7 @@ export default function TrackActionMenu({
   onRemoveFromPlaylistClick,
   onOpenPlaylistPicker,
   onEditDetails,
+  onLinkToArchiveClick,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -97,6 +99,18 @@ export default function TrackActionMenu({
           >
             {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
           </button>
+          {onLinkToArchiveClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onLinkToArchiveClick();
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            >
+              Link to Archive
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
