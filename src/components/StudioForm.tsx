@@ -574,7 +574,7 @@ Your lyrics here
 
 [Chorus]
 Your chorus here`}
-                className="input-field min-h-[220px] resize-y font-mono text-sm leading-relaxed"
+                className="input-field min-h-[220px] resize-y text-base leading-relaxed"
               />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
@@ -758,7 +758,7 @@ Your chorus here`}
             placeholder={isHeartMulaSelected
               ? `Write your lyrics here, including structure tags...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here\n\n[intro-short]\n[outro-short]`
               : `Write your lyrics here...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here`}
-            className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-sm leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
+            className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-base leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
             autoFocus
           />
         </div>
