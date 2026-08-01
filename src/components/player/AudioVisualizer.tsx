@@ -124,6 +124,12 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
           minFreq: 20,
           maxFreq: 20000,
           channelLayout: "single",
+          // Most music has very little energy above ~5-8kHz, so raw dB values
+          // leave the treble end of the spectrum looking empty even though the
+          // canvas genuinely spans the full width. A-weighting boosts
+          // mid/high frequencies (closer to human hearing sensitivity) so the
+          // bars fill out visually across the whole range.
+          weightingFilter: "A",
         });
 
         analyzerRef.current = analyzer;
