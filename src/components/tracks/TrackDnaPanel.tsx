@@ -39,7 +39,7 @@ function TrackDnaCard({
       onClick={onClick}
     >
       <div
-        className="pointer-events-none absolute inset-0 scale-125 bg-cover bg-center opacity-[0.08] blur-xl"
+        className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-[0.16] blur-md"
         style={{ backgroundImage: "url(/images/track-dna-bg.png)" }}
       />
       <div className="relative">{children}</div>
