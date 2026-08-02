@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackItem } from "./types";
+import { useUserStore } from "@/lib/store";
 
 const PROVIDERS = [
   { value: "upload", label: "Unknown / Other" },
@@ -158,10 +159,11 @@ interface TrackEditPanelProps {
 }
 
 export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [], knownWriterNames = [] }: TrackEditPanelProps) {
+  const user = useUserStore((state) => state.user);
   const [title, setTitle] = useState(track.title ?? "");
-  const [artistName, setArtistName] = useState(track.artistName ?? "");
-  const [composerName, setComposerName] = useState(track.composerName ?? "");
-  const [writerName, setWriterName] = useState(track.writerName ?? "");
+  const [artistName, setArtistName] = useState(track.artistName ?? user?.artistAlias ?? "");
+  const [composerName, setComposerName] = useState(track.composerName ?? user?.composerAlias ?? "");
+  const [writerName, setWriterName] = useState(track.writerName ?? user?.writerAlias ?? "");
   const [provider, setProvider] = useState(track.provider ?? "upload");
   const [language, setLanguage] = useState(track.language ?? "");
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
