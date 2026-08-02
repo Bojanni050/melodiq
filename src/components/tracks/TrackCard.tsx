@@ -399,6 +399,17 @@ const TrackCard = memo(function TrackCard({
                 {title}
               </h3>
             )}
+            {analyzingComposition && (
+              <span
+                className="flex shrink-0 items-end gap-0.5 h-3"
+                title="Analyzing composition…"
+                aria-label="Analyzing composition"
+              >
+                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar" />
+                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-150" />
+                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-300" />
+              </span>
+            )}
             {archiveLinkKind && (
               <span
                 className="shrink-0"
