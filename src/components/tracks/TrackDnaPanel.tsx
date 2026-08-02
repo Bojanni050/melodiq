@@ -24,6 +24,29 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Shared shell for every Track DNA panel state (loading/not-found/pending/
+// loaded) — gives them all the same blurred, zoomed-in DNA-helix watermark.
+function TrackDnaCard({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div
+      className="relative mx-3 mb-2 space-y-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4"
+      onClick={onClick}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 scale-125 bg-cover bg-center opacity-[0.08] blur-xl"
+        style={{ backgroundImage: "url(/images/track-dna-bg.png)" }}
+      />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
 // Track DNA — auto-computed facts embedded inline on a track row (Song/Library/
 // Workspaces pages). Always renders in an authenticated app context — the
 // owner can view their own track regardless of publish status, per
@@ -61,84 +84,82 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
 
   if (loading) {
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40">
-        Loading Track DNA…
-      </div>
+      <TrackDnaCard>
+        <p className="text-sm text-white/40">Loading Track DNA…</p>
+      </TrackDnaCard>
     );
   }
 
   if (notFound) {
     return (
-      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40">
-        Track DNA isn&apos;t available for this track.
-      </div>
+      <TrackDnaCard>
+        <p className="text-sm text-white/40">Track DNA isn&apos;t available for this track.</p>
+      </TrackDnaCard>
     );
   }
 
   if (!audioDna) {
     return (
-      <div
-        className="mx-3 mb-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/40"
-        onClick={(e) => e.stopPropagation()}
-      >
-        Analysis in progress — Track DNA will appear once the track finishes rendering.
-      </div>
+      <TrackDnaCard onClick={(e) => e.stopPropagation()}>
+        <p className="text-sm text-white/40">
+          Analysis in progress — Track DNA will appear once the track finishes rendering.
+        </p>
+      </TrackDnaCard>
     );
   }
 
   const hasAudioFacts = audioDna.tempo != null || audioDna.key != null || audioDna.energy != null || audioDna.loudness != null;
 
   return (
-    <div
-      className="mx-3 mb-2 space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+    <TrackDnaCard onClick={(e) => e.stopPropagation()}>
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold text-white">Track DNA</h4>
 
-      {hasAudioFacts && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
-          {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
-          {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}
-          {audioDna.loudness != null && <Fact label="Loudness" value={`${audioDna.loudness.toFixed(1)} LUFS`} />}
-        </div>
-      )}
-
-      {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Atmosphere</div>
-          <div className="flex flex-wrap gap-1.5">
-            {audioDna.atmosphereTags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs text-white/80"
-              >
-                {tag}
-              </span>
-            ))}
+        {hasAudioFacts && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
+            {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
+            {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}
+            {audioDna.loudness != null && <Fact label="Loudness" value={`${audioDna.loudness.toFixed(1)} LUFS`} />}
           </div>
-        </div>
-      )}
+        )}
 
-      {audioDna.lyricsScore != null && (
-        <div className="space-y-1 border-t border-white/10 pt-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-white">Lyrics</span>
-            <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+        {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Atmosphere</div>
+            <div className="flex flex-wrap gap-1.5">
+              {audioDna.atmosphereTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs text-white/80"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
-          {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
-        </div>
-      )}
+        )}
 
-      {audioDna.compositionScore != null && (
-        <div className="space-y-1 border-t border-white/10 pt-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-white">Composition</span>
-            <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
+        {audioDna.lyricsScore != null && (
+          <div className="space-y-1 border-t border-white/10 pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-white">Lyrics</span>
+              <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+            </div>
+            {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
           </div>
-          {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
-        </div>
-      )}
-    </div>
+        )}
+
+        {audioDna.compositionScore != null && (
+          <div className="space-y-1 border-t border-white/10 pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-white">Composition</span>
+              <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
+            </div>
+            {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
+          </div>
+        )}
+      </div>
+    </TrackDnaCard>
   );
 }

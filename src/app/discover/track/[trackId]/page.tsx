@@ -207,7 +207,11 @@ export default function TrackDnaPage() {
                 </div>
               </div>
 
-              <section className="space-y-5 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+              <section className="relative space-y-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                <div
+                  className="pointer-events-none absolute inset-0 -z-10 scale-125 bg-cover bg-center opacity-[0.08] blur-xl"
+                  style={{ backgroundImage: "url(/images/track-dna-bg.png)" }}
+                />
                 <h2 className="text-base font-semibold">Stats</h2>
 
                 {!audioDna ? (
