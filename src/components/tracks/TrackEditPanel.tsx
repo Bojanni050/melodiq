@@ -17,6 +17,27 @@ const PROVIDERS = [
   { value: "lyria", label: "Lyria 3" },
 ];
 
+function knownTrackDna(track: TrackItem): string {
+  if (track.trackDna?.trim()) return track.trackDna;
+  if (!track.audioDna) return "";
+  try {
+    const dna = JSON.parse(track.audioDna) as {
+      tempo?: number; key?: string; energy?: number; loudness?: number;
+      atmosphereTags?: string[]; lyricsScore?: number; lyricsNotes?: string;
+      compositionScore?: number; compositionNotes?: string;
+    };
+    return [
+      dna.tempo != null ? `${dna.tempo} BPM` : "",
+      dna.key ? `Key: ${dna.key}` : "",
+      dna.energy != null ? `Energy: ${dna.energy}%` : "",
+      dna.loudness != null ? `Loudness: ${dna.loudness.toFixed(1)} LUFS` : "",
+      dna.atmosphereTags?.length ? `Atmosphere: ${dna.atmosphereTags.join(", ")}` : "",
+      dna.lyricsScore != null ? `Lyrics: ${dna.lyricsScore.toFixed(1)}/10${dna.lyricsNotes ? ` — ${dna.lyricsNotes}` : ""}` : "",
+      dna.compositionScore != null ? `Composition: ${dna.compositionScore.toFixed(1)}/10${dna.compositionNotes ? ` — ${dna.compositionNotes}` : ""}` : "",
+    ].filter(Boolean).join("\n");
+  } catch { return ""; }
+}
+
 function AutocompleteInput({
   value,
   onChange,
@@ -144,7 +165,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
   const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
   const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
-  const [trackDna, setTrackDna] = useState(track.trackDna ?? "");
+  const [trackDna, setTrackDna] = useState(() => knownTrackDna(track));
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
@@ -459,7 +480,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               value={trackDna}
               onChange={(e) => setTrackDna(e.target.value)}
               rows={3}
-              placeholder="What makes this specific version distinct — arrangement, mix notes, take..."
+              placeholder="Track DNA is still being analysed…"
               className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
             />
           </div>

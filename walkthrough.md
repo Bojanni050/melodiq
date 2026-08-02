@@ -1073,3 +1073,9 @@
 - Findings: APIMart supports asynchronous Suno section replacement through `replaceMusic`, but MelodIQ had no way to select a musical range or submit the operation.
 - Conclusions: Build the section selector from lyric headers when available, retain a manual two-handle timeline for exact selection, and keep one-second snap-to-grid enabled by default.
 - Actions: Added `src/components/tracks/SectionReplaceEditor.tsx`, `src/app/api/tracks/[id]/replace-section/route.ts`, and the APIMart provider submission helper; added it to Track Details and documented the user-facing flow.
+
+## 2026-08-03 ma 00:20 (Known Track DNA in editor)
+
+- Findings: The Track DNA textarea in Edit Track Details showed only a generic placeholder even where `audioDna` analysis was already stored for the track.
+- Conclusions: Prefer manually authored Track DNA when present; otherwise transform the available structured audio analysis into a readable editor value.
+- Actions: Updated `src/components/tracks/TrackEditPanel.tsx` to populate Track DNA from the existing audio analysis, and updated user documentation and build stamp.

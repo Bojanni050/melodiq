@@ -227,6 +227,7 @@ Click a track to open a slide-out panel with:
 - Playback blijft actief bij navigatie naar andere pagina's zoals Lyric Studio
 - Onder de tracktitel staat nu de artiestnaam, gevolgd door de creditsregel `Lyrics: <writer> / Composed by <composer>` in kleiner formaat. Dit geldt ook voor de pop-outspeler.
 - APIMart-tracks hebben in Track Details een **Section editor**. Kies een songsectie of een nauwkeurig tijdsbereik, eventueel met snap-to-grid uitgeschakeld, voeg vervangende lyrics toe en start een nieuwe trackversie.
+- Het Track DNA-veld in **Edit Track Details** toont automatisch de reeds bekende audioanalyse, zoals tempo, toonsoort, energie, loudness, sfeer en kwaliteitsscores.
 
 ---
 
