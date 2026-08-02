@@ -23,6 +23,21 @@ export async function GET() {
       trackTitle: tracks.title,
       trackCoverUrl: tracks.coverUrl,
       trackS3KeyCoverThumb: tracks.s3KeyCoverThumb,
+      // Full track data for playback
+      trackAudioUrl: tracks.audioUrl,
+      trackAudioUrlHd: tracks.audioUrlHd,
+      trackFormat: tracks.format,
+      trackFormatHd: tracks.formatHd,
+      trackS3KeyHd: tracks.s3KeyHd,
+      trackDuration: tracks.duration,
+      trackLyrics: tracks.lyrics,
+      trackLyricsTimestamps: tracks.lyricsTimestamps,
+      trackProvider: tracks.provider,
+      trackProviderModel: tracks.providerModel,
+      trackStatus: tracks.status,
+      trackCreatedAt: tracks.createdAt,
+      trackInstrumental: tracks.instrumental,
+      trackArtistName: tracks.artistName,
       createdAt: songArchive.createdAt,
       updatedAt: songArchive.updatedAt,
     })
@@ -33,6 +48,7 @@ export async function GET() {
 
   const serialized = rows.map((r) => ({
     ...r,
+    trackCreatedAt: r.trackCreatedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));

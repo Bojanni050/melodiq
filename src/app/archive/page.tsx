@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import { usePlayerStore } from "@/lib/store";
+import type { Track } from "@/lib/store";
 
 interface ArchiveEntry {
   id: string;
@@ -15,6 +17,21 @@ interface ArchiveEntry {
   trackTitle: string | null;
   trackCoverUrl?: string | null;
   trackS3KeyCoverThumb?: string | null;
+  // Full track data from joined query
+  trackAudioUrl?: string | null;
+  trackAudioUrlHd?: string | null;
+  trackFormat?: string | null;
+  trackFormatHd?: string | null;
+  trackS3KeyHd?: string | null;
+  trackDuration?: number | null;
+  trackLyrics?: string | null;
+  trackLyricsTimestamps?: string | null;
+  trackProvider?: string | null;
+  trackProviderModel?: string | null;
+  trackStatus?: string | null;
+  trackCreatedAt?: string | null;
+  trackInstrumental?: boolean | null;
+  trackArtistName?: string | null;
   createdAt: string;
   updatedAt: string;
   translations?: ArchiveEntry[];
@@ -24,6 +41,48 @@ function entryCoverSrc(entry: Pick<ArchiveEntry, "trackId" | "trackCoverUrl" | "
   if (entry.trackCoverUrl) return entry.trackCoverUrl;
   if (entry.trackId && entry.trackS3KeyCoverThumb) return `/api/tracks/${entry.trackId}/cover?thumb=1`;
   return null;
+}
+
+function entryToTrack(entry: ArchiveEntry): Track | null {
+  if (!entry.trackId || entry.trackStatus !== "done") return null;
+  return {
+    id: entry.trackId,
+    title: entry.trackTitle ?? entry.title,
+    provider: entry.trackProvider ?? "upload",
+    providerModel: entry.trackProviderModel ?? "",
+    prompt: entry.prompt,
+    lyrics: entry.trackLyrics ?? entry.lyrics,
+    language: null,
+    translatedLyrics: null,
+    translatedLanguage: null,
+    status: "done",
+    audioUrl: entry.trackAudioUrl ?? null,
+    audioUrlHd: entry.trackAudioUrlHd ?? null,
+    format: entry.trackFormat ?? null,
+    formatHd: entry.trackFormatHd ?? null,
+    duration: entry.trackDuration ?? null,
+    createdAt: entry.trackCreatedAt ?? entry.createdAt,
+    error: null,
+    s3Key: null,
+    s3KeyHd: entry.trackS3KeyHd ?? null,
+    coverUrl: entry.trackCoverUrl ?? null,
+    s3KeyCover: null,
+    s3KeyCoverThumb: entry.trackS3KeyCoverThumb ?? null,
+    rating: null,
+    playCount: null,
+    othersPlayCount: null,
+    votedAt: null,
+    instrumental: entry.trackInstrumental ?? null,
+    artistName: entry.trackArtistName ?? null,
+    composerName: null,
+    writerName: null,
+    lyricsTimestamps: entry.trackLyricsTimestamps ?? null,
+    releaseStatus: null,
+    publishDate: null,
+    trackDna: null,
+    audioDna: null,
+    deletedAt: null,
+  };
 }
 
 interface TrackOption {
@@ -309,6 +368,24 @@ export default function ArchivePage() {
   const [search, setSearch] = useState("");
   const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArchiveEntry | null>(null);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+
+  const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
+  const enqueueTrack = usePlayerStore((state) => state.enqueueTrack);
+  const clearQueue = usePlayerStore((state) => state.clearQueue);
+
+  const playableTracks = useMemo<Track[]>(() => {
+    const result: Track[] = [];
+    for (const entry of entries) {
+      const track = entryToTrack(entry);
+      if (track) result.push(track);
+    }
+    return result;
+  }, [entries]);
 
   useEffect(() => {
     loadEntries();
@@ -370,6 +447,24 @@ export default function ArchivePage() {
     setDeleteTarget(null);
   }
 
+  function handlePlayTrack(track: Track) {
+    if (currentTrack?.id === track.id) {
+      setIsPlaying(!isPlaying);
+    } else {
+      playTrackFromGesture(track);
+    }
+  }
+
+  const handlePlayAll = useCallback(() => {
+    if (playableTracks.length === 0) return;
+    let ordered = shuffle
+      ? [...playableTracks].sort(() => Math.random() - 0.5)
+      : playableTracks;
+    clearQueue();
+    ordered.slice(1).forEach((t) => enqueueTrack(t));
+    playTrackFromGesture(ordered[0]);
+  }, [playableTracks, shuffle, clearQueue, enqueueTrack, playTrackFromGesture]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return entries;
@@ -386,6 +481,7 @@ export default function ArchivePage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+        {/* Header */}
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div>
@@ -394,13 +490,63 @@ export default function ArchivePage() {
                 Your definitive lyrics &amp; prompt per song — one source of truth, whether it was made in MelodIQ or Suno directly.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setEditingTarget({ mode: "new-original" })}
-              className="btn-primary text-sm px-3 py-1.5 shrink-0"
-            >
-              + New
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Play All */}
+              {playableTracks.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePlayAll}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
+                  title="Play all master tracks"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  </svg>
+                  Play All
+                </button>
+              )}
+
+              {/* Shuffle toggle */}
+              <button
+                type="button"
+                onClick={() => setShuffle((v) => !v)}
+                className={`p-2 rounded-lg border transition-colors ${
+                  shuffle
+                    ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                    : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                }`}
+                title="Shuffle"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </button>
+
+              {/* Repeat toggle */}
+              <button
+                type="button"
+                onClick={() => setRepeat((v) => !v)}
+                className={`p-2 rounded-lg border transition-colors ${
+                  repeat
+                    ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                    : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                }`}
+                title="Repeat"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+
+              {/* New entry */}
+              <button
+                type="button"
+                onClick={() => setEditingTarget({ mode: "new-original" })}
+                className="btn-primary text-sm px-3 py-1.5"
+              >
+                + New
+              </button>
+            </div>
           </div>
         </div>
 
@@ -421,72 +567,106 @@ export default function ArchivePage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {filtered.map((entry) => (
-                <div key={entry.id} className="section-card space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className="min-w-0 flex-1 flex items-start gap-3 cursor-pointer"
-                      onClick={() => setEditingTarget({ mode: "edit", entry })}
-                    >
-                      <div className="shrink-0 w-12 h-12 rounded-lg bg-white/[0.06] overflow-hidden flex items-center justify-center">
-                        {entryCoverSrc(entry) ? (
-                          <img src={entryCoverSrc(entry)!} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
-                          {entry.trackTitle && (
-                            <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60">
-                              Linked: {entry.trackTitle}
-                            </span>
+              {filtered.map((entry) => {
+                const playable = entryToTrack(entry);
+                const isCurrent = currentTrack?.id === entry.trackId;
+                return (
+                  <div key={entry.id} className="section-card space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      {/* Cover + play button */}
+                      <div className="flex items-start gap-3">
+                        <div className="relative shrink-0 group">
+                          <div className="w-12 h-12 rounded-lg bg-white/[0.06] overflow-hidden flex items-center justify-center">
+                            {entryCoverSrc(entry) ? (
+                              <img src={entryCoverSrc(entry)!} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                              </svg>
+                            )}
+                          </div>
+                          {playable && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handlePlayTrack(playable); }}
+                              className={`absolute inset-0 flex items-center justify-center rounded-lg transition-opacity ${
+                                isCurrent ? "opacity-100 bg-black/50" : "opacity-0 group-hover:opacity-100 bg-black/60"
+                              }`}
+                            >
+                              {isCurrent && isPlaying ? (
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                </svg>
+                              )}
+                            </button>
                           )}
                         </div>
-                        {entry.prompt && <p className="text-xs text-white/40 mt-1 line-clamp-1">{entry.prompt}</p>}
-                        {entry.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
+
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer"
+                          onClick={() => setEditingTarget({ mode: "edit", entry })}
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
+                            {entry.trackTitle && (
+                              <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60">
+                                Linked: {entry.trackTitle}
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="shrink-0 flex items-center gap-1 text-[10px] text-primary-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                                Now playing
+                              </span>
+                            )}
+                          </div>
+                          {entry.prompt && <p className="text-xs text-white/40 mt-1 line-clamp-1">{entry.prompt}</p>}
+                          {entry.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
+                        </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(entry)}
+                        className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        aria-label="Delete entry"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
+
+                    {(entry.translations || []).length > 0 && (
+                      <div className="space-y-1.5 pl-3 border-l-2 border-white/5">
+                        {entry.translations!.map((translation) => (
+                          <TranslationRow
+                            key={translation.id}
+                            translation={translation}
+                            onEdit={() => setEditingTarget({ mode: "edit", entry: translation })}
+                            onDelete={() => setDeleteTarget(translation)}
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => setDeleteTarget(entry)}
-                      className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      aria-label="Delete entry"
+                      onClick={() => setEditingTarget({ mode: "new-translation", parentId: entry.id, parentTitle: entry.title })}
+                      className="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
+                      Add translation
                     </button>
                   </div>
-
-                  {(entry.translations || []).length > 0 && (
-                    <div className="space-y-1.5 pl-3 border-l-2 border-white/5">
-                      {entry.translations!.map((translation) => (
-                        <TranslationRow
-                          key={translation.id}
-                          translation={translation}
-                          onEdit={() => setEditingTarget({ mode: "edit", entry: translation })}
-                          onDelete={() => setDeleteTarget(translation)}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setEditingTarget({ mode: "new-translation", parentId: entry.id, parentTitle: entry.title })}
-                    className="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add translation
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </main>
@@ -498,16 +678,16 @@ export default function ArchivePage() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setDeleteTarget(null)}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4"
+            className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#181822] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm text-white/80 leading-relaxed">
-              Delete &ldquo;{deleteTarget.title}&rdquo;
-              {deleteTarget.parentId ? "" : " and all its translations"} from Master Tracks? This can't be undone.
+            <p className="text-sm text-white/85">
+              Delete <span className="font-semibold">{deleteTarget.title}</span>?
             </p>
-            <div className="flex justify-end gap-2">
+            <p className="text-xs text-white/40 mt-1">This action cannot be undone.</p>
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
@@ -518,7 +698,7 @@ export default function ArchivePage() {
               <button
                 type="button"
                 onClick={() => handleDelete(deleteTarget)}
-                className="rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-1.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
+                className="rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
               >
                 Delete
               </button>

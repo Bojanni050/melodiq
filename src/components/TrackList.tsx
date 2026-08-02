@@ -242,6 +242,7 @@ export default memo(function TrackList({
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const [currentTrackVisible, setCurrentTrackVisible] = useState(true);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
@@ -328,6 +329,11 @@ export default memo(function TrackList({
   const scrollToTop = useCallback(() => {
     sentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+
+  const scrollToCurrentTrack = useCallback(() => {
+    if (!currentTrack) return;
+    window.dispatchEvent(new CustomEvent("melodiq:scroll-to-track", { detail: { trackId: currentTrack.id } }));
+  }, [currentTrack]);
 
   const sortedTracks = useMemo(() => {
     // In playlist mode the tracks prop arrives pre-ordered by server position — don't re-sort.
@@ -518,6 +524,19 @@ export default memo(function TrackList({
 
     return () => clearTimeout(timer);
   }, [currentTrack, tracks]);
+
+  // Track whether the current track DOM element is in the viewport
+  useEffect(() => {
+    if (!currentTrack) { setCurrentTrackVisible(true); return; }
+    const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
+    if (!el) { setCurrentTrackVisible(false); return; }
+    const observer = new IntersectionObserver(
+      ([entry]) => setCurrentTrackVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [currentTrack, paginatedTracks]);
 
   useEffect(() => {
     function handleScrollToTrack(event: Event) {
@@ -859,6 +878,23 @@ export default memo(function TrackList({
           enableDragReorder={enableDragReorder}
           hideSortOptions={!!dragOrderKey}
         />
+
+        {/* Jump to current track button — appears when now-playing track is scrolled out of view */}
+        {currentTrack && !currentTrackVisible && (
+          <div className="sticky top-[42px] z-20 flex justify-end w-full pointer-events-none animate-[slideDown_0.2s_ease-out]">
+            <button
+              type="button"
+              onClick={scrollToCurrentTrack}
+              className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/80 text-xs font-medium border border-white/12 shadow-lg backdrop-blur-md hover:bg-white hover:text-black hover:border-white transition-all hover:scale-105 active:scale-95"
+              title="Spring naar huidige track"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              <span>Huidige track</span>
+            </button>
+          </div>
+        )}
 
         <div ref={sentinelRef} className="h-0 w-full" />
 
