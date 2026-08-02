@@ -13,9 +13,17 @@ interface ArchiveEntry {
   notes: string;
   trackId: string | null;
   trackTitle: string | null;
+  trackCoverUrl?: string | null;
+  trackS3KeyCoverThumb?: string | null;
   createdAt: string;
   updatedAt: string;
   translations?: ArchiveEntry[];
+}
+
+function entryCoverSrc(entry: Pick<ArchiveEntry, "trackId" | "trackCoverUrl" | "trackS3KeyCoverThumb">): string | null {
+  if (entry.trackCoverUrl) return entry.trackCoverUrl;
+  if (entry.trackId && entry.trackS3KeyCoverThumb) return `/api/tracks/${entry.trackId}/cover?thumb=1`;
+  return null;
 }
 
 interface TrackOption {
@@ -113,7 +121,7 @@ function EntryEditor({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-white/90">
-          {existing ? (isTranslation ? "Edit translation" : "Edit archive entry") : isTranslation ? "New translation" : "New archive entry"}
+          {existing ? (isTranslation ? "Edit translation" : "Edit master track entry") : isTranslation ? "New translation" : "New master track entry"}
         </h2>
 
         <div className={isTranslation ? "grid grid-cols-3 gap-3" : ""}>
@@ -308,12 +316,16 @@ export default function ArchivePage() {
 
   async function loadEntries() {
     setLoading(true);
+    await refetchEntries();
+    setLoading(false);
+  }
+
+  async function refetchEntries() {
     const res = await fetch("/api/archive");
     if (res.ok) {
       const data = await res.json();
       setEntries(data.entries || []);
     }
-    setLoading(false);
   }
 
   function handleSaved(entry: ArchiveEntry, parentId: string | null) {
@@ -339,6 +351,7 @@ export default function ArchivePage() {
       });
     }
     setEditingTarget(null);
+    void refetchEntries();
   }
 
   async function handleDelete(entry: ArchiveEntry) {
@@ -376,7 +389,7 @@ export default function ArchivePage() {
         <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-lg font-bold">Archive</h1>
+              <h1 className="text-lg font-bold">Master Tracks</h1>
               <p className="text-sm text-white/40 mt-0.5">
                 Your definitive lyrics &amp; prompt per song — one source of truth, whether it was made in MelodIQ or Suno directly.
               </p>
@@ -396,7 +409,7 @@ export default function ArchivePage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search archive…"
+            placeholder="Search master tracks…"
             className="input-field text-sm mb-4"
           />
 
@@ -404,7 +417,7 @@ export default function ArchivePage() {
             <p className="text-sm text-white/40">Loading…</p>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-white/40 italic py-8 text-center">
-              {entries.length === 0 ? "No archive entries yet. Add your first definitive lyrics + prompt." : "No matches."}
+              {entries.length === 0 ? "No master track entries yet. Add your first definitive lyrics + prompt." : "No matches."}
             </p>
           ) : (
             <div className="space-y-3">
@@ -412,19 +425,30 @@ export default function ArchivePage() {
                 <div key={entry.id} className="section-card space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div
-                      className="min-w-0 flex-1 cursor-pointer"
+                      className="min-w-0 flex-1 flex items-start gap-3 cursor-pointer"
                       onClick={() => setEditingTarget({ mode: "edit", entry })}
                     >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
-                        {entry.trackTitle && (
-                          <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60">
-                            Linked: {entry.trackTitle}
-                          </span>
+                      <div className="shrink-0 w-12 h-12 rounded-lg bg-white/[0.06] overflow-hidden flex items-center justify-center">
+                        {entryCoverSrc(entry) ? (
+                          <img src={entryCoverSrc(entry)!} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
                         )}
                       </div>
-                      {entry.prompt && <p className="text-xs text-white/40 mt-1 line-clamp-1">{entry.prompt}</p>}
-                      {entry.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
+                          {entry.trackTitle && (
+                            <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60">
+                              Linked: {entry.trackTitle}
+                            </span>
+                          )}
+                        </div>
+                        {entry.prompt && <p className="text-xs text-white/40 mt-1 line-clamp-1">{entry.prompt}</p>}
+                        {entry.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -481,7 +505,7 @@ export default function ArchivePage() {
           >
             <p className="text-sm text-white/80 leading-relaxed">
               Delete &ldquo;{deleteTarget.title}&rdquo;
-              {deleteTarget.parentId ? "" : " and all its translations"} from the archive? This can&apos;t be undone.
+              {deleteTarget.parentId ? "" : " and all its translations"} from Master Tracks? This can't be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button

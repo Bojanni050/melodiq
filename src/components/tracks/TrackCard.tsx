@@ -386,7 +386,7 @@ const TrackCard = memo(function TrackCard({
             {archiveLinkKind && (
               <span
                 className="shrink-0"
-                title={archiveLinkKind === "original" ? "Archive: single source of truth" : "Archive: translation"}
+                title={archiveLinkKind === "original" ? "Master Tracks: single source of truth" : "Master Tracks: translation"}
               >
                 <svg
                   className={`w-3.5 h-3.5 ${archiveLinkKind === "original" ? "text-amber-400" : "text-sky-400"}`}

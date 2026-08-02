@@ -21,6 +21,8 @@ export async function GET() {
       notes: songArchive.notes,
       trackId: songArchive.trackId,
       trackTitle: tracks.title,
+      trackCoverUrl: tracks.coverUrl,
+      trackS3KeyCoverThumb: tracks.s3KeyCoverThumb,
       createdAt: songArchive.createdAt,
       updatedAt: songArchive.updatedAt,
     })

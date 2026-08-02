@@ -108,7 +108,7 @@ export default function TrackActionMenu({
               }}
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
             >
-              Link to Archive
+              Link to Master Tracks
             </button>
           )}
           <button

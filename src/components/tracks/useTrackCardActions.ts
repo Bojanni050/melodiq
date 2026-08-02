@@ -154,7 +154,12 @@ export function useTrackCardActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating }),
       });
-      if (res.ok) setCurrentRating(rating);
+      if (res.ok) {
+        setCurrentRating(rating);
+      } else {
+        const body = await res.json().catch(() => null);
+        console.error(`Failed to update rating: HTTP ${res.status}`, body);
+      }
     } catch (error) {
       console.error("Failed to update rating:", error);
     } finally {

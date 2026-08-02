@@ -39,7 +39,7 @@ export default function Sidebar({ credits }: SidebarProps) {
     { href: "/studio", label: "Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
-    { href: "/archive", label: "Archive", icon: "archive" },
+    { href: "/archive", label: "Master Tracks", icon: "archive" },
     { href: "/account", label: "Account", icon: "account" },
     { href: "/settings", label: "Settings", icon: "settings" },
     { href: "/logs", label: "Logs", icon: "logs" },

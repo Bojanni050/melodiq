@@ -328,6 +328,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
       if (res.ok) {
         setCurrentRating(rating);
+      } else {
+        const body = await res.json().catch(() => null);
+        console.error(`Failed to update rating: HTTP ${res.status}`, body);
       }
     } catch (error) {
       console.error("Failed to update rating:", error);

@@ -140,7 +140,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
         onClick={(e) => e.stopPropagation()}
       >
         <div>
-          <h3 className="text-lg font-semibold text-white/90">Link to Archive</h3>
+          <h3 className="text-lg font-semibold text-white/90">Link to Master Tracks</h3>
           <p className="text-xs text-white/40 mt-0.5 truncate">
             {track.title || track.prompt.substring(0, 60)}
           </p>
@@ -152,7 +152,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Archive entries…"
+              placeholder="Search Master Tracks entries…"
               className="input-field text-sm"
               autoFocus
             />
@@ -203,7 +203,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create new Archive entry from this track
+              Create new Master Tracks entry from this track
             </button>
           </>
         ) : (
@@ -219,7 +219,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
                 autoFocus
               />
               <p className="text-xs text-white/30 mt-1.5">
-                Lyrics and prompt will be pre-filled from this track — you can refine them afterwards in Archive.
+                Lyrics and prompt will be pre-filled from this track — you can refine them afterwards in Master Tracks.
               </p>
             </div>
             <div className="flex justify-between gap-2 pt-1">
