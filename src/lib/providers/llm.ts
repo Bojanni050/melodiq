@@ -319,6 +319,78 @@ Rules:
   }
 }
 
+export interface CompositionQualityScore {
+  score: number;
+  notes: string;
+}
+
+// Automated Track DNA "Composition" signal — judges arrangement/structure by
+// actually listening to the rendered audio, not just its metadata. Needs an
+// audio-input-capable model, so it bypasses callLLM (text-only) and talks to
+// OpenRouter directly. Model is intentionally fixed rather than following the
+// configurable "trackdna" purpose, since a text-only model there would just
+// fail on audio input.
+const COMPOSITION_AUDIO_MODEL = "google/gemini-2.5-flash";
+
+export async function scoreCompositionQuality(
+  audioBuffer: Buffer,
+  format: string = "mp3"
+): Promise<CompositionQualityScore | null> {
+  if (!audioBuffer?.length) return null;
+
+  const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
+  if (!apiKey) return null;
+
+  const systemPrompt = `You are a professional music producer and arranger critiquing a finished track.
+
+Listen to the audio and rate it 1-10 for composition and arrangement quality: structure (intro/verse/chorus/bridge flow), dynamic build across sections, instrumentation choices, and mix balance. Judge only what you actually hear — do not guess from genre conventions.
+
+Rules:
+- Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
+- Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
+
+  try {
+    const res = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model: COMPOSITION_AUDIO_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Rate this track's composition and arrangement." },
+              { type: "input_audio", input_audio: { data: audioBuffer.toString("base64"), format } },
+            ],
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 60_000,
+      }
+    );
+
+    const raw = res.data?.choices?.[0]?.message?.content;
+    if (typeof raw !== "string") return null;
+
+    const parsed = parseJsonObject(raw);
+    if (!parsed) return null;
+
+    const score = Number(parsed.score);
+    if (!Number.isFinite(score) || score < 1 || score > 10) return null;
+    const notes = typeof parsed.notes === "string" ? parsed.notes.slice(0, 300) : "";
+
+    return { score: Math.round(score * 10) / 10, notes };
+  } catch (error) {
+    console.warn("[llm] Failed to score composition quality:", error);
+    return null;
+  }
+}
+
 // Automated Track DNA "Atmosphere" signal — turns the generation prompt/style
 // text (already stored, no extra input needed) into a few clean mood/genre tags.
 export async function extractAtmosphereTags(prompt: string): Promise<string[] | null> {

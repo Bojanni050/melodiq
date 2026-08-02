@@ -176,6 +176,16 @@ export default function SettingsPage() {
     });
   }
 
+  async function toggleAutoAnalyzeComposition() {
+    const next = values.AUTO_ANALYZE_COMPOSITION === "true" ? "false" : "true";
+    setValues((prev) => ({ ...prev, AUTO_ANALYZE_COMPOSITION: next }));
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "AUTO_ANALYZE_COMPOSITION", value: next }),
+    });
+  }
+
   const dirtyKeys = TRACKED_SETTINGS_KEYS.filter((key) => (values[key] ?? "") !== (savedValues[key] ?? ""));
 
   async function saveAllChanges() {
@@ -390,6 +400,8 @@ export default function SettingsPage() {
                   onToggleImageDropdown={() => { setShowImageModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowTrackDnaModelDropdown(false); }}
                   onToggleTrackDnaDropdown={() => { setShowTrackDnaModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); }}
                   onReadMore={setModelDetail}
+                  autoAnalyzeComposition={values.AUTO_ANALYZE_COMPOSITION === "true"}
+                  onToggleAutoAnalyzeComposition={toggleAutoAnalyzeComposition}
                 />
               )}
 

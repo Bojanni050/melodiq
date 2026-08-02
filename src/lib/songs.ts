@@ -106,6 +106,8 @@ export type AudioDna = {
   atmosphereTags: string[] | null;
   lyricsScore: number | null;
   lyricsNotes: string | null;
+  compositionScore: number | null;
+  compositionNotes: string | null;
   computedAt: string;
 };
 

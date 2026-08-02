@@ -27,6 +27,8 @@ export default function AiRoutingSection({
   onToggleImageDropdown,
   onToggleTrackDnaDropdown,
   onReadMore,
+  autoAnalyzeComposition,
+  onToggleAutoAnalyzeComposition,
 }: {
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
@@ -51,6 +53,8 @@ export default function AiRoutingSection({
   onToggleImageDropdown: () => void;
   onToggleTrackDnaDropdown: () => void;
   onReadMore: (model: LLMModel) => void;
+  autoAnalyzeComposition: boolean;
+  onToggleAutoAnalyzeComposition: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -99,6 +103,31 @@ export default function AiRoutingSection({
               per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
               creative writing.
             </p>
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <label className="block text-sm font-medium text-white/50">Auto-analyze composition</label>
+              <p className="text-xs text-white/25 mt-1 max-w-md">
+                Automatically score composition/arrangement (by listening to the audio) on every newly finished
+                track. Off by default — existing tracks are never analyzed in bulk; use &ldquo;Analyze
+                Composition&rdquo; on a track&apos;s menu to run it on demand regardless of this setting.
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Toggle auto-analyze composition"
+              onClick={onToggleAutoAnalyzeComposition}
+              className={`relative w-12 h-6 rounded-full shrink-0 transition-colors ${
+                autoAnalyzeComposition ? "bg-emerald-500/20" : "bg-white/10"
+              }`}
+            >
+              <span className="sr-only">Toggle auto-analyze composition</span>
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  autoAnalyzeComposition ? "translate-x-6" : ""
+                }`}
+              />
+            </button>
           </div>
         </div>
       </section>

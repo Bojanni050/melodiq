@@ -18,6 +18,8 @@ interface TrackActionMenuProps {
   onOpenPlaylistPicker: () => void;
   onEditDetails?: () => void;
   onLinkToArchiveClick?: () => void;
+  onAnalyzeCompositionClick?: () => void;
+  analyzingComposition?: boolean;
 }
 
 export default function TrackActionMenu({
@@ -31,6 +33,8 @@ export default function TrackActionMenu({
   onOpenPlaylistPicker,
   onEditDetails,
   onLinkToArchiveClick,
+  onAnalyzeCompositionClick,
+  analyzingComposition,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +113,19 @@ export default function TrackActionMenu({
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
             >
               Link to Master Tracks
+            </button>
+          )}
+          {onAnalyzeCompositionClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAnalyzeCompositionClick();
+                setMenuOpen(false);
+              }}
+              disabled={analyzingComposition}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
             </button>
           )}
           <button

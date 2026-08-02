@@ -92,6 +92,22 @@ const TrackCard = memo(function TrackCard({
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const [dnaOpen, setDnaOpen] = useState(false);
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
+  const [analyzingComposition, setAnalyzingComposition] = useState(false);
+
+  async function handleAnalyzeComposition() {
+    setAnalyzingComposition(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/analyze-composition`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        console.error(`Failed to analyze composition: HTTP ${res.status}`, body);
+      }
+    } catch (error) {
+      console.error("Failed to analyze composition:", error);
+    } finally {
+      setAnalyzingComposition(false);
+    }
+  }
 
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
@@ -604,6 +620,8 @@ const TrackCard = memo(function TrackCard({
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
               onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
+              onAnalyzeCompositionClick={handleAnalyzeComposition}
+              analyzingComposition={analyzingComposition}
             />
           )}
           <button

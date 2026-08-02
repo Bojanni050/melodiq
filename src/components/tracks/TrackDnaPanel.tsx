@@ -10,6 +10,8 @@ interface AudioDna {
   atmosphereTags: string[] | null;
   lyricsScore: number | null;
   lyricsNotes: string | null;
+  compositionScore: number | null;
+  compositionNotes: string | null;
   computedAt: string;
 }
 
@@ -125,6 +127,16 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
             <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
           </div>
           {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
+        </div>
+      )}
+
+      {audioDna.compositionScore != null && (
+        <div className="space-y-1 border-t border-white/10 pt-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-white">Composition</span>
+            <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
+          </div>
+          {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
         </div>
       )}
     </div>
