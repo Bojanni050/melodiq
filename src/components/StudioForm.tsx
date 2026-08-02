@@ -1148,7 +1148,7 @@ Your chorus here`}
                   : "bg-white/5 text-white/40 hover:bg-white/10"
               }`}
             >
-              🎤 Female
+              👩‍🎤 Female
             </button>
             <button
               type="button"
@@ -1159,7 +1159,7 @@ Your chorus here`}
                   : "bg-white/5 text-white/40 hover:bg-white/10"
               }`}
             >
-              🎤 Male
+              👨‍🎤 Male
             </button>
           </div>
         </section>

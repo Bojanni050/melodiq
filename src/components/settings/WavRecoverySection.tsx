@@ -44,10 +44,11 @@ export default function WavRecoverySection() {
 
   return (
     <section className="section-card">
-      <h2 className="text-sm font-semibold mb-1">PoYo (Suno) — Herstel Ontbrekende WAV Bestanden</h2>
+      <h2 className="text-sm font-semibold mb-1">Herstel Ontbrekende WAV/FLAC Bestanden</h2>
       <p className="text-sm text-white/40 mb-3">
-        Vraag WAV-conversie opnieuw aan voor tracks die wel succesvol zijn gegenereerd (Ready/Done),
-        maar waarvan het WAV-bestand ontbreekt (bijvoorbeeld door eerdere S3 SSL-fouten). 
+        Vraag WAV/HD-conversie opnieuw aan voor PoYo- en APIMart-tracks die wel succesvol zijn
+        gegenereerd (Ready/Done), maar waarvan het HD-bestand ontbreekt. Reset ook de auto-retry
+        teller voor APIMart-tracks die hun automatische pogingen al hebben opgebruikt.
         Veilig om meerdere keren uit te voeren.
       </p>
       <div className="flex items-center gap-2">
