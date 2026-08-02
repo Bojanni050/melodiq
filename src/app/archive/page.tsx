@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 import { usePlayerStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 
@@ -370,6 +371,7 @@ export default function ArchivePage() {
   const [deleteTarget, setDeleteTarget] = useState<ArchiveEntry | null>(null);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
+  const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
 
   const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -655,6 +657,38 @@ export default function ArchivePage() {
                           />
                         ))}
                       </div>
+                    )}
+
+                    {/* Track DNA toggle + panel */}
+                    {entry.trackId && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDnaOpenIds((prev) => {
+                              const next = new Set(prev);
+                              next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
+                              return next;
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 transition-colors hover:bg-primary-500/20"
+                          title={dnaOpenIds.has(entry.id) ? "Hide Track DNA" : "Show Track DNA"}
+                        >
+                          Track DNA
+                          <svg
+                            className={`w-2.5 h-2.5 shrink-0 transition-transform ${dnaOpenIds.has(entry.id) ? "rotate-180" : ""}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {dnaOpenIds.has(entry.id) && (
+                          <TrackDnaPanel trackId={entry.trackId} />
+                        )}
+                      </>
                     )}
 
                     <button

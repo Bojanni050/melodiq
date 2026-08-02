@@ -528,15 +528,19 @@ export default memo(function TrackList({
   // Track whether the current track DOM element is in the viewport
   useEffect(() => {
     if (!currentTrack) { setCurrentTrackVisible(true); return; }
+    // Find the scrollable container (parent page's overflow-y-auto div)
+    const container = sentinelRef.current?.closest<HTMLElement>('[class*="overflow-y-auto"]') ?? null;
     const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
     if (!el) { setCurrentTrackVisible(false); return; }
     const observer = new IntersectionObserver(
       ([entry]) => setCurrentTrackVisible(entry.isIntersecting),
-      { threshold: 0 },
+      { root: container, rootMargin: "0px 0px -72px 0px", threshold: 0 },
     );
     observer.observe(el);
+    // Immediate check in case element is already out of view
+    setCurrentTrackVisible(el.getBoundingClientRect().top < (container?.getBoundingClientRect().bottom ?? window.innerHeight));
     return () => observer.disconnect();
-  }, [currentTrack, paginatedTracks]);
+  }, [currentTrack]);
 
   useEffect(() => {
     function handleScrollToTrack(event: Event) {
