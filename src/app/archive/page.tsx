@@ -204,7 +204,7 @@ function EntryEditor({
             onChange={(e) => setLyrics(e.target.value)}
             rows={8}
             placeholder={isTranslation ? "Lyrics in the translated language" : "Final lyrics for this song"}
-            className="input-field text-sm font-mono resize-y"
+            className="input-field text-sm resize-y"
           />
         </div>
 
@@ -217,7 +217,7 @@ function EntryEditor({
             onChange={(e) => setPrompt(e.target.value)}
             rows={4}
             placeholder={isTranslation ? "Only fill in if the style/prompt changed for this version" : "Final style/prompt used for this song"}
-            className="input-field text-sm font-mono resize-y"
+            className="input-field text-sm resize-y"
           />
         </div>
 

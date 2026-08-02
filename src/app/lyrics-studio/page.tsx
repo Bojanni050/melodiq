@@ -588,7 +588,7 @@ export default function LyricsStudioPage() {
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
-        <pre className="whitespace-pre-wrap text-white/90 text-base font-mono">{combinedLyrics || "(nog geen lyrics)"}</pre>
+        <pre className="whitespace-pre-wrap font-sans text-white/90 text-base">{combinedLyrics || "(nog geen lyrics)"}</pre>
       </CollapsibleSidebar>
 
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">

@@ -434,7 +434,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 onChange={(e) => setLyrics(e.target.value)}
                 rows={8}
                 placeholder="Paste lyrics here..."
-                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none font-mono"
+                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
               />
             </div>
           )}
