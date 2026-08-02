@@ -157,6 +157,7 @@ interface LibraryTrack {
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;
+  writerName?: string | null;
   deletedAt?: string | null;
   uploadIndex?: number;
 }
@@ -197,6 +198,7 @@ type QueuedUploadItem = {
   title: string;
   artistName: string;
   composerName: string;
+  writerName: string;
   coverFile: File | null;
   metadataFile: File | null;
   prompt: string;
@@ -306,6 +308,12 @@ export default function LibraryPage() {
   const knownComposerNames = useMemo(() => {
     const names = new Set<string>();
     tracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    return Array.from(names).sort();
+  }, [tracks]);
+
+  const knownWriterNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
     return Array.from(names).sort();
   }, [tracks]);
   const [view, setView] = useState<LibraryView>("songs");
@@ -720,6 +728,7 @@ export default function LibraryPage() {
         title: titleFromUploadFilename(file.name),
         artistName: "",
         composerName: "",
+        writerName: "",
         coverFile: null,
         metadataFile: null,
         prompt: uploadPromptDraft,
@@ -852,6 +861,7 @@ export default function LibraryPage() {
             title: item.title.trim() || null,
             artistName: item.artistName.trim() || null,
             composerName: item.composerName.trim() || null,
+            writerName: item.writerName.trim() || null,
             prompt: item.prompt.trim() || null,
             lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
             instrumental: item.instrumental,
@@ -1939,6 +1949,7 @@ export default function LibraryPage() {
           track={editingTrack}
           knownArtistNames={knownArtistNames}
           knownComposerNames={knownComposerNames}
+          knownWriterNames={knownWriterNames}
           onClose={() => setEditingTrack(null)}
           onSaved={(updated) => {
             const normalized: LibraryTrack = {
@@ -2151,7 +2162,7 @@ export default function LibraryPage() {
                             className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                           />
 
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-1">
                               <label htmlFor={`upload-item-artist-${item.id}`} className="text-sm text-white/60">Artist</label>
                               <AutocompleteInput
@@ -2177,6 +2188,20 @@ export default function LibraryPage() {
                                 disabled={uploading}
                                 placeholder="Composer name"
                                 suggestions={knownComposerNames}
+                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label htmlFor={`upload-item-writer-${item.id}`} className="text-sm text-white/60">Written By</label>
+                              <AutocompleteInput
+                                id={`upload-item-writer-${item.id}`}
+                                value={item.writerName}
+                                onChange={(v) => setQueuedUploads((current) =>
+                                  current.map((upload) => upload.id === item.id ? { ...upload, writerName: v } : upload)
+                                )}
+                                disabled={uploading}
+                                placeholder="Lyrics writer"
+                                suggestions={knownWriterNames}
                                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
                               />
                             </div>

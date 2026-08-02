@@ -10,6 +10,7 @@ interface User {
   name: string | null;
   artistAlias: string | null;
   composerAlias: string | null;
+  writerAlias: string | null;
   createdAt: string;
 }
 
@@ -20,6 +21,7 @@ export default function AccountPage() {
   const [name, setName] = useState("");
   const [artistAlias, setArtistAlias] = useState("");
   const [composerAlias, setComposerAlias] = useState("");
+  const [writerAlias, setWriterAlias] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -37,6 +39,7 @@ export default function AccountPage() {
         setName(data.user?.name || "");
         setArtistAlias(data.user?.artistAlias || "");
         setComposerAlias(data.user?.composerAlias || "");
+        setWriterAlias(data.user?.writerAlias || "");
       } else {
         router.push("/login");
       }
@@ -51,7 +54,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, artistAlias, composerAlias }),
+      body: JSON.stringify({ name, artistAlias, composerAlias, writerAlias }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -155,6 +158,18 @@ export default function AccountPage() {
                     maxLength={255}
                   />
                   <p className="text-xs text-white/25 mt-1">Used as the default composer on new tracks. Falls back to your name if empty.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/50 mb-1">Writer alias</label>
+                  <input
+                    type="text"
+                    value={writerAlias}
+                    onChange={(e) => setWriterAlias(e.target.value)}
+                    className="input-field font-mono text-sm"
+                    placeholder="e.g. Bojan van den Hoek"
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-white/25 mt-1">Used as the default lyrics writer on new tracks. Falls back to your artist alias if empty.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-white/50 mb-1">Email</label>

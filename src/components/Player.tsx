@@ -164,6 +164,7 @@ export default function Player() {
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
+  const writerLabel = (currentTrack?.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   const detectAudioSource = useCallback(async (streamUrl: string): Promise<{ source: AudioSource; state: AudioSourceState }> => {
@@ -1222,7 +1223,7 @@ export default function Player() {
                   )}
                 </div>
                 <p className="text-sm text-white/40 truncate">
-                  {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
+                  {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{writerLabel ? `writer: ${writerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
               </div>

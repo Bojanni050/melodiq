@@ -30,6 +30,7 @@ export interface Track {
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;
+  writerName?: string | null;
   instrumental?: boolean | null;
   language?: string | null;
   releaseStatus?: string | null;
@@ -101,6 +102,7 @@ export function useTrackManager() {
       title: t.title ? t.title.replace(/\s*\(2\)\s*$/, "") : t.title,
       artistName: t.artistName ?? null,
       composerName: t.composerName ?? null,
+      writerName: t.writerName ?? null,
       instrumental: t.instrumental ?? null,
       language: t.language ?? null,
     }));

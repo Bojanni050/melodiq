@@ -253,6 +253,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name VARCHAR(255);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS writer_name VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_lyrics TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_language VARCHAR(50);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_mp3 TEXT;
@@ -279,6 +280,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON 
 const alterUsersSql = `
 ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user';
 `;
 

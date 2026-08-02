@@ -154,6 +154,7 @@ export default function PlayerWindowPage() {
   const cleanTitle = track?.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "";
   const artistLabel = (track?.artistName || "").trim();
   const composerLabel = (track?.composerName || "").trim();
+  const writerLabel = (track?.writerName || "").trim();
   const coverUrl = track?.coverUrl || (track?.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
 
   const parsedLyrics = useMemo(() => parseLyrics(track?.lyrics ?? null, track?.lyricsTimestamps), [track]);
@@ -268,6 +269,7 @@ export default function PlayerWindowPage() {
               <p className="text-sm text-white/60">
                 {artistLabel ? `${artistLabel} — ` : ""}
                 {composerLabel ? `composer: ${composerLabel} — ` : ""}
+                {writerLabel ? `writer: ${writerLabel} — ` : ""}
                 {formatProviderLabel(track.provider)}
               </p>
               <div className="mt-2">

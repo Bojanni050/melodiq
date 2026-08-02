@@ -682,6 +682,7 @@ export async function PATCH(
     const workspaceId = body.workspaceId;
     const artistName = body.artistName;
     const composerName = body.composerName;
+    const writerName = body.writerName;
     const instrumental = body.instrumental;
     const language = body.language;
     const provider = body.provider;
@@ -699,7 +700,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -793,6 +794,20 @@ export async function PATCH(
         updates.composerName = trimmed || null;
       } else {
         return NextResponse.json({ error: "Invalid composerName" }, { status: 400 });
+      }
+    }
+
+    if (writerName !== undefined) {
+      if (writerName === null) {
+        updates.writerName = null;
+      } else if (typeof writerName === "string") {
+        const trimmed = writerName.trim();
+        if (trimmed.length > 255) {
+          return NextResponse.json({ error: "Writer name too long (max 255 characters)" }, { status: 400 });
+        }
+        updates.writerName = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid writerName" }, { status: 400 });
       }
     }
 

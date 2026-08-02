@@ -193,6 +193,7 @@ type UploadItemOverride = {
   title: string | null;
   artistName: string | null;
   composerName: string | null;
+  writerName: string | null;
   prompt: string | null;
   lyrics: string | null;
   instrumental: boolean | null;
@@ -267,17 +268,18 @@ function parseUploadItemOverrides(value: FormDataEntryValue | null): UploadItemO
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null, sunoStyleInfluence: null, sunoWeirdness: null };
+      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, writerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null, sunoStyleInfluence: null, sunoWeirdness: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
       const artistName = typeof item.artistName === "string" && item.artistName.trim() ? item.artistName.trim() : null;
       const composerName = typeof item.composerName === "string" && item.composerName.trim() ? item.composerName.trim() : null;
+      const writerName = typeof item.writerName === "string" && item.writerName.trim() ? item.writerName.trim() : null;
       const prompt = typeof item.prompt === "string" && item.prompt.trim() ? item.prompt.trim() : null;
       const lyrics = typeof item.lyrics === "string" && item.lyrics.trim() ? item.lyrics.trim() : null;
       const instrumental = typeof item.instrumental === "boolean" ? item.instrumental : null;
       const sourceProvider = typeof item.sourceProvider === "string" && item.sourceProvider.trim() ? item.sourceProvider.trim() : null;
       const sunoStyleInfluence = typeof item.sunoStyleInfluence === "number" ? Math.min(100, Math.max(1, Math.round(item.sunoStyleInfluence))) : null;
       const sunoWeirdness = typeof item.sunoWeirdness === "number" ? Math.min(100, Math.max(1, Math.round(item.sunoWeirdness))) : null;
-      return { title, artistName, composerName, prompt, lyrics, instrumental, sourceProvider, sunoStyleInfluence, sunoWeirdness };
+      return { title, artistName, composerName, writerName, prompt, lyrics, instrumental, sourceProvider, sunoStyleInfluence, sunoWeirdness };
     });
   } catch {
     return [];
@@ -378,6 +380,7 @@ export async function GET(request: NextRequest) {
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
     composerName: tracks.composerName,
+    writerName: tracks.writerName,
     deletedAt: tracks.deletedAt,
     completedAt: tracks.completedAt,
     createdAt: tracks.createdAt,
@@ -910,9 +913,10 @@ export async function POST(request: NextRequest) {
     const globalUploadInstrumental = formData.get("instrumental") === "true";
     const uploadItemOverrides = parseUploadItemOverrides(formData.get("uploadItems"));
 
-    const userRow = await db.select({ name: users.name, artistAlias: users.artistAlias, composerAlias: users.composerAlias }).from(users).where(eq(users.id, userId)).limit(1);
+    const userRow = await db.select({ name: users.name, artistAlias: users.artistAlias, composerAlias: users.composerAlias, writerAlias: users.writerAlias }).from(users).where(eq(users.id, userId)).limit(1);
     const defaultComposer = userRow[0]?.composerAlias?.trim() || userRow[0]?.name?.trim() || null;
     const defaultArtist = userRow[0]?.artistAlias?.trim() || userRow[0]?.name?.trim() || null;
+    const defaultWriter = userRow[0]?.writerAlias?.trim() || defaultArtist;
     const metadataEntries = formData.getAll("metadataFiles");
     const metadataFiles = metadataEntries.filter(
       (entry): entry is File => entry instanceof File && isSupportedMetadataFilename(entry.name)
@@ -1088,6 +1092,7 @@ export async function POST(request: NextRequest) {
             instrumental: isInstrumental,
             artistName: itemOverride?.artistName ?? defaultArtist,
             composerName: itemOverride?.composerName ?? defaultComposer,
+            writerName: itemOverride?.writerName ?? defaultWriter,
             sunoStyleInfluence: itemOverride?.sunoStyleInfluence ?? null,
             sunoWeirdness: itemOverride?.sunoWeirdness ?? null,
             s3KeyLicense,

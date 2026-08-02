@@ -76,6 +76,7 @@ export interface Track {
   instrumental?: boolean | null;
   artistName?: string | null;
   composerName?: string | null;
+  writerName?: string | null;
   deletedAt?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;
@@ -389,6 +390,7 @@ export interface UserProfile {
   name: string | null;
   artistAlias: string | null;
   composerAlias: string | null;
+  writerAlias: string | null;
   createdAt: string;
 }
 

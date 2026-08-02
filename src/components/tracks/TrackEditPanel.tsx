@@ -127,12 +127,14 @@ interface TrackEditPanelProps {
   onSaved: (updated: TrackItem) => void;
   knownArtistNames?: string[];
   knownComposerNames?: string[];
+  knownWriterNames?: string[];
 }
 
-export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [] }: TrackEditPanelProps) {
+export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [], knownWriterNames = [] }: TrackEditPanelProps) {
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? "");
   const [composerName, setComposerName] = useState(track.composerName ?? "");
+  const [writerName, setWriterName] = useState(track.writerName ?? "");
   const [provider, setProvider] = useState(track.provider ?? "upload");
   const [language, setLanguage] = useState(track.language ?? "");
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
@@ -173,6 +175,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         title: title.trim() || null,
         artistName: artistName.trim() || null,
         composerName: composerName.trim() || null,
+        writerName: writerName.trim() || null,
         provider: provider.trim() || "upload",
         language: language.trim() || null,
         instrumental,
@@ -324,8 +327,8 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             </div>
           </div>
 
-          {/* Artist + Composer side by side */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Artist + Composer + Written By side by side */}
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <label className="text-sm text-white/60">Artist</label>
               <AutocompleteInput
@@ -343,6 +346,16 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 onChange={setComposerName}
                 placeholder="Composer name"
                 suggestions={knownComposerNames}
+                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-white/60">Written By</label>
+              <AutocompleteInput
+                value={writerName}
+                onChange={setWriterName}
+                placeholder="Lyrics writer"
+                suggestions={knownWriterNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>

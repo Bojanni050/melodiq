@@ -30,6 +30,7 @@ export interface TrackItem {
   lyricsTimestamps?: string | null;
   artistName?: string | null;
   composerName?: string | null;
+  writerName?: string | null;
   instrumental?: boolean | null;
   language?: string | null;
   translatedLyrics?: string | null;
