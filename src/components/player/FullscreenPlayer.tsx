@@ -71,6 +71,10 @@ export default function FullscreenPlayer({
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (currentTrack?.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
+  const creditsLabel = [
+    writerLabel ? `Lyrics: ${writerLabel}` : "",
+    composerLabel ? `Composed by ${composerLabel}` : "",
+  ].filter(Boolean).join(" / ");
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   const { mutate } = useSWRConfig();
@@ -390,11 +394,9 @@ export default function FullscreenPlayer({
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
-              <p className="text-sm text-white/60 capitalize">
-                {currentTrack
-                  ? `${artistLabel ? `${artistLabel} — ` : ""}${composerLabel ? `composer: ${composerLabel} — ` : ""}${writerLabel ? `writer: ${writerLabel} — ` : ""}${formatProviderLabel(currentTrack.provider)} • ${currentTrack.providerModel}`
-                  : ""}
-              </p>
+              {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
+              {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
+              {currentTrack && <p className="text-xs text-white/40 capitalize">{formatProviderLabel(currentTrack.provider)} • {currentTrack.providerModel}</p>}
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
@@ -425,11 +427,8 @@ export default function FullscreenPlayer({
                 <h3 className={`font-semibold text-white/90 leading-snug transition-all duration-500 ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
                   {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                 </h3>
-                {(artistLabel || composerLabel) && (
-                  <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>
-                    {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
-                  </p>
-                )}
+                {artistLabel && <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>{artistLabel}</p>}
+                {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
               </div>
             </div>
           )}
@@ -456,11 +455,8 @@ export default function FullscreenPlayer({
                       <h3 className="text-base sm:text-lg font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {(artistLabel || composerLabel) && (
-                        <p className="mt-0.5 text-sm text-white/50">
-                          {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
-                        </p>
-                      )}
+                      {artistLabel && <p className="mt-0.5 text-sm text-white/50">{artistLabel}</p>}
+                      {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
                     </div>
                   </div>
                   <div
@@ -524,11 +520,8 @@ export default function FullscreenPlayer({
                       <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {(artistLabel || composerLabel) && (
-                        <p className="mt-1 text-sm text-white/50">
-                          {artistLabel}{artistLabel && composerLabel ? " — " : ""}{composerLabel}
-                        </p>
-                      )}
+                      {artistLabel && <p className="mt-1 text-sm text-white/50">{artistLabel}</p>}
+                      {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
                     </div>
                   </div>
                 </div>

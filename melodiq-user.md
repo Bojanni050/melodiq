@@ -225,6 +225,7 @@ Click a track to open a slide-out panel with:
 - Lyrics are rendered in a smaller font for better readability on dense/long songs
 - The player badge now shows whether audio came from a cache hit, cache warmup, or S3 fallback
 - Playback blijft actief bij navigatie naar andere pagina's zoals Lyric Studio
+- Onder de tracktitel staat nu de artiestnaam, gevolgd door de creditsregel `Lyrics: <writer> / Composed by <composer>` in kleiner formaat. Dit geldt ook voor de pop-outspeler.
 
 ---
 

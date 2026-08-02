@@ -155,6 +155,10 @@ export default function PlayerWindowPage() {
   const artistLabel = (track?.artistName || "").trim();
   const composerLabel = (track?.composerName || "").trim();
   const writerLabel = (track?.writerName || "").trim();
+  const creditsLabel = [
+    writerLabel ? `Lyrics: ${writerLabel}` : "",
+    composerLabel ? `Composed by ${composerLabel}` : "",
+  ].filter(Boolean).join(" / ");
   const coverUrl = track?.coverUrl || (track?.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
 
   const parsedLyrics = useMemo(() => parseLyrics(track?.lyrics ?? null, track?.lyricsTimestamps), [track]);
@@ -266,12 +270,9 @@ export default function PlayerWindowPage() {
                 </button>
               </div>
               <h2 className="text-lg font-semibold">{cleanTitle || track.prompt.substring(0, 50)}</h2>
-              <p className="text-sm text-white/60">
-                {artistLabel ? `${artistLabel} — ` : ""}
-                {composerLabel ? `composer: ${composerLabel} — ` : ""}
-                {writerLabel ? `writer: ${writerLabel} — ` : ""}
-                {formatProviderLabel(track.provider)}
-              </p>
+              {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
+              {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
+              <p className="text-xs text-white/40 capitalize">{formatProviderLabel(track.provider)}</p>
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>

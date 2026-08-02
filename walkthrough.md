@@ -1061,3 +1061,9 @@
   - Updated `src/components/Sidebar.tsx` — build version stamp updated to `di 11:15`.
   - Updated `melodiq-user.md` — user guide version updated to `di 11:15`.
   - Validated with `npm run build` which succeeded completely with **0 compilation or TypeScript errors**.
+
+## 2026-08-02 zo 23:58 (Fullscreen credits)
+
+- Findings: De fullscreenspelers vermengden artiest-, componist- en schrijvergegevens in één technische providerregel, waardoor de credits niet als duidelijke metadata onder de titel stonden.
+- Conclusions: Toon de artiest op een eigen regel onder de titel en groepeer schrijver en componist in een subtielere, consistente creditsregel; gebruik daarbij de op de track opgeslagen aliassen met de bestaande gebruikersalias-fallback in de hoofdspeler.
+- Actions: Updated `src/components/player/FullscreenPlayer.tsx` and `src/app/player-window/page.tsx` to display `Lyrics: <writer> / Composed by <composer>` under the artist; updated `src/components/Sidebar.tsx` build stamp and `melodiq-user.md`.
