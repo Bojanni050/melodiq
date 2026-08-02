@@ -7,6 +7,7 @@ import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { formatGenerationTime } from "@/lib/track-utils";
 import { useSWRConfig } from "swr";
+import SectionReplaceEditor from "@/components/tracks/SectionReplaceEditor";
 
 type TrackStem = {
   id: string;
@@ -1079,6 +1080,12 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         )}
 
         {/* Mastering */}
+        {canExtractStems && (
+          <div className="shrink-0">
+            <SectionReplaceEditor track={track} onSubmitted={() => { void mutate("/api/tracks"); }} />
+          </div>
+        )}
+
         {canExtractStems && (
           <div className="shrink-0">
             <button

@@ -271,6 +271,41 @@ export async function createApimartRemaster(
   }
 }
 
+export async function createApimartSectionReplacement(params: {
+  taskId: string;
+  audioIndex: number;
+  startSeconds: number;
+  endSeconds: number;
+  version: string;
+  infillLyrics?: string;
+  prompt?: string;
+  title?: string;
+  tags?: string;
+  negativeTags?: string;
+}): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+  const response = await axios.post(
+    `${APIMART_BASE_URL}/generations/replaceMusic`,
+    {
+      model: "suno",
+      task_id: params.taskId,
+      audio_index: params.audioIndex,
+      start_s: params.startSeconds,
+      end_s: params.endSeconds,
+      version: params.version,
+      infill_lyrics: params.infillLyrics || undefined,
+      prompt: params.prompt || undefined,
+      title: params.title || undefined,
+      tags: params.tags || undefined,
+      negative_tags: params.negativeTags || undefined,
+    },
+    { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, timeout: 30000 }
+  );
+  const taskId = response.data?.data?.[0]?.task_id;
+  if (!taskId) throw new Error(`APIMart returned no task_id for section replacement. Response: ${JSON.stringify(response.data)}`);
+  return { taskId };
+}
+
 export async function getApimartCredits(): Promise<number | null> {
   try {
     const apiKey = await getApimartApiKey();

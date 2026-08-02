@@ -1067,3 +1067,9 @@
 - Findings: De fullscreenspelers vermengden artiest-, componist- en schrijvergegevens in één technische providerregel, waardoor de credits niet als duidelijke metadata onder de titel stonden.
 - Conclusions: Toon de artiest op een eigen regel onder de titel en groepeer schrijver en componist in een subtielere, consistente creditsregel; gebruik daarbij de op de track opgeslagen aliassen met de bestaande gebruikersalias-fallback in de hoofdspeler.
 - Actions: Updated `src/components/player/FullscreenPlayer.tsx` and `src/app/player-window/page.tsx` to display `Lyrics: <writer> / Composed by <composer>` under the artist; updated `src/components/Sidebar.tsx` build stamp and `melodiq-user.md`.
+
+## 2026-08-03 ma 00:12 (APIMart section editor)
+
+- Findings: APIMart supports asynchronous Suno section replacement through `replaceMusic`, but MelodIQ had no way to select a musical range or submit the operation.
+- Conclusions: Build the section selector from lyric headers when available, retain a manual two-handle timeline for exact selection, and keep one-second snap-to-grid enabled by default.
+- Actions: Added `src/components/tracks/SectionReplaceEditor.tsx`, `src/app/api/tracks/[id]/replace-section/route.ts`, and the APIMart provider submission helper; added it to Track Details and documented the user-facing flow.
