@@ -254,14 +254,21 @@ export async function generateLyrics(idea: string, language: string, instrumenta
     return "";
   }
 
-  const systemPrompt = `You are a professional songwriter. Write original lyrics based on the user's idea. 
+  const systemPrompt = `You are a professional songwriter. Write original lyrics based on the user's idea.
 
 Rules:
 - Use section tags: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus], [Outro]
 - Write original content (no copying existing songs)
 - Language: ${language}
 - Make it emotionally resonant and musically structured
-- Keep it 2-4 minutes when sung`;
+- Keep it 2-4 minutes when sung
+
+Craft:
+- Write the chorus around one crucial, hook-worthy line — the phrase the whole song should be remembered for. Build the verses toward it rather than burying it.
+- Ground feelings in specific, concrete detail instead of naming the emotion outright. "My eyes are red and swollen from salty tears" lands harder than "I feel so sad." Favor vivid, specific verbs and adjectives over generic ones (wander/stroll/shuffle, not just "walk").
+- Balance external detail (what's seen, heard, touched — concrete and image-driven) with internal detail (thoughts and feelings) rather than leaning only on one.
+- Preserve the natural stress of everyday speech: let meaningful words (nouns, verbs, adjectives) fall on the strong, singable beats, and let small connector words (a, the, of, and, to) stay light. A line should scan the way it would if spoken naturally.
+- Favor one clear, simple central idea per section over cramming in too many images or ideas at once — simplicity carries more emotional weight than complexity.`;
 
   return callLLM(idea, systemPrompt, { purpose: "lyrics" });
 }

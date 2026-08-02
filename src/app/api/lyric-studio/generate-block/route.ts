@@ -200,8 +200,9 @@ Write ONLY the lyrics for the requested section — no section label, no explana
 The lyrics must be coherent with the other sections provided as context
 Write in the specified language
 Match the mood and topic provided
-Keep syllable flow natural and singable
-Chorus lines should be punchy and memorable
+Keep syllable flow natural and singable — let meaningful words (nouns, verbs, adjectives) fall on the strong beats, the way they would if spoken aloud, and keep small connector words (a, the, of, and, to) light
+Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled
+Chorus lines should be punchy and memorable — build around one crucial, hook-worthy line rather than several competing ideas
 Bridge should contrast emotionally with the verses
 ${performerTagInstruction ? `${performerTagInstruction}\n` : ""}Return only the raw lyric text, nothing else`;
   const userPrompt = `Write the ${blockLabel} (${blockType}) for a song.
