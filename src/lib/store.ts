@@ -71,6 +71,7 @@ export interface Track {
   s3KeyCover?: string | null;
   s3KeyCoverThumb?: string | null;
   playCount?: number | null;
+  othersPlayCount?: number | null;
   votedAt?: string | null;
   lyricsTimestamps?: string | null;
   instrumental?: boolean | null;
@@ -81,6 +82,7 @@ export interface Track {
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
+  audioDna?: string | null;
   // True for tracks loaded from the public Discover surface, which the
   // viewer may not own — media/side-effects route through the public
   // /api/discover/{id}/* endpoints instead of the private /api/tracks/{id}/*

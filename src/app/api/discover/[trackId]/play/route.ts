@@ -20,9 +20,9 @@ export async function POST(
 
   const updated = await db
     .update(tracks)
-    .set({ playCount: sql`${tracks.playCount} + 1`, updatedAt: new Date() })
+    .set({ othersPlayCount: sql`${tracks.othersPlayCount} + 1`, updatedAt: new Date() })
     .where(eq(tracks.id, track.id))
-    .returning({ playCount: tracks.playCount });
+    .returning({ othersPlayCount: tracks.othersPlayCount });
 
-  return NextResponse.json({ playCount: updated[0]?.playCount ?? track.playCount });
+  return NextResponse.json({ othersPlayCount: updated[0]?.othersPlayCount ?? track.othersPlayCount });
 }

@@ -20,11 +20,13 @@ export interface TrackItem {
   s3KeyCoverThumb?: string | null;
   rating?: string | null;
   playCount?: number | null;
+  othersPlayCount?: number | null;
   votedAt?: string | null;
   workspaceId?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
+  audioDna?: string | null;
   pollsOpenAt?: string | null;
   pollsCloseAt?: string | null;
   lyricsTimestamps?: string | null;

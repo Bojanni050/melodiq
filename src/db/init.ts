@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "wav_job_id" VARCHAR(255),
   "rating" VARCHAR(10),
   "play_count" integer NOT NULL DEFAULT 0,
+  "others_play_count" integer NOT NULL DEFAULT 0,
   "release_status" VARCHAR(20) NOT NULL DEFAULT 'concept',
   "publish_date" timestamp,
   "track_dna" text,
@@ -248,6 +249,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_url_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_hd TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS rating VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS play_count integer NOT NULL DEFAULT 0;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS others_play_count integer NOT NULL DEFAULT 0;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_job_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS conversion_id VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid;

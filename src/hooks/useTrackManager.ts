@@ -26,6 +26,7 @@ export interface Track {
   s3KeyCoverThumb?: string | null;
   rating?: string | null;
   playCount?: number | null;
+  othersPlayCount?: number | null;
   votedAt?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
@@ -36,6 +37,7 @@ export interface Track {
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
+  audioDna?: string | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
@@ -70,6 +72,7 @@ function tracksHaveSameRenderableState(a: Track[], b: Track[]) {
       a[i].s3KeyCoverThumb !== b[i].s3KeyCoverThumb ||
       (a[i].lyrics ?? null) !== (b[i].lyrics ?? null) ||
       (a[i].playCount ?? null) !== (b[i].playCount ?? null) ||
+      (a[i].othersPlayCount ?? null) !== (b[i].othersPlayCount ?? null) ||
       (a[i].rating ?? null) !== (b[i].rating ?? null) ||
       (a[i].lyricsTimestamps ?? null) !== (b[i].lyricsTimestamps ?? null)
     ) {
@@ -130,6 +133,7 @@ export function useTrackManager() {
       s3KeyCover: track.s3KeyCover ?? null,
       s3KeyCoverThumb: track.s3KeyCoverThumb ?? null,
       playCount: track.playCount ?? null,
+      othersPlayCount: track.othersPlayCount ?? null,
     }));
 
     usePlayerStore.getState().syncTrackSnapshots(playerSnapshots);

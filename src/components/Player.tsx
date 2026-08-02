@@ -409,10 +409,12 @@ export default function Player() {
             const res = await fetch(`${mediaBase(track)}/play`, { method: "POST" });
             if (!res.ok) return;
             const data: unknown = await res.json().catch(() => null);
-            const playCount =
-              data && typeof data === "object" && "playCount" in data && typeof (data as { playCount?: unknown }).playCount === "number"
-                ? (data as { playCount: number }).playCount
+            const readCount = (key: "playCount" | "othersPlayCount") =>
+              data && typeof data === "object" && key in data && typeof (data as Record<string, unknown>)[key] === "number"
+                ? (data as Record<string, number>)[key]
                 : null;
+            const playCount = readCount("playCount");
+            const othersPlayCount = readCount("othersPlayCount");
 
             if (typeof playCount === "number") {
               usePlayerStore.setState((state) =>
@@ -424,7 +426,11 @@ export default function Player() {
 
             window.dispatchEvent(
               new CustomEvent("melodiq:track-played", {
-                detail: { trackId, ...(typeof playCount === "number" ? { playCount } : {}) },
+                detail: {
+                  trackId,
+                  ...(typeof playCount === "number" ? { playCount } : {}),
+                  ...(typeof othersPlayCount === "number" ? { othersPlayCount } : {}),
+                },
               })
             );
           } catch (error) {

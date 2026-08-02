@@ -329,14 +329,9 @@ export default function SettingsPage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="px-4 py-3">
-            <h1 className="text-lg font-bold">Settings</h1>
-            <p className="text-sm text-white/40 mt-0.5">Configure your API providers</p>
-          </div>
-        </div>
-        <main className="p-4">
-          <div className="flex flex-col lg:flex-row gap-6 max-w-5xl">
+        <main className="px-6 py-10">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Settings</h1>
+          <div className="mt-8 flex flex-col lg:flex-row gap-6 max-w-5xl">
             <SettingsSidebar active={activeSection} onChange={setActiveSection} />
 
             <div className="flex-1 min-w-0 max-w-3xl">

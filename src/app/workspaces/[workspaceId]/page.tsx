@@ -263,6 +263,7 @@ export default function WorkspaceDetailPage() {
         s3KeyCover: track.s3KeyCover ?? null,
         rating: track.rating ?? null,
         playCount: track.playCount ?? null,
+        othersPlayCount: track.othersPlayCount ?? null,
       }));
 
     player.setPlayContext(playContext);
@@ -296,6 +297,7 @@ export default function WorkspaceDetailPage() {
       s3KeyCover: selectedTrack.s3KeyCover ?? null,
       rating: selectedTrack.rating ?? null,
       playCount: selectedTrack.playCount ?? null,
+      othersPlayCount: selectedTrack.othersPlayCount ?? null,
     });
   }
 

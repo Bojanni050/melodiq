@@ -14,8 +14,34 @@ interface User {
   createdAt: string;
 }
 
+type AccountTab = "profile" | "security";
+
+const TABS: { id: AccountTab; label: string }[] = [
+  { id: "profile", label: "Profile" },
+  { id: "security", label: "Security" },
+];
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium uppercase tracking-wider text-white/35 mb-1.5">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-white/25 mt-1.5">{hint}</p>}
+    </div>
+  );
+}
+
 export default function AccountPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -96,6 +122,10 @@ export default function AccountPage() {
     setSavingSecurity(false);
   }
 
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+    : "—";
+
   if (loading) {
     return (
       <div className="h-screen bg-[#0a0a0f] overflow-hidden">
@@ -113,138 +143,164 @@ export default function AccountPage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="px-4 py-3">
-            <h1 className="text-lg font-bold">Account</h1>
-            <p className="text-sm text-white/40 mt-0.5">Manage your profile and security settings</p>
-          </div>
-        </div>
-        <main className="p-4 max-w-2xl">
-          <div className="space-y-4">
-            {/* Profile Section */}
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-4">Profile</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="Your name"
-                  />
+        <main className="px-6 py-10 max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Account</h1>
+
+          {/* Tabs */}
+          <nav className="mt-8 flex items-center gap-8 border-b border-white/10">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative pb-3 text-base font-medium transition-colors ${
+                  activeTab === tab.id ? "text-white" : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full" />
+                )}
+              </button>
+            ))}
+          </nav>
+
+          {activeTab === "profile" && (
+            <div className="mt-8 space-y-6">
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4">Identity</h2>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <Field label="Name">
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="Your name"
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <input
+                        type="text"
+                        value={user?.email || ""}
+                        disabled
+                        className="input-field text-sm bg-white/5 text-white/30 cursor-not-allowed"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="h-px bg-white/8" />
+
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <Field label="Artist alias" hint="Your public artist name (optional).">
+                      <input
+                        type="text"
+                        value={artistAlias}
+                        onChange={(e) => setArtistAlias(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="e.g. DJ Bojan"
+                        maxLength={255}
+                      />
+                    </Field>
+                    <Field label="Composer alias" hint="Default composer on new tracks. Falls back to your name.">
+                      <input
+                        type="text"
+                        value={composerAlias}
+                        onChange={(e) => setComposerAlias(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="e.g. Bojan van den Hoek"
+                        maxLength={255}
+                      />
+                    </Field>
+                    <Field label="Writer alias" hint="Default lyrics writer on new tracks. Falls back to your artist alias.">
+                      <input
+                        type="text"
+                        value={writerAlias}
+                        onChange={(e) => setWriterAlias(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="e.g. Bojan van den Hoek"
+                        maxLength={255}
+                      />
+                    </Field>
+                    <Field label="Member since">
+                      <p className="text-sm text-white/70 py-2">{memberSince}</p>
+                    </Field>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Artist alias</label>
-                  <input
-                    type="text"
-                    value={artistAlias}
-                    onChange={(e) => setArtistAlias(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="e.g. DJ Bojan"
-                    maxLength={255}
-                  />
-                  <p className="text-xs text-white/25 mt-1">Your public artist name (optional).</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Composer alias</label>
-                  <input
-                    type="text"
-                    value={composerAlias}
-                    onChange={(e) => setComposerAlias(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="e.g. Bojan van den Hoek"
-                    maxLength={255}
-                  />
-                  <p className="text-xs text-white/25 mt-1">Used as the default composer on new tracks. Falls back to your name if empty.</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Writer alias</label>
-                  <input
-                    type="text"
-                    value={writerAlias}
-                    onChange={(e) => setWriterAlias(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="e.g. Bojan van den Hoek"
-                    maxLength={255}
-                  />
-                  <p className="text-xs text-white/25 mt-1">Used as the default lyrics writer on new tracks. Falls back to your artist alias if empty.</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Email</label>
-                  <input
-                    type="text"
-                    value={user?.email || ""}
-                    disabled
-                    className="input-field font-mono text-sm bg-white/5 text-white/30 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-white/25 mt-1">Email cannot be changed</p>
-                </div>
+              </section>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={saveProfile}
+                  disabled={savingProfile}
+                  className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {savingProfile ? "Saving..." : "Save profile"}
+                </button>
                 {profileMessage && (
                   <p className={`text-sm ${profileMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
                     {profileMessage}
                   </p>
                 )}
-                <button
-                  onClick={saveProfile}
-                  disabled={savingProfile}
-                  className="btn-primary text-sm px-3 py-1.5"
-                >
-                  {savingProfile ? "Saving..." : "Save Profile"}
-                </button>
               </div>
-            </section>
+            </div>
+          )}
 
-            {/* Security Section */}
-            <section className="section-card">
-              <h2 className="text-sm font-semibold mb-4">Security</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="Enter current password"
-                  />
+          {activeTab === "security" && (
+            <div className="mt-8 space-y-6">
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4">Change password</h2>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <Field label="Current password">
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="Enter current password"
+                      />
+                    </Field>
+                    <div />
+                    <Field label="New password">
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="At least 8 characters"
+                      />
+                    </Field>
+                    <Field label="Confirm new password">
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="input-field text-sm"
+                        placeholder="Re-enter new password"
+                      />
+                    </Field>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">New Password</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="At least 8 characters"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-white/50 mb-1">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="input-field font-mono text-sm"
-                    placeholder="Re-enter new password"
-                  />
-                </div>
+              </section>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={savePassword}
+                  disabled={savingSecurity || !currentPassword || !newPassword || !confirmPassword}
+                  className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingSecurity ? "Saving..." : "Change password"}
+                </button>
                 {securityMessage && (
                   <p className={`text-sm ${securityMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
                     {securityMessage}
                   </p>
                 )}
-                <button
-                  onClick={savePassword}
-                  disabled={savingSecurity || !currentPassword || !newPassword || !confirmPassword}
-                  className="btn-primary text-sm px-3 py-1.5"
-                >
-                  {savingSecurity ? "Saving..." : "Change Password"}
-                </button>
               </div>
-            </section>
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -28,6 +28,7 @@ type Track = {
   s3KeyCover: string | null;
   rating?: string | null;
   playCount?: number | null;
+  othersPlayCount?: number | null;
   lyricsTimestamps?: string | null;
 };
 

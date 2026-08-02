@@ -95,6 +95,10 @@ export const tracks = pgTable("tracks", {
   s3KeyLicense: text("s3_key_license"),
   rating: varchar("rating", { length: 10 }),
   playCount: integer("play_count").default(0).notNull(),
+  // Plays via the public Discover feed (anyone browsing /discover), tracked
+  // separately from playCount (plays via the owner's own Library/Studio/
+  // Workspaces views) — see mediaBase() in Player.tsx for the routing split.
+  othersPlayCount: integer("others_play_count").default(0).notNull(),
   votedAt: timestamp("voted_at"),
   releaseStatus: varchar("release_status", { length: 20 }).default("concept").notNull(),
   publishDate: timestamp("publish_date"),

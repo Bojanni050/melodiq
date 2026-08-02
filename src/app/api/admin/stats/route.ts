@@ -16,7 +16,7 @@ export async function GET() {
   ] = await Promise.all([
     db.select({ value: count() }).from(users),
     db.select({ value: count() }).from(tracks),
-    db.select({ value: sql<number>`coalesce(sum(${tracks.playCount}), 0)` }).from(tracks),
+    db.select({ value: sql<number>`coalesce(sum(${tracks.playCount} + ${tracks.othersPlayCount}), 0)` }).from(tracks),
   ]);
 
   return NextResponse.json({

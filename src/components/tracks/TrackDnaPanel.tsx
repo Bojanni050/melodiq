@@ -55,7 +55,7 @@ function TrackDnaCard({
 // Read-only: tempo/key/energy/loudness are computed once from the audio right
 // after generation, atmosphere tags and lyrics score come from an LLM — no
 // voting involved.
-export default function TrackDnaPanel({ trackId }: { trackId: string }) {
+export default function TrackDnaPanel({ trackId, refreshKey }: { trackId: string; refreshKey?: number }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [audioDna, setAudioDna] = useState<AudioDna | null>(null);
@@ -63,7 +63,10 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
   useEffect(() => {
     let active = true;
     async function fetchDna() {
-      const res = await fetch(`/api/discover/${trackId}`);
+      // Skip the loading flash on a refresh (refreshKey > 0) — only the
+      // initial fetch should show "Loading Track DNA…".
+      if (!refreshKey) setLoading(true);
+      const res = await fetch(`/api/discover/${trackId}`, { cache: "no-store" });
       if (!active) return;
       if (res.status === 404) {
         setNotFound(true);
@@ -80,7 +83,8 @@ export default function TrackDnaPanel({ trackId }: { trackId: string }) {
     return () => {
       active = false;
     };
-  }, [trackId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackId, refreshKey]);
 
   if (loading) {
     return (

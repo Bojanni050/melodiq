@@ -90,9 +90,11 @@ const TrackCard = memo(function TrackCard({
   const playClickCooldownRef = useRef(0);
 
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
+  const [optimisticOthersPlayCount, setOptimisticOthersPlayCount] = useState(track.othersPlayCount ?? 0);
   const [dnaOpen, setDnaOpen] = useState(false);
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
+  const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
 
   async function handleAnalyzeComposition() {
     setAnalyzingComposition(true);
@@ -101,7 +103,11 @@ const TrackCard = memo(function TrackCard({
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         console.error(`Failed to analyze composition: HTTP ${res.status}`, body);
+        return;
       }
+      // Picks up the freshly-written compositionScore/notes on the expanded
+      // Track DNA panel, if it's currently open, without a full page reload.
+      setDnaRefreshKey((key) => key + 1);
     } catch (error) {
       console.error("Failed to analyze composition:", error);
     } finally {
@@ -114,15 +120,23 @@ const TrackCard = memo(function TrackCard({
   }, [track.playCount]);
 
   useEffect(() => {
+    setOptimisticOthersPlayCount(track.othersPlayCount ?? 0);
+  }, [track.othersPlayCount]);
+
+  useEffect(() => {
     function handleTrackPlayed(event: Event) {
-      const e = event as CustomEvent<{ trackId?: string; playCount?: number }>;
+      const e = event as CustomEvent<{ trackId?: string; playCount?: number; othersPlayCount?: number }>;
       if (e.detail?.trackId !== track.id) return;
       const nextCount = e.detail?.playCount;
+      const nextOthersCount = e.detail?.othersPlayCount;
       if (typeof nextCount === "number" && Number.isFinite(nextCount)) {
         setOptimisticPlayCount(nextCount);
-        return;
+      } else if (typeof nextOthersCount !== "number") {
+        setOptimisticPlayCount((count) => Math.max(1, count + 1));
       }
-      setOptimisticPlayCount((count) => Math.max(1, count + 1));
+      if (typeof nextOthersCount === "number" && Number.isFinite(nextOthersCount)) {
+        setOptimisticOthersPlayCount(nextOthersCount);
+      }
     }
     window.addEventListener("melodiq:track-played", handleTrackPlayed);
     return () => window.removeEventListener("melodiq:track-played", handleTrackPlayed);
@@ -190,11 +204,22 @@ const TrackCard = memo(function TrackCard({
   const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
   const playCount = optimisticPlayCount;
+  const othersPlayCount = optimisticOthersPlayCount;
   const isNewUnplayed = track.status === "done" && playCount === 0;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const effectiveCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
+  const audioDna = useMemo<{ compositionScore?: number | null; lyricsScore?: number | null } | null>(() => {
+    if (!track.audioDna) return null;
+    try {
+      return JSON.parse(track.audioDna);
+    } catch {
+      return null;
+    }
+  }, [track.audioDna]);
+  const hasCompositionAnalysis = audioDna?.compositionScore != null;
+  const hasLyricsAnalysis = audioDna?.lyricsScore != null;
   const effectiveThumbUrl = actions.coverOverrideUrl
     ? `${actions.coverOverrideUrl}&thumb=1`
     : track.s3KeyCoverThumb
@@ -399,6 +424,16 @@ const TrackCard = memo(function TrackCard({
                 {title}
               </h3>
             )}
+            {hasCompositionAnalysis && !analyzingComposition && (
+              <span className="shrink-0 text-xs leading-none" title="Composition analysis available" aria-label="Composition analysis available">
+                🎼
+              </span>
+            )}
+            {hasLyricsAnalysis && (
+              <span className="shrink-0 text-xs leading-none" title="Lyrics analysis available" aria-label="Lyrics analysis available">
+                📝
+              </span>
+            )}
             {analyzingComposition && (
               <span
                 className="flex shrink-0 items-end gap-0.5 h-3"
@@ -557,7 +592,10 @@ const TrackCard = memo(function TrackCard({
             <>
               <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
               <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
-                {playCount} {playCount === 1 ? "play" : "plays"}
+                {playCount} {playCount === 1 ? "play" : "plays"} by you
+                {othersPlayCount > 0 && (
+                  <> · {othersPlayCount} {othersPlayCount === 1 ? "play" : "plays"} by others</>
+                )}
               </p>
             </>
           )}
@@ -652,7 +690,7 @@ const TrackCard = memo(function TrackCard({
         </div>
       </div>
 
-      {dnaOpen && <TrackDnaPanel trackId={track.id} />}
+      {dnaOpen && <TrackDnaPanel trackId={track.id} refreshKey={dnaRefreshKey} />}
     </>
   );
 }, (prevProps, nextProps) => {
@@ -663,6 +701,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.lyrics === nextProps.track.lyrics &&
     prevProps.track.status === nextProps.track.status &&
     prevProps.track.playCount === nextProps.track.playCount &&
+    prevProps.track.othersPlayCount === nextProps.track.othersPlayCount &&
     prevProps.track.coverUrl === nextProps.track.coverUrl &&
     prevProps.track.rating === nextProps.track.rating &&
     prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&

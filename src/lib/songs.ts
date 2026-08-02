@@ -27,7 +27,7 @@ function toPublicTrackSummary(
     coverUrl: track.coverUrl || null,
     hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
     duration: track.duration,
-    totalPlays: track.playCount,
+    totalPlays: track.playCount + track.othersPlayCount,
     instrumental: track.instrumental,
     publishDate: track.publishDate ? track.publishDate.toISOString() : null,
   };

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       duration: tracks.duration,
       rating: tracks.rating,
       playCount: tracks.playCount,
+      othersPlayCount: tracks.othersPlayCount,
       audioUrl: tracks.audioUrl,
       audioUrlHd: tracks.audioUrlHd,
       s3Key: tracks.s3Key,
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
   // CSV
   const headers = [
     "id", "title", "provider", "model", "language", "instrumental",
-    "duration", "format", "format_hd", "status", "rating", "play_count",
+    "duration", "format", "format_hd", "status", "rating", "play_count", "others_play_count",
     "workspace", "prompt", "lyrics", "audio_url", "audio_url_hd",
     "s3_key", "s3_key_hd", "cover_url", "created_at",
   ];
@@ -104,6 +105,7 @@ export async function GET(req: NextRequest) {
     t.status,
     t.rating,
     t.playCount,
+    t.othersPlayCount,
     t.workspaceId ? (wsMap.get(t.workspaceId) ?? "") : "",
     t.prompt,
     t.lyrics,
