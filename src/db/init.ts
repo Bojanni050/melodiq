@@ -84,6 +84,25 @@ CREATE TABLE IF NOT EXISTS "track_stems" (
 CREATE INDEX IF NOT EXISTS "track_stems_track_id_idx" ON "track_stems"("track_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "track_stems_track_id_stem_type_unique" ON "track_stems"("track_id", "stem_type");
 
+CREATE TABLE IF NOT EXISTS "track_masters" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "variation_category" varchar(20) NOT NULL,
+  "status" varchar(20) NOT NULL DEFAULT 'pending',
+  "job_id" varchar(255),
+  "audio_url" text,
+  "s3_key" text,
+  "format" varchar(10) DEFAULT 'mp3',
+  "error" text,
+  "completed_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "track_masters_track_id_idx" ON "track_masters"("track_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "track_masters_track_id_variation_unique" ON "track_masters"("track_id", "variation_category");
+
 CREATE TABLE IF NOT EXISTS "workspaces" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
@@ -323,6 +342,12 @@ CREATE TRIGGER tracks_set_completed_at
 DROP TRIGGER IF EXISTS track_stems_set_completed_at ON track_stems;
 CREATE TRIGGER track_stems_set_completed_at
   BEFORE UPDATE ON track_stems
+  FOR EACH ROW
+  EXECUTE FUNCTION set_completed_at();
+
+DROP TRIGGER IF EXISTS track_masters_set_completed_at ON track_masters;
+CREATE TRIGGER track_masters_set_completed_at
+  BEFORE UPDATE ON track_masters
   FOR EACH ROW
   EXECUTE FUNCTION set_completed_at();
 `;

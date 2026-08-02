@@ -231,6 +231,46 @@ export async function createApimartStems(
   }
 }
 
+export async function createApimartRemaster(
+  taskId: string,
+  audioIndex: number,
+  version: string,
+  variationCategory: "subtle" | "normal" | "high"
+): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.post(
+      `${APIMART_BASE_URL}/generations/remaster`,
+      {
+        model: "suno",
+        task_id: taskId,
+        audio_index: audioIndex,
+        version,
+        variation_category: variationCategory,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const masterTaskId = response.data?.data?.[0]?.task_id;
+    if (!masterTaskId) {
+      throw new Error(`APIMart returned no task_id for remaster. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] remaster submitted — taskId=${masterTaskId}`);
+    return { taskId: masterTaskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
 export async function getApimartCredits(): Promise<number | null> {
   try {
     const apiKey = await getApimartApiKey();

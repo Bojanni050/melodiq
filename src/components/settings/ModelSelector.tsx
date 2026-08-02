@@ -1,6 +1,6 @@
 "use client";
 
-import { LLMModel } from "@/lib/settings-utils";
+import { formatPrice, truncateDescription, LLMModel } from "@/lib/settings-utils";
 
 export default function ModelSelector({
   label,
@@ -35,6 +35,7 @@ export default function ModelSelector({
         ) : (
           options.map((model) => {
             const isSelected = selected?.id === model.id;
+            const description = truncateDescription(model.description, 2);
             return (
               <div
                 key={model.id}
@@ -44,6 +45,12 @@ export default function ModelSelector({
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{model.name}</p>
                     <p className="text-[11px] text-white/40 font-mono truncate">{model.id}</p>
+                    <p className="text-[11px] text-white/50 mt-0.5">
+                      In: {formatPrice(model.pricing.prompt)} · Out: {formatPrice(model.pricing.completion)}
+                    </p>
+                    {description.text && (
+                      <p className="text-[11px] text-white/35 mt-0.5 leading-snug">{description.text}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {onReadMore && (

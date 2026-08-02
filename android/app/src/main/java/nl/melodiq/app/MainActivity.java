@@ -10,7 +10,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
-            WebSettings settings = getBridge().getWebView().getSettings();
+            WebS settings settings = getBridge().getWebView().getSettings();
             Method m = settings.getClass().getMethod("setSpatialNavigationEnabled", boolean.class);
             m.invoke(settings, true);
         } catch (Exception ignored) {}

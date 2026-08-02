@@ -4,12 +4,23 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { STEM_TYPES } from "@/lib/stem-types";
+import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { formatGenerationTime } from "@/lib/track-utils";
 import { useSWRConfig } from "swr";
 
 type TrackStem = {
   id: string;
   stemType: string;
+  status: "pending" | "completed" | "failed";
+  audioUrl: string | null;
+  error: string | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+type TrackMaster = {
+  id: string;
+  variationCategory: string;
   status: "pending" | "completed" | "failed";
   audioUrl: string | null;
   error: string | null;
@@ -100,6 +111,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [stems, setStems] = useState<TrackStem[]>([]);
   const [extractingStemType, setExtractingStemType] = useState<string | null>(null);
   const [stemsError, setStemsError] = useState<string | null>(null);
+  const [masteringExpanded, setMasteringExpanded] = useState(false);
+  const [masters, setMasters] = useState<TrackMaster[]>([]);
+  const [masteringVariation, setMasteringVariation] = useState<string | null>(null);
+  const [masteringError, setMasteringError] = useState<string | null>(null);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -500,6 +515,60 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       setStemsError(message);
     } finally {
       setExtractingStemType(null);
+    }
+  }
+
+  async function fetchMastersOnce() {
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/master`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setMasters(Array.isArray(data) ? data : []);
+    } catch {
+      // best-effort — the user can just re-expand the section to retry
+    }
+  }
+
+  // Initial load whenever the section is opened.
+  useEffect(() => {
+    if (!masteringExpanded || !canExtractStems) return;
+    void fetchMastersOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [masteringExpanded, track.id]);
+
+  // Keep polling every 4s while any master is still processing; this effect
+  // re-runs each time `masters` updates, so it naturally chains itself until
+  // nothing is pending anymore.
+  useEffect(() => {
+    if (!masteringExpanded) return;
+    if (!masters.some((m) => m.status === "pending")) return;
+    const timerId = setTimeout(() => { void fetchMastersOnce(); }, 4000);
+    return () => clearTimeout(timerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [masters, masteringExpanded]);
+
+  async function handleMaster(variationCategory: string) {
+    setMasteringVariation(variationCategory);
+    setMasteringError(null);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/master`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variationCategory }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const message = payload && typeof payload.error === "string" ? payload.error : `Mastering failed (${res.status})`;
+        throw new Error(message);
+      }
+      const master = await res.json();
+      setMasters((prev) => [...prev.filter((m) => m.variationCategory !== variationCategory), master]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start mastering";
+      console.error("Failed to master track:", error);
+      setMasteringError(message);
+    } finally {
+      setMasteringVariation(null);
     }
   }
 
@@ -997,6 +1066,64 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                           className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
                         >
                           {stem?.status === "failed" ? "Retry" : "Extract"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mastering */}
+        {canExtractStems && (
+          <div className="shrink-0">
+            <button
+              type="button"
+              onClick={() => setMasteringExpanded((value) => !value)}
+              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+              title={masteringExpanded ? "Collapse mastering" : "Expand mastering"}
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform ${masteringExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Mastering
+            </button>
+            {masteringExpanded && (
+              <div className="mt-2 space-y-1.5">
+                {masteringError && <p className="text-sm text-red-300/80">{masteringError}</p>}
+                {MASTER_VARIATIONS.map((variationDef) => {
+                  const master = masters.find((m) => m.variationCategory === variationDef.value);
+                  const isMastering = master?.status === "pending" || masteringVariation === variationDef.value;
+                  return (
+                    <div key={variationDef.value} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                      <span className="text-sm text-white/70">
+                        {variationDef.label}
+                        {master?.status === "completed" && master.completedAt && (
+                          <span className="ml-1.5 text-[11px] text-white/30" title="Time from mastering start to completion">
+                            ({formatGenerationTime(master.createdAt, master.completedAt)})
+                          </span>
+                        )}
+                      </span>
+                      {master?.status === "completed" && master.audioUrl ? (
+                        <a
+                          href={master.audioUrl}
+                          download
+                          className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 hover:text-primary-200 transition-colors"
+                        >
+                          Download
+                        </a>
+                      ) : isMastering ? (
+                        <span className="text-[11px] text-white/40">Mastering…</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleMaster(variationDef.value)}
+                          disabled={masteringVariation !== null}
+                          className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
+                        >
+                          {master?.status === "failed" ? "Retry" : "Master"}
                         </button>
                       )}
                     </div>

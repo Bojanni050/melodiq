@@ -146,6 +146,36 @@ export const trackStemsRelations = relations(trackStems, ({ one }) => ({
   }),
 }));
 
+export const trackMasters = pgTable("track_masters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  trackId: uuid("track_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  variationCategory: varchar("variation_category", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  jobId: varchar("job_id", { length: 255 }),
+  audioUrl: text("audio_url"),
+  s3Key: text("s3_key"),
+  format: varchar("format", { length: 10 }).default("mp3"),
+  error: text("error"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("track_masters_track_id_idx").on(table.trackId),
+  uniqueIndex("track_masters_track_id_variation_unique").on(table.trackId, table.variationCategory),
+]);
+
+export const trackMastersRelations = relations(trackMasters, ({ one }) => ({
+  track: one(tracks, {
+    fields: [trackMasters.trackId],
+    references: [tracks.id],
+  }),
+  user: one(users, {
+    fields: [trackMasters.userId],
+    references: [users.id],
+  }),
+}));
+
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
