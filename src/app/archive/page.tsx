@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { usePlayerStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
@@ -481,83 +481,86 @@ export default function ArchivePage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
-          <div className="px-4 py-3 flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-lg font-bold">Master Tracks</h1>
-              <p className="text-sm text-white/40 mt-0.5">
-                Your definitive lyrics &amp; prompt per song — one source of truth, whether it was made in MelodIQ or Suno directly.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Play All */}
-              {playableTracks.length > 0 && (
+        <div className="max-w-3xl mx-auto px-4">
+          {/* Header */}
+          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5 -mx-4 px-4 py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-bold">Master Tracks</h1>
+                <p className="text-sm text-white/40 mt-0.5">
+                  Your definitive lyrics &amp; prompt per song — one source of truth.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Play All */}
+                {playableTracks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handlePlayAll}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
+                    title="Play all master tracks"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                    </svg>
+                    Play All
+                  </button>
+                )}
+
+                {/* Shuffle toggle */}
                 <button
                   type="button"
-                  onClick={handlePlayAll}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
-                  title="Play all master tracks"
+                  onClick={() => setShuffle((v) => !v)}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    shuffle
+                      ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                      : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                  }`}
+                  title="Shuffle"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                   </svg>
-                  Play All
                 </button>
-              )}
 
-              {/* Shuffle toggle */}
-              <button
-                type="button"
-                onClick={() => setShuffle((v) => !v)}
-                className={`p-2 rounded-lg border transition-colors ${
-                  shuffle
-                    ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                    : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
-                }`}
-                title="Shuffle"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </button>
+                {/* Repeat toggle */}
+                <button
+                  type="button"
+                  onClick={() => setRepeat((v) => !v)}
+                  className={`p-2 rounded-lg border transition-colors ${
+                    repeat
+                      ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                      : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                  }`}
+                  title="Repeat"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
 
-              {/* Repeat toggle */}
-              <button
-                type="button"
-                onClick={() => setRepeat((v) => !v)}
-                className={`p-2 rounded-lg border transition-colors ${
-                  repeat
-                    ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                    : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
-                }`}
-                title="Repeat"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-
-              {/* New entry */}
-              <button
-                type="button"
-                onClick={() => setEditingTarget({ mode: "new-original" })}
-                className="btn-primary text-sm px-3 py-1.5"
-              >
-                + New
-              </button>
+                {/* New entry */}
+                <button
+                  type="button"
+                  onClick={() => setEditingTarget({ mode: "new-original" })}
+                  className="btn-primary text-sm px-3 py-1.5"
+                >
+                  + New
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <main className="p-4 max-w-3xl">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search master tracks…"
-            className="input-field text-sm mb-4"
-          />
+          {/* Search */}
+          <div className="py-4">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search master tracks…"
+              className="input-field text-sm"
+            />
+          </div>
 
           {loading ? (
             <p className="text-sm text-white/40">Loading…</p>
@@ -669,7 +672,7 @@ export default function ArchivePage() {
               })}
             </div>
           )}
-        </main>
+        </div>
       </div>
 
       {editingTarget && (
