@@ -17,25 +17,31 @@ const PROVIDERS = [
   { value: "lyria", label: "Lyria 3" },
 ];
 
+interface ParsedAudioDna {
+  tempo?: number; key?: string; energy?: number; loudness?: number;
+  atmosphereTags?: string[]; lyricsScore?: number; lyricsNotes?: string;
+  compositionScore?: number; compositionNotes?: string;
+}
+
+function parseAudioDna(track: TrackItem): ParsedAudioDna | null {
+  if (!track.audioDna) return null;
+  try { return JSON.parse(track.audioDna) as ParsedAudioDna; }
+  catch { return null; }
+}
+
 function knownTrackDna(track: TrackItem): string {
   if (track.trackDna?.trim()) return track.trackDna;
-  if (!track.audioDna) return "";
-  try {
-    const dna = JSON.parse(track.audioDna) as {
-      tempo?: number; key?: string; energy?: number; loudness?: number;
-      atmosphereTags?: string[]; lyricsScore?: number; lyricsNotes?: string;
-      compositionScore?: number; compositionNotes?: string;
-    };
-    return [
-      dna.tempo != null ? `${dna.tempo} BPM` : "",
-      dna.key ? `Key: ${dna.key}` : "",
-      dna.energy != null ? `Energy: ${dna.energy}%` : "",
-      dna.loudness != null ? `Loudness: ${dna.loudness.toFixed(1)} LUFS` : "",
-      dna.atmosphereTags?.length ? `Atmosphere: ${dna.atmosphereTags.join(", ")}` : "",
-      dna.lyricsScore != null ? `Lyrics: ${dna.lyricsScore.toFixed(1)}/10${dna.lyricsNotes ? ` — ${dna.lyricsNotes}` : ""}` : "",
-      dna.compositionScore != null ? `Composition: ${dna.compositionScore.toFixed(1)}/10${dna.compositionNotes ? ` — ${dna.compositionNotes}` : ""}` : "",
-    ].filter(Boolean).join("\n");
-  } catch { return ""; }
+  const dna = parseAudioDna(track);
+  if (!dna) return "";
+  return [
+    dna.tempo != null ? `${dna.tempo} BPM` : "",
+    dna.key ? `Key: ${dna.key}` : "",
+    dna.energy != null ? `Energy: ${dna.energy}%` : "",
+    dna.loudness != null ? `Loudness: ${dna.loudness.toFixed(1)} LUFS` : "",
+    dna.atmosphereTags?.length ? `Atmosphere: ${dna.atmosphereTags.join(", ")}` : "",
+    dna.lyricsScore != null ? `Lyrics: ${dna.lyricsScore.toFixed(1)}/10${dna.lyricsNotes ? ` — ${dna.lyricsNotes}` : ""}` : "",
+    dna.compositionScore != null ? `Composition: ${dna.compositionScore.toFixed(1)}/10${dna.compositionNotes ? ` — ${dna.compositionNotes}` : ""}` : "",
+  ].filter(Boolean).join("\n");
 }
 
 function AutocompleteInput({
@@ -165,9 +171,10 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
   const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
   const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
-  const [trackDna, setTrackDna] = useState(() => knownTrackDna(track));
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  const parsedAudioDna = useMemo(() => parseAudioDna(track), [track]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +213,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
         releaseStatus,
         publishDate: publishDate ? new Date(publishDate).toISOString() : null,
-        trackDna: trackDna.trim() || null,
+        trackDna: knownTrackDna(track).trim() || null,
       };
 
       const res = await fetch(`/api/tracks/${track.id}`, {
@@ -473,16 +480,94 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             </div>
           )}
 
-          {/* Track DNA */}
-          <div className="space-y-1">
-            <label className="text-sm text-white/60">Track DNA</label>
-            <textarea
-              value={trackDna}
-              onChange={(e) => setTrackDna(e.target.value)}
-              rows={3}
-              placeholder="Track DNA is still being analysed…"
-              className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+          {/* Track DNA — read-only structured display */}
+          <div className="relative space-y-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            {/* Subtle DNA helix background */}
+            <div
+              className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-[0.12] blur-sm"
+              style={{ backgroundImage: "url(/images/track-dna-helix.png)" }}
             />
+            <div className="relative space-y-3">
+            <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+
+            {/* Audio facts */}
+            {parsedAudioDna && (parsedAudioDna.tempo != null || parsedAudioDna.key != null || parsedAudioDna.energy != null || parsedAudioDna.loudness != null) && (
+              <div className="grid grid-cols-2 gap-3">
+                {parsedAudioDna.tempo != null && (
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Tempo</div>
+                    <div className="text-sm font-medium text-white">{parsedAudioDna.tempo} BPM</div>
+                  </div>
+                )}
+                {parsedAudioDna.key != null && (
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Key</div>
+                    <div className="text-sm font-medium text-white">{parsedAudioDna.key}</div>
+                  </div>
+                )}
+                {parsedAudioDna.energy != null && (
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Energy</div>
+                    <div className="text-sm font-medium text-white">{parsedAudioDna.energy}%</div>
+                  </div>
+                )}
+                {parsedAudioDna.loudness != null && (
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Loudness</div>
+                    <div className="text-sm font-medium text-white">{parsedAudioDna.loudness.toFixed(1)} LUFS</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Atmosphere tags */}
+            {parsedAudioDna?.atmosphereTags && parsedAudioDna.atmosphereTags.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Atmosphere</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {parsedAudioDna.atmosphereTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs text-white/80"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lyrics score */}
+            {parsedAudioDna?.lyricsScore != null && (
+              <div className="space-y-1 border-t border-white/10 pt-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-white">Lyrics</span>
+                  <span className="text-white/50">{parsedAudioDna.lyricsScore.toFixed(1)}/10</span>
+                </div>
+                {parsedAudioDna.lyricsNotes && (
+                  <p className="text-sm text-white/40">{parsedAudioDna.lyricsNotes}</p>
+                )}
+              </div>
+            )}
+
+            {/* Composition score */}
+            {parsedAudioDna?.compositionScore != null && (
+              <div className="space-y-1 border-t border-white/10 pt-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-white">Composition</span>
+                  <span className="text-white/50">{parsedAudioDna.compositionScore.toFixed(1)}/10</span>
+                </div>
+                {parsedAudioDna.compositionNotes && (
+                  <p className="text-sm text-white/40">{parsedAudioDna.compositionNotes}</p>
+                )}
+              </div>
+            )}
+
+            {/* Fallback when no DNA data at all */}
+            {!parsedAudioDna && (
+              <p className="text-sm text-white/40">Track DNA is still being analysed…</p>
+            )}
+            </div>
           </div>
 
           {error && (
