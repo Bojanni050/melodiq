@@ -26,6 +26,7 @@ import { detectLanguageFromLyrics } from "@/lib/providers/llm";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
+import { logApi } from "@/lib/logger";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 const DEFAULT_WORKSPACE_SENTINEL = "workspace-default";
@@ -471,14 +472,37 @@ export async function GET(
 
           {
             const audioIndex = isSecond ? 2 : 1;
+            const wavStartTime = Date.now();
             createApimartWav(parentJobId, audioIndex)
-              .then((submitRes) =>
-                db
+              .then((submitRes) => {
+                logApi({
+                  userId: track.userId,
+                  type: "webhook",
+                  provider: "apimart",
+                  endpoint: "/api/generate/submit (convert-to-wav)",
+                  request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
+                  response: JSON.stringify({ wavJobId: submitRes.taskId }),
+                  statusCode: 200,
+                  duration: Date.now() - wavStartTime,
+                }).catch(() => {});
+                return db
                   .update(tracks)
                   .set({ wavJobId: submitRes.taskId })
-                  .where(eq(tracks.id, track.id!))
-              )
-              .catch((error) => console.error("[tracks/[id]] wav export submit failed (apimart)", error));
+                  .where(eq(tracks.id, track.id!));
+              })
+              .catch((error) => {
+                console.error("[tracks/[id]] wav export submit failed (apimart)", error);
+                logApi({
+                  userId: track.userId,
+                  type: "webhook",
+                  provider: "apimart",
+                  endpoint: "/api/generate/submit (convert-to-wav)",
+                  request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
+                  response: JSON.stringify({ error: error?.message ?? String(error) }),
+                  statusCode: 500,
+                  duration: Date.now() - wavStartTime,
+                }).catch(() => {});
+              });
           }
 
           return NextResponse.json(updated[0]);
