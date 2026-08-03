@@ -51,6 +51,26 @@ function isVocalistTag(value: unknown): value is VocalistTag {
   return value === "auto" || value === "male" || value === "female" || value === "together" || value === "duet";
 }
 
+type FixedVocalistTag = "male" | "female" | "together";
+
+function isFixedVocalistTag(value: VocalistTag): value is FixedVocalistTag {
+  return value === "male" || value === "female" || value === "together";
+}
+
+const VOCAL_DIRECTION_LABELS: Record<FixedVocalistTag, string> = {
+  male: "Male Vocal",
+  female: "Female Vocal",
+  together: "Together Vocal",
+};
+
+// A fixed single-vocalist choice doesn't need the LLM's judgment — it's applied
+// mechanically as a section-level tag after generation instead of being sent as
+// a per-line instruction, so the model isn't burdened with tagging at all.
+function buildVocalDirectionTag(blockLabel: string, tag: FixedVocalistTag, performerDirections: string): string {
+  const parts = [VOCAL_DIRECTION_LABELS[tag], performerDirections].filter(Boolean);
+  return `[${blockLabel} | ${parts.join(", ")}]`;
+}
+
 const BLOCK_TYPES: BlockType[] = [
   "intro",
   "verse",
@@ -148,8 +168,12 @@ export async function POST(request: NextRequest) {
 
   const performerDirectionsText = typeof performerDirections === "string" ? performerDirections.trim() : "";
   const vocalistTagValue: VocalistTag = isVocalistTag(vocalistTag) ? vocalistTag : "auto";
-  const dir = performerDirectionsText ? ` - ${performerDirectionsText}` : "";
-  const includePerformerTags = vocalistTagValue !== "auto" || performerDirectionsText.length > 0;
+  const fixedVocalTag = isFixedVocalistTag(vocalistTagValue);
+  // A fixed vocalist choice (male/female/together) doesn't need the LLM's judgment at
+  // all — it's applied deterministically as a section tag after generation instead
+  // (see buildVocalDirectionTag below). Only auto (AI infers the voice) and duet
+  // (AI decides which lines go to which voice) still need per-line instructions.
+  const includePerformerTags = !fixedVocalTag && (vocalistTagValue === "duet" || performerDirectionsText.length > 0);
 
   const performerTagInstruction = (() => {
     if (!includePerformerTags) return "";
@@ -175,13 +199,8 @@ Chorus line two
 ${dirNote}${performerDirectionsText ? `\nDuet structure instruction from the user: "${performerDirectionsText}" — follow this when deciding which vocalist sings which lines.` : ""}`;
     }
 
-    if (vocalistTagValue === "auto") {
-      return `Prefix every non-empty lyric line with exactly one of these tags: [male], [female], or [together].
+    return `Prefix every non-empty lyric line with exactly one of these tags: [male], [female], or [together].
 Choose based on the topic, mood, pronouns, and existing sections to be consistent and natural.
-${dirNote}`;
-    }
-
-    return `Prefix every non-empty lyric line with this tag: [${vocalistTagValue}${dir}].
 ${dirNote}`;
   })();
 
@@ -215,8 +234,8 @@ Topic: ${topic}
 Mood/Vibe: ${mood}
 Language: ${language}
 ${styleText ? `Style/Genre: ${styleText}` : ""}
-${performerDirectionsText ? `Performer direction: ${performerDirectionsText}` : ""}
-${vocalistTagValue !== "auto" ? `Vocalist tag: [${vocalistTagValue}]` : ""}
+${!fixedVocalTag && performerDirectionsText ? `Performer direction: ${performerDirectionsText}` : ""}
+${vocalistTagValue === "duet" ? `Vocalist tag: [duet]` : ""}
 ${chorusInstruction ? `Chorus instruction: ${chorusInstruction}` : ""}
 ${context ? `--- EXISTING SECTIONS (for context and coherence) ---
 ${context}
@@ -225,12 +244,15 @@ Now write only the lyrics for: ${blockLabel}`;
 
   try {
     const llmProvider = await getLLMProviderForPurpose("lyrics");
-    const result = await callLLM(userPrompt, systemPrompt, {
+    const rawResult = await callLLM(userPrompt, systemPrompt, {
       purpose: "lyrics",
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
       openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
     });
+    const result = isFixedVocalistTag(vocalistTagValue)
+      ? `${buildVocalDirectionTag(blockLabel, vocalistTagValue, performerDirectionsText)}\n${rawResult.trim()}`
+      : rawResult;
 
     await logApi({
       userId: auth.userId,

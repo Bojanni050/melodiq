@@ -145,15 +145,13 @@ export default function LyricsControlPanel({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!showAdvanced || modelOptions || modelsLoading) return;
-    let active = true;
+  function loadModelOptions() {
+    if (modelsLoading) return;
     setModelsLoading(true);
     setModelsError(null);
     fetch("/api/lyric-studio/models")
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!active) return;
         if (!res.ok) {
           setModelsError(data?.error || "Kon modellen niet laden.");
           return;
@@ -161,15 +159,12 @@ export default function LyricsControlPanel({
         setModelOptions({ recommended: data.recommended ?? [], others: data.others ?? [] });
       })
       .catch(() => {
-        if (active) setModelsError("Kon modellen niet laden.");
+        setModelsError("Kon modellen niet laden.");
       })
       .finally(() => {
-        if (active) setModelsLoading(false);
+        setModelsLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [showAdvanced, modelOptions, modelsLoading]);
+  }
 
   function getRandomSubset(arr: string[], count = 12): string[] {
     const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -564,41 +559,66 @@ export default function LyricsControlPanel({
               </label>
 
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 space-y-2">
-                <label className="text-sm text-white/85" htmlFor="lyric-studio-llm-model">LLM model</label>
-                <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
-                  <select
-                    id="lyric-studio-llm-model"
-                    value={llmModel}
-                    onChange={(event) => onLlmModelChange(event.target.value)}
-                    disabled={modelsLoading}
-                    className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none disabled:opacity-50"
-                  >
-                    <option value="" className="bg-gray-900">Standaard (uit Instellingen)</option>
-                    {modelOptions && modelOptions.recommended.length > 0 && (
-                      <optgroup label="Aanbevolen">
-                        {modelOptions.recommended.map((model) => (
-                          <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {modelOptions && modelOptions.others.length > 0 && (
-                      <optgroup label="Overige (A-Z)">
-                        {modelOptions.others.map((model) => (
-                          <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
-                    v
-                  </span>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-sm text-white/85" htmlFor="lyric-studio-llm-model">LLM model</label>
+                  {(modelOptions || modelsError) && (
+                    <button
+                      type="button"
+                      onClick={loadModelOptions}
+                      disabled={modelsLoading}
+                      title="Modellen opnieuw laden"
+                      className="text-xs text-white/40 transition hover:text-white/70 disabled:opacity-40"
+                    >
+                      {modelsLoading ? "Laden..." : "Vernieuwen"}
+                    </button>
+                  )}
                 </div>
+
+                {modelOptions ? (
+                  <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
+                    <select
+                      id="lyric-studio-llm-model"
+                      value={llmModel}
+                      onChange={(event) => onLlmModelChange(event.target.value)}
+                      className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none"
+                    >
+                      <option value="" className="bg-gray-900">Standaard (uit Instellingen)</option>
+                      {modelOptions.recommended.length > 0 && (
+                        <optgroup label="Aanbevolen">
+                          {modelOptions.recommended.map((model) => (
+                            <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {modelOptions.others.length > 0 && (
+                        <optgroup label="Overige (A-Z)">
+                          {modelOptions.others.map((model) => (
+                            <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+                      v
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={loadModelOptions}
+                    disabled={modelsLoading}
+                    className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {modelsLoading ? "Modellen laden..." : "Modellen ophalen"}
+                  </button>
+                )}
+
                 <p className="text-xs text-white/50">
-                  {modelsLoading
-                    ? "Modellen laden..."
-                    : modelsError
-                      ? modelsError
-                      : "Overschrijft alleen dit Lyric Studio-project. Instellingen blijft de standaard — ook na Clear All."}
+                  {modelsError
+                    ? modelsError
+                    : llmModel
+                      ? "Overschrijft alleen dit Lyric Studio-project. Instellingen blijft de standaard — ook na Clear All."
+                      : "Standaard: gebruikt het model dat in Instellingen is ingesteld."}
                 </p>
               </div>
 
