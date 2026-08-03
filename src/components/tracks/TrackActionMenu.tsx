@@ -22,6 +22,7 @@ interface TrackActionMenuProps {
   analyzingComposition?: boolean;
   onRetryWavClick?: () => void;
   retryingWav?: boolean;
+  retryWavResult?: "success" | "error" | null;
 }
 
 export default function TrackActionMenu({
@@ -39,6 +40,7 @@ export default function TrackActionMenu({
   analyzingComposition,
   onRetryWavClick,
   retryingWav,
+  retryWavResult,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -138,13 +140,22 @@ export default function TrackActionMenu({
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                // Deliberately doesn't close the menu — the request is async and the
+                // loading/result text below would never be seen otherwise.
                 onRetryWavClick();
-                setMenuOpen(false);
               }}
               disabled={retryingWav}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                retryWavResult === "error" ? "text-red-300" : retryWavResult === "success" ? "text-emerald-300" : "text-white/80"
+              } disabled:opacity-50`}
             >
-              {retryingWav ? "Retrying WAV..." : "Retry WAV"}
+              {retryingWav
+                ? "Retrying WAV..."
+                : retryWavResult === "success"
+                  ? "WAV retry aangevraagd ✓"
+                  : retryWavResult === "error"
+                    ? "Retry mislukt — probeer opnieuw"
+                    : "Retry WAV"}
             </button>
           )}
           <button

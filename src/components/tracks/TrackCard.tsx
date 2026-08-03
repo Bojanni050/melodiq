@@ -96,6 +96,7 @@ const TrackCard = memo(function TrackCard({
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
+  const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
 
   async function handleAnalyzeComposition() {
     setAnalyzingComposition(true);
@@ -118,20 +119,26 @@ const TrackCard = memo(function TrackCard({
 
   async function handleRetryWav() {
     setRetryingWav(true);
+    setRetryWavResult(null);
     try {
       const res = await fetch("/api/tracks/retry-wav", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trackId: track.id }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.retried) {
         console.error(`Failed to retry WAV: HTTP ${res.status}`, body);
+        setRetryWavResult("error");
+      } else {
+        setRetryWavResult("success");
       }
     } catch (error) {
       console.error("Failed to retry WAV:", error);
+      setRetryWavResult("error");
     } finally {
       setRetryingWav(false);
+      setTimeout(() => setRetryWavResult(null), 4000);
     }
   }
 
@@ -697,6 +704,7 @@ const TrackCard = memo(function TrackCard({
                   : undefined
               }
               retryingWav={retryingWav}
+              retryWavResult={retryWavResult}
             />
           )}
           <button
