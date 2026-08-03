@@ -748,7 +748,31 @@ const TrackCard = memo(function TrackCard({
         </div>
       </div>
 
-      {dnaOpen && <TrackDnaPanel trackId={track.id} refreshKey={dnaRefreshKey} />}
+      {dnaOpen && (
+        <div className="space-y-2">
+          <TrackDnaPanel trackId={track.id} refreshKey={dnaRefreshKey} />
+          {track.status === "done" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAdvancedDna();
+              }}
+              disabled={advancedDnaRunning}
+              className="ml-3 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              {advancedDnaRunning ? (
+                <>
+                  <span className="w-2 h-2 rounded-full border border-white/40 border-t-transparent animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                "Advanced Analysis"
+              )}
+            </button>
+          )}
+        </div>
+      )}
 
             {advancedDnaResult && (
               <AdvancedDnaResult

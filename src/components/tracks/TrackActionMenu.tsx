@@ -116,28 +116,32 @@ export default function TrackActionMenu({
             {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
           </button>
           {onLinkToArchiveClick && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen(false);
-                onLinkToArchiveClick();
-              }}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-            >
-              Link to Master Tracks
-            </button>
-          )}
-          {onAnalyzeCompositionClick && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAnalyzeCompositionClick();
-                setMenuOpen(false);
-              }}
-              disabled={analyzingComposition}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(false);
+                          onLinkToArchiveClick();
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                      >
+                        Link to Master Tracks
+                      </button>
+                    )}
+                    {(onAnalyzeCompositionClick || onAdvancedDnaClick) && (
+                      <>
+                        <div className="my-1 h-px bg-white/10" />
+                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Track DNA</p>
+                        {onAnalyzeCompositionClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAnalyzeCompositionClick();
+                              setMenuOpen(false);
+                            }}
+                            disabled={analyzingComposition}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
                           </button>
                         )}
                         {onAdvancedDnaClick && (
@@ -150,9 +154,11 @@ export default function TrackActionMenu({
                             disabled={advancedDnaRunning}
                             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {advancedDnaRunning ? "Advanced analysis..." : "Advanced Track DNA"}
+                            {advancedDnaRunning ? "Running advanced analysis..." : "Advanced Track DNA"}
                           </button>
                         )}
+                      </>
+                    )}
                         {onRetryWavClick && (
             <button
               onClick={(e) => {
