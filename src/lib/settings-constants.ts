@@ -165,11 +165,17 @@ export const PROVIDERS: ProviderConfig[] = [
       },
       {
         key: "OPENAI_TRACKDNA_MODEL",
-        label: "Track DNA Model",
-        type: "text",
-        placeholder: "gpt-4o",
-      },
-    ],
+                label: "Track DNA Model",
+                type: "text",
+                placeholder: "gpt-4o",
+              },
+              {
+                key: "OPENAI_ADVANCED_DNA_MODEL",
+                label: "Advanced DNA Model",
+                type: "text",
+                placeholder: "gpt-4o",
+              },
+            ],
     testEndpoint: "openai",
   },
   {

@@ -26,6 +26,10 @@ export default function AiRoutingSection({
   onToggleLyricsDropdown,
   onToggleImageDropdown,
   onToggleTrackDnaDropdown,
+  selectedAdvancedDnaModel,
+  showAdvancedDnaDropdown,
+  onAdvancedDnaModelSelect,
+  onToggleAdvancedDnaDropdown,
   onReadMore,
   autoAnalyzeComposition,
   onToggleAutoAnalyzeComposition,
@@ -43,6 +47,8 @@ export default function AiRoutingSection({
   showLyricsDropdown: boolean;
   showImageDropdown: boolean;
   showTrackDnaDropdown: boolean;
+  selectedAdvancedDnaModel: LLMModel | null;
+  showAdvancedDnaDropdown: boolean;
   onSearchQueryChange: (query: string) => void;
   onPromptModelSelect: (model: LLMModel) => void;
   onLyricsModelSelect: (model: LLMModel) => void;
@@ -52,6 +58,8 @@ export default function AiRoutingSection({
   onToggleLyricsDropdown: () => void;
   onToggleImageDropdown: () => void;
   onToggleTrackDnaDropdown: () => void;
+  onAdvancedDnaModelSelect: (model: LLMModel) => void;
+  onToggleAdvancedDnaDropdown: () => void;
   onReadMore: (model: LLMModel) => void;
   autoAnalyzeComposition: boolean;
   onToggleAutoAnalyzeComposition: () => void;
@@ -102,6 +110,20 @@ export default function AiRoutingSection({
               Used by the automatic Track DNA analysis (atmosphere tags &amp; lyrics quality score) that runs once
               per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
               creative writing.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Advanced DNA provider</label>
+            <select
+              value={values.ADVANCED_LLM_PROVIDER || "openrouter"}
+              onChange={(e) => onFieldChange("ADVANCED_LLM_PROVIDER", e.target.value)}
+              className="select-field font-mono text-sm"
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="openai">OpenAI</option>
+            </select>
+            <p className="text-xs text-white/25 mt-1">
+              Used by the Advanced Track DNA analysis for more thorough lyrics &amp; composition critique with tips.
             </p>
           </div>
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -186,6 +208,18 @@ export default function AiRoutingSection({
             searchQuery={modelSearchQuery}
             onToggle={onToggleTrackDnaDropdown}
             onSelect={onTrackDnaModelSelect}
+            onSearchQueryChange={onSearchQueryChange}
+            onReadMore={onReadMore}
+          />
+          <OpenRouterModelDropdown
+            label="Advanced DNA Model"
+            selected={selectedAdvancedDnaModel}
+            open={showAdvancedDnaDropdown}
+            options={filteredModels}
+            allModelsLoaded={allModels.length > 0}
+            searchQuery={modelSearchQuery}
+            onToggle={onToggleAdvancedDnaDropdown}
+            onSelect={onAdvancedDnaModelSelect}
             onSearchQueryChange={onSearchQueryChange}
             onReadMore={onReadMore}
           />

@@ -29,6 +29,7 @@ const TRACKED_SETTINGS_KEYS = [
   "PROMPT_LLM_PROVIDER",
   "LYRICS_LLM_PROVIDER",
   "TRACKDNA_LLM_PROVIDER",
+  "ADVANCED_LLM_PROVIDER",
   "PIXAZO_API_KEY",
   "APP_URL",
   "POYO_WEBHOOK_URL",
@@ -71,6 +72,8 @@ export default function SettingsPage() {
   const [selectedLyricsModel, setSelectedLyricsModel] = useState<LLMModel | null>(null);
   const [selectedImageModel, setSelectedImageModel] = useState<LLMModel | null>(null);
   const [selectedTrackDnaModel, setSelectedTrackDnaModel] = useState<LLMModel | null>(null);
+  const [selectedAdvancedDnaModel, setSelectedAdvancedDnaModel] = useState<LLMModel | null>(null);
+  const [showAdvancedDnaModelDropdown, setShowAdvancedDnaModelDropdown] = useState(false);
   const [modelDetail, setModelDetail] = useState<LLMModel | null>(null);
   const [testingModels, setTestingModels] = useState(false);
   const [importSourceUrl, setImportSourceUrl] = useState("");
@@ -90,9 +93,11 @@ export default function SettingsPage() {
           PROMPT_LLM_PROVIDER: data.PROMPT_LLM_PROVIDER || "openrouter",
           LYRICS_LLM_PROVIDER: data.LYRICS_LLM_PROVIDER || "openrouter",
           TRACKDNA_LLM_PROVIDER: data.TRACKDNA_LLM_PROVIDER || "openrouter",
+          ADVANCED_LLM_PROVIDER: data.ADVANCED_LLM_PROVIDER || "openrouter",
           OPENROUTER_PROMPT_MODEL: data.OPENROUTER_PROMPT_MODEL || data.OPENROUTER_MODEL || "",
           OPENROUTER_LYRICS_MODEL: data.OPENROUTER_LYRICS_MODEL || data.OPENROUTER_MODEL || "",
           OPENROUTER_TRACKDNA_MODEL: data.OPENROUTER_TRACKDNA_MODEL || data.OPENROUTER_MODEL || "",
+          OPENROUTER_ADVANCED_DNA_MODEL: data.OPENROUTER_ADVANCED_DNA_MODEL || data.OPENROUTER_MODEL || "",
           OPENAI_PROMPT_MODEL: data.OPENAI_PROMPT_MODEL || data.OPENAI_MODEL || "gpt-4o",
           OPENAI_LYRICS_MODEL: data.OPENAI_LYRICS_MODEL || data.OPENAI_MODEL || "gpt-4o",
           OPENAI_TRACKDNA_MODEL: data.OPENAI_TRACKDNA_MODEL || data.OPENAI_MODEL || "gpt-4o",
@@ -104,6 +109,7 @@ export default function SettingsPage() {
         if (settings.OPENROUTER_LYRICS_MODEL) setSelectedLyricsModel(createModelPlaceholder(settings.OPENROUTER_LYRICS_MODEL));
         if (settings.OPENROUTER_IMAGE_MODEL) setSelectedImageModel(createModelPlaceholder(settings.OPENROUTER_IMAGE_MODEL));
         if (settings.OPENROUTER_TRACKDNA_MODEL) setSelectedTrackDnaModel(createModelPlaceholder(settings.OPENROUTER_TRACKDNA_MODEL));
+        if (settings.OPENROUTER_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.OPENROUTER_ADVANCED_DNA_MODEL));
       }
     }
     loadSettings();
@@ -132,10 +138,12 @@ export default function SettingsPage() {
         const matchLyrics = fetched.find((m) => m.id === (values.OPENROUTER_LYRICS_MODEL || values.OPENROUTER_MODEL));
         const matchImage = fetched.find((m) => m.id === values.OPENROUTER_IMAGE_MODEL);
         const matchTrackDna = fetched.find((m) => m.id === (values.OPENROUTER_TRACKDNA_MODEL || values.OPENROUTER_MODEL));
+        const matchAdvancedDna = fetched.find((m) => m.id === (values.OPENROUTER_ADVANCED_DNA_MODEL || values.OPENROUTER_MODEL));
         if (matchPrompt) setSelectedPromptModel(matchPrompt);
         if (matchLyrics) setSelectedLyricsModel(matchLyrics);
         if (matchImage) setSelectedImageModel(matchImage);
         if (matchTrackDna) setSelectedTrackDnaModel(matchTrackDna);
+        if (matchAdvancedDna) setSelectedAdvancedDnaModel(matchAdvancedDna);
       }
     } finally {
       setTestingModels(false);
@@ -164,6 +172,12 @@ export default function SettingsPage() {
     setSelectedTrackDnaModel(model);
     updateField("OPENROUTER_TRACKDNA_MODEL", model.id);
     setShowTrackDnaModelDropdown(false);
+  }
+
+  function selectAdvancedDnaModel(model: LLMModel) {
+    setSelectedAdvancedDnaModel(model);
+    updateField("OPENROUTER_ADVANCED_DNA_MODEL", model.id);
+    setShowAdvancedDnaModelDropdown(false);
   }
 
   async function toggleApiLogging() {
@@ -381,19 +395,23 @@ export default function SettingsPage() {
                   selectedLyricsModel={selectedLyricsModel}
                   selectedImageModel={selectedImageModel}
                   selectedTrackDnaModel={selectedTrackDnaModel}
+                  selectedAdvancedDnaModel={selectedAdvancedDnaModel}
                   showPromptDropdown={showPromptModelDropdown}
                   showLyricsDropdown={showLyricsModelDropdown}
                   showImageDropdown={showImageModelDropdown}
                   showTrackDnaDropdown={showTrackDnaModelDropdown}
+                  showAdvancedDnaDropdown={showAdvancedDnaModelDropdown}
                   onSearchQueryChange={setModelSearchQuery}
                   onPromptModelSelect={selectPromptModel}
                   onLyricsModelSelect={selectLyricsModel}
                   onImageModelSelect={selectImageModel}
                   onTrackDnaModelSelect={selectTrackDnaModel}
-                  onTogglePromptDropdown={() => { setShowPromptModelDropdown((v) => !v); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); }}
-                  onToggleLyricsDropdown={() => { setShowLyricsModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); }}
-                  onToggleImageDropdown={() => { setShowImageModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowTrackDnaModelDropdown(false); }}
-                  onToggleTrackDnaDropdown={() => { setShowTrackDnaModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); }}
+                  onAdvancedDnaModelSelect={selectAdvancedDnaModel}
+                  onTogglePromptDropdown={() => { setShowPromptModelDropdown((v) => !v); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); setShowAdvancedDnaModelDropdown(false); }}
+                  onToggleLyricsDropdown={() => { setShowLyricsModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); setShowAdvancedDnaModelDropdown(false); }}
+                  onToggleImageDropdown={() => { setShowImageModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowTrackDnaModelDropdown(false); setShowAdvancedDnaModelDropdown(false); }}
+                  onToggleTrackDnaDropdown={() => { setShowTrackDnaModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowAdvancedDnaModelDropdown(false); }}
+                  onToggleAdvancedDnaDropdown={() => { setShowAdvancedDnaModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); }}
                   onReadMore={setModelDetail}
                   autoAnalyzeComposition={values.AUTO_ANALYZE_COMPOSITION === "true"}
                   onToggleAutoAnalyzeComposition={toggleAutoAnalyzeComposition}

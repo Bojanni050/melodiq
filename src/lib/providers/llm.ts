@@ -68,6 +68,7 @@ export async function callLLM(
     (purpose === "prompt" ? await getSetting("OPENAI_PROMPT_MODEL") : "") ||
     (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
     (purpose === "trackdna" ? await getSetting("OPENAI_TRACKDNA_MODEL") : "") ||
+    (purpose === "advanced" ? await getSetting("OPENAI_ADVANCED_DNA_MODEL") : "") ||
     (await getSetting("OPENAI_MODEL")) ||
     process.env.OPENAI_MODEL ||
     "gpt-4o";
