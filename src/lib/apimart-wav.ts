@@ -6,6 +6,7 @@ import { createApimartWav, getApimartRawTaskStatus } from "@/lib/providers/apima
 import { convertWavToFlac } from "@/lib/wav-to-flac";
 import { detectFormatFromUrl, detectFormatFromContentType, contentTypeForFormat } from "@/lib/audio-format";
 import { uploadToS3 } from "@/lib/s3";
+import { logApi } from "@/lib/logger";
 
 // Same cooldown/retry-cap shape as PoYo's WAV self-healing — APIMart has no
 // webhook callback, so this is an active poll instead of a passive one.
@@ -31,14 +32,21 @@ export function apimartAudioIndexForJobId(jobId: string): number {
   return jobId.endsWith(":1") ? 2 : 1;
 }
 
+export interface ApimartWavRetryResult {
+  processedTrackIds: string[];
+  succeededTrackIds: string[];
+  failedTrackIds: string[];
+}
+
 /**
  * Self-healing WAV export for "done" APIMart tracks that still have no HD
  * file. Submits an export task if none is in flight yet, otherwise polls the
  * existing one and downloads/uploads the result once completed. Mirrors
  * retryStaleWavConversions (PoYo) but polls instead of waiting on a webhook.
  */
-export async function retryStaleApimartWavConversions(userId: string, trackId?: string): Promise<void> {
+export async function retryStaleApimartWavConversions(userId: string, trackId?: string): Promise<ApimartWavRetryResult> {
   const cutoff = new Date(Date.now() - APIMART_WAV_RETRY_COOLDOWN_MS);
+  const result: ApimartWavRetryResult = { processedTrackIds: [], succeededTrackIds: [], failedTrackIds: [] };
 
   const candidates = await db
     .select()
@@ -57,9 +65,11 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
     );
 
   const eligible = candidates.filter((track) => track.jobId);
-  if (eligible.length === 0) return;
+  if (eligible.length === 0) return result;
 
   for (const track of eligible) {
+    result.processedTrackIds.push(track.id!);
+    const startTime = Date.now();
     try {
       if (!track.wavJobId) {
         const parentJobId = track.jobId!.split(":")[0];
@@ -69,6 +79,17 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
           .update(tracks)
           .set({ wavJobId: submitRes.taskId, wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
           .where(eq(tracks.id, track.id!));
+        await logApi({
+          userId,
+          type: "webhook",
+          provider: "apimart",
+          endpoint: "/api/tracks/retry-wav (apimart self-heal)",
+          request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
+          response: JSON.stringify({ wavJobId: submitRes.taskId }),
+          statusCode: 200,
+          duration: Date.now() - startTime,
+        });
+        result.succeededTrackIds.push(track.id!);
         continue;
       }
 
@@ -82,11 +103,21 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
             .update(tracks)
             .set({ wavJobId: null, wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
             .where(eq(tracks.id, track.id!));
+          await logApi({
+            userId, type: "webhook", provider: "apimart",
+            endpoint: "/api/tracks/retry-wav (apimart self-heal)",
+            request: JSON.stringify({ trackId: track.id, wavJobId: track.wavJobId }),
+            response: JSON.stringify({ status: statusValue }),
+            statusCode: 400, duration: Date.now() - startTime,
+          });
+          result.failedTrackIds.push(track.id!);
         } else {
           await db
             .update(tracks)
             .set({ wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
             .where(eq(tracks.id, track.id!));
+          // Still processing on APIMart's side — not a failure, just not done yet.
+          result.succeededTrackIds.push(track.id!);
         }
         continue;
       }
@@ -97,6 +128,14 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
           .update(tracks)
           .set({ wavJobId: null, wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
           .where(eq(tracks.id, track.id!));
+        await logApi({
+          userId, type: "webhook", provider: "apimart",
+          endpoint: "/api/tracks/retry-wav (apimart self-heal)",
+          request: JSON.stringify({ trackId: track.id, wavJobId: track.wavJobId }),
+          response: JSON.stringify({ error: "No audio URL in completed task" }),
+          statusCode: 400, duration: Date.now() - startTime,
+        });
+        result.failedTrackIds.push(track.id!);
         continue;
       }
 
@@ -128,13 +167,32 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
           audioUrlHd: `/api/tracks/${track.id}/download?hd=true`,
         })
         .where(eq(tracks.id, track.id!));
+      await logApi({
+        userId, type: "webhook", provider: "apimart",
+        endpoint: "/api/tracks/retry-wav (apimart self-heal)",
+        request: JSON.stringify({ trackId: track.id, wavJobId: track.wavJobId }),
+        response: JSON.stringify({ s3KeyHd, formatHd }),
+        statusCode: 200, duration: Date.now() - startTime,
+      });
+      result.succeededTrackIds.push(track.id!);
     } catch (error: any) {
-      console.error(`[apimart-wav] retry failed for track ${track.id}:`, error?.message ?? error);
+      const message = error?.message ?? String(error);
+      console.error(`[apimart-wav] retry failed for track ${track.id}:`, message);
+      await logApi({
+        userId, type: "webhook", provider: "apimart",
+        endpoint: "/api/tracks/retry-wav (apimart self-heal)",
+        request: JSON.stringify({ trackId: track.id, jobId: track.jobId, wavJobId: track.wavJobId }),
+        response: JSON.stringify({ error: message }),
+        statusCode: 500, duration: Date.now() - startTime,
+      }).catch(() => {});
       await db
         .update(tracks)
         .set({ wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
         .where(eq(tracks.id, track.id!))
         .catch(() => {});
+      result.failedTrackIds.push(track.id!);
     }
   }
+
+  return result;
 }

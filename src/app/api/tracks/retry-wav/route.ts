@@ -96,9 +96,10 @@ export async function POST(request: Request) {
         .set({ wavJobId: null, wavRetryAt: null, wavRetryCount: 0 })
         .where(inArray(tracks.id, apimartTracksToRetry.map((t) => t.id!)));
 
-      await retryStaleApimartWavConversions(userId, trackId);
+      const apimartResult = await retryStaleApimartWavConversions(userId, trackId);
+      const succeededIds = new Set(apimartResult.succeededTrackIds);
       for (const track of apimartTracksToRetry) {
-        results.push({ trackId: track.id!, success: true });
+        results.push({ trackId: track.id!, success: succeededIds.has(track.id!) });
       }
     }
 
