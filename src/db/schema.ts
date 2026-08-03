@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   artistAlias: varchar("artist_alias", { length: 255 }),
   composerAlias: varchar("composer_alias", { length: 255 }),
   writerAlias: varchar("writer_alias", { length: 255 }),
+  bio: text("bio"),
   role: varchar("role", { length: 20 }).default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

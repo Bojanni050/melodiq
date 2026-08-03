@@ -25,6 +25,7 @@ export async function PUT(request: NextRequest) {
   const artistAlias = body.artistAlias;
   const composerAlias = body.composerAlias;
   const writerAlias = body.writerAlias;
+  const bio = body.bio;
   const currentPassword = body.currentPassword;
   const newPassword = body.newPassword;
 
@@ -90,6 +91,20 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  if (bio !== undefined) {
+    if (bio === null) {
+      updates.bio = null;
+    } else if (typeof bio === "string") {
+      const trimmed = bio.trim();
+      if (trimmed.length > 4000) {
+        return NextResponse.json({ error: "Bio too long (max 4000 characters)" }, { status: 400 });
+      }
+      updates.bio = trimmed ? trimmed : null;
+    } else {
+      return NextResponse.json({ error: "Invalid bio" }, { status: 400 });
+    }
+  }
+
   if (newPassword) {
     if (!currentPassword || typeof currentPassword !== "string") {
       return NextResponse.json({ error: "Current password is required" }, { status: 400 });
@@ -122,6 +137,7 @@ export async function PUT(request: NextRequest) {
       artistAlias: users.artistAlias,
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
+      bio: users.bio,
       createdAt: users.createdAt,
     });
 

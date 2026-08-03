@@ -284,6 +284,7 @@ const alterUsersSql = `
 ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_alias varchar(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user';
 `;
 

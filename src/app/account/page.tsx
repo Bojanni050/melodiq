@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 interface User {
@@ -11,6 +12,7 @@ interface User {
   artistAlias: string | null;
   composerAlias: string | null;
   writerAlias: string | null;
+  bio: string | null;
   createdAt: string;
 }
 
@@ -48,6 +50,7 @@ export default function AccountPage() {
   const [artistAlias, setArtistAlias] = useState("");
   const [composerAlias, setComposerAlias] = useState("");
   const [writerAlias, setWriterAlias] = useState("");
+  const [bio, setBio] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -66,6 +69,7 @@ export default function AccountPage() {
         setArtistAlias(data.user?.artistAlias || "");
         setComposerAlias(data.user?.composerAlias || "");
         setWriterAlias(data.user?.writerAlias || "");
+        setBio(data.user?.bio || "");
       } else {
         router.push("/login");
       }
@@ -80,7 +84,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, artistAlias, composerAlias, writerAlias }),
+      body: JSON.stringify({ name, artistAlias, composerAlias, writerAlias, bio }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -227,6 +231,33 @@ export default function AccountPage() {
                       <p className="text-sm text-white/70 py-2">{memberSince}</p>
                     </Field>
                   </div>
+                </div>
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white">Artist bio</h2>
+                  {user?.id && (
+                    <Link
+                      href={`/discover/artist/${user.id}`}
+                      target="_blank"
+                      className="text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      View public artist page →
+                    </Link>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8">
+                  <Field label="Bio" hint="Shown on your public artist page. Separate paragraphs with a blank line.">
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      rows={6}
+                      className="input-field text-sm resize-y"
+                      placeholder="Tell listeners who you are and what you make..."
+                      maxLength={4000}
+                    />
+                  </Field>
                 </div>
               </section>
 
