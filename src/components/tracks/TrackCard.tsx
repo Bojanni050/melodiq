@@ -120,7 +120,10 @@ const TrackCard = memo(function TrackCard({
       }
 
       const [advancedDnaRunning, setAdvancedDnaRunning] = useState(false);
-      const [advancedDnaResult, setAdvancedDnaResult] = useState<{ lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>(null);
+      const [advancedDnaResult, setAdvancedDnaResult] = useState<{ lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>(() => {
+        if (!track.advancedDna) return null;
+        try { return JSON.parse(track.advancedDna); } catch { return null; }
+      });
 
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
@@ -469,6 +472,15 @@ const TrackCard = memo(function TrackCard({
               >
                 {title}
               </h3>
+            )}
+            {advancedDnaResult && (
+              <span
+                className="shrink-0 text-xs leading-none"
+                title="Advanced DNA analysis available"
+                aria-label="Advanced DNA analysis available"
+              >
+                🧬
+              </span>
             )}
             {hasCompositionAnalysis && !analyzingComposition && (
               <span className="shrink-0 text-xs leading-none" title="Composition analysis available" aria-label="Composition analysis available">

@@ -380,6 +380,7 @@ export async function GET(request: NextRequest) {
     publishDate: tracks.publishDate,
     trackDna: tracks.trackDna,
     audioDna: tracks.audioDna,
+    advancedDna: tracks.advancedDna,
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
     composerName: tracks.composerName,

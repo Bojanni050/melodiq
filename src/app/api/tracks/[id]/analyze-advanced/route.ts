@@ -28,7 +28,10 @@ export async function POST(
     return NextResponse.json({ error: "Track isn't ready yet" }, { status: 400 });
   }
 
-  const analysis = await analyzeAdvancedDna(id);
+  const url = new URL(request.url);
+  const forceRefresh = url.searchParams.get("refresh") === "true";
+
+  const analysis = await analyzeAdvancedDna(id, { forceRefresh });
   if (!analysis) {
     return NextResponse.json({ error: "Advanced analysis failed" }, { status: 502 });
   }

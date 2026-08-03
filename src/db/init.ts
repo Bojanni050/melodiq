@@ -271,6 +271,8 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_status VARCHAR(20) NOT NULL DEFAULT 'concept';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS publish_date timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS track_dna text;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_dna text;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS advanced_dna text;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_open_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;

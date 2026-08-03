@@ -109,6 +109,10 @@ export const tracks = pgTable("tracks", {
   // Auto-computed Track DNA (tempo/key/energy/loudness from audio-features.ts,
   // atmosphere tags + lyrics score from LLM) — JSON, replaces track_dna_votes.
   audioDna: text("audio_dna"),
+  // On-demand Advanced DNA analysis (LLM deep-dive into lyrics + composition),
+  // stored as JSON so it survives page reloads. Written by the analyze-advanced
+  // API route the first time the user requests the analysis.
+  advancedDna: text("advanced_dna"),
   pollsOpenAt: timestamp("polls_open_at"),
   pollsCloseAt: timestamp("polls_close_at"),
   deletedAt: timestamp("deleted_at"),
