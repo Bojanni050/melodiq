@@ -483,13 +483,20 @@ export default function ArchivePage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4">
-          {/* Header */}
-          <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5 -mx-4 px-4 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h1 className="text-lg font-bold">Master Tracks</h1>
-                <p className="text-sm text-white/40 mt-0.5">
+        <div className="max-w-3xl mx-auto px-4 py-5 space-y-6">
+          {/* Header card — matching library style */}
+          <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Master Tracks</h1>
+                  {entries.length > 0 && (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                      {entries.length} {entries.length === 1 ? "track" : "tracks"}{playableTracks.length > 0 ? ` · ${playableTracks.length} playable` : ""}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-white/40">
                   Your definitive lyrics &amp; prompt per song — one source of truth.
                 </p>
               </div>
@@ -551,18 +558,16 @@ export default function ArchivePage() {
                 </button>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Search */}
-          <div className="py-4">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search master tracks…"
-              className="input-field text-sm"
-            />
-          </div>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search master tracks…"
+            className="input-field text-sm"
+          />
 
           {loading ? (
             <p className="text-sm text-white/40">Loading…</p>
