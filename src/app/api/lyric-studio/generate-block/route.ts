@@ -37,6 +37,7 @@ interface GenerateBlockBody {
   temperature?: unknown;
   topP?: unknown;
   llmModel?: unknown;
+  literalnessLevel?: unknown;
 }
 
 type ChorusMode = "repeat" | "variation";
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel, literalnessLevel } = body;
   const vocalistTag = body.vocalistTag;
   const performerDirections = body.performerDirections;
 
@@ -158,6 +159,9 @@ export async function POST(request: NextRequest) {
   }
   if (llmModel !== undefined && typeof llmModel !== "string") {
     return NextResponse.json({ error: "llmModel must be a string" }, { status: 400 });
+  }
+  if (literalnessLevel !== undefined && (typeof literalnessLevel !== "number" || literalnessLevel < 1 || literalnessLevel > 10)) {
+    return NextResponse.json({ error: "literalnessLevel must be between 1 and 10" }, { status: 400 });
   }
 
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
@@ -204,6 +208,14 @@ Choose based on the topic, mood, pronouns, and existing sections to be consisten
 ${dirNote}`;
   })();
 
+  const literalnessLevelValue = typeof literalnessLevel === "number" ? Math.round(literalnessLevel) : 5;
+  const literalnessInstruction =
+    literalnessLevelValue <= 3
+      ? "Favor imagery, metaphor, and suggestion over plain statement — let meaning come through what's seen, heard, or touched rather than being said outright. Abstract, poetic phrasing is welcome."
+      : literalnessLevelValue >= 8
+        ? "Be direct and literal: say plainly what's happening and what's felt, the way someone would actually say it out loud. Avoid metaphor, symbolism, and vague imagery — state the concrete situation and emotion in clear, unambiguous language."
+        : "Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled.";
+
   let chorusInstruction = "";
   if (blockType === "chorus") {
     if (chorusMode === "repeat") {
@@ -224,7 +236,7 @@ The lyrics must be coherent with the other sections provided as context
 Write in the specified language
 Match the mood and topic provided
 Keep syllable flow natural and singable — let meaningful words (nouns, verbs, adjectives) fall on the strong beats, the way they would if spoken aloud, and keep small connector words (a, the, of, and, to) light
-Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled
+${literalnessInstruction}
 Avoid AI songwriting clichés: stock breakup/nostalgia props like "your coat still on my chair", "half-empty cups gone cold", cold coffee, unmade beds, ticking clocks, or fading photographs. If the topic calls for that kind of imagery, find a detail specific to this song's actual topic and mood instead of reaching for the generic default
 Chorus lines should be punchy and memorable — build around one crucial, hook-worthy line rather than several competing ideas
 Bridge should contrast emotionally with the verses
@@ -259,7 +271,7 @@ Now write only the lyrics for: ${blockLabel}`;
       type: "llm",
       provider: llmProvider,
       endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel }),
+      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel, literalnessLevel: literalnessLevelValue }),
       response: JSON.stringify({ result: result.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,

@@ -33,6 +33,8 @@ export interface LyricsDraftState {
   setRepetitiveChorus: (v: boolean) => void;
   creativityLevel: number;
   setCreativityLevel: (v: number) => void;
+  literalnessLevel: number;
+  setLiteralnessLevel: (v: number) => void;
   contextLevel: number;
   setContextLevel: (v: number) => void;
   styleSuggestion: string;
@@ -58,6 +60,7 @@ export function useLyricsDraft(): LyricsDraftState {
   const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
   const [repetitiveChorus, setRepetitiveChorus] = useState(true);
   const [creativityLevel, setCreativityLevel] = useState(5);
+  const [literalnessLevel, setLiteralnessLevel] = useState(5);
   const [contextLevel, setContextLevel] = useState(5);
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [llmModel, setLlmModel] = useState("");
@@ -81,7 +84,7 @@ export function useLyricsDraft(): LyricsDraftState {
         lyricCols?: number; showLyricsSidebar?: boolean;
         structure?: string; customStructure?: string;
         language?: string; customLanguage?: string;
-        repetitiveChorus?: boolean; creativityLevel?: number;
+        repetitiveChorus?: boolean; creativityLevel?: number; literalnessLevel?: number;
         contextLevel?: number; styleSuggestion?: string; llmModel?: string;
       };
 
@@ -102,6 +105,9 @@ export function useLyricsDraft(): LyricsDraftState {
       if (typeof parsed.repetitiveChorus === "boolean") setRepetitiveChorus(parsed.repetitiveChorus);
       if (typeof parsed.creativityLevel === "number" && parsed.creativityLevel >= 1 && parsed.creativityLevel <= 10) {
         setCreativityLevel(Math.round(parsed.creativityLevel));
+      }
+      if (typeof parsed.literalnessLevel === "number" && parsed.literalnessLevel >= 1 && parsed.literalnessLevel <= 10) {
+        setLiteralnessLevel(Math.round(parsed.literalnessLevel));
       }
       if (typeof parsed.contextLevel === "number" && parsed.contextLevel >= 1 && parsed.contextLevel <= 10) {
         setContextLevel(Math.round(parsed.contextLevel));
@@ -142,12 +148,12 @@ export function useLyricsDraft(): LyricsDraftState {
     const payload = buildLyricsStudioDraftPayload({
       topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar,
       structure, customStructure, language, customLanguage,
-      repetitiveChorus, creativityLevel, contextLevel, styleSuggestion, llmModel,
+      repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel,
     });
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
     activePreset, blocks, customLanguage, customStructure, hasRestoredDraft,
-    language, lyricCols, mood, repetitiveChorus, creativityLevel, contextLevel,
+    language, lyricCols, mood, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel,
     showLyricsSidebar, styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections,
   ]);
 
@@ -163,6 +169,7 @@ export function useLyricsDraft(): LyricsDraftState {
     showLyricsSidebar, setShowLyricsSidebar,
     repetitiveChorus, setRepetitiveChorus,
     creativityLevel, setCreativityLevel,
+    literalnessLevel, setLiteralnessLevel,
     contextLevel, setContextLevel,
     styleSuggestion, setStyleSuggestion,
     llmModel, setLlmModel,
@@ -198,6 +205,7 @@ export function loadSnapshotIntoState(
   storeFns.setCustomLanguage(payload.customLanguage || "");
   state.setRepetitiveChorus(typeof payload.repetitiveChorus === "boolean" ? payload.repetitiveChorus : true);
   state.setCreativityLevel(typeof payload.creativityLevel === "number" && payload.creativityLevel >= 1 && payload.creativityLevel <= 10 ? Math.round(payload.creativityLevel) : 5);
+  state.setLiteralnessLevel(typeof payload.literalnessLevel === "number" && payload.literalnessLevel >= 1 && payload.literalnessLevel <= 10 ? Math.round(payload.literalnessLevel) : 5);
   state.setContextLevel(typeof payload.contextLevel === "number" && payload.contextLevel >= 1 && payload.contextLevel <= 10 ? Math.round(payload.contextLevel) : 7);
   state.setStyleSuggestion(payload.styleSuggestion || "");
   state.setLlmModel(typeof payload.llmModel === "string" ? payload.llmModel : "");

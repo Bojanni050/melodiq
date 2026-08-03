@@ -33,6 +33,9 @@ type LyricsControlPanelProps = {
   creativityLevel: number;
   creativityZone: string;
   temperature: number;
+  literalnessLevel: number;
+  literalnessZone: string;
+  onLiteralnessLevelChange: (value: number) => void;
   contextLevel: number;
   contextZone: string;
   topP: number;
@@ -93,6 +96,9 @@ export default function LyricsControlPanel({
   creativityLevel,
   creativityZone,
   temperature,
+  literalnessLevel,
+  literalnessZone,
+  onLiteralnessLevelChange,
   contextLevel,
   contextZone,
   topP,
@@ -639,6 +645,26 @@ export default function LyricsControlPanel({
                 />
                 <p className="mt-1 text-xs text-white/50">
                   {creativityZone} • temp {temperature.toFixed(2)} • zones: 1-3 laag, 4-7 middel, 8-10 hoog
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                <div className="flex items-center justify-between text-sm text-white/85">
+                  <span>Letterlijkheid</span>
+                  <span>{literalnessLevel}/10</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={literalnessLevel}
+                  onChange={(event) => onLiteralnessLevelChange(Number(event.target.value))}
+                  aria-label="Literalness level"
+                  className="mt-2 w-full accent-primary-500"
+                />
+                <p className="mt-1 text-xs text-white/50">
+                  {literalnessZone} • zones: 1-3 poëtisch/beeldspraak, 4-7 gebalanceerd, 8-10 letterlijk/direct
                 </p>
               </div>
 

@@ -20,6 +20,7 @@ export interface LyricStudioSnapshot {
     customLanguage: string;
     repetitiveChorus: boolean;
     creativityLevel: number;
+    literalnessLevel: number;
     contextLevel: number;
     styleSuggestion: string;
     llmModel: string;

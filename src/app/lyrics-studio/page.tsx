@@ -46,6 +46,7 @@ export default function LyricsStudioPage() {
     lyricCols, setLyricCols, showLyricsSidebar, setShowLyricsSidebar,
     repetitiveChorus, setRepetitiveChorus,
     creativityLevel, setCreativityLevel,
+    literalnessLevel, setLiteralnessLevel,
     contextLevel, setContextLevel,
     styleSuggestion, setStyleSuggestion,
     llmModel, setLlmModel,
@@ -152,6 +153,7 @@ export default function LyricsStudioPage() {
   const temperature = Number((0.1 + ((creativityLevel - 1) / 9) * 1.1).toFixed(2));
   const topP = Number((0.1 + ((contextLevel - 1) / 9) * 0.9).toFixed(2));
   const creativityZone = creativityLevel <= 3 ? "Laag" : creativityLevel <= 7 ? "Middel" : "Hoog";
+  const literalnessZone = literalnessLevel <= 3 ? "Poëtisch" : literalnessLevel <= 7 ? "Gebalanceerd" : "Letterlijk";
   const contextZone = contextLevel <= 3 ? "Smal" : contextLevel <= 7 ? "Gebalanceerd" : "Breed";
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
@@ -247,7 +249,7 @@ export default function LyricsStudioPage() {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: new Date().toISOString(),
-      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, contextLevel, styleSuggestion, llmModel }),
+      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel }),
     };
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
     setSavedSnapshots(next);
@@ -280,6 +282,7 @@ export default function LyricsStudioPage() {
         existingBlocks: contextBlocks.filter((b) => b.id !== block.id).map(({ type, label, content }) => ({ type, label, content })),
         chorusMode: options?.chorusMode, isFirstChorus: options?.isFirstChorus, temperature, topP,
         llmModel: llmModel.trim() || undefined,
+        literalnessLevel,
       }),
     });
     const data = await response.json();
@@ -553,7 +556,7 @@ export default function LyricsStudioPage() {
     setLyricCols(2); setShowLyricsSidebar(false); setShowStructureDropdown(false);
     setStructure(""); setCustomStructure(""); setRepetitiveChorus(true);
     setTitle("");
-    setCreativityLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
+    setCreativityLevel(5); setLiteralnessLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setLlmModel("");
     setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
     window.localStorage.removeItem("melodiq-lyrics-studio");
@@ -657,6 +660,8 @@ export default function LyricsStudioPage() {
                 showStructureDropdown={showStructureDropdown} activePreset={activePreset}
                 repetitiveChorus={repetitiveChorus} creativityLevel={creativityLevel}
                 creativityZone={creativityZone} temperature={temperature}
+                literalnessLevel={literalnessLevel} literalnessZone={literalnessZone}
+                onLiteralnessLevelChange={setLiteralnessLevel}
                 contextLevel={contextLevel} contextZone={contextZone} topP={topP}
                 llmModel={llmModel} onLlmModelChange={setLlmModel}
                 canGenerateBlocks={canGenerateBlocks} generatingSong={generatingSong}

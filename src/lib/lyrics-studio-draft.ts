@@ -17,6 +17,7 @@ export type LyricsStudioDraftPayload = {
   customLanguage: string;
   repetitiveChorus: boolean;
   creativityLevel: number;
+  literalnessLevel: number;
   contextLevel: number;
   styleSuggestion: string;
   llmModel: string;
@@ -39,6 +40,7 @@ export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload)
     customLanguage: payload.customLanguage,
     repetitiveChorus: payload.repetitiveChorus,
     creativityLevel: payload.creativityLevel,
+    literalnessLevel: payload.literalnessLevel,
     contextLevel: payload.contextLevel,
     styleSuggestion: payload.styleSuggestion,
     llmModel: payload.llmModel,
