@@ -4,6 +4,7 @@ import { tracks } from "@/db/schema";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 import { logApi } from "@/lib/logger";
+import { createApimartWav } from "@/lib/providers/apimart";
 
 const MAX_SUBMIT_ATTEMPTS = 3;
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
@@ -29,6 +30,53 @@ function sleep(ms: number) {
 }
 
 /**
+ * Vraagt WAV conversie aan bij APIMart's eigen endpoint.
+ * APIMart stuurt het resultaat naar de webhook.
+ */
+async function requestApimartWavConversion(track: {
+  id: string;
+  jobId: string;
+  audioId: string;
+  userId?: string | null;
+}): Promise<string | null> {
+  const startTime = Date.now();
+  try {
+    // APIMart jobId format: "taskId,audioIndex"
+    const [taskId, audioIndexStr] = track.jobId.split(",");
+    const audioIndex = parseInt(audioIndexStr || "0", 10);
+    const result = await createApimartWav(taskId, audioIndex);
+    
+    await logApi({
+      userId: track.userId,
+      type: "webhook",
+      provider: "apimart",
+      endpoint: "/api/generate/submit (convert-to-wav)",
+      request: JSON.stringify({ trackId: track.id, taskId, audioIndex }),
+      response: JSON.stringify({ taskId: result.taskId }),
+      statusCode: 200,
+      duration: Date.now() - startTime,
+    });
+    
+    console.log(`[wav] APIMart conversion task_id: ${result.taskId} for track ${track.id}`);
+    return result.taskId;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    await logApi({
+      userId: track.userId,
+      type: "webhook",
+      provider: "apimart",
+      endpoint: "/api/generate/submit (convert-to-wav)",
+      request: JSON.stringify({ trackId: track.id }),
+      response: JSON.stringify({ error: message }),
+      statusCode: 500,
+      duration: Date.now() - startTime,
+    });
+    console.warn(`[wav] APIMart conversion request failed for track ${track.id}:`, message);
+    return null;
+  }
+}
+
+/**
  * Vraagt WAV conversie aan bij PoYo voor een gegenereerde track.
  * Returns de WAV task_id of null bij failure.
  * PoYo stuurt het WAV resultaat naar /api/webhooks/poyo-wav via callback.
@@ -42,7 +90,14 @@ export async function requestWavConversion(track: {
   jobId: string;
   audioId: string;
   userId?: string | null;
+  provider?: string | null;
 }): Promise<string | null> {
+  // APIMart has its own WAV endpoint — don't send it to PoYo
+  if (track.provider === "apimart") {
+    return requestApimartWavConversion(track);
+  }
+
+  // Default: PoYo convert-to-wav flow
   const originalTaskId = getOriginalPoYoTaskId(track.jobId);
   const requestPayload = { task_id: originalTaskId, audio_id: track.audioId };
 
@@ -152,6 +207,7 @@ export async function requestMissingWavConversion(track: {
   userId?: string | null;
   wavJobId?: string | null;
   s3KeyHd?: string | null;
+  provider?: string | null;
 }): Promise<string | null> {
   if (!track.id || !track.jobId || !track.audioId || track.wavJobId || track.s3KeyHd) {
     return null;
@@ -162,6 +218,7 @@ export async function requestMissingWavConversion(track: {
     jobId: track.jobId,
     audioId: track.audioId,
     userId: track.userId,
+    provider: track.provider,
   });
 
   if (!wavTaskId) return null;
@@ -183,7 +240,8 @@ export async function requestMissingWavConversion(track: {
 export async function retryStaleWavConversions(userId: string): Promise<void> {
   const cutoff = new Date(Date.now() - WAV_RETRY_COOLDOWN_MS);
 
-  const candidates = await db
+  // PoYo tracks
+  const poyoCandidates = await db
     .select()
     .from(tracks)
     .where(
@@ -198,6 +256,23 @@ export async function retryStaleWavConversions(userId: string): Promise<void> {
       )
     );
 
+  // APIMart tracks
+  const apimartCandidates = await db
+    .select()
+    .from(tracks)
+    .where(
+      and(
+        eq(tracks.userId, userId),
+        eq(tracks.provider, "apimart"),
+        eq(tracks.status, "done"),
+        isNull(tracks.deletedAt),
+        isNull(tracks.s3KeyHd),
+        or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
+        lt(tracks.wavRetryCount, MAX_AUTO_WAV_RETRIES)
+      )
+    );
+
+  const candidates = [...poyoCandidates, ...apimartCandidates];
   const eligible = candidates.filter((track) => track.jobId && track.audioId);
   if (eligible.length === 0) return;
 
@@ -207,6 +282,7 @@ export async function retryStaleWavConversions(userId: string): Promise<void> {
       jobId: track.jobId!,
       audioId: track.audioId!,
       userId: track.userId,
+      provider: track.provider,
     });
 
     await db
