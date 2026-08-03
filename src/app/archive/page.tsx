@@ -483,7 +483,7 @@ export default function ArchivePage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-5 space-y-6">
+        <div className="px-4 py-5 space-y-6">
           {/* Header card — matching library style */}
           <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -569,6 +569,7 @@ export default function ArchivePage() {
             className="input-field text-sm"
           />
 
+          <div className="max-w-[80%] mx-auto">
           {loading ? (
             <p className="text-sm text-white/40">Loading…</p>
           ) : filtered.length === 0 ? (
@@ -711,6 +712,7 @@ export default function ArchivePage() {
               })}
             </div>
           )}
+          </div>
         </div>
       </div>
 
