@@ -3,9 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { scoreCompositionQuality } from "@/lib/providers/llm";
-import { downloadFromS3 } from "@/lib/s3";
-import type { AudioDna } from "@/lib/songs";
+import { analyzeTrackDna } from "@/lib/track-dna-analysis";
 
 // On-demand version of the "Composition" Track DNA signal — lets the user
 // trigger it for a specific track regardless of the AUTO_ANALYZE_COMPOSITION
@@ -21,7 +19,7 @@ export async function POST(
   const { id } = await params;
 
   const result = await db
-    .select()
+    .select({ id: tracks.id, status: tracks.status, s3Key: tracks.s3Key })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
@@ -34,36 +32,10 @@ export async function POST(
     return NextResponse.json({ error: "Track audio isn't available yet" }, { status: 400 });
   }
 
-  try {
-    const audioBuffer = await downloadFromS3(track.s3Key);
-    const composition = await scoreCompositionQuality(audioBuffer, track.format || "mp3");
-
-    if (!composition) {
-      return NextResponse.json({ error: "Composition analysis failed" }, { status: 502 });
-    }
-
-    const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
-    const audioDna: AudioDna = {
-      tempo: existing.tempo ?? null,
-      key: existing.key ?? null,
-      energy: existing.energy ?? null,
-      loudness: existing.loudness ?? null,
-      atmosphereTags: existing.atmosphereTags ?? null,
-      lyricsScore: existing.lyricsScore ?? null,
-      lyricsNotes: existing.lyricsNotes ?? null,
-      compositionScore: composition.score,
-      compositionNotes: composition.notes,
-      computedAt: new Date().toISOString(),
-    };
-
-    await db
-      .update(tracks)
-      .set({ audioDna: JSON.stringify(audioDna) })
-      .where(eq(tracks.id, track.id!));
-
-    return NextResponse.json({ audioDna });
-  } catch (error: any) {
-    console.error(`[analyze-composition] failed for track ${id}:`, error?.message ?? error);
-    return NextResponse.json({ error: "Composition analysis failed" }, { status: 500 });
+  const audioDna = await analyzeTrackDna(id);
+  if (!audioDna) {
+    return NextResponse.json({ error: "Composition analysis failed" }, { status: 502 });
   }
+
+  return NextResponse.json({ audioDna });
 }

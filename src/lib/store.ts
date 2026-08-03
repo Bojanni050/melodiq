@@ -434,6 +434,7 @@ export interface Playlist {
   description?: string | null;
   coverUrl?: string | null;
   trackIds: string[];
+  isSystem?: boolean;
   createdAt: string;
 }
 

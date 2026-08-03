@@ -127,6 +127,7 @@ CREATE TABLE IF NOT EXISTS "playlists" (
   "description" varchar(500),
   "s3_key_cover" varchar(512),
   "s3_key_cover_thumb" varchar(512),
+  "is_system" boolean NOT NULL DEFAULT false,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
@@ -291,6 +292,7 @@ const alterPlaylistsSql = `
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS description varchar(500);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover varchar(512);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover_thumb varchar(512);
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_system boolean NOT NULL DEFAULT false;
 `;
 
 const tracksWorkspaceFkSql = `

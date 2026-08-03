@@ -39,7 +39,9 @@ export default function TrackActionMenu({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
-  const playlistsContainingTrack = allPlaylists.filter((playlist) => playlist.trackIds.includes(track.id));
+  // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
+  // manually removed from them, so they never show up in this list.
+  const playlistsContainingTrack = allPlaylists.filter((playlist) => !playlist.isSystem && playlist.trackIds.includes(track.id));
 
   useEffect(() => {
     if (!menuOpen) return;

@@ -3,6 +3,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { songArchive, tracks } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
+import { analyzeTrackDna } from "@/lib/track-dna-analysis";
+import { addTrackToMasterTracksPlaylist } from "@/lib/playlists";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +111,21 @@ export async function POST(request: NextRequest) {
     .returning();
 
   const row = inserted[0];
+
+  if (row.trackId) {
+    // Keeps the user's "Master Tracks" playlist in sync with what's linked.
+    await addTrackToMasterTracksPlaylist(auth.userId, row.trackId).catch((error) => {
+      console.error(`[archive] failed to add track ${row.trackId} to Master Tracks playlist:`, error);
+    });
+
+    // Fire-and-forget: newly linking a track as a master track auto-runs
+    // composition analysis (and backfills lyrics analysis if it's missing),
+    // regardless of the AUTO_ANALYZE_COMPOSITION setting.
+    void analyzeTrackDna(row.trackId, { includeLyricsIfMissing: true }).catch((error) => {
+      console.error(`[archive] auto-analysis failed for track ${row.trackId}:`, error);
+    });
+  }
+
   return NextResponse.json({
     entry: {
       id: row.id,

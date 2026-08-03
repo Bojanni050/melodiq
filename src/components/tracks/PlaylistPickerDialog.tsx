@@ -23,6 +23,9 @@ export default function PlaylistPickerDialog({
   tracksById,
 }: PlaylistPickerDialogProps) {
   const allPlaylists = usePlaylistStore((state) => state.playlists);
+  // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
+  // manually added, so they're never offered as a target here.
+  const selectablePlaylists = allPlaylists.filter((p) => !p.isSystem);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   if (!isOpen) return null;
@@ -106,10 +109,10 @@ export default function PlaylistPickerDialog({
         {/* Playlist list */}
         <div className="max-h-[380px] overflow-y-auto px-3 pb-2">
           <div className="space-y-1">
-            {allPlaylists.length === 0 ? (
+            {selectablePlaylists.length === 0 ? (
               <p className="text-sm text-white/40 italic px-3 py-6 text-center">No playlists yet</p>
             ) : (
-              allPlaylists.map((playlist) => {
+              selectablePlaylists.map((playlist) => {
                 const fully = alreadyInPlaylist(playlist.id);
                 const partial = !fully && partiallyInPlaylist(playlist.id);
                 const isChecked = selected.has(playlist.id);

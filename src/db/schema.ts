@@ -225,6 +225,10 @@ export const playlists = pgTable("playlists", {
   description: varchar("description", { length: 500 }),
   s3KeyCover: varchar("s3_key_cover", { length: 512 }),
   s3KeyCoverThumb: varchar("s3_key_cover_thumb", { length: 512 }),
+  // System-managed playlists (e.g. "Master Tracks"): can't be deleted,
+  // renamed, or have tracks manually added/removed — only reordered. See
+  // ensureMasterTracksPlaylist in lib/playlists.ts.
+  isSystem: boolean("is_system").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 import { usePlayerStore } from "@/lib/store";
@@ -363,6 +364,113 @@ function TranslationRow({
   );
 }
 
+// Compact ⋯ menu for the track linked to a Master Tracks entry — kept
+// separate from the full library TrackActionMenu since this context only
+// needs a handful of track-scoped actions, not playlist/workspace plumbing.
+function EntryTrackActionsMenu({
+  entry,
+  onPlay,
+  onAnalyze,
+  analyzing,
+  onUnlink,
+}: {
+  entry: ArchiveEntry;
+  onPlay: () => void;
+  onAnalyze: () => void;
+  analyzing: boolean;
+  onUnlink: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const downloadUrl = entry.trackAudioUrlHd || entry.trackAudioUrl;
+
+  return (
+    <div className="relative shrink-0" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/10 transition-colors"
+        title="Track actions"
+        aria-label="Track actions"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onPlay();
+            }}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+          >
+            Play
+          </button>
+          {downloadUrl && (
+            <a
+              href={downloadUrl}
+              download
+              onClick={() => setOpen(false)}
+              className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            >
+              Download
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onAnalyze();
+            }}
+            disabled={analyzing}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {analyzing ? "Analyzing composition…" : "Analyze Composition"}
+          </button>
+          <Link
+            href="/library"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+          >
+            Open in Library
+          </Link>
+          <div className="my-1 h-px bg-white/10" />
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onUnlink();
+            }}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+          >
+            Unlink track
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ArchivePage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -372,6 +480,8 @@ export default function ArchivePage() {
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
+  const [dnaRefreshKeys, setDnaRefreshKeys] = useState<Record<string, number>>({});
 
   const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -455,6 +565,38 @@ export default function ArchivePage() {
     } else {
       playTrackFromGesture(track);
     }
+  }
+
+  async function handleAnalyzeComposition(entry: ArchiveEntry) {
+    if (!entry.trackId) return;
+    setAnalyzingIds((prev) => new Set(prev).add(entry.id));
+    try {
+      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-composition`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        console.error(`Failed to analyze composition: HTTP ${res.status}`, body);
+        return;
+      }
+      // Refreshes the expanded Track DNA panel, if open, without a reload.
+      setDnaRefreshKeys((prev) => ({ ...prev, [entry.trackId!]: (prev[entry.trackId!] ?? 0) + 1 }));
+    } catch (error) {
+      console.error("Failed to analyze composition:", error);
+    } finally {
+      setAnalyzingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
+
+  async function handleUnlinkTrack(entry: ArchiveEntry) {
+    const res = await fetch(`/api/archive/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trackId: null }),
+    });
+    if (res.ok) void refetchEntries();
   }
 
   const handlePlayAll = useCallback(() => {
@@ -640,16 +782,27 @@ export default function ArchivePage() {
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(entry)}
-                        className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        aria-label="Delete entry"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      <div className="flex items-start gap-1 shrink-0">
+                        {entry.trackId && (
+                          <EntryTrackActionsMenu
+                            entry={entry}
+                            onPlay={() => { if (playable) handlePlayTrack(playable); }}
+                            onAnalyze={() => void handleAnalyzeComposition(entry)}
+                            analyzing={analyzingIds.has(entry.id)}
+                            onUnlink={() => void handleUnlinkTrack(entry)}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(entry)}
+                          className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          aria-label="Delete entry"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
                     {(entry.translations || []).length > 0 && (
@@ -692,7 +845,7 @@ export default function ArchivePage() {
                           </svg>
                         </button>
                         {dnaOpenIds.has(entry.id) && (
-                          <TrackDnaPanel trackId={entry.trackId} />
+                          <TrackDnaPanel trackId={entry.trackId} refreshKey={dnaRefreshKeys[entry.trackId] ?? 0} />
                         )}
                       </>
                     )}

@@ -43,6 +43,9 @@ export async function DELETE(
     if (!existing) {
       return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
     }
+    if (existing.isSystem) {
+      return NextResponse.json({ error: "This playlist can't be deleted" }, { status: 403 });
+    }
 
     await db.delete(playlists).where(and(eq(playlists.id, id), eq(playlists.userId, auth.userId)));
     return NextResponse.json({ success: true });
@@ -69,6 +72,13 @@ export async function PATCH(
   try {
     const body = await request.json();
     const action = typeof body?.action === "string" ? body.action : "";
+
+    // System playlists (e.g. Master Tracks) are auto-managed: the only thing
+    // a user can change by hand is track order.
+    const SYSTEM_BLOCKED_ACTIONS = new Set(["add-track", "remove-track", "rename", "update-description"]);
+    if (existing.isSystem && SYSTEM_BLOCKED_ACTIONS.has(action)) {
+      return NextResponse.json({ error: "This playlist is managed automatically" }, { status: 403 });
+    }
 
     if (action === "add-track") {
       const trackId = typeof body?.trackId === "string" ? body.trackId : "";
