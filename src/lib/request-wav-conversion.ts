@@ -5,6 +5,7 @@ import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 import { logApi } from "@/lib/logger";
 import { createApimartWav } from "@/lib/providers/apimart";
+import { apimartAudioIndexForJobId } from "@/lib/apimart-wav";
 
 const MAX_SUBMIT_ATTEMPTS = 3;
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
@@ -41,9 +42,11 @@ async function requestApimartWavConversion(track: {
 }): Promise<string | null> {
   const startTime = Date.now();
   try {
-    // APIMart jobId format: "taskId,audioIndex"
-    const [taskId, audioIndexStr] = track.jobId.split(",");
-    const audioIndex = parseInt(audioIndexStr || "0", 10);
+    // APIMart jobId format: "taskId" (first track) or "taskId:1" (second track) —
+    // same convention as apimartAudioIndexForJobId / the polling fallbacks, not a
+    // comma-separated pair.
+    const taskId = track.jobId.split(":")[0];
+    const audioIndex = apimartAudioIndexForJobId(track.jobId);
     const result = await createApimartWav(taskId, audioIndex);
     
     await logApi({

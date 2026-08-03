@@ -15,11 +15,18 @@ import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
  * - APIMart: reset de auto-retry cooldown/teller (die na 8 mislukte pogingen
  *   permanent stopt) en laat het self-healing proces daarna direct opnieuw
  *   proberen, in plaats van te wachten op de volgende Library-poll.
+ *
+ * Optioneel: { trackId } in de body beperkt de retry tot die ene track
+ * (gebruikt door de "Retry WAV" actie in het track-actiemenu) — zonder
+ * trackId worden alle in aanmerking komende tracks van de user geretried.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
+
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const trackId = typeof body?.trackId === "string" ? body.trackId : undefined;
 
   try {
     const tracksToRetry = await db
@@ -32,7 +39,8 @@ export async function POST() {
           eq(tracks.status, "done"),
           isNotNull(tracks.audioId),
           isNotNull(tracks.jobId),
-          isNull(tracks.s3KeyHd)
+          isNull(tracks.s3KeyHd),
+          trackId ? eq(tracks.id, trackId) : undefined
         )
       );
 
@@ -74,7 +82,8 @@ export async function POST() {
           eq(tracks.provider, "apimart"),
           eq(tracks.status, "done"),
           isNotNull(tracks.jobId),
-          isNull(tracks.s3KeyHd)
+          isNull(tracks.s3KeyHd),
+          trackId ? eq(tracks.id, trackId) : undefined
         )
       );
 
@@ -87,7 +96,7 @@ export async function POST() {
         .set({ wavJobId: null, wavRetryAt: null, wavRetryCount: 0 })
         .where(inArray(tracks.id, apimartTracksToRetry.map((t) => t.id!)));
 
-      await retryStaleApimartWavConversions(userId);
+      await retryStaleApimartWavConversions(userId, trackId);
       for (const track of apimartTracksToRetry) {
         results.push({ trackId: track.id!, success: true });
       }

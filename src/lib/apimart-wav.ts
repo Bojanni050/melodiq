@@ -37,7 +37,7 @@ export function apimartAudioIndexForJobId(jobId: string): number {
  * existing one and downloads/uploads the result once completed. Mirrors
  * retryStaleWavConversions (PoYo) but polls instead of waiting on a webhook.
  */
-export async function retryStaleApimartWavConversions(userId: string): Promise<void> {
+export async function retryStaleApimartWavConversions(userId: string, trackId?: string): Promise<void> {
   const cutoff = new Date(Date.now() - APIMART_WAV_RETRY_COOLDOWN_MS);
 
   const candidates = await db
@@ -51,7 +51,8 @@ export async function retryStaleApimartWavConversions(userId: string): Promise<v
         isNull(tracks.deletedAt),
         isNull(tracks.s3KeyHd),
         or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
-        lt(tracks.wavRetryCount, MAX_AUTO_APIMART_WAV_RETRIES)
+        lt(tracks.wavRetryCount, MAX_AUTO_APIMART_WAV_RETRIES),
+        trackId ? eq(tracks.id, trackId) : undefined
       )
     );
 

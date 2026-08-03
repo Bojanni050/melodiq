@@ -95,6 +95,7 @@ const TrackCard = memo(function TrackCard({
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
+  const [retryingWav, setRetryingWav] = useState(false);
 
   async function handleAnalyzeComposition() {
     setAnalyzingComposition(true);
@@ -112,6 +113,25 @@ const TrackCard = memo(function TrackCard({
       console.error("Failed to analyze composition:", error);
     } finally {
       setAnalyzingComposition(false);
+    }
+  }
+
+  async function handleRetryWav() {
+    setRetryingWav(true);
+    try {
+      const res = await fetch("/api/tracks/retry-wav", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackId: track.id }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        console.error(`Failed to retry WAV: HTTP ${res.status}`, body);
+      }
+    } catch (error) {
+      console.error("Failed to retry WAV:", error);
+    } finally {
+      setRetryingWav(false);
     }
   }
 
@@ -671,6 +691,12 @@ const TrackCard = memo(function TrackCard({
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onAnalyzeCompositionClick={handleAnalyzeComposition}
               analyzingComposition={analyzingComposition}
+              onRetryWavClick={
+                (track.provider === "poyo" || track.provider === "apimart") && !track.s3KeyHd
+                  ? handleRetryWav
+                  : undefined
+              }
+              retryingWav={retryingWav}
             />
           )}
           <button

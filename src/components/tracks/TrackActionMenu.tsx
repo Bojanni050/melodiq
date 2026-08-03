@@ -20,6 +20,8 @@ interface TrackActionMenuProps {
   onLinkToArchiveClick?: () => void;
   onAnalyzeCompositionClick?: () => void;
   analyzingComposition?: boolean;
+  onRetryWavClick?: () => void;
+  retryingWav?: boolean;
 }
 
 export default function TrackActionMenu({
@@ -35,6 +37,8 @@ export default function TrackActionMenu({
   onLinkToArchiveClick,
   onAnalyzeCompositionClick,
   analyzingComposition,
+  onRetryWavClick,
+  retryingWav,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -128,6 +132,19 @@ export default function TrackActionMenu({
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
+            </button>
+          )}
+          {onRetryWavClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRetryWavClick();
+                setMenuOpen(false);
+              }}
+              disabled={retryingWav}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {retryingWav ? "Retrying WAV..." : "Retry WAV"}
             </button>
           )}
           <button
