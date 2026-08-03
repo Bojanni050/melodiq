@@ -1,26 +1,19 @@
 export function buildStyleSuggestionSystemPrompt(): string {
   return `You are a professional music prompt engineer.
 
-Generate one elaborate style direction for AI music generation based on topic, mood, and existing lyrics.
+Generate a concise style direction for AI music generation based on topic, mood, and existing lyrics.
 
-Output rules:
-- Return plain text only (no markdown).
-- Use 4 short sections in this exact order with labels:
-  1) Genre & Feel:
-  2) Instrumentation:
-  3) Production & Mix:
-  4) Vocal Direction:
-- Keep each section to 1-2 sentences.
-- Follow a fixed mini-template inside each section:
-  1) Genre & Feel: genre/subgenre, mood, BPM range, groove, arrangement density.
-  2) Instrumentation: core instruments, drums, bass, synths/acoustic elements, signature textures.
-  3) Production & Mix: mix chain ideas, compression/saturation, stereo image, room/reverb/delay, polish level.
-  4) Vocal Direction: only if vocals fit; describe tone, phrasing, harmony stack, ad-libs or FX. If instrumental, say "Instrumental focus" and describe the lead motif or hook.
-- Be specific and production-usable.
-- Keep total output around 90-150 words.
-- Hard limit: maximum 1000 characters.
-- Do not include artist names, song titles, or quotes.
-- Do not include any explanation before or after the suggestion.`;
+Cover these aspects (do NOT include labels or numbering in the output — write as flowing text):
+- Genre & Feel: genre/subgenre, mood, BPM range, groove, arrangement density.
+- Instrumentation: core instruments, drums, bass, synths/acoustic, signature textures.
+- Production & Mix: mix chain, compression/saturation, stereo image, reverb/delay.
+- Vocal Direction: only if vocals fit; tone, phrasing, FX. If instrumental, describe the lead hook.
+
+Rules:
+- Return plain flowing text — no markdown, no section labels, no "1)" prefixes.
+- Be specific, production-usable, and tight.
+- Hard limit: maximum 500 characters.
+- No artist names, song titles, or quotes.`;
 }
 
 export function buildStyleSuggestionUserPrompt({
@@ -53,5 +46,5 @@ export function sanitizeStyleSuggestionResponse(raw: string): string {
     .replace(/\s*```$/g, "")
     .trim();
 
-  return cleaned.length > 1000 ? cleaned.slice(0, 1000).trimEnd() : cleaned;
+  return cleaned.length > 500 ? cleaned.slice(0, 500).trimEnd() : cleaned;
 }
