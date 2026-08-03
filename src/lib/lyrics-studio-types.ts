@@ -22,6 +22,7 @@ export interface LyricStudioSnapshot {
     creativityLevel: number;
     contextLevel: number;
     styleSuggestion: string;
+    llmModel: string;
   };
 }
 

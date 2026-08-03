@@ -11,6 +11,7 @@ import {
   STYLE_SUGGESTIONS,
 } from "@/lib/lyrics-studio-constants";
 import type { BlockType } from "@/lib/lyrics-utils";
+import type { LyricStudioModelOption } from "@/app/api/lyric-studio/models/route";
 
 type LyricsControlPanelProps = {
   topic: string;
@@ -35,6 +36,8 @@ type LyricsControlPanelProps = {
   contextLevel: number;
   contextZone: string;
   topP: number;
+  llmModel: string;
+  onLlmModelChange: (value: string) => void;
   canGenerateBlocks: boolean;
   generatingSong: boolean;
   blockTypes: BlockType[];
@@ -93,6 +96,8 @@ export default function LyricsControlPanel({
   contextLevel,
   contextZone,
   topP,
+  llmModel,
+  onLlmModelChange,
   canGenerateBlocks,
   generatingSong,
   blockTypes,
@@ -135,6 +140,36 @@ export default function LyricsControlPanel({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
+
+  const [modelOptions, setModelOptions] = useState<{ recommended: LyricStudioModelOption[]; others: LyricStudioModelOption[] } | null>(null);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!showAdvanced || modelOptions || modelsLoading) return;
+    let active = true;
+    setModelsLoading(true);
+    setModelsError(null);
+    fetch("/api/lyric-studio/models")
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!active) return;
+        if (!res.ok) {
+          setModelsError(data?.error || "Kon modellen niet laden.");
+          return;
+        }
+        setModelOptions({ recommended: data.recommended ?? [], others: data.others ?? [] });
+      })
+      .catch(() => {
+        if (active) setModelsError("Kon modellen niet laden.");
+      })
+      .finally(() => {
+        if (active) setModelsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showAdvanced, modelOptions, modelsLoading]);
 
   function getRandomSubset(arr: string[], count = 12): string[] {
     const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -527,6 +562,45 @@ export default function LyricsControlPanel({
                   </span>
                 </span>
               </label>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 space-y-2">
+                <label className="text-sm text-white/85" htmlFor="lyric-studio-llm-model">LLM model</label>
+                <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/8 to-white/4 p-px">
+                  <select
+                    id="lyric-studio-llm-model"
+                    value={llmModel}
+                    onChange={(event) => onLlmModelChange(event.target.value)}
+                    disabled={modelsLoading}
+                    className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none disabled:opacity-50"
+                  >
+                    <option value="" className="bg-gray-900">Standaard (uit Instellingen)</option>
+                    {modelOptions && modelOptions.recommended.length > 0 && (
+                      <optgroup label="Aanbevolen">
+                        {modelOptions.recommended.map((model) => (
+                          <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {modelOptions && modelOptions.others.length > 0 && (
+                      <optgroup label="Overige (A-Z)">
+                        {modelOptions.others.map((model) => (
+                          <option key={model.id} value={model.id} className="bg-gray-900">{model.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
+                    v
+                  </span>
+                </div>
+                <p className="text-xs text-white/50">
+                  {modelsLoading
+                    ? "Modellen laden..."
+                    : modelsError
+                      ? modelsError
+                      : "Overschrijft alleen dit Lyric Studio-project. Instellingen blijft de standaard — ook na Clear All."}
+                </p>
+              </div>
 
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
                 <div className="flex items-center justify-between text-sm text-white/85">

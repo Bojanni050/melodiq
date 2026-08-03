@@ -36,6 +36,7 @@ interface GenerateBlockBody {
   isFirstChorus?: unknown;
   temperature?: unknown;
   topP?: unknown;
+  llmModel?: unknown;
 }
 
 type ChorusMode = "repeat" | "variation";
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel } = body;
   const vocalistTag = body.vocalistTag;
   const performerDirections = body.performerDirections;
 
@@ -134,6 +135,9 @@ export async function POST(request: NextRequest) {
   }
   if (topP !== undefined && (typeof topP !== "number" || topP < 0.1 || topP > 1.0)) {
     return NextResponse.json({ error: "topP must be between 0.1 and 1.0" }, { status: 400 });
+  }
+  if (llmModel !== undefined && typeof llmModel !== "string") {
+    return NextResponse.json({ error: "llmModel must be a string" }, { status: 400 });
   }
 
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
@@ -225,6 +229,7 @@ Now write only the lyrics for: ${blockLabel}`;
       purpose: "lyrics",
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
+      openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
     });
 
     await logApi({
@@ -232,7 +237,7 @@ Now write only the lyrics for: ${blockLabel}`;
       type: "llm",
       provider: llmProvider,
       endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP }),
+      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel }),
       response: JSON.stringify({ result: result.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,

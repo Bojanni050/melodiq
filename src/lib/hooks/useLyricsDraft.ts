@@ -37,6 +37,8 @@ export interface LyricsDraftState {
   setContextLevel: (v: number) => void;
   styleSuggestion: string;
   setStyleSuggestion: (v: string) => void;
+  llmModel: string;
+  setLlmModel: (v: string) => void;
   savedSnapshots: LyricStudioSnapshot[];
   setSavedSnapshots: (v: LyricStudioSnapshot[]) => void;
   hasRestoredDraft: boolean;
@@ -58,6 +60,7 @@ export function useLyricsDraft(): LyricsDraftState {
   const [creativityLevel, setCreativityLevel] = useState(5);
   const [contextLevel, setContextLevel] = useState(5);
   const [styleSuggestion, setStyleSuggestion] = useState("");
+  const [llmModel, setLlmModel] = useState("");
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
@@ -79,7 +82,7 @@ export function useLyricsDraft(): LyricsDraftState {
         structure?: string; customStructure?: string;
         language?: string; customLanguage?: string;
         repetitiveChorus?: boolean; creativityLevel?: number;
-        contextLevel?: number; styleSuggestion?: string;
+        contextLevel?: number; styleSuggestion?: string; llmModel?: string;
       };
 
       if (typeof parsed.topic === "string") setTopic(parsed.topic);
@@ -104,6 +107,7 @@ export function useLyricsDraft(): LyricsDraftState {
         setContextLevel(Math.round(parsed.contextLevel));
       }
       if (typeof parsed.styleSuggestion === "string") setStyleSuggestion(parsed.styleSuggestion);
+      if (typeof parsed.llmModel === "string") setLlmModel(parsed.llmModel);
 
       if (Array.isArray(parsed.blocks)) {
         const validTypes = new Set<BlockType>(BLOCK_TYPES);
@@ -138,13 +142,13 @@ export function useLyricsDraft(): LyricsDraftState {
     const payload = buildLyricsStudioDraftPayload({
       topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar,
       structure, customStructure, language, customLanguage,
-      repetitiveChorus, creativityLevel, contextLevel, styleSuggestion,
+      repetitiveChorus, creativityLevel, contextLevel, styleSuggestion, llmModel,
     });
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
     activePreset, blocks, customLanguage, customStructure, hasRestoredDraft,
     language, lyricCols, mood, repetitiveChorus, creativityLevel, contextLevel,
-    showLyricsSidebar, styleSuggestion, structure, style, topic, vocalistTag, performerDirections,
+    showLyricsSidebar, styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections,
   ]);
 
   return {
@@ -161,6 +165,7 @@ export function useLyricsDraft(): LyricsDraftState {
     creativityLevel, setCreativityLevel,
     contextLevel, setContextLevel,
     styleSuggestion, setStyleSuggestion,
+    llmModel, setLlmModel,
     savedSnapshots, setSavedSnapshots,
     hasRestoredDraft,
   };
@@ -195,4 +200,5 @@ export function loadSnapshotIntoState(
   state.setCreativityLevel(typeof payload.creativityLevel === "number" && payload.creativityLevel >= 1 && payload.creativityLevel <= 10 ? Math.round(payload.creativityLevel) : 5);
   state.setContextLevel(typeof payload.contextLevel === "number" && payload.contextLevel >= 1 && payload.contextLevel <= 10 ? Math.round(payload.contextLevel) : 7);
   state.setStyleSuggestion(payload.styleSuggestion || "");
+  state.setLlmModel(typeof payload.llmModel === "string" ? payload.llmModel : "");
 }

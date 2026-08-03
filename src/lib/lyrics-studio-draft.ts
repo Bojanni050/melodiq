@@ -19,6 +19,7 @@ export type LyricsStudioDraftPayload = {
   creativityLevel: number;
   contextLevel: number;
   styleSuggestion: string;
+  llmModel: string;
 };
 
 export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload): LyricsStudioDraftPayload {
@@ -40,6 +41,7 @@ export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload)
     creativityLevel: payload.creativityLevel,
     contextLevel: payload.contextLevel,
     styleSuggestion: payload.styleSuggestion,
+    llmModel: payload.llmModel,
   };
 }
 
