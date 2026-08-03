@@ -132,7 +132,10 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
           userId, type: "webhook", provider: "apimart",
           endpoint: "/api/tracks/retry-wav (apimart self-heal)",
           request: JSON.stringify({ trackId: track.id, wavJobId: track.wavJobId }),
-          response: JSON.stringify({ error: "No audio URL in completed task" }),
+          // Includes the raw task payload (not just the error) so a mismatch between
+          // extractApimartAudioUrl's expected shape and APIMart's actual response is
+          // diagnosable from the log instead of needing to reproduce it live.
+          response: JSON.stringify({ error: "No audio URL in completed task", raw: raw?.data }).slice(0, 4000),
           statusCode: 400, duration: Date.now() - startTime,
         });
         result.failedTrackIds.push(track.id!);
