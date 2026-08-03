@@ -20,6 +20,7 @@ import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
 import TrackActionMenu from "./TrackActionMenu";
 import TrackDnaPanel from "./TrackDnaPanel";
+import AdvancedDnaResult from "./AdvancedDnaResult";
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
 
@@ -114,13 +115,30 @@ const TrackCard = memo(function TrackCard({
     } catch (error) {
       console.error("Failed to analyze composition:", error);
     } finally {
-      setAnalyzingComposition(false);
-    }
-  }
+          setAnalyzingComposition(false);
+        }
+      }
 
-  async function handleRetryWav() {
-    setRetryingWav(true);
-    setRetryWavResult(null);
+      const [advancedDnaRunning, setAdvancedDnaRunning] = useState(false);
+      const [advancedDnaResult, setAdvancedDnaResult] = useState<{ lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>(null);
+
+      async function handleAdvancedDna() {
+        setAdvancedDnaRunning(true);
+        try {
+          const res = await fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" });
+          if (!res.ok) return;
+          const data = await res.json();
+          setAdvancedDnaResult(data);
+        } catch (error) {
+          console.error("Failed advanced DNA analysis:", error);
+        } finally {
+          setAdvancedDnaRunning(false);
+        }
+      }
+
+      async function handleRetryWav() {
+        setRetryingWav(true);
+        setRetryWavResult(null);
     try {
       const res = await fetch("/api/tracks/retry-wav", {
         method: "POST",
@@ -701,7 +719,9 @@ const TrackCard = memo(function TrackCard({
               onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onAnalyzeCompositionClick={handleAnalyzeComposition}
-              analyzingComposition={analyzingComposition}
+                            analyzingComposition={analyzingComposition}
+                            onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
+                            advancedDnaRunning={advancedDnaRunning}
               onRetryWavClick={
                 (track.provider === "poyo" || track.provider === "apimart") && !track.s3KeyHd
                   ? handleRetryWav
@@ -729,8 +749,17 @@ const TrackCard = memo(function TrackCard({
       </div>
 
       {dnaOpen && <TrackDnaPanel trackId={track.id} refreshKey={dnaRefreshKey} />}
-    </>
-  );
+
+            {advancedDnaResult && (
+              <AdvancedDnaResult
+                lyricsAnalysis={advancedDnaResult.lyricsAnalysis}
+                compositionAnalysis={advancedDnaResult.compositionAnalysis}
+                tips={advancedDnaResult.tips}
+                onClose={() => setAdvancedDnaResult(null)}
+              />
+            )}
+          </>
+        );
 }, (prevProps, nextProps) => {
   return (
     prevProps.track.id === nextProps.track.id &&

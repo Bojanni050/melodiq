@@ -127,11 +127,17 @@ export const PROVIDERS: ProviderConfig[] = [
       },
       {
         key: "OPENROUTER_TRACKDNA_MODEL",
-        label: "Track DNA Model",
-        type: "text",
-        placeholder: "google/gemini-2.5-flash",
-      },
-    ],
+                label: "Track DNA Model",
+                type: "text",
+                placeholder: "google/gemini-2.5-flash",
+              },
+              {
+                key: "OPENROUTER_ADVANCED_DNA_MODEL",
+                label: "Advanced DNA Model",
+                type: "text",
+                placeholder: "google/gemini-2.5-flash",
+              },
+            ],
     testEndpoint: "openrouter",
   },
   {

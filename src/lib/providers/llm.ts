@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
 export type LLMProvider = "openrouter" | "openai";
-export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "default";
+export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "default";
 
 interface CallLLMOptions {
   purpose?: LLMPurpose;
@@ -29,10 +29,13 @@ async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""
     return "openrouter";
   }
   if (purpose === "trackdna") {
-    return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
+      return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
+    }
+    if (purpose === "advanced") {
+      return normalizeProvider(await getSetting("ADVANCED_LLM_PROVIDER")) || "openrouter";
+    }
+    return normalizeProvider(await getSetting("LLM_PROVIDER"));
   }
-  return normalizeProvider(await getSetting("LLM_PROVIDER"));
-}
 
 export async function getLLMProviderForPurpose(purpose: LLMPurpose): Promise<LLMProvider> {
   return (await getPurposeProvider(purpose)) || "openrouter";
@@ -55,6 +58,7 @@ export async function callLLM(
     (purpose === "prompt" ? await getSetting("OPENROUTER_PROMPT_MODEL") : "") ||
     (purpose === "lyrics" ? await getSetting("OPENROUTER_LYRICS_MODEL") : "") ||
     (purpose === "trackdna" ? await getSetting("OPENROUTER_TRACKDNA_MODEL") : "") ||
+    (purpose === "advanced" ? await getSetting("OPENROUTER_ADVANCED_DNA_MODEL") : "") ||
     (await getSetting("OPENROUTER_MODEL")) ||
     process.env.OPENROUTER_MODEL ||
     "google/gemini-2.5-flash";

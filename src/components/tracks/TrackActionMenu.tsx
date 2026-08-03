@@ -20,6 +20,8 @@ interface TrackActionMenuProps {
   onLinkToArchiveClick?: () => void;
   onAnalyzeCompositionClick?: () => void;
   analyzingComposition?: boolean;
+  onAdvancedDnaClick?: () => void;
+  advancedDnaRunning?: boolean;
   onRetryWavClick?: () => void;
   retryingWav?: boolean;
   retryWavResult?: "success" | "error" | null;
@@ -38,6 +40,8 @@ export default function TrackActionMenu({
   onLinkToArchiveClick,
   onAnalyzeCompositionClick,
   analyzingComposition,
+  onAdvancedDnaClick,
+  advancedDnaRunning,
   onRetryWavClick,
   retryingWav,
   retryWavResult,
@@ -134,9 +138,22 @@ export default function TrackActionMenu({
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
-            </button>
-          )}
-          {onRetryWavClick && (
+                          </button>
+                        )}
+                        {onAdvancedDnaClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAdvancedDnaClick();
+                              setMenuOpen(false);
+                            }}
+                            disabled={advancedDnaRunning}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {advancedDnaRunning ? "Advanced analysis..." : "Advanced Track DNA"}
+                          </button>
+                        )}
+                        {onRetryWavClick && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
