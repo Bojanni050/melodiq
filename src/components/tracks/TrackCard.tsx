@@ -94,6 +94,10 @@ const TrackCard = memo(function TrackCard({
   const [optimisticPlayCount, setOptimisticPlayCount] = useState(track.playCount ?? 0);
   const [optimisticOthersPlayCount, setOptimisticOthersPlayCount] = useState(track.othersPlayCount ?? 0);
   const [dnaOpen, setDnaOpen] = useState(false);
+  // Keep the panel in the DOM after first open so the fetch doesn't repeat
+  // every time the card is toggled — the animation wrapper hides it instead.
+  const [dnaMounted, setDnaMounted] = useState(false);
+  useEffect(() => { if (dnaOpen) setDnaMounted(true); }, [dnaOpen]);
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
@@ -760,16 +764,27 @@ const TrackCard = memo(function TrackCard({
         </div>
       </div>
 
-      {dnaOpen && (
-        <TrackDnaPanel
-          trackId={track.id}
-          refreshKey={dnaRefreshKey}
-          advancedDnaResult={advancedDnaResult}
-          advancedDnaRunning={advancedDnaRunning}
-          onRunAdvancedDna={handleAdvancedDna}
-          trackStatus={track.status}
-        />
-      )}
+      {/* Animated expand/collapse wrapper using the CSS grid trick.
+          grid-template-rows: 0fr → 1fr transitions height smoothly for any
+          content size without needing JS measurements. */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+          dnaOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {dnaMounted && (
+            <TrackDnaPanel
+              trackId={track.id}
+              refreshKey={dnaRefreshKey}
+              advancedDnaResult={advancedDnaResult}
+              advancedDnaRunning={advancedDnaRunning}
+              onRunAdvancedDna={handleAdvancedDna}
+              trackStatus={track.status}
+            />
+          )}
+        </div>
+      </div>
           </>
         );
 }, (prevProps, nextProps) => {
