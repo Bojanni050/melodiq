@@ -21,8 +21,10 @@ export function extractApimartAudioUrl(raw: any): string | null {
     result?.audio_url,
     result?.url,
     result?.wav_url,
+    result?.wavUrl,
     data?.audio_url,
     data?.url,
+    data?.wavUrl,
   ];
   const found = candidates.find((value) => typeof value === "string" && value.trim().length > 0);
   return typeof found === "string" ? found : null;
