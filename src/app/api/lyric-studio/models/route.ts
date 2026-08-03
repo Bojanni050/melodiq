@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
+import type { LLMModel } from "@/lib/settings-utils";
 
-export interface LyricStudioModelOption {
-  id: string;
-  name: string;
-}
+export type LyricStudioModelOption = LLMModel;
 
 // Priority order for the "recommended" group — flagship, strong-at-creative-writing
 // models. Only ones actually present in the live OpenRouter catalog are kept, so this
@@ -51,14 +49,24 @@ export async function GET() {
       timeout: 15000,
     });
 
-    const all: LyricStudioModelOption[] = (response.data?.data || [])
+    const all: LLMModel[] = (response.data?.data || [])
       .filter(isTextCapable)
-      .map((m: any) => ({ id: m.id as string, name: (m.name || m.id.split("/").pop()) as string }));
+      .map((m: any) => ({
+        id: m.id as string,
+        name: (m.name || m.id.split("/").pop()) as string,
+        description: m.description || "",
+        pricing: {
+          prompt: m.pricing?.prompt,
+          completion: m.pricing?.completion,
+        },
+        context_length: m.context_length,
+        architecture: m.architecture,
+      }));
 
     const byId = new Map(all.map((m) => [m.id, m]));
     const recommended = RECOMMENDED_MODEL_PRIORITY
       .map((id) => byId.get(id))
-      .filter((m): m is LyricStudioModelOption => !!m)
+      .filter((m): m is LLMModel => !!m)
       .slice(0, 5);
     const recommendedIds = new Set(recommended.map((m) => m.id));
     const others = all

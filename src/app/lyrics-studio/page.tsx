@@ -26,6 +26,7 @@ import {
   autoGrowTextarea,
   BLOCK_LABELS,
   combineLyrics,
+  countGeneratableBlocks,
   createBlock,
   createPresetBlocks,
   parseStructureText,
@@ -317,6 +318,8 @@ export default function LyricsStudioPage() {
     const presetName = activePreset || STRUCTURE_PRESET_MAP[structure] || "Pop";
     return createPresetBlocks(allPresets[presetName] || allPresets.Pop, presetName);
   }
+
+  const estimatedSongBlockCount = countGeneratableBlocks(getGenerationBlocks(), repetitiveChorus);
 
   async function generateSongLyrics() {
     if (!canGenerateBlocks || generatingSong) return;
@@ -664,6 +667,7 @@ export default function LyricsStudioPage() {
                 onLiteralnessLevelChange={setLiteralnessLevel}
                 contextLevel={contextLevel} contextZone={contextZone} topP={topP}
                 llmModel={llmModel} onLlmModelChange={setLlmModel}
+                estimatedSongBlockCount={estimatedSongBlockCount}
                 canGenerateBlocks={canGenerateBlocks} generatingSong={generatingSong}
                 blockTypes={BLOCK_TYPES} blockLabels={BLOCK_LABELS} blockColors={BLOCK_COLORS}
                 presets={allPresets} combinedLyrics={combinedLyrics} copied={copied}

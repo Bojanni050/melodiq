@@ -113,3 +113,34 @@ export function autoGrowTextarea(element: HTMLTextAreaElement): void {
   element.style.height = "auto";
   element.style.height = `${element.scrollHeight}px`;
 }
+
+// How many blocks a "Generate complete song" run will actually call the LLM for —
+// marker blocks (instrumental/drop) never call it, and repeated choruses reuse the
+// first chorus's content instead of generating again (see generateSongLyrics).
+export function countGeneratableBlocks(blockList: LyricBlock[], repetitiveChorus: boolean): number {
+  let count = 0;
+  let sawChorus = false;
+  for (const block of blockList) {
+    if (isEmptyLyricBlockType(block.type)) continue;
+    if (block.type === "chorus" && repetitiveChorus && sawChorus && !block.uniqueChorusOverride) continue;
+    if (block.type === "chorus") sawChorus = true;
+    count++;
+  }
+  return count;
+}
+
+// Rough per-call token estimate for one Lyric Studio block generation request —
+// system+user prompt (grows as more blocks accumulate as context) plus one section
+// of lyrics as output. This is a ballpark for the cost estimate shown in the UI,
+// not an exact prediction — actual usage varies with topic/mood/style length.
+const ESTIMATED_INPUT_TOKENS_PER_BLOCK = 700;
+const ESTIMATED_OUTPUT_TOKENS_PER_BLOCK = 130;
+
+export function estimateSongGenerationCost(
+  pricing: { prompt: string | number; completion: string | number },
+  blockCount: number
+): number {
+  const promptPrice = Number(pricing.prompt) || 0;
+  const completionPrice = Number(pricing.completion) || 0;
+  return blockCount * (ESTIMATED_INPUT_TOKENS_PER_BLOCK * promptPrice + ESTIMATED_OUTPUT_TOKENS_PER_BLOCK * completionPrice);
+}
