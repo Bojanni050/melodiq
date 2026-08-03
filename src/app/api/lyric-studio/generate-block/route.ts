@@ -202,6 +202,7 @@ Write in the specified language
 Match the mood and topic provided
 Keep syllable flow natural and singable — let meaningful words (nouns, verbs, adjectives) fall on the strong beats, the way they would if spoken aloud, and keep small connector words (a, the, of, and, to) light
 Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled
+Avoid AI songwriting clichés: stock breakup/nostalgia props like "your coat still on my chair", "half-empty cups gone cold", cold coffee, unmade beds, ticking clocks, or fading photographs. If the topic calls for that kind of imagery, find a detail specific to this song's actual topic and mood instead of reaching for the generic default
 Chorus lines should be punchy and memorable — build around one crucial, hook-worthy line rather than several competing ideas
 Bridge should contrast emotionally with the verses
 ${performerTagInstruction ? `${performerTagInstruction}\n` : ""}Return only the raw lyric text, nothing else`;
