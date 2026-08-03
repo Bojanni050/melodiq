@@ -13,6 +13,8 @@ interface User {
   composerAlias: string | null;
   writerAlias: string | null;
   bio: string | null;
+  profileImageUrl: string | null;
+  heroImageUrl: string | null;
   createdAt: string;
 }
 
@@ -58,6 +60,8 @@ export default function AccountPage() {
   const [savingSecurity, setSavingSecurity] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [securityMessage, setSecurityMessage] = useState("");
+  const [uploadingProfile, setUploadingProfile] = useState(false);
+  const [uploadingHero, setUploadingHero] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -124,6 +128,42 @@ export default function AccountPage() {
       setSecurityMessage(data.error || "Failed to update password");
     }
     setSavingSecurity(false);
+  }
+
+  async function uploadImage(type: "profile" | "hero", file: File) {
+    if (type === "hero") {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+        img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); };
+        img.src = url;
+      });
+      URL.revokeObjectURL(url);
+      if (dimensions.width < 1920 || dimensions.height < 1080) {
+        setProfileMessage(`Hero image must be at least 1920×1080 (uploaded: ${dimensions.width}×${dimensions.height})`);
+        return;
+      }
+    }
+    const upload = type === "profile" ? setUploadingProfile : setUploadingHero;
+    upload(true);
+    setProfileMessage("");
+    try {
+      const fd = new FormData();
+      fd.append("type", type);
+      fd.append("file", file);
+      const res = await fetch("/api/account/upload-image", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        setUser((prev) => prev ? { ...prev, [type === "profile" ? "profileImageUrl" : "heroImageUrl"]: data.url } : prev);
+        setProfileMessage("Image uploaded");
+      } else {
+        setProfileMessage(data.error || "Upload failed");
+      }
+    } catch {
+      setProfileMessage("Upload failed");
+    } finally {
+      upload(false);
+    }
   }
 
   const memberSince = user?.createdAt
@@ -232,6 +272,49 @@ export default function AccountPage() {
                     </Field>
                   </div>
                 </div>
+
+                  {/* Profile photo + Hero image */}
+                  <div className="h-px bg-white/8" />
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <div>
+                      <Field label="Profile photo">
+                        <div className="flex items-center gap-3">
+                          {user?.profileImageUrl ? (
+                            <img src={user.profileImageUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-white/[0.06] flex items-center justify-center">
+                              <svg className="w-6 h-6 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                          )}
+                          <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
+                            {uploadingProfile ? "Uploading..." : "Upload"}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("profile", f); }} />
+                          </label>
+                        </div>
+                      </Field>
+                    </div>
+                    <div>
+                      <Field label="Hero image" hint="Min. 1920×1080 — shown on your public artist page.">
+                        <div className="flex items-center gap-3">
+                          {user?.heroImageUrl ? (
+                            <img src={user.heroImageUrl} alt="" className="w-28 h-14 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-28 h-14 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                              <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                          <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
+                            {uploadingHero ? "Uploading..." : "Upload"}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("hero", f); }} />
+                          </label>
+                        </div>
+                      </Field>
+                    </div>
+                  </div>
               </section>
 
               <section>

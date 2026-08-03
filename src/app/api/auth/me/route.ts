@@ -17,8 +17,10 @@ export async function GET() {
       artistAlias: users.artistAlias,
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
-      bio: users.bio,
-      role: users.role,
+            bio: users.bio,
+            profileImageUrl: users.profileImageUrl,
+            heroImageUrl: users.heroImageUrl,
+            role: users.role,
       createdAt: users.createdAt,
     })
     .from(users)

@@ -329,7 +329,7 @@ export default function SettingsPage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
       <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
-        <main className="px-6 py-10">
+        <main className="px-6 py-10 mx-auto max-w-7xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Settings</h1>
           <div className="mt-8 flex flex-col lg:flex-row gap-6 max-w-5xl">
             <SettingsSidebar active={activeSection} onChange={setActiveSection} />

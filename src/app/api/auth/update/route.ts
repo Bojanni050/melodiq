@@ -138,7 +138,9 @@ export async function PUT(request: NextRequest) {
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
       bio: users.bio,
-      createdAt: users.createdAt,
+            profileImageUrl: users.profileImageUrl,
+            heroImageUrl: users.heroImageUrl,
+            createdAt: users.createdAt,
     });
 
   return NextResponse.json({ user: updated[0] });

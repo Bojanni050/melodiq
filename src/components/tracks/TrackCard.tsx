@@ -69,6 +69,7 @@ const TrackCard = memo(function TrackCard({
   isDetailSelected?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
+  const user = useUserStore((state) => state.user);
   const artistAlias = useUserStore((state) => state.user?.artistAlias);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
@@ -583,7 +584,10 @@ const TrackCard = memo(function TrackCard({
           ) : (
             <p
               className="text-[10px] text-white/40 mt-0.5 truncate cursor-text select-none"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (user?.id) router.push(`/discover/artist/${user.id}`);
+              }}
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
               title={track.artistName ? "Double-click to edit artist" : "Double-click to add artist name"}
             >
