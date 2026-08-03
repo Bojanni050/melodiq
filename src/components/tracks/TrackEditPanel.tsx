@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackItem } from "./types";
 import { useUserStore } from "@/lib/store";
+import SectionReplaceEditor from "./SectionReplaceEditor";
 
 const PROVIDERS = [
   { value: "upload", label: "Unknown / Other" },
@@ -479,6 +480,14 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 placeholder="Paste lyrics here..."
                 className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
               />
+            </div>
+          )}
+
+          {/* Section replace (Suno replace-music via APIMart) */}
+          {provider === "apimart" && !!track.jobId && (
+            <div className="space-y-1">
+              <label className="text-sm text-white/60">Replace a section</label>
+              <SectionReplaceEditor track={track} onSubmitted={() => {}} />
             </div>
           )}
 

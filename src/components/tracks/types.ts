@@ -39,6 +39,7 @@ export interface TrackItem {
   translatedLanguage?: string | null;
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
+  jobId?: string | null;
 }
 
 export interface PlaylistOption {
