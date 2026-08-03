@@ -15,6 +15,12 @@ interface AudioDna {
   computedAt: string;
 }
 
+interface AdvancedDnaResult {
+  lyricsAnalysis: string | null;
+  compositionAnalysis: string | null;
+  tips: string[];
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
@@ -55,7 +61,21 @@ function TrackDnaCard({
 // Read-only: tempo/key/energy/loudness are computed once from the audio right
 // after generation, atmosphere tags and lyrics score come from an LLM — no
 // voting involved.
-export default function TrackDnaPanel({ trackId, refreshKey }: { trackId: string; refreshKey?: number }) {
+export default function TrackDnaPanel({
+  trackId,
+  refreshKey,
+  advancedDnaResult,
+  advancedDnaRunning,
+  onRunAdvancedDna,
+  trackStatus,
+}: {
+  trackId: string;
+  refreshKey?: number;
+  advancedDnaResult?: AdvancedDnaResult | null;
+  advancedDnaRunning?: boolean;
+  onRunAdvancedDna?: () => void;
+  trackStatus?: string;
+}) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [audioDna, setAudioDna] = useState<AudioDna | null>(null);
@@ -163,6 +183,76 @@ export default function TrackDnaPanel({ trackId, refreshKey }: { trackId: string
             {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
           </div>
         )}
+
+        {/* ── Advanced DNA section ───────────────────────────────────── */}
+        <div className="border-t border-white/10 pt-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">🧬</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-white/50">
+                Advanced Analysis
+              </span>
+            </div>
+            {trackStatus === "done" && onRunAdvancedDna && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRunAdvancedDna(); }}
+                disabled={advancedDnaRunning}
+                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                {advancedDnaRunning ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full border border-white/40 border-t-transparent animate-spin" />
+                    Analyzing…
+                  </>
+                ) : advancedDnaResult ? (
+                  "Re-run"
+                ) : (
+                  "Run analysis"
+                )}
+              </button>
+            )}
+          </div>
+
+          {advancedDnaRunning && !advancedDnaResult && (
+            <p className="text-xs text-white/35 italic">Running advanced analysis…</p>
+          )}
+
+          {advancedDnaResult ? (
+            <div className="space-y-3">
+              {advancedDnaResult.lyricsAnalysis && (
+                <div className="space-y-1">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Lyrics</div>
+                  <p className="text-sm text-white/70 leading-relaxed">{advancedDnaResult.lyricsAnalysis}</p>
+                </div>
+              )}
+              {advancedDnaResult.compositionAnalysis && (
+                <div className="space-y-1">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Composition &amp; Mix</div>
+                  <p className="text-sm text-white/70 leading-relaxed">{advancedDnaResult.compositionAnalysis}</p>
+                </div>
+              )}
+              {advancedDnaResult.tips.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-primary-300/80">
+                    {advancedDnaResult.tips.length} {advancedDnaResult.tips.length === 1 ? "tip" : "tips"} for improvement
+                  </div>
+                  <ol className="space-y-1.5 list-decimal list-inside">
+                    {advancedDnaResult.tips.map((tip, i) => (
+                      <li key={i} className="text-sm text-white/70 leading-relaxed">
+                        {tip}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          ) : !advancedDnaRunning && (
+            <p className="text-xs text-white/30 italic">
+              Run an advanced analysis for a deep-dive into lyrics, composition, and improvement tips.
+            </p>
+          )}
+        </div>
       </div>
     </TrackDnaCard>
   );
