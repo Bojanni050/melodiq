@@ -52,8 +52,12 @@ Suno style prompt rules:
 - Never use artist names, band names, producer names, or song titles. Always translate 
   references into descriptive stylistic language covering vocal tone, arrangement, 
   instrumentation, rhythmic approach, atmosphere, production texture, and genre fusion.
-- Describe the full musical picture: genre, subgenre, mood, tempo feel, instrumentation, 
-  vocal style, production aesthetic, and sonic atmosphere.
+- Describe the full musical picture: genre, subgenre, mood, tempo feel, vocal style, 
+  production aesthetic, and sonic atmosphere.
+- Always list specific instruments by name (e.g. 'piano, acoustic guitar, brushed drums, 
+  cello, upright bass, synth pads') instead of vague descriptions like 'warm textures' 
+  or 'rich sonic landscape'. Suno responds better to concrete instrument names than 
+  abstract descriptions.
 - If BPM is provided, include it as a numeric tag, e.g. '120 BPM'.
 - If key or scale is provided, include it, e.g. 'A minor', 'D major', 'Dorian mode'.
 - Use comma-separated tags and short descriptive phrases. Keep the prompt concise 
