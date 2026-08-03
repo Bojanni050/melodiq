@@ -57,7 +57,7 @@ export async function callLLM(
     (purpose === "trackdna" ? await getSetting("OPENROUTER_TRACKDNA_MODEL") : "") ||
     (await getSetting("OPENROUTER_MODEL")) ||
     process.env.OPENROUTER_MODEL ||
-    "openai/gpt-5";
+    "google/gemini-2.5-flash";
   const OPENAI_KEY = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
   const OPENAI_MODEL =
     normalizedOptions.openAiModelOverride ||

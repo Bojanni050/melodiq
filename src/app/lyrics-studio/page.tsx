@@ -479,7 +479,7 @@ export default function LyricsStudioPage() {
       const res = await fetch("/api/lyric-studio/style-suggestion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, mood, lyrics: combinedLyrics, language: effectiveLanguage, styleHint: style }),
+        body: JSON.stringify({ topic, mood, lyrics: combinedLyrics, language: effectiveLanguage, styleHint: style, temperature }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setNotice({ type: "error", message: d?.error || "Style suggestion genereren is mislukt." }); return; }
       const data = await res.json();
@@ -756,6 +756,8 @@ export default function LyricsStudioPage() {
                 combinedLyrics={combinedLyrics} styleSuggestion={styleSuggestion}
                 generatingStyleSuggestion={generatingStyleSuggestion}
                 copiedStyleSuggestion={copiedStyleSuggestion}
+                creativityLevel={creativityLevel}
+                onCreativityLevelChange={setCreativityLevel}
                 onGenerateStyleSuggestion={generateStyleSuggestion}
                 onStyleSuggestionChange={setStyleSuggestion}
                 onCopyStyleSuggestion={copyStyleSuggestion}

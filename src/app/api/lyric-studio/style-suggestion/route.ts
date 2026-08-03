@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     lyrics?: unknown;
     language?: unknown;
     styleHint?: unknown;
+    temperature?: unknown;
   };
 
   try {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { topic, mood, lyrics, language, styleHint } = body;
+  const { topic, mood, lyrics, language, styleHint, temperature } = body;
 
   if (typeof topic !== "string" || !topic.trim()) {
     return NextResponse.json({ error: "topic is required" }, { status: 400 });
@@ -58,7 +59,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const llmProvider = await getLLMProviderForPurpose("prompt");
-    const result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt" });
+    const result = await callLLM(userPrompt, systemPrompt, {
+      purpose: "prompt",
+      temperature: typeof temperature === "number" && temperature > 0 ? temperature : undefined,
+    });
     const suggestion = sanitizeStyleSuggestionResponse(result);
 
     await logApi({

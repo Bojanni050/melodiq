@@ -12,6 +12,8 @@ type LyricsStudioSidePanelProps = {
   styleSuggestion: string;
   generatingStyleSuggestion: boolean;
   copiedStyleSuggestion: boolean;
+  creativityLevel: number;
+  onCreativityLevelChange: (value: number) => void;
   onGenerateStyleSuggestion: () => void;
   onStyleSuggestionChange: (value: string) => void;
   onCopyStyleSuggestion: () => void;
@@ -27,11 +29,14 @@ export default function LyricsStudioSidePanel({
   styleSuggestion,
   generatingStyleSuggestion,
   copiedStyleSuggestion,
+  creativityLevel,
+  onCreativityLevelChange,
   onGenerateStyleSuggestion,
   onStyleSuggestionChange,
   onCopyStyleSuggestion,
   onUseLyricsAndStyleInStudio,
 }: LyricsStudioSidePanelProps) {
+  const creativityZone = creativityLevel <= 3 ? "Braaf" : creativityLevel <= 7 ? "Gebalanceerd" : "Wild";
   return (
     <aside className="hidden lg:block">
       <div className="flex h-full flex-col gap-4 rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
@@ -54,6 +59,26 @@ export default function LyricsStudioSidePanel({
             >
               {generatingStyleSuggestion ? "Generating..." : "AI Fill"}
             </button>
+          </div>
+
+          {/* Creativity slider */}
+          <div className="mb-3 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-white/45">Creativity</span>
+              <span className={`text-[10px] font-medium ${
+                creativityLevel <= 3 ? "text-blue-400" : creativityLevel <= 7 ? "text-yellow-400" : "text-orange-400"
+              }`}>
+                {creativityLevel} — {creativityZone}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={creativityLevel}
+              onChange={(e) => onCreativityLevelChange(Number(e.target.value))}
+              className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary-500"
+            />
           </div>
 
           <textarea
