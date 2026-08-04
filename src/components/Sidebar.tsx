@@ -175,6 +175,9 @@ export default function Sidebar({ credits }: SidebarProps) {
                 <span className="text-lg font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                   MelodIQ
                 </span>
+                <span className="text-[10px] text-white/45 tracking-wide">
+                  Create. Refine. Produce.
+                </span>
                 {buildVersion && (
                   <span className="text-[11px] text-white/35">
                     build number {buildVersion}
@@ -273,6 +276,9 @@ export default function Sidebar({ credits }: SidebarProps) {
             <div className="flex flex-col leading-tight">
               <span className="text-base font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                 MelodIQ
+              </span>
+              <span className="text-[9px] text-white/45 tracking-wide">
+                Create. Refine. Produce.
               </span>
               {buildVersion && (
                 <span className="text-[10px] text-white/35">
