@@ -13,6 +13,7 @@ export default function LyricBlockEditor({
   canGenerateBlocks,
   translatingBlockId,
   effectiveTranslationLanguage,
+  improvingBlockId,
   onStartBlockDrag,
   onStartBlockDragFromCard,
   onStartBlockMouseDrag,
@@ -26,6 +27,7 @@ export default function LyricBlockEditor({
   onUpdateBlock,
   onGenerateBlock,
   onTranslateBlock,
+  onImproveBlock,
   autoGrowTextarea,
 }: {
   blocks: LyricBlock[];
@@ -38,6 +40,7 @@ export default function LyricBlockEditor({
   canGenerateBlocks: boolean;
   translatingBlockId: string | null;
   effectiveTranslationLanguage: string;
+  improvingBlockId: string | null;
   onStartBlockDrag: (event: React.PointerEvent<HTMLButtonElement>, blockId: string) => void;
   onDragHandleMouseDown: (blockId: string) => void;
   onStartBlockDragFromCard: (event: React.PointerEvent<HTMLElement>, blockId: string) => void;
@@ -51,6 +54,7 @@ export default function LyricBlockEditor({
   onUpdateBlock: (id: string, patch: Partial<LyricBlock>) => void;
   onGenerateBlock: (block: LyricBlock) => void;
   onTranslateBlock: (id: string) => void;
+  onImproveBlock: (block: LyricBlock) => void;
   autoGrowTextarea: (element: HTMLTextAreaElement) => void;
 }) {
   return (
@@ -224,6 +228,25 @@ export default function LyricBlockEditor({
                     </button>
                     <button
                       type="button"
+                      onClick={() => onImproveBlock(block)}
+                      disabled={isEmptyLyricBlock || improvingBlockId === block.id || !block.content.trim()}
+                      title={
+                        isEmptyLyricBlock
+                          ? "This marker block has no lyrics"
+                          : block.content.trim()
+                            ? "Improve this block with LyricIQ"
+                            : "Add lyrics to improve"
+                      }
+                      className="inline-flex items-center justify-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {improvingBlockId === block.id ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-200/30 border-t-amber-200" />
+                      ) : (
+                        "✨ LyricIQ™"
+                      )}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => onTranslateBlock(block.id)}
                       disabled={isEmptyLyricBlock || translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
                       title={
@@ -244,6 +267,9 @@ export default function LyricBlockEditor({
                   </div>
                   <span className="text-xs text-white/35">{isEmptyLyricBlock ? "marker" : `${block.content.length} chars`}</span>
                 </div>
+                {improvingBlockId === block.id && (
+                  <p className="mt-2 text-xs text-amber-200/80">✨ LyricIQ is improving your lyrics…</p>
+                )}
                 {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
               </article>
             );

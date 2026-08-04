@@ -306,6 +306,41 @@ export default function LyricsStudioPage() {
     }
   }
 
+  const [improvingBlockId, setImprovingBlockId] = useState<string | null>(null);
+
+  async function improveBlockWithLyricIQ(block: LyricBlock) {
+    if (!block.content.trim() || improvingBlockId) return;
+    setImprovingBlockId(block.id);
+    try {
+      const response = await fetch("/api/lyric-studio/lyric-iq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blockType: block.type,
+          blockLabel: block.label,
+          lyrics: block.content,
+          language: effectiveLanguage,
+          topic,
+          mood,
+          style,
+          temperature,
+          topP: contextLevel,
+          llmModel: llmModel.trim() || undefined,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "LyricIQ failed");
+      if (typeof data.result === "string" && data.result.trim()) {
+        updateBlock(block.id, { content: data.result });
+      }
+    } catch (error) {
+      console.error(error);
+      setNotice({ type: "error", message: "LyricIQ couldn't improve this section. Please try again." });
+    } finally {
+      setImprovingBlockId(null);
+    }
+  }
+
   function getGenerationBlocks() {
     if (blocks.length > 0) return blocks;
     if (structure === "manual" && customStructure.trim()) {
@@ -727,6 +762,7 @@ export default function LyricsStudioPage() {
                     draggedBlockId={draggedBlockId} dropTarget={dropTarget}
                     canGenerateBlocks={canGenerateBlocks} translatingBlockId={translatingBlockId}
                     effectiveTranslationLanguage={effectiveTranslationLanguage}
+                    improvingBlockId={improvingBlockId}
                     onStartBlockDrag={startBlockDrag}
                     onStartBlockDragFromCard={startBlockDragFromCard}
                     onStartBlockMouseDrag={startBlockMouseDrag}
@@ -737,6 +773,7 @@ export default function LyricsStudioPage() {
                     onMoveBlock={moveBlock} onDuplicateBlock={duplicateBlock}
                     onDeleteBlock={deleteBlock} onUpdateBlock={updateBlock}
                     onGenerateBlock={generateBlock} onTranslateBlock={translateBlock}
+                    onImproveBlock={improveBlockWithLyricIQ}
                     autoGrowTextarea={autoGrowTextarea}
                   />
                 )}
