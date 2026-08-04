@@ -45,6 +45,8 @@ const TrackListHeader = memo(function TrackListHeader({
   setSearchQuery,
   enableDragReorder,
   hideSortOptions,
+  showJumpToCurrent,
+  onJumpToCurrent,
 }: {
   displayedTracks: TrackItem[];
   sortOrder: SortOrder;
@@ -53,6 +55,8 @@ const TrackListHeader = memo(function TrackListHeader({
   setSearchQuery: (query: string) => void;
   enableDragReorder: boolean;
   hideSortOptions?: boolean;
+  showJumpToCurrent?: boolean;
+  onJumpToCurrent?: () => void;
 }) {
   const toggleSelectAll = useSelectionStore((state) => state.toggleSelectAll);
 
@@ -143,6 +147,16 @@ const TrackListHeader = memo(function TrackListHeader({
         <span className="shrink-0 text-xs text-white/30">
           {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
         </span>
+        {showJumpToCurrent && onJumpToCurrent && (
+          <button
+            type="button"
+            onClick={onJumpToCurrent}
+            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium border border-white/12 hover:bg-white hover:text-black hover:border-white transition-all"
+            title="Spring naar huidige track"
+          >
+            <span>Huidige track</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -881,24 +895,9 @@ export default memo(function TrackList({
           setSearchQuery={setSearchQuery}
           enableDragReorder={enableDragReorder}
           hideSortOptions={!!dragOrderKey}
+          showJumpToCurrent={!!currentTrack && !currentTrackVisible}
+          onJumpToCurrent={scrollToCurrentTrack}
         />
-
-        {/* Jump to current track button — appears when now-playing track is scrolled out of view */}
-        {currentTrack && !currentTrackVisible && (
-          <div className="sticky top-[42px] z-20 flex justify-end w-full pointer-events-none animate-[slideDown_0.2s_ease-out]">
-            <button
-              type="button"
-              onClick={scrollToCurrentTrack}
-              className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/80 text-xs font-medium border border-white/12 shadow-lg backdrop-blur-md hover:bg-white hover:text-black hover:border-white transition-all hover:scale-105 active:scale-95"
-              title="Spring naar huidige track"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span>Huidige track</span>
-            </button>
-          </div>
-        )}
 
         <div ref={sentinelRef} className="h-0 w-full" />
 
