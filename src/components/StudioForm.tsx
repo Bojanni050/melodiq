@@ -399,7 +399,7 @@ export default memo(function StudioForm({
     <div className="relative flex h-full min-h-0 flex-col gap-4">
       {/* Top Bar: Studio Header & Clear All */}
       <div className="flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight text-white/90">Song Studio</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-white/90">Music</h2>
         <button
           type="button"
           onClick={() => setShowClearConfirm(true)}

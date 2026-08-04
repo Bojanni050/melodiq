@@ -62,10 +62,6 @@ export default function Sidebar({ credits }: SidebarProps) {
       ],
     },
     {
-      label: "SONG STUDIO",
-      items: [],
-    },
-    {
       label: "ORGANIZE",
       items: [
         { href: "/library", label: "Library", icon: "library" },
