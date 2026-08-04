@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import { useSidebarStore } from "@/lib/store";
 
 interface AdminStats {
   totalUsers: number;
@@ -23,6 +24,8 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(false);
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
 
   useEffect(() => {
     let active = true;
@@ -65,7 +68,7 @@ export default function AdminPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center text-sm text-white/50">Checking access...</main>
       </div>
@@ -74,7 +77,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
@@ -86,7 +89,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+    <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={null} />
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
         <div className="mx-auto max-w-4xl space-y-6 pb-16">

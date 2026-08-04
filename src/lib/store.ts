@@ -1525,3 +1525,17 @@ export const useArchiveLinksStore = create<ArchiveLinksState>()((set, get) => ({
   },
 }));
 
+interface SidebarState {
+  collapsed: boolean;
+  isQHD: boolean;
+  setCollapsed: (v: boolean) => void;
+  setIsQHD: (v: boolean) => void;
+}
+
+export const useSidebarStore = create<SidebarState>()((set) => ({
+  collapsed: false,
+  isQHD: false,
+  setCollapsed: (v) => set({ collapsed: v }),
+  setIsQHD: (v) => set({ isQHD: v, collapsed: !v }),
+}));
+

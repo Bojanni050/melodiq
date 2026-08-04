@@ -6,7 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore, useSidebarStore } from "@/lib/store";
 
 type Track = {
   id: string;
@@ -60,6 +60,8 @@ function getWorkspaceSwatchClass(workspaceId: string) {
 
 export default function WorkspacesPage() {
   const router = useRouter();
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
   const {
     workspaces,
     setSelectedWorkspaceId,
@@ -277,7 +279,7 @@ export default function WorkspacesPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] flex">
+      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-[73px] lg:pt-5">
           <div className="max-w-[1600px] mx-auto space-y-6">
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">

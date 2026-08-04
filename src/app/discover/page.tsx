@@ -5,7 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import { formatDuration } from "@/lib/track-utils";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore } from "@/lib/store";
 
 interface PublicTrack {
   id: string;
@@ -57,6 +57,8 @@ export default function DiscoverPage() {
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
 
   useEffect(() => {
     let active = true;
@@ -320,7 +322,10 @@ export default function DiscoverPage() {
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
       {isLoggedIn && <Sidebar credits={null} />}
-      <main className={`flex-1 overflow-y-auto px-4 py-6 sm:px-8 ${isLoggedIn ? "lg:pl-64" : ""}`}>
+      <main
+        className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
+        style={isLoggedIn ? { paddingLeft: sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
+      >
         {authChecked && !isLoggedIn && (
           <header className="mb-8 flex items-center gap-2">
             <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">

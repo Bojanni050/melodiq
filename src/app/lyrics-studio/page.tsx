@@ -35,7 +35,7 @@ import {
 } from "@/lib/lyrics-utils";
 import { useLyricBlockDrag } from "@/lib/hooks/useLyricBlockDrag";
 import { loadSnapshotIntoState, saveSnapshotsToStorage, useLyricsDraft } from "@/lib/hooks/useLyricsDraft";
-import { useStudioStore } from "@/lib/store";
+import { useStudioStore, useSidebarStore } from "@/lib/store";
 
 export default function LyricsStudioPage() {
   const router = useRouter();
@@ -55,6 +55,8 @@ export default function LyricsStudioPage() {
   } = draft;
 
   const { title, setTitle, language, customLanguage, structure, customStructure, setLanguage, setCustomLanguage, setStructure, setCustomStructure } = useStudioStore();
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
 
   const [customPresets, setCustomPresets] = useState<Record<string, BlockType[]>>({});
 
@@ -582,7 +584,7 @@ export default function LyricsStudioPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--player-height))] bg-[#0d0d12] text-white overflow-hidden">
+    <div className="flex h-[calc(100vh-var(--player-height))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}>
       <Sidebar credits={credits} />
 
       <CollapsibleSidebar open={showLyricsSidebar} onClose={() => setShowLyricsSidebar(false)}>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { formatDuration } from "@/lib/track-utils";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore } from "@/lib/store";
 
 interface TrackDetail {
   id: string;
@@ -56,6 +56,8 @@ export default function TrackDnaPage() {
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
   const isCurrentTrack = Boolean(track && currentTrack?.id === track.id);
   const isPlaying = isCurrentTrack && globalIsPlaying;
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
 
   useEffect(() => {
     let active = true;
@@ -142,7 +144,10 @@ export default function TrackDnaPage() {
   return (
     <div className="flex min-h-screen bg-[#0a0a0f] text-white">
       {isLoggedIn && <Sidebar credits={null} />}
-      <main className={`flex-1 overflow-y-auto px-4 py-6 sm:px-8 ${isLoggedIn ? "lg:pl-64" : ""}`}>
+      <main
+        className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
+        style={isLoggedIn ? { paddingLeft: sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
+      >
         <div className="mx-auto max-w-2xl space-y-8 pb-16">
           <Link href="/discover" className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

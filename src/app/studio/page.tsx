@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePlaylistStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
+import { usePlaylistStore, useSidebarStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -18,6 +18,8 @@ import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 
 export default function StudioPage() {
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
   const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate, handleTrackUpdate } = useTrackManager();
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
 
@@ -100,7 +102,7 @@ export default function StudioPage() {
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={creditValue} />
 
-      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row lg:ml-60">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-hidden flex flex-col lg:flex-row" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-[53px] lg:pt-0">
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 

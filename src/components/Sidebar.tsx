@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useWorkspaceStore, usePlayerStore } from "@/lib/store";
+import { useWorkspaceStore, usePlayerStore, useSidebarStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -25,7 +25,9 @@ export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isQHD = useIsQHD();
-  const [collapsed, setCollapsed] = useState(() => !isQHD);
+  const collapsed = useSidebarStore((s) => s.collapsed);
+  const setCollapsed = useSidebarStore((s) => s.setCollapsed);
+  const setIsQHD = useSidebarStore((s) => s.setIsQHD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
@@ -34,8 +36,8 @@ export default function Sidebar({ credits }: SidebarProps) {
   const buildVersion = "202608041944";
 
   useEffect(() => {
-    setCollapsed(!isQHD);
-  }, [isQHD]);
+    setIsQHD(isQHD);
+  }, [isQHD, setIsQHD]);
 
   useEffect(() => {
     let active = true;
@@ -234,8 +236,8 @@ export default function Sidebar({ credits }: SidebarProps) {
         </div>
       </aside>
 
-      {/* Expand button when collapsed on non-QHD */}
-      {!isQHD && collapsed && (
+      {/* Expand button when collapsed */}
+      {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
           className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
@@ -247,11 +249,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         </button>
       )}
 
-      {/* Collapse button when expanded on non-QHD */}
-      {!isQHD && !collapsed && (
+      {/* Collapse button when expanded */}
+      {!collapsed && (
         <button
           onClick={() => setCollapsed(true)}
-          className="hidden lg:flex fixed left-[240px] top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          style={{ left: isQHD ? "300px" : "240px" }}
           aria-label="Sidebar sluiten"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

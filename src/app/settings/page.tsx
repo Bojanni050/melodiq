@@ -17,7 +17,7 @@ import VisualizerSection from "@/components/settings/VisualizerSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS, WEBHOOK_DEFAULTS } from "@/lib/settings-constants";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore } from "@/lib/store";
 import { applyWebhookDefaults, buildWebhookUrl, createModelPlaceholder, LLMModel } from "@/lib/settings-utils";
 
 const TRACKED_SETTINGS_KEYS = [
@@ -56,6 +56,8 @@ function formatBytes(bytes: number): string {
 }
 
 export default function SettingsPage() {
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
   const [values, setValues] = useState<Record<string, string>>({});
   const [savedValues, setSavedValues] = useState<Record<string, string>>({});
   const [savingAll, setSavingAll] = useState(false);
@@ -342,7 +344,7 @@ export default function SettingsPage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="lg:ml-60 h-[calc(100vh-var(--player-height))] overflow-y-auto">
+      <div className="h-[calc(100vh-var(--player-height))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="px-6 py-10 mx-auto max-w-7xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Settings</h1>
           <div className="mt-8 flex flex-col lg:flex-row gap-6 max-w-5xl">
