@@ -1,5 +1,13 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-04 di 19:04 (Style Suggestion: 500 tekens limiet verwijderd)
+
+- Findings: De style suggestion werd afgekapt op 500 tekens. De hard limit in zowel het LLM prompt als de sanitize function zorgde voor onvolledige antwoorden.
+- Conclusions: Verwijder de character limit zodat het volledige antwoord van de LLM wordt weergegeven. De LLM wordt nog steeds gevraagd om compact en productiegericht te schrijven.
+- Actions:
+  - Modified `src/lib/lyrics-style-suggestion.ts` — "Hard limit: maximum 500 characters" verwijderd uit system prompt (regel 15); `slice(0, 500)` truncatie verwijderd uit `sanitizeStyleSuggestionResponse` (regel 49)
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-08-04 di 18:39 (Lyric Studio: huidig LLM model tonen in geavanceerde instellingen)
 
 - Findings: In de geavanceerde instellingen van de Lyric Studio werd het huidige gekozen LLM model niet weergegeven. Gebruikers wisten niet welk model er actief was zonder op de dropdown te klikken.

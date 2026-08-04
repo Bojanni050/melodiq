@@ -12,7 +12,6 @@ Cover these aspects (do NOT include labels or numbering in the output — write 
 Rules:
 - Return plain flowing text — no markdown, no section labels, no "1)" prefixes.
 - Be specific, production-usable, and tight.
-- Hard limit: maximum 500 characters.
 - No artist names, song titles, or quotes.`;
 }
 
@@ -46,5 +45,5 @@ export function sanitizeStyleSuggestionResponse(raw: string): string {
     .replace(/\s*```$/g, "")
     .trim();
 
-  return cleaned.length > 500 ? cleaned.slice(0, 500).trimEnd() : cleaned;
+  return cleaned;
 }
