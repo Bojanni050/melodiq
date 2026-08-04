@@ -52,13 +52,14 @@ export default function Sidebar({ credits }: SidebarProps) {
     };
   }, []);
 
-  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string }> }> = [
+  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean }> }> = [
     {
       label: "CREATE",
       items: [
-        { href: "/discover", label: "Discover", icon: "discover" },
         { href: "/studio", label: "Song Studio", icon: "studio" },
-        { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
+        { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
+        { href: "#", label: "Style", icon: "style", placeholder: true },
+        { href: "/studio", label: "Music", icon: "music" },
       ],
     },
     {
@@ -155,6 +156,18 @@ export default function Sidebar({ credits }: SidebarProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 12l1.75 1.75L14.5 10" />
           </svg>
         );
+      case "style":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+          </svg>
+        );
+      case "music":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
+        );
       default:
         return null;
     }
@@ -210,6 +223,22 @@ export default function Sidebar({ credits }: SidebarProps) {
 
         {/* Nav items */}
         <nav className="flex-1 px-2 py-4 space-y-4 overflow-y-auto">
+          {!collapsed && (
+            <Link
+              href="/discover"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                pathname === "/discover"
+                  ? "bg-white/10 text-white font-medium"
+                  : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>Dashboard</span>
+            </Link>
+          )}
+          {!collapsed && <div className="border-t border-white/5" />}
           {navGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
@@ -225,27 +254,34 @@ export default function Sidebar({ credits }: SidebarProps) {
                   const targetHref = item.href === "/workspaces" && selectedWorkspaceId
                     ? `/workspaces/${selectedWorkspaceId}`
                     : item.href;
+                  const isPlaceholder = "placeholder" in item && item.placeholder;
                   return (
                     <Link
-                      key={item.href}
+                      key={item.href + item.label}
                       href={targetHref}
+                      onClick={isPlaceholder ? (e) => e.preventDefault() : undefined}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                         active
                           ? "bg-white/10 text-white font-medium"
-                          : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                          : isPlaceholder
+                            ? "text-white/35 cursor-not-allowed"
+                            : "text-white/70 font-medium hover:text-white hover:bg-white/5"
                       }`}
+                      title={isPlaceholder ? "Coming soon" : undefined}
                     >
                       <Icon name={item.icon} active={active} />
                       {!collapsed && (
-                        <span>
+                        <span className="flex items-center gap-2">
                           {active && <span className="text-primary-500 mr-1 font-bold">&gt; </span>}
                           {item.label}
+                          {isPlaceholder && <span className="text-[9px] text-white/20 uppercase tracking-wider">soon</span>}
                         </span>
                       )}
                     </Link>
                   );
                 })}
               </div>
+              {!collapsed && <div className="mt-4 border-t border-white/5" />}
             </div>
           ))}
         </nav>
@@ -353,6 +389,21 @@ export default function Sidebar({ credits }: SidebarProps) {
               </button>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              <Link
+                href="/discover"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  pathname === "/discover"
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Dashboard</span>
+              </Link>
+              <div className="border-t border-white/5" />
               {navGroups.map((group) => (
                 <div key={group.label}>
                   <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
@@ -366,23 +417,31 @@ export default function Sidebar({ credits }: SidebarProps) {
                       const targetHref = item.href === "/workspaces" && selectedWorkspaceId
                         ? `/workspaces/${selectedWorkspaceId}`
                         : item.href;
+                      const isPlaceholder = "placeholder" in item && item.placeholder;
                       return (
                         <Link
-                          key={item.href}
+                          key={item.href + item.label}
                           href={targetHref}
-                          onClick={() => setMobileMenuOpen(false)}
+                          onClick={isPlaceholder ? (e) => e.preventDefault() : () => setMobileMenuOpen(false)}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                             active
                               ? "bg-white/10 text-white font-medium"
-                              : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                              : isPlaceholder
+                                ? "text-white/35 cursor-not-allowed"
+                                : "text-white/70 font-medium hover:text-white hover:bg-white/5"
                           }`}
+                          title={isPlaceholder ? "Coming soon" : undefined}
                         >
                           <Icon name={item.icon} active={active} />
-                          <span>{item.label}</span>
+                          <span className="flex items-center gap-2">
+                            {item.label}
+                            {isPlaceholder && <span className="text-[9px] text-white/20 uppercase tracking-wider">soon</span>}
+                          </span>
                         </Link>
                       );
                     })}
                   </div>
+                  <div className="mt-4 border-t border-white/5" />
                 </div>
               ))}
             </nav>
