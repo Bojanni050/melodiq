@@ -52,17 +52,37 @@ export default function Sidebar({ credits }: SidebarProps) {
     };
   }, []);
 
-  const navItems = [
-    { href: "/discover", label: "Discover", icon: "discover" },
-    { href: "/library", label: "Library", icon: "library" },
-    { href: "/studio", label: "Song Studio", icon: "studio" },
-    { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
-    { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
-    { href: "/archive", label: "Master Tracks", icon: "archive" },
-    { href: "/account", label: "Account", icon: "account" },
-    { href: "/settings", label: "Settings", icon: "settings" },
-    { href: "/logs", label: "Logs", icon: "logs" },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "admin" }] : []),
+  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string }> }> = [
+    {
+      label: "CREATE",
+      items: [
+        { href: "/discover", label: "Discover", icon: "discover" },
+        { href: "/studio", label: "Song Studio", icon: "studio" },
+        { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
+      ],
+    },
+    {
+      label: "ORGANIZE",
+      items: [
+        { href: "/library", label: "Library", icon: "library" },
+        { href: "/archive", label: "Master Tracks", icon: "archive" },
+        { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
+      ],
+    },
+    {
+      label: "ACCOUNT",
+      items: [
+        { href: "/account", label: "Account", icon: "account" },
+        { href: "/settings", label: "Settings", icon: "settings" },
+      ],
+    },
+    {
+      label: "DEVELOPER",
+      items: [
+        { href: "/logs", label: "Logs", icon: "logs" },
+        ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "admin" }] : []),
+      ],
+    },
   ];
 
   async function handleLogout() {
@@ -189,34 +209,45 @@ export default function Sidebar({ credits }: SidebarProps) {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = item.href === "/"
-              ? pathname === "/"
-              : pathname === item.href || pathname.startsWith(item.href + "/");
-            const targetHref = item.href === "/workspaces" && selectedWorkspaceId
-              ? `/workspaces/${selectedWorkspaceId}`
-              : item.href;
-            return (
-              <Link
-                key={item.href}
-                href={targetHref}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  active
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-white/70 font-medium hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Icon name={item.icon} active={active} />
-                {!collapsed && (
-                  <span>
-                    {active && <span className="text-primary-500 mr-1 font-bold">&gt; </span>}
-                    {item.label}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-2 py-4 space-y-4 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              {!collapsed && (
+                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const active = item.href === "/"
+                    ? pathname === "/"
+                    : pathname === item.href || pathname.startsWith(item.href + "/");
+                  const targetHref = item.href === "/workspaces" && selectedWorkspaceId
+                    ? `/workspaces/${selectedWorkspaceId}`
+                    : item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={targetHref}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        active
+                          ? "bg-white/10 text-white font-medium"
+                          : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Icon name={item.icon} active={active} />
+                      {!collapsed && (
+                        <span>
+                          {active && <span className="text-primary-500 mr-1 font-bold">&gt; </span>}
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom section */}
@@ -321,30 +352,39 @@ export default function Sidebar({ credits }: SidebarProps) {
                 </svg>
               </button>
             </div>
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
-                const active = item.href === "/"
-                  ? pathname === "/"
-                  : pathname === item.href || pathname.startsWith(item.href + "/");
-                const targetHref = item.href === "/workspaces" && selectedWorkspaceId
-                  ? `/workspaces/${selectedWorkspaceId}`
-                  : item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={targetHref}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors ${
-                      active
-                        ? "bg-white/10 text-white font-medium"
-                        : "text-white/70 font-medium hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon name={item.icon} active={active} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              {navGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    {group.label}
+                  </p>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const active = item.href === "/"
+                        ? pathname === "/"
+                        : pathname === item.href || pathname.startsWith(item.href + "/");
+                      const targetHref = item.href === "/workspaces" && selectedWorkspaceId
+                        ? `/workspaces/${selectedWorkspaceId}`
+                        : item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={targetHref}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                            active
+                              ? "bg-white/10 text-white font-medium"
+                              : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                          }`}
+                        >
+                          <Icon name={item.icon} active={active} />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
             <div className="px-3 pb-6 pt-3 border-t border-white/5 space-y-3">
               {credits !== null && (
