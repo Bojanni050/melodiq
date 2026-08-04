@@ -1021,134 +1021,13 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           )}
         </div>
 
-        {/* Stems */}
-        {canExtractStems && (
-          <div className="shrink-0">
-            <button
-              type="button"
-              onClick={() => setStemsExpanded((value) => !value)}
-              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
-              title={stemsExpanded ? "Collapse stems" : "Expand stems"}
-            >
-              <svg className={`w-3.5 h-3.5 transition-transform ${stemsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              Stems
-            </button>
-            {stemsExpanded && (
-              <div className="mt-2 space-y-1.5">
-                {stemsError && <p className="text-sm text-red-300/80">{stemsError}</p>}
-                {STEM_TYPES.map((stemDef) => {
-                  const stem = stems.find((s) => s.stemType === stemDef.value);
-                  const isExtracting = stem?.status === "pending" || extractingStemType === stemDef.value;
-                  return (
-                    <div key={stemDef.value} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                      <span className="text-sm text-white/70">
-                        {stemDef.label}
-                        {stem?.status === "completed" && stem.completedAt && (
-                          <span className="ml-1.5 text-[11px] text-white/30" title="Time from extraction start to completion">
-                            ({formatGenerationTime(stem.createdAt, stem.completedAt)})
-                          </span>
-                        )}
-                      </span>
-                      {stem?.status === "completed" && stem.audioUrl ? (
-                        <a
-                          href={stem.audioUrl}
-                          download
-                          className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 hover:text-primary-200 transition-colors"
-                        >
-                          Download
-                        </a>
-                      ) : isExtracting ? (
-                        <span className="text-[11px] text-white/40">Extracting…</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleExtractStem(stemDef.value)}
-                          disabled={extractingStemType !== null}
-                          className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
-                        >
-                          {stem?.status === "failed" ? "Retry" : "Extract"}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Mastering */}
-        {canExtractStems && (
-          <div className="shrink-0">
-            <SectionReplaceEditor track={track} onSubmitted={() => { void mutate("/api/tracks"); }} />
-          </div>
-        )}
-
-        {canExtractStems && (
-          <div className="shrink-0">
-            <button
-              type="button"
-              onClick={() => setMasteringExpanded((value) => !value)}
-              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
-              title={masteringExpanded ? "Collapse mastering" : "Expand mastering"}
-            >
-              <svg className={`w-3.5 h-3.5 transition-transform ${masteringExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              Mastering
-            </button>
-            {masteringExpanded && (
-              <div className="mt-2 space-y-1.5">
-                {masteringError && <p className="text-sm text-red-300/80">{masteringError}</p>}
-                {MASTER_VARIATIONS.map((variationDef) => {
-                  const master = masters.find((m) => m.variationCategory === variationDef.value);
-                  const isMastering = master?.status === "pending" || masteringVariation === variationDef.value;
-                  return (
-                    <div key={variationDef.value} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                      <span className="text-sm text-white/70">
-                        {variationDef.label}
-                        {master?.status === "completed" && master.completedAt && (
-                          <span className="ml-1.5 text-[11px] text-white/30" title="Time from mastering start to completion">
-                            ({formatGenerationTime(master.createdAt, master.completedAt)})
-                          </span>
-                        )}
-                      </span>
-                      {master?.status === "completed" && master.audioUrl ? (
-                        <a
-                          href={master.audioUrl}
-                          download
-                          className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 hover:text-primary-200 transition-colors"
-                        >
-                          Download
-                        </a>
-                      ) : isMastering ? (
-                        <span className="text-[11px] text-white/40">Mastering…</span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleMaster(variationDef.value)}
-                          disabled={masteringVariation !== null}
-                          className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40"
-                        >
-                          {master?.status === "failed" ? "Retry" : "Master"}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Error */}
         {track.error && (
           <div className="shrink-0 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-sm text-red-400">{track.error}</p>
           </div>
         )}
+
       </div>
     </div>
   );

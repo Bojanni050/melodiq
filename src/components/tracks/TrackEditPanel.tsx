@@ -157,9 +157,11 @@ interface TrackEditPanelProps {
   knownArtistNames?: string[];
   knownComposerNames?: string[];
   knownWriterNames?: string[];
+  /** When true, renders inline within the track list (no fixed overlay) */
+  inline?: boolean;
 }
 
-export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [], knownWriterNames = [] }: TrackEditPanelProps) {
+export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [], knownWriterNames = [], inline = false }: TrackEditPanelProps) {
   const user = useUserStore((state) => state.user);
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? user?.artistAlias ?? "");
@@ -246,6 +248,111 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   }
 
   const knownProvider = PROVIDERS.some((p) => p.value === provider);
+
+  // Inline mode: render directly in the track list without overlay
+  if (inline) {
+    return (
+      <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3 shrink-0">
+          <div>
+            <h3 className="text-sm font-semibold">Edit Track Details</h3>
+            <p className="text-xs text-white/50 mt-0.5 truncate max-w-[260px]">
+              {track.title ?? track.prompt.substring(0, 60)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {/* Fields */}
+        <div className="px-4 py-3 space-y-3 max-h-[70vh] overflow-y-auto">
+          {/* Title */}
+          <div className="space-y-1">
+            <label className="text-xs text-white/60">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Track title"
+              className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+            />
+          </div>
+          {/* Artist + Composer + Written By */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Artist</label>
+              <AutocompleteInput value={artistName} onChange={setArtistName} placeholder="Artist" suggestions={knownArtistNames} className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-3 text-xs text-white outline-none focus:border-white/25" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Composer</label>
+              <AutocompleteInput value={composerName} onChange={setComposerName} placeholder="Composer" suggestions={knownComposerNames} className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-3 text-xs text-white outline-none focus:border-white/25" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Written By</label>
+              <AutocompleteInput value={writerName} onChange={setWriterName} placeholder="Writer" suggestions={knownWriterNames} className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-3 text-xs text-white outline-none focus:border-white/25" />
+            </div>
+          </div>
+          {/* Source + Language */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Source</label>
+              <select
+                value={knownProvider ? provider : "__custom__"}
+                onChange={(e) => { const v = e.target.value; setProvider(v === "__custom__" ? provider : v); }}
+                className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-2 text-xs text-white outline-none focus:border-white/25"
+              >
+                {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                {!knownProvider && <option value="__custom__">{provider}</option>}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Language</label>
+              <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="e.g. English" className="h-8 w-full rounded-lg border border-white/12 bg-[#11121a] px-3 text-xs text-white outline-none focus:border-white/25" />
+            </div>
+          </div>
+          {/* Instrumental toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-2">
+            <p className="text-xs font-medium text-white">Instrumental</p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={instrumental}
+              onClick={() => setInstrumental((v) => !v)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${instrumental ? "bg-primary-500" : "bg-white/15"}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${instrumental ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+          </div>
+          {/* Prompt */}
+          <div className="space-y-1">
+            <label className="text-xs text-white/60">Prompt / Style</label>
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} placeholder="Style, mood, genre..." className="w-full rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none" />
+          </div>
+          {/* Lyrics */}
+          {!instrumental && (
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Lyrics</label>
+              <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} rows={5} placeholder="Paste lyrics here..." className="w-full rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none" />
+            </div>
+          )}
+          {error && <p className="text-sm text-red-400">⚠ {error}</p>}
+        </div>
+        {/* Footer */}
+        <div className="border-t border-white/10 px-4 py-3 flex items-center justify-end gap-2">
+          <button type="button" onClick={onClose} className="h-8 rounded-full border border-white/12 px-3 text-xs text-white/60 hover:text-white transition-colors">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="h-8 rounded-full bg-white px-4 text-xs font-medium text-black hover:bg-white/90 disabled:opacity-60 transition-colors">{saving ? "Saving…" : "Save"}</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-70">

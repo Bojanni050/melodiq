@@ -25,6 +25,11 @@ interface TrackActionMenuProps {
   onRetryWavClick?: () => void;
   retryingWav?: boolean;
   retryWavResult?: "success" | "error" | null;
+  /** Stem / Mastering / Section-edit — only shown when canExtractStems is true */
+  canExtractStems?: boolean;
+  onStemsClick?: () => void;
+  onMasteringClick?: () => void;
+  onEditSectionClick?: () => void;
 }
 
 export default function TrackActionMenu({
@@ -45,6 +50,10 @@ export default function TrackActionMenu({
   onRetryWavClick,
   retryingWav,
   retryWavResult,
+  canExtractStems,
+  onStemsClick,
+  onMasteringClick,
+  onEditSectionClick,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -155,6 +164,48 @@ export default function TrackActionMenu({
                             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {advancedDnaRunning ? "Running advanced analysis..." : "Advanced Track DNA"}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (
+                      <>
+                        <div className="my-1 h-px bg-white/10" />
+                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Production</p>
+                        {onStemsClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStemsClick();
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                          >
+                            Stems
+                          </button>
+                        )}
+                        {onMasteringClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMasteringClick();
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                          >
+                            Mastering
+                          </button>
+                        )}
+                        {onEditSectionClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEditSectionClick();
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                          >
+                            Edit
                           </button>
                         )}
                       </>

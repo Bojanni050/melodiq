@@ -7,6 +7,9 @@ import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, use
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
+import { STEM_TYPES } from "@/lib/stem-types";
+import { MASTER_VARIATIONS } from "@/lib/master-types";
+import { useSWRConfig } from "swr";
 
 // Extracted Sub-components
 import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
@@ -20,9 +23,123 @@ import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
 import TrackActionMenu from "./TrackActionMenu";
 import TrackDnaPanel from "./TrackDnaPanel";
+import SectionReplaceEditor from "./SectionReplaceEditor";
+import TrackEditPanel from "./TrackEditPanel";
 
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
+
+// ── Inline stem row (self-fetching) ─────────────────────────────────────────
+type StemDef = { value: string; label: string };
+type StemRecord = { id: string; stemType: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
+
+function StemRow({ stemDef, trackId }: { stemDef: StemDef; trackId: string }) {
+  const [stem, setStem] = useState<StemRecord | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/tracks/${trackId}/stems`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((list: StemRecord[]) => setStem(list.find((s) => s.stemType === stemDef.value) ?? null))
+      .catch(() => null);
+  }, [trackId, stemDef.value]);
+
+  // Poll while pending
+  useEffect(() => {
+    if (stem?.status !== "pending") return;
+    const id = setTimeout(() => {
+      fetch(`/api/tracks/${trackId}/stems`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((list: StemRecord[]) => setStem(list.find((s) => s.stemType === stemDef.value) ?? null))
+        .catch(() => null);
+    }, 4000);
+    return () => clearTimeout(id);
+  }, [stem, trackId, stemDef.value]);
+
+  async function handleExtract() {
+    setExtracting(true); setError(null);
+    try {
+      const res = await fetch(`/api/tracks/${trackId}/stems`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stemType: stemDef.value }) });
+      if (!res.ok) { const p = await res.json().catch(() => null); setError(p?.error ?? "Failed"); return; }
+      setStem(await res.json());
+    } catch { setError("Failed to start extraction"); }
+    finally { setExtracting(false); }
+  }
+
+  const isExtracting = stem?.status === "pending" || extracting;
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+      <span className="text-sm text-white/70">{stemDef.label}</span>
+      {error && <span className="text-[11px] text-red-300">{error}</span>}
+      {stem?.status === "completed" && stem.audioUrl ? (
+        <a href={stem.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
+      ) : isExtracting ? (
+        <span className="text-[11px] text-white/40">Extracting…</span>
+      ) : (
+        <button type="button" onClick={handleExtract} disabled={extracting} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
+          {stem?.status === "failed" ? "Retry" : "Extract"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Inline master row (self-fetching) ────────────────────────────────────────
+type MasterDef = { value: string; label: string };
+type MasterRecord = { id: string; variationCategory: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
+
+function MasterRow({ variationDef, trackId }: { variationDef: MasterDef; trackId: string }) {
+  const [master, setMaster] = useState<MasterRecord | null>(null);
+  const [mastering, setMastering] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/tracks/${trackId}/masters`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
+      .catch(() => null);
+  }, [trackId, variationDef.value]);
+
+  // Poll while pending
+  useEffect(() => {
+    if (master?.status !== "pending") return;
+    const id = setTimeout(() => {
+      fetch(`/api/tracks/${trackId}/masters`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
+        .catch(() => null);
+    }, 4000);
+    return () => clearTimeout(id);
+  }, [master, trackId, variationDef.value]);
+
+  async function handleMaster() {
+    setMastering(true); setError(null);
+    try {
+      const res = await fetch(`/api/tracks/${trackId}/masters`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variationCategory: variationDef.value }) });
+      if (!res.ok) { const p = await res.json().catch(() => null); setError(p?.error ?? "Failed"); return; }
+      setMaster(await res.json());
+    } catch { setError("Failed to start mastering"); }
+    finally { setMastering(false); }
+  }
+
+  const isMastering = master?.status === "pending" || mastering;
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+      <span className="text-sm text-white/70">{variationDef.label}</span>
+      {error && <span className="text-[11px] text-red-300">{error}</span>}
+      {master?.status === "completed" && master.audioUrl ? (
+        <a href={master.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
+      ) : isMastering ? (
+        <span className="text-[11px] text-white/40">Mastering…</span>
+      ) : (
+        <button type="button" onClick={handleMaster} disabled={mastering} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
+          {master?.status === "failed" ? "Retry" : "Master"}
+        </button>
+      )}
+    </div>
+  );
+}
 
 const TrackCard = memo(function TrackCard({
   track,
@@ -98,6 +215,17 @@ const TrackCard = memo(function TrackCard({
   // every time the card is toggled — the animation wrapper hides it instead.
   const [dnaMounted, setDnaMounted] = useState(false);
   useEffect(() => { if (dnaOpen) setDnaMounted(true); }, [dnaOpen]);
+  const [stemsOpen, setStemsOpen] = useState(false);
+  const [stemsMounted, setStemsMounted] = useState(false);
+  useEffect(() => { if (stemsOpen) setStemsMounted(true); }, [stemsOpen]);
+  const [masteringOpen, setMasteringOpen] = useState(false);
+  const [masteringMounted, setMasteringMounted] = useState(false);
+  useEffect(() => { if (masteringOpen) setMasteringMounted(true); }, [masteringOpen]);
+  const [editSectionOpen, setEditSectionOpen] = useState(false);
+  const [editSectionMounted, setEditSectionMounted] = useState(false);
+  useEffect(() => { if (editSectionOpen) setEditSectionMounted(true); }, [editSectionOpen]);
+  const [editTrackOpen, setEditTrackOpen] = useState(false);
+  const { mutate } = useSWRConfig();
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
@@ -732,7 +860,7 @@ const TrackCard = memo(function TrackCard({
               onAddToPlaylistClick={actions.handleAddToPlaylistClick}
               onOpenPlaylistPicker={() => actions.setShowPlaylistPickerDialog(true)}
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
-              onEditDetails={onEditDetails ? () => onEditDetails(track) : undefined}
+              onEditDetails={() => setEditTrackOpen((v) => !v)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onAnalyzeCompositionClick={handleAnalyzeComposition}
                             analyzingComposition={analyzingComposition}
@@ -745,6 +873,10 @@ const TrackCard = memo(function TrackCard({
               }
               retryingWav={retryingWav}
               retryWavResult={retryWavResult}
+              canExtractStems={track.provider === "apimart" && !!track.jobId}
+              onStemsClick={() => setStemsOpen((v) => !v)}
+              onMasteringClick={() => setMasteringOpen((v) => !v)}
+              onEditSectionClick={() => setEditSectionOpen((v) => !v)}
             />
           )}
           <button
@@ -782,6 +914,83 @@ const TrackCard = memo(function TrackCard({
               onRunAdvancedDna={handleAdvancedDna}
               trackStatus={track.status}
             />
+          )}
+        </div>
+      </div>
+
+      {/* Inline Edit Track panel */}
+      {editTrackOpen && (
+        <TrackEditPanel
+          track={track}
+          inline
+          onClose={() => setEditTrackOpen(false)}
+          onSaved={(updated) => {
+            setEditTrackOpen(false);
+            onEditDetails?.(updated as TrackItem);
+          }}
+        />
+      )}
+
+      {/* Inline Stems panel */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+          stemsOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {stemsMounted && (
+            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3 space-y-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Stems</p>
+                <button type="button" onClick={() => setStemsOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+              </div>
+              {STEM_TYPES.map((stemDef) => {
+                // Stem data lives in the right-sidebar store; here we render a standalone extraction UI.
+                return (
+                  <StemRow key={stemDef.value} stemDef={stemDef} trackId={track.id} />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Mastering panel */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+          masteringOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {masteringMounted && (
+            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3 space-y-1.5">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Mastering</p>
+                <button type="button" onClick={() => setMasteringOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+              </div>
+              {MASTER_VARIATIONS.map((variationDef) => (
+                <MasterRow key={variationDef.value} variationDef={variationDef} trackId={track.id} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Edit (Section replace) panel */}
+      <div
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+          editSectionOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {editSectionMounted && (
+            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Edit</p>
+                <button type="button" onClick={() => setEditSectionOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+              </div>
+              <SectionReplaceEditor track={track} onSubmitted={() => { void mutate("/api/tracks"); }} />
+            </div>
           )}
         </div>
       </div>
