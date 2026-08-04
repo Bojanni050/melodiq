@@ -131,9 +131,15 @@ export const PROVIDERS: ProviderConfig[] = [
                 type: "text",
                 placeholder: "google/gemini-2.5-flash",
               },
-              {
-                key: "OPENROUTER_ADVANCED_DNA_MODEL",
+      {
+        key: "OPENROUTER_ADVANCED_DNA_MODEL",
                 label: "Advanced DNA Model",
+                type: "text",
+                placeholder: "google/gemini-2.5-flash",
+              },
+              {
+                key: "OPENROUTER_LYRICIQ_MODEL",
+                label: "LyricIQ Model",
                 type: "text",
                 placeholder: "google/gemini-2.5-flash",
               },
@@ -169,9 +175,15 @@ export const PROVIDERS: ProviderConfig[] = [
                 type: "text",
                 placeholder: "gpt-4o",
               },
-              {
-                key: "OPENAI_ADVANCED_DNA_MODEL",
+      {
+        key: "OPENAI_ADVANCED_DNA_MODEL",
                 label: "Advanced DNA Model",
+                type: "text",
+                placeholder: "gpt-4o",
+              },
+              {
+                key: "OPENAI_LYRICIQ_MODEL",
+                label: "LyricIQ Model",
                 type: "text",
                 placeholder: "gpt-4o",
               },

@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 
 export type LLMProvider = "openrouter" | "openai";
-export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "default";
+export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
 
 interface CallLLMOptions {
   purpose?: LLMPurpose;
@@ -34,6 +34,9 @@ async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""
     if (purpose === "advanced") {
       return normalizeProvider(await getSetting("ADVANCED_LLM_PROVIDER")) || "openrouter";
     }
+    if (purpose === "lyriciq") {
+      return normalizeProvider(await getSetting("LYRICIQ_LLM_PROVIDER")) || "openrouter";
+    }
     return normalizeProvider(await getSetting("LLM_PROVIDER"));
   }
 
@@ -59,6 +62,7 @@ export async function callLLM(
     (purpose === "lyrics" ? await getSetting("OPENROUTER_LYRICS_MODEL") : "") ||
     (purpose === "trackdna" ? await getSetting("OPENROUTER_TRACKDNA_MODEL") : "") ||
     (purpose === "advanced" ? await getSetting("OPENROUTER_ADVANCED_DNA_MODEL") : "") ||
+    (purpose === "lyriciq" ? await getSetting("OPENROUTER_LYRICIQ_MODEL") : "") ||
     (await getSetting("OPENROUTER_MODEL")) ||
     process.env.OPENROUTER_MODEL ||
     "google/gemini-2.5-flash";
@@ -69,6 +73,7 @@ export async function callLLM(
     (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
     (purpose === "trackdna" ? await getSetting("OPENAI_TRACKDNA_MODEL") : "") ||
     (purpose === "advanced" ? await getSetting("OPENAI_ADVANCED_DNA_MODEL") : "") ||
+    (purpose === "lyriciq" ? await getSetting("OPENAI_LYRICIQ_MODEL") : "") ||
     (await getSetting("OPENAI_MODEL")) ||
     process.env.OPENAI_MODEL ||
     "gpt-4o";

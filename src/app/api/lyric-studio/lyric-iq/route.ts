@@ -189,9 +189,9 @@ Keep the same song.
 Simply make it feel like it was written by a better songwriter.`;
 
   try {
-    const llmProvider = await getLLMProviderForPurpose("lyrics");
+    const llmProvider = await getLLMProviderForPurpose("lyriciq");
     const result = await callLLM(userPrompt, systemPrompt, {
-      purpose: "lyrics",
+      purpose: "lyriciq",
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
       openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
@@ -216,7 +216,7 @@ Simply make it feel like it was written by a better songwriter.`;
     return NextResponse.json({ result: cleaned });
   } catch (error) {
     const message = getErrorMessage(error);
-    const llmProvider = await getLLMProviderForPurpose("lyrics");
+    const llmProvider = await getLLMProviderForPurpose("lyriciq");
 
     await logApi({
       userId: auth.userId,

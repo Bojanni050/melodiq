@@ -30,6 +30,10 @@ export default function AiRoutingSection({
   showAdvancedDnaDropdown,
   onAdvancedDnaModelSelect,
   onToggleAdvancedDnaDropdown,
+  selectedLyricIqModel,
+  showLyricIqDropdown,
+  onLyricIqModelSelect,
+  onToggleLyricIqDropdown,
   onReadMore,
   autoAnalyzeComposition,
   onToggleAutoAnalyzeComposition,
@@ -49,6 +53,8 @@ export default function AiRoutingSection({
   showTrackDnaDropdown: boolean;
   selectedAdvancedDnaModel: LLMModel | null;
   showAdvancedDnaDropdown: boolean;
+  selectedLyricIqModel: LLMModel | null;
+  showLyricIqDropdown: boolean;
   onSearchQueryChange: (query: string) => void;
   onPromptModelSelect: (model: LLMModel) => void;
   onLyricsModelSelect: (model: LLMModel) => void;
@@ -60,6 +66,8 @@ export default function AiRoutingSection({
   onToggleTrackDnaDropdown: () => void;
   onAdvancedDnaModelSelect: (model: LLMModel) => void;
   onToggleAdvancedDnaDropdown: () => void;
+  onLyricIqModelSelect: (model: LLMModel) => void;
+  onToggleLyricIqDropdown: () => void;
   onReadMore: (model: LLMModel) => void;
   autoAnalyzeComposition: boolean;
   onToggleAutoAnalyzeComposition: () => void;
@@ -124,6 +132,20 @@ export default function AiRoutingSection({
             </select>
             <p className="text-xs text-white/25 mt-1">
               Used by the Advanced Track DNA analysis for more thorough lyrics &amp; composition critique with tips.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">LyricIQ provider</label>
+            <select
+              value={values.LYRICIQ_LLM_PROVIDER || "openrouter"}
+              onChange={(e) => onFieldChange("LYRICIQ_LLM_PROVIDER", e.target.value)}
+              className="select-field font-mono text-sm"
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="openai">OpenAI</option>
+            </select>
+            <p className="text-xs text-white/25 mt-1">
+              Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.
             </p>
           </div>
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -220,6 +242,18 @@ export default function AiRoutingSection({
             searchQuery={modelSearchQuery}
             onToggle={onToggleAdvancedDnaDropdown}
             onSelect={onAdvancedDnaModelSelect}
+            onSearchQueryChange={onSearchQueryChange}
+            onReadMore={onReadMore}
+          />
+          <OpenRouterModelDropdown
+            label="LyricIQ Model"
+            selected={selectedLyricIqModel}
+            open={showLyricIqDropdown}
+            options={filteredModels}
+            allModelsLoaded={allModels.length > 0}
+            searchQuery={modelSearchQuery}
+            onToggle={onToggleLyricIqDropdown}
+            onSelect={onLyricIqModelSelect}
             onSearchQueryChange={onSearchQueryChange}
             onReadMore={onReadMore}
           />
