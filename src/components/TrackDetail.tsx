@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { parseLyricsToBlocks } from "@/lib/lyrics-to-blocks";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { formatGenerationTime } from "@/lib/track-utils";
@@ -92,6 +94,7 @@ interface TrackDetailProps {
 }
 
 export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false, onTrackUpdated }: TrackDetailProps) {
+  const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
@@ -781,6 +784,24 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
                   >
                     {track.lyrics ? "Edit" : "Add"}
+                  </button>
+                )}
+                {allowLyricsEdit && track.lyrics && !lyricsEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rawLyrics = track.lyrics ?? "";
+                      const blocks = parseLyricsToBlocks(rawLyrics);
+                      sessionStorage.setItem(
+                        "lyrics-studio-track-edit",
+                        JSON.stringify({ trackId: track.id, blocks, title: track.title, style: track.prompt })
+                      );
+                      router.push("/lyrics-studio");
+                    }}
+                    className="rounded px-2 py-1 text-[11px] text-amber-200/80 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
+                    title="Open in Lyric Studio with sections identified"
+                  >
+                    Edit Lyrics
                   </button>
                 )}
                 {allowLyricsEdit && lyricsEditing && (

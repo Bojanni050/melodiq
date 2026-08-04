@@ -72,6 +72,40 @@ export default function LyricsStudioPage() {
     }
   }, []);
 
+  // Load track-edit payload from sessionStorage (Edit Lyrics button in TrackDetail)
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem("lyrics-studio-track-edit");
+      if (!raw) return;
+      window.sessionStorage.removeItem("lyrics-studio-track-edit");
+      const payload = JSON.parse(raw) as {
+        trackId: string;
+        blocks: Array<{ id?: string; type: BlockType; label: string; content: string; uniqueChorusOverride?: boolean }>;
+        title?: string;
+        style?: string;
+      };
+      if (Array.isArray(payload.blocks) && payload.blocks.length > 0) {
+        const validTypes = new Set<BlockType>(BLOCK_TYPES);
+        const restored: LyricBlock[] = payload.blocks
+          .filter((b) => !!b && validTypes.has(b.type) && typeof b.content === "string")
+          .map((b) => ({
+            id: typeof b.id === "string" && b.id.trim() ? b.id : `track-edit-${crypto.randomUUID()}`,
+            type: b.type,
+            label: typeof b.label === "string" && b.label.trim() ? b.label : BLOCK_LABELS[b.type],
+            content: b.content,
+            generating: false,
+            uniqueChorusOverride: b.type === "chorus" && typeof b.uniqueChorusOverride === "boolean" ? b.uniqueChorusOverride : false,
+          }));
+        setBlocks(restored);
+      }
+      if (payload.title) setTitle(payload.title);
+      if (payload.style) setStyle(payload.style);
+      setNotice({ type: "success", message: "Lyrics geladen vanuit track. Je kunt nu per sectie bewerken." });
+    } catch (error) {
+      console.error("Failed to load track-edit payload", error);
+    }
+  }, [setBlocks, setTitle, setStyle]);
+
   const allPresets = useMemo(() => ({
     ...BLOCK_PRESETS,
     ...customPresets
