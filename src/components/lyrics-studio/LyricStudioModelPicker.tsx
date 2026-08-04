@@ -92,7 +92,9 @@ export default function LyricStudioModelPicker({
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-sm text-white/85">LLM model</label>
+        <label className="text-sm text-white/85">
+          LLM model{selected ? ` — ${selected.name}` : ""}
+        </label>
         {(loaded || error) && (
           <button
             type="button"

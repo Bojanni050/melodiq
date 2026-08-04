@@ -1,5 +1,13 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-04 di 18:39 (Lyric Studio: huidig LLM model tonen in geavanceerde instellingen)
+
+- Findings: In de geavanceerde instellingen van de Lyric Studio werd het huidige gekozen LLM model niet weergegeven. Gebruikers wisten niet welk model er actief was zonder op de dropdown te klikken.
+- Conclusions: Voeg een label toe dat het huidige model toont in het formaat "LLM model — <model naam>" boven de "Modellen ophalen" knop. Dit geeft direct inzicht in de actieve configuratie.
+- Actions:
+  - Modified `src/components/lyrics-studio/LyricStudioModelPicker.tsx` — label aangepast van "LLM model" naar "LLM model — {selected.name}" (regel 95-97)
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-06-02 ma 11:25 (page.tsx refactored — 1332 → 180 regels)
 
 - Findings: `src/app/page.tsx` was 1332 regels en 60 KB en bevatte alles: SWR data fetching, track state management, workspace logica, AI generatie en alle JSX. Dit maakten de file moeilijk te onderhouden en te begrijpen.
