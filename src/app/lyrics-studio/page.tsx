@@ -560,7 +560,7 @@ export default function LyricsStudioPage() {
     setStructure(""); setCustomStructure(""); setRepetitiveChorus(true);
     setTitle("");
     setCreativityLevel(5); setLiteralnessLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
-    setLlmModel("");
+    setLlmModel(""); setVocalistTag("auto");
     setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
     window.localStorage.removeItem("melodiq-lyrics-studio");
     setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
