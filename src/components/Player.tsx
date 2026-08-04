@@ -862,11 +862,16 @@ export default function Player() {
   ]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying && castState !== "connected") {
+    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    const shouldPlay = isPlaying && castState !== "connected";
+    if (shouldPlay) {
+      if (audio.paused) {
         void tryPlay();
-      } else {
-        audioRef.current.pause();
+      }
+    } else {
+      if (!audio.paused) {
+        audio.pause();
       }
     }
   }, [isPlaying, tryPlay, castState]);
