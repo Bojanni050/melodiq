@@ -9,16 +9,33 @@ interface SidebarProps {
   credits: number | null;
 }
 
+function useIsQHD() {
+  const [isQHD, setIsQHD] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 2560px)");
+    setIsQHD(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsQHD(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isQHD;
+}
+
 export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const isQHD = useIsQHD();
+  const [collapsed, setCollapsed] = useState(() => !isQHD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
   const buildVersion = "202608041944";
+
+  useEffect(() => {
+    setCollapsed(!isQHD);
+  }, [isQHD]);
 
   useEffect(() => {
     let active = true;
@@ -121,17 +138,30 @@ export default function Sidebar({ credits }: SidebarProps) {
     }
   }
 
+  const sidebarWidth = isQHD ? (collapsed ? "w-15" : "w-75") : (collapsed ? "w-15" : "w-60");
+
   return (
     <>
-      <aside className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${collapsed ? "w-15" : "w-60"}`}>
-        {/* Cover art ambient background with fade-to-black on the right */}
+      <aside
+        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${sidebarWidth}`}
+        style={isQHD && !collapsed ? { fontSize: "1.1em" } : undefined}
+      >
         {sidebarCoverUrl && (
           <div
             className="absolute inset-0 bg-cover bg-center blur-[60px] opacity-20 saturate-200 pointer-events-none scale-110"
             style={{ backgroundImage: `url(${sidebarCoverUrl})` }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0d0d12] pointer-events-none" />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: isQHD
+              ? "linear-gradient(to right, transparent 40%, #0d0d12 100%)"
+              : collapsed
+                ? "linear-gradient(to right, transparent 50%, #0d0d12 100%)"
+                : "linear-gradient(to right, transparent 30%, #0d0d12 100%)",
+          }}
+        />
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
           <Link href="/discover" className="flex items-center gap-2">
@@ -184,7 +214,7 @@ export default function Sidebar({ credits }: SidebarProps) {
           })}
         </nav>
 
-        {/* Bottom section — pb-24 keeps logout above the 80px player bar */}
+        {/* Bottom section */}
         <div className="px-3 pb-24 space-y-3 border-t border-white/5 pt-3">
           {credits !== null && (
             <div className="px-3 py-2 bg-white/5 rounded-lg">
@@ -203,6 +233,32 @@ export default function Sidebar({ credits }: SidebarProps) {
           </button>
         </div>
       </aside>
+
+      {/* Expand button when collapsed on non-QHD */}
+      {!isQHD && collapsed && (
+        <button
+          onClick={() => setCollapsed(false)}
+          className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Sidebar openen"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      {/* Collapse button when expanded on non-QHD */}
+      {!isQHD && !collapsed && (
+        <button
+          onClick={() => setCollapsed(true)}
+          className="hidden lg:flex fixed left-[240px] top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Sidebar sluiten"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
 
       {/* Mobile top header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 h-13.25">
@@ -238,15 +294,11 @@ export default function Sidebar({ credits }: SidebarProps) {
       {/* Mobile navigation drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          
-          {/* Drawer content */}
           <div className="relative ml-auto h-full w-70 bg-[#0d0d12] border-l border-white/5 flex flex-col z-10 shadow-2xl">
-            {/* Drawer Header */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
               <span className="text-base font-semibold text-white">Menu</span>
               <button
@@ -260,8 +312,6 @@ export default function Sidebar({ credits }: SidebarProps) {
                 </svg>
               </button>
             </div>
-            
-            {/* Drawer Nav links */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {navItems.map((item) => {
                 const active = item.href === "/"
@@ -287,8 +337,6 @@ export default function Sidebar({ credits }: SidebarProps) {
                 );
               })}
             </nav>
-            
-            {/* Drawer Footer with Credits + Logout */}
             <div className="px-3 pb-6 pt-3 border-t border-white/5 space-y-3">
               {credits !== null && (
                 <div className="px-3 py-2 bg-white/5 rounded-lg">
