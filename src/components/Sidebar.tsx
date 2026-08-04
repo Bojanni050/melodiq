@@ -36,7 +36,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const navItems = [
     { href: "/discover", label: "Discover", icon: "discover" },
     { href: "/library", label: "Library", icon: "library" },
-    { href: "/studio", label: "Studio", icon: "studio" },
+    { href: "/studio", label: "Song Studio", icon: "studio" },
     { href: "/lyrics-studio", label: "Lyric Studio", icon: "lyrics" },
     { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
     { href: "/archive", label: "Master Tracks", icon: "archive" },

@@ -263,6 +263,7 @@ export default memo(function StudioForm({
   } = useStudioStore();
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showVocalGenderConfirm, setShowVocalGenderConfirm] = useState(false);
 
   useEffect(() => {
     if (!savedLyricsLoaded) {
@@ -398,7 +399,7 @@ export default memo(function StudioForm({
     <div className="relative flex h-full min-h-0 flex-col gap-4">
       {/* Top Bar: Studio Header & Clear All */}
       <div className="flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight text-white/90">Studio</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-white/90">Song Studio</h2>
         <button
           type="button"
           onClick={() => setShowClearConfirm(true)}
@@ -442,6 +443,47 @@ export default memo(function StudioForm({
                 className="rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-1.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
               >
                 Clear all
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showVocalGenderConfirm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowVocalGenderConfirm(false)}
+          />
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <p className="text-sm text-white/80 leading-relaxed">
+                Geen Vocal Gender gekozen. Het model kiest zelf een stem. Is dat de bedoeling?
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowVocalGenderConfirm(false)}
+                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVocalGenderConfirm(false);
+                  onGenerate();
+                }}
+                className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
+              >
+                Doorgaan
               </button>
             </div>
           </div>
@@ -1222,7 +1264,13 @@ Your chorus here`}
         </label>
 
         <GenerateButton
-          onClick={onGenerate}
+          onClick={() => {
+            if (!instrumental && vocalGender === "auto") {
+              setShowVocalGenderConfirm(true);
+            } else {
+              onGenerate();
+            }
+          }}
           loading={isGenerating}
           disabled={!canGenerate}
           label="🎶 Generate Track"

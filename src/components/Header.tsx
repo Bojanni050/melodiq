@@ -10,7 +10,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
-    { href: "/", label: "Studio" },
+    { href: "/", label: "Song Studio" },
     { href: "/library", label: "Library" },
     { href: "/settings", label: "Settings" },
     { href: "/logs", label: "Logs" },

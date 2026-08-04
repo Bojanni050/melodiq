@@ -372,7 +372,7 @@ export default function DiscoverPage() {
                 </>
               ) : (
                 <p className="text-sm text-white/45">
-                  No tracks yet. Head to <Link href="/studio" className="text-primary-400 hover:underline">Studio</Link> to generate your first one.
+                  No tracks yet. Head to <Link href="/studio" className="text-primary-400 hover:underline">Song Studio</Link> to generate your first one.
                 </p>
               )}
             </section>
