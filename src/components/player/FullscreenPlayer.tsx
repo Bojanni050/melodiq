@@ -472,7 +472,7 @@ export default function FullscreenPlayer({
                           key={index}
                           ref={isActive ? activeLineRef : null}
                           onClick={() => handleLineClick(line.startTime)}
-                          className={`cursor-pointer transition-all duration-500 origin-center py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
+                          className={`cursor-pointer transition-all duration-500 origin-center py-1 text-base sm:text-2xl md:text-3xl lg:text-4xl leading-relaxed ${
                             isActive
                               ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
                               : isPlayed
