@@ -7,6 +7,7 @@ export type PublicTrackSummary = {
   id: string;
   title: string;
   artistName: string | null;
+  artistId: string | null;
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
@@ -17,13 +18,14 @@ export type PublicTrackSummary = {
 
 function toPublicTrackSummary(
   track: typeof tracks.$inferSelect,
-  ownerById: Map<string, { artistAlias: string | null; name: string | null }>
+  ownerById: Map<string, { id: string; artistAlias: string | null; name: string | null }>
 ): PublicTrackSummary {
   const owner = ownerById.get(track.userId);
   return {
     id: track.id,
     title: track.title || "Untitled",
     artistName: track.artistName || owner?.artistAlias || owner?.name || null,
+    artistId: owner?.id || track.userId,
     coverUrl: track.coverUrl || null,
     hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
     duration: track.duration,
