@@ -691,6 +691,29 @@ export default function Player() {
   }, [volume]);
 
   useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space") return;
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      if (!usePlayerStore.getState().currentTrack) return;
+      event.preventDefault();
+      const isPlaying = usePlayerStore.getState().isPlaying;
+      if (isPlaying) {
+        audioRef.current?.pause();
+        usePlayerStore.getState().setIsPlaying(false);
+      } else {
+        usePlayerStore.getState().setIsPlaying(true);
+        void tryPlay();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [tryPlay]);
+
+  useEffect(() => {
     if (!audioRef.current || !currentTrack?.id) return;
     const trackSnapshot = currentTrack;
 
@@ -781,6 +804,18 @@ export default function Player() {
         if (usePlayerStore.getState().isPlaying || shouldResume) {
           void tryPlay();
         }
+        return;
+      }
+
+      // If playTrackFromGesture already started this track playing from the
+      // streaming URL, skip the blob fetch entirely. The blob download is
+      // only for cold starts (e.g. restoring progress from localStorage on
+      // page load). Fetching and swapping to a blob URL mid-playback
+      // restarts the track from 0 because the new <audio> element src
+      // doesn't carry over the currentTime.
+      if (gestureLoadedThisTrack && usePlayerStore.getState().isPlaying) {
+        lastLoadedTrackIdRef.current = trackId;
+        setResolvingUrl(false);
         return;
       }
 
