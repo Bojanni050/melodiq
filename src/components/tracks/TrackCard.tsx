@@ -231,6 +231,7 @@ const TrackCard = memo(function TrackCard({
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
+  const [togglingPublish, setTogglingPublish] = useState(false);
 
   async function handleAnalyzeComposition() {
     setAnalyzingComposition(true);
@@ -293,6 +294,33 @@ const TrackCard = memo(function TrackCard({
     } finally {
       setRetryingWav(false);
       setTimeout(() => setRetryWavResult(null), 4000);
+    }
+  }
+
+  async function handleTogglePublish() {
+    if (track.status !== "done") return;
+    const isCurrentlyPublished = track.releaseStatus === "published";
+    const nextStatus = isCurrentlyPublished ? "unpublished" : "published";
+    const nextPublishDate = isCurrentlyPublished ? null : new Date().toISOString();
+    setTogglingPublish(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          releaseStatus: nextStatus,
+          publishDate: nextPublishDate,
+        }),
+      });
+      if (!res.ok) {
+        console.error(`Failed to update publish status: HTTP ${res.status}`);
+        return;
+      }
+      void mutate("/api/tracks");
+    } catch (error) {
+      console.error("Failed to toggle publish:", error);
+    } finally {
+      setTogglingPublish(false);
     }
   }
 
@@ -877,6 +905,9 @@ const TrackCard = memo(function TrackCard({
               onStemsClick={() => setStemsOpen((v) => !v)}
               onMasteringClick={() => setMasteringOpen((v) => !v)}
               onEditSectionClick={() => setEditSectionOpen((v) => !v)}
+              isPublished={track.releaseStatus === "published"}
+              onTogglePublish={track.status === "done" ? handleTogglePublish : undefined}
+              togglingPublish={togglingPublish}
             />
           )}
           <button

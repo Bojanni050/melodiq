@@ -30,6 +30,9 @@ interface TrackActionMenuProps {
   onStemsClick?: () => void;
   onMasteringClick?: () => void;
   onEditSectionClick?: () => void;
+  isPublished?: boolean;
+  onTogglePublish?: () => void;
+  togglingPublish?: boolean;
 }
 
 export default function TrackActionMenu({
@@ -54,6 +57,9 @@ export default function TrackActionMenu({
   onStemsClick,
   onMasteringClick,
   onEditSectionClick,
+  isPublished,
+  onTogglePublish,
+  togglingPublish,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +108,25 @@ export default function TrackActionMenu({
           >
             Edit Track Details
           </button>
+          {onTogglePublish && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onTogglePublish();
+              }}
+              disabled={togglingPublish}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {togglingPublish
+                ? isPublished
+                  ? "Unpublishing..."
+                  : "Publishing..."
+                : isPublished
+                  ? "Unpublish"
+                  : "Publish"}
+            </button>
+          )}
           <div className="my-1 h-px bg-white/10" />
           <button
             onClick={(e) => {
