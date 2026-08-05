@@ -49,7 +49,9 @@ export async function GET(
   const serialized = playlistTracksRows.map((row) => ({
     id: row.trackId,
     title: row.title || "Untitled",
-    coverUrl: row.coverUrl,
+    coverUrl: row.coverUrl?.startsWith("/api/tracks/")
+      ? row.coverUrl.replace("/api/tracks/", "/api/discover/")
+      : row.coverUrl,
     hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
     duration: row.duration,
     totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
