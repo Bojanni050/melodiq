@@ -439,7 +439,7 @@ export default function FullscreenPlayer({
               {hasTimings ? (
                 /* Timed: cover art on left, lyrics scrolling on right */
                 <div className="flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4 py-8">
-                  <div className="shrink-0 flex flex-col items-center gap-4">
+                  <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
                     <div className="w-52 h-52 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] transition-all duration-500">
                       {coverUrl ? (
                         <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
