@@ -437,10 +437,10 @@ export default function FullscreenPlayer({
           {showLyrics && lyricsVisible && (
             <div className="flex-1 w-full flex items-center justify-center min-h-0 h-full">
               {hasTimings ? (
-                /* Timed: cover art on top, lyrics scrolling below — all centered */
-                <div className="flex flex-col items-center gap-4 w-full h-full">
-                  <div className="shrink-0 flex flex-col items-center gap-3 pt-2">
-                    <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 transition-all duration-500">
+                /* Timed: cover art on left, lyrics scrolling on right */
+                <div className="flex flex-col lg:flex-row items-center lg:items-center justify-center gap-6 lg:gap-10 w-full h-full max-w-7xl">
+                  <div className="shrink-0 flex flex-col items-center gap-3 lg:items-start">
+                    <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60 xl:w-72 xl:h-72 transition-all duration-500">
                       {coverUrl ? (
                         <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
                       ) : (
@@ -451,17 +451,18 @@ export default function FullscreenPlayer({
                         </div>
                       )}
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-base sm:text-lg font-semibold text-white/90 leading-snug">
+                    <div className="text-center lg:text-left max-w-xs">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {artistLabel && <p className="mt-0.5 text-sm text-white/50">{artistLabel}</p>}
-                      {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                      {artistLabel && <p className="mt-1 text-sm sm:text-base text-white/50">{artistLabel}</p>}
+                      {writerLabel && <p className="mt-0.5 text-xs text-white/40">Written by {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
                     </div>
                   </div>
                   <div
                     ref={containerRef}
-                    className="flex-1 w-full max-w-2xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                    className="flex-1 w-full min-w-0 max-w-2xl lg:max-w-3xl xl:max-w-4xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                   >
                     {parsedLyrics.map((line, index) => {
                       const isActive = index === activeLineIndex;
