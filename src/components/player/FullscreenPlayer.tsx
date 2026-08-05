@@ -435,10 +435,10 @@ export default function FullscreenPlayer({
 
           {/* Lyrics */}
           {showLyrics && lyricsVisible && (
-            <div className="flex-1 w-full flex items-center justify-center min-h-0 h-full">
+            <div className="flex-1 w-full flex items-stretch justify-center min-h-0 h-full">
               {hasTimings ? (
                 /* Timed: cover art on left, lyrics scrolling on right */
-                <div className="flex flex-col lg:flex-row items-center lg:items-center justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4">
+                <div className="flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4 py-8">
                   <div className="shrink-0 flex flex-col items-center gap-4">
                     <div className="w-52 h-52 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] transition-all duration-500">
                       {coverUrl ? (
@@ -470,7 +470,7 @@ export default function FullscreenPlayer({
                   </div>
                   <div
                     ref={containerRef}
-                    className="flex-1 w-full min-w-0 max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                    className="flex-1 w-full min-w-0 min-h-0 max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]"
                   >
                     {parsedLyrics.map((line, index) => {
                       const isActive = index === activeLineIndex;
@@ -499,7 +499,7 @@ export default function FullscreenPlayer({
                 /* Static: lyrics left (scrollable) + cover art right (fixed), centered as a unit */
                 <div className="flex flex-col lg:flex-row items-start justify-center gap-10 w-full h-full px-4">
                   {/* Lyrics columns — scrollable, fills available height */}
-                  <div className="flex-1 min-w-0 h-full overflow-y-auto py-6 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  <div className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto py-6 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
                     <div className={`grid gap-4 lg:gap-8 w-fit mx-auto ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
                       {columns.map((column, colIndex) => (
                         <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
