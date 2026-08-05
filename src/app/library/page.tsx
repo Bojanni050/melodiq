@@ -281,8 +281,9 @@ export default function LibraryPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const viewAsRole = useUserStore((s) => s.viewAsRole);
-  const isListener = (viewAsRole ?? user?.role ?? null) === "listener";
-  const allowLyricsEdit = !isListener;
+  const effectiveRole = viewAsRole ?? user?.role ?? null;
+  const isListener = effectiveRole === "listener";
+  const allowLyricsEdit = effectiveRole === "admin";
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
