@@ -1095,3 +1095,9 @@
 - Findings: The Track DNA textarea in Edit Track Details showed only a generic placeholder even where `audioDna` analysis was already stored for the track.
 - Conclusions: Prefer manually authored Track DNA when present; otherwise transform the available structured audio analysis into a readable editor value.
 - Actions: Updated `src/components/tracks/TrackEditPanel.tsx` to populate Track DNA from the existing audio analysis, and updated user documentation and build stamp.
+
+## 2026-08-05 wo (Listener library fix: images + crash)
+
+- Findings: As listener, the Library page showed no track list and no artwork on melodiq.nl. Root cause (two coupled bugs): (1) library/page.tsx put raw /api/discover PublicTrackSummary objects straight into TrackCard — those have no `prompt`/`lyrics`/`audioUrl` fields, and TrackCard.tsx L417 calls `track.prompt.length`, throwing a TypeError that crashed the whole page. (2) The discover feed exposes `coverUrl: "/api/tracks/{id}/cover"`, an owner-only route that 404s for a listener.
+- Conclusions: Discover tracks must be normalized into a full LibraryTrack before rendering, and their cover must point at the public `/api/discover/{id}/cover` proxy route instead of the owner-only one.
+- Actions: `src/app/library/page.tsx` listener branch now maps each published track to a complete LibraryTrack (prompt:'', lyrics null, status 'done', provider 'discover', coverUrl=/api/discover/{id}/cover, publicSource true). Build clean; deployed to VPS via git pull + docker compose build/up. endpoints /api/discover, /api/discover/{id}/cover, /api/discover/{id}/stream all 200.
