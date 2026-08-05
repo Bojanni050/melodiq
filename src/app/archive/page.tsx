@@ -884,9 +884,11 @@ export default function ArchivePage() {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm text-white/85">
-              Delete <span className="font-semibold">{deleteTarget.title}</span>?
+              Delete Master Tracks entry <span className="font-semibold">{deleteTarget.title}</span>?
             </p>
-            <p className="text-xs text-white/40 mt-1">This action cannot be undone.</p>
+            <p className="text-xs text-white/40 mt-1">
+              The original track itself is not deleted — only this Master Tracks reference.
+            </p>
             <div className="flex justify-end gap-2 mt-5">
               <button
                 type="button"
