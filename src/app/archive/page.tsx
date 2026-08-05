@@ -564,9 +564,16 @@ export default function ArchivePage() {
   function handlePlayTrack(track: Track) {
     if (currentTrack?.id === track.id) {
       setIsPlaying(!isPlaying);
-    } else {
-      playTrackFromGesture(track);
+      return;
     }
+    const pageTracks = filtered
+      .map((e) => entryToTrack(e))
+      .filter((t): t is Track => t !== null);
+    const startIndex = pageTracks.findIndex((t) => t.id === track.id);
+    const rest = startIndex >= 0 ? pageTracks.slice(startIndex + 1) : [];
+    clearQueue();
+    rest.forEach((t) => enqueueTrack(t));
+    playTrackFromGesture(track);
   }
 
   async function handleAnalyzeComposition(entry: ArchiveEntry) {

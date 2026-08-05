@@ -809,8 +809,9 @@ export default function Player() {
         return;
       }
 
+      const wasPlaying = !audioEl.paused;
+      const currentPosition = audioEl.currentTime;
       audioEl.pause();
-      audioEl.currentTime = 0;
       audioEl.src = playUrl;
       audioEl.load();
 

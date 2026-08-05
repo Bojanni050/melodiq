@@ -271,12 +271,20 @@ export const usePlayerStore = create<PlayerState>()(
           console.log("[Player] playTrackFromGesture:", { track, url });
         }
 
-        audioElement.pause();
-        audioElement.currentTime = 0;
-        audioElement.src = url || "";
-        audioElement.volume = get().volume;
-        audioElement.dataset.gestureTrackId = track.id;
-        audioElement.load();
+        const isSameTrackAlreadyLoaded =
+          audioElement.dataset.gestureTrackId === track.id &&
+          !!audioElement.src &&
+          !audioElement.error &&
+          audioElement.readyState >= 1;
+
+        if (!isSameTrackAlreadyLoaded) {
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          audioElement.src = url || "";
+          audioElement.volume = get().volume;
+          audioElement.dataset.gestureTrackId = track.id;
+          audioElement.load();
+        }
 
         const playPromise = audioElement.play();
         if (playPromise && typeof playPromise.catch === "function") {
