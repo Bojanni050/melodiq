@@ -1214,7 +1214,7 @@ export default function Player() {
         <div className="relative max-w-screen-2xl mx-auto h-full px-4 flex items-center gap-3">
           {/* Now Playing Info */}
           {currentTrack ? (
-            <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[240px]">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[200px] lg:w-[260px]">
               <button
                 onClick={() => setIsFullscreen(true)}
                 className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/5"
@@ -1340,7 +1340,7 @@ export default function Player() {
             </button>
 
             {/* Progress bar */}
-            <div className="hidden sm:flex items-center gap-2 ml-2 min-w-0 max-w-72 flex-1">
+            <div className="hidden sm:flex items-center gap-2 ml-2 min-w-0 max-w-48 lg:max-w-72 flex-1">
               <span className="text-xs text-white/40 w-8 text-right tabular-nums">
                 {duration > 0 ? `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, "0")}` : "0:00"}
               </span>
@@ -1369,7 +1369,7 @@ export default function Player() {
           </div>
 
           {/* Right Controls */}
-          <div className="hidden sm:flex items-center gap-1 flex-shrink-0 sm:w-[240px]">
+          <div className="hidden sm:flex items-center justify-end gap-1 flex-shrink-0 sm:w-[200px] lg:w-[240px]">
             {/* Queue info */}
             {queue.length > 0 && (
               <div className="hidden md:flex items-center gap-1 text-xs text-white/40 px-2 py-1 rounded-full bg-white/5" title={`${queue.length} tracks in queue`}>
