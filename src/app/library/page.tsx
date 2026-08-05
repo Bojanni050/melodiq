@@ -388,16 +388,40 @@ export default function LibraryPage() {
       if (res.ok) {
         const data = await res.json();
         const published = (data.published || []).map((t: any) => ({
-          ...t,
+          // Discover tracks only carry a PublicTrackSummary (no prompt/lyrics/
+          // audio fields). Normalize into a full LibraryTrack so TrackCard /
+          // TrackDetail / the player never hit undefined fields, and point the
+          // cover at the public discover route (the feed's /api/tracks/{id}/cover
+          // is an owner-only route and 404s for listeners).
+          id: t.id,
+          title: t.title ?? null,
+          provider: "discover",
+          providerModel: "discover",
+          prompt: "",
+          lyrics: null,
+          status: "done",
+          audioUrl: null,
+          audioUrlHd: null,
+          format: null,
+          formatHd: null,
+          duration: t.duration ?? null,
+          error: null,
+          s3Key: null,
+          s3KeyHd: null,
+          coverUrl: `/api/discover/${t.id}/cover`,
+          s3KeyCover: null,
+          artistName: t.artistName ?? null,
+          instrumental: t.instrumental ?? false,
+          createdAt: t.publishDate ?? new Date().toISOString(),
           // Mark as public source so playback routes through the discover API
           publicSource: true,
-          status: "done",
         }));
         setTracks(published);
       }
       setLoading(false);
       return;
     }
+
     const res = await fetch("/api/tracks?status=done");
     if (activeCheck && !activeCheck()) return;
     if (res.ok) {
