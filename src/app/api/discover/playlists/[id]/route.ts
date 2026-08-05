@@ -40,6 +40,7 @@ export async function GET(
       duration: tracks.duration,
       playCount: tracks.playCount,
       othersPlayCount: tracks.othersPlayCount,
+      lyricsTimestamps: tracks.lyricsTimestamps,
     })
     .from(playlistTracks)
     .innerJoin(tracks, eq(tracks.id, playlistTracks.trackId))
@@ -55,6 +56,7 @@ export async function GET(
     hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
     duration: row.duration,
     totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
+    lyricsTimestamps: row.lyricsTimestamps || null,
   }));
 
   return NextResponse.json({

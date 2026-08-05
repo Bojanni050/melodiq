@@ -45,6 +45,7 @@ export async function GET(
       totalPlays: track.playCount + track.othersPlayCount,
       instrumental: track.instrumental,
       publishDate: track.publishDate ? track.publishDate.toISOString() : null,
+      lyricsTimestamps: track.lyricsTimestamps || null,
     },
     audioDna,
     loggedIn: Boolean(payload),

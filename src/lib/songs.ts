@@ -14,6 +14,7 @@ export type PublicTrackSummary = {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  lyricsTimestamps: string | null;
 };
 
 function toPublicTrackSummary(
@@ -34,6 +35,7 @@ function toPublicTrackSummary(
     totalPlays: track.playCount + track.othersPlayCount,
     instrumental: track.instrumental,
     publishDate: track.publishDate ? track.publishDate.toISOString() : null,
+    lyricsTimestamps: track.lyricsTimestamps || null,
   };
 }
 

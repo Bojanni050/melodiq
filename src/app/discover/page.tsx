@@ -17,6 +17,7 @@ interface PublicTrack {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  lyricsTimestamps: string | null;
 }
 
 interface PublicPlaylist {
@@ -290,6 +291,7 @@ export default function DiscoverPage() {
       formatHd: null,
       duration: track.duration,
       lyrics: null,
+      lyricsTimestamps: track.lyricsTimestamps,
       createdAt: new Date().toISOString(),
       error: null,
       coverUrl: coverSrc(track),

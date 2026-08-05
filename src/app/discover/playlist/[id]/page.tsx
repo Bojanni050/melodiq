@@ -13,6 +13,7 @@ interface PublicPlaylistTrack {
   hasCoverProxy: boolean;
   duration: number | null;
   totalPlays: number;
+  lyricsTimestamps: string | null;
 }
 
 interface PublicPlaylistData {
@@ -85,6 +86,7 @@ export default function PublicPlaylistPage() {
       formatHd: null,
       duration: track.duration,
       lyrics: null,
+      lyricsTimestamps: track.lyricsTimestamps || null,
       createdAt: new Date().toISOString(),
       error: null,
       coverUrl: coverSrc(track),
