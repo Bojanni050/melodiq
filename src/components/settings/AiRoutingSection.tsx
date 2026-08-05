@@ -34,6 +34,11 @@ export default function AiRoutingSection({
   showLyricIqDropdown,
   onLyricIqModelSelect,
   onToggleLyricIqDropdown,
+  selectedTimecodedModel,
+  showTimecodedDropdown,
+  onTimecodedModelSelect,
+  onToggleTimecodedDropdown,
+  isAdmin,
   onReadMore,
   autoAnalyzeComposition,
   onToggleAutoAnalyzeComposition,
@@ -55,6 +60,8 @@ export default function AiRoutingSection({
   showAdvancedDnaDropdown: boolean;
   selectedLyricIqModel: LLMModel | null;
   showLyricIqDropdown: boolean;
+  selectedTimecodedModel?: LLMModel | null;
+  showTimecodedDropdown?: boolean;
   onSearchQueryChange: (query: string) => void;
   onPromptModelSelect: (model: LLMModel) => void;
   onLyricsModelSelect: (model: LLMModel) => void;
@@ -68,6 +75,9 @@ export default function AiRoutingSection({
   onToggleAdvancedDnaDropdown: () => void;
   onLyricIqModelSelect: (model: LLMModel) => void;
   onToggleLyricIqDropdown: () => void;
+  onTimecodedModelSelect?: (model: LLMModel) => void;
+  onToggleTimecodedDropdown?: () => void;
+  isAdmin?: boolean;
   onReadMore: (model: LLMModel) => void;
   autoAnalyzeComposition: boolean;
   onToggleAutoAnalyzeComposition: () => void;
@@ -257,6 +267,20 @@ export default function AiRoutingSection({
             onSearchQueryChange={onSearchQueryChange}
             onReadMore={onReadMore}
           />
+          {isAdmin && onTimecodedModelSelect && onToggleTimecodedDropdown && (
+            <OpenRouterModelDropdown
+              label="Timecoded Editor Model"
+              selected={selectedTimecodedModel ?? null}
+              open={!!showTimecodedDropdown}
+              options={filteredModels}
+              allModelsLoaded={allModels.length > 0}
+              searchQuery={modelSearchQuery}
+              onToggle={onToggleTimecodedDropdown}
+              onSelect={onTimecodedModelSelect}
+              onSearchQueryChange={onSearchQueryChange}
+              onReadMore={onReadMore}
+            />
+          )}
         </div>
       </section>
     </div>
