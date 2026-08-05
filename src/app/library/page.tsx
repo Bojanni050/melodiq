@@ -130,6 +130,7 @@ import {
   usePlaylistStore,
   useSidebarStore,
   useStudioStore,
+  useUserStore,
   useWorkspaceStore,
   type Workspace,
 } from "@/lib/store";
@@ -277,6 +278,13 @@ export default function LibraryPage() {
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const user = useUserStore((s) => s.user);
+  const loadUser = useUserStore((s) => s.loadUser);
+  const viewAsRole = useUserStore((s) => s.viewAsRole);
+  const isListener = (viewAsRole ?? user?.role ?? null) === "listener";
+  const allowLyricsEdit = !isListener;
+  useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
+  const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState<Workspace | null>(null);
   const { playlists, selectedPlaylistId, setSelectedPlaylistId, addTrackToPlaylist, reorderPlaylistTracks, localMovePlaylistTrack, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
@@ -1114,6 +1122,33 @@ export default function LibraryPage() {
     }
   }
 
+  async function handleTogglePlaylistPublic(playlistId: string) {
+    setTogglingPlaylistPublic(true);
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle-public" }),
+      });
+      if (!res.ok) {
+        console.error(`Failed to toggle playlist public: HTTP ${res.status}`);
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      const updated = data?.playlist;
+      if (updated) {
+        const { hydratePlaylistsFromServer, playlists: storePlaylists } = usePlaylistStore.getState();
+        hydratePlaylistsFromServer(storePlaylists.map((p) => p.id === playlistId ? { ...p, isPublic: updated.isPublic, publishedAt: updated.publishedAt } : p));
+      }
+      // Refresh the public discover playlists list
+      window.dispatchEvent(new CustomEvent("discover-playlists-changed"));
+    } catch (error) {
+      console.error("Failed to toggle playlist public:", error);
+    } finally {
+      setTogglingPlaylistPublic(false);
+    }
+  }
+
   function getWorkspaceGradientClass(workspaceId: string, folderGradient?: string | null) {
     if (folderGradient) {
       const index = WORKSPACE_FOLDER_GRADIENTS.findIndex((value) => value === folderGradient);
@@ -1300,7 +1335,30 @@ export default function LibraryPage() {
                             All playlists
                           </button>
                         </div>
-                        <h2 className="text-lg font-semibold truncate">{selectedPlaylist.name}</h2>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-lg font-semibold truncate">{selectedPlaylist.name}</h2>
+                          {selectedPlaylist.isPublic && (
+                            <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
+                              ● Published
+                            </span>
+                          )}
+                          {!selectedPlaylist.isSystem && (user?.role === "admin" || viewAsRole === "admin") && (
+                            <button
+                              type="button"
+                              onClick={() => void handleTogglePlaylistPublic(selectedPlaylist.id)}
+                              disabled={togglingPlaylistPublic}
+                              className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {togglingPlaylistPublic
+                                ? selectedPlaylist.isPublic
+                                  ? "Unpublishing…"
+                                  : "Publishing…"
+                                : selectedPlaylist.isPublic
+                                  ? "Unpublish"
+                                  : "Publish"}
+                            </button>
+                          )}
+                        </div>
                         <p className="text-sm text-white/55">{visiblePlaylistTracks.length} songs in this playlist{visiblePlaylistTracksTotalDuration ? ` (${visiblePlaylistTracksTotalDuration})` : ""}.</p>
                         {selectedPlaylist.description && (
                           <p className="text-sm text-white/40 mt-1 max-w-xl">{selectedPlaylist.description}</p>
@@ -1840,7 +1898,7 @@ export default function LibraryPage() {
                 onClose={handleCloseTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
-                allowLyricsEdit
+                allowLyricsEdit={allowLyricsEdit}
                 onTrackUpdated={handleTrackUpdated}
               />
             ) : (
@@ -2491,7 +2549,7 @@ export default function LibraryPage() {
             onPlay={handlePlayTrack}
             onDownload={handleDownloadTrack}
             mode="overlay"
-            allowLyricsEdit
+            allowLyricsEdit={allowLyricsEdit}
             onTrackUpdated={handleTrackUpdated}
           />
         </div>

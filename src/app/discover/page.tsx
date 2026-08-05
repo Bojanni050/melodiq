@@ -19,6 +19,13 @@ interface PublicTrack {
   publishDate: string | null;
 }
 
+interface PublicPlaylist {
+  id: string;
+  name: string;
+  description: string | null;
+  trackCount: number;
+}
+
 interface MyTrack {
   id: string;
   title: string | null;
@@ -50,6 +57,7 @@ export default function DiscoverPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
+  const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
   const [loading, setLoading] = useState(true);
   const [myTracks, setMyTracks] = useState<MyTrack[]>([]);
   const [myTracksLoading, setMyTracksLoading] = useState(true);
@@ -105,6 +113,22 @@ export default function DiscoverPage() {
       setLoading(false);
     }
     fetchFeed();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchPlaylists() {
+      const res = await fetch("/api/discover/playlists");
+      if (!active) return;
+      if (res.ok) {
+        const data = await res.json();
+        setPublishedPlaylists(data.playlists || []);
+      }
+    }
+    fetchPlaylists();
     return () => {
       active = false;
     };
@@ -430,6 +454,36 @@ export default function DiscoverPage() {
                   <p className="text-sm text-white/45">Nothing trending yet.</p>
                 )}
               </section>
+
+              {publishedPlaylists.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-base font-semibold">Published Playlists</h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                    {publishedPlaylists.map((playlist) => (
+                      <Link
+                        key={playlist.id}
+                        href={`/discover/playlist/${playlist.id}`}
+                        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
+                      >
+                        <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40">
+                          <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">{playlist.name}</p>
+                          {playlist.description && (
+                            <p className="truncate text-xs text-white/45">{playlist.description}</p>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-white/35">
+                          {playlist.trackCount} {playlist.trackCount === 1 ? "track" : "tracks"}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">Published Tracks</h2>

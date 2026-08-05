@@ -236,6 +236,10 @@ export const playlists = pgTable("playlists", {
   // renamed, or have tracks manually added/removed — only reordered. See
   // ensureMasterTracksPlaylist in lib/playlists.ts.
   isSystem: boolean("is_system").default(false).notNull(),
+  // Published playlists appear on the public /discover page. Toggled by
+  // admins via the playlist panel; playlists are always private by default.
+  isPublic: boolean("is_public").default(false).notNull(),
+  publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

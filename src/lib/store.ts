@@ -453,6 +453,8 @@ export interface Playlist {
   coverUrl?: string | null;
   trackIds: string[];
   isSystem?: boolean;
+  isPublic?: boolean;
+  publishedAt?: string | null;
   createdAt: string;
 }
 
@@ -615,7 +617,7 @@ export const usePlaylistStore = create<PlaylistState>()(
           const payload = await response.json().catch(() => null);
           const incomingPlaylists =
             payload && typeof payload === "object" && Array.isArray((payload as { playlists?: unknown[] }).playlists)
-              ? ((payload as { playlists: Playlist[] }).playlists as Playlist[])
+              ? ((payload as { playlists: Playlist[] }).playlists as Playlist[] as unknown as Playlist[])
               : [];
 
           get().hydratePlaylistsFromServer(incomingPlaylists);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { playlistTracks, playlists, tracks } from "@/db/schema";
+import { playlistTracks, playlists, tracks, users } from "@/db/schema";
 import { getUserPlaylistById, getUserPlaylistsWithTrackIds } from "@/lib/playlists";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -252,6 +252,32 @@ export async function PATCH(
       await db
         .update(playlists)
         .set({ description, updatedAt: new Date() })
+        .where(and(eq(playlists.id, id), eq(playlists.userId, auth.userId)));
+
+      const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);
+      const playlist = hydrated.find((item) => item.id === id);
+      return NextResponse.json({ playlist });
+    }
+
+    if (action === "toggle-public") {
+      // Only admins can publish playlists to the public discover page.
+      const [owner] = await db
+        .select({ role: sql<string>`role` })
+        .from(sql`users`)
+        .where(sql`id = ${auth.userId}`)
+        .limit(1);
+      if (!owner || owner.role !== "admin") {
+        return NextResponse.json({ error: "Only admins can publish playlists" }, { status: 403 });
+      }
+
+      const nextPublic = !existing.isPublic;
+      await db
+        .update(playlists)
+        .set({
+          isPublic: nextPublic,
+          publishedAt: nextPublic ? new Date() : null,
+          updatedAt: new Date(),
+        })
         .where(and(eq(playlists.id, id), eq(playlists.userId, auth.userId)));
 
       const hydrated = await getUserPlaylistsWithTrackIds(auth.userId);

@@ -10,6 +10,8 @@ export type PlaylistPayload = {
   coverUrl: string | null;
   trackIds: string[];
   isSystem: boolean;
+  isPublic: boolean;
+  publishedAt: string | null;
   createdAt: string;
 };
 
@@ -21,6 +23,8 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
       description: playlists.description,
       s3KeyCover: playlists.s3KeyCover,
       isSystem: playlists.isSystem,
+      isPublic: playlists.isPublic,
+      publishedAt: playlists.publishedAt,
       createdAt: playlists.createdAt,
     })
     .from(playlists)
@@ -54,6 +58,8 @@ export async function getUserPlaylistsWithTrackIds(userId: string): Promise<Play
     coverUrl: row.s3KeyCover ? `/api/playlists/${row.id}/cover` : null,
     trackIds: tracksByPlaylistId.get(row.id) ?? [],
     isSystem: row.isSystem,
+    isPublic: row.isPublic,
+    publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   }));
 }
@@ -66,6 +72,7 @@ export async function getUserPlaylistById(userId: string, playlistId: string) {
       name: playlists.name,
       description: playlists.description,
       isSystem: playlists.isSystem,
+      isPublic: playlists.isPublic,
       createdAt: playlists.createdAt,
     })
     .from(playlists)
