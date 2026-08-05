@@ -31,7 +31,6 @@ export default function Sidebar({ credits }: SidebarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
-  const viewAsRole = useUserStore((s) => s.viewAsRole);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
@@ -45,9 +44,8 @@ export default function Sidebar({ credits }: SidebarProps) {
     if (!user) void loadUser();
   }, [user, loadUser]);
 
-  const effectiveRole = viewAsRole ?? user?.role ?? null;
-  const isAdmin = effectiveRole === "admin";
-  const isListener = effectiveRole === "listener" || effectiveRole === null;
+  const isAdmin = user?.role === "admin";
+  const isListener = user?.role === "listener" || user?.role == null;
 
   const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean }> }> = [
     ...(!isListener

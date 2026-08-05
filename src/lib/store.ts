@@ -415,20 +415,14 @@ export interface UserProfile {
 interface UserState {
   user: UserProfile | null;
   loading: boolean;
-  viewAsRole: UserRole | null;
   setUser: (user: UserProfile | null) => void;
   loadUser: () => Promise<UserProfile | null>;
-  setViewAsRole: (role: UserRole | null) => void;
-  effectiveRole: () => UserRole | null;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
   loading: false,
-  viewAsRole: null,
   setUser: (user) => set({ user }),
-  setViewAsRole: (role) => set({ viewAsRole: role }),
-  effectiveRole: () => get().viewAsRole ?? get().user?.role ?? null,
   loadUser: async () => {
     if (get().loading) return get().user;
     if (get().user) return get().user;

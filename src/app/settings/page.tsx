@@ -66,8 +66,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("providers");
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
-  const viewAsRole = useUserStore((s) => s.viewAsRole);
-  const isListener = (viewAsRole ?? user?.role ?? null) === "listener";
+  const isListener = user?.role === "listener";
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   useEffect(() => { if (isListener) setActiveSection("playback"); }, [isListener]);
   const [activeProvidersTab, setActiveProvidersTab] = useState<ProvidersTabId>("music");

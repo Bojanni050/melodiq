@@ -70,10 +70,8 @@ export default function DiscoverPage() {
   const isQHD = useSidebarStore((s) => s.isQHD);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
-  const viewAsRole = useUserStore((s) => s.viewAsRole);
 
-  const effectiveRole = viewAsRole ?? user?.role ?? null;
-  const isListener = effectiveRole === "listener";
+  const isListener = user?.role === "listener";
   const showOwnerSections = isLoggedIn && !isListener;
 
   useEffect(() => {

@@ -280,10 +280,8 @@ export default function LibraryPage() {
   const isQHD = useSidebarStore((s) => s.isQHD);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
-  const viewAsRole = useUserStore((s) => s.viewAsRole);
-  const effectiveRole = viewAsRole ?? user?.role ?? null;
-  const isListener = effectiveRole === "listener";
-  const allowLyricsEdit = effectiveRole === "admin";
+  const isListener = user?.role === "listener";
+  const allowLyricsEdit = user?.role === "admin";
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
@@ -1387,7 +1385,7 @@ export default function LibraryPage() {
                               ● Published
                             </span>
                           )}
-                          {!selectedPlaylist.isSystem && (user?.role === "admin" || viewAsRole === "admin") && (
+                          {!selectedPlaylist.isSystem && user?.role === "admin" && (
                             <button
                               type="button"
                               onClick={() => void handleTogglePlaylistPublic(selectedPlaylist.id)}
