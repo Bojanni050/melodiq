@@ -437,10 +437,10 @@ const TrackCard = memo(function TrackCard({
   const hasLyricsAnalysis = audioDna?.lyricsScore != null;
   const effectiveThumbUrl = actions.coverOverrideUrl
     ? `${actions.coverOverrideUrl}&thumb=1`
-    : track.s3KeyCoverThumb
-      ? `/api/tracks/${track.id}/cover?thumb=1`
-      : !effectiveCoverUrl && track.publicSource
-        ? `/api/discover/${track.id}/cover?thumb=1`
+    : track.publicSource
+      ? `/api/discover/${track.id}/cover?thumb=1`
+      : track.s3KeyCoverThumb
+        ? `/api/tracks/${track.id}/cover?thumb=1`
         : effectiveCoverUrl;
   const deleteCount = actions.pendingDeleteIds && actions.pendingDeleteIds.length > 0 ? actions.pendingDeleteIds.length : 1;
   const deleteMessage = deleteCount === 1
