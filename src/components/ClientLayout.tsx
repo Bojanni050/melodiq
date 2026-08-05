@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Player from "@/components/Player";
+import RoleSwitcher from "@/components/RoleSwitcher";
 import { useDpadNavigation } from "@/hooks/useDpadNavigation";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <>
       {children}
       {!isPopupWindow && <Player />}
+      <RoleSwitcher />
     </>
   );
 }

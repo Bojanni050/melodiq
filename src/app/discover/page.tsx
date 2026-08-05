@@ -5,7 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import { formatDuration } from "@/lib/track-utils";
-import { usePlayerStore, useSidebarStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 
 interface PublicTrack {
   id: string;
@@ -48,7 +48,6 @@ interface MyTrack {
 export default function DiscoverPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<"user" | "admin" | "listener" | null>(null);
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +59,17 @@ export default function DiscoverPage() {
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const user = useUserStore((s) => s.user);
+  const loadUser = useUserStore((s) => s.loadUser);
+  const viewAsRole = useUserStore((s) => s.viewAsRole);
 
-  const isListener = userRole === "listener";
+  const effectiveRole = viewAsRole ?? user?.role ?? null;
+  const isListener = effectiveRole === "listener";
   const showOwnerSections = isLoggedIn && !isListener;
+
+  useEffect(() => {
+    if (!user) void loadUser();
+  }, [user, loadUser]);
 
   useEffect(() => {
     let active = true;
@@ -71,10 +78,7 @@ export default function DiscoverPage() {
         const res = await fetch("/api/auth/me");
         if (active) {
           setIsLoggedIn(res.ok);
-          if (res.ok) {
-            const data = await res.json().catch(() => null);
-            if (active) setUserRole(data?.user?.role ?? null);
-          }
+          if (res.ok) void loadUser();
         }
       } catch {
         if (active) setIsLoggedIn(false);

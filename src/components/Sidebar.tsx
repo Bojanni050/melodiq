@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useWorkspaceStore, usePlayerStore, useSidebarStore } from "@/lib/store";
+import { useWorkspaceStore, usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 
 interface SidebarProps {
   credits: number | null;
@@ -29,7 +29,9 @@ export default function Sidebar({ credits }: SidebarProps) {
   const setCollapsed = useSidebarStore((s) => s.setCollapsed);
   const setIsQHD = useSidebarStore((s) => s.setIsQHD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<"user" | "admin" | "listener" | null>(null);
+  const user = useUserStore((s) => s.user);
+  const loadUser = useUserStore((s) => s.loadUser);
+  const viewAsRole = useUserStore((s) => s.viewAsRole);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
@@ -40,20 +42,12 @@ export default function Sidebar({ credits }: SidebarProps) {
   }, [isQHD, setIsQHD]);
 
   useEffect(() => {
-    let active = true;
-    fetch("/api/auth/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (active) setUserRole(data?.user?.role ?? null);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
+    if (!user) void loadUser();
+  }, [user, loadUser]);
 
-  const isAdmin = userRole === "admin";
-  const isListener = userRole === "listener" || userRole === null;
+  const effectiveRole = viewAsRole ?? user?.role ?? null;
+  const isAdmin = effectiveRole === "admin";
+  const isListener = effectiveRole === "listener" || effectiveRole === null;
 
   const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean }> }> = [
     ...(!isListener
