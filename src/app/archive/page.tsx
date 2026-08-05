@@ -593,12 +593,13 @@ export default function ArchivePage() {
   }
 
   async function handleUnlinkTrack(entry: ArchiveEntry) {
+    setEntries((prev) => prev.filter((e) => e.id !== entry.id));
     const res = await fetch(`/api/archive/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ trackId: null }),
     });
-    if (res.ok) void refetchEntries();
+    if (!res.ok) void refetchEntries();
   }
 
   const handlePlayAll = useCallback(() => {

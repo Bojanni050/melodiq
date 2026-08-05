@@ -76,6 +76,18 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
   }, [entries, query]);
 
   async function handleAttach(entry: ArchiveEntryOption) {
+    if (entries) {
+      const trackTitle = (track.title || "").trim().toLowerCase();
+      if (trackTitle) {
+        const duplicate = entries.find(
+          (e) => e.id !== entry.id && e.title.trim().toLowerCase() === trackTitle
+        );
+        if (duplicate) {
+          setError(`Er bestaat al een Master Tracks entry met de titel "${duplicate.title}". Unlink of verwijder die eerst.`);
+          return;
+        }
+      }
+    }
     setAttaching(entry.id);
     setError(null);
     try {
@@ -163,7 +175,12 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
               ) : filtered.length === 0 ? (
                 <p className="text-sm text-white/40 italic py-4 text-center">No matching entries.</p>
               ) : (
-                filtered.map((entry) => (
+                filtered.map((entry) => {
+                  const trackTitle = (track.title || "").trim().toLowerCase();
+                  const isDuplicateTitle =
+                    trackTitle.length > 0 &&
+                    entry.title.trim().toLowerCase() === trackTitle;
+                  return (
                   <button
                     key={entry.id}
                     type="button"
@@ -182,6 +199,11 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
                     {entry.parentTitle && (
                       <p className="text-[11px] text-white/35 mt-0.5">Translation of &ldquo;{entry.parentTitle}&rdquo;</p>
                     )}
+                    {isDuplicateTitle && entry.trackId !== track.id && (
+                      <p className="text-[11px] text-amber-300/70 mt-0.5">
+                        Er bestaat al een entry met dezelfde titel
+                      </p>
+                    )}
                     {entry.trackId && entry.trackId !== track.id && (
                       <p className="text-[11px] text-amber-300/70 mt-0.5">
                         Already linked to &ldquo;{entry.trackTitle || "another track"}&rdquo; — attaching will replace it
@@ -191,7 +213,8 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
                       <p className="text-[11px] text-green-300/70 mt-0.5">Already linked to this track</p>
                     )}
                   </button>
-                ))
+                  );
+                })
               )}
             </div>
 
