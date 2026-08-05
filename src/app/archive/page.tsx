@@ -34,6 +34,10 @@ interface ArchiveEntry {
   trackCreatedAt?: string | null;
   trackInstrumental?: boolean | null;
   trackArtistName?: string | null;
+  trackReleaseStatus?: string | null;
+  trackPublishDate?: string | null;
+  releaseStatus?: string | null;
+  publishDate?: string | null;
   createdAt: string;
   updatedAt: string;
   translations?: ArchiveEntry[];
@@ -373,12 +377,18 @@ function EntryTrackActionsMenu({
   onAnalyze,
   analyzing,
   onUnlink,
+  isPublished,
+  onTogglePublish,
+  togglingPublish,
 }: {
   entry: ArchiveEntry;
   onPlay: () => void;
   onAnalyze: () => void;
   analyzing: boolean;
   onUnlink: () => void;
+  isPublished?: boolean;
+  onTogglePublish?: () => void;
+  togglingPublish?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -454,6 +464,25 @@ function EntryTrackActionsMenu({
           >
             Open in Library
           </Link>
+          {onTogglePublish && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onTogglePublish();
+              }}
+              disabled={togglingPublish}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {togglingPublish
+                ? isPublished
+                  ? "Unpublishing..."
+                  : "Publishing..."
+                : isPublished
+                  ? "Unpublish"
+                  : "Publish"}
+            </button>
+          )}
           <div className="my-1 h-px bg-white/10" />
           <button
             type="button"
@@ -484,6 +513,9 @@ export default function ArchivePage() {
   const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
   const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [dnaRefreshKeys, setDnaRefreshKeys] = useState<Record<string, number>>({});
+  const [togglingPublishIds, setTogglingPublishIds] = useState<Set<string>>(new Set());
+  const [advancedDnaRunningIds, setAdvancedDnaRunningIds] = useState<Set<string>>(new Set());
+  const [advancedDnaResults, setAdvancedDnaResults] = useState<Record<string, { lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>>({});
 
   const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -592,6 +624,65 @@ export default function ArchivePage() {
       console.error("Failed to analyze composition:", error);
     } finally {
       setAnalyzingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
+
+  async function handleTogglePublish(entry: ArchiveEntry) {
+    if (!entry.trackId) return;
+    const isCurrentlyPublished = entry.releaseStatus === "published";
+    const nextStatus = isCurrentlyPublished ? "unpublished" : "published";
+    const nextPublishDate = isCurrentlyPublished ? null : new Date().toISOString();
+    setTogglingPublishIds((prev) => new Set(prev).add(entry.id));
+    try {
+      const res = await fetch(`/api/tracks/${entry.trackId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          releaseStatus: nextStatus,
+          publishDate: nextPublishDate,
+        }),
+      });
+      if (!res.ok) {
+        console.error(`Failed to update publish status: HTTP ${res.status}`);
+        return;
+      }
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === entry.id
+            ? { ...e, releaseStatus: nextStatus, publishDate: nextPublishDate }
+            : e
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle publish:", error);
+    } finally {
+      setTogglingPublishIds((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
+
+  async function handleAdvancedDna(entry: ArchiveEntry) {
+    if (!entry.trackId) return;
+    setAdvancedDnaRunningIds((prev) => new Set(prev).add(entry.id));
+    try {
+      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-advanced`, { method: "POST" });
+      if (!res.ok) {
+        console.error(`Failed advanced DNA: HTTP ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      setAdvancedDnaResults((prev) => ({ ...prev, [entry.id]: data }));
+    } catch (error) {
+      console.error("Failed advanced DNA:", error);
+    } finally {
+      setAdvancedDnaRunningIds((prev) => {
         const next = new Set(prev);
         next.delete(entry.id);
         return next;
@@ -780,6 +871,14 @@ export default function ArchivePage() {
                                 Linked: {entry.trackTitle}
                               </span>
                             )}
+                            {entry.releaseStatus === "published" && (
+                              <span
+                                className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
+                                title={entry.publishDate ? `Published ${new Date(entry.publishDate).toLocaleDateString()}` : "Published"}
+                              >
+                                ● Published
+                              </span>
+                            )}
                             {isCurrent && (
                               <span className="shrink-0 flex items-center gap-1 text-[10px] text-primary-300">
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
@@ -800,6 +899,9 @@ export default function ArchivePage() {
                             onAnalyze={() => void handleAnalyzeComposition(entry)}
                             analyzing={analyzingIds.has(entry.id)}
                             onUnlink={() => void handleUnlinkTrack(entry)}
+                            isPublished={entry.releaseStatus === "published"}
+                            onTogglePublish={entry.trackId ? () => void handleTogglePublish(entry) : undefined}
+                            togglingPublish={togglingPublishIds.has(entry.id)}
                           />
                         )}
                         <button
@@ -855,7 +957,14 @@ export default function ArchivePage() {
                           </svg>
                         </button>
                         {dnaOpenIds.has(entry.id) && (
-                          <TrackDnaPanel trackId={entry.trackId} refreshKey={dnaRefreshKeys[entry.trackId] ?? 0} />
+                          <TrackDnaPanel
+                            trackId={entry.trackId}
+                            refreshKey={dnaRefreshKeys[entry.trackId] ?? 0}
+                            trackStatus="done"
+                            advancedDnaResult={advancedDnaResults[entry.id] ?? null}
+                            advancedDnaRunning={advancedDnaRunningIds.has(entry.id)}
+                            onRunAdvancedDna={() => void handleAdvancedDna(entry)}
+                          />
                         )}
                       </>
                     )}

@@ -40,6 +40,8 @@ export async function GET() {
       trackCreatedAt: tracks.createdAt,
       trackInstrumental: tracks.instrumental,
       trackArtistName: tracks.artistName,
+      trackReleaseStatus: tracks.releaseStatus,
+      trackPublishDate: tracks.publishDate,
       createdAt: songArchive.createdAt,
       updatedAt: songArchive.updatedAt,
     })
@@ -51,6 +53,7 @@ export async function GET() {
   const serialized = rows.map((r) => ({
     ...r,
     trackCreatedAt: r.trackCreatedAt?.toISOString() ?? null,
+    trackPublishDate: r.trackPublishDate?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));

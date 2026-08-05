@@ -426,6 +426,16 @@ export default function LibraryPage() {
   }, [fetchTracks, loadPlaylists]);
 
   useEffect(() => {
+    function onTracksChanged() {
+      let active = true;
+      fetchTracks(() => active);
+      return () => { active = false; };
+    }
+    window.addEventListener("tracks-changed", onTracksChanged);
+    return () => window.removeEventListener("tracks-changed", onTracksChanged);
+  }, [fetchTracks]);
+
+  useEffect(() => {
     useWorkspaceStore.persist.rehydrate();
   }, []);
 

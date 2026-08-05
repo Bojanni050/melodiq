@@ -319,6 +319,7 @@ const TrackCard = memo(function TrackCard({
         return;
       }
       void mutate("/api/tracks");
+      window.dispatchEvent(new CustomEvent("tracks-changed"));
     } catch (error) {
       console.error("Failed to toggle publish:", error);
     } finally {
