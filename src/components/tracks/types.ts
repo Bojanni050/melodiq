@@ -28,6 +28,7 @@ export interface TrackItem {
   trackDna?: string | null;
   audioDna?: string | null;
   advancedDna?: string | null;
+  publicSource?: boolean;
   pollsOpenAt?: string | null;
   pollsCloseAt?: string | null;
   lyricsTimestamps?: string | null;

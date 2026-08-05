@@ -62,8 +62,16 @@ export default function Sidebar({ credits }: SidebarProps) {
           },
         ]
       : []),
-    ...(!isListener
+    ...(isListener
       ? [
+          {
+            label: "BROWSE",
+            items: [
+              { href: "/library", label: "Library", icon: "library" },
+            ],
+          },
+        ]
+      : [
           {
             label: "ORGANIZE",
             items: [
@@ -72,8 +80,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
             ],
           },
-        ]
-      : []),
+        ]),
     {
       label: "ACCOUNT",
       items: [

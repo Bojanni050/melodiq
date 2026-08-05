@@ -264,7 +264,8 @@ export default function DiscoverPage() {
   }
 
   function coverSrc(track: PublicTrack) {
-    if (track.coverUrl) return track.coverUrl;
+    const url = track.coverUrl;
+    if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
     if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
     return null;
   }

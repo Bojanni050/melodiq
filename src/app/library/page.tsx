@@ -380,6 +380,24 @@ export default function LibraryPage() {
   }, [view]);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
+    if (activeCheck && !activeCheck()) return;
+    if (isListener) {
+      // Listeners browse published tracks from the community, not their own library
+      const res = await fetch("/api/discover");
+      if (activeCheck && !activeCheck()) return;
+      if (res.ok) {
+        const data = await res.json();
+        const published = (data.published || []).map((t: any) => ({
+          ...t,
+          // Mark as public source so playback routes through the discover API
+          publicSource: true,
+          status: "done",
+        }));
+        setTracks(published);
+      }
+      setLoading(false);
+      return;
+    }
     const res = await fetch("/api/tracks?status=done");
     if (activeCheck && !activeCheck()) return;
     if (res.ok) {
@@ -391,7 +409,7 @@ export default function LibraryPage() {
       }
     }
     setLoading(false);
-  }, []);
+  }, [isListener]);
 
   const fetchTrash = useCallback(async () => {
     setTrashLoading(true);

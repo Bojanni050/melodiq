@@ -421,7 +421,10 @@ const TrackCard = memo(function TrackCard({
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
-  const effectiveCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
+  const rawCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
+  const effectiveCoverUrl = rawCoverUrl && (rawCoverUrl.startsWith("http") || rawCoverUrl.startsWith("/"))
+    ? rawCoverUrl
+    : null;
   const audioDna = useMemo<{ compositionScore?: number | null; lyricsScore?: number | null } | null>(() => {
     if (!track.audioDna) return null;
     try {
@@ -436,7 +439,9 @@ const TrackCard = memo(function TrackCard({
     ? `${actions.coverOverrideUrl}&thumb=1`
     : track.s3KeyCoverThumb
       ? `/api/tracks/${track.id}/cover?thumb=1`
-      : effectiveCoverUrl;
+      : !effectiveCoverUrl && track.publicSource
+        ? `/api/discover/${track.id}/cover?thumb=1`
+        : effectiveCoverUrl;
   const deleteCount = actions.pendingDeleteIds && actions.pendingDeleteIds.length > 0 ? actions.pendingDeleteIds.length : 1;
   const deleteMessage = deleteCount === 1
     ? "Delete this song? This cannot be undone."

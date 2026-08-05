@@ -59,7 +59,8 @@ export default function PublicPlaylistPage() {
   }, [playlistId]);
 
   function coverSrc(track: PublicPlaylistTrack): string | null {
-    if (track.coverUrl) return track.coverUrl;
+    const url = track.coverUrl;
+    if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
     if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
     return null;
   }

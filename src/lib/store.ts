@@ -186,6 +186,11 @@ export const usePlayerStore = create<PlayerState>()(
 
           if (track.lyrics && track.lyrics.trim()) {
             nextState.showTrackDetailsPanel = true;
+          } else if (track.publicSource) {
+            // For public/discover tracks (e.g. in the library for listeners),
+            // always open the right sidebar so they can see track details,
+            // add to playlist, etc. — even without lyrics.
+            nextState.showTrackDetailsPanel = true;
           }
 
           return nextState as PlayerState;
