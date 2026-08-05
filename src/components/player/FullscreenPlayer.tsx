@@ -456,8 +456,16 @@ export default function FullscreenPlayer({
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
                       {artistLabel && <p className="mt-1 text-base lg:text-lg text-white/50">{artistLabel}</p>}
+                      {currentTrack?.publishDate && (
+                        <p className="mt-1 text-xs lg:text-sm text-white/40">
+                          {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                        </p>
+                      )}
                       {writerLabel && <p className="mt-1 text-xs lg:text-sm text-white/40">Written by {writerLabel}</p>}
                       {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-white/40">Composed by {composerLabel}</p>}
+                      {currentTrack?.providerModel && (
+                        <p className="mt-1 text-xs lg:text-sm text-white/35 font-mono">{currentTrack.providerModel}</p>
+                      )}
                     </div>
                   </div>
                   <div
