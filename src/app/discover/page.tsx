@@ -48,6 +48,7 @@ interface MyTrack {
 export default function DiscoverPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<"user" | "admin" | "listener" | null>(null);
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,12 +61,21 @@ export default function DiscoverPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
 
+  const isListener = userRole === "listener";
+  const showOwnerSections = isLoggedIn && !isListener;
+
   useEffect(() => {
     let active = true;
     async function checkAuth() {
       try {
         const res = await fetch("/api/auth/me");
-        if (active) setIsLoggedIn(res.ok);
+        if (active) {
+          setIsLoggedIn(res.ok);
+          if (res.ok) {
+            const data = await res.json().catch(() => null);
+            if (active) setUserRole(data?.user?.role ?? null);
+          }
+        }
       } catch {
         if (active) setIsLoggedIn(false);
       } finally {
@@ -346,7 +356,7 @@ export default function DiscoverPage() {
 
           {authChecked && !isLoggedIn && <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />}
 
-          {isLoggedIn && (
+          {showOwnerSections && (
             <section className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-base font-semibold">Your Tracks</h2>
@@ -383,7 +393,7 @@ export default function DiscoverPage() {
             </section>
           )}
 
-          {isLoggedIn && recentTracks.length > 0 && (
+          {showOwnerSections && recentTracks.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">Recently Generated</h2>

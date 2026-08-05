@@ -29,7 +29,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const setCollapsed = useSidebarStore((s) => s.setCollapsed);
   const setIsQHD = useSidebarStore((s) => s.setIsQHD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<"user" | "admin" | "listener" | null>(null);
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
@@ -44,7 +44,7 @@ export default function Sidebar({ credits }: SidebarProps) {
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (active && data?.user?.role === "admin") setIsAdmin(true);
+        if (active) setUserRole(data?.user?.role ?? null);
       })
       .catch(() => {});
     return () => {
@@ -52,23 +52,34 @@ export default function Sidebar({ credits }: SidebarProps) {
     };
   }, []);
 
+  const isAdmin = userRole === "admin";
+  const isListener = userRole === "listener" || userRole === null;
+
   const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean }> }> = [
-    {
-      label: "CREATE",
-      items: [
-        { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
-        { href: "/style", label: "Style", icon: "style" },
-        { href: "/studio", label: "Music", icon: "music" },
-      ],
-    },
-    {
-      label: "ORGANIZE",
-      items: [
-        { href: "/library", label: "Library", icon: "library" },
-        { href: "/archive", label: "Master Tracks", icon: "archive" },
-        { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
-      ],
-    },
+    ...(!isListener
+      ? [
+          {
+            label: "CREATE",
+            items: [
+              { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
+              { href: "/style", label: "Style", icon: "style" },
+              { href: "/studio", label: "Music", icon: "music" },
+            ],
+          },
+        ]
+      : []),
+    ...(!isListener
+      ? [
+          {
+            label: "ORGANIZE",
+            items: [
+              { href: "/library", label: "Library", icon: "library" },
+              { href: "/archive", label: "Master Tracks", icon: "archive" },
+              { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
+            ],
+          },
+        ]
+      : []),
     {
       label: "ACCOUNT",
       items: [
@@ -76,13 +87,17 @@ export default function Sidebar({ credits }: SidebarProps) {
         { href: "/settings", label: "Settings", icon: "settings" },
       ],
     },
-    {
-      label: "DEVELOPER",
-      items: [
-        { href: "/logs", label: "Logs", icon: "logs" },
-        ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "admin" }] : []),
-      ],
-    },
+    ...(isAdmin
+      ? [
+          {
+            label: "DEVELOPER",
+            items: [
+              { href: "/logs", label: "Logs", icon: "logs" },
+              { href: "/admin", label: "Admin", icon: "admin" },
+            ],
+          },
+        ]
+      : []),
   ];
 
   async function handleLogout() {

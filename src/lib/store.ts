@@ -394,6 +394,8 @@ export const usePlayerStore = create<PlayerState>()(
   )
 );
 
+export type UserRole = "user" | "admin" | "listener";
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -401,6 +403,7 @@ export interface UserProfile {
   artistAlias: string | null;
   composerAlias: string | null;
   writerAlias: string | null;
+  role: UserRole;
   createdAt: string;
 }
 
@@ -427,6 +430,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       }
       const data = (await res.json()) as { user?: UserProfile };
       const user = data.user ?? null;
+      if (user && !user.role) user.role = "user";
       set({ user, loading: false });
       return user;
     } catch {
