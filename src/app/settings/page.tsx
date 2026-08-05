@@ -17,7 +17,7 @@ import VisualizerSection from "@/components/settings/VisualizerSection";
 import S3Section from "@/components/settings/S3Section";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS, WEBHOOK_DEFAULTS } from "@/lib/settings-constants";
-import { usePlayerStore, useSidebarStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { applyWebhookDefaults, buildWebhookUrl, createModelPlaceholder, LLMModel } from "@/lib/settings-utils";
 
 const TRACKED_SETTINGS_KEYS = [
@@ -64,6 +64,12 @@ export default function SettingsPage() {
   const [savingAll, setSavingAll] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("providers");
+  const user = useUserStore((s) => s.user);
+  const loadUser = useUserStore((s) => s.loadUser);
+  const viewAsRole = useUserStore((s) => s.viewAsRole);
+  const isListener = (viewAsRole ?? user?.role ?? null) === "listener";
+  useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
+  useEffect(() => { if (isListener) setActiveSection("playback"); }, [isListener]);
   const [activeProvidersTab, setActiveProvidersTab] = useState<ProvidersTabId>("music");
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
@@ -362,7 +368,7 @@ export default function SettingsPage() {
         <main className="px-6 py-10 mx-auto max-w-7xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Settings</h1>
           <div className="mt-8 flex flex-col lg:flex-row gap-6 max-w-5xl">
-            <SettingsSidebar active={activeSection} onChange={setActiveSection} />
+            <SettingsSidebar active={activeSection} onChange={setActiveSection} isListener={isListener} />
 
             <div className="flex-1 min-w-0 max-w-3xl">
               {activeSection === "providers" && (

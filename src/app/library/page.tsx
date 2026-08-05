@@ -1326,15 +1326,17 @@ export default function LibraryPage() {
                     </button>
                   </div>
                 </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setIsUploadPanelOpen(true)}
-                    className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
-                  >
-                    Upload Files
-                  </button>
-                </div>
+                {!isListener && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadPanelOpen(true)}
+                      className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                    >
+                      Upload Files
+                    </button>
+                  </div>
+                )}
               </div>
             </section>
 

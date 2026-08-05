@@ -72,13 +72,23 @@ const GROUPS: { label: string; sections: { id: SettingsSectionId; label: string 
 export function SettingsSidebar({
   active,
   onChange,
+  isListener = false,
 }: {
   active: SettingsSectionId;
   onChange: (id: SettingsSectionId) => void;
+  isListener?: boolean;
 }) {
+  const groups = isListener
+    ? [
+        {
+          label: "Library",
+          sections: [{ id: "playback" as SettingsSectionId, label: "Playback" }],
+        },
+      ]
+    : GROUPS;
   return (
     <nav className="flex lg:flex-col gap-4 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:w-56 shrink-0">
-      {GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.label} className="shrink-0 lg:shrink lg:space-y-1">
           <p className="hidden lg:block px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-white/30">
             {group.label}

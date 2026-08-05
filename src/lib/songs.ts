@@ -26,7 +26,9 @@ function toPublicTrackSummary(
     title: track.title || "Untitled",
     artistName: track.artistName || owner?.artistAlias || owner?.name || null,
     artistId: owner?.id || track.userId,
-    coverUrl: track.coverUrl || null,
+    coverUrl: track.coverUrl?.startsWith("/api/tracks/")
+      ? track.coverUrl.replace("/api/tracks/", "/api/discover/")
+      : track.coverUrl || null,
     hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
     duration: track.duration,
     totalPlays: track.playCount + track.othersPlayCount,
