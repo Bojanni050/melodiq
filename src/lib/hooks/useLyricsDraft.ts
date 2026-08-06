@@ -27,8 +27,6 @@ export interface LyricsDraftState {
   setActivePreset: (v: string) => void;
   lyricCols: number;
   setLyricCols: (v: number) => void;
-  showLyricsSidebar: boolean;
-  setShowLyricsSidebar: React.Dispatch<React.SetStateAction<boolean>>;
   repetitiveChorus: boolean;
   setRepetitiveChorus: (v: boolean) => void;
   creativityLevel: number;
@@ -57,7 +55,6 @@ export function useLyricsDraft(): LyricsDraftState {
   const [blocks, setBlocks] = useState<LyricBlock[]>([]);
   const [activePreset, setActivePreset] = useState("");
   const [lyricCols, setLyricCols] = useState(2);
-  const [showLyricsSidebar, setShowLyricsSidebar] = useState(false);
   const [repetitiveChorus, setRepetitiveChorus] = useState(true);
   const [creativityLevel, setCreativityLevel] = useState(5);
   const [literalnessLevel, setLiteralnessLevel] = useState(5);
@@ -81,7 +78,7 @@ export function useLyricsDraft(): LyricsDraftState {
         vocalistTag?: "auto" | "male" | "female" | "together" | "duet";
         performerDirections?: string;
         blocks?: Array<Partial<LyricBlock>>; activePreset?: string;
-        lyricCols?: number; showLyricsSidebar?: boolean;
+        lyricCols?: number;
         structure?: string; customStructure?: string;
         language?: string; customLanguage?: string;
         repetitiveChorus?: boolean; creativityLevel?: number; literalnessLevel?: number;
@@ -97,7 +94,6 @@ export function useLyricsDraft(): LyricsDraftState {
       if (typeof parsed.performerDirections === "string") setPerformerDirections(parsed.performerDirections);
       if (typeof parsed.activePreset === "string") setActivePreset(parsed.activePreset);
       if (parsed.lyricCols === 1 || parsed.lyricCols === 2) setLyricCols(parsed.lyricCols);
-      if (typeof parsed.showLyricsSidebar === "boolean") setShowLyricsSidebar(parsed.showLyricsSidebar);
       if (typeof parsed.structure === "string") setStructure(parsed.structure);
       if (typeof parsed.customStructure === "string") setCustomStructure(parsed.customStructure);
       if (typeof parsed.language === "string") setLanguage(parsed.language);
@@ -146,7 +142,7 @@ export function useLyricsDraft(): LyricsDraftState {
   useEffect(() => {
     if (!hasRestoredDraft) return;
     const payload = buildLyricsStudioDraftPayload({
-      topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar,
+      topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols,
       structure, customStructure, language, customLanguage,
       repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel,
     });
@@ -154,7 +150,7 @@ export function useLyricsDraft(): LyricsDraftState {
   }, [
     activePreset, blocks, customLanguage, customStructure, hasRestoredDraft,
     language, lyricCols, mood, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel,
-    showLyricsSidebar, styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections,
+    styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections,
   ]);
 
   return {
@@ -166,7 +162,6 @@ export function useLyricsDraft(): LyricsDraftState {
     blocks, setBlocks,
     activePreset, setActivePreset,
     lyricCols, setLyricCols,
-    showLyricsSidebar, setShowLyricsSidebar,
     repetitiveChorus, setRepetitiveChorus,
     creativityLevel, setCreativityLevel,
     literalnessLevel, setLiteralnessLevel,
@@ -198,7 +193,6 @@ export function loadSnapshotIntoState(
   state.setBlocks(sanitizeLyricBlocksForLoad(payload.blocks || [], BLOCK_TYPES, BLOCK_LABELS));
   state.setActivePreset(payload.activePreset || "");
   state.setLyricCols(payload.lyricCols === 1 ? 1 : 2);
-  state.setShowLyricsSidebar(Boolean(payload.showLyricsSidebar));
   storeFns.setStructure(payload.structure || "");
   storeFns.setCustomStructure(payload.customStructure || "");
   storeFns.setLanguage(payload.language || "English");

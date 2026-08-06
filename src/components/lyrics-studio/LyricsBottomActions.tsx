@@ -1,11 +1,8 @@
 "use client";
 
-import Flowchart from "@/components/Flowchart";
 import { TRANSLATION_LANGUAGES } from "@/lib/lyrics-studio-constants";
-import type { LyricBlock } from "@/lib/lyrics-utils";
 
 type LyricsBottomActionsProps = {
-  blocks: LyricBlock[];
   translationLanguage: string;
   customTranslationLanguage: string;
   translatingLyrics: boolean;
@@ -19,7 +16,6 @@ type LyricsBottomActionsProps = {
 };
 
 export default function LyricsBottomActions({
-  blocks,
   translationLanguage,
   customTranslationLanguage,
   translatingLyrics,
@@ -33,10 +29,6 @@ export default function LyricsBottomActions({
 }: LyricsBottomActionsProps) {
   return (
     <>
-      <div className="block xl:hidden">
-        <Flowchart blocks={blocks.map((block) => ({ label: block.label, type: block.type }))} />
-      </div>
-
       <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
         <div className="flex flex-1 flex-col gap-2 sm:max-w-[280px]">
           <select

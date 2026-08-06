@@ -54,6 +54,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             label: "CREATE",
             items: [
               { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
+              { href: "/melody", label: "Melody", icon: "melody" },
               { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
               { href: "/style", label: "Style", icon: "style" },
               { href: "/studio", label: "Music", icon: "music" },
@@ -199,6 +200,12 @@ export default function Sidebar({ credits }: SidebarProps) {
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l2.5 2.5M12 3a9 9 0 110 18A9 9 0 0112 3z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.5 7.5L5 6M20.5 7.5L19 6M12 3V1.5" />
+          </svg>
+        );
+      case "melody":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 18V5l10-2v13M9 18a3 3 0 11-3-3 3 3 0 013 3zm10-2a3 3 0 11-3-3 3 3 0 013 3z" />
           </svg>
         );
       default:

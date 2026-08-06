@@ -13,7 +13,6 @@ export interface LyricStudioSnapshot {
     blocks: LyricBlock[];
     activePreset: string;
     lyricCols: number;
-    showLyricsSidebar: boolean;
     structure: string;
     customStructure: string;
     language: string;

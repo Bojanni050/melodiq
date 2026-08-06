@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import CollapsibleSidebar from "@/components/CollapsibleSidebar";
 import LyricsBottomActions from "@/components/lyrics-studio/LyricsBottomActions";
 import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
 import LyricsConfirmModal from "@/components/lyrics-studio/LyricsConfirmModal";
 import LyricsControlPanel from "@/components/lyrics-studio/LyricsControlPanel";
 import LyricsNotice from "@/components/lyrics-studio/LyricsNotice";
 import LyricsSnapshotModals from "@/components/lyrics-studio/LyricsSnapshotModals";
-import LyricsStudioSidePanel from "@/components/lyrics-studio/LyricsStudioSidePanel";
 import TranslationReview from "@/components/lyrics-studio/TranslationReview";
 import {
   BLOCK_COLORS,
@@ -44,7 +42,7 @@ export default function LyricsStudioPage() {
     topic, setTopic, mood, setMood, style, setStyle,
     vocalistTag, setVocalistTag, performerDirections, setPerformerDirections,
     blocks, setBlocks, activePreset, setActivePreset,
-    lyricCols, setLyricCols, showLyricsSidebar, setShowLyricsSidebar,
+    lyricCols, setLyricCols,
     repetitiveChorus, setRepetitiveChorus,
     creativityLevel, setCreativityLevel,
     literalnessLevel, setLiteralnessLevel,
@@ -151,9 +149,7 @@ export default function LyricsStudioPage() {
   const [copied, setCopied] = useState(false);
   const [generatingSong, setGeneratingSong] = useState(false);
   const [showStructureDropdown, setShowStructureDropdown] = useState(false);
-  const [generatingStyleSuggestion, setGeneratingStyleSuggestion] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
-  const [copiedStyleSuggestion, setCopiedStyleSuggestion] = useState(false);
   const [translationLanguage, setTranslationLanguage] = useState("nl");
   const [customTranslationLanguage, setCustomTranslationLanguage] = useState("");
   const [translatingLyrics, setTranslatingLyrics] = useState(false);
@@ -167,7 +163,6 @@ export default function LyricsStudioPage() {
   const [notice, setNotice] = useState<LyricsStudioNotice | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [pendingPresetName, setPendingPresetName] = useState<string | null>(null);
-  const [pendingStudioPayload, setPendingStudioPayload] = useState<{ lyrics: string; style: string } | null>(null);
 
   const songGenerationAbortRef = useRef<AbortController | null>(null);
   const stopSongGenerationRef = useRef(false);
@@ -286,7 +281,7 @@ export default function LyricsStudioPage() {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: new Date().toISOString(),
-      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, showLyricsSidebar, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel }),
+      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel }),
     };
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
     setSavedSnapshots(next);
@@ -527,52 +522,6 @@ export default function LyricsStudioPage() {
     router.push("/");
   }
 
-  function useLyricsAndStyleInStudio() {
-    const nextLyrics = combinedLyrics.trim();
-    const nextStyle = (styleSuggestion.trim() || style.trim()).trim();
-    const nextTitle = title.trim();
-    if (!nextLyrics || !nextStyle) return;
-    const studio = useStudioStore.getState();
-    const hasExisting = Boolean(studio.songIdea.trim() || studio.lyrics.trim() || studio.lyricsContext.trim() || studio.title.trim());
-    if (hasExisting) {
-      setPendingStudioPayload({ lyrics: nextLyrics, style: nextStyle });
-      setConfirmAction("replaceStudio");
-      return;
-    }
-    sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: nextLyrics, style: nextStyle, title: nextTitle }));
-    router.push("/studio");
-  }
-
-  async function generateStyleSuggestion() {
-    if (!topic.trim() || !mood.trim() || !combinedLyrics.trim()) return;
-    setGeneratingStyleSuggestion(true);
-    try {
-      const res = await fetch("/api/lyric-studio/style-suggestion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, mood, lyrics: combinedLyrics, language: effectiveLanguage, styleHint: style, temperature }),
-      });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); setNotice({ type: "error", message: d?.error || "Style suggestion genereren is mislukt." }); return; }
-      const data = await res.json();
-      if (data?.suggestion && typeof data.suggestion === "string") setStyleSuggestion(data.suggestion);
-    } catch {
-      setNotice({ type: "error", message: "Style suggestion genereren is mislukt." });
-    } finally {
-      setGeneratingStyleSuggestion(false);
-    }
-  }
-
-  async function copyStyleSuggestion() {
-    if (!styleSuggestion.trim()) return;
-    try {
-      await navigator.clipboard.writeText(styleSuggestion);
-      setCopiedStyleSuggestion(true);
-      window.setTimeout(() => setCopiedStyleSuggestion(false), 2000);
-    } catch {
-      setNotice({ type: "error", message: "Style kopieren mislukt." });
-    }
-  }
-
   async function generateTitleFromLyrics() {
     if (!canGenerateTitle || generatingTitle) return;
     setGeneratingTitle(true);
@@ -627,12 +576,12 @@ export default function LyricsStudioPage() {
   function clearAllDraft(force = false) {
     if (!force) { setConfirmAction("clearAll"); return; }
     setTopic(""); setMood(""); setStyle(""); setBlocks([]); setActivePreset("");
-    setLyricCols(2); setShowLyricsSidebar(false); setShowStructureDropdown(false);
+    setLyricCols(2); setShowStructureDropdown(false);
     setStructure(""); setCustomStructure(""); setRepetitiveChorus(true);
     setTitle("");
     setCreativityLevel(5); setLiteralnessLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setLlmModel(""); setVocalistTag("auto");
-    setStyleSuggestion(""); setCopiedStyleSuggestion(false); setShowLoadSnapshots(false);
+    setStyleSuggestion(""); setShowLoadSnapshots(false);
     window.localStorage.removeItem("melodiq-lyrics-studio");
     setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
   }
@@ -642,10 +591,6 @@ export default function LyricsStudioPage() {
       setActivePreset(pendingPresetName);
       setBlocks(createPresetBlocks(allPresets[pendingPresetName], pendingPresetName));
       setPendingPresetName(null);
-    } else if (confirmAction === "replaceStudio" && pendingStudioPayload) {
-      sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: pendingStudioPayload.lyrics, style: pendingStudioPayload.style, title: title.trim() }));
-      router.push("/studio");
-      setPendingStudioPayload(null);
     } else if (confirmAction === "clearAll") {
       clearAllDraft(true);
     }
@@ -655,21 +600,6 @@ export default function LyricsStudioPage() {
   return (
     <div className="flex h-[calc(100vh-var(--player-height))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}>
       <Sidebar credits={credits} />
-
-      <CollapsibleSidebar open={showLyricsSidebar} onClose={() => setShowLyricsSidebar(false)}>
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="text-xl font-bold">Volledige lyrics</h2>
-          <button
-            type="button"
-            onClick={copyAllLyrics}
-            disabled={!combinedLyrics}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-        <pre className="whitespace-pre-wrap font-sans text-white/90 text-base">{combinedLyrics || "(nog geen lyrics)"}</pre>
-      </CollapsibleSidebar>
 
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
@@ -690,12 +620,6 @@ export default function LyricsStudioPage() {
                 </button>
                 <button type="button" onClick={() => clearAllDraft()} className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20">
                   Clear all
-                </button>
-                <button type="button" onClick={() => setShowLyricsSidebar((v) => !v)} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
-                  </svg>
-                  Lyrics
                 </button>
               </div>
             </div>
@@ -719,10 +643,10 @@ export default function LyricsStudioPage() {
             <LyricsConfirmModal
               confirmAction={confirmAction}
               onConfirm={handleConfirmAction}
-              onCancel={() => { setConfirmAction(null); setPendingPresetName(null); setPendingStudioPayload(null); }}
+              onCancel={() => { setConfirmAction(null); setPendingPresetName(null); }}
             />
 
-            <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_340px]">
+            <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_320px]">
               <LyricsControlPanel
                 topic={topic} mood={mood} style={style}
                 vocalistTag={vocalistTag} performerDirections={performerDirections}
@@ -813,7 +737,7 @@ export default function LyricsStudioPage() {
                 )}
 
                 <LyricsBottomActions
-                  blocks={blocks} translationLanguage={translationLanguage}
+                  translationLanguage={translationLanguage}
                   customTranslationLanguage={customTranslationLanguage}
                   translatingLyrics={translatingLyrics} combinedLyrics={combinedLyrics} copied={copied}
                   onTranslationLanguageChange={setTranslationLanguage}
@@ -824,18 +748,22 @@ export default function LyricsStudioPage() {
                 />
               </section>
 
-              <LyricsStudioSidePanel
-                blocks={blocks} topic={topic} mood={mood} style={style}
-                combinedLyrics={combinedLyrics} styleSuggestion={styleSuggestion}
-                generatingStyleSuggestion={generatingStyleSuggestion}
-                copiedStyleSuggestion={copiedStyleSuggestion}
-                creativityLevel={creativityLevel}
-                onCreativityLevelChange={setCreativityLevel}
-                onGenerateStyleSuggestion={generateStyleSuggestion}
-                onStyleSuggestionChange={setStyleSuggestion}
-                onCopyStyleSuggestion={copyStyleSuggestion}
-                onUseLyricsAndStyleInStudio={useLyricsAndStyleInStudio}
-              />
+              <aside className="hidden lg:block">
+                <div className="min-h-[620px] rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-white/70">Lyrics</h3>
+                    <button
+                      type="button"
+                      onClick={copyAllLyrics}
+                      disabled={!combinedLyrics}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      {copied ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-white/90">{combinedLyrics || "(nog geen lyrics)"}</pre>
+                </div>
+              </aside>
             </div>
           </div>
         </div>

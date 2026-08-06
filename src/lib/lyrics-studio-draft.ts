@@ -10,7 +10,6 @@ export type LyricsStudioDraftPayload = {
   blocks: LyricBlock[];
   activePreset: string;
   lyricCols: number;
-  showLyricsSidebar: boolean;
   structure: string;
   customStructure: string;
   language: string;
@@ -33,7 +32,6 @@ export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload)
     blocks: payload.blocks,
     activePreset: payload.activePreset,
     lyricCols: payload.lyricCols,
-    showLyricsSidebar: payload.showLyricsSidebar,
     structure: payload.structure,
     customStructure: payload.customStructure,
     language: payload.language,
