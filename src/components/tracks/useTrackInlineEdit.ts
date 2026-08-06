@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { TrackItem } from "./types";
+import { useSelectionStore } from "@/lib/store";
 
 export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: string, newTitle: string) => void) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -33,6 +34,27 @@ export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: s
     const trimmed = editTitle.trim();
     setIsEditingTitle(false);
     if (!trimmed || trimmed === track.title) return;
+
+    const selectedIds = useSelectionStore.getState().selectedIds;
+    
+    if (selectedIds.size > 1 && selectedIds.has(track.id)) {
+      const applyToAll = window.confirm("Wil je de titel van alle geselecteerde tracks aanpassen?");
+      if (applyToAll) {
+        selectedIds.forEach((selectedId) => {
+          onTitleUpdate?.(selectedId, trimmed);
+          fetch(`/api/tracks/${selectedId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: trimmed }),
+          }).catch(() => {});
+        });
+        return;
+      } else {
+        setEditTitle(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
+        return;
+      }
+    }
+
     onTitleUpdate?.(track.id, trimmed);
     fetch(`/api/tracks/${track.id}`, {
       method: "PATCH",

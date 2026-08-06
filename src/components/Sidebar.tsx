@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useWorkspaceStore, usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 
 interface SidebarProps {
@@ -21,8 +21,17 @@ function useIsQHD() {
   return isQHD;
 }
 
-export default function Sidebar({ credits }: SidebarProps) {
+export default function Sidebar(props: SidebarProps) {
+  return (
+    <Suspense fallback={null}>
+      <SidebarInner {...props} />
+    </Suspense>
+  );
+}
+
+function SidebarInner({ credits }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const isQHD = useIsQHD();
   const collapsed = useSidebarStore((s) => s.collapsed);
@@ -47,7 +56,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const isAdmin = user?.role === "admin";
   const isListener = user?.role === "listener" || user?.role == null;
 
-  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean }> }> = [
+  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean; indent?: boolean }> }> = [
     ...(!isListener
       ? [
           {
@@ -67,6 +76,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             label: "BROWSE",
             items: [
               { href: "/library", label: "Library", icon: "library" },
+              { href: "/library?view=playlists", label: "Playlists", icon: "playlists", indent: true },
             ],
           },
         ]
@@ -75,6 +85,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             label: "ORGANIZE",
             items: [
               { href: "/library", label: "Library", icon: "library" },
+              { href: "/library?view=playlists", label: "Playlists", icon: "playlists", indent: true },
               { href: "/archive", label: "Master Tracks", icon: "archive" },
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
             ],
@@ -100,6 +111,21 @@ export default function Sidebar({ credits }: SidebarProps) {
       : []),
   ];
 
+  function isNavItemActive(href: string) {
+    const [base, queryString] = href.split("?");
+    const baseMatches = pathname === base || pathname.startsWith(base + "/");
+    if (!baseMatches) return false;
+    if (queryString) {
+      const targetParams = new URLSearchParams(queryString);
+      for (const [key, value] of targetParams.entries()) {
+        if (searchParams.get(key) !== value) return false;
+      }
+      return true;
+    }
+    if (base === "/library" && searchParams.get("view") === "playlists") return false;
+    return true;
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -124,6 +150,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        );
+      case "playlists":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h10M4 12h10M4 18h6m8-9v9.28a2 2 0 11-2-1.96V9h-2V7h4z" />
           </svg>
         );
       case "workspaces":
@@ -269,9 +301,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               )}
               <div className="space-y-1">
                 {group.items.map((item) => {
-                  const active = item.href === "/"
-                    ? pathname === "/"
-                    : pathname === item.href || pathname.startsWith(item.href + "/");
+                  const active = isNavItemActive(item.href);
                   const targetHref = item.href === "/workspaces" && selectedWorkspaceId
                     ? `/workspaces/${selectedWorkspaceId}`
                     : item.href;
@@ -281,7 +311,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                       key={item.href + item.label}
                       href={targetHref}
                       onClick={isPlaceholder ? (e) => e.preventDefault() : undefined}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                         active
                           ? "bg-white/10 text-white font-medium"
                           : isPlaceholder
@@ -432,9 +462,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                   </p>
                   <div className="space-y-1">
                     {group.items.map((item) => {
-                      const active = item.href === "/"
-                        ? pathname === "/"
-                        : pathname === item.href || pathname.startsWith(item.href + "/");
+                      const active = isNavItemActive(item.href);
                       const targetHref = item.href === "/workspaces" && selectedWorkspaceId
                         ? `/workspaces/${selectedWorkspaceId}`
                         : item.href;
@@ -444,7 +472,7 @@ export default function Sidebar({ credits }: SidebarProps) {
                           key={item.href + item.label}
                           href={targetHref}
                           onClick={isPlaceholder ? (e) => e.preventDefault() : () => setMobileMenuOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                             active
                               ? "bg-white/10 text-white font-medium"
                               : isPlaceholder

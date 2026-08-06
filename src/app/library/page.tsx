@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function AutocompleteInput({
   id,
@@ -275,7 +275,16 @@ async function readApiPayload(response: Response): Promise<unknown> {
 }
 
 export default function LibraryPage() {
+  return (
+    <Suspense fallback={null}>
+      <LibraryPageInner />
+    </Suspense>
+  );
+}
+
+function LibraryPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const user = useUserStore((s) => s.user);
@@ -326,7 +335,18 @@ export default function LibraryPage() {
     tracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
     return Array.from(names).sort();
   }, [tracks]);
-  const [view, setView] = useState<LibraryView>("songs");
+  const [view, setView] = useState<LibraryView>(() =>
+    searchParams.get("view") === "playlists" ? "playlists" : "songs"
+  );
+
+  useEffect(() => {
+    setSelectedPlaylistId(null);
+    setSelectedWorkspaceId(null);
+    setView(searchParams.get("view") === "playlists" ? "playlists" : "songs");
+    // Only react to actual URL navigation (e.g. sidebar links), not in-page
+    // view changes like opening a playlist or workspace card.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [trashedTracks, setTrashedTracks] = useState<LibraryTrack[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
@@ -1269,27 +1289,6 @@ export default function LibraryPage() {
                     >
                       Tracks
                     </button>
-
-                    {/* Playlists + contextual sub-pill */}
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedPlaylistId(null); setView("playlists"); }}
-                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${(view === "playlists" || !!selectedPlaylist) && !selectedWorkspace ? "bg-white/15 text-white" : "text-white/60 hover:text-white"}`}
-                    >
-                      Playlists
-                    </button>
-                    <div className={`flex items-center overflow-hidden transition-all duration-200 ${selectedPlaylist ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"}`}>
-                      <svg className="w-3 h-3 text-white/25 shrink-0 mx-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      <button
-                        type="button"
-                        onClick={() => selectedPlaylist && setView("songs")}
-                        className={`h-8 rounded-full px-3 text-sm font-medium whitespace-nowrap transition-colors ${view === "songs" && !!selectedPlaylist ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
-                      >
-                        {selectedPlaylist?.name ?? "songs"}
-                      </button>
-                    </div>
 
                     {/* Workspaces + contextual sub-pill */}
                     <button
