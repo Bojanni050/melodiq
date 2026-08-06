@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useWorkspaceStore, usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 
 interface SidebarProps {
@@ -21,17 +21,8 @@ function useIsQHD() {
   return isQHD;
 }
 
-export default function Sidebar(props: SidebarProps) {
-  return (
-    <Suspense fallback={null}>
-      <SidebarInner {...props} />
-    </Suspense>
-  );
-}
-
-function SidebarInner({ credits }: SidebarProps) {
+export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const isQHD = useIsQHD();
   const collapsed = useSidebarStore((s) => s.collapsed);
@@ -76,7 +67,7 @@ function SidebarInner({ credits }: SidebarProps) {
             label: "BROWSE",
             items: [
               { href: "/library", label: "Library", icon: "library" },
-              { href: "/library?view=playlists", label: "Playlists", icon: "playlists", indent: true },
+              { href: "/playlists", label: "Playlists", icon: "playlists" },
             ],
           },
         ]
@@ -85,7 +76,7 @@ function SidebarInner({ credits }: SidebarProps) {
             label: "ORGANIZE",
             items: [
               { href: "/library", label: "Library", icon: "library" },
-              { href: "/library?view=playlists", label: "Playlists", icon: "playlists", indent: true },
+              { href: "/playlists", label: "Playlists", icon: "playlists" },
               { href: "/archive", label: "Master Tracks", icon: "archive" },
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
             ],
@@ -112,18 +103,7 @@ function SidebarInner({ credits }: SidebarProps) {
   ];
 
   function isNavItemActive(href: string) {
-    const [base, queryString] = href.split("?");
-    const baseMatches = pathname === base || pathname.startsWith(base + "/");
-    if (!baseMatches) return false;
-    if (queryString) {
-      const targetParams = new URLSearchParams(queryString);
-      for (const [key, value] of targetParams.entries()) {
-        if (searchParams.get(key) !== value) return false;
-      }
-      return true;
-    }
-    if (base === "/library" && searchParams.get("view") === "playlists") return false;
-    return true;
+    return pathname === href || pathname.startsWith(href + "/");
   }
 
   async function handleLogout() {

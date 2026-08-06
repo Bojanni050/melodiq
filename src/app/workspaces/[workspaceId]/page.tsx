@@ -6,8 +6,9 @@ import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
+import DeleteWorkspaceDialog from "@/components/tracks/DeleteWorkspaceDialog";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useSidebarStore, useWorkspaceStore } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useSidebarStore, useWorkspaceStore, type Workspace } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 
 function hashString(value: string) {
@@ -51,6 +52,7 @@ export default function WorkspaceDetailPage() {
     workspaces,
     setSelectedWorkspaceId,
     createWorkspaceFolder,
+    deleteWorkspace,
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
 
@@ -59,6 +61,7 @@ export default function WorkspaceDetailPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
+  const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState<Workspace | null>(null);
 
   useEffect(() => {
     if (workspaceId) {
@@ -462,31 +465,49 @@ export default function WorkspaceDetailPage() {
                         const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
                         const childCover = getWorkspaceCoverCollage(childWorkspace.id, childTracks)[0];
                         return (
-                          <button
+                          <div
                             key={childWorkspace.id}
-                            type="button"
-                            onClick={() => openWorkspace(childWorkspace.id)}
                             className="group flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#0f1017] px-3 py-2 text-left transition-colors hover:bg-white/4"
                           >
-                            <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
-                              {childCover ? (
-                                <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                  <svg className="h-4 w-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
-                            </div>
-                            <span className="text-xs text-white/45">{childTracks.length} tracks</span>
-                            <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => openWorkspace(childWorkspace.id)}
+                              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                            >
+                              <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
+                                {childCover ? (
+                                  <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <svg className="h-4 w-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
+                              </div>
+                              <span className="text-xs text-white/45">{childTracks.length} tracks</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPendingDeleteWorkspace(childWorkspace)}
+                              className="shrink-0 text-sm text-white/30 transition-colors hover:text-red-400"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openWorkspace(childWorkspace.id)}
+                              className="shrink-0"
+                              aria-label={`Open ${childWorkspace.name}`}
+                            >
+                              <svg className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -531,6 +552,22 @@ export default function WorkspaceDetailPage() {
             mode="overlay"
           />
         </div>
+      )}
+
+      {pendingDeleteWorkspace && (
+        <DeleteWorkspaceDialog
+          workspaceName={pendingDeleteWorkspace.name}
+          trackCount={pendingDeleteWorkspace.trackIds.length}
+          onDeleteFolderOnly={() => {
+            deleteWorkspace(pendingDeleteWorkspace.id);
+            setPendingDeleteWorkspace(null);
+          }}
+          onDeleteFolderAndTracks={() => {
+            deleteWorkspace(pendingDeleteWorkspace.id, { deleteTracks: true });
+            setPendingDeleteWorkspace(null);
+          }}
+          onCancel={() => setPendingDeleteWorkspace(null)}
+        />
       )}
     </div>
   );

@@ -446,7 +446,17 @@ export default function WorkspacesPage() {
                           <div className="px-4 py-3">
                             <span className="text-sm text-white/35">Default</span>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="flex items-center justify-end px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => deleteWorkspace(workspace.id)}
+                              className="text-sm text-white/35 transition-colors hover:text-red-400"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </article>
                     );
                   })}
@@ -484,6 +494,16 @@ export default function WorkspacesPage() {
                             {childCount > 0 ? ` • ${childCount} subfolders` : ""}
                           </p>
                         </div>
+
+                        {workspace.id !== DEFAULT_WORKSPACE_ID && (
+                          <button
+                            type="button"
+                            onClick={() => deleteWorkspace(workspace.id)}
+                            className="shrink-0 text-sm text-white/30 transition-colors hover:text-red-400"
+                          >
+                            Delete
+                          </button>
+                        )}
 
                         <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
