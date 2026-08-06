@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
+import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
 export type LLMProvider = "openrouter" | "openai";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
@@ -278,7 +279,8 @@ Craft:
 - Ground feelings in specific, concrete detail instead of naming the emotion outright. "My eyes are red and swollen from salty tears" lands harder than "I feel so sad." Favor vivid, specific verbs and adjectives over generic ones (wander/stroll/shuffle, not just "walk").
 - Balance external detail (what's seen, heard, touched — concrete and image-driven) with internal detail (thoughts and feelings) rather than leaning only on one.
 - Preserve the natural stress of everyday speech: let meaningful words (nouns, verbs, adjectives) fall on the strong, singable beats, and let small connector words (a, the, of, and, to) stay light. A line should scan the way it would if spoken naturally.
-- Favor one clear, simple central idea per section over cramming in too many images or ideas at once — simplicity carries more emotional weight than complexity.`;
+- Favor one clear, simple central idea per section over cramming in too many images or ideas at once — simplicity carries more emotional weight than complexity.
+${buildAvoidWordsInstruction()}`;
 
   return callLLM(idea, systemPrompt, { purpose: "lyrics" });
 }

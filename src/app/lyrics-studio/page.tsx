@@ -678,7 +678,7 @@ export default function LyricsStudioPage() {
 
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Lyric Studio</h1>
+                <h1 className="text-3xl font-bold mb-2">Lyrics</h1>
                 <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
               </div>
               <div className="flex items-center gap-2">

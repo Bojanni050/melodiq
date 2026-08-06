@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
 import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
+import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
 type BlockType =
   | "intro"
@@ -140,6 +141,7 @@ Improve:
 Remove:
 - generic wording
 - AI clichés
+${buildAvoidWordsInstruction()}
 - repetitive phrases
 - robotic sentence structure
 - filler
