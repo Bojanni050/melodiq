@@ -151,6 +151,10 @@ export default function PlayerWindowPage() {
     channelRef.current?.postMessage({ type: "control", ...message } satisfies PlayerPopupControlMessage);
   }
 
+  const handleLineClick = (startTime: number) => {
+    if (startTime >= 0) sendControl({ action: "seek", value: startTime });
+  };
+
   const cleanTitle = track?.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "";
   const artistLabel = (track?.artistName || "").trim();
   const composerLabel = (track?.composerName || "").trim();
@@ -288,25 +292,46 @@ export default function PlayerWindowPage() {
                       <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                     )}
                   </div>
+                  <div className="text-center">
+                    <h3 className={`font-semibold text-white/90 leading-snug ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
+                      {cleanTitle || track.prompt.substring(0, 50)}
+                    </h3>
+                    {artistLabel && <p className="mt-1 text-sm sm:text-base text-white/50">{artistLabel}</p>}
+                    {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                  </div>
                 </div>
               )}
 
               {showLyrics && lyricsVisible && (
-                <div className="flex-1 w-full flex items-center justify-center min-h-0 h-full">
+                <div className="flex-1 w-full flex items-stretch justify-center min-h-0 h-full">
                   {hasTimings ? (
-                    <div className="flex flex-col items-center gap-4 w-full h-full">
-                      <div className="shrink-0 flex flex-col items-center gap-3 pt-2">
-                        <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-60 lg:h-60">
+                    /* Timed: cover art + meta on left, lyrics scrolling on right */
+                    <div className="flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4 py-8">
+                      <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
+                        <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-72 lg:h-72 xl:w-80 xl:h-80">
                           {coverUrl ? (
                             <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
                           ) : (
                             <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                           )}
                         </div>
+                        <div className="text-center max-w-sm">
+                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                            {cleanTitle || track.prompt.substring(0, 50)}
+                          </h3>
+                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                          {track.publishDate && (
+                            <p className="mt-1 text-xs text-white/40">
+                              {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                            </p>
+                          )}
+                          {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
+                          {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                        </div>
                       </div>
                       <div
                         ref={containerRef}
-                        className="flex-1 w-full max-w-2xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        className="flex-1 w-full min-w-0 min-h-0 max-w-2xl lg:max-w-3xl overflow-y-auto px-4 py-12 space-y-6 md:space-y-8 scroll-smooth flex flex-col items-center text-center relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] [mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_15%,black_85%,transparent_100%)]"
                       >
                         {parsedLyrics.map((line, index) => {
                           const isActive = index === activeLineIndex;
@@ -315,12 +340,13 @@ export default function PlayerWindowPage() {
                             <div
                               key={index}
                               ref={isActive ? activeLineRef : null}
-                              className={`transition-all duration-500 origin-center py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
+                              onClick={() => handleLineClick(line.startTime)}
+                              className={`cursor-pointer transition-all duration-500 origin-center py-1 text-sm sm:text-lg md:text-xl lg:text-2xl leading-relaxed ${
                                 isActive
                                   ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
                                   : isPlayed
-                                  ? "text-white/45 font-medium"
-                                  : "text-white/20 font-medium"
+                                  ? "text-white/45 font-medium hover:text-white/80"
+                                  : "text-white/20 font-medium hover:text-white/60"
                               }`}
                             >
                               {line.text}
@@ -330,8 +356,9 @@ export default function PlayerWindowPage() {
                       </div>
                     </div>
                   ) : (
+                    /* Static: lyrics left (scrollable) + cover art right (fixed), centered as a unit */
                     <div className="flex flex-col lg:flex-row items-start justify-center gap-10 w-full h-full px-4">
-                      <div className="flex-1 min-w-0 h-full overflow-y-auto py-6 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+                      <div className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto py-6 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
                         <div className={`grid gap-4 lg:gap-8 w-fit mx-auto ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
                           {columns.map((column, colIndex) => (
                             <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
@@ -351,6 +378,13 @@ export default function PlayerWindowPage() {
                           ) : (
                             <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                           )}
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                            {cleanTitle || track.prompt.substring(0, 50)}
+                          </h3>
+                          {artistLabel && <p className="mt-1 text-sm text-white/50">{artistLabel}</p>}
+                          {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
                         </div>
                       </div>
                     </div>
