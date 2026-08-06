@@ -1082,8 +1082,28 @@ export default function Player() {
     broadcastPopupState();
   }, [currentTrack, isPlaying, queue.length, history.length, audioSource, audioSourceState, broadcastPopupState]);
 
+  const [popupOpen, setPopupOpen] = useState(false);
+
+  // Polls because a window closed via its own OS chrome (the "X" button)
+  // doesn't fire any event we can listen for cross-window.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (popupWindowRef.current?.closed) {
+        popupWindowRef.current = null;
+        setPopupOpen(false);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handlePopOutPlayer = useCallback(() => {
     if (typeof window === "undefined") return;
+    if (popupWindowRef.current && !popupWindowRef.current.closed) {
+      popupWindowRef.current.close();
+      popupWindowRef.current = null;
+      setPopupOpen(false);
+      return;
+    }
     const popup = window.open(
       "/player-window",
       PLAYER_POPUP_WINDOW_NAME,
@@ -1092,6 +1112,7 @@ export default function Player() {
     if (popup) {
       popupWindowRef.current = popup;
       popup.focus();
+      setPopupOpen(true);
     }
   }, []);
 
@@ -1430,8 +1451,8 @@ export default function Player() {
               type="button"
               onClick={handlePopOutPlayer}
               disabled={!currentTrack}
-              className="p-2 rounded-full text-white/40 hover:text-white/80 disabled:opacity-20 transition-colors"
-              title="Open player in a second window (drag to another monitor)"
+              className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white/80"}`}
+              title={popupOpen ? "Close pop-out player window" : "Open player in a second window (drag to another monitor)"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3h8v8m0-8L11 13M19 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6" />

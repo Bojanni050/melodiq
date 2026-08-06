@@ -47,9 +47,18 @@ export default function FullscreenPlayer({
   });
   const [controlsVisible, setControlsVisible] = useState(true);
   const [lyricsVisible, setLyricsVisible] = useState(true);
-  const [contentVisible, setContentVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioElement = usePlayerStore((state) => state.audioElement);
+
+  // Crossfade on track switch: snapshot the outgoing track's visual and let it
+  // fade out on top of the (already fully rendered) incoming track, instead of
+  // blanking out and fading the new content back in.
+  type TrackVisual = { coverUrl: string | null; title: string; artist: string };
+  const [outgoingVisual, setOutgoingVisual] = useState<TrackVisual | null>(null);
+  const [outgoingFading, setOutgoingFading] = useState(false);
+  const lastTrackIdRef = useRef<string | null>(null);
+  const lastVisualRef = useRef<TrackVisual | null>(null);
+  const outgoingTimersRef = useRef<{ raf: number | null; timeout: ReturnType<typeof setTimeout> | null }>({ raf: null, timeout: null });
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -199,13 +208,6 @@ export default function FullscreenPlayer({
     }
   }, [currentTrack?.id]);
 
-  useEffect(() => {
-    if (!currentTrack?.id) return;
-    setContentVisible(false);
-    const t = setTimeout(() => setContentVisible(true), 250);
-    return () => clearTimeout(t);
-  }, [currentTrack?.id]);
-
   const handleLineClick = useCallback((startTime: number) => {
     if (startTime >= 0 && audioElement) {
       audioElement.currentTime = startTime;
@@ -241,6 +243,29 @@ export default function FullscreenPlayer({
   }, [audioElement]);
 
   const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
+
+  useEffect(() => {
+    const trackId = currentTrack?.id ?? null;
+    const visual: TrackVisual = { coverUrl, title: cleanTitle || currentTrack?.prompt.substring(0, 50) || "", artist: artistLabel };
+    if (lastTrackIdRef.current && trackId && lastTrackIdRef.current !== trackId && lastVisualRef.current) {
+      if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);
+      if (outgoingTimersRef.current.timeout) clearTimeout(outgoingTimersRef.current.timeout);
+      setOutgoingVisual(lastVisualRef.current);
+      setOutgoingFading(false);
+      outgoingTimersRef.current.raf = requestAnimationFrame(() => setOutgoingFading(true));
+      outgoingTimersRef.current.timeout = setTimeout(() => setOutgoingVisual(null), 700);
+    }
+    lastTrackIdRef.current = trackId;
+    lastVisualRef.current = visual;
+  }, [currentTrack?.id, coverUrl, cleanTitle, artistLabel]);
+
+  useEffect(() => {
+    return () => {
+      if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);
+      if (outgoingTimersRef.current.timeout) clearTimeout(outgoingTimersRef.current.timeout);
+    };
+  }, []);
+
   const lyrics = currentTrack?.lyrics || "";
   const lyricsLines = lyrics.split("\n").filter((line) => line.trim());
   const showLyrics = lyricsLines.length > 0;
@@ -336,6 +361,12 @@ export default function FullscreenPlayer({
           }}
         />
       )}
+      {outgoingVisual?.coverUrl && (
+        <div
+          className={`absolute inset-0 bg-cover bg-center blur-[90px] opacity-45 saturate-150 transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
+          style={{ backgroundImage: `url(${outgoingVisual.coverUrl})` }}
+        />
+      )}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,133,80,0.35),transparent_42%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.18),transparent_38%),radial-gradient(circle_at_50%_78%,rgba(255,83,12,0.3),transparent_45%)] blur-3xl opacity-70" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/90" />
       <div className="relative h-full flex flex-col">
@@ -390,7 +421,7 @@ export default function FullscreenPlayer({
               disabled={!currentTrack}
               onCastConnected={() => usePlayerStore.getState().setIsPlaying(false)}
             />
-            <div className={`transition-opacity duration-300 ${contentVisible ? "opacity-100" : "opacity-0"}`}>
+            <div>
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
@@ -403,7 +434,26 @@ export default function FullscreenPlayer({
             </div>
           </div>
         </div>
-        <div className={`flex-1 min-h-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden transition-opacity duration-300 gap-6 ${visualizerEnabled ? "pb-36" : ""} ${contentVisible ? "opacity-100" : "opacity-0"}`}>
+        <div className={`relative flex-1 min-h-0 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-12 overflow-y-auto lg:overflow-hidden gap-6 ${visualizerEnabled ? "pb-36" : ""}`}>
+
+          {/* Outgoing track snapshot, fading out on top of the (already visible) new content */}
+          {outgoingVisual && (
+            <div
+              className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/85 backdrop-blur-xl pointer-events-none transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
+            >
+              <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96">
+                {outgoingVisual.coverUrl ? (
+                  <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                ) : (
+                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 border border-white/10" />
+                )}
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">{outgoingVisual.title}</h3>
+                {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-white/50">{outgoingVisual.artist}</p>}
+              </div>
+            </div>
+          )}
 
           {/* Cover art when no lyrics or lyrics hidden */}
           {(!showLyrics || !lyricsVisible) && (
