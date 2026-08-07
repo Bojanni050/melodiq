@@ -55,9 +55,14 @@ export default function Sidebar({ credits }: SidebarProps) {
             items: [
               { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
               { href: "/melody", label: "Melody", icon: "melody" },
-              { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
               { href: "/style", label: "Style", icon: "style" },
               { href: "/studio", label: "Music", icon: "music" },
+            ],
+          },
+          {
+            label: "REFINE",
+            items: [
+              { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
             ],
           },
         ]
