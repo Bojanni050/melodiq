@@ -6,8 +6,6 @@ import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import "./timecoded-editor.css";
-
 export const metadata: Metadata = {
   title: "Timecoded Lyrics Editor — MelodIQ",
   description: "Edit synchronized timecoded lyrics safely. Timestamps are always preserved.",
