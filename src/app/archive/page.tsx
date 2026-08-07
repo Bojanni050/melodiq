@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
+import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, useSidebarStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 
@@ -374,6 +376,7 @@ function TranslationRow({
 function EntryTrackActionsMenu({
   entry,
   onPlay,
+  onDetails,
   onAnalyze,
   analyzing,
   onUnlink,
@@ -383,6 +386,7 @@ function EntryTrackActionsMenu({
 }: {
   entry: ArchiveEntry;
   onPlay: () => void;
+  onDetails: () => void;
   onAnalyze: () => void;
   analyzing: boolean;
   onUnlink: () => void;
@@ -435,6 +439,16 @@ function EntryTrackActionsMenu({
             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
           >
             Play
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onDetails();
+            }}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+          >
+            Track Details
           </button>
           {downloadUrl && (
             <a
@@ -503,6 +517,11 @@ function EntryTrackActionsMenu({
 export default function ArchivePage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
+  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const [selectedTrack, setSelectedTrack] = useState<TrackDetailTrack | null>(null);
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -606,6 +625,39 @@ export default function ArchivePage() {
     clearQueue();
     rest.forEach((t) => enqueueTrack(t));
     playTrackFromGesture(track);
+  }
+
+  function handleOpenTrackDetails(entry: ArchiveEntry) {
+    const track = entryToTrack(entry);
+    if (!track) return;
+    setSelectedTrack({
+      ...track,
+      format: track.format ?? null,
+      formatHd: track.formatHd ?? null,
+    });
+    setShowTrackDetailsPanel(true);
+  }
+
+  function handleCloseTrackDetails() {
+    setShowTrackDetailsPanel(false);
+  }
+
+  function handleDetailPlay(url: string) {
+    if (!selectedTrack) return;
+    const track = playableTracks.find((t) => t.id === selectedTrack.id);
+    if (!track) return;
+    clearQueue();
+    playTrackFromGesture({ ...track, audioUrl: url });
+  }
+
+  function handleDownloadTrack(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
+      : (selectedTrack?.format ?? "mp3");
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
   }
 
   async function handleAnalyzeComposition(entry: ArchiveEntry) {
@@ -725,7 +777,8 @@ export default function ArchivePage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <main className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 space-y-6">
           {/* Header card — matching library style */}
           <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
@@ -896,6 +949,7 @@ export default function ArchivePage() {
                           <EntryTrackActionsMenu
                             entry={entry}
                             onPlay={() => { if (playable) handlePlayTrack(playable); }}
+                            onDetails={() => handleOpenTrackDetails(entry)}
                             onAnalyze={() => void handleAnalyzeComposition(entry)}
                             analyzing={analyzingIds.has(entry.id)}
                             onUnlink={() => void handleUnlinkTrack(entry)}
@@ -986,7 +1040,39 @@ export default function ArchivePage() {
           )}
           </div>
         </div>
+        </main>
+
+        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+          <div className="h-full overflow-y-auto pb-4">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={handleCloseTrackDetails}
+                onPlay={handleDetailPlay}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
+
+      {showTrackDetailsPanel && selectedTrack && (
+        <div className="lg:hidden">
+          <TrackDetail
+            track={selectedTrack}
+            onClose={handleCloseTrackDetails}
+            onPlay={handleDetailPlay}
+            onDownload={handleDownloadTrack}
+            mode="overlay"
+          />
+        </div>
+      )}
 
       {editingTarget && (
         <EntryEditor target={editingTarget} onClose={() => setEditingTarget(null)} onSaved={handleSaved} />
