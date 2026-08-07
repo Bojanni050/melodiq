@@ -217,7 +217,7 @@ export default memo(function TrackList({
   tracks,
   isGenerating,
   autoQueueAfterPlay,
-  enableDragReorder = true,
+  enableDragReorder = false,
   onSelect,
   onDelete,
   onReusePrompt,
