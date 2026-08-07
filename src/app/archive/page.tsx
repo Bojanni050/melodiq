@@ -375,6 +375,7 @@ function TranslationRow({
 // needs a handful of track-scoped actions, not playlist/workspace plumbing.
 function EntryTrackActionsMenu({
   entry,
+  onEdit,
   onPlay,
   onDetails,
   onAnalyze,
@@ -385,6 +386,7 @@ function EntryTrackActionsMenu({
   togglingPublish,
 }: {
   entry: ArchiveEntry;
+  onEdit: () => void;
   onPlay: () => void;
   onDetails: () => void;
   onAnalyze: () => void;
@@ -434,80 +436,95 @@ function EntryTrackActionsMenu({
             type="button"
             onClick={() => {
               setOpen(false);
-              onPlay();
+              onEdit();
             }}
             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
           >
-            Play
+            Edit entry
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onDetails();
-            }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-          >
-            Track Details
-          </button>
-          {downloadUrl && (
-            <a
-              href={downloadUrl}
-              download
-              onClick={() => setOpen(false)}
-              className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-            >
-              Download
-            </a>
+          {entry.trackId && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onPlay();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              >
+                Play
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onDetails();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              >
+                Track Details
+              </button>
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  download
+                  onClick={() => setOpen(false)}
+                  className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Download
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onAnalyze();
+                }}
+                disabled={analyzing}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {analyzing ? "Analyzing composition…" : "Analyze Composition"}
+              </button>
+              <Link
+                href="/library"
+                onClick={() => setOpen(false)}
+                className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              >
+                Open in Library
+              </Link>
+              {onTogglePublish && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onTogglePublish();
+                  }}
+                  disabled={togglingPublish}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {togglingPublish
+                    ? isPublished
+                      ? "Unpublishing..."
+                      : "Publishing..."
+                    : isPublished
+                      ? "Unpublish"
+                      : "Publish"}
+                </button>
+              )}
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onUnlink();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+              >
+                Unlink track
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onAnalyze();
-            }}
-            disabled={analyzing}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {analyzing ? "Analyzing composition…" : "Analyze Composition"}
-          </button>
-          <Link
-            href="/library"
-            onClick={() => setOpen(false)}
-            className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-          >
-            Open in Library
-          </Link>
-          {onTogglePublish && (
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onTogglePublish();
-              }}
-              disabled={togglingPublish}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {togglingPublish
-                ? isPublished
-                  ? "Unpublishing..."
-                  : "Publishing..."
-                : isPublished
-                  ? "Unpublish"
-                  : "Publish"}
-            </button>
-          )}
-          <div className="my-1 h-px bg-white/10" />
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              onUnlink();
-            }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
-          >
-            Unlink track
-          </button>
         </div>
       )}
     </div>
@@ -913,10 +930,7 @@ export default function ArchivePage() {
                           )}
                         </div>
 
-                        <div
-                          className="min-w-0 flex-1 cursor-pointer"
-                          onClick={() => setEditingTarget({ mode: "edit", entry })}
-                        >
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
                             {entry.trackTitle && (
@@ -945,19 +959,18 @@ export default function ArchivePage() {
                       </div>
 
                       <div className="flex items-start gap-1 shrink-0">
-                        {entry.trackId && (
-                          <EntryTrackActionsMenu
-                            entry={entry}
-                            onPlay={() => { if (playable) handlePlayTrack(playable); }}
-                            onDetails={() => handleOpenTrackDetails(entry)}
-                            onAnalyze={() => void handleAnalyzeComposition(entry)}
-                            analyzing={analyzingIds.has(entry.id)}
-                            onUnlink={() => void handleUnlinkTrack(entry)}
-                            isPublished={entry.releaseStatus === "published"}
-                            onTogglePublish={entry.trackId ? () => void handleTogglePublish(entry) : undefined}
-                            togglingPublish={togglingPublishIds.has(entry.id)}
-                          />
-                        )}
+                        <EntryTrackActionsMenu
+                          entry={entry}
+                          onEdit={() => setEditingTarget({ mode: "edit", entry })}
+                          onPlay={() => { if (playable) handlePlayTrack(playable); }}
+                          onDetails={() => handleOpenTrackDetails(entry)}
+                          onAnalyze={() => void handleAnalyzeComposition(entry)}
+                          analyzing={analyzingIds.has(entry.id)}
+                          onUnlink={() => void handleUnlinkTrack(entry)}
+                          isPublished={entry.releaseStatus === "published"}
+                          onTogglePublish={entry.trackId ? () => void handleTogglePublish(entry) : undefined}
+                          togglingPublish={togglingPublishIds.has(entry.id)}
+                        />
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(entry)}
