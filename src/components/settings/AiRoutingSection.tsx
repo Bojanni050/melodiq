@@ -42,6 +42,8 @@ export default function AiRoutingSection({
   onReadMore,
   autoAnalyzeComposition,
   onToggleAutoAnalyzeComposition,
+  tclAutoJumpToEditor,
+  onToggleTclAutoJumpToEditor,
 }: {
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
@@ -81,6 +83,8 @@ export default function AiRoutingSection({
   onReadMore: (model: LLMModel) => void;
   autoAnalyzeComposition: boolean;
   onToggleAutoAnalyzeComposition: () => void;
+  tclAutoJumpToEditor: boolean;
+  onToggleTclAutoJumpToEditor: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -179,6 +183,31 @@ export default function AiRoutingSection({
               <span
                 className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                   autoAnalyzeComposition ? "translate-x-6" : ""
+                }`}
+              />
+            </button>
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <label className="block text-sm font-medium text-white/50">Auto-open Lyrics Editor after generating TCL</label>
+              <p className="text-xs text-white/25 mt-1 max-w-md">
+                On: &ldquo;Generate Time-Coded Lyrics&rdquo; from a track&apos;s menu jumps straight into the
+                Timecoded Lyrics Editor. Off: it generates in place — a progress indicator shows on the track
+                while it runs, and the result shows up on the track card when it&apos;s done.
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Toggle auto-open Lyrics Editor after generating TCL"
+              onClick={onToggleTclAutoJumpToEditor}
+              className={`relative w-12 h-6 rounded-full shrink-0 transition-colors ${
+                tclAutoJumpToEditor ? "bg-emerald-500/20" : "bg-white/10"
+              }`}
+            >
+              <span className="sr-only">Toggle auto-open Lyrics Editor after generating TCL</span>
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  tclAutoJumpToEditor ? "translate-x-6" : ""
                 }`}
               />
             </button>

@@ -233,6 +233,16 @@ export default function SettingsPage() {
     });
   }
 
+  async function toggleTclAutoJumpToEditor() {
+    const next = values.TCL_AUTO_JUMP_EDITOR === "false" ? "true" : "false";
+    setValues((prev) => ({ ...prev, TCL_AUTO_JUMP_EDITOR: next }));
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "TCL_AUTO_JUMP_EDITOR", value: next }),
+    });
+  }
+
   const dirtyKeys = TRACKED_SETTINGS_KEYS.filter((key) => (values[key] ?? "") !== (savedValues[key] ?? ""));
 
   async function saveAllChanges() {
@@ -366,7 +376,7 @@ export default function SettingsPage() {
     ? allModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
     : allModels;
 
-  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart"].includes(p.id));
+  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc"].includes(p.id));
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
@@ -457,6 +467,8 @@ export default function SettingsPage() {
                   onReadMore={setModelDetail}
                   autoAnalyzeComposition={values.AUTO_ANALYZE_COMPOSITION === "true"}
                   onToggleAutoAnalyzeComposition={toggleAutoAnalyzeComposition}
+                  tclAutoJumpToEditor={values.TCL_AUTO_JUMP_EDITOR !== "false"}
+                  onToggleTclAutoJumpToEditor={toggleTclAutoJumpToEditor}
                 />
               )}
 

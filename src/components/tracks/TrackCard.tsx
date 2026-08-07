@@ -3,6 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
@@ -28,6 +29,12 @@ import TrackEditPanel from "./TrackEditPanel";
 
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
+
+async function settingsFetcher(url: string): Promise<Record<string, string>> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(res.statusText || "Request failed");
+  return res.json();
+}
 
 // ── Inline stem row (self-fetching) ─────────────────────────────────────────
 type StemDef = { value: string; label: string };
@@ -234,6 +241,42 @@ const TrackCard = memo(function TrackCard({
   const [retryingWav, setRetryingWav] = useState(false);
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
   const [togglingPublish, setTogglingPublish] = useState(false);
+  const [generatingTcl, setGeneratingTcl] = useState(false);
+  const [tclError, setTclError] = useState<string | null>(null);
+  const { data: appSettings } = useSWR<Record<string, string>>("/api/settings", settingsFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  });
+  const tclAutoJumpToEditor = appSettings?.TCL_AUTO_JUMP_EDITOR !== "false";
+
+  async function handleGenerateTclClick() {
+    if (tclAutoJumpToEditor) {
+      router.push(`/timecoded-editor/${track.id}`);
+      return;
+    }
+    setGeneratingTcl(true);
+    setTclError(null);
+    let failure: string | null = null;
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/generate-tcl`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        failure = body?.error || "Time-coded lyrics generation failed";
+      } else {
+        void mutate("/api/tracks");
+        window.dispatchEvent(new CustomEvent("tracks-changed"));
+      }
+    } catch (error) {
+      console.error("Failed to generate time-coded lyrics:", error);
+      failure = "Network error — could not reach the server.";
+    } finally {
+      setGeneratingTcl(false);
+      if (failure) {
+        setTclError(failure);
+        setTimeout(() => setTclError(null), 5000);
+      }
+    }
+  }
 
   async function handleAnalyzeComposition() {
     setAnalyzingComposition(true);
@@ -421,6 +464,8 @@ const TrackCard = memo(function TrackCard({
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
+  const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
+  const canGenerateTcl = track.status === "done" && !!track.lyrics?.trim() && !!(track.audioUrl || track.s3KeyHd) && !hasTcl;
   const rawCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
   const effectiveCoverUrl = rawCoverUrl && (rawCoverUrl.startsWith("http") || rawCoverUrl.startsWith("/"))
     ? rawCoverUrl
@@ -671,6 +716,20 @@ const TrackCard = memo(function TrackCard({
                 <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-300" />
               </span>
             )}
+            {generatingTcl && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200"
+                title="Generating time-coded lyrics — this can take a bit longer than usual"
+                aria-label="Generating time-coded lyrics"
+              >
+                <span className="flex items-end gap-0.5 h-3">
+                  <span className="w-0.5 bg-blue-300 rounded-full animate-wave-bar" />
+                  <span className="w-0.5 bg-blue-300 rounded-full animate-wave-bar animation-delay-150" />
+                  <span className="w-0.5 bg-blue-300 rounded-full animate-wave-bar animation-delay-300" />
+                </span>
+                Generating TCL…
+              </span>
+            )}
             {archiveLinkKind && (
               <span
                 className="shrink-0"
@@ -846,6 +905,9 @@ const TrackCard = memo(function TrackCard({
           {track.error && (
             <p className="text-sm text-red-400 mt-0.5">{track.error}</p>
           )}
+          {tclError && (
+            <p className="text-sm text-red-400 mt-0.5">{tclError}</p>
+          )}
         </div>
 
         {/* Time + actions */}
@@ -916,6 +978,8 @@ const TrackCard = memo(function TrackCard({
               isPublished={track.releaseStatus === "published"}
               onTogglePublish={track.status === "done" ? handleTogglePublish : undefined}
               togglingPublish={togglingPublish}
+              onGenerateTclClick={canGenerateTcl ? handleGenerateTclClick : undefined}
+              generatingTcl={generatingTcl}
             />
           )}
           {isOwner && (
