@@ -237,6 +237,7 @@ export default memo(function StudioForm({
     title,
     autoCreateWorkspaceFromGeneratedTitle,
     selectedProviders,
+    rememberProviderChoice,
     instrumental,
     vocalGender,
     weirdness,
@@ -251,6 +252,7 @@ export default memo(function StudioForm({
     setProvider,
     toggleProvider,
     setProviderModel,
+    setRememberProviderChoice,
     setInstrumental,
     setVocalGender,
     setWeirdness,
@@ -509,11 +511,13 @@ export default memo(function StudioForm({
             className="select-field text-sm flex-1"
           >
             <option value="" className="bg-gray-900">Select provider...</option>
-            {Object.entries(PROVIDERS).map(([key, val]) => (
-              <option key={key} value={key} className="bg-gray-900">
-                {val.fullName}
-              </option>
-            ))}
+            {Object.entries(PROVIDERS)
+              .sort(([, a], [, b]) => a.fullName.localeCompare(b.fullName))
+              .map(([key, val]) => (
+                <option key={key} value={key} className="bg-gray-900">
+                  {val.fullName}
+                </option>
+              ))}
           </select>
           {Object.keys(selectedProviders).length > 0 && (
             <select
@@ -530,6 +534,15 @@ export default memo(function StudioForm({
             </select>
           )}
         </div>
+        <label className="mt-2 flex items-center gap-1.5 text-xs text-white/40 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={rememberProviderChoice}
+            onChange={(e) => setRememberProviderChoice(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-white/20 bg-transparent accent-primary-500"
+          />
+          Remember choice
+        </label>
         {Object.keys(selectedProviders).length > 0 && (
           <div className="mt-2 text-xs text-white/30">
             {(() => {

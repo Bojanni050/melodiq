@@ -1209,6 +1209,7 @@ interface StudioState {
   title: string;
   autoCreateWorkspaceFromGeneratedTitle: boolean;
   selectedProviders: Record<string, string>;
+  rememberProviderChoice: boolean;
   language: string;
   customLanguage: string;
   instrumental: boolean;
@@ -1228,6 +1229,7 @@ interface StudioState {
   setProvider: (key: string, model: string) => void;
   toggleProvider: (key: string, defaultModel: string) => void;
   setProviderModel: (key: string, model: string) => void;
+  setRememberProviderChoice: (val: boolean) => void;
   setLanguage: (lang: string) => void;
   setCustomLanguage: (lang: string) => void;
   setInstrumental: (val: boolean) => void;
@@ -1253,6 +1255,7 @@ export const useStudioStore = create<StudioState>()(
       title: "",
       autoCreateWorkspaceFromGeneratedTitle: false,
       selectedProviders: { poyo: "v5.5" },
+      rememberProviderChoice: true,
       language: "English",
       customLanguage: "",
       instrumental: false,
@@ -1285,6 +1288,7 @@ export const useStudioStore = create<StudioState>()(
         set((state) => ({
           selectedProviders: { ...state.selectedProviders, [key]: model },
         })),
+      setRememberProviderChoice: (val) => set({ rememberProviderChoice: val }),
       setLanguage: (lang) => set({ language: lang }),
       setCustomLanguage: (lang) => set({ customLanguage: lang }),
       setInstrumental: (val) => set({ instrumental: val }),
@@ -1366,6 +1370,11 @@ export const useStudioStore = create<StudioState>()(
           merged.selectedProviders = merged.provider
             ? { [merged.provider]: merged.providerModel || "v5.5" }
             : { poyo: "v5.5" };
+        }
+        // "Remember choice" unchecked — don't restore the last-used provider,
+        // fall back to the form's default instead of the persisted value.
+        if (persistedState?.rememberProviderChoice === false) {
+          merged.selectedProviders = currentState.selectedProviders;
         }
         return merged;
       },
