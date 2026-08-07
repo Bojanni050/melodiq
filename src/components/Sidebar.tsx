@@ -239,16 +239,16 @@ export default function Sidebar({ credits }: SidebarProps) {
         />
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
-          <Link href="/discover" className="flex items-center gap-2">
-            <svg className="w-7 h-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+          <Link href="/discover" className="flex items-center gap-2.5">
+            <svg className="w-10 h-10 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
-                <span className="text-lg font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                   MelodIQ
                 </span>
-                <span className="text-[10px] text-white/45 tracking-wide">
+                <span className="text-xs text-white/45 tracking-wide">
                   Create. Refine. Produce.
                 </span>
                 {buildVersion && (
@@ -375,14 +375,14 @@ export default function Sidebar({ credits }: SidebarProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 h-13.25">
         <div className="flex items-center justify-between px-4 h-full">
           <Link href="/discover" className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-8 h-8 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
+              <span className="text-lg font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
                 MelodIQ
               </span>
-              <span className="text-[9px] text-white/45 tracking-wide">
+              <span className="text-[11px] text-white/45 tracking-wide">
                 Create. Refine. Produce.
               </span>
               {buildVersion && (
