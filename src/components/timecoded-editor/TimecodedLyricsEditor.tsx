@@ -520,13 +520,6 @@ export default function TimecodedLyricsEditor({
           />
         )}
 
-        {/* ── Import panel ────────────────── */}
-        {showImport && (
-          <div className="tce-import-section">
-            <ImportPanel onImport={handleImport} />
-          </div>
-        )}
-
         {/* ── AI Toolbar ──────────────────── */}
         {hasLines && (
           <AIToolbar
@@ -538,20 +531,28 @@ export default function TimecodedLyricsEditor({
           />
         )}
 
-        {/* ── Editor table ────────────────── */}
-        <div className="tce-editor-area">
-          <EditorTable
-            lines={lines}
-            activeLineId={activeLineId}
-            selectedIds={selectedIds}
-            dirtyIds={dirtyIds}
-            wordTimingClearedIds={wordTimingClearedIds}
-            searchMatches={searchMatches}
-            activeMatchLineId={activeMatchLineId}
-            onTextChange={handleTextChange}
-            onActivate={setActiveLineId}
-            onToggleSelect={handleToggleSelect}
-          />
+        {/* ── Import panel + editor table ─── */}
+        <div className={`tce-editor-columns${hasLines ? "" : " tce-editor-columns--empty"}`}>
+          {showImport && (
+            <div className="tce-import-section">
+              <ImportPanel onImport={handleImport} />
+            </div>
+          )}
+
+          <div className={`tce-editor-area${!hasLines && !showImport ? " tce-editor-area--full" : ""}`}>
+            <EditorTable
+              lines={lines}
+              activeLineId={activeLineId}
+              selectedIds={selectedIds}
+              dirtyIds={dirtyIds}
+              wordTimingClearedIds={wordTimingClearedIds}
+              searchMatches={searchMatches}
+              activeMatchLineId={activeMatchLineId}
+              onTextChange={handleTextChange}
+              onActivate={setActiveLineId}
+              onToggleSelect={handleToggleSelect}
+            />
+          </div>
         </div>
 
         {/* ── Export panel ────────────────── */}
