@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
+import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 
@@ -66,6 +68,11 @@ export default function DiscoverPage() {
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
+  const showTrackDetailsPanel = usePlayerStore((s) => s.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((s) => s.setShowTrackDetailsPanel);
+  const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
+  const [selectedTrack, setSelectedTrack] = useState<TrackDetailTrack | null>(null);
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const user = useUserStore((s) => s.user);
@@ -157,6 +164,14 @@ export default function DiscoverPage() {
     };
   }, [authChecked, isLoggedIn]);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
+  }, [rightPanelWidth]);
+
+  useEffect(() => {
+    if (isLoggedIn) setShowTrackDetailsPanel(true);
+  }, [isLoggedIn, setShowTrackDetailsPanel]);
+
   const totalTrackCount = myTracks.length;
   const topPlayedTracks = [...myTracks]
     .filter((track) => track.status === "done")
@@ -181,6 +196,31 @@ export default function DiscoverPage() {
   }
 
   function handlePlayMyTrack(track: MyTrack) {
+    setSelectedTrack({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      lyrics: track.lyrics,
+      lyricsTimestamps: track.lyricsTimestamps,
+      status: track.status as "pending" | "generating" | "done" | "failed",
+      audioUrl: track.audioUrl,
+      audioUrlHd: track.audioUrlHd,
+      format: track.format,
+      formatHd: track.formatHd,
+      duration: track.duration,
+      createdAt: track.createdAt,
+      error: track.error,
+      s3KeyHd: track.s3KeyHd,
+      coverUrl: myTrackCoverSrc(track),
+      s3KeyCover: track.s3KeyCover,
+      rating: track.rating,
+      instrumental: track.instrumental,
+      artistName: track.artistName,
+    });
+    setShowTrackDetailsPanel(true);
+
     if (currentTrack?.id === track.id) {
       setGlobalIsPlaying(!globalIsPlaying);
       return;
@@ -210,6 +250,55 @@ export default function DiscoverPage() {
       playCount: track.playCount,
       rating: track.rating,
     });
+  }
+
+  function handleCloseTrackDetails() {
+    setShowTrackDetailsPanel(false);
+  }
+
+  function handleDetailPlay(url: string) {
+    if (!selectedTrack) return;
+    const track = myTracks.find((t) => t.id === selectedTrack.id);
+    if (!track) return;
+    if (currentTrack?.id === track.id) {
+      setGlobalIsPlaying(!globalIsPlaying);
+      return;
+    }
+    playTrackFromGesture({
+      id: track.id,
+      title: track.title,
+      provider: track.provider,
+      providerModel: track.providerModel,
+      prompt: track.prompt,
+      status: track.status as "pending" | "generating" | "done" | "failed",
+      audioUrl: url,
+      audioUrlHd: track.audioUrlHd,
+      s3Key: track.s3Key,
+      s3KeyHd: track.s3KeyHd,
+      format: track.format,
+      formatHd: track.formatHd,
+      duration: track.duration,
+      lyrics: track.lyrics,
+      lyricsTimestamps: track.lyricsTimestamps,
+      createdAt: track.createdAt,
+      error: track.error,
+      coverUrl: myTrackCoverSrc(track),
+      s3KeyCover: track.s3KeyCover,
+      artistName: track.artistName,
+      instrumental: track.instrumental,
+      playCount: track.playCount,
+      rating: track.rating,
+    });
+  }
+
+  function handleDownloadTrack(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
+      : (selectedTrack?.format ?? "mp3");
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
   }
 
   function MyTrackCard({ track }: { track: MyTrack }) {
@@ -359,12 +448,13 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+    <div className="h-screen bg-[#0a0a0f] text-white overflow-hidden">
       {isLoggedIn && <Sidebar credits={null} />}
-      <main
-        className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
-        style={isLoggedIn ? { paddingLeft: sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
+      <div
+        className={isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" : "min-h-screen flex"}
+        style={isLoggedIn ? { marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
       >
+      <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
         {authChecked && !isLoggedIn && (
           <header className="mb-8 flex items-center gap-2">
             <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
@@ -376,7 +466,7 @@ export default function DiscoverPage() {
           </header>
         )}
 
-        <div className="mx-auto max-w-5xl space-y-8 pb-16">
+        <div className="space-y-8 pb-16">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/35">Overview</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Discover</h1>
@@ -404,11 +494,11 @@ export default function DiscoverPage() {
                 )}
               </div>
               {myTracksLoading ? (
-                <p className="text-sm text-white/50">Loading…</p>
+                <p className="text-sm text-white/50">Loadingâ€¦</p>
               ) : topPlayedTracks.length > 0 ? (
                 <>
                   <p className="text-xs text-white/40">Top {topPlayedTracks.length} most played</p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {topPlayedTracks.map((track) => (
                       <MyTrackCard key={track.id} track={track} />
                     ))}
@@ -431,7 +521,7 @@ export default function DiscoverPage() {
                 </Link>
               </div>
               <p className="text-xs text-white/40">Your {recentTracks.length} latest track{recentTracks.length !== 1 ? "s" : ""}</p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {recentTracks.map((track) => (
                   <MyTrackCard key={track.id} track={track} />
                 ))}
@@ -440,13 +530,13 @@ export default function DiscoverPage() {
           )}
 
           {loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-white/50">Loadingâ€¦</p>
           ) : (
             <>
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">Current Trends</h2>
                 {trending.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {trending.map((track) => (
                       <TrackCard key={track.id} track={track} />
                     ))}
@@ -459,7 +549,7 @@ export default function DiscoverPage() {
               {publishedPlaylists.length > 0 && (
                 <section className="space-y-3">
                   <h2 className="text-base font-semibold">Published Playlists</h2>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {publishedPlaylists.map((playlist) => (
                       <Link
                         key={playlist.id}
@@ -489,7 +579,7 @@ export default function DiscoverPage() {
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">Published Tracks</h2>
                 {published.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {published.map((track) => (
                       <TrackCard key={track.id} track={track} />
                     ))}
@@ -502,6 +592,28 @@ export default function DiscoverPage() {
           )}
         </div>
       </main>
+
+      {isLoggedIn && (
+        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+          <div className="h-full overflow-y-auto pb-4">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={handleCloseTrackDetails}
+                onPlay={handleDetailPlay}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Play one of your tracks to show its info and lyrics here.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
+      )}
+      </div>
     </div>
   );
 }

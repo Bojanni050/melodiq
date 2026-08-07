@@ -1051,8 +1051,23 @@ export default function ArchivePage() {
               {filtered.map((entry) => {
                 const playable = entryToTrack(entry);
                 const isCurrent = currentTrack?.id === entry.trackId;
+                const isDetailSelected = showTrackDetailsPanel && !!entry.trackId && selectedTrack?.id === entry.trackId;
                 return (
-                  <div key={entry.id} className="section-card space-y-3">
+                  <div
+                    key={entry.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenTrackDetails(entry)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleOpenTrackDetails(entry);
+                      }
+                    }}
+                    className={`section-card space-y-3 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 focus-visible:outline-offset-1 ${
+                      isDetailSelected ? "bg-white/[0.11] border border-white/15" : "hover:bg-white/[0.04]"
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       {/* Cover + play button */}
                       <div className="flex items-start gap-3">
@@ -1130,7 +1145,7 @@ export default function ArchivePage() {
                         />
                         <button
                           type="button"
-                          onClick={() => setDeleteTarget(entry)}
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(entry); }}
                           className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           aria-label="Delete entry"
                         >
@@ -1142,7 +1157,7 @@ export default function ArchivePage() {
                     </div>
 
                     {(entry.translations || []).length > 0 && (
-                      <div className="space-y-1.5 pl-3 border-l-2 border-white/5">
+                      <div className="space-y-1.5 pl-3 border-l-2 border-white/5" onClick={(e) => e.stopPropagation()}>
                         {entry.translations!.map((translation) => (
                           <TranslationRow
                             key={translation.id}
@@ -1195,7 +1210,7 @@ export default function ArchivePage() {
 
                     <button
                       type="button"
-                      onClick={() => setEditingTarget({ mode: "new-translation", parentId: entry.id, parentTitle: entry.title })}
+                      onClick={(e) => { e.stopPropagation(); setEditingTarget({ mode: "new-translation", parentId: entry.id, parentTitle: entry.title }); }}
                       className="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
