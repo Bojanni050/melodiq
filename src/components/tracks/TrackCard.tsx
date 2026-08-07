@@ -249,33 +249,57 @@ const TrackCard = memo(function TrackCard({
   });
   const tclAutoJumpToEditor = appSettings?.TCL_AUTO_JUMP_EDITOR !== "false";
 
+  function failTclGeneration(message: string) {
+    setGeneratingTcl(false);
+    setTclError(message);
+    setTimeout(() => setTclError(null), 5000);
+  }
+
   async function handleGenerateTclClick() {
-    if (tclAutoJumpToEditor) {
-      router.push(`/timecoded-editor/${track.id}`);
-      return;
-    }
     setGeneratingTcl(true);
     setTclError(null);
-    let failure: string | null = null;
     try {
       const res = await fetch(`/api/tracks/${track.id}/generate-tcl`, { method: "POST" });
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        failure = body?.error || "Time-coded lyrics generation failed";
-      } else {
-        void mutate("/api/tracks");
-        window.dispatchEvent(new CustomEvent("tracks-changed"));
+        failTclGeneration(body?.error || "Time-coded lyrics generation failed");
+        return;
       }
     } catch (error) {
-      console.error("Failed to generate time-coded lyrics:", error);
-      failure = "Network error — could not reach the server.";
-    } finally {
-      setGeneratingTcl(false);
-      if (failure) {
-        setTclError(failure);
-        setTimeout(() => setTclError(null), 5000);
-      }
+      console.error("Failed to start time-coded lyrics generation:", error);
+      failTclGeneration("Network error — could not reach the server.");
+      return;
     }
+
+    // QuickLRC alignment runs in the background (can take up to ~90s) — poll
+    // trackAlignments.status instead of blocking on the HTTP request, which
+    // would otherwise risk tripping a reverse-proxy gateway timeout.
+    const startedAt = Date.now();
+    const poll = async () => {
+      if (Date.now() - startedAt > 180_000) {
+        failTclGeneration("Time-coded lyrics generation is taking longer than expected — check back shortly.");
+        return;
+      }
+      try {
+        const res = await fetch(`/api/tracks/${track.id}/generate-tcl`);
+        const data = await res.json().catch(() => null);
+        if (data?.status === "done") {
+          setGeneratingTcl(false);
+          void mutate("/api/tracks");
+          window.dispatchEvent(new CustomEvent("tracks-changed"));
+          if (tclAutoJumpToEditor) router.push(`/timecoded-editor/${track.id}`);
+          return;
+        }
+        if (data?.status === "failed") {
+          failTclGeneration(data?.error || "Time-coded lyrics generation failed");
+          return;
+        }
+      } catch {
+        // transient network hiccup — keep polling rather than aborting the wait
+      }
+      setTimeout(poll, 4000);
+    };
+    setTimeout(poll, 4000);
   }
 
   async function handleAnalyzeComposition() {
@@ -780,6 +804,9 @@ const TrackCard = memo(function TrackCard({
             {track.instrumental && (
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-violet-300/30 bg-violet-400/10 text-violet-200 shrink-0" title="No vocals">Instrumental</span>
             )}
+            {track.isCollaboration && (
+              <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-cyan-300/30 bg-cyan-400/10 text-cyan-200 shrink-0" title="Made together with another artist">Collaboration</span>
+            )}
             {isUploadedTrack && (
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">Uploaded</span>
             )}
@@ -1115,6 +1142,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&
     prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
     prevProps.track.instrumental === nextProps.track.instrumental &&
+    prevProps.track.isCollaboration === nextProps.track.isCollaboration &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
     prevProps.workspaceById?.size === nextProps.workspaceById?.size
   );

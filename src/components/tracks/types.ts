@@ -36,6 +36,7 @@ export interface TrackItem {
   composerName?: string | null;
   writerName?: string | null;
   instrumental?: boolean | null;
+  isCollaboration?: boolean | null;
   language?: string | null;
   translatedLyrics?: string | null;
   translatedLanguage?: string | null;

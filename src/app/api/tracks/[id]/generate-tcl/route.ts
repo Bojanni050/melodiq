@@ -2,21 +2,12 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, users } from "@/db/schema";
+import { tracks, users, trackAlignments } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { generateTimeCodedLyrics } from "@/lib/tcl/generate";
+import { beginTimeCodedLyricsGeneration, runTimeCodedLyricsAlignment } from "@/lib/tcl/generate";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await requireAuth();
-  if (auth instanceof NextResponse) return auth;
-  const { userId } = auth;
-
-  const { id } = await params;
-
+async function authorizeTrack(id: string, userId: string) {
   const [track] = await db
     .select({ userId: tracks.userId, status: tracks.status })
     .from(tracks)
@@ -24,7 +15,7 @@ export async function POST(
     .limit(1);
 
   if (!track) {
-    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+    return { error: NextResponse.json({ error: "Track not found" }, { status: 404 }) };
   }
 
   const [userRow] = await db
@@ -36,17 +27,70 @@ export async function POST(
   const isAdmin = userRow?.role === "admin";
   const isOwner = track.userId === userId;
   if (!isAdmin && !isOwner) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  if (track.status !== "done") {
+  return { track };
+}
+
+/** Current alignment status — the client polls this instead of waiting on
+ * the POST response, since the alignment itself runs in the background. */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { id } = await params;
+
+  const { error } = await authorizeTrack(id, auth.userId);
+  if (error) return error;
+
+  const [alignment] = await db
+    .select({ status: trackAlignments.status, error: trackAlignments.error, confidence: trackAlignments.confidence })
+    .from(trackAlignments)
+    .where(eq(trackAlignments.trackId, id))
+    .limit(1);
+
+  return NextResponse.json(alignment ?? { status: "none" });
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+  const { id } = await params;
+
+  const { error, track } = await authorizeTrack(id, auth.userId);
+  if (error) return error;
+
+  if (track!.status !== "done") {
     return NextResponse.json({ error: "Track isn't ready yet" }, { status: 400 });
   }
 
-  const result = await generateTimeCodedLyrics(id);
-  if (!result.success) {
-    return NextResponse.json({ error: result.error || "Generation failed" }, { status: 502 });
+  const [existing] = await db
+    .select({ status: trackAlignments.status })
+    .from(trackAlignments)
+    .where(eq(trackAlignments.trackId, id))
+    .limit(1);
+
+  if (existing?.status === "processing") {
+    return NextResponse.json({ started: false, status: "processing" }, { status: 202 });
   }
 
-  return NextResponse.json(result);
+  const begin = await beginTimeCodedLyricsGeneration(id);
+  if (!begin.ok) {
+    return NextResponse.json({ error: begin.error }, { status: 400 });
+  }
+
+  // Fire-and-forget: QuickLRC alignment can take up to ~90s, well past most
+  // reverse-proxy gateway timeouts. The "processing" row is already
+  // persisted at this point, so the client can safely start polling GET.
+  void runTimeCodedLyricsAlignment(id).catch((err) => {
+    console.error(`[generate-tcl] background alignment failed for track ${id}:`, err);
+  });
+
+  return NextResponse.json({ started: true, status: "processing" }, { status: 202 });
 }

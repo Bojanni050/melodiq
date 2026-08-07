@@ -44,17 +44,21 @@ export function toLyricsTimestampsMirror(doc: TclDocument): string {
   });
 }
 
-export async function generateTimeCodedLyrics(songId: string): Promise<GenerateTimeCodedLyricsResult> {
+/** Validates the track and marks it "processing" — fast, synchronous work
+ * that's safe to await directly in an API route before responding. */
+export async function beginTimeCodedLyricsGeneration(
+  songId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, songId)).limit(1);
   if (!track) {
-    return { success: false, error: "Track not found" };
+    return { ok: false, error: "Track not found" };
   }
   if (!track.lyrics || !track.lyrics.trim()) {
-    return { success: false, error: "No lyrics available for this track" };
+    return { ok: false, error: "No lyrics available for this track" };
   }
   const audioKey = track.s3Key || track.s3KeyHd;
   if (!audioKey) {
-    return { success: false, error: "No finished audio available for this track" };
+    return { ok: false, error: "No finished audio available for this track" };
   }
 
   await db
@@ -69,6 +73,23 @@ export async function generateTimeCodedLyrics(songId: string): Promise<GenerateT
       target: trackAlignments.trackId,
       set: { status: "processing", engine: "quicklrc", error: null, updatedAt: new Date() },
     });
+
+  return { ok: true };
+}
+
+/** Runs the actual (slow, up to ~90s) alignment call and persists the
+ * result. Callers should kick this off without awaiting it — a reverse
+ * proxy's gateway timeout would otherwise likely trip before QuickLRC
+ * responds — and have clients poll trackAlignments.status instead. */
+export async function runTimeCodedLyricsAlignment(songId: string): Promise<GenerateTimeCodedLyricsResult> {
+  const [track] = await db.select().from(tracks).where(eq(tracks.id, songId)).limit(1);
+  if (!track || !track.lyrics) {
+    return { success: false, error: "Track not found" };
+  }
+  const audioKey = track.s3Key || track.s3KeyHd;
+  if (!audioKey) {
+    return { success: false, error: "No finished audio available for this track" };
+  }
 
   try {
     const audioUrl = await getPresignedUrl(audioKey, 900);

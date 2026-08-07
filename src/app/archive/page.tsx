@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
+import TrackList from "@/components/TrackList";
+import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { usePlayerStore, useSidebarStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useSidebarStore, useStudioStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
+import type { TrackItem } from "@/components/tracks/types";
 
 interface ArchiveEntry {
   id: string;
@@ -531,7 +535,10 @@ function EntryTrackActionsMenu({
   );
 }
 
+type MasterTracksTab = "master" | "published" | "all";
+
 export default function ArchivePage() {
+  const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -552,6 +559,89 @@ export default function ArchivePage() {
   const [togglingPublishIds, setTogglingPublishIds] = useState<Set<string>>(new Set());
   const [advancedDnaRunningIds, setAdvancedDnaRunningIds] = useState<Set<string>>(new Set());
   const [advancedDnaResults, setAdvancedDnaResults] = useState<Record<string, { lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>>({});
+
+  const [activeTab, setActiveTab] = useState<MasterTracksTab>("master");
+  const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
+  const [tracksLoading, setTracksLoading] = useState(true);
+  const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
+
+  const knownArtistNames = useMemo(() => {
+    const names = new Set<string>();
+    allTracks.forEach((t) => { if (t.artistName) names.add(t.artistName); });
+    return Array.from(names).sort();
+  }, [allTracks]);
+
+  const knownComposerNames = useMemo(() => {
+    const names = new Set<string>();
+    allTracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    return Array.from(names).sort();
+  }, [allTracks]);
+
+  const knownWriterNames = useMemo(() => {
+    const names = new Set<string>();
+    allTracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
+    return Array.from(names).sort();
+  }, [allTracks]);
+
+  const publishedTracks = useMemo(
+    () => allTracks.filter((t) => t.releaseStatus === "published"),
+    [allTracks],
+  );
+
+  const tabTracks = activeTab === "published" ? publishedTracks : allTracks;
+
+  const fetchAllTracks = useCallback(async () => {
+    const res = await fetch("/api/tracks?status=done");
+    if (res.ok) {
+      const data = await res.json();
+      setAllTracks((data.tracks || []).map((t: TrackItem) => ({ ...t })));
+    }
+    setTracksLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void fetchAllTracks();
+    void loadPlaylists();
+  }, [fetchAllTracks, loadPlaylists]);
+
+  useEffect(() => {
+    function onTracksChanged() {
+      void fetchAllTracks();
+    }
+    window.addEventListener("tracks-changed", onTracksChanged);
+    return () => window.removeEventListener("tracks-changed", onTracksChanged);
+  }, [fetchAllTracks]);
+
+  function handleDeleteTabTrack(trackId: string) {
+    setAllTracks((current) => current.filter((track) => track.id !== trackId));
+  }
+
+  function performReusePrompt(track: TrackItem) {
+    sessionStorage.setItem(
+      "melodiq-reuse-prompt-payload",
+      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+    );
+    router.push("/studio");
+  }
+
+  function handleReusePrompt(track: TrackItem) {
+    const { songIdea, lyrics } = useStudioStore.getState();
+    if (songIdea.trim() || lyrics.trim()) {
+      setReuseConfirmTrack(track);
+      return;
+    }
+    performReusePrompt(track);
+  }
+
+  function handleTabDetailPlay(url: string) {
+    if (!selectedTrack) return;
+    const track = allTracks.find((t) => t.id === selectedTrack.id);
+    if (!track) return;
+    clearQueue();
+    playTrackFromGesture({ ...track, s3Key: null, audioUrl: url });
+  }
 
   const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -803,76 +893,143 @@ export default function ArchivePage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Master Tracks</h1>
-                  {entries.length > 0 && (
+                  {activeTab === "master" && entries.length > 0 && (
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
                       {entries.length} {entries.length === 1 ? "track" : "tracks"}{playableTracks.length > 0 ? ` · ${playableTracks.length} playable` : ""}
                     </span>
                   )}
+                  {activeTab !== "master" && tabTracks.length > 0 && (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                      {tabTracks.length} {tabTracks.length === 1 ? "track" : "tracks"}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-white/40">
-                  Your definitive lyrics &amp; prompt per song — one source of truth.
+                  {activeTab === "master"
+                    ? "Your definitive lyrics & prompt per song — one source of truth."
+                    : activeTab === "published"
+                      ? "All tracks currently published to Discover."
+                      : "Every finished track in your library."}
                 </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Play All */}
-                {playableTracks.length > 0 && (
+                <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
                   <button
                     type="button"
-                    onClick={handlePlayAll}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
-                    title="Play all master tracks"
+                    onClick={() => setActiveTab("master")}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "master" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                    </svg>
-                    Play All
+                    Master
                   </button>
-                )}
-
-                {/* Shuffle toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShuffle((v) => !v)}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    shuffle
-                      ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                      : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
-                  }`}
-                  title="Shuffle"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </button>
-
-                {/* Repeat toggle */}
-                <button
-                  type="button"
-                  onClick={() => setRepeat((v) => !v)}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    repeat
-                      ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                      : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
-                  }`}
-                  title="Repeat"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-
-                {/* New entry */}
-                <button
-                  type="button"
-                  onClick={() => setEditingTarget({ mode: "new-original" })}
-                  className="btn-primary text-sm px-3 py-1.5"
-                >
-                  + New
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("published")}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "published" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                  >
+                    Published
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("all")}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "all" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                  >
+                    All
+                  </button>
+                </div>
               </div>
+              {activeTab === "master" && (
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Play All */}
+                  {playableTracks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePlayAll}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
+                      title="Play all master tracks"
+                    >
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                      </svg>
+                      Play All
+                    </button>
+                  )}
+
+                  {/* Shuffle toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setShuffle((v) => !v)}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      shuffle
+                        ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                        : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                    }`}
+                    title="Shuffle"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                  </button>
+
+                  {/* Repeat toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setRepeat((v) => !v)}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      repeat
+                        ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                        : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                    }`}
+                    title="Repeat"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+
+                  {/* New entry */}
+                  <button
+                    type="button"
+                    onClick={() => setEditingTarget({ mode: "new-original" })}
+                    className="btn-primary text-sm px-3 py-1.5"
+                  >
+                    + New
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 
+          {activeTab !== "master" ? (
+            <div className="max-w-[80%] mx-auto">
+              {tracksLoading ? (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+              ) : (
+                <TrackList
+                  tracks={tabTracks}
+                  autoQueueAfterPlay
+                  onReusePrompt={handleReusePrompt}
+                  onSelect={(track) => {
+                    setSelectedTrack(track);
+                    setShowTrackDetailsPanel(true);
+                  }}
+                  onDelete={handleDeleteTabTrack}
+                  onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
+                  playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
+                  onTitleUpdate={(trackId, newTitle) =>
+                    setAllTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
+                  }
+                  onEditDetails={(track) =>
+                    setEditingTrack({
+                      ...track,
+                      coverUrl: track.coverUrl ?? null,
+                      s3KeyCover: track.s3KeyCover ?? null,
+                      rating: track.rating ?? null,
+                    })
+                  }
+                  selectedTrackId={selectedTrack?.id ?? null}
+                />
+              )}
+            </div>
+          ) : (
+          <>
           {/* Search */}
           <input
             type="text"
@@ -1052,6 +1209,8 @@ export default function ArchivePage() {
             </div>
           )}
           </div>
+          </>
+          )}
         </div>
         </main>
 
@@ -1062,7 +1221,7 @@ export default function ArchivePage() {
                 mode="sidebar"
                 track={selectedTrack}
                 onClose={handleCloseTrackDetails}
-                onPlay={handleDetailPlay}
+                onPlay={activeTab === "master" ? handleDetailPlay : handleTabDetailPlay}
                 onDownload={handleDownloadTrack}
               />
             ) : (
@@ -1080,7 +1239,7 @@ export default function ArchivePage() {
           <TrackDetail
             track={selectedTrack}
             onClose={handleCloseTrackDetails}
-            onPlay={handleDetailPlay}
+            onPlay={activeTab === "master" ? handleDetailPlay : handleTabDetailPlay}
             onDownload={handleDownloadTrack}
             mode="overlay"
           />
@@ -1089,6 +1248,70 @@ export default function ArchivePage() {
 
       {editingTarget && (
         <EntryEditor target={editingTarget} onClose={() => setEditingTarget(null)} onSaved={handleSaved} />
+      )}
+
+      {editingTrack && (
+        <TrackEditPanel
+          track={editingTrack}
+          knownArtistNames={knownArtistNames}
+          knownComposerNames={knownComposerNames}
+          knownWriterNames={knownWriterNames}
+          onClose={() => setEditingTrack(null)}
+          onSaved={(updated) => {
+            const normalized: TrackItem = {
+              ...updated,
+              coverUrl: updated.coverUrl ?? null,
+              s3KeyCover: updated.s3KeyCover ?? null,
+              rating: updated.rating ?? null,
+            };
+            setAllTracks((prev) => prev.map((t) => (t.id === normalized.id ? { ...t, ...normalized } : t)));
+            setSelectedTrack((prev) => (prev?.id === normalized.id ? { ...prev, ...normalized } : prev));
+            usePlayerStore.getState().syncTrackSnapshots([{ ...normalized, s3Key: null }]);
+          }}
+        />
+      )}
+
+      {reuseConfirmTrack && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+          onClick={() => setReuseConfirmTrack(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-amber-100">
+                  De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const track = reuseConfirmTrack;
+                      setReuseConfirmTrack(null);
+                      if (track) performReusePrompt(track);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+                  >
+                    Doorgaan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReuseConfirmTrack(null)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {deleteTarget && (

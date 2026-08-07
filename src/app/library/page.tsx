@@ -141,6 +141,8 @@ interface LibraryTrack {
   providerModel: string;
   prompt: string;
   lyrics: string | null;
+  instrumental?: boolean | null;
+  isCollaboration?: boolean | null;
   status: "pending" | "generating" | "done" | "failed";
   audioUrl: string | null;
   audioUrlHd: string | null;

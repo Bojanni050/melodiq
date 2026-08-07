@@ -70,6 +70,7 @@ export const tracks = pgTable("tracks", {
   translatedLyrics: text("translated_lyrics"),
   translatedLanguage: varchar("translated_language", { length: 50 }),
   instrumental: boolean("instrumental").default(false).notNull(),
+  isCollaboration: boolean("is_collaboration").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),
   audioUrlHd: text("audio_url_hd"),

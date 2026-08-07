@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "lyrics_timestamps" text,
   "language" varchar(50),
   "instrumental" boolean NOT NULL DEFAULT false,
+  "is_collaboration" boolean NOT NULL DEFAULT false,
   "status" varchar(20) NOT NULL DEFAULT 'pending',
   "audio_url" text,
   "audio_url_hd" text,
@@ -276,6 +277,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS advanced_dna text;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_open_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_collaboration boolean NOT NULL DEFAULT false;
 ALTER TABLE track_stems ADD COLUMN IF NOT EXISTS completed_at timestamp;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");

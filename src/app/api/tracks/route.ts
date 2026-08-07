@@ -355,6 +355,7 @@ export async function GET(request: NextRequest) {
     translatedLyrics: tracks.translatedLyrics,
     translatedLanguage: tracks.translatedLanguage,
     instrumental: tracks.instrumental,
+    isCollaboration: tracks.isCollaboration,
     status: tracks.status,
     audioUrl: tracks.audioUrl,
     audioUrlHd: tracks.audioUrlHd,

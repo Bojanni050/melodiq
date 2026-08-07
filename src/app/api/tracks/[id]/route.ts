@@ -708,6 +708,7 @@ export async function PATCH(
     const composerName = body.composerName;
     const writerName = body.writerName;
     const instrumental = body.instrumental;
+    const isCollaboration = body.isCollaboration;
     const language = body.language;
     const provider = body.provider;
     const duration = body.duration;
@@ -724,7 +725,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -840,6 +841,13 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid instrumental value" }, { status: 400 });
       }
       updates.instrumental = instrumental;
+    }
+
+    if (isCollaboration !== undefined) {
+      if (typeof isCollaboration !== "boolean") {
+        return NextResponse.json({ error: "Invalid isCollaboration value" }, { status: 400 });
+      }
+      updates.isCollaboration = isCollaboration;
     }
 
     if (language !== undefined) {

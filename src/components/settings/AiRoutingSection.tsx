@@ -191,9 +191,10 @@ export default function AiRoutingSection({
             <div>
               <label className="block text-sm font-medium text-white/50">Auto-open Lyrics Editor after generating TCL</label>
               <p className="text-xs text-white/25 mt-1 max-w-md">
-                On: &ldquo;Generate Time-Coded Lyrics&rdquo; from a track&apos;s menu jumps straight into the
-                Timecoded Lyrics Editor. Off: it generates in place — a progress indicator shows on the track
-                while it runs, and the result shows up on the track card when it&apos;s done.
+                &ldquo;Generate Time-Coded Lyrics&rdquo; from a track&apos;s menu always generates in place first
+                (a progress indicator shows on the track while it runs). On: once it&apos;s done, you&apos;re
+                taken straight into the Timecoded Lyrics Editor, ready to play. Off: it just shows up on the
+                track card when it&apos;s done.
               </p>
             </div>
             <button

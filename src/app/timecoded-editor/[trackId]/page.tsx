@@ -7,7 +7,6 @@ import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks, users, trackAlignments } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getPresignedUrl } from "@/lib/s3";
 import type { TclDocument } from "@/lib/tcl/types";
 
 export const metadata: Metadata = {
@@ -104,8 +103,14 @@ export default async function TimecodedEditorTrackPage({ params }: Props) {
     tclDocument = undefined;
   }
 
+  // Proxied through our own origin (not a direct presigned S3 URL) — the
+  // WaveformPanel's WaveSurfer instance fetches+decodes the audio itself to
+  // render the waveform, which requires CORS headers the S3-compatible
+  // bucket doesn't send for cross-origin requests. Same-origin sidesteps that.
   const audioKey = track.s3Key || track.s3KeyHd;
-  const audioUrl = audioKey ? await getPresignedUrl(audioKey, 3600) : undefined;
+  const audioUrl = audioKey
+    ? `/api/tracks/${trackId}/download${!track.s3Key && track.s3KeyHd ? "?hd=true" : ""}`
+    : undefined;
 
   return (
     <TimecodedLyricsEditor

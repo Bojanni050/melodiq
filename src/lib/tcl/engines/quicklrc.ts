@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
-import { parseTtml } from "../ttml";
+import { parseTtmlWords, regroupWordsByLyricsLines } from "../ttml";
 import type { AlignmentEngine, AlignmentInput } from "../engine";
 import type { TclDocument } from "../types";
 
@@ -42,7 +42,13 @@ export const quicklrcEngine: AlignmentEngine = {
     }
 
     const xml = typeof response.data === "string" ? response.data : String(response.data);
-    const doc = parseTtml(xml);
+    // QuickLRC's word-level TTML has one <p> per WORD, not per line — the
+    // original lyrics' line breaks are the only source of line boundaries.
+    const words = parseTtmlWords(xml);
+    if (words.length === 0) {
+      throw new Error("QuickLRC returned no aligned words");
+    }
+    const doc = regroupWordsByLyricsLines(words, lyrics);
 
     if (doc.lines.length === 0) {
       throw new Error("QuickLRC returned no aligned lines");

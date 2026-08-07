@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
+import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { usePlayerStore, usePlaylistStore, useSidebarStore, useUserStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useSidebarStore, useStudioStore, useUserStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
 
@@ -39,6 +40,8 @@ export default function PlaylistDetailPage() {
   const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const [isEditingPlaylistOrder, setIsEditingPlaylistOrder] = useState(false);
   const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +86,24 @@ export default function PlaylistDetailPage() {
     [playlistTracks],
   );
 
+  const knownArtistNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.artistName) names.add(t.artistName); });
+    return Array.from(names).sort();
+  }, [tracks]);
+
+  const knownComposerNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    return Array.from(names).sort();
+  }, [tracks]);
+
+  const knownWriterNames = useMemo(() => {
+    const names = new Set<string>();
+    tracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
+    return Array.from(names).sort();
+  }, [tracks]);
+
   useEffect(() => {
     if (!showTrackDetailsPanel) return;
 
@@ -123,6 +144,24 @@ export default function PlaylistDetailPage() {
   function handleDeleteTrack(trackId: string) {
     setTracks((current) => current.filter((track) => track.id !== trackId));
   }
+
+  function performReusePrompt(track: TrackItem) {
+    sessionStorage.setItem(
+      "melodiq-reuse-prompt-payload",
+      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+    );
+    router.push("/studio");
+  }
+
+  function handleReusePrompt(track: TrackItem) {
+    const { songIdea, lyrics } = useStudioStore.getState();
+    if (songIdea.trim() || lyrics.trim()) {
+      setReuseConfirmTrack(track);
+      return;
+    }
+    performReusePrompt(track);
+  }
+
 
   function handleSelectTrack(track: TrackItem) {
     setSelectedTrack(track);
@@ -334,11 +373,21 @@ export default function PlaylistDetailPage() {
                   }}
                   onSelect={handleSelectTrack}
                   onDelete={handleDeleteTrack}
+                  onReusePrompt={handleReusePrompt}
                   onAddToPlaylist={(trackId, targetPlaylistId, options) => addTrackToPlaylist(targetPlaylistId, trackId, options)}
                   playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
                   onTitleUpdate={(trackId, newTitle) =>
                     setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                   }
+                  onEditDetails={(track) =>
+                    setEditingTrack({
+                      ...track,
+                      coverUrl: track.coverUrl ?? null,
+                      s3KeyCover: track.s3KeyCover ?? null,
+                      rating: track.rating ?? null,
+                    })
+                  }
+                  selectedTrackId={selectedTrack?.id ?? null}
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
@@ -378,6 +427,70 @@ export default function PlaylistDetailPage() {
             onDownload={handleDownloadTrack}
             mode="overlay"
           />
+        </div>
+      )}
+
+      {editingTrack && (
+        <TrackEditPanel
+          track={editingTrack}
+          knownArtistNames={knownArtistNames}
+          knownComposerNames={knownComposerNames}
+          knownWriterNames={knownWriterNames}
+          onClose={() => setEditingTrack(null)}
+          onSaved={(updated) => {
+            const normalized: TrackItem = {
+              ...updated,
+              coverUrl: updated.coverUrl ?? null,
+              s3KeyCover: updated.s3KeyCover ?? null,
+              rating: updated.rating ?? null,
+            };
+            setTracks((prev) => prev.map((t) => (t.id === normalized.id ? { ...t, ...normalized } : t)));
+            setSelectedTrack((prev) => (prev?.id === normalized.id ? { ...prev, ...normalized } : prev));
+            usePlayerStore.getState().syncTrackSnapshots([{ ...normalized, s3Key: null }]);
+          }}
+        />
+      )}
+
+      {reuseConfirmTrack && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+          onClick={() => setReuseConfirmTrack(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-amber-100">
+                  De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const track = reuseConfirmTrack;
+                      setReuseConfirmTrack(null);
+                      if (track) performReusePrompt(track);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+                  >
+                    Doorgaan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReuseConfirmTrack(null)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

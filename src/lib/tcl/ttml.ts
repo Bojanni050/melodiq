@@ -90,6 +90,78 @@ export function parseTtml(xml: string): TclDocument {
   return { version: 1, lines };
 }
 
+/** QuickLRC's word-level TTML output (isWordLevel: true) puts every WORD in
+ * its own top-level <p>, with no line grouping at all — unlike normal TTML
+ * where <p> is a line and words are nested <span>s. Parses that flat form. */
+export function parseTtmlWords(xml: string): { word: string; start: number; end: number }[] {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    textNodeName: "#text",
+    trimValues: true,
+  });
+
+  const root: any = parser.parse(xml);
+  const tt = root?.tt ?? root;
+  const body = tt?.body ?? {};
+  const divs = asArray<Record<string, unknown>>(body.div);
+  const paragraphs = divs.flatMap((div) => asArray<Record<string, unknown>>(div?.p as any));
+
+  return paragraphs
+    .map((p) => ({
+      word: textOf(p).trim(),
+      start: parseTtmlTime(p["@_begin"]),
+      end: parseTtmlTime(p["@_end"]),
+    }))
+    .filter((w) => w.word.length > 0);
+}
+
+/** Reconstructs line-level TclLines from QuickLRC's flat, timestamped word
+ * list by chunking it according to the original lyrics' own line breaks —
+ * QuickLRC's word-level TTML carries no line boundaries of its own, so the
+ * source lyrics (which QuickLRC force-aligns word-for-word) are the only
+ * place that information still exists. */
+export function regroupWordsByLyricsLines(
+  words: { word: string; start: number; end: number }[],
+  lyrics: string
+): TclDocument {
+  const lyricsLines = lyrics
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith("["));
+
+  const lines: TclLine[] = [];
+  let cursor = 0;
+
+  for (const lyricLine of lyricsLines) {
+    const wordCount = lyricLine.split(/\s+/).filter(Boolean).length;
+    const lineWords = words.slice(cursor, cursor + wordCount);
+    cursor += wordCount;
+    if (lineWords.length === 0) continue;
+
+    lines.push({
+      start: lineWords[0].start,
+      end: lineWords[lineWords.length - 1].end,
+      text: lyricLine,
+      words: lineWords,
+    });
+  }
+
+  // ASR produced more words than the source lyrics had — append them as a
+  // trailing line rather than silently dropping them.
+  if (cursor < words.length) {
+    const leftover = words.slice(cursor);
+    lines.push({
+      start: leftover[0].start,
+      end: leftover[leftover.length - 1].end,
+      text: leftover.map((w) => w.word).join(" "),
+      words: leftover,
+    });
+  }
+
+  return { version: 1, lines };
+}
+
 export function serializeTtml(doc: TclDocument): string {
   const paragraphs = doc.lines.map((line) => {
     if (line.words.length > 0) {
