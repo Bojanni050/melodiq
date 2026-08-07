@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, usePlaylistStore } from "@/lib/store";
+import { useSidebarStore, usePlaylistStore, useUserStore } from "@/lib/store";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
@@ -12,6 +13,13 @@ type Track = {
   coverUrl: string | null;
   s3KeyCover?: string | null;
 };
+
+interface PublicPlaylist {
+  id: string;
+  name: string;
+  description: string | null;
+  trackCount: number;
+}
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -28,6 +36,8 @@ function hashString(value: string) {
 export default function PlaylistsPage() {
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const user = useUserStore((s) => s.user);
+  const isListener = user?.role === "listener" || user?.role == null;
   const isQHD = useSidebarStore((s) => s.isQHD);
   const { playlists, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
 
@@ -40,7 +50,24 @@ export default function PlaylistsPage() {
   const [uploadingPlaylistCover, setUploadingPlaylistCover] = useState(false);
   const [editingDescriptionPlaylistId, setEditingDescriptionPlaylistId] = useState<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
   const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchPublishedPlaylists() {
+      const res = await fetch("/api/discover/playlists");
+      if (!active) return;
+      if (res.ok) {
+        const data = await res.json();
+        setPublishedPlaylists(data.playlists || []);
+      }
+    }
+    fetchPublishedPlaylists();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -164,8 +191,8 @@ export default function PlaylistsPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <main className={`flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${isListener ? "lg:pt-20" : "lg:pt-5"}`}>
           <div className="max-w-400 mx-auto space-y-6">
             <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
               <div className="flex flex-col gap-2">
@@ -178,6 +205,40 @@ export default function PlaylistsPage() {
             </section>
 
             <section className="space-y-5">
+              {publishedPlaylists.length > 0 && (
+                <div className="space-y-4 mb-10 pt-4">
+                  <h2 className="text-xl font-semibold tracking-tight text-white">Admin Playlists</h2>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {publishedPlaylists.map((playlist) => (
+                      <Link
+                        key={playlist.id}
+                        href={`/discover/playlist/${playlist.id}`}
+                        className="group flex flex-col gap-3 rounded-[26px] border border-white/10 bg-[#0f1017] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition-colors hover:border-white/20"
+                      >
+                        <div className="flex aspect-4/3 w-full items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-600/40 to-primary-900/40 overflow-hidden relative">
+                          <svg className="h-12 w-12 text-white/50 transition-transform duration-500 group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                          <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-semibold text-white">{playlist.name}</h3>
+                          {playlist.description && (
+                            <p className="truncate text-sm text-white/50 mt-0.5">{playlist.description}</p>
+                          )}
+                        </div>
+                        <div className="mt-auto flex items-center justify-between">
+                          <p className="text-sm text-white/40">
+                            {playlist.trackCount} {playlist.trackCount === 1 ? "song" : "songs"}
+                          </p>
+                          <span className="text-sm text-white/60 transition-colors group-hover:text-white">View</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
                   {playlists.length} playlists

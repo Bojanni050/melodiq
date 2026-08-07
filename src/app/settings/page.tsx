@@ -375,7 +375,7 @@ export default function SettingsPage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="px-6 py-10 mx-auto max-w-7xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Settings</h1>
           <div className="mt-8 flex flex-col lg:flex-row gap-6 max-w-5xl">

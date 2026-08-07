@@ -725,7 +725,7 @@ export default function ArchivePage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <div className="px-4 py-5 space-y-6">
           {/* Header card — matching library style */}
           <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">

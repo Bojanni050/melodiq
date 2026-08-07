@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore } from "@/lib/store";
+import { useSidebarStore, useUserStore } from "@/lib/store";
 
 interface User {
   id: string;
@@ -48,6 +48,8 @@ export default function AccountPage() {
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const authUser = useUserStore((s) => s.user);
+  const isListener = authUser?.role === "listener" || authUser?.role == null;
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,7 +179,7 @@ export default function AccountPage() {
     return (
       <div className="h-screen bg-[#0a0a0f] overflow-hidden">
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height))]" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="flex items-center justify-center h-full">
             <p className="text-white/50">Loading...</p>
           </div>
@@ -189,8 +191,8 @@ export default function AccountPage() {
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="px-6 py-10 max-w-4xl mx-auto">
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <main className={`px-6 max-w-4xl mx-auto ${isListener ? "pb-10 pt-20" : "py-10"}`}>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Account</h1>
 
           {/* Tabs */}

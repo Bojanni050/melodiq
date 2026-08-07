@@ -912,8 +912,8 @@ export default function LibraryPage() {
       )}
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <main className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${isListener ? "lg:pt-20" : "lg:pt-5"}`}>
           <div className="max-w-400 mx-auto space-y-6">
 
             {/* Header */}
@@ -1138,7 +1138,7 @@ export default function LibraryPage() {
             className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
           />
 
-          <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height))] w-full max-w-140 border-r border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+          <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-140 border-r border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
             <div className="flex h-full flex-col">
               <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div>

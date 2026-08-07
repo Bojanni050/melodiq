@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Player from "@/components/Player";
 import { useDpadNavigation } from "@/hooks/useDpadNavigation";
+import NonAdminHeader from "@/components/NonAdminHeader";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   useDpadNavigation();
@@ -11,6 +12,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
+      {!isPopupWindow && <NonAdminHeader />}
       {children}
       {!isPopupWindow && <Player />}
     </>

@@ -146,7 +146,7 @@ export default function StyleStudioPage() {
 
   return (
     <div
-      className="flex h-[calc(100vh-var(--player-height))] bg-[#0d0d12] text-white overflow-hidden"
+      className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden"
       style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}
     >
       <Sidebar credits={credits} />
