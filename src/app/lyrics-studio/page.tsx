@@ -598,10 +598,10 @@ export default function LyricsStudioPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}>
+    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={credits} />
 
-      <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">
+      <main className="flex-1 flex flex-col overflow-hidden pt-[65px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
             <LyricsNotice notice={notice} onClose={() => setNotice(null)} />
