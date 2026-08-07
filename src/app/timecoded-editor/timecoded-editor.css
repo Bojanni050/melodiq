@@ -1125,3 +1125,125 @@ mark.tce-match-active {
     max-height: 92vh;
   }
 }
+
+/* ── Word-timing-cleared badge ───────────────────────────────── */
+.tce-word-timing-cleared {
+  position: absolute;
+  bottom: 0.2rem;
+  right: 0.5rem;
+  font-size: 0.65rem;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  white-space: nowrap;
+}
+
+/* ── Generate CTA shell (no track_alignments row yet) ───────────── */
+.tce-generate-shell {
+  max-width: 32rem;
+  margin: 4rem auto;
+  padding: 2rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tce-generate-shell p {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 1rem 0 1.5rem;
+}
+
+.tce-generate-cta__error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+/* ── Waveform panel ──────────────────────────────────────────── */
+.tce-waveform {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tce-waveform__controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tce-waveform__time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tce-waveform__speed,
+.tce-waveform__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tce-waveform__speed select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: white;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.tce-waveform__track {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tce-waveform__lyrics {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.tce-waveform__line {
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 150ms, color 150ms;
+}
+
+.tce-waveform__line:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tce-waveform__line--active {
+  color: white;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.tce-waveform__word {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+.tce-waveform__word:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tce-waveform__word--active {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.25);
+  font-weight: 600;
+}

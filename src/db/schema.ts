@@ -189,6 +189,39 @@ export const trackMastersRelations = relations(trackMasters, ({ one }) => ({
   }),
 }));
 
+// Time Coded Lyrics — forced-alignment result, generated separately from
+// tracks.lyrics/lyricsTimestamps so the source lyrics stay untouched. One
+// row per track (upsert on regenerate). `tcl` holds the canonical generic
+// TclDocument JSON (see src/lib/tcl/types.ts); `engine` records which
+// alignment engine produced it, kept swappable per src/lib/tcl/engine.ts.
+export const trackAlignments = pgTable("track_alignments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  trackId: uuid("track_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending|processing|done|failed
+  engine: varchar("engine", { length: 30 }).default("quicklrc").notNull(),
+  confidence: real("confidence"),
+  tcl: text("tcl"),
+  error: text("error"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("track_alignments_track_id_unique").on(table.trackId),
+  index("track_alignments_user_id_idx").on(table.userId),
+]);
+
+export const trackAlignmentsRelations = relations(trackAlignments, ({ one }) => ({
+  track: one(tracks, {
+    fields: [trackAlignments.trackId],
+    references: [tracks.id],
+  }),
+  user: one(users, {
+    fields: [trackAlignments.userId],
+    references: [users.id],
+  }),
+}));
+
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),

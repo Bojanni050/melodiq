@@ -111,6 +111,13 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "GET",
   },
+  quicklrc: {
+    // No dedicated "whoami" endpoint is documented; an empty body is missing
+    // the required fileUrl and returns 400 for a valid key, 401 for an invalid one.
+    url: "https://www.quicklrc.com/api/v1/transcribe",
+    keyPrefix: "",
+    method: "POST",
+  },
 };
 
 export async function POST(request: Request) {
@@ -210,6 +217,13 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         message: "Connected — APIMart API key is valid (test task id not found, as expected).",
+      });
+    }
+
+    if (provider === "quicklrc" && status === 400) {
+      return NextResponse.json({
+        success: true,
+        message: "Connected — QuickLRC API key is valid (test request rejected with 400 validation, expected).",
       });
     }
 

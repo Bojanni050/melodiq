@@ -9,6 +9,8 @@ import React, {
 } from "react";
 import { parseLyrics, type LyricLine } from "@/lib/timecoded-editor/LyricsParser";
 import { serializeLyrics } from "@/lib/timecoded-editor/LyricsSerializer";
+import { tclToLyricLines, lyricLinesToTcl } from "@/lib/timecoded-editor/TclConverters";
+import type { TclDocument } from "@/lib/tcl/types";
 import {
   validatePatch,
   applyPatch,
@@ -30,6 +32,7 @@ import EditorTable from "./EditorTable";
 import ExportPanel from "./ExportPanel";
 import ImportPanel from "./ImportPanel";
 import SearchReplacePanel from "./SearchReplacePanel";
+import WaveformPanel from "./WaveformPanel";
 
 const AUTOSAVE_KEY = "melodiq-tce-draft";
 const AUTOSAVE_DELAY = 1200;
@@ -37,8 +40,12 @@ const AUTOSAVE_DELAY = 1200;
 interface TimecodedLyricsEditorProps {
   /** If provided, the editor loads this track's lyricsTimestamps and can save back */
   trackId?: string;
-  /** Pre-loaded raw timecoded lyrics (from a track row) */
+  /** Pre-loaded raw timecoded lyrics (from a track row) — ignored when tclDocument is provided */
   initialRaw?: string;
+  /** Forced-alignment result for this track — enables waveform playback + word-level exports */
+  tclDocument?: TclDocument;
+  /** Presigned audio URL for the track, required for the waveform panel */
+  audioUrl?: string;
 }
 
 type Toast = { id: string; type: "success" | "error" | "info" | "warning"; message: string };
@@ -51,9 +58,18 @@ const history = new HistoryManager();
 export default function TimecodedLyricsEditor({
   trackId,
   initialRaw,
+  tclDocument,
+  audioUrl,
 }: TimecodedLyricsEditorProps) {
+  // The alignment result never changes for the lifetime of this session —
+  // only used as the "original" reference for word-timing preservation.
+  const originalTclDocRef = useRef<TclDocument | undefined>(tclDocument);
+
   // ── Core state ──────────────────────────────────────────────
   const [lines, setLines] = useState<LyricLine[]>(() => {
+    if (tclDocument) {
+      return tclToLyricLines(tclDocument);
+    }
     if (initialRaw) {
       try { return parseLyrics(initialRaw); } catch { /* ignore */ }
     }
@@ -68,6 +84,15 @@ export default function TimecodedLyricsEditor({
   });
 
   const [originalLines, setOriginalLines] = useState<LyricLine[]>(lines);
+
+  // ── Live TCL doc (recomputed from `lines`) — feeds the waveform panel,
+  // word-level exports, and the "word timing cleared" badges. ──────────
+  const { doc: liveTclDoc, dirtyLineIds: wordTimingClearedIds } = useMemo(() => {
+    if (!originalTclDocRef.current) {
+      return { doc: undefined as TclDocument | undefined, dirtyLineIds: new Set<number>() };
+    }
+    return lyricLinesToTcl(lines, originalTclDocRef.current);
+  }, [lines]);
   const [activeLineId, setActiveLineId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
@@ -230,11 +255,15 @@ export default function TimecodedLyricsEditor({
     if (!trackId) return;
     setIsSavingToTrack(true);
     try {
-      const lyricsTimestamps = serializeLyrics(lines);
-      const res = await fetch("/api/timecoded-editor/save", {
+      const usesTcl = !!originalTclDocRef.current;
+      const res = await fetch(usesTcl ? "/api/timecoded-editor/save-tcl" : "/api/timecoded-editor/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trackId, lyricsTimestamps }),
+        body: JSON.stringify(
+          usesTcl
+            ? { trackId, tcl: liveTclDoc }
+            : { trackId, lyricsTimestamps: serializeLyrics(lines) }
+        ),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -474,6 +503,11 @@ export default function TimecodedLyricsEditor({
           </div>
         </div>
 
+        {/* ── Waveform panel ──────────────── */}
+        {audioUrl && liveTclDoc && (
+          <WaveformPanel audioUrl={audioUrl} doc={liveTclDoc} />
+        )}
+
         {/* ── Search panel ────────────────── */}
         {showSearch && (
           <SearchReplacePanel
@@ -511,6 +545,7 @@ export default function TimecodedLyricsEditor({
             activeLineId={activeLineId}
             selectedIds={selectedIds}
             dirtyIds={dirtyIds}
+            wordTimingClearedIds={wordTimingClearedIds}
             searchMatches={searchMatches}
             activeMatchLineId={activeMatchLineId}
             onTextChange={handleTextChange}
@@ -527,6 +562,8 @@ export default function TimecodedLyricsEditor({
               trackId={trackId}
               isSaving={isSavingToTrack}
               onSaveToTrack={trackId ? handleSaveToTrack : undefined}
+              tclDocument={liveTclDoc}
+              wordTimingClearedIds={wordTimingClearedIds}
             />
           </div>
         )}

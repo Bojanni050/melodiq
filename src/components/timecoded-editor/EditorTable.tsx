@@ -10,6 +10,7 @@ interface EditorTableProps {
   activeLineId: number | null;
   selectedIds: Set<number>;
   dirtyIds: Set<number>;
+  wordTimingClearedIds?: Set<number>;
   searchMatches: SearchMatch[];
   activeMatchLineId: number | null;
   onTextChange: (id: number, text: string) => void;
@@ -22,6 +23,7 @@ export default function EditorTable({
   activeLineId,
   selectedIds,
   dirtyIds,
+  wordTimingClearedIds,
   searchMatches,
   activeMatchLineId,
   onTextChange,
@@ -116,6 +118,7 @@ export default function EditorTable({
             isActive={line.id === activeLineId}
             isSelected={selectedIds.has(line.id)}
             isDirty={dirtyIds.has(line.id)}
+            wordTimingCleared={wordTimingClearedIds?.has(line.id)}
             searchMatches={matchesByLine.get(line.id) ?? []}
             activeMatchLineId={activeMatchLineId}
             onTextChange={onTextChange}

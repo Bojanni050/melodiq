@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import TimecodedLyricsEditor from "@/components/timecoded-editor/TimecodedLyricsEditor";
+import GenerateTclButton from "@/components/timecoded-editor/GenerateTclButton";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
-import { tracks, users } from "@/db/schema";
+import { tracks, users, trackAlignments } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getPresignedUrl } from "@/lib/s3";
+import type { TclDocument } from "@/lib/tcl/types";
 
 export const metadata: Metadata = {
   title: "Timecoded Lyrics Editor — MelodIQ",
@@ -43,7 +46,10 @@ export default async function TimecodedEditorTrackPage({ params }: Props) {
   const [track] = await db
     .select({
       userId: tracks.userId,
-      lyricsTimestamps: tracks.lyricsTimestamps,
+      lyrics: tracks.lyrics,
+      status: tracks.status,
+      s3Key: tracks.s3Key,
+      s3KeyHd: tracks.s3KeyHd,
     })
     .from(tracks)
     .where(eq(tracks.id, trackId))
@@ -56,10 +62,56 @@ export default async function TimecodedEditorTrackPage({ params }: Props) {
     redirect("/timecoded-editor");
   }
 
+  const [alignment] = await db
+    .select({ status: trackAlignments.status, tcl: trackAlignments.tcl })
+    .from(trackAlignments)
+    .where(eq(trackAlignments.trackId, trackId))
+    .limit(1);
+
+  const hasAlignment = alignment?.status === "done" && !!alignment.tcl;
+
+  if (!hasAlignment) {
+    const audioKey = track.s3Key || track.s3KeyHd;
+    const canGenerate = !!track.lyrics?.trim() && track.status === "done" && !!audioKey;
+
+    return (
+      <div className="tce-root">
+        <div className="tce-generate-shell">
+          <h1 className="tce-title">
+            <span className="tce-title__icon">🎵</span>
+            Timecoded Lyrics Editor
+          </h1>
+          {canGenerate ? (
+            <>
+              <p>No time-coded lyrics have been generated for this track yet.</p>
+              <GenerateTclButton trackId={trackId} />
+            </>
+          ) : (
+            <p>
+              This track needs both finished audio and lyrics before time-coded
+              lyrics can be generated.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  let tclDocument: TclDocument | undefined;
+  try {
+    tclDocument = JSON.parse(alignment!.tcl!) as TclDocument;
+  } catch {
+    tclDocument = undefined;
+  }
+
+  const audioKey = track.s3Key || track.s3KeyHd;
+  const audioUrl = audioKey ? await getPresignedUrl(audioKey, 3600) : undefined;
+
   return (
     <TimecodedLyricsEditor
       trackId={trackId}
-      initialRaw={track.lyricsTimestamps ?? undefined}
+      tclDocument={tclDocument}
+      audioUrl={audioUrl}
     />
   );
 }

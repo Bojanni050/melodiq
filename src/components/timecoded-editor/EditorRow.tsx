@@ -9,6 +9,8 @@ interface EditorRowProps {
   isActive: boolean;
   isSelected: boolean;
   isDirty: boolean;
+  /** True when this line's word-level timing was cleared because its text changed. */
+  wordTimingCleared?: boolean;
   searchMatches: SearchMatch[];
   /** lineId of the currently focused search match (for highlighting) */
   activeMatchLineId: number | null;
@@ -55,6 +57,7 @@ export default function EditorRow({
   isActive,
   isSelected,
   isDirty,
+  wordTimingCleared,
   searchMatches,
   activeMatchLineId,
   onTextChange,
@@ -119,6 +122,15 @@ export default function EditorRow({
         />
         {isDirty && (
           <span className="tce-dirty-dot" title="Unsaved changes" aria-label="Unsaved" />
+        )}
+        {wordTimingCleared && (
+          <span
+            className="tce-word-timing-cleared"
+            title="Word-level timing cleared for this line — text was edited since alignment"
+            aria-label="Word timing cleared"
+          >
+            ⚠ word timing cleared
+          </span>
         )}
       </div>
     </div>

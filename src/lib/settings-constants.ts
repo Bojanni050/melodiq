@@ -224,6 +224,20 @@ export const PROVIDERS: ProviderConfig[] = [
     ],
     testEndpoint: "apimart",
   },
+  {
+    id: "quicklrc",
+    name: "QuickLRC",
+    description: "Forced-alignment engine for Time Coded Lyrics generation",
+    fields: [
+      {
+        key: "QUICKLRC_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "qlrc_...",
+      },
+    ],
+    testEndpoint: "quicklrc",
+  },
 ];
 
 export const WEBHOOK_DEFAULTS = [
