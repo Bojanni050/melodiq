@@ -53,7 +53,7 @@ export default function FullscreenPlayer({
   // Crossfade on track switch: snapshot the outgoing track's visual and let it
   // fade out on top of the (already fully rendered) incoming track, instead of
   // blanking out and fading the new content back in.
-  type TrackVisual = { coverUrl: string | null; title: string; artist: string };
+  type TrackVisual = { coverUrl: string | null; title: string; artist: string; publishDate?: string; writerName?: string; composerName?: string };
   const [outgoingVisual, setOutgoingVisual] = useState<TrackVisual | null>(null);
   const [outgoingFading, setOutgoingFading] = useState(false);
   const lastTrackIdRef = useRef<string | null>(null);
@@ -246,7 +246,14 @@ export default function FullscreenPlayer({
 
   useEffect(() => {
     const trackId = currentTrack?.id ?? null;
-    const visual: TrackVisual = { coverUrl, title: cleanTitle || currentTrack?.prompt.substring(0, 50) || "", artist: artistLabel };
+    const visual: TrackVisual = { 
+      coverUrl, 
+      title: cleanTitle || currentTrack?.prompt.substring(0, 50) || "", 
+      artist: artistLabel,
+      publishDate: currentTrack?.publishDate,
+      writerName: currentTrack?.writerName,
+      composerName: currentTrack?.composerName
+    };
     if (lastTrackIdRef.current && trackId && lastTrackIdRef.current !== trackId && lastVisualRef.current) {
       if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);
       if (outgoingTimersRef.current.timeout) clearTimeout(outgoingTimersRef.current.timeout);
@@ -353,17 +360,17 @@ export default function FullscreenPlayer({
       `}</style>
       {coverUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center blur-[90px] opacity-45 saturate-150"
+          className="absolute inset-0 bg-cover bg-center blur-[120px] opacity-60 saturate-[2.5]"
           style={{
             backgroundImage: `url(${coverUrl})`,
-            transform: bgZoom ? undefined : "scale(1.15)",
+            transform: bgZoom ? undefined : "scale(1.25)",
             animation: bgZoom ? "fsZoom 22s ease-in-out infinite" : undefined,
           }}
         />
       )}
       {outgoingVisual?.coverUrl && (
         <div
-          className={`absolute inset-0 bg-cover bg-center blur-[90px] opacity-45 saturate-150 transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
+          className={`absolute inset-0 bg-cover bg-center blur-[120px] opacity-60 saturate-[2.5] transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
           style={{ backgroundImage: `url(${outgoingVisual.coverUrl})` }}
         />
       )}
@@ -441,16 +448,23 @@ export default function FullscreenPlayer({
             <div
               className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/85 backdrop-blur-xl pointer-events-none transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
             >
-              <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96">
+              <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                 {outgoingVisual.coverUrl ? (
-                  <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                  <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                 ) : (
                   <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 border border-white/10" />
                 )}
               </div>
-              <div className="text-center">
+              <div className="text-center mt-4">
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">{outgoingVisual.title}</h3>
                 {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-white/50">{outgoingVisual.artist}</p>}
+                {outgoingVisual.publishDate && (
+                  <p className="mt-1 text-xs text-white/40">
+                    {new Date(outgoingVisual.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </p>
+                )}
+                {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">Written by {outgoingVisual.writerName}</p>}
+                {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">Composed by {outgoingVisual.composerName}</p>}
               </div>
             </div>
           )}
@@ -458,12 +472,12 @@ export default function FullscreenPlayer({
           {/* Cover art when no lyrics or lyrics hidden */}
           {(!showLyrics || !lyricsVisible) && (
             <div className="shrink-0 flex flex-col items-center justify-center gap-4 transition-all duration-500">
-              <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 transition-all duration-500">
+              <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative transition-all duration-500">
                 {coverUrl ? (
                   <img
                     src={coverUrl}
                     alt="Album art"
-                    className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50"
+                    className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]"
                   />
                 ) : (
                   <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
@@ -473,12 +487,18 @@ export default function FullscreenPlayer({
                   </div>
                 )}
               </div>
-              <div className="text-center">
+              <div className="text-center mt-4">
                 <h3 className={`font-semibold text-white/90 leading-snug transition-all duration-500 ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
                   {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                 </h3>
                 {artistLabel && <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>{artistLabel}</p>}
-                {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                {currentTrack?.publishDate && (
+                  <p className="mt-1 text-xs text-white/40">
+                    {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </p>
+                )}
+                {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
+                {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
               </div>
             </div>
           )}
@@ -490,9 +510,9 @@ export default function FullscreenPlayer({
                 /* Timed: cover art on left, lyrics scrolling on right */
                 <div className="flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4 py-8">
                   <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
-                    <div className="w-52 h-52 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] transition-all duration-500">
+                    <div className="w-56 h-56 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] relative transition-all duration-500">
                       {coverUrl ? (
-                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                       ) : (
                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
                           <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,7 +521,7 @@ export default function FullscreenPlayer({
                         </div>
                       )}
                     </div>
-                    <div className="text-center max-w-sm">
+                    <div className="text-center max-w-sm mt-4">
                       <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
@@ -531,12 +551,12 @@ export default function FullscreenPlayer({
                           key={index}
                           ref={isActive ? activeLineRef : null}
                           onClick={() => handleLineClick(line.startTime)}
-                          className={`cursor-pointer transition-all duration-500 origin-center py-1 text-base sm:text-2xl md:text-3xl lg:text-4xl leading-relaxed ${
+                          className={`cursor-pointer transition-all duration-500 origin-center py-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-tight ${
                             isActive
-                              ? "text-primary-400 font-bold scale-105 filter drop-shadow-[0_0_12px_rgba(255,133,80,0.45)] opacity-100"
+                              ? "text-white font-extrabold scale-[1.02] filter drop-shadow-2xl opacity-100"
                               : isPlayed
-                              ? "text-white/45 font-medium hover:text-white/80"
-                              : "text-white/20 font-medium hover:text-white/60"
+                              ? "text-white/30 font-bold hover:text-white/70"
+                              : "text-white/15 font-bold hover:text-white/50"
                           }`}
                         >
                           {line.text}
@@ -552,9 +572,9 @@ export default function FullscreenPlayer({
                   <div className="flex-1 min-w-0 min-h-0 h-full overflow-y-auto py-6 [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
                     <div className={`grid gap-4 lg:gap-8 w-fit mx-auto ${columnCount === 1 ? "grid-cols-1" : columnCount === 2 ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
                       {columns.map((column, colIndex) => (
-                        <div key={colIndex} className="space-y-1.5 text-center w-44 sm:w-52 lg:w-60">
+                        <div key={colIndex} className="space-y-3 text-center w-52 sm:w-64 lg:w-72">
                           {column.map((line, lineIndex) => (
-                            <p key={lineIndex} className="text-white/80 text-sm leading-relaxed">
+                            <p key={lineIndex} className="text-white/80 text-base md:text-lg font-medium leading-relaxed">
                               {line}
                             </p>
                           ))}
@@ -564,9 +584,9 @@ export default function FullscreenPlayer({
                   </div>
                   {/* Cover art to the right — stays put while lyrics scroll */}
                   <div className="shrink-0 flex flex-col items-center gap-3 py-6 self-start lg:self-center">
-                    <div className="w-60 h-60 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
+                    <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[26rem] lg:h-[26rem] xl:w-[30rem] xl:h-[30rem] relative">
                       {coverUrl ? (
-                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                       ) : (
                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
                           <svg className="w-20 h-20 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,12 +595,18 @@ export default function FullscreenPlayer({
                         </div>
                       )}
                     </div>
-                    <div className="text-center">
+                    <div className="text-center mt-4">
                       <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {artistLabel && <p className="mt-1 text-sm text-white/50">{artistLabel}</p>}
-                      {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                      {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                      {currentTrack?.publishDate && (
+                        <p className="mt-1 text-xs text-white/40">
+                          {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                        </p>
+                      )}
+                      {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
                     </div>
                   </div>
                 </div>
