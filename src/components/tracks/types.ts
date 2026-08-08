@@ -33,6 +33,7 @@ export interface TrackItem {
   pollsCloseAt?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
+  artistId?: string | null;
   composerName?: string | null;
   writerName?: string | null;
   instrumental?: boolean | null;

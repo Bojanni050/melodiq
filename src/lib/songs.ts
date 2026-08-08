@@ -14,6 +14,7 @@ export type PublicTrackSummary = {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  lyrics: string | null;
   lyricsTimestamps: string | null;
 };
 
@@ -35,12 +36,14 @@ function toPublicTrackSummary(
     totalPlays: track.playCount + track.othersPlayCount,
     instrumental: track.instrumental,
     publishDate: track.publishDate ? track.publishDate.toISOString() : null,
+    lyrics: track.lyrics || null,
     lyricsTimestamps: track.lyricsTimestamps || null,
   };
 }
 
-// Public, cross-user: every individually published track. Never includes
-// lyrics/prompt/trackDna — those stay private.
+// Public, cross-user: every individually published track. Includes lyrics
+// (normal + time-coded) so listeners can view them read-only; never includes
+// prompt/trackDna — those stay private.
 export async function getPublishedTracksFeed(limit = 50): Promise<PublicTrackSummary[]> {
   const rows = await db
     .select()

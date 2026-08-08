@@ -35,6 +35,9 @@ interface TrackActionMenuProps {
   togglingPublish?: boolean;
   onGenerateTclClick?: () => void;
   generatingTcl?: boolean;
+  /** Listeners get a stripped-down menu: only queue/playlist/artist actions. */
+  isListener?: boolean;
+  onGoToArtist?: () => void;
 }
 
 export default function TrackActionMenu({
@@ -64,6 +67,8 @@ export default function TrackActionMenu({
   togglingPublish,
   onGenerateTclClick,
   generatingTcl,
+  isListener,
+  onGoToArtist,
 }: TrackActionMenuProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +107,44 @@ export default function TrackActionMenu({
 
       {menuOpen && (
         <div className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5">
+          {isListener ? (
+            <>
+              {onGoToArtist && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onGoToArtist();
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Go to Artist
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToQueue?.(track);
+                  setMenuOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              >
+                Add to queue
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onOpenPlaylistPicker();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+              >
+                <span>Add to playlist</span>
+                <span className="text-white/30">›</span>
+              </button>
+            </>
+          ) : (
+          <>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -330,6 +373,8 @@ export default function TrackActionMenu({
                 </button>
               ))}
             </>
+          )}
+          </>
           )}
         </div>
       )}

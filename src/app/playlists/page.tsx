@@ -4,14 +4,34 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, usePlaylistStore, useUserStore } from "@/lib/store";
+import TrackDetail from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
+import { useSidebarStore, usePlaylistStore, useUserStore, usePlayerStore } from "@/lib/store";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
 type Track = {
   id: string;
+  title: string | null;
+  provider: string;
+  providerModel: string;
+  prompt: string;
+  lyrics: string | null;
+  status: "pending" | "generating" | "done" | "failed";
+  audioUrl: string | null;
+  audioUrlHd: string | null;
+  format: string | null;
+  formatHd: string | null;
+  duration: number | null;
+  createdAt: string;
+  error: string | null;
+  s3KeyHd: string | null;
   coverUrl: string | null;
-  s3KeyCover?: string | null;
+  s3KeyCover: string | null;
+  rating?: string | null;
+  playCount?: number | null;
+  othersPlayCount?: number | null;
+  lyricsTimestamps?: string | null;
 };
 
 interface PublicPlaylist {
@@ -52,6 +72,97 @@ export default function PlaylistsPage() {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
   const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
+
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+
+  useEffect(() => {
+    setShowTrackDetailsPanel(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!showTrackDetailsPanel) return;
+
+    setSelectedTrack((prev) => {
+      if (prev) {
+        const found = tracks.find((t) => t.id === prev.id);
+        if (found) return found;
+        return prev;
+      }
+      if (currentTrack) {
+        const found = tracks.find((t) => t.id === currentTrack.id);
+        if (found) return found;
+        return currentTrack as unknown as Track;
+      }
+      return null;
+    });
+  }, [showTrackDetailsPanel, tracks, currentTrack]);
+
+  const prevIsPlaying = useRef(isPlaying);
+  const prevCurrentTrackId = useRef(currentTrack?.id);
+
+  useEffect(() => {
+    const playResumed = isPlaying && !prevIsPlaying.current;
+    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
+
+    prevIsPlaying.current = isPlaying;
+    prevCurrentTrackId.current = currentTrack?.id;
+
+    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const matched = tracks.find((t) => t.id === currentTrack.id);
+        return matched || (currentTrack as unknown as Track);
+      });
+    }
+  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
+
+  function handleCloseTrackDetails() {
+    setShowTrackDetailsPanel(false);
+  }
+
+  function handlePlayTrack(url: string) {
+    if (!selectedTrack) return;
+
+    const player = usePlayerStore.getState();
+    player.playTrackFromGesture({
+      id: selectedTrack.id,
+      title: selectedTrack.title,
+      provider: selectedTrack.provider,
+      providerModel: selectedTrack.providerModel,
+      prompt: selectedTrack.prompt,
+      status: selectedTrack.status,
+      audioUrl: url,
+      audioUrlHd: selectedTrack.audioUrlHd,
+      format: selectedTrack.format,
+      formatHd: selectedTrack.formatHd,
+      s3Key: null,
+      s3KeyHd: selectedTrack.s3KeyHd,
+      duration: selectedTrack.duration,
+      lyrics: selectedTrack.lyrics,
+      lyricsTimestamps: selectedTrack.lyricsTimestamps,
+      createdAt: selectedTrack.createdAt,
+      error: selectedTrack.error,
+      coverUrl: selectedTrack.coverUrl ?? null,
+      s3KeyCover: selectedTrack.s3KeyCover ?? null,
+    });
+  }
+
+  function handleDownloadTrack(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
+      : (selectedTrack?.format ?? "mp3");
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
+  }
 
   useEffect(() => {
     let active = true;
@@ -398,7 +509,38 @@ export default function PlaylistsPage() {
             </section>
           </div>
         </main>
+
+        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+          <div className="h-full overflow-y-auto">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={handleCloseTrackDetails}
+                onPlay={handlePlayTrack}
+                onDownload={handleDownloadTrack}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track or press play to show track info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
+
+      {showTrackDetailsPanel && selectedTrack && (
+        <div className="lg:hidden">
+          <TrackDetail
+            track={selectedTrack}
+            onClose={handleCloseTrackDetails}
+            onPlay={handlePlayTrack}
+            onDownload={handleDownloadTrack}
+            mode="overlay"
+          />
+        </div>
+      )}
 
       {coverPickerPlaylistId && (
         <div className="fixed inset-0 z-70">

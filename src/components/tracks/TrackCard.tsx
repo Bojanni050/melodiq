@@ -197,6 +197,7 @@ const TrackCard = memo(function TrackCard({
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const user = useUserStore((state) => state.user);
+  const isListenerRole = user?.role === "listener" || user?.role == null;
   const artistAlias = useUserStore((state) => state.user?.artistAlias);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
@@ -1017,6 +1018,8 @@ const TrackCard = memo(function TrackCard({
               togglingPublish={togglingPublish}
               onGenerateTclClick={canGenerateTcl ? handleGenerateTclClick : undefined}
               generatingTcl={generatingTcl}
+              isListener={isListenerRole}
+              onGoToArtist={track.artistId ? () => router.push(`/discover/artist/${track.artistId}`) : undefined}
             />
           )}
           {isOwner && (

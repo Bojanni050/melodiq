@@ -157,6 +157,7 @@ interface LibraryTrack {
   rating?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;
+  artistId?: string | null;
   composerName?: string | null;
   writerName?: string | null;
   deletedAt?: string | null;
@@ -312,17 +313,19 @@ export default function LibraryPage() {
       if (res.ok) {
         const data = await res.json();
         const published = (data.published || []).map((t: any) => ({
-          // Discover tracks only carry a PublicTrackSummary (no prompt/lyrics/
-          // audio fields). Normalize into a full LibraryTrack so TrackCard /
-          // TrackDetail / the player never hit undefined fields, and point the
-          // cover at the public discover route (the feed's /api/tracks/{id}/cover
-          // is an owner-only route and 404s for listeners).
+          // Discover tracks carry a PublicTrackSummary (no prompt/audio fields,
+          // but lyrics are included read-only). Normalize into a full
+          // LibraryTrack so TrackCard / TrackDetail / the player never hit
+          // undefined fields, and point the cover at the public discover route
+          // (the feed's /api/tracks/{id}/cover is an owner-only route and
+          // 404s for listeners).
           id: t.id,
           title: t.title ?? null,
           provider: "discover",
           providerModel: "discover",
           prompt: "",
-          lyrics: null,
+          lyrics: t.lyrics ?? null,
+          lyricsTimestamps: t.lyricsTimestamps ?? null,
           status: "done",
           audioUrl: null,
           audioUrlHd: null,
@@ -335,6 +338,7 @@ export default function LibraryPage() {
           coverUrl: `/api/discover/${t.id}/cover`,
           s3KeyCover: null,
           artistName: t.artistName ?? null,
+          artistId: t.artistId ?? null,
           instrumental: t.instrumental ?? false,
           createdAt: t.publishDate ?? new Date().toISOString(),
           // Mark as public source so playback routes through the discover API
