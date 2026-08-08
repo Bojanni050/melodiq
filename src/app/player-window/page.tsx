@@ -37,7 +37,7 @@ export default function PlayerWindowPage() {
 
   // Crossfade on track switch: snapshot the outgoing track's visual and let it
   // fade out on top of the (already fully rendered) incoming track.
-  type TrackVisual = { coverUrl: string | null; title: string; artist: string };
+  type TrackVisual = { coverUrl: string | null; title: string; artist: string; publishDate?: string; writerName?: string; composerName?: string };
   const [outgoingVisual, setOutgoingVisual] = useState<TrackVisual | null>(null);
   const [outgoingFading, setOutgoingFading] = useState(false);
   const lastTrackIdRef = useRef<string | null>(null);
@@ -176,7 +176,14 @@ export default function PlayerWindowPage() {
 
   useEffect(() => {
     const trackId = track?.id ?? null;
-    const visual: TrackVisual = { coverUrl, title: cleanTitle || track?.prompt.substring(0, 50) || "", artist: artistLabel };
+    const visual: TrackVisual = { 
+      coverUrl, 
+      title: cleanTitle || track?.prompt.substring(0, 50) || "", 
+      artist: artistLabel,
+      publishDate: track?.publishDate,
+      writerName: track?.writerName,
+      composerName: track?.composerName
+    };
     if (lastTrackIdRef.current && trackId && lastTrackIdRef.current !== trackId && lastVisualRef.current) {
       if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);
       if (outgoingTimersRef.current.timeout) clearTimeout(outgoingTimersRef.current.timeout);
@@ -324,34 +331,47 @@ export default function PlayerWindowPage() {
                 <div
                   className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/85 backdrop-blur-xl pointer-events-none transition-opacity duration-700 ease-out ${outgoingFading ? "opacity-0" : "opacity-100"}`}
                 >
-                  <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96">
+                  <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                     {outgoingVisual.coverUrl ? (
-                      <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                      <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                     ) : (
                       <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 border border-white/10" />
                     )}
                   </div>
-                  <div className="text-center">
+                  <div className="text-center mt-4">
                     <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">{outgoingVisual.title}</h3>
                     {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-white/50">{outgoingVisual.artist}</p>}
+                    {outgoingVisual.publishDate && (
+                      <p className="mt-1 text-xs text-white/40">
+                        {new Date(outgoingVisual.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                      </p>
+                    )}
+                    {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">Written by {outgoingVisual.writerName}</p>}
+                    {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">Composed by {outgoingVisual.composerName}</p>}
                   </div>
                 </div>
               )}
               {(!showLyrics || !lyricsVisible) && (
                 <div className="shrink-0 flex flex-col items-center justify-center gap-4">
-                  <div className="w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96">
+                  <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                     {coverUrl ? (
-                      <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                      <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                     ) : (
                       <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                     )}
                   </div>
-                  <div className="text-center">
+                  <div className="text-center mt-4">
                     <h3 className={`font-semibold text-white/90 leading-snug ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
                       {cleanTitle || track.prompt.substring(0, 50)}
                     </h3>
                     {artistLabel && <p className="mt-1 text-sm sm:text-base text-white/50">{artistLabel}</p>}
-                    {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                    {track.publishDate && (
+                      <p className="mt-1 text-xs text-white/40">
+                        {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                      </p>
+                    )}
+                    {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
+                    {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
                   </div>
                 </div>
               )}
@@ -362,9 +382,9 @@ export default function PlayerWindowPage() {
                     /* Timed: cover art + meta on left, lyrics scrolling on right */
                     <div className="flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-6 lg:gap-16 w-full h-full max-w-[1600px] px-4 py-8">
                       <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
-                        <div className="w-44 h-44 sm:w-52 sm:h-52 lg:w-72 lg:h-72 xl:w-80 xl:h-80">
+                        <div className="w-56 h-56 sm:w-64 sm:h-64 lg:w-96 lg:h-96 xl:w-[26rem] xl:h-[26rem] relative">
                           {coverUrl ? (
-                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                           ) : (
                             <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                           )}
@@ -397,7 +417,7 @@ export default function PlayerWindowPage() {
                               onClick={() => handleLineClick(line.startTime)}
                               className={`cursor-pointer transition-all duration-500 origin-center py-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-tight ${
                                 isActive
-                                  ? "text-white font-extrabold scale-[1.02] filter drop-shadow-2xl opacity-100"
+                                  ? "text-[#ec4899] font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(236,72,153,0.5)] opacity-100"
                                   : isPlayed
                                   ? "text-white/30 font-bold hover:text-white/70"
                                   : "text-white/15 font-bold hover:text-white/50"
@@ -426,19 +446,25 @@ export default function PlayerWindowPage() {
                         </div>
                       </div>
                       <div className="shrink-0 flex flex-col items-center gap-3 py-6 self-start lg:self-center">
-                        <div className="w-60 h-60 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96">
+                        <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[26rem] lg:h-[26rem] xl:w-[30rem] xl:h-[30rem] relative">
                           {coverUrl ? (
-                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50" />
+                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                           ) : (
                             <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
                           )}
                         </div>
-                        <div className="text-center">
+                        <div className="text-center mt-4">
                           <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
                             {cleanTitle || track.prompt.substring(0, 50)}
                           </h3>
-                          {artistLabel && <p className="mt-1 text-sm text-white/50">{artistLabel}</p>}
-                          {creditsLabel && <p className="mt-0.5 text-xs text-white/40">{creditsLabel}</p>}
+                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                          {track.publishDate && (
+                            <p className="mt-1 text-xs text-white/40">
+                              {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                            </p>
+                          )}
+                          {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
+                          {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
                         </div>
                       </div>
                     </div>
