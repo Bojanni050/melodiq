@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { generateTitle } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
+import { toTitleCase } from "@/lib/title-case";
 
 export async function POST(request: Request) {
   const auth = await requireAuth();
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
 
   try {
     const title = await generateTitle(lyrics);
-    return NextResponse.json({ title });
+    return NextResponse.json({ title: title ? toTitleCase(title) : title });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to generate title" }, { status: 500 });
   }

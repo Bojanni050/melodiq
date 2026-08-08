@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, workspaces } from "@/db/schema";
 import { RELEASE_STATUSES, type ReleaseStatus } from "@/lib/release-status";
+import { toTitleCase } from "@/lib/title-case";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
@@ -756,7 +757,7 @@ export async function PATCH(
         if (trimmed.length > 255) {
           return NextResponse.json({ error: "Title too long (max 255 characters)" }, { status: 400 });
         }
-        updates.title = trimmed ? trimmed : null;
+        updates.title = trimmed ? toTitleCase(trimmed) : null;
       } else {
         return NextResponse.json({ error: "Invalid title" }, { status: 400 });
       }

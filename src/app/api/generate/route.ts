@@ -17,6 +17,7 @@ import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { requireAuth } from "@/lib/require-auth";
+import { toTitleCase } from "@/lib/title-case";
 import { getSetting, getWebhookUrl, validateProviderApiKeys } from "@/lib/settings";
 import { callLLM } from "@/lib/providers/llm";
 import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
@@ -177,11 +178,12 @@ export async function POST(request: NextRequest) {
   const derivedInstrumentalTitle = instrumental
     ? deriveInstrumentalTitleFallbackFromPrompt(normalizedPrompt)
     : null;
-  const resolvedTitle =
+  const resolvedTitleRaw =
     normalizedTitle ||
     aiInstrumentalTitle ||
     derivedInstrumentalTitle ||
     (provider === "poyo" && normalizedPrompt ? normalizedPrompt.slice(0, 80) : null);
+  const resolvedTitle = resolvedTitleRaw ? toTitleCase(resolvedTitleRaw) : resolvedTitleRaw;
 
   // Validate that required API keys are configured
   const validation = await validateProviderApiKeys(provider);
