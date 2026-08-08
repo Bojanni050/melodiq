@@ -53,6 +53,7 @@ export default function Sidebar({ credits }: SidebarProps) {
           {
             label: "BROWSE",
             items: [
+              { href: "/discover", label: "Discover", icon: "discover" },
               { href: "/library", label: "Library", icon: "library" },
               { href: "/playlists", label: "Playlists", icon: "playlists" },
             ],
@@ -64,6 +65,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             items: [
               { href: "/library", label: "Library", icon: "library" },
               { href: "/playlists", label: "Playlists", icon: "playlists" },
+              { href: "/releases", label: "Releases", icon: "releases" },
               { href: "/archive", label: "Master Tracks", icon: "archive" },
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
             ],
@@ -142,6 +144,13 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h10M4 12h10M4 18h6m8-9v9.28a2 2 0 11-2-1.96V9h-2V7h4z" />
+          </svg>
+        );
+      case "releases":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
+            <circle cx="12" cy="12" r="3" strokeWidth={1.5} />
           </svg>
         );
       case "workspaces":

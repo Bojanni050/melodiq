@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePlaylistStore, useSidebarStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePlaylistStore, useReleaseStore, useSidebarStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
 import StudioForm from "@/components/StudioForm";
@@ -23,6 +23,10 @@ export default function StudioPage() {
   const { tracks, tracksRef, fetchTracks, handleDeleteTrack, handleTitleUpdate, handleTrackUpdate } = useTrackManager();
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
 
+  const workspaceView = useWorkspaceView(tracks);
+  const { setStudioTab } = workspaceView;
+  const handleWorkspaceOpened = useCallback(() => setStudioTab("workspaces"), [setStudioTab]);
+
   const {
     generating,
     notice,
@@ -33,9 +37,11 @@ export default function StudioPage() {
     handleGenerateTitle,
     handleGenerate,
     handleReusePrompt,
-  } = useStudioActions({ tracksRef, fetchTracks });
-
-  const workspaceView = useWorkspaceView(tracks);
+  } = useStudioActions({
+    tracksRef,
+    fetchTracks,
+    onWorkspaceOpened: handleWorkspaceOpened,
+  });
 
   const {
     credits,
@@ -61,10 +67,12 @@ export default function StudioPage() {
 
   const ensureDefaultWorkspace = useWorkspaceStore((state) => state.ensureDefaultWorkspace);
   const loadPlaylists = usePlaylistStore((state) => state.loadPlaylists);
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
   useEffect(() => {
     ensureDefaultWorkspace();
     useStudioStore.persist.rehydrate();
     void loadPlaylists();
+    void loadReleases();
     try {
       const raw = sessionStorage.getItem("lyrics-studio-payload");
       if (raw) {
@@ -88,7 +96,7 @@ export default function StudioPage() {
     } catch {
       // ignore
     }
-  }, [ensureDefaultWorkspace, loadPlaylists]);
+  }, [ensureDefaultWorkspace, loadPlaylists, loadReleases]);
 
   const playlists = usePlaylistStore((state) => state.playlists);
   const memoizedPlaylists = useMemo(

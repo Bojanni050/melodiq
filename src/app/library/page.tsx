@@ -127,6 +127,7 @@ import {
   DEFAULT_WORKSPACE_ID,
   usePlayerStore,
   usePlaylistStore,
+  useReleaseStore,
   useSidebarStore,
   useStudioStore,
   useUserStore,
@@ -249,6 +250,7 @@ export default function LibraryPage() {
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
   const {
     workspaces,
     selectedWorkspaceId,
@@ -396,10 +398,11 @@ export default function LibraryPage() {
     let active = true;
     fetchTracks(() => active);
     void loadPlaylists();
+    void loadReleases();
     return () => {
       active = false;
     };
-  }, [fetchTracks, loadPlaylists]);
+  }, [fetchTracks, loadPlaylists, loadReleases]);
 
   useEffect(() => {
     function onTracksChanged() {

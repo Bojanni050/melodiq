@@ -8,7 +8,7 @@ import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import DeleteWorkspaceDialog from "@/components/tracks/DeleteWorkspaceDialog";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
-import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useSidebarStore, useWorkspaceStore, type Workspace } from "@/lib/store";
+import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useWorkspaceStore, type Workspace } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 
 function hashString(value: string) {
@@ -48,6 +48,7 @@ export default function WorkspaceDetailPage() {
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
   const {
     workspaces,
     setSelectedWorkspaceId,
@@ -95,11 +96,12 @@ export default function WorkspaceDetailPage() {
 
     fetchTracks();
     void loadPlaylists();
+    void loadReleases();
 
     return () => {
       active = false;
     };
-  }, [loadPlaylists, workspaceId]);
+  }, [loadPlaylists, loadReleases, workspaceId]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);

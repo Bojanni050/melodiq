@@ -147,6 +147,38 @@ CREATE INDEX IF NOT EXISTS "playlist_tracks_playlist_idx" ON "playlist_tracks"("
 CREATE INDEX IF NOT EXISTS "playlist_tracks_track_idx" ON "playlist_tracks"("track_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
 
+CREATE TABLE IF NOT EXISTS "releases" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "title" varchar(255) NOT NULL,
+  "type" varchar(20) NOT NULL,
+  "kind" varchar(30),
+  "artist_name" varchar(255),
+  "description" text,
+  "cover_url" text,
+  "s3_key_cover" text,
+  "s3_key_cover_thumb" text,
+  "release_date" timestamp,
+  "is_public" boolean NOT NULL DEFAULT false,
+  "published_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "release_tracks" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "release_id" uuid NOT NULL REFERENCES "releases"("id") ON DELETE CASCADE,
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "position" integer NOT NULL,
+  "side" varchar(10),
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "releases_user_id_idx" ON "releases"("user_id");
+CREATE INDEX IF NOT EXISTS "release_tracks_release_idx" ON "release_tracks"("release_id");
+CREATE INDEX IF NOT EXISTS "release_tracks_track_idx" ON "release_tracks"("track_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "release_tracks_release_position_unique" ON "release_tracks"("release_id", "position");
+
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid REFERENCES "users"("id"),

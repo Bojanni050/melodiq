@@ -9,7 +9,7 @@ import TrackList from "@/components/TrackList";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { usePlayerStore, usePlaylistStore, useSidebarStore, useStudioStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useStudioStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 
@@ -566,6 +566,7 @@ export default function ArchivePage() {
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -604,7 +605,8 @@ export default function ArchivePage() {
   useEffect(() => {
     void fetchAllTracks();
     void loadPlaylists();
-  }, [fetchAllTracks, loadPlaylists]);
+    void loadReleases();
+  }, [fetchAllTracks, loadPlaylists, loadReleases]);
 
   useEffect(() => {
     function onTracksChanged() {

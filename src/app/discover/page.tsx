@@ -19,6 +19,7 @@ interface PublicTrack {
   totalPlays: number;
   instrumental: boolean;
   publishDate: string | null;
+  lyrics: string | null;
   lyricsTimestamps: string | null;
 }
 
@@ -359,6 +360,30 @@ export default function DiscoverPage() {
   }
 
   function handlePlay(track: PublicTrack) {
+    setSelectedTrack({
+      id: track.id,
+      title: track.title,
+      provider: "discover",
+      providerModel: "discover",
+      prompt: "",
+      lyrics: track.lyrics,
+      lyricsTimestamps: track.lyricsTimestamps,
+      status: "done",
+      audioUrl: null,
+      audioUrlHd: null,
+      format: null,
+      formatHd: null,
+      duration: track.duration,
+      createdAt: new Date().toISOString(),
+      error: null,
+      s3KeyHd: null,
+      coverUrl: coverSrc(track),
+      s3KeyCover: null,
+      artistName: track.artistName,
+      instrumental: track.instrumental,
+    });
+    setShowTrackDetailsPanel(true);
+
     if (currentTrack?.id === track.id) {
       setGlobalIsPlaying(!globalIsPlaying);
       return;
@@ -377,7 +402,7 @@ export default function DiscoverPage() {
       format: null,
       formatHd: null,
       duration: track.duration,
-      lyrics: null,
+      lyrics: track.lyrics,
       lyricsTimestamps: track.lyricsTimestamps,
       createdAt: new Date().toISOString(),
       error: null,

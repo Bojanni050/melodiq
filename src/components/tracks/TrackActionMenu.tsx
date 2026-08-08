@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePlaylistStore } from "@/lib/store";
+import { usePlaylistStore, useReleaseStore } from "@/lib/store";
 import type { PlaylistOption, TrackItem } from "./types";
 
 interface TrackActionMenuProps {
@@ -16,6 +16,8 @@ interface TrackActionMenuProps {
   onAddToPlaylistClick: (playlistId: string, playlistName: string, isDuplicate: boolean) => void;
   onRemoveFromPlaylistClick: (playlistId: string, playlistName: string) => void;
   onOpenPlaylistPicker: () => void;
+  onOpenReleasePicker?: () => void;
+  onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
   onEditDetails?: () => void;
   onLinkToArchiveClick?: () => void;
   onAnalyzeCompositionClick?: () => void;
@@ -49,6 +51,8 @@ export default function TrackActionMenu({
   onAddToQueue,
   onRemoveFromPlaylistClick,
   onOpenPlaylistPicker,
+  onOpenReleasePicker,
+  onRemoveFromReleaseClick,
   onEditDetails,
   onLinkToArchiveClick,
   onAnalyzeCompositionClick,
@@ -76,6 +80,8 @@ export default function TrackActionMenu({
   // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
   // manually removed from them, so they never show up in this list.
   const playlistsContainingTrack = allPlaylists.filter((playlist) => !playlist.isSystem && playlist.trackIds.includes(track.id));
+  const allReleases = useReleaseStore((state) => state.releases);
+  const releasesContainingTrack = allReleases.filter((release) => release.tracks.some((t) => t.trackId === track.id));
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -372,6 +378,43 @@ export default function TrackActionMenu({
                   {playlist.name}
                 </button>
               ))}
+            </>
+          )}
+
+          {onOpenReleasePicker && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onOpenReleasePicker();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+              >
+                <span>Add to release</span>
+                <span className="text-white/30">›</span>
+              </button>
+
+              {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
+                <>
+                  <div className="my-1 h-px bg-white/10" />
+                  <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from release</p>
+                  {releasesContainingTrack.map((release) => (
+                    <button
+                      key={`remove-release-${release.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onRemoveFromReleaseClick(release.id, release.title);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+                    >
+                      {release.title}
+                    </button>
+                  ))}
+                </>
+              )}
             </>
           )}
           </>

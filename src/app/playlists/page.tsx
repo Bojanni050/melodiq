@@ -6,7 +6,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { useSidebarStore, usePlaylistStore, useUserStore, usePlayerStore } from "@/lib/store";
+import { useSidebarStore, usePlaylistStore, useReleaseStore, useUserStore, usePlayerStore } from "@/lib/store";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
@@ -60,6 +60,7 @@ export default function PlaylistsPage() {
   const isListener = user?.role === "listener" || user?.role == null;
   const isQHD = useSidebarStore((s) => s.isQHD);
   const { playlists, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,11 +196,12 @@ export default function PlaylistsPage() {
 
     fetchTracks();
     void loadPlaylists();
+    void loadReleases();
 
     return () => {
       active = false;
     };
-  }, [loadPlaylists]);
+  }, [loadPlaylists, loadReleases]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

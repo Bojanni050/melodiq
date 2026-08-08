@@ -18,9 +18,11 @@ function deriveWorkspaceNameFromTitle(rawTitle: string): string {
 interface UseStudioActionsOptions {
   tracksRef: React.RefObject<Track[]>;
   fetchTracks: () => Promise<Track[]>;
+  /** Called with the workspace id when auto-create-workspace resolves one (new or reused) — lets the caller switch to the Workspaces tab so it's actually "opened". */
+  onWorkspaceOpened?: (workspaceId: string) => void;
 }
 
-export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOptions) {
+export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: UseStudioActionsOptions) {
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
@@ -228,6 +230,7 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
           if (createdWorkspaceId) {
             finalWorkspaceId = createdWorkspaceId;
             useWorkspaceStore.getState().setSelectedWorkspaceId(createdWorkspaceId);
+            onWorkspaceOpened?.(createdWorkspaceId);
           }
         }
       }
@@ -264,7 +267,7 @@ export function useStudioActions({ tracksRef, fetchTracks }: UseStudioActionsOpt
       // waiting out the SWR dedupe window.
       void mutate("/api/credits");
     }
-  }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks, tracksRef]);
+  }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks, tracksRef, onWorkspaceOpened]);
 
   const handleReusePrompt = useCallback((track: Track) => {
     const studio = useStudioStore.getState();

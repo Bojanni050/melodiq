@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePlaylistStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
+import { usePlaylistStore, useReleaseStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import type { PlaylistOption, TrackItem } from "./types";
 
@@ -26,6 +26,8 @@ export function useTrackCardActions({
   const createPlaylist = usePlaylistStore((state) => state.createPlaylist);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
+  const addTrackToRelease = useReleaseStore((state) => state.addTrackToRelease);
+  const removeTrackFromRelease = useReleaseStore((state) => state.removeTrackFromRelease);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
   const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
     useShallow((s) => ({
@@ -58,6 +60,7 @@ export function useTrackCardActions({
   const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [showReleasePickerDialog, setShowReleasePickerDialog] = useState(false);
 
   useEffect(() => {
     function handleCoverRegenerated(event: Event) {
@@ -269,6 +272,28 @@ export function useTrackCardActions({
     removeTrackFromPlaylist(playlistId, track.id);
   }
 
+  function handleAddToReleaseClick(releaseId: string, _releaseName: string, isDuplicate: boolean) {
+    const activeSelection = useSelectionStore.getState().selectedIds;
+    const isMultiSelect = activeSelection.size > 1 && activeSelection.has(track.id);
+
+    if (isMultiSelect) {
+      for (const id of Array.from(activeSelection)) {
+        addTrackToRelease(releaseId, id);
+      }
+      clearSelection();
+      return;
+    }
+
+    // A track already on this release is simply re-confirmed, not duplicated.
+    if (isDuplicate) return;
+    addTrackToRelease(releaseId, track.id);
+    clearSelection();
+  }
+
+  function handleRemoveFromReleaseClick(releaseId: string) {
+    removeTrackFromRelease(releaseId, track.id);
+  }
+
   function handleMoveToWorkspace(workspaceId: string) {
     if (onMoveToWorkspaceProp) {
       onMoveToWorkspaceProp(track.id, workspaceId);
@@ -323,6 +348,7 @@ export function useTrackCardActions({
     showMergeWorkspaceDialog, setShowMergeWorkspaceDialog,
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
+    showReleasePickerDialog, setShowReleasePickerDialog,
     // handlers
     executeDelete, handleDelete,
     handleRegenerateCover,
@@ -334,6 +360,8 @@ export function useTrackCardActions({
     handleAddToPlaylistClick,
     confirmAlreadyInPlaylistAdd,
     handleRemoveFromPlaylistClick,
+    handleAddToReleaseClick,
+    handleRemoveFromReleaseClick,
     handleMoveToWorkspace,
     confirmWorkspaceMerge,
     handleMergeWorkspaceTrigger,

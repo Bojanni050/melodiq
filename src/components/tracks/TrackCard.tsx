@@ -16,6 +16,7 @@ import { useSWRConfig } from "swr";
 import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
 import CreatePlaylistDialog from "./CreatePlaylistDialog";
 import PlaylistPickerDialog from "./PlaylistPickerDialog";
+import ReleasePickerDialog from "./ReleasePickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import LinkToArchiveDialog from "./LinkToArchiveDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
@@ -600,6 +601,13 @@ const TrackCard = memo(function TrackCard({
         tracksById={tracksById}
       />
 
+      <ReleasePickerDialog
+        isOpen={actions.showReleasePickerDialog}
+        onClose={() => actions.setShowReleasePickerDialog(false)}
+        track={track}
+        onAddToRelease={actions.handleAddToReleaseClick}
+      />
+
       <LinkToArchiveDialog
         isOpen={showLinkToArchiveDialog}
         track={track}
@@ -996,6 +1004,8 @@ const TrackCard = memo(function TrackCard({
               onAddToPlaylistClick={actions.handleAddToPlaylistClick}
               onOpenPlaylistPicker={() => actions.setShowPlaylistPickerDialog(true)}
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
+              onOpenReleasePicker={() => actions.setShowReleasePickerDialog(true)}
+              onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
               onEditDetails={() => setEditTrackOpen((v) => !v)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onAnalyzeCompositionClick={handleAnalyzeComposition}

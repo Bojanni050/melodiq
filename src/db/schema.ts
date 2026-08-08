@@ -31,6 +31,7 @@ export const users = pgTable("users", {
 export const usersRelations = relations(users, ({ many }) => ({
   tracks: many(tracks),
   playlists: many(playlists),
+  releases: many(releases),
   apiLogs: many(apiLogs),
   clonedVoices: many(clonedVoices),
 }));
@@ -308,6 +309,64 @@ export const playlistTracksRelations = relations(playlistTracks, ({ one }) => ({
   }),
   track: one(tracks, {
     fields: [playlistTracks.trackId],
+    references: [tracks.id],
+  }),
+}));
+
+// A release is a formal, publishable grouping of tracks (single, EP, album),
+// distinct from playlists (free-form curation) and workspaces (working
+// folders). A track can appear on multiple releases (e.g. a remix that's
+// both on its own remix single and on a later compilation) via releaseTracks.
+export const releases = pgTable("releases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(), // single | ep | album
+  // Free-form descriptive tag, not validated against `type`: remix, compilation,
+  // soundtrack, solo, live, etc. Used for display/filtering only.
+  kind: varchar("kind", { length: 30 }),
+  artistName: varchar("artist_name", { length: 255 }),
+  description: text("description"),
+  coverUrl: text("cover_url"),
+  s3KeyCover: text("s3_key_cover"),
+  s3KeyCoverThumb: text("s3_key_cover_thumb"),
+  releaseDate: timestamp("release_date"),
+  isPublic: boolean("is_public").default(false).notNull(),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("releases_user_id_idx").on(table.userId),
+]);
+
+export const releaseTracks = pgTable("release_tracks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseId: uuid("release_id").notNull(),
+  trackId: uuid("track_id").notNull(),
+  position: integer("position").notNull(),
+  side: varchar("side", { length: 10 }), // "A" / "B" / null
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("release_tracks_release_idx").on(table.releaseId),
+  index("release_tracks_track_idx").on(table.trackId),
+  uniqueIndex("release_tracks_release_position_unique").on(table.releaseId, table.position),
+]);
+
+export const releasesRelations = relations(releases, ({ one, many }) => ({
+  user: one(users, {
+    fields: [releases.userId],
+    references: [users.id],
+  }),
+  releaseTracks: many(releaseTracks),
+}));
+
+export const releaseTracksRelations = relations(releaseTracks, ({ one }) => ({
+  release: one(releases, {
+    fields: [releaseTracks.releaseId],
+    references: [releases.id],
+  }),
+  track: one(tracks, {
+    fields: [releaseTracks.trackId],
     references: [tracks.id],
   }),
 }));

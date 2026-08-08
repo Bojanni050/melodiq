@@ -134,6 +134,7 @@ export default function Player() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loadUser } = useUserStore();
+  const isListener = user?.role === "listener" || user?.role == null;
   const { castState, isRemotePaused, togglePlayCast, loadCastMedia, seekCast } = useChromecast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playToggleCooldownRef = useRef(0);
@@ -1447,17 +1448,19 @@ export default function Player() {
               </svg>
             </button>
 
-            <button
-              type="button"
-              onClick={handlePopOutPlayer}
-              disabled={!currentTrack}
-              className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white/80"}`}
-              title={popupOpen ? "Close pop-out player window" : "Open player in a second window (drag to another monitor)"}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3h8v8m0-8L11 13M19 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6" />
-              </svg>
-            </button>
+            {!isListener && (
+              <button
+                type="button"
+                onClick={handlePopOutPlayer}
+                disabled={!currentTrack}
+                className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white/80"}`}
+                title={popupOpen ? "Close pop-out player window" : "Open player in a second window (drag to another monitor)"}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3h8v8m0-8L11 13M19 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6" />
+                </svg>
+              </button>
+            )}
 
             {/* Track actions menu */}
             {currentTrack && !currentTrack.publicSource && (

@@ -647,8 +647,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           </div>
         )}
 
-        {/* Gradient Overlay for Text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+        {/* Gradient Overlay for Text — only needed to keep the info overlay legible over a photo; without cover art the tinted background is already dark enough. */}
+        {track.coverUrl && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+        )}
 
         {/* Rating Overlay (Top Right) */}
         {track.status === "done" && (
