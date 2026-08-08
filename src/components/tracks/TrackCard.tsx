@@ -213,7 +213,6 @@ const TrackCard = memo(function TrackCard({
     loadArchiveLinks();
   }, [loadArchiveLinks]);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
-  const setIsFullscreen = usePlayerStore((state) => state.setIsFullscreen);
   const isCurrentlyPlaying = currentTrack?.id === track.id;
   const playClickCooldownRef = useRef(0);
 
@@ -237,6 +236,7 @@ const TrackCard = memo(function TrackCard({
   const { mutate } = useSWRConfig();
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [analyzingComposition, setAnalyzingComposition] = useState(false);
+  const [reanalyzingAudio, setReanalyzingAudio] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
@@ -318,6 +318,23 @@ const TrackCard = memo(function TrackCard({
       console.error("Failed to analyze composition:", error);
     } finally {
           setAnalyzingComposition(false);
+        }
+      }
+
+      async function handleReanalyzeAudio() {
+        setReanalyzingAudio(true);
+        try {
+          const res = await fetch(`/api/tracks/${track.id}/reanalyze-audio`, { method: "POST" });
+          if (!res.ok) {
+            const body = await res.json().catch(() => null);
+            console.error(`Failed to re-analyze audio: HTTP ${res.status}`, body);
+            return;
+          }
+          setDnaRefreshKey((key) => key + 1);
+        } catch (error) {
+          console.error("Failed to re-analyze audio:", error);
+        } finally {
+          setReanalyzingAudio(false);
         }
       }
 
@@ -494,7 +511,7 @@ const TrackCard = memo(function TrackCard({
   const effectiveCoverUrl = rawCoverUrl && (rawCoverUrl.startsWith("http") || rawCoverUrl.startsWith("/"))
     ? rawCoverUrl
     : null;
-  const audioDna = useMemo<{ compositionScore?: number | null; lyricsScore?: number | null } | null>(() => {
+  const audioDna = useMemo<{ compositionScore?: number | null; lyricsScore?: number | null; tempo?: number | null } | null>(() => {
     if (!track.audioDna) return null;
     try {
       return JSON.parse(track.audioDna);
@@ -504,6 +521,10 @@ const TrackCard = memo(function TrackCard({
   }, [track.audioDna]);
   const hasCompositionAnalysis = audioDna?.compositionScore != null;
   const hasLyricsAnalysis = audioDna?.lyricsScore != null;
+  const bpm = audioDna?.tempo ?? null;
+  const generationCompletedOn = track.status === "done" && track.completedAt
+    ? new Date(track.completedAt).toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" })
+    : null;
   const effectiveThumbUrl = actions.coverOverrideUrl
     ? `${actions.coverOverrideUrl}&thumb=1`
     : track.publicSource
@@ -611,12 +632,6 @@ const TrackCard = memo(function TrackCard({
         onClick={(e) => {
           if (e.shiftKey) { onToggleSelection?.(track.id, true); return; }
           onSelect(track);
-        }}
-        onDoubleClick={(e) => {
-          if (e.shiftKey) return;
-          if (track.status !== "done") return;
-          if (!isCurrentlyPlaying) onPlay(track);
-          setIsFullscreen(true);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -771,17 +786,6 @@ const TrackCard = memo(function TrackCard({
             <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
               {status.label}
             </span>
-            {track.status === "done" && generationTime && (
-              <span
-                className="hidden sm:inline-flex items-center gap-1 text-[10px] text-white/30 shrink-0"
-                title="Time from generation start to completion"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {generationTime}
-              </span>
-            )}
             {track.status === "done" && track.releaseStatus && track.releaseStatus !== "concept" && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
@@ -867,13 +871,13 @@ const TrackCard = memo(function TrackCard({
             </div>
           ) : (
             <p
-              className="text-[10px] text-white/40 mt-0.5 truncate cursor-text select-none"
+              className="text-xs text-white/50 hover:text-primary-300 mt-0.5 truncate cursor-pointer select-none transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 if (user?.id) router.push(`/discover/artist/${user.id}`);
               }}
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
-              title={track.artistName ? "Double-click to edit artist" : "Double-click to add artist name"}
+              title={track.artistName ? "Click to view artist page · double-click to edit" : "Click to view artist page · double-click to add artist name"}
             >
               {track.artistName || artistAlias || <span className="italic opacity-50">no artist — double-click to add</span>}
             </p>
@@ -906,7 +910,13 @@ const TrackCard = memo(function TrackCard({
           {track.status !== "generating" && track.status !== "pending" && (
             <>
               <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+              {generationCompletedOn && generationTime && (
+                <p className="hidden sm:block text-[10px] text-white/30 mt-0.5" title="Time from generation start to completion">
+                  Generation completed on {generationCompletedOn} in {generationTime}
+                </p>
+              )}
               <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
+                {bpm != null && <>{bpm} BPM · </>}
                 {playCount} {playCount === 1 ? "play" : "plays"} by you
                 {othersPlayCount > 0 && (
                   <> · {othersPlayCount} {othersPlayCount === 1 ? "play" : "plays"} by others</>
@@ -1045,6 +1055,8 @@ const TrackCard = memo(function TrackCard({
               advancedDnaRunning={advancedDnaRunning}
               onRunAdvancedDna={handleAdvancedDna}
               trackStatus={track.status}
+              onReanalyzeAudio={handleReanalyzeAudio}
+              reanalyzingAudio={reanalyzingAudio}
             />
           )}
         </div>

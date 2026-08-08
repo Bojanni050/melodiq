@@ -181,7 +181,8 @@ function computeUploadAudioHash(audioBuffer: Buffer, format: "mp3" | "wav"): str
 
 function titleFromFilename(filename: string) {
   const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
-  return withoutExtension || "Untitled Upload";
+  const withoutCopySuffix = withoutExtension.replace(/\s*\(\d+\)$/, "").trim();
+  return withoutCopySuffix || "Untitled Upload";
 }
 
 type UploadMetadata = {

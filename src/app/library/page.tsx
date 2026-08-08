@@ -210,7 +210,8 @@ function isSupportedAudioFile(file: File) {
 
 function titleFromUploadFilename(filename: string) {
   const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
-  return withoutExtension || "Untitled Upload";
+  const withoutCopySuffix = withoutExtension.replace(/\s*\(\d+\)$/, "").trim();
+  return withoutCopySuffix || "Untitled Upload";
 }
 
 function formatFileSize(bytes: number) {

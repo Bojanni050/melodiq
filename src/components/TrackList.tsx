@@ -523,10 +523,22 @@ export default memo(function TrackList({
     );
   }, []);
 
+  // Pagination only renders the first `visibleCount` tracks — a track sorted
+  // past that window has no DOM node yet, so scrollIntoView would silently
+  // no-op. Expand the visible window to include it before scrolling.
+  const revealTrackInPagination = useCallback((trackId: string) => {
+    const index = displayedTracksRef.current.findIndex((t) => t.id === trackId);
+    if (index === -1) return false;
+    setVisibleCount((prev) => (index < prev ? prev : Math.min(index + 30, displayedTracksRef.current.length)));
+    return true;
+  }, []);
+
   useEffect(() => {
     if (hasScrolledToRestoredTrack.current) return;
     if (!currentTrack) return;
     if (!tracks.some((t) => t.id === currentTrack.id)) return;
+
+    revealTrackInPagination(currentTrack.id);
 
     const timer = setTimeout(() => {
       const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
@@ -557,18 +569,27 @@ export default memo(function TrackList({
   }, [currentTrack]);
 
   useEffect(() => {
-    function handleScrollToTrack(event: Event) {
-      const trackId = (event as CustomEvent<{ trackId: string }>).detail?.trackId;
-      if (!trackId) return;
+    function scrollToEl(trackId: string) {
       const el = document.querySelector(`[data-track-id="${trackId}"]`);
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("ring-2", "ring-primary-500/40", "rounded-xl");
       window.setTimeout(() => el.classList.remove("ring-2", "ring-primary-500/40", "rounded-xl"), 1500);
     }
+    function handleScrollToTrack(event: Event) {
+      const trackId = (event as CustomEvent<{ trackId: string }>).detail?.trackId;
+      if (!trackId) return;
+      const wasRevealed = revealTrackInPagination(trackId);
+      if (document.querySelector(`[data-track-id="${trackId}"]`)) {
+        scrollToEl(trackId);
+      } else if (wasRevealed) {
+        // Newly-revealed rows need a render pass before they exist in the DOM.
+        window.setTimeout(() => scrollToEl(trackId), 100);
+      }
+    }
     window.addEventListener("melodiq:scroll-to-track", handleScrollToTrack);
     return () => window.removeEventListener("melodiq:scroll-to-track", handleScrollToTrack);
-  }, []);
+  }, [revealTrackInPagination]);
 
   useEffect(() => {
     const availableIds = new Set(tracks.map((track) => track.id));

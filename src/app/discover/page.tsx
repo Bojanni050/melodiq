@@ -341,7 +341,7 @@ export default function DiscoverPage() {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">{track.title || track.prompt.substring(0, 40)}</p>
-          <p className="truncate text-sm text-white/45">{track.artistName || "Untitled artist"}</p>
+          <p className="truncate text-sm text-white/45">{track.artistName || "Unknown Artist"}</p>
         </div>
         <div className="flex items-center justify-between text-[11px] text-white/35">
           <span>{formatDuration(track.duration)}</span>

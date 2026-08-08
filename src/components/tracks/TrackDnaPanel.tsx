@@ -68,6 +68,8 @@ export default function TrackDnaPanel({
   advancedDnaRunning,
   onRunAdvancedDna,
   trackStatus,
+  onReanalyzeAudio,
+  reanalyzingAudio,
 }: {
   trackId: string;
   refreshKey?: number;
@@ -75,6 +77,8 @@ export default function TrackDnaPanel({
   advancedDnaRunning?: boolean;
   onRunAdvancedDna?: () => void;
   trackStatus?: string;
+  onReanalyzeAudio?: () => void;
+  reanalyzingAudio?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -137,7 +141,29 @@ export default function TrackDnaPanel({
   return (
     <TrackDnaCard onClick={(e) => e.stopPropagation()}>
       <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+          {trackStatus === "done" && onReanalyzeAudio && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onReanalyzeAudio(); }}
+              disabled={reanalyzingAudio}
+              title="Re-run tempo/key/energy/loudness detection on the audio"
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              {reanalyzingAudio ? (
+                <>
+                  <span className="w-2 h-2 rounded-full border border-white/40 border-t-transparent animate-spin" />
+                  Analyzing…
+                </>
+              ) : hasAudioFacts ? (
+                "Re-analyze audio"
+              ) : (
+                "Analyze audio"
+              )}
+            </button>
+          )}
+        </div>
 
         {hasAudioFacts && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

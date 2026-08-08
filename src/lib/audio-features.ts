@@ -13,6 +13,24 @@ export interface AudioFeatures {
 
 const SAMPLE_RATE = 22050;
 
+// ffmpeg-static's bundled binary is built against glibc and fails silently
+// (ENOENT/exec-format error) on the Alpine/musl base image this app is
+// deployed on — so prefer the system `ffmpeg` (installed via apk in the
+// Dockerfile) when it's on PATH, and only fall back to the bundled static
+// binary for local dev environments (e.g. Windows) that lack a system ffmpeg.
+let ffmpegPathPromise: Promise<string | null> | null = null;
+
+function resolveFfmpegPath(): Promise<string | null> {
+  if (!ffmpegPathPromise) {
+    ffmpegPathPromise = new Promise((resolve) => {
+      const probe = spawn("ffmpeg", ["-version"]);
+      probe.on("error", () => resolve((ffmpegStatic as string | null) ?? null));
+      probe.on("close", (code) => resolve(code === 0 ? "ffmpeg" : ((ffmpegStatic as string | null) ?? null)));
+    });
+  }
+  return ffmpegPathPromise;
+}
+
 /**
  * Extract objective audio characteristics (tempo, key, energy, loudness) from a
  * generated track's audio buffer — the DSP counterpart to extractAudioDuration.
@@ -20,17 +38,18 @@ const SAMPLE_RATE = 22050;
  * doesn't block the others or the track finalization that calls this.
  */
 export async function extractAudioFeatures(buffer: Buffer): Promise<AudioFeatures | null> {
-  if (!ffmpegStatic) {
-    console.warn("[audio-features] ffmpeg-static not available");
+  const ffmpegPath = await resolveFfmpegPath();
+  if (!ffmpegPath) {
+    console.warn("[audio-features] no working ffmpeg binary found (system PATH or ffmpeg-static)");
     return null;
   }
 
   const [pcm, loudness] = await Promise.all([
-    decodeToPcm(buffer).catch((error) => {
+    decodeToPcm(buffer, ffmpegPath).catch((error) => {
       console.warn("[audio-features] PCM decode failed:", error);
       return null;
     }),
-    measureLoudness(buffer).catch((error) => {
+    measureLoudness(buffer, ffmpegPath).catch((error) => {
       console.warn("[audio-features] Loudness measurement failed:", error);
       return null;
     }),
@@ -48,9 +67,9 @@ export async function extractAudioFeatures(buffer: Buffer): Promise<AudioFeature
   };
 }
 
-function decodeToPcm(buffer: Buffer): Promise<Float32Array> {
+function decodeToPcm(buffer: Buffer, ffmpegPath: string): Promise<Float32Array> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegStatic as string, [
+    const proc = spawn(ffmpegPath, [
       "-i", "pipe:0",
       "-f", "s16le",
       "-acodec", "pcm_s16le",
@@ -83,9 +102,9 @@ function decodeToPcm(buffer: Buffer): Promise<Float32Array> {
   });
 }
 
-function measureLoudness(buffer: Buffer): Promise<number | null> {
+function measureLoudness(buffer: Buffer, ffmpegPath: string): Promise<number | null> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegStatic as string, [
+    const proc = spawn(ffmpegPath, [
       "-i", "pipe:0",
       "-af", "loudnorm=print_format=json",
       "-f", "null",
