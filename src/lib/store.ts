@@ -1254,7 +1254,7 @@ export const useStudioStore = create<StudioState>()(
       lyricsContext: "",
       title: "",
       autoCreateWorkspaceFromGeneratedTitle: false,
-      selectedProviders: { poyo: "v5.5" },
+      selectedProviders: { apimart: "v5.5" },
       rememberProviderChoice: true,
       language: "English",
       customLanguage: "",
@@ -1344,7 +1344,7 @@ export const useStudioStore = create<StudioState>()(
           lyricsContext: "",
           title: "",
           autoCreateWorkspaceFromGeneratedTitle: false,
-          selectedProviders: { poyo: "v5.5" },
+          selectedProviders: { apimart: "v5.5" },
           language: "English",
           customLanguage: "",
           instrumental: false,
@@ -1369,7 +1369,7 @@ export const useStudioStore = create<StudioState>()(
         if (!merged.selectedProviders) {
           merged.selectedProviders = merged.provider
             ? { [merged.provider]: merged.providerModel || "v5.5" }
-            : { poyo: "v5.5" };
+            : { apimart: "v5.5" };
         }
         // "Remember choice" unchecked — don't restore the last-used provider,
         // fall back to the form's default instead of the persisted value.
