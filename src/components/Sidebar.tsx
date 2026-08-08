@@ -48,25 +48,6 @@ export default function Sidebar({ credits }: SidebarProps) {
   const isListener = user?.role === "listener" || user?.role == null;
 
   const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean; indent?: boolean }> }> = [
-    ...(!isListener
-      ? [
-          {
-            label: "CREATE",
-            items: [
-              { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
-              { href: "/melody", label: "Melody", icon: "melody" },
-              { href: "/style", label: "Style", icon: "style" },
-              { href: "/studio", label: "Music", icon: "music" },
-            ],
-          },
-          {
-            label: "REFINE",
-            items: [
-              { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
-            ],
-          },
-        ]
-      : []),
     ...(isListener
       ? [
           {
@@ -88,6 +69,25 @@ export default function Sidebar({ credits }: SidebarProps) {
             ],
           },
         ]),
+    ...(!isListener
+      ? [
+          {
+            label: "CREATE",
+            items: [
+              { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
+              { href: "/melody", label: "Melody", icon: "melody" },
+              { href: "/style", label: "Style", icon: "style" },
+              { href: "/studio", label: "Music", icon: "music" },
+            ],
+          },
+          {
+            label: "REFINE",
+            items: [
+              { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
+            ],
+          },
+        ]
+      : []),
     {
       label: "ACCOUNT",
       items: [

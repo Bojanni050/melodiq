@@ -143,7 +143,7 @@ export const usePlayerStore = create<PlayerState>()(
       isPlaying: false,
       autoPlayNext: true,
       showTrackDetailsPanel: true,
-      rightPanelWidth: 380,
+      rightPanelWidth: 500,
       volume: 0.8,
       progress: 0,
       audioElement: null,

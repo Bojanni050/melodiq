@@ -70,6 +70,11 @@ export default function PlaylistDetailPage() {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
+  useEffect(() => {
+    setShowTrackDetailsPanel(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const selectedPlaylist = useMemo(
     () => (playlistId ? playlists.find((playlist) => playlist.id === playlistId) ?? null : null),
     [playlistId, playlists],

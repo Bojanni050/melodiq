@@ -882,13 +882,13 @@ export default function ArchivePage() {
   }, [entries, search]);
 
   return (
-    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5 space-y-6">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+        <div className="max-w-400 mx-auto space-y-6">
           {/* Header card — matching library style */}
-          <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+          <section className="px-1 py-2 sm:px-2">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -998,7 +998,7 @@ export default function ArchivePage() {
           </section>
 
           {activeTab !== "master" ? (
-            <div className="max-w-[80%] mx-auto">
+            <div>
               {tracksLoading ? (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
               ) : (
@@ -1039,7 +1039,7 @@ export default function ArchivePage() {
             className="input-field text-sm"
           />
 
-          <div className="max-w-[80%] mx-auto">
+          <div>
           {loading ? (
             <p className="text-sm text-white/40">Loading…</p>
           ) : filtered.length === 0 ? (

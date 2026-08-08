@@ -194,7 +194,7 @@ export default function PlaylistsPage() {
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className={`flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${isListener ? "lg:pt-20" : "lg:pt-5"}`}>
           <div className="max-w-400 mx-auto space-y-6">
-            <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+            <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
                 <p className="text-xs uppercase tracking-[0.28em] text-white/35">Playlist Manager</p>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Playlists</h1>

@@ -920,7 +920,7 @@ export default function LibraryPage() {
           <div className="max-w-400 mx-auto space-y-6">
 
             {/* Header */}
-            <section className="rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),linear-gradient(135deg,#11111a_0%,#0b0b11_100%)] p-5 sm:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+            <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 flex-wrap">
