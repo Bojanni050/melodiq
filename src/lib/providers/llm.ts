@@ -473,3 +473,37 @@ ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
     openRouterModelOverride: imageModel || undefined,
   });
 }
+
+export function normalizeAiTitle(raw: string): string | null {
+  const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) || "";
+  const cleaned = firstLine
+    .replace(/^["'\s]+|["'\s]+$/g, "")
+    .replace(/[\[\]{}]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return null;
+  return cleaned.slice(0, 80).trim();
+}
+
+export async function generateInstrumentalTitleFromPrompt(prompt: string): Promise<string | null> {
+  const trimmedPrompt = prompt.trim();
+  if (!trimmedPrompt) return null;
+
+  const systemPrompt = \You generate concise song titles for instrumental tracks.
+
+Rules:
+- Return only the title
+- No quotes, no punctuation at the end, no explanation
+- Maximum 6 words
+- Keep it evocative and based on the style prompt\;
+
+  const userPrompt = \Create one instrumental track title from this style prompt:\n\n\\;
+
+  try {
+    const rawTitle = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", temperature: 0.4 });
+    return normalizeAiTitle(rawTitle);
+  } catch {
+    return null;
+  }
+}

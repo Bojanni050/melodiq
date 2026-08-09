@@ -1,5 +1,5 @@
 import type { Track } from "@/lib/store";
-import type { AudioSource, AudioSourceState } from "@/components/Player";
+import type { AudioSource, AudioSourceState } from "@/components/player/playerUtils";
 
 export const PLAYER_POPUP_CHANNEL = "melodiq-player-popup";
 export const PLAYER_POPUP_WINDOW_NAME = "melodiq-player-popup";

@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence, personaId } = body;
+  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe", "apimart"];
@@ -1087,6 +1087,10 @@ export async function POST(request: NextRequest) {
         instrumental: instrumental || false,
         vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined,
         personaId: verifiedPersonaId,
+        weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined,
+        styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined,
+        audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined,
+        negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined,
       });
 
       const [t1, t2] = await Promise.all([

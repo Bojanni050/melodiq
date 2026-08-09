@@ -12,7 +12,7 @@ import {
   formatProviderLabel,
   AudioSourceBadge,
   resolveStreamSuffix,
-} from "../Player";
+} from "./playerUtils";
 import ChromecastButton from "../ChromecastButton";
 
 const AudioVisualizer = dynamic(() => import("./AudioVisualizer"), { ssr: false });

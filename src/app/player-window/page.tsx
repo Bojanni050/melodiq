@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Track } from "@/lib/store";
-import { formatProviderLabel, type AudioSource, type AudioSourceState, AudioSourceBadge } from "@/components/Player";
+import { formatProviderLabel, type AudioSource, type AudioSourceState, AudioSourceBadge } from "@/components/player/playerUtils";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import {
   PLAYER_POPUP_CHANNEL,

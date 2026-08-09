@@ -704,6 +704,7 @@ export async function PATCH(
     const prompt = body.prompt;
     const lyrics = body.lyrics;
     const regenerateCoverArt = body.regenerateCoverArt;
+    const regenerateTitle = body.regenerateTitle;
     const workspaceId = body.workspaceId;
     const artistName = body.artistName;
     const composerName = body.composerName;
@@ -726,7 +727,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -745,6 +746,31 @@ export async function PATCH(
         { forceNew: true }
       );
       return NextResponse.json({ accepted: true, requestedAt: Date.now() }, { status: 202 });
+    }
+
+    if (regenerateTitle === true) {
+      const track = result[0];
+      const { generateTitle, generateInstrumentalTitleFromPrompt } = await import("@/lib/providers/llm");
+      const { toTitleCase } = await import("@/lib/title-case");
+      
+      try {
+        let newTitle: string | null = null;
+        if (track.lyrics && track.lyrics.trim().length >= 20) {
+          newTitle = await generateTitle(track.lyrics);
+        } else if (track.prompt && track.prompt.trim()) {
+          newTitle = await generateInstrumentalTitleFromPrompt(track.prompt);
+        }
+        
+        if (newTitle) {
+          newTitle = toTitleCase(newTitle);
+          const updatedTrack = await db.update(tracks).set({ title: newTitle }).where(eq(tracks.id, id)).returning();
+          return NextResponse.json({ track: updatedTrack[0] });
+        } else {
+          return NextResponse.json({ error: "Could not generate title from available track data" }, { status: 400 });
+        }
+      } catch (e: any) {
+        return NextResponse.json({ error: e.message || "Failed to generate title" }, { status: 500 });
+      }
     }
 
     const updates: Partial<typeof tracks.$inferInsert> = {};

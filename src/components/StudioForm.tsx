@@ -242,6 +242,8 @@ export default memo(function StudioForm({
     vocalGender,
     weirdness,
     styleInfluence,
+    audioWeight,
+    negativeTags,
     savedLyrics,
     savedLyricsLoaded,
     setSongIdea,
@@ -257,6 +259,8 @@ export default memo(function StudioForm({
     setVocalGender,
     setWeirdness,
     setStyleInfluence,
+    setAudioWeight,
+    setNegativeTags,
     fetchSavedLyrics,
     saveLyric,
     loadSavedLyric,
@@ -1220,6 +1224,95 @@ Your chorus here`}
               <p className="text-[10px] text-white/25 mt-1">
                 {styleInfluence <= 40 ? "Model has freedom to invent melodies and deviate from genre" : styleInfluence <= 70 ? "Moderate — respects your tags but adds creative variation" : "Strict — forces the model to rigidly obey your style tags"}
               </p>
+            </div>
+          </>
+        )}
+
+        {/* APIMart Sliders — only for APIMart provider */}
+        {Object.keys(selectedProviders).length > 0 && Object.keys(selectedProviders)[0] === "apimart" && (
+          <>
+            <div className="my-4 h-px bg-white/10" />
+
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">APIMart Settings</h4>
+            </div>
+
+            {/* Exclude Styles (Negative Tags) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white/60 mb-1.5">Exclude Styles</label>
+              <input
+                type="text"
+                placeholder="e.g. vocals, drums, lo-fi"
+                value={negativeTags}
+                onChange={(e) => setNegativeTags(e.target.value)}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+              />
+            </div>
+
+            {/* Style Weight */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-white/60">Style weight</label>
+                <span className="text-sm text-white/40 font-mono">{(styleInfluence / 100).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={styleInfluence}
+                  onChange={(e) => setStyleInfluence(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${styleInfluence}%, rgba(255,255,255,0.1) ${styleInfluence}%)`,
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+            </div>
+
+            {/* Weirdness Constraint (Creativity) */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-white/60">Creativity (Weirdness)</label>
+                <span className="text-sm text-white/40 font-mono">{(weirdness / 100).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={weirdness}
+                  onChange={(e) => setWeirdness(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${weirdness}%, rgba(255,255,255,0.1) ${weirdness}%)`,
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+            </div>
+
+            {/* Audio Weight */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-white/60">Audio weight</label>
+                <span className="text-sm text-white/40 font-mono">{(audioWeight / 100).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={audioWeight}
+                  onChange={(e) => setAudioWeight(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
             </div>
           </>
         )}

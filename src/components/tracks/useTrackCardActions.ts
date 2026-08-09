@@ -41,6 +41,7 @@ export function useTrackCardActions({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null);
   const [isRegeneratingCover, setIsRegeneratingCover] = useState(false);
+  const [isRegeneratingTitle, setIsRegeneratingTitle] = useState(false);
   const [coverOverrideUrl, setCoverOverrideUrl] = useState<string | null>(null);
   const [currentRating, setCurrentRating] = useState<string | null>(track.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
@@ -145,6 +146,29 @@ export function useTrackCardActions({
       }
     } catch {
       setIsRegeneratingCover(false);
+    }
+  }
+
+  async function handleRegenerateTitle() {
+    if (isRegeneratingTitle) return;
+    setIsRegeneratingTitle(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateTitle: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Since track data usually comes from SWR or similar, updating might be handled globally 
+        // or by a mutate() call in the parent. The new title is returned in data.track.title.
+        // The component will re-render if it depends on a global store or SWR cache invalidation.
+        window.dispatchEvent(new CustomEvent("melodiq:track-updated", { detail: { trackId: track.id } }));
+      }
+    } catch (error) {
+      console.error("Failed to regenerate title:", error);
+    } finally {
+      setIsRegeneratingTitle(false);
     }
   }
 
@@ -339,6 +363,7 @@ export function useTrackCardActions({
     currentRating, ratingLoading,
     currentVotedAt, voteLoading,
     isRegeneratingCover,
+    isRegeneratingTitle,
     showCreatePlaylistDialog, setShowCreatePlaylistDialog,
     showPlaylistPickerDialog, setShowPlaylistPickerDialog,
     showDuplicatePlaylistDialog, setShowDuplicatePlaylistDialog,
@@ -352,6 +377,7 @@ export function useTrackCardActions({
     // handlers
     executeDelete, handleDelete,
     handleRegenerateCover,
+    handleRegenerateTitle,
     handleRating,
     handleVote,
     handleDownload,

@@ -108,6 +108,8 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       vocalGender,
       weirdness,
       styleInfluence,
+      audioWeight,
+      negativeTags,
       usePersonaVoice,
     } = useStudioStore.getState();
 
@@ -185,6 +187,8 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               vocalGender,
               weirdness,
               styleInfluence,
+              audioWeight,
+              negativeTags,
               personaId: provider === "apimart" ? personaId : undefined,
             }),
           }).then(async (res) => {

@@ -10,6 +10,8 @@ interface TrackActionMenuProps {
   onReusePrompt?: (track: TrackItem) => void;
   onRegenerateCover: () => void;
   isRegeneratingCover: boolean;
+  onRegenerateTitle?: () => void;
+  isRegeneratingTitle?: boolean;
   onMoveToWorkspaceClick: () => void;
   onAddToQueue?: (track: TrackItem) => void;
   onCreatePlaylistClick: () => void;
@@ -47,6 +49,8 @@ export default function TrackActionMenu({
   onReusePrompt,
   onRegenerateCover,
   isRegeneratingCover,
+  onRegenerateTitle,
+  isRegeneratingTitle,
   onMoveToWorkspaceClick,
   onAddToQueue,
   onRemoveFromPlaylistClick,
@@ -202,6 +206,19 @@ export default function TrackActionMenu({
           >
             {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
           </button>
+          {onRegenerateTitle && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRegenerateTitle();
+                setMenuOpen(false);
+              }}
+              disabled={isRegeneratingTitle}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRegeneratingTitle ? "Regenerating title..." : "Regenerate Title"}
+            </button>
+          )}
           {onLinkToArchiveClick && (
                       <button
                         onClick={(e) => {

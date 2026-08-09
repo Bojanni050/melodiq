@@ -998,6 +998,8 @@ const TrackCard = memo(function TrackCard({
               onReusePrompt={onReusePrompt}
               onRegenerateCover={actions.handleRegenerateCover}
               isRegeneratingCover={actions.isRegeneratingCover}
+              onRegenerateTitle={actions.handleRegenerateTitle}
+              isRegeneratingTitle={actions.isRegeneratingTitle}
               onMoveToWorkspaceClick={() => actions.setWorkspaceMenuOpen(true)}
               onAddToQueue={onAddToQueue}
               onCreatePlaylistClick={() => actions.setShowCreatePlaylistDialog(true)}
