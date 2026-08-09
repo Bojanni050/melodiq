@@ -40,6 +40,7 @@ export default function ReleaseDetailPage() {
     renameRelease,
     updateReleaseType,
     updateReleaseCover,
+    toggleReleasePublic,
   } = useReleaseStore();
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
@@ -51,6 +52,9 @@ export default function ReleaseDetailPage() {
   const [titleDraft, setTitleDraft] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [publishingRelease, setPublishingRelease] = useState(false);
+  // null = closed, string[] = list of unpublished track titles waiting for confirm
+  const [publishConfirmTracks, setPublishConfirmTracks] = useState<string[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -161,6 +165,31 @@ export default function ReleaseDetailPage() {
       console.error("[release-cover] upload error", err);
     } finally {
       setUploadingCover(false);
+    }
+  }
+
+  function handlePublishClick() {
+    if (!selectedRelease || publishingRelease) return;
+    if (selectedRelease.isPublic) {
+      // Unpublishing — just confirm with a simple modal (reuse publishConfirmTracks as null sentinel but show unpublish modal)
+      setPublishConfirmTracks([]);
+      return;
+    }
+    // Publishing — find which tracks are not yet published
+    const unpublishedTitles = releaseTracks
+      .filter((t) => t.releaseStatus !== "published")
+      .map((t) => t.title || "Untitled");
+    setPublishConfirmTracks(unpublishedTitles);
+  }
+
+  async function confirmPublishToggle() {
+    if (!selectedRelease || publishingRelease) return;
+    setPublishConfirmTracks(null);
+    setPublishingRelease(true);
+    try {
+      await toggleReleasePublic(selectedRelease.id);
+    } finally {
+      setPublishingRelease(false);
     }
   }
 
@@ -304,6 +333,33 @@ export default function ReleaseDetailPage() {
                   >
                     {isEditingOrder ? "Save order" : "Edit order"}
                   </button>
+
+                  {/* Publish / Unpublish button */}
+                  <button
+                    type="button"
+                    onClick={handlePublishClick}
+                    disabled={publishingRelease}
+                    className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      selectedRelease?.isPublic
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {publishingRelease ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                        {selectedRelease?.isPublic ? "Unpublishing…" : "Publishing…"}
+                      </span>
+                    ) : selectedRelease?.isPublic ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        Published
+                      </span>
+                    ) : "Publish"}
+                  </button>
               </div>
 
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (
@@ -406,6 +462,85 @@ export default function ReleaseDetailPage() {
             setEditingTrack(null);
           }}
         />
+      )}
+
+      {/* Publish / Unpublish confirmation modal */}
+      {publishConfirmTracks !== null && selectedRelease && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Cancel"
+            onClick={() => setPublishConfirmTracks(null)}
+            className="absolute inset-0 bg-black/65"
+          />
+          <div className="relative w-full max-w-[460px] rounded-3xl border border-white/12 bg-[#0f1119] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+            {selectedRelease.isPublic ? (
+              /* Unpublish confirmation */
+              <>
+                <h3 className="text-lg font-semibold text-white">Unpublish release?</h3>
+                <p className="mt-2 text-sm text-white/60">
+                  <strong className="text-white">&ldquo;{selectedRelease.title}&rdquo;</strong> will be removed from public discovery.
+                  All {releaseTracks.length} track{releaseTracks.length !== 1 ? "s" : ""} in this release will also be set to unpublished.
+                </p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishConfirmTracks(null)}
+                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmPublishToggle}
+                    className="h-10 rounded-full bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/15"
+                  >
+                    Unpublish
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Publish confirmation */
+              <>
+                <h3 className="text-lg font-semibold text-white">Publish release?</h3>
+                <p className="mt-2 text-sm text-white/60">
+                  <strong className="text-white">&ldquo;{selectedRelease.title}&rdquo;</strong> will be made publicly visible.
+                </p>
+                {publishConfirmTracks.length > 0 && (
+                  <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                    <p className="text-xs font-medium text-amber-400/90 mb-2">
+                      The following {publishConfirmTracks.length} track{publishConfirmTracks.length !== 1 ? "s" : ""} will also be published:
+                    </p>
+                    <ul className="space-y-1">
+                      {publishConfirmTracks.map((title, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-white/70">
+                          <span className="h-1 w-1 rounded-full bg-white/30 shrink-0" />
+                          {title}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishConfirmTracks(null)}
+                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmPublishToggle}
+                    className="h-10 rounded-full bg-emerald-600/80 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+                  >
+                    {publishConfirmTracks.length > 0 ? "Publish release & tracks" : "Publish release"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { releaseTracks, releases, tracks } from "@/db/schema";
@@ -244,23 +244,50 @@ export async function PATCH(
     }
 
     if (action === "toggle-public") {
-      // Only admins can publish releases to the public discover page.
-      const [owner] = await db
-        .select({ role: sql<string>`role` })
-        .from(sql`users`)
-        .where(sql`id = ${auth.userId}`)
-        .limit(1);
-      if (!owner || owner.role !== "admin") {
-        return NextResponse.json({ error: "Only admins can publish releases" }, { status: 403 });
+      const nextPublic = !existing.isPublic;
+      const now = new Date();
+
+      // Cascade: publish or unpublish all tracks that belong to this release.
+      const releaseTrackRows = await db
+        .select({ trackId: releaseTracks.trackId })
+        .from(releaseTracks)
+        .where(eq(releaseTracks.releaseId, id));
+
+      const trackIds = releaseTrackRows.map((row) => row.trackId);
+
+      if (trackIds.length > 0) {
+        if (nextPublic) {
+          // Only publish tracks that aren't already published.
+          await db
+            .update(tracks)
+            .set({ releaseStatus: "published", publishDate: now, updatedAt: now })
+            .where(
+              and(
+                inArray(tracks.id, trackIds),
+                eq(tracks.userId, auth.userId),
+                sql`${tracks.releaseStatus} != 'published'`
+              )
+            );
+        } else {
+          // Unpublish all tracks in the release.
+          await db
+            .update(tracks)
+            .set({ releaseStatus: "unpublished", publishDate: null, updatedAt: now })
+            .where(
+              and(
+                inArray(tracks.id, trackIds),
+                eq(tracks.userId, auth.userId)
+              )
+            );
+        }
       }
 
-      const nextPublic = !existing.isPublic;
       await db
         .update(releases)
         .set({
           isPublic: nextPublic,
-          publishedAt: nextPublic ? new Date() : null,
-          updatedAt: new Date(),
+          publishedAt: nextPublic ? now : null,
+          updatedAt: now,
         })
         .where(and(eq(releases.id, id), eq(releases.userId, auth.userId)));
 

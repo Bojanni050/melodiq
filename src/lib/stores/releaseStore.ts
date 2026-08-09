@@ -47,6 +47,7 @@ interface ReleaseState {
   ) => void;
   updateReleaseType: (releaseId: string, type: string) => void;
   updateReleaseCover: (releaseId: string, coverUrl: string) => void;
+  toggleReleasePublic: (releaseId: string) => Promise<void>;
 }
 
 function persistReleaseDelete(releaseId: string) {
@@ -285,6 +286,28 @@ export const useReleaseStore = create<ReleaseState>()(
             release.id === releaseId ? { ...release, coverUrl } : release
           ),
         }));
+      },
+      toggleReleasePublic: async (releaseId) => {
+        try {
+          const res = await fetch(`/api/releases/${releaseId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "toggle-public" }),
+          });
+          if (!res.ok) {
+            console.error("[store] toggleReleasePublic failed", res.status);
+            return;
+          }
+          const data = await res.json().catch(() => null);
+          const updated = data?.release;
+          if (updated) {
+            get().hydrateReleasesFromServer(
+              get().releases.map((r) => (r.id === releaseId ? { ...r, ...updated } : r))
+            );
+          }
+        } catch (error) {
+          console.error("[store] toggleReleasePublic error", error);
+        }
       },
     }),
     {
