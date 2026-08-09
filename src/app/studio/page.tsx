@@ -117,7 +117,7 @@ export default function StudioPage() {
           <main className="p-4">
             <div className="flex flex-col xl:flex-row gap-6 xl:gap-8">
               {/* Studio form */}
-              <div className="w-full xl:w-[500px] xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]">
+              <div className="w-full xl:w-[500px] xl:min-w-[360px] xl:shrink xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]">
                 <StudioForm
                   credits={credits}
                   isGenerating={generating}
@@ -129,7 +129,7 @@ export default function StudioPage() {
               </div>
 
               {/* Track list column */}
-              <div className="w-full xl:flex-1 self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]">
+              <div className="w-full xl:flex-1 xl:min-w-[280px] self-start xl:sticky xl:top-4 min-h-[400px] xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]">
                 <div className="flex flex-col h-full min-h-0">
                   <StudioTabBar activeTab={workspaceView.studioTab} onTabChange={workspaceView.setStudioTab} />
 

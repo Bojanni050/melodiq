@@ -185,5 +185,5 @@ export const useSidebarStore = create<SidebarState>()((set) => ({
   collapsed: false,
   isQHD: false,
   setCollapsed: (v) => set({ collapsed: v }),
-  setIsQHD: (v) => set({ isQHD: v, collapsed: !v }),
+  setIsQHD: (v) => set({ isQHD: v }),
 }));
