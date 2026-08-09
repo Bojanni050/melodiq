@@ -46,6 +46,7 @@ interface ReleaseState {
     details: { kind?: string | null; artistName?: string | null; description?: string | null; releaseDate?: string | null }
   ) => void;
   updateReleaseType: (releaseId: string, type: string) => void;
+  updateReleaseCover: (releaseId: string, coverUrl: string) => void;
 }
 
 function persistReleaseDelete(releaseId: string) {
@@ -277,6 +278,13 @@ export const useReleaseStore = create<ReleaseState>()(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "update-type", type }),
         }).catch((error) => console.error("[store] updateReleaseType failed", error));
+      },
+      updateReleaseCover: (releaseId, coverUrl) => {
+        set((state) => ({
+          releases: state.releases.map((release) =>
+            release.id === releaseId ? { ...release, coverUrl } : release
+          ),
+        }));
       },
     }),
     {

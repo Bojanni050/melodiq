@@ -469,6 +469,8 @@ export default function SettingsPage() {
                   onToggleAutoAnalyzeComposition={toggleAutoAnalyzeComposition}
                   tclAutoJumpToEditor={values.TCL_AUTO_JUMP_EDITOR !== "false"}
                   onToggleTclAutoJumpToEditor={toggleTclAutoJumpToEditor}
+                  onGetModels={getOpenRouterModels}
+                  testingModels={testingModels}
                 />
               )}
 

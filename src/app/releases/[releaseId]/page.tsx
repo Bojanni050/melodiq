@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -39,6 +39,7 @@ export default function ReleaseDetailPage() {
     setTrackSide,
     renameRelease,
     updateReleaseType,
+    updateReleaseCover,
   } = useReleaseStore();
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
@@ -48,6 +49,8 @@ export default function ReleaseDetailPage() {
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -144,6 +147,23 @@ export default function ReleaseDetailPage() {
     setEditingTitle(false);
   }
 
+  async function handleCoverUpload(file: File) {
+    if (!selectedRelease || uploadingCover) return;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("cover", file);
+      const res = await fetch(`/api/releases/${selectedRelease.id}/cover`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { coverUrl } = await res.json() as { coverUrl: string };
+      updateReleaseCover(selectedRelease.id, `${coverUrl}?t=${Date.now()}`);
+    } catch (err) {
+      console.error("[release-cover] upload error", err);
+    } finally {
+      setUploadingCover(false);
+    }
+  }
+
   if (!loading && !selectedRelease) {
     return (
       <div className="h-screen bg-[#09090d] overflow-hidden text-white">
@@ -185,7 +205,50 @@ export default function ReleaseDetailPage() {
             </div>
 
             <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                {/* Cover thumbnail */}
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={uploadingCover}
+                  title="Upload cover art"
+                  className="group relative shrink-0 h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] transition-opacity disabled:opacity-60"
+                >
+                  {selectedRelease?.coverUrl ? (
+                    <img
+                      src={selectedRelease.coverUrl}
+                      alt="Release cover"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <svg className="h-8 w-8 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9" strokeWidth={1.2} />
+                        <circle cx="12" cy="12" r="3" strokeWidth={1.2} />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    {uploadingCover ? (
+                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleCoverUpload(f); e.target.value = ""; }}
+                />
+
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     {editingTitle ? (
@@ -215,8 +278,8 @@ export default function ReleaseDetailPage() {
                     {releaseTracks.length} tracks in this release{releaseTracksTotalDuration ? ` (${releaseTracksTotalDuration})` : ""}.
                   </p>
                 </div>
-
-                <div className="flex shrink-0 items-center gap-2">
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                   {RELEASE_TYPES.map((t) => (
                     <button
                       key={t.value}
@@ -241,7 +304,6 @@ export default function ReleaseDetailPage() {
                   >
                     {isEditingOrder ? "Save order" : "Edit order"}
                   </button>
-                </div>
               </div>
 
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (

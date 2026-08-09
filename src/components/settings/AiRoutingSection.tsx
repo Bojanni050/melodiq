@@ -44,6 +44,8 @@ export default function AiRoutingSection({
   onToggleAutoAnalyzeComposition,
   tclAutoJumpToEditor,
   onToggleTclAutoJumpToEditor,
+  onGetModels,
+  testingModels,
 }: {
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
@@ -85,6 +87,8 @@ export default function AiRoutingSection({
   onToggleAutoAnalyzeComposition: () => void;
   tclAutoJumpToEditor: boolean;
   onToggleTclAutoJumpToEditor: () => void;
+  onGetModels?: () => void;
+  testingModels?: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -217,12 +221,40 @@ export default function AiRoutingSection({
       </section>
 
       <section className="section-card">
-        <div className="mb-3">
-          <h2 className="text-sm font-semibold">Models</h2>
-          <p className="text-sm text-white/30">
-            OpenRouter models used for prompt optimization, lyrics, and image prompts. Retrieve models from the
-            OpenRouter provider card under Providers &rarr; LLM.
-          </p>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold">Models</h2>
+            <p className="text-sm text-white/30">
+              OpenRouter models used for prompt optimization, lyrics, and image prompts.
+            </p>
+          </div>
+          {onGetModels && (
+            <button
+              type="button"
+              onClick={onGetModels}
+              disabled={testingModels}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {testingModels ? (
+                <>
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Retrieving…
+                </>
+              ) : (
+                <>
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 5.36A9 9 0 0020.49 15" />
+                  </svg>
+                  Retrieve Models
+                </>
+              )}
+            </button>
+          )}
         </div>
         <div className="space-y-3">
           <OpenRouterModelDropdown
