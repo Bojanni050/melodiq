@@ -270,6 +270,7 @@ export default memo(function StudioForm({
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showVocalGenderConfirm, setShowVocalGenderConfirm] = useState(false);
+  const [showEmptyLyricsConfirm, setShowEmptyLyricsConfirm] = useState(false);
 
   useEffect(() => {
     if (!savedLyricsLoaded) {
@@ -492,6 +493,54 @@ export default memo(function StudioForm({
                 className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
               >
                 Doorgaan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showEmptyLyricsConfirm && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowEmptyLyricsConfirm(false)}
+          />
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[26rem] flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white mb-1">No lyrics entered</p>
+                <p className="text-sm text-white/65 leading-relaxed">
+                  The lyrics field is empty. The AI provider will make up its own lyrics. Continue anyway?
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEmptyLyricsConfirm(false)}
+                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmptyLyricsConfirm(false);
+                  if (!instrumental && vocalGender === "auto") {
+                    setShowVocalGenderConfirm(true);
+                  } else {
+                    onGenerate();
+                  }
+                }}
+                className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-4 py-1.5 text-sm text-violet-200 transition-colors hover:bg-violet-500/25"
+              >
+                Continue anyway
               </button>
             </div>
           </div>
@@ -1416,6 +1465,10 @@ Your chorus here`}
           onClick={() => {
             if (songIdea.length > styleMaxChars) {
               setShowStyleTooLongConfirm(true);
+              return;
+            }
+            if (!instrumental && !lyrics.trim()) {
+              setShowEmptyLyricsConfirm(true);
               return;
             }
             if (!instrumental && vocalGender === "auto") {
