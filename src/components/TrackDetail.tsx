@@ -5,31 +5,9 @@ import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { parseLyricsToBlocks } from "@/lib/lyrics-to-blocks";
-import { STEM_TYPES } from "@/lib/stem-types";
-import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { formatGenerationTime } from "@/lib/track-utils";
 import { useSWRConfig } from "swr";
 import SectionReplaceEditor from "@/components/tracks/SectionReplaceEditor";
-
-type TrackStem = {
-  id: string;
-  stemType: string;
-  status: "pending" | "completed" | "failed";
-  audioUrl: string | null;
-  error: string | null;
-  createdAt: string;
-  completedAt: string | null;
-};
-
-type TrackMaster = {
-  id: string;
-  variationCategory: string;
-  status: "pending" | "completed" | "failed";
-  audioUrl: string | null;
-  error: string | null;
-  createdAt: string;
-  completedAt: string | null;
-};
 
 const TRANSLATE_LANGUAGES = [
   "English",
@@ -112,14 +90,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
   const [showingTranslation, setShowingTranslation] = useState(false);
-  const [stemsExpanded, setStemsExpanded] = useState(false);
-  const [stems, setStems] = useState<TrackStem[]>([]);
-  const [extractingStemType, setExtractingStemType] = useState<string | null>(null);
-  const [stemsError, setStemsError] = useState<string | null>(null);
-  const [masteringExpanded, setMasteringExpanded] = useState(false);
-  const [masters, setMasters] = useState<TrackMaster[]>([]);
-  const [masteringVariation, setMasteringVariation] = useState<string | null>(null);
-  const [masteringError, setMasteringError] = useState<string | null>(null);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
@@ -464,116 +434,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       setTranslateError(message);
     } finally {
       setTranslating(false);
-    }
-  }
-
-  const canExtractStems = track.provider === "apimart" && !!track.jobId;
-
-  async function fetchStemsOnce() {
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/stems`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setStems(Array.isArray(data) ? data : []);
-    } catch {
-      // best-effort — the user can just re-expand the section to retry
-    }
-  }
-
-  // Initial load whenever the section is opened.
-  useEffect(() => {
-    if (!stemsExpanded || !canExtractStems) return;
-    void fetchStemsOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stemsExpanded, track.id]);
-
-  // Keep polling every 4s while any stem is still extracting; this effect
-  // re-runs each time `stems` updates, so it naturally chains itself until
-  // nothing is pending anymore.
-  useEffect(() => {
-    if (!stemsExpanded) return;
-    if (!stems.some((s) => s.status === "pending")) return;
-    const timerId = setTimeout(() => { void fetchStemsOnce(); }, 4000);
-    return () => clearTimeout(timerId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stems, stemsExpanded]);
-
-  async function handleExtractStem(stemType: string) {
-    setExtractingStemType(stemType);
-    setStemsError(null);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/stems`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stemType }),
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : `Stem extraction failed (${res.status})`;
-        throw new Error(message);
-      }
-      const stem = await res.json();
-      setStems((prev) => [...prev.filter((s) => s.stemType !== stemType), stem]);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to start stem extraction";
-      console.error("Failed to extract stem:", error);
-      setStemsError(message);
-    } finally {
-      setExtractingStemType(null);
-    }
-  }
-
-  async function fetchMastersOnce() {
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/master`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setMasters(Array.isArray(data) ? data : []);
-    } catch {
-      // best-effort — the user can just re-expand the section to retry
-    }
-  }
-
-  // Initial load whenever the section is opened.
-  useEffect(() => {
-    if (!masteringExpanded || !canExtractStems) return;
-    void fetchMastersOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [masteringExpanded, track.id]);
-
-  // Keep polling every 4s while any master is still processing; this effect
-  // re-runs each time `masters` updates, so it naturally chains itself until
-  // nothing is pending anymore.
-  useEffect(() => {
-    if (!masteringExpanded) return;
-    if (!masters.some((m) => m.status === "pending")) return;
-    const timerId = setTimeout(() => { void fetchMastersOnce(); }, 4000);
-    return () => clearTimeout(timerId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [masters, masteringExpanded]);
-
-  async function handleMaster(variationCategory: string) {
-    setMasteringVariation(variationCategory);
-    setMasteringError(null);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/master`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variationCategory }),
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : `Mastering failed (${res.status})`;
-        throw new Error(message);
-      }
-      const master = await res.json();
-      setMasters((prev) => [...prev.filter((m) => m.variationCategory !== variationCategory), master]);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to start mastering";
-      console.error("Failed to master track:", error);
-      setMasteringError(message);
-    } finally {
-      setMasteringVariation(null);
     }
   }
 
