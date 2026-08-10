@@ -106,6 +106,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   })();
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
   const canEditPrompt = isUploadedTrack;
+  const mp3Label = (track.format ?? "mp3").toUpperCase();
+  const wavLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
 
   const displayDuration = track.duration
@@ -258,6 +260,34 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           </div>
         </div>
       </div>
+
+      {/* Actions */}
+      {track.status === "done" && track.audioUrl && (
+        <div className="shrink-0 flex items-center gap-3 px-6 pt-5">
+          <button
+            onClick={() => onPlay(track.audioUrl!)}
+            className="flex-1 btn-primary py-2.5 text-sm"
+          >
+            Play
+          </button>
+          <button
+            onClick={() => handleDownload(track.audioUrl!)}
+            disabled={downloading}
+            className="btn-secondary text-sm px-3 py-2.5"
+          >
+            {mp3Label}
+          </button>
+          {track.s3KeyHd && track.audioUrlHd && (
+            <button
+              onClick={() => handleDownload(track.audioUrlHd!, true)}
+              disabled={downloading}
+              className="btn-secondary text-sm px-3 py-2.5"
+            >
+              {wavLabel}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Details Container */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
