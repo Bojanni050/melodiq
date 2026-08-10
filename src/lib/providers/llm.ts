@@ -490,15 +490,15 @@ export async function generateInstrumentalTitleFromPrompt(prompt: string): Promi
   const trimmedPrompt = prompt.trim();
   if (!trimmedPrompt) return null;
 
-  const systemPrompt = \You generate concise song titles for instrumental tracks.
+  const systemPrompt = `You generate concise song titles for instrumental tracks.
 
 Rules:
 - Return only the title
 - No quotes, no punctuation at the end, no explanation
 - Maximum 6 words
-- Keep it evocative and based on the style prompt\;
+- Keep it evocative and based on the style prompt`;
 
-  const userPrompt = \Create one instrumental track title from this style prompt:\n\n\\;
+  const userPrompt = `Create one instrumental track title from this style prompt:\n\n${trimmedPrompt}`;
 
   try {
     const rawTitle = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", temperature: 0.4 });
