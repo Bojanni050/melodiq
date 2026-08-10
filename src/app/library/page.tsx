@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import AutocompleteInput from "@/components/ui/AutocompleteInput";
-import SliderWithInput from "@/components/ui/SliderWithInput";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import type { TrackItem } from "@/components/tracks/types";
 import ResizablePanel from "@/components/studio/ResizablePanel";
+import TrashPanel from "@/components/library/TrashPanel";
+import UploadPanel from "@/components/library/UploadPanel";
+import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
+import type { LibraryTrack, LibraryView } from "@/components/library/types";
 import {
   DEFAULT_WORKSPACE_ID,
   usePlayerStore,
@@ -21,110 +23,6 @@ import {
   useWorkspaceStore,
 } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
-
-interface LibraryTrack {
-  id: string;
-  title: string | null;
-  provider: string;
-  providerModel: string;
-  prompt: string;
-  lyrics: string | null;
-  instrumental?: boolean | null;
-  isCollaboration?: boolean | null;
-  status: "pending" | "generating" | "done" | "failed";
-  audioUrl: string | null;
-  audioUrlHd: string | null;
-  format: string | null;
-  formatHd: string | null;
-  duration: number | null;
-  createdAt: string;
-  error: string | null;
-  s3KeyHd: string | null;
-  coverUrl: string | null;
-  s3KeyCover: string | null;
-  rating?: string | null;
-  lyricsTimestamps?: string | null;
-  artistName?: string | null;
-  artistId?: string | null;
-  composerName?: string | null;
-  writerName?: string | null;
-  deletedAt?: string | null;
-  uploadIndex?: number;
-}
-
-type LibraryView = "songs" | "trash";
-
-const MAX_UPLOAD_QUEUE = 10;
-
-const UPLOAD_PROVIDERS = [
-  { value: "upload", label: "Unknown / Other" },
-  { value: "suno", label: "Suno" },
-  { value: "mureka", label: "Mureka" },
-  { value: "heartmula", label: "HeartMuLa" },
-  { value: "udio", label: "Udio" },
-  { value: "poyo", label: "PoYo" },
-  { value: "tempolor", label: "Tempolor" },
-  { value: "apiframe", label: "APIFrame" },
-  { value: "apimart", label: "APIMart" },
-  { value: "musicgpt", label: "MusicGPT" },
-] as const;
-
-type QueuedUploadItem = {
-  id: string;
-  file: File;
-  title: string;
-  artistName: string;
-  composerName: string;
-  writerName: string;
-  coverFile: File | null;
-  metadataFile: File | null;
-  prompt: string;
-  lyrics: string;
-  instrumental: boolean;
-  sourceProvider: string;
-  sunoStyleInfluence: number | null;
-  sunoWeirdness: number | null;
-  licenseFile: File | null;
-};
-
-function isObjectRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isSupportedAudioFile(file: File) {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-  return type.includes("mpeg") || type.includes("mp3") || type.includes("wav") || type.includes("wave") || name.endsWith(".mp3") || name.endsWith(".wav");
-}
-
-function titleFromUploadFilename(filename: string) {
-  const withoutExtension = filename.replace(/\.[^/.]+$/, "").trim();
-  const withoutCopySuffix = withoutExtension.replace(/\s*\(\d+\)$/, "").trim();
-  return withoutCopySuffix || "Untitled Upload";
-}
-
-function formatFileSize(bytes: number) {
-  if (!Number.isFinite(bytes) || bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-async function readApiPayload(response: Response): Promise<unknown> {
-  const contentType = response.headers.get("content-type") || "";
-
-  if (contentType.toLowerCase().includes("application/json")) {
-    return response.json().catch(() => null);
-  }
-
-  const rawText = await response.text().catch(() => "");
-  if (!rawText) return null;
-
-  try {
-    return JSON.parse(rawText);
-  } catch {
-    return { __rawText: rawText };
-  }
-}
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -152,9 +50,6 @@ export default function LibraryPage() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const uploadInputRef = useRef<HTMLInputElement | null>(null);
-  const uploadMetadataInputRef = useRef<HTMLInputElement | null>(null);
-  const uploadLicenseInputRef = useRef<HTMLInputElement | null>(null);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -181,18 +76,7 @@ export default function LibraryPage() {
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
-  const [rejectedFiles, setRejectedFiles] = useState<Array<{ filename: string; reason: string }>>([]);
   const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
-  const [isUploadDropzoneActive, setIsUploadDropzoneActive] = useState(false);
-  const [queuedUploads, setQueuedUploads] = useState<QueuedUploadItem[]>([]);
-  const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
-  const [pendingLicenseTargetId, setPendingLicenseTargetId] = useState<string | null>(null);
-  const [uploadPromptDraft, setUploadPromptDraft] = useState("");
-  const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
-  const [uploadInstrumental, setUploadInstrumental] = useState(false);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     if (activeCheck && !activeCheck()) return;
@@ -265,6 +149,44 @@ export default function LibraryPage() {
       setTrashLoading(false);
     }
   }, []);
+
+  const handleRestoreTrack = useCallback(async (trackId: string) => {
+    await fetch(`/api/tracks/${trackId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }) });
+    setTrashedTracks((prev) => prev.filter((t) => t.id !== trackId));
+    await fetchTracks();
+  }, [fetchTracks]);
+
+  const handleDeleteTrackForever = useCallback(async (trackId: string) => {
+    const track = trashedTracks.find((t) => t.id === trackId);
+    if (!confirm(`Permanently delete "${track?.title || "this track"}"? This cannot be undone.`)) return;
+    await fetch(`/api/tracks/${trackId}?permanent=true`, { method: "DELETE" });
+    setTrashedTracks((prev) => prev.filter((t) => t.id !== trackId));
+  }, [trashedTracks]);
+
+  const handleUploadFinished = useCallback((uploadedTracks: LibraryTrack[], workspaceId: string) => {
+    if (uploadedTracks.length > 0) {
+      const uploadedTrackIds = uploadedTracks.map((track) => track.id);
+      moveTracksToWorkspace(workspaceId, uploadedTrackIds);
+
+      setTracks((current) => {
+        const byId = new Map(current.map((track) => [track.id, track]));
+        uploadedTracks.forEach((track) => byId.set(track.id, track));
+        return Array.from(byId.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      });
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("melodiq:tracks-uploaded", {
+            detail: { trackIds: uploadedTrackIds, workspaceId },
+          })
+        );
+      }
+    }
+
+    void fetchTracks();
+  }, [moveTracksToWorkspace, fetchTracks]);
 
   useEffect(() => {
     function consumeJumpToTrack() {
@@ -349,7 +271,7 @@ export default function LibraryPage() {
       if (currentTrack) {
         const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
         if (matchedTrack) return matchedTrack;
-        
+
         return {
           id: currentTrack.id,
           title: currentTrack.title,
@@ -383,7 +305,7 @@ export default function LibraryPage() {
   useEffect(() => {
     const playResumed = isPlaying && !prevIsPlaying.current;
     const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-    
+
     prevIsPlaying.current = isPlaying;
     prevCurrentTrackId.current = currentTrack?.id;
 
@@ -468,261 +390,6 @@ export default function LibraryPage() {
         : current
     );
   }, []);
-
-  function handleQueueAudioSelection(files: FileList | null) {
-    if (!files || files.length === 0 || uploading) return;
-
-    const incoming = Array.from(files);
-    const invalid = incoming.filter((file) => !isSupportedAudioFile(file));
-    const valid = incoming.filter((file) => isSupportedAudioFile(file));
-
-    if (invalid.length > 0) {
-      setRejectedFiles((current) => [
-        ...current,
-        ...invalid.map((file) => ({ filename: file.name, reason: "Only MP3 and WAV files are supported." })),
-      ]);
-    }
-
-    setQueuedUploads((current) => {
-      const room = Math.max(0, MAX_UPLOAD_QUEUE - current.length);
-      const accepted = valid.slice(0, room).map((file) => ({
-        id: typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        file,
-        title: titleFromUploadFilename(file.name),
-        artistName: "",
-        composerName: "",
-        writerName: "",
-        coverFile: null,
-        metadataFile: null,
-        prompt: uploadPromptDraft,
-        lyrics: uploadLyricsDraft,
-        instrumental: uploadInstrumental,
-        sourceProvider: "upload",
-        sunoStyleInfluence: 50,
-        sunoWeirdness: 50,
-        licenseFile: null,
-      }));
-
-      if (valid.length > room) {
-        setUploadError(`Queue limit reached. Maximum ${MAX_UPLOAD_QUEUE} files per upload batch.`);
-      }
-
-      return [...current, ...accepted];
-    });
-
-    if (uploadInputRef.current) {
-      uploadInputRef.current.value = "";
-    }
-  }
-
-  function handleMetadataAttachSelection(files: FileList | null) {
-    if (!pendingMetadataTargetId || !files || files.length === 0) return;
-    const file = files[0];
-
-    const normalizedName = file.name.toLowerCase();
-    if (!normalizedName.endsWith(".txt") && !normalizedName.endsWith(".lrc")) {
-      setUploadError("Metadata file must be a .txt or .lrc file.");
-      return;
-    }
-
-    setQueuedUploads((current) =>
-      current.map((item) =>
-        item.id === pendingMetadataTargetId
-          ? { ...item, metadataFile: file }
-          : item
-      )
-    );
-    setPendingMetadataTargetId(null);
-
-    if (uploadMetadataInputRef.current) {
-      uploadMetadataInputRef.current.value = "";
-    }
-  }
-
-  function handleLicenseAttachSelection(files: FileList | null) {
-    if (!pendingLicenseTargetId || !files || files.length === 0) return;
-    const file = files[0];
-
-    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
-      setUploadError("License file must be a PDF.");
-      return;
-    }
-
-    setQueuedUploads((current) =>
-      current.map((item) =>
-        item.id === pendingLicenseTargetId ? { ...item, licenseFile: file } : item
-      )
-    );
-    setPendingLicenseTargetId(null);
-
-    if (uploadLicenseInputRef.current) {
-      uploadLicenseInputRef.current.value = "";
-    }
-  }
-
-  function handleUploadDrop(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsUploadDropzoneActive(false);
-
-    if (uploading) return;
-    handleQueueAudioSelection(event.dataTransfer.files);
-  }
-
-  function handleUploadDragOver(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = "copy";
-    if (!uploading) {
-      setIsUploadDropzoneActive(true);
-    }
-  }
-
-  function handleUploadDragLeave(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const relatedTarget = event.relatedTarget as Node | null;
-    if (relatedTarget && event.currentTarget.contains(relatedTarget)) {
-      return;
-    }
-
-    setIsUploadDropzoneActive(false);
-  }
-
-  async function handleStartUpload() {
-    if (queuedUploads.length === 0 || uploading) return;
-
-    const targetWorkspaceId = workspaces.some((workspace) => workspace.id === uploadWorkspaceId)
-      ? uploadWorkspaceId
-      : DEFAULT_WORKSPACE_ID;
-
-    setUploading(true);
-    setUploadError(null);
-    setUploadNotice(null);
-    setRejectedFiles([]);
-
-    try {
-      const formData = new FormData();
-      queuedUploads.forEach((item, index) => {
-        formData.append("files", item.file);
-        if (item.metadataFile) {
-          formData.append(`metadataFile:${index}`, item.metadataFile);
-        }
-        if (item.coverFile) {
-          formData.append(`coverFile:${index}`, item.coverFile);
-        }
-        if (item.licenseFile) {
-          formData.append(`licenseFile:${index}`, item.licenseFile);
-        }
-      });
-
-      formData.append(
-        "uploadItems",
-        JSON.stringify(
-          queuedUploads.map((item) => ({
-            title: item.title.trim() || null,
-            artistName: item.artistName.trim() || null,
-            composerName: item.composerName.trim() || null,
-            writerName: item.writerName.trim() || null,
-            prompt: item.prompt.trim() || null,
-            lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
-            instrumental: item.instrumental,
-            sourceProvider: item.sourceProvider || null,
-            sunoStyleInfluence: item.sourceProvider === "suno" ? item.sunoStyleInfluence : null,
-            sunoWeirdness: item.sourceProvider === "suno" ? item.sunoWeirdness : null,
-          }))
-        )
-      );
-
-      formData.append("workspaceId", targetWorkspaceId);
-
-      const response = await fetch("/api/tracks", {
-        method: "POST",
-        body: formData,
-      });
-
-      const payload = await readApiPayload(response);
-
-      const payloadRejected = isObjectRecord(payload) && Array.isArray(payload.rejected)
-        ? (payload.rejected as Array<{ filename: string; reason: string }>)
-        : [];
-
-      if (payloadRejected.length > 0) {
-        setRejectedFiles(payloadRejected);
-      }
-
-      if (!response.ok) {
-        if (response.status === 413) {
-          throw new Error("Upload is too large. Try fewer files or smaller files.");
-        }
-
-        const apiError = isObjectRecord(payload) && typeof payload.error === "string"
-          ? payload.error
-          : null;
-        const apiDetails = isObjectRecord(payload) && typeof payload.details === "string"
-          ? payload.details
-          : null;
-
-        if (apiError) {
-          throw new Error(apiDetails ? `${apiError} (${apiDetails})` : apiError);
-        }
-
-        throw new Error(`Upload failed (HTTP ${response.status}).`);
-      }
-
-      if (!isObjectRecord(payload)) {
-        throw new Error("Upload failed: invalid server response.");
-      }
-
-      const uploadedTracks: LibraryTrack[] = (Array.isArray(payload.tracks) ? payload.tracks : []).filter(
-        (track: LibraryTrack) => track.status === "done",
-      );
-
-      if (uploadedTracks.length > 0) {
-        const uploadedTrackIds = uploadedTracks.map((track) => track.id);
-        moveTracksToWorkspace(targetWorkspaceId, uploadedTrackIds);
-
-        setTracks((current) => {
-          const byId = new Map(current.map((track) => [track.id, track]));
-          uploadedTracks.forEach((track) => byId.set(track.id, track));
-          return Array.from(byId.values()).sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          );
-        });
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent("melodiq:tracks-uploaded", {
-              detail: { trackIds: uploadedTrackIds, workspaceId: targetWorkspaceId },
-            })
-          );
-        }
-
-        setQueuedUploads([]);
-      }
-
-      const rejectedCount = payloadRejected.length;
-      if (uploadedTracks.length > 0) {
-        setUploadNotice(
-          rejectedCount > 0
-            ? `Uploaded ${uploadedTracks.length} file(s) successfully, but ${rejectedCount} file(s) were skipped.`
-            : `Uploaded ${uploadedTracks.length} file(s) successfully.`
-        );
-      } else {
-        setUploadError("No files were uploaded successfully.");
-      }
-
-      await fetchTracks();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed.";
-      setUploadError(message);
-    } finally {
-      setUploading(false);
-    }
-  }
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -909,76 +576,12 @@ export default function LibraryPage() {
 
             {/* Recycle Bin view */}
             {view === "trash" && (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">Recycle Bin</h2>
-                    <p className="text-sm text-white/40 mt-0.5">Deleted tracks — restore or permanently delete them.</p>
-                  </div>
-                </div>
-
-                {trashLoading ? (
-                  <div className="flex items-center justify-center py-20 text-white/30 text-sm">Loading…</div>
-                ) : trashedTracks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3 text-white/30">
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <p className="text-sm">Recycle bin is empty</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
-                    {trashedTracks.map((track) => (
-                      <div key={track.id} className="flex items-center gap-3 px-4 py-3 bg-white/2 hover:bg-white/5 transition-colors">
-                        {/* Cover */}
-                        <div className="w-10 h-10 rounded-md shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
-                          {track.s3KeyCover ? (
-                            <img src={`/api/tracks/${track.id}/cover`} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                            </svg>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white/80 truncate">{track.title || track.prompt?.substring(0, 60) || "Untitled"}</p>
-                          <p className="text-xs text-white/35 mt-0.5">
-                            Deleted {track.deletedAt ? new Date(track.deletedAt).toLocaleDateString() : "recently"}
-                          </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await fetch(`/api/tracks/${track.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }) });
-                              setTrashedTracks((prev) => prev.filter((t) => t.id !== track.id));
-                              await fetchTracks();
-                            }}
-                            className="text-sm text-white/50 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/10"
-                          >
-                            Restore
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!confirm(`Permanently delete "${track.title || "this track"}"? This cannot be undone.`)) return;
-                              await fetch(`/api/tracks/${track.id}?permanent=true`, { method: "DELETE" });
-                              setTrashedTracks((prev) => prev.filter((t) => t.id !== track.id));
-                            }}
-                            className="text-sm text-red-400/60 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
-                          >
-                            Delete forever
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
+              <TrashPanel
+                tracks={trashedTracks}
+                loading={trashLoading}
+                onRestore={handleRestoreTrack}
+                onDeleteForever={handleDeleteTrackForever}
+              />
             )}
 
           </div>
@@ -1027,510 +630,16 @@ export default function LibraryPage() {
         />
       )}
 
-      {isUploadPanelOpen && (
-        <div className="fixed inset-0 z-70">
-          <button
-            type="button"
-            aria-label="Close upload panel"
-            onClick={() => setIsUploadPanelOpen(false)}
-            className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
-          />
-
-          <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-140 border-r border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-            <div className="flex h-full flex-col">
-              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Upload Files</h3>
-                  <p className="text-sm text-white/55">Queue up to {MAX_UPLOAD_QUEUE} files, edit titles, add metadata, then upload.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsUploadPanelOpen(false)}
-                  title="Close upload panel"
-                  aria-label="Close upload panel"
-                  className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-                <div className="space-y-2">
-                  <label className="text-sm text-white/60" htmlFor="upload-panel-workspace-select">Workspace</label>
-                  <select
-                    id="upload-panel-workspace-select"
-                    value={uploadWorkspaceId}
-                    onChange={(event) => setUploadWorkspaceId(event.target.value)}
-                    className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                    disabled={uploading}
-                  >
-                    {uploadWorkspaceOptions.map((workspace) => (
-                      <option key={workspace.id} value={workspace.id}>
-                        {workspace.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Instrumental toggle */}
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-white">Instrumental</p>
-                    <p className="text-xs text-white/45">No lyrics — hides the lyrics field</p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={uploadInstrumental}
-                    disabled={uploading}
-                    onClick={() => setUploadInstrumental((v) => !v)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${uploadInstrumental ? "bg-primary-500" : "bg-white/15"}`}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${uploadInstrumental ? "translate-x-5" : "translate-x-0"}`} />
-                  </button>
-                </div>
-
-                <div className={`grid gap-3 transition-all duration-200 ${uploadInstrumental ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
-                  <div className="space-y-1">
-                    <label htmlFor="upload-panel-prompt" className="text-sm text-white/60">Optional prompt (global)</label>
-                    <textarea
-                      id="upload-panel-prompt"
-                      value={uploadPromptDraft}
-                      onChange={(event) => setUploadPromptDraft(event.target.value)}
-                      rows={3}
-                      disabled={uploading}
-                      placeholder="Style / mood / context"
-                      className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
-                    />
-                  </div>
-                  {!uploadInstrumental && (
-                    <div className="space-y-1">
-                      <label htmlFor="upload-panel-lyrics" className="text-sm text-white/60">Optional lyrics (global)</label>
-                      <textarea
-                        id="upload-panel-lyrics"
-                        value={uploadLyricsDraft}
-                        onChange={(event) => setUploadLyricsDraft(event.target.value)}
-                        rows={3}
-                        disabled={uploading}
-                        placeholder="Paste lyrics"
-                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <input
-                    ref={uploadInputRef}
-                    type="file"
-                    multiple
-                    accept=".mp3,.wav,audio/mpeg,audio/wav"
-                    aria-label="Queue MP3/WAV files"
-                    title="Queue MP3/WAV files"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(event) => handleQueueAudioSelection(event.target.files)}
-                  />
-                  <input
-                    ref={uploadMetadataInputRef}
-                    type="file"
-                    accept=".txt,.lrc,text/plain"
-                    aria-label="Attach metadata TXT or LRC file"
-                    title="Attach metadata TXT or LRC file"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(event) => handleMetadataAttachSelection(event.target.files)}
-                  />
-                  <input
-                    ref={uploadLicenseInputRef}
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    aria-label="Attach license PDF"
-                    title="Attach license PDF"
-                    className="hidden"
-                    disabled={uploading}
-                    onChange={(event) => handleLicenseAttachSelection(event.target.files)}
-                  />
-
-                  <button
-                    type="button"
-                    disabled={uploading || queuedUploads.length >= MAX_UPLOAD_QUEUE}
-                    onClick={() => uploadInputRef.current?.click()}
-                    className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
-                  >
-                    Add MP3/WAV Files
-                  </button>
-
-                  <span className="text-xs text-white/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
-                </div>
-
-                <div
-                  onDrop={handleUploadDrop}
-                  onDragOver={handleUploadDragOver}
-                  onDragEnter={handleUploadDragOver}
-                  onDragLeave={handleUploadDragLeave}
-                  className={`rounded-2xl border-2 border-dashed px-4 py-5 text-center transition-colors ${
-                    isUploadDropzoneActive
-                      ? "border-primary-400/80 bg-primary-500/10"
-                      : "border-white/15 bg-white/3"
-                  } ${uploading ? "opacity-60" : ""}`}
-                >
-                  <p className="text-sm font-medium text-white/85">Drag and drop MP3/WAV files here</p>
-                  <p className="mt-1 text-xs text-white/55">Drop files to add them to the upload queue.</p>
-                </div>
-
-                {queuedUploads.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-4 text-sm text-white/55">
-                    No files queued yet.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {queuedUploads.map((item) => (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-white/3 p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-white">{item.file.name}</p>
-                            <p className="text-xs text-white/45">{formatFileSize(item.file.size)}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setQueuedUploads((current) => current.filter((upload) => upload.id !== item.id))}
-                            className="rounded-full p-1.5 text-white/45 transition-colors hover:bg-red-500/10 hover:text-red-300"
-                            title="Remove from queue"
-                          >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        <div className="mt-2 space-y-2">
-                          <label htmlFor={`upload-item-title-${item.id}`} className="text-sm text-white/60">Title</label>
-                          <input
-                            id={`upload-item-title-${item.id}`}
-                            type="text"
-                            value={item.title}
-                            onChange={(event) => {
-                              const nextTitle = event.target.value;
-                              setQueuedUploads((current) =>
-                                current.map((upload) =>
-                                  upload.id === item.id ? { ...upload, title: nextTitle } : upload
-                                )
-                              );
-                            }}
-                            disabled={uploading}
-                            className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                          />
-
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="space-y-1">
-                              <label htmlFor={`upload-item-artist-${item.id}`} className="text-sm text-white/60">Artist</label>
-                              <AutocompleteInput
-                                id={`upload-item-artist-${item.id}`}
-                                value={item.artistName}
-                                onChange={(v) => setQueuedUploads((current) =>
-                                  current.map((upload) => upload.id === item.id ? { ...upload, artistName: v } : upload)
-                                )}
-                                disabled={uploading}
-                                placeholder="Artist name"
-                                suggestions={knownArtistNames}
-                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label htmlFor={`upload-item-composer-${item.id}`} className="text-sm text-white/60">Composer</label>
-                              <AutocompleteInput
-                                id={`upload-item-composer-${item.id}`}
-                                value={item.composerName}
-                                onChange={(v) => setQueuedUploads((current) =>
-                                  current.map((upload) => upload.id === item.id ? { ...upload, composerName: v } : upload)
-                                )}
-                                disabled={uploading}
-                                placeholder="Composer name"
-                                suggestions={knownComposerNames}
-                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label htmlFor={`upload-item-writer-${item.id}`} className="text-sm text-white/60">Written By</label>
-                              <AutocompleteInput
-                                id={`upload-item-writer-${item.id}`}
-                                value={item.writerName}
-                                onChange={(v) => setQueuedUploads((current) =>
-                                  current.map((upload) => upload.id === item.id ? { ...upload, writerName: v } : upload)
-                                )}
-                                disabled={uploading}
-                                placeholder="Lyrics writer"
-                                suggestions={knownWriterNames}
-                                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-sm text-white/60">Cover art</label>
-                            <div className="flex items-center gap-3">
-                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
-                                {item.coverFile ? (
-                                  <img
-                                    src={URL.createObjectURL(item.coverFile)}
-                                    alt=""
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <label
-                                  htmlFor={`upload-item-cover-${item.id}`}
-                                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                                >
-                                  {item.coverFile ? "Change" : "Upload image"}
-                                </label>
-                                <input
-                                  id={`upload-item-cover-${item.id}`}
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  disabled={uploading}
-                                  onChange={(e) => {
-                                    const f = e.target.files?.[0] ?? null;
-                                    setQueuedUploads((current) =>
-                                      current.map((upload) => upload.id === item.id ? { ...upload, coverFile: f } : upload)
-                                    );
-                                    e.target.value = "";
-                                  }}
-                                />
-                                {item.coverFile && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setQueuedUploads((current) =>
-                                      current.map((upload) => upload.id === item.id ? { ...upload, coverFile: null } : upload)
-                                    )}
-                                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
-                                  >
-                                    Remove
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <label htmlFor={`upload-item-provider-${item.id}`} className="text-sm text-white/50">Source</label>
-                            <select
-                              id={`upload-item-provider-${item.id}`}
-                              value={UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) ? item.sourceProvider : "__custom__"}
-                              onChange={(event) => {
-                                const v = event.target.value;
-                                setQueuedUploads((current) =>
-                                  current.map((upload) => upload.id === item.id ? { ...upload, sourceProvider: v === "__custom__" ? "" : v } : upload)
-                                );
-                              }}
-                              disabled={uploading}
-                              className="h-8 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
-                            >
-                              {UPLOAD_PROVIDERS.map((p) => (
-                                <option key={p.value} value={p.value}>{p.label}</option>
-                              ))}
-                              {!UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) && item.sourceProvider && (
-                                <option value="__custom__">{item.sourceProvider}</option>
-                              )}
-                            </select>
-                          </div>
-
-                          {item.sourceProvider === "suno" && (
-                            <div className="space-y-3 rounded-xl border border-white/8 bg-white/3 px-3 py-3">
-                              <SliderWithInput
-                                label="Style Influence"
-                                value={item.sunoStyleInfluence}
-                                onChange={(v) => setQueuedUploads((current) =>
-                                  current.map((u) => u.id === item.id ? { ...u, sunoStyleInfluence: v } : u)
-                                )}
-                                disabled={uploading}
-                              />
-                              <SliderWithInput
-                                label="Weirdness"
-                                value={item.sunoWeirdness}
-                                onChange={(v) => setQueuedUploads((current) =>
-                                  current.map((u) => u.id === item.id ? { ...u, sunoWeirdness: v } : u)
-                                )}
-                                disabled={uploading}
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex items-center justify-between gap-2 pt-0.5">
-                            <label className="text-sm text-white/50">Instrumental</label>
-                            <button
-                              type="button"
-                              role="switch"
-                              aria-checked={item.instrumental}
-                              disabled={uploading}
-                              onClick={() => setQueuedUploads((current) =>
-                                current.map((upload) =>
-                                  upload.id === item.id ? { ...upload, instrumental: !upload.instrumental } : upload
-                                )
-                              )}
-                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.instrumental ? "bg-primary-500" : "bg-white/15"}`}
-                            >
-                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.instrumental ? "translate-x-4" : "translate-x-0"}`} />
-                            </button>
-                          </div>
-
-                          <div className={`grid gap-2 ${item.instrumental ? "grid-cols-1" : "grid-cols-2"}`}>
-                            <div className="space-y-1">
-                              <label htmlFor={`upload-item-prompt-${item.id}`} className="text-sm text-white/50">Prompt</label>
-                              <textarea
-                                id={`upload-item-prompt-${item.id}`}
-                                value={item.prompt}
-                                onChange={(event) => {
-                                  const v = event.target.value;
-                                  setQueuedUploads((current) =>
-                                    current.map((upload) => upload.id === item.id ? { ...upload, prompt: v } : upload)
-                                  );
-                                }}
-                                rows={2}
-                                disabled={uploading}
-                                placeholder="Style / mood / context"
-                                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
-                              />
-                            </div>
-                            {!item.instrumental && (
-                              <div className="space-y-1">
-                                <label htmlFor={`upload-item-lyrics-${item.id}`} className="text-sm text-white/50">Lyrics</label>
-                                <textarea
-                                  id={`upload-item-lyrics-${item.id}`}
-                                  value={item.lyrics}
-                                  onChange={(event) => {
-                                    const v = event.target.value;
-                                    setQueuedUploads((current) =>
-                                      current.map((upload) => upload.id === item.id ? { ...upload, lyrics: v } : upload)
-                                    );
-                                  }}
-                                  rows={2}
-                                  disabled={uploading}
-                                  placeholder="Paste lyrics"
-                                  className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={uploading}
-                              onClick={() => {
-                                setPendingMetadataTargetId(item.id);
-                                uploadMetadataInputRef.current?.click();
-                              }}
-                              className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-sm font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
-                            >
-                              {item.metadataFile ? "Replace metadata TXT/LRC" : "Attach metadata TXT/LRC"}
-                            </button>
-                            {item.metadataFile && (
-                              <>
-                                <span className="truncate text-xs text-white/55">{item.metadataFile.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setQueuedUploads((current) =>
-                                      current.map((upload) =>
-                                        upload.id === item.id ? { ...upload, metadataFile: null } : upload
-                                      )
-                                    );
-                                  }}
-                                  className="text-sm text-red-300/85 hover:text-red-200"
-                                >
-                                  Remove
-                                </button>
-                              </>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={uploading}
-                              onClick={() => {
-                                setPendingLicenseTargetId(item.id);
-                                uploadLicenseInputRef.current?.click();
-                              }}
-                              className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-sm font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
-                            >
-                              {item.licenseFile ? "Replace license PDF" : "Attach license PDF"}
-                            </button>
-                            {item.licenseFile && (
-                              <>
-                                <span className="truncate text-xs text-white/55">{item.licenseFile.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setQueuedUploads((current) =>
-                                      current.map((upload) =>
-                                        upload.id === item.id ? { ...upload, licenseFile: null } : upload
-                                      )
-                                    );
-                                  }}
-                                  className="text-sm text-red-300/85 hover:text-red-200"
-                                >
-                                  Remove
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {uploadError && (
-                  <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
-                    <span className="font-semibold">Error:</span> {uploadError}
-                  </div>
-                )}
-
-                {uploadNotice && (
-                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
-                    <span className="font-semibold">Success:</span> {uploadNotice}
-                  </div>
-                )}
-
-                {rejectedFiles.length > 0 && (
-                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3">
-                    <p className="text-sm font-semibold text-amber-300">Rejected files</p>
-                    <ul className="mt-2 space-y-1 text-sm text-amber-200/80">
-                      {rejectedFiles.map((file, idx) => (
-                        <li key={idx}>
-                          <span className="font-medium">{file.filename}</span>: {file.reason}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-white/10 px-5 py-4">
-                <button
-                  type="button"
-                  disabled={uploading || queuedUploads.length === 0}
-                  onClick={handleStartUpload}
-                  className="h-11 w-full rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
-                >
-                  {uploading ? "Uploading..." : `Upload ${queuedUploads.length} file(s)`}
-                </button>
-              </div>
-            </div>
-          </aside>
-        </div>
-      )}
+      <UploadPanel
+        isOpen={isUploadPanelOpen}
+        onClose={() => setIsUploadPanelOpen(false)}
+        workspaceOptions={uploadWorkspaceOptions}
+        defaultWorkspaceId={uploadWorkspaceId}
+        knownArtistNames={knownArtistNames}
+        knownComposerNames={knownComposerNames}
+        knownWriterNames={knownWriterNames}
+        onUploadFinished={handleUploadFinished}
+      />
 
       {showTrackDetailsPanel && selectedTrack && (
         <div className="lg:hidden">
@@ -1547,46 +656,14 @@ export default function LibraryPage() {
       )}
 
       {reuseConfirmTrack && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
-          onClick={() => setReuseConfirmTrack(null)}
-        >
-          <div
-            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start gap-3">
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-              </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-amber-100">
-                  De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const track = reuseConfirmTrack;
-                      setReuseConfirmTrack(null);
-                      if (track) performReusePrompt(track);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
-                  >
-                    Doorgaan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReuseConfirmTrack(null)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
-                  >
-                    Annuleren
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReuseConfirmDialog
+          onConfirm={() => {
+            const track = reuseConfirmTrack;
+            setReuseConfirmTrack(null);
+            if (track) performReusePrompt(track);
+          }}
+          onCancel={() => setReuseConfirmTrack(null)}
+        />
       )}
     </div>
   );
