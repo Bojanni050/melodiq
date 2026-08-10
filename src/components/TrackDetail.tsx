@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
-import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import { parseLyricsToBlocks } from "@/lib/lyrics-to-blocks";
 import { formatGenerationTime } from "@/lib/track-utils";
-import { useSWRConfig } from "swr";
-import SectionReplaceEditor from "@/components/tracks/SectionReplaceEditor";
+import type { TrackDetailTrack } from "@/components/track-detail/types";
+import { useTrackDetailSync } from "@/components/track-detail/useTrackDetailSync";
+import { useTrackRating } from "@/components/track-detail/useTrackRating";
+import { usePromptEditor } from "@/components/track-detail/usePromptEditor";
+import { useLyricsEditor } from "@/components/track-detail/useLyricsEditor";
+import { useLyricsTranslation } from "@/components/track-detail/useLyricsTranslation";
+import { useCopyToClipboard } from "@/components/track-detail/useCopyToClipboard";
+import { useSyncedLyrics } from "@/components/track-detail/useSyncedLyrics";
+
+export type { TrackDetailTrack } from "@/components/track-detail/types";
 
 const TRANSLATE_LANGUAGES = [
   "English",
@@ -30,37 +37,6 @@ const TRANSLATE_LANGUAGES = [
   "Chinese",
 ];
 
-export type TrackDetailTrack = {
-  id: string;
-  title: string | null;
-  provider: string;
-  providerModel: string;
-  jobId?: string | null;
-  prompt: string;
-  lyrics: string | null;
-  lyricsTimestamps?: string | null;
-  language?: string | null;
-  translatedLyrics?: string | null;
-  translatedLanguage?: string | null;
-  status: "pending" | "generating" | "done" | "failed";
-  audioUrl: string | null;
-  audioUrlHd: string | null;
-  format: string | null;
-  formatHd: string | null;
-  duration: number | null;
-  completedAt?: string | null;
-  createdAt: string;
-  error: string | null;
-  s3KeyHd: string | null;
-  coverUrl?: string | null;
-  s3KeyCover?: string | null;
-  rating?: string | null;
-  instrumental?: boolean | null;
-  artistName?: string | null;
-  composerName?: string | null;
-  writerName?: string | null;
-};
-
 interface TrackDetailProps {
   track: TrackDetailTrack;
   onClose: () => void;
@@ -74,229 +50,32 @@ interface TrackDetailProps {
 export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false, onTrackUpdated }: TrackDetailProps) {
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
-  const [ratingLoading, setRatingLoading] = useState(false);
-  const [promptExpanded, setPromptExpanded] = useState(false);
-  const [lyricsExpanded, setLyricsExpanded] = useState(true);
-  const [promptDraft, setPromptDraft] = useState(initialTrack.prompt);
-  const [promptEditing, setPromptEditing] = useState(false);
-  const [promptSaving, setPromptSaving] = useState(false);
-  const [lyricsDraft, setLyricsDraft] = useState(initialTrack.lyrics ?? "");
-  const [lyricsEditing, setLyricsEditing] = useState(false);
-  const [lyricsSaving, setLyricsSaving] = useState(false);
-  const [lyricsSaveError, setLyricsSaveError] = useState<string | null>(null);
-  const [translating, setTranslating] = useState(false);
-  const [translateError, setTranslateError] = useState<string | null>(null);
-  const [translateMenuOpen, setTranslateMenuOpen] = useState(false);
-  const [showingTranslation, setShowingTranslation] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
-  const [currentTime, setCurrentTime] = useState(0);
-  const { mutate } = useSWRConfig();
 
-  // central track state to support instant self-healing updates
-  const [localTrack, setLocalTrack] = useState(initialTrack);
+  // central track state that self-heals via polling (TCL sync, cover art)
+  const { track, setLocalTrack, mutate } = useTrackDetailSync(initialTrack, onTrackUpdated);
 
-  useEffect(() => {
-    setLocalTrack(initialTrack);
-    setCurrentRating(initialTrack.rating ?? null);
-    setPromptDraft(initialTrack.prompt);
-    setPromptEditing(false);
-    setLyricsDraft(initialTrack.lyrics ?? "");
-    setLyricsEditing(false);
-    setLyricsExpanded(true);
-    setShowingTranslation(false);
-    setTranslateMenuOpen(false);
-    setTranslateError(null);
-  }, [initialTrack]);
+  // shared by every editor hook: applies a server-returned track update to
+  // local state, the player store, and the SWR track list in one place
+  const applyTrackUpdate = useCallback((updatedTrack: any) => {
+    setLocalTrack(updatedTrack);
+    onTrackUpdated?.(updatedTrack);
+    usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
+    void mutate("/api/tracks");
+  }, [setLocalTrack, onTrackUpdated, mutate]);
 
-  // central self-healing polling loop
-  useEffect(() => {
-    if (localTrack.status !== "done" || (localTrack.provider !== "poyo" && localTrack.provider !== "apimart") || localTrack.instrumental) return;
-
-    const hasTimings = localTrack.lyricsTimestamps && !isLyricsTaskSubmission(localTrack.lyricsTimestamps)
-      ? parseLyrics(localTrack.lyrics, localTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
-      : false;
-
-    // We only poll if it has NO timings, OR if it's currently a task submission receipt
-    const needsPolling = !hasTimings || isLyricsTaskSubmission(localTrack.lyricsTimestamps);
-    if (!needsPolling) return;
-
-    console.log(`[TCL-Sync] central TrackDetail started polling for track ${localTrack.id}`);
-    
-    let pollCount = 0;
-    const maxPolls = 15; // 15 polls * 5 seconds = 75 seconds max
-    let active = true;
-    let timerId: ReturnType<typeof setTimeout>;
-
-    const poll = async () => {
-      if (!active) return;
-      try {
-        const res = await fetch(`/api/tracks/${localTrack.id}`);
-        if (!res.ok) return;
-        const updatedTrack = await res.json();
-
-        if (!active) return;
-
-        if (updatedTrack && updatedTrack.lyricsTimestamps !== localTrack.lyricsTimestamps) {
-          const updatedHasTimings = updatedTrack.lyricsTimestamps && !isLyricsTaskSubmission(updatedTrack.lyricsTimestamps)
-            ? parseLyrics(updatedTrack.lyrics, updatedTrack.lyricsTimestamps).some((line) => line.startTime >= 0)
-            : false;
-
-          console.log(`[TCL-Sync] central TrackDetail fetched update. Has Timings: ${updatedHasTimings}`);
-
-          // Update local state instantly so user sees it right away
-          setLocalTrack(updatedTrack);
-
-          // Update player store instantly so playing track keeps tracking lyrics
-          usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
-
-          // Update SWR global list so other lists are reactively aware
-          void mutate("/api/tracks");
-
-          // If we finally got real timings, stop polling
-          if (updatedHasTimings) {
-            console.log(`[TCL-Sync] central TrackDetail polling finished successfully for track ${localTrack.id}`);
-            return;
-          }
-        }
-      } catch (err: any) {
-        console.error(`[TCL-Sync] central TrackDetail polling error:`, err?.message ?? err);
-      }
-
-      pollCount++;
-      if (pollCount < maxPolls && active) {
-        timerId = setTimeout(poll, 5000);
-      } else if (pollCount >= maxPolls) {
-        console.log(`[TCL-Sync] central TrackDetail stopped polling: hit max retries for track ${localTrack.id}`);
-      }
-    };
-
-    timerId = setTimeout(poll, 2000); // start first poll after 2 seconds
-
-    return () => {
-      active = false;
-      clearTimeout(timerId);
-    };
-  }, [localTrack.id, localTrack.lyricsTimestamps, mutate]);
-
-  // Poll for cover art when track has none yet
-  useEffect(() => {
-    if (localTrack.coverUrl || localTrack.s3KeyCover) return;
-    if (localTrack.status !== "done") return;
-
-    let active = true;
-    let pollCount = 0;
-    const maxPolls = 24; // 24 × 5s = 2 minutes
-    let timerId: ReturnType<typeof setTimeout>;
-
-    const poll = async () => {
-      if (!active) return;
-      try {
-        const res = await fetch(`/api/tracks/${localTrack.id}`);
-        if (!res.ok) return;
-        const updated = await res.json();
-        if (!active) return;
-        if (updated?.coverUrl || updated?.s3KeyCover) {
-          setLocalTrack(updated);
-          onTrackUpdated?.(updated);
-          usePlayerStore.getState().syncTrackSnapshots([updated]);
-          void mutate("/api/tracks");
-          return;
-        }
-      } catch {}
-      pollCount++;
-      if (pollCount < maxPolls && active) timerId = setTimeout(poll, 5000);
-    };
-
-    timerId = setTimeout(poll, 3000);
-    return () => { active = false; clearTimeout(timerId); };
-  }, [localTrack.id, localTrack.coverUrl, localTrack.s3KeyCover, localTrack.status, onTrackUpdated, mutate]);
-
-  // Shadow initialTrack with the active stateful localTrack
-  const track = localTrack;
+  const { currentRating, ratingLoading, handleRating } = useTrackRating(track, initialTrack);
+  const { copiedField, handleCopy } = useCopyToClipboard();
+  const prompt = usePromptEditor(track, initialTrack, applyTrackUpdate);
+  const lyricsEdit = useLyricsEditor(track, initialTrack, applyTrackUpdate);
+  const translation = useLyricsTranslation(track, initialTrack, applyTrackUpdate);
+  const lyricsSync = useSyncedLyrics(track);
 
   useEffect(() => {
     void loadUser();
   }, [loadUser]);
-
-  useEffect(() => {
-    setCurrentTime(0);
-  }, [track.id]);
-
-  useEffect(() => {
-    if (!audioElement || currentTrack?.id !== track.id) return;
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audioElement.currentTime || 0);
-    };
-
-    audioElement.addEventListener("timeupdate", handleTimeUpdate);
-    // Initial sync
-    setCurrentTime(audioElement.currentTime || 0);
-
-    return () => {
-      audioElement.removeEventListener("timeupdate", handleTimeUpdate);
-    };
-  }, [audioElement, currentTrack, track.id]);
-
-  const parsedLyrics = useMemo(() => {
-    return parseLyrics(track.lyrics, track.lyricsTimestamps);
-  }, [track.lyrics, track.lyricsTimestamps]);
-
-  const hasTimings = useMemo(() => {
-    return parsedLyrics.some((line) => line.startTime >= 0);
-  }, [parsedLyrics]);
-
-  const activeLineIndex = useMemo(() => {
-    if (!hasTimings) return -1;
-    let activeIndex = -1;
-    for (let i = 0; i < parsedLyrics.length; i++) {
-      if (parsedLyrics[i].startTime <= currentTime) {
-        activeIndex = i;
-      } else {
-        break;
-      }
-    }
-    return activeIndex;
-  }, [parsedLyrics, currentTime, hasTimings]);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sidebarActiveLineRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (containerRef.current && sidebarActiveLineRef.current) {
-      const container = containerRef.current;
-      const activeEl = sidebarActiveLineRef.current;
-      
-      const containerHeight = container.clientHeight;
-      const elemTop = activeEl.offsetTop;
-      const elemHeight = activeEl.clientHeight;
-      
-      // Center the active element exactly in the middle of the container
-      const targetScrollTop = elemTop - (containerHeight / 2) + (elemHeight / 2);
-      
-      container.scrollTo({
-        top: targetScrollTop,
-        behavior: "smooth"
-      });
-    }
-  }, [activeLineIndex]);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: "instant" });
-    }
-  }, [track.id]);
-
-  const handleLineClick = useCallback((startTime: number) => {
-    if (startTime >= 0 && audioElement && currentTrack?.id === track.id) {
-      audioElement.currentTime = startTime;
-      setCurrentTime(startTime);
-    }
-  }, [audioElement, currentTrack, track.id]);
 
   function handleDownload(url: string, hd = false) {
     setDownloading(true);
@@ -304,146 +83,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     setTimeout(() => setDownloading(false), 1000);
   }
 
-  async function handleRating(newRating: "up" | "down") {
-    // Toggle: if same rating clicked, set to null
-    const rating = currentRating === newRating ? null : newRating;
-    
-    setRatingLoading(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/rating`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating }),
-      });
-
-      if (res.ok) {
-        setCurrentRating(rating);
-      } else {
-        const body = await res.json().catch(() => null);
-        console.error(`Failed to update rating: HTTP ${res.status}`, body);
-      }
-    } catch (error) {
-      console.error("Failed to update rating:", error);
-    } finally {
-      setRatingLoading(false);
-    }
-  }
-
-  async function handleCopy(text: string, field: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  }
-
-  async function handleSavePrompt() {
-    const trimmedPrompt = promptDraft.trim();
-    if (!trimmedPrompt) return;
-
-    setPromptSaving(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmedPrompt }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : "Failed to update prompt";
-        throw new Error(message);
-      }
-
-      const updatedTrack = await res.json();
-      setLocalTrack(updatedTrack);
-      onTrackUpdated?.(updatedTrack);
-      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
-      void mutate("/api/tracks");
-      setPromptEditing(false);
-      setPromptDraft(updatedTrack.prompt);
-      setPromptExpanded(true);
-    } catch (error) {
-      console.error("Failed to update prompt:", error);
-    } finally {
-      setPromptSaving(false);
-    }
-  }
-
-  async function handleSaveLyrics() {
-    setLyricsSaving(true);
-    setLyricsSaveError(null);
-    try {
-      const trimmedLyrics = lyricsDraft.trim();
-      const res = await fetch(`/api/tracks/${track.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lyrics: trimmedLyrics ? trimmedLyrics : null }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : `Save failed (${res.status})`;
-        throw new Error(message);
-      }
-
-      const updatedTrack = await res.json();
-      setLocalTrack(updatedTrack);
-      onTrackUpdated?.(updatedTrack);
-      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
-      void mutate("/api/tracks");
-      setLyricsEditing(false);
-      setLyricsDraft(updatedTrack.lyrics ?? "");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to save lyrics";
-      console.error("Failed to update lyrics:", error);
-      setLyricsSaveError(message);
-    } finally {
-      setLyricsSaving(false);
-    }
-  }
-
-  async function handleTranslateLyrics(targetLanguage: string) {
-    setTranslateMenuOpen(false);
-    setTranslating(true);
-    setTranslateError(null);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/translate-lyrics`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetLanguage }),
-      });
-
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        const message = payload && typeof payload.error === "string" ? payload.error : `Translation failed (${res.status})`;
-        throw new Error(message);
-      }
-
-      const updatedTrack = await res.json();
-      setLocalTrack(updatedTrack);
-      onTrackUpdated?.(updatedTrack);
-      usePlayerStore.getState().syncTrackSnapshots([updatedTrack]);
-      void mutate("/api/tracks");
-      setShowingTranslation(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to translate lyrics";
-      console.error("Failed to translate lyrics:", error);
-      setTranslateError(message);
-    } finally {
-      setTranslating(false);
-    }
-  }
-
   const title = (track.title || track.prompt.substring(0, 60)).replace(/\s*\(2\)\s*$/, "");
   const promptFirstLine = track.prompt
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.length > 0) ?? "";
-  const mp3Label = (track.format ?? "mp3").toUpperCase();
-  const wavLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const artistLabel = (track.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (track.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
@@ -463,7 +107,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
   const canEditPrompt = isUploadedTrack;
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
-  const promptDraftIsValid = promptDraft.trim().length > 0;
 
   const displayDuration = track.duration
     ?? (currentTrack?.id === track.id && audioElement && isFinite(audioElement.duration) && audioElement.duration > 0
@@ -621,34 +264,31 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
         {/* Lyrics */}
         {(track.lyrics || allowLyricsEdit) && (
-          <div className={lyricsExpanded ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "shrink-0"}>
+          <div className={lyricsEdit.lyricsExpanded ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "shrink-0"}>
             <div className="shrink-0 flex items-center justify-between mb-2">
               <button
                 type="button"
-                onClick={() => setLyricsExpanded((v) => !v)}
+                onClick={() => lyricsEdit.setLyricsExpanded((v) => !v)}
                 className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
-                title={lyricsExpanded ? "Collapse lyrics" : "Expand lyrics"}
+                title={lyricsEdit.lyricsExpanded ? "Collapse lyrics" : "Expand lyrics"}
               >
-                <svg className={`w-3.5 h-3.5 transition-transform ${lyricsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-3.5 h-3.5 transition-transform ${lyricsEdit.lyricsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                Lyrics {hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
+                Lyrics {lyricsSync.hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
               </button>
               <div className="flex items-center gap-1">
-                {allowLyricsEdit && !lyricsEditing && (
+                {allowLyricsEdit && !lyricsEdit.lyricsEditing && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setLyricsDraft(track.lyrics ?? "");
-                      setLyricsEditing(true);
-                    }}
+                    onClick={lyricsEdit.startEditingLyrics}
                     className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
                     title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
                   >
                     {track.lyrics ? "Edit" : "Add"}
                   </button>
                 )}
-                {allowLyricsEdit && track.lyrics && !lyricsEditing && (
+                {allowLyricsEdit && track.lyrics && !lyricsEdit.lyricsEditing && (
                   <button
                     type="button"
                     onClick={() => {
@@ -666,33 +306,30 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     Edit Lyrics
                   </button>
                 )}
-                {allowLyricsEdit && lyricsEditing && (
+                {allowLyricsEdit && lyricsEdit.lyricsEditing && (
                   <>
                     <button
                       type="button"
-                      onClick={() => {
-                        setLyricsDraft(track.lyrics ?? "");
-                        setLyricsEditing(false);
-                      }}
+                      onClick={lyricsEdit.cancelEditingLyrics}
                       className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                      disabled={lyricsSaving}
+                      disabled={lyricsEdit.lyricsSaving}
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      onClick={handleSaveLyrics}
+                      onClick={lyricsEdit.handleSaveLyrics}
                       className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
-                      disabled={lyricsSaving}
+                      disabled={lyricsEdit.lyricsSaving}
                     >
-                      {lyricsSaving ? "Saving..." : "Save"}
+                      {lyricsEdit.lyricsSaving ? "Saving..." : "Save"}
                     </button>
-                    {lyricsSaveError && (
-                      <span className="text-[11px] text-red-400" title={lyricsSaveError}>⚠ {lyricsSaveError}</span>
+                    {lyricsEdit.lyricsSaveError && (
+                      <span className="text-[11px] text-red-400" title={lyricsEdit.lyricsSaveError}>⚠ {lyricsEdit.lyricsSaveError}</span>
                     )}
                   </>
                 )}
-                {track.lyrics && !lyricsEditing && (
+                {track.lyrics && !lyricsEdit.lyricsEditing && (
                   <button
                     onClick={() => handleCopy(track.lyrics!, "lyrics")}
                     className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
@@ -709,34 +346,34 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     )}
                   </button>
                 )}
-                {track.lyrics && !lyricsEditing && track.translatedLyrics && (
+                {track.lyrics && !lyricsEdit.lyricsEditing && track.translatedLyrics && (
                   <button
                     type="button"
-                    onClick={() => setShowingTranslation((v) => !v)}
+                    onClick={() => translation.setShowingTranslation((v) => !v)}
                     className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                    title={showingTranslation ? "Show original lyrics" : `Show ${track.translatedLanguage ?? "translated"} lyrics`}
+                    title={translation.showingTranslation ? "Show original lyrics" : `Show ${track.translatedLanguage ?? "translated"} lyrics`}
                   >
-                    {showingTranslation ? "Original" : track.translatedLanguage ?? "Translated"}
+                    {translation.showingTranslation ? "Original" : track.translatedLanguage ?? "Translated"}
                   </button>
                 )}
-                {track.lyrics && !lyricsEditing && (
+                {track.lyrics && !lyricsEdit.lyricsEditing && (
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => track.language && setTranslateMenuOpen((v) => !v)}
-                      disabled={!track.language || translating}
+                      onClick={() => track.language && translation.setTranslateMenuOpen((v) => !v)}
+                      disabled={!track.language || translation.translating}
                       className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                       title={track.language ? "Translate lyrics" : "Set a language first (see the auto-detected language above, or edit the track)"}
                     >
-                      {translating ? "Translating..." : "Translate"}
+                      {translation.translating ? "Translating..." : "Translate"}
                     </button>
-                    {translateMenuOpen && (
+                    {translation.translateMenuOpen && (
                       <div className="absolute right-0 top-full mt-1 z-20 w-40 max-h-56 overflow-y-auto rounded-lg border border-white/12 bg-[#181920] shadow-xl py-1">
                         {TRANSLATE_LANGUAGES.filter((lang) => lang !== track.language).map((lang) => (
                           <button
                             key={lang}
                             type="button"
-                            onClick={() => handleTranslateLyrics(lang)}
+                            onClick={() => translation.handleTranslateLyrics(lang)}
                             className="block w-full px-3 py-1.5 text-left text-[12px] text-white/70 hover:bg-white/10 hover:text-white/90 transition-colors"
                           >
                             {lang}
@@ -748,40 +385,40 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 )}
               </div>
             </div>
-            {translateError && (
-              <p className="shrink-0 mb-2 text-[11px] text-red-400">⚠ {translateError}</p>
+            {translation.translateError && (
+              <p className="shrink-0 mb-2 text-[11px] text-red-400">⚠ {translation.translateError}</p>
             )}
-            {lyricsExpanded && (lyricsEditing ? (
+            {lyricsEdit.lyricsExpanded && (lyricsEdit.lyricsEditing ? (
               <div className="relative flex-1 min-h-0 overflow-hidden">
                 <textarea
-                  value={lyricsDraft}
-                  onChange={(event) => setLyricsDraft(event.target.value)}
+                  value={lyricsEdit.lyricsDraft}
+                  onChange={(event) => lyricsEdit.setLyricsDraft(event.target.value)}
                   placeholder="Add or edit lyrics here"
                   className="h-full w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
                   maxLength={20000}
-                  disabled={lyricsSaving}
+                  disabled={lyricsEdit.lyricsSaving}
                 />
               </div>
-            ) : track.lyrics ? (showingTranslation && track.translatedLyrics) ? (
+            ) : track.lyrics ? (translation.showingTranslation && track.translatedLyrics) ? (
               <div className="flex-1 min-h-0 overflow-hidden">
                 <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.translatedLyrics}</pre>
               </div>
-            ) : hasTimings ? (
+            ) : lyricsSync.hasTimings ? (
               <div className="flex-1 min-h-0 overflow-hidden">
                 <div
-                  ref={containerRef}
+                  ref={lyricsSync.containerRef}
                   className="h-full overflow-y-auto px-3 pt-3 pb-16 scroll-smooth space-y-4 relative [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"
                 >
-                  {parsedLyrics.map((line, index) => {
-                    const isActive = index === activeLineIndex;
-                    const isPlayed = index < activeLineIndex;
+                  {lyricsSync.parsedLyrics.map((line, index) => {
+                    const isActive = index === lyricsSync.activeLineIndex;
+                    const isPlayed = index < lyricsSync.activeLineIndex;
                     const isTrackPlaying = currentTrack?.id === track.id;
 
                     return (
                       <div
                         key={index}
-                        ref={isActive ? sidebarActiveLineRef : null}
-                        onClick={() => handleLineClick(line.startTime)}
+                        ref={isActive ? lyricsSync.sidebarActiveLineRef : null}
+                        onClick={() => lyricsSync.handleLineClick(line.startTime)}
                         className={`transition-all duration-300 leading-relaxed py-0.5 ${
                           isTrackPlaying ? "cursor-pointer" : ""
                         } ${
@@ -815,54 +452,47 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
-              onClick={() => setPromptExpanded((value) => !value)}
+              onClick={() => prompt.setPromptExpanded((value) => !value)}
               className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
-              title={promptExpanded ? "Collapse prompt" : "Expand prompt"}
+              title={prompt.promptExpanded ? "Collapse prompt" : "Expand prompt"}
             >
-              <svg className={`w-3.5 h-3.5 transition-transform ${promptExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3.5 h-3.5 transition-transform ${prompt.promptExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
               Prompt
             </button>
             <div className="flex items-center gap-1">
-              {canEditPrompt && !promptEditing && (
+              {canEditPrompt && !prompt.promptEditing && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setPromptDraft(track.prompt);
-                    setPromptEditing(true);
-                    setPromptExpanded(true);
-                  }}
+                  onClick={prompt.startEditingPrompt}
                   className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
                   title="Edit prompt"
                 >
                   Edit
                 </button>
               )}
-              {canEditPrompt && promptEditing && (
+              {canEditPrompt && prompt.promptEditing && (
                 <>
                   <button
                     type="button"
-                    onClick={() => {
-                      setPromptDraft(track.prompt);
-                      setPromptEditing(false);
-                    }}
+                    onClick={prompt.cancelEditingPrompt}
                     className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
-                    disabled={promptSaving}
+                    disabled={prompt.promptSaving}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    onClick={handleSavePrompt}
+                    onClick={prompt.handleSavePrompt}
                     className="rounded px-2 py-1 text-[11px] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200 transition-colors disabled:opacity-60"
-                    disabled={promptSaving || !promptDraftIsValid}
+                    disabled={prompt.promptSaving || !prompt.promptDraftIsValid}
                   >
-                    {promptSaving ? "Saving..." : "Save"}
+                    {prompt.promptSaving ? "Saving..." : "Save"}
                   </button>
                 </>
               )}
-              {!promptEditing && (
+              {!prompt.promptEditing && (
                 <button
                   onClick={() => handleCopy(track.prompt, "prompt")}
                   className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
@@ -881,21 +511,21 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               )}
             </div>
           </div>
-          {promptEditing ? (
+          {prompt.promptEditing ? (
             <div className="space-y-2">
               <textarea
-                value={promptDraft}
-                onChange={(event) => setPromptDraft(event.target.value)}
+                value={prompt.promptDraft}
+                onChange={(event) => prompt.setPromptDraft(event.target.value)}
                 placeholder="Add or edit the upload prompt"
                 className="h-32 w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
                 maxLength={10000}
-                disabled={promptSaving}
+                disabled={prompt.promptSaving}
               />
-              {!promptDraftIsValid && (
+              {!prompt.promptDraftIsValid && (
                 <p className="text-sm text-red-300/80">Prompt is required for uploaded tracks.</p>
               )}
             </div>
-          ) : promptExpanded ? (
+          ) : prompt.promptExpanded ? (
             <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
           ) : (
             <p className="text-sm text-white/40 leading-relaxed line-clamp-2">
