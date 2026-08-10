@@ -30,123 +30,13 @@ import TrackEditPanel from "./TrackEditPanel";
 
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
+import StemRow from "./StemRow";
+import MasterRow from "./MasterRow";
 
 async function settingsFetcher(url: string): Promise<Record<string, string>> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(res.statusText || "Request failed");
   return res.json();
-}
-
-// ── Inline stem row (self-fetching) ─────────────────────────────────────────
-type StemDef = { value: string; label: string };
-type StemRecord = { id: string; stemType: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
-
-function StemRow({ stemDef, trackId }: { stemDef: StemDef; trackId: string }) {
-  const [stem, setStem] = useState<StemRecord | null>(null);
-  const [extracting, setExtracting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/tracks/${trackId}/stems`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((list: StemRecord[]) => setStem(list.find((s) => s.stemType === stemDef.value) ?? null))
-      .catch(() => null);
-  }, [trackId, stemDef.value]);
-
-  // Poll while pending
-  useEffect(() => {
-    if (stem?.status !== "pending") return;
-    const id = setTimeout(() => {
-      fetch(`/api/tracks/${trackId}/stems`)
-        .then((r) => r.ok ? r.json() : [])
-        .then((list: StemRecord[]) => setStem(list.find((s) => s.stemType === stemDef.value) ?? null))
-        .catch(() => null);
-    }, 4000);
-    return () => clearTimeout(id);
-  }, [stem, trackId, stemDef.value]);
-
-  async function handleExtract() {
-    setExtracting(true); setError(null);
-    try {
-      const res = await fetch(`/api/tracks/${trackId}/stems`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stemType: stemDef.value }) });
-      if (!res.ok) { const p = await res.json().catch(() => null); setError(p?.error ?? "Failed"); return; }
-      setStem(await res.json());
-    } catch { setError("Failed to start extraction"); }
-    finally { setExtracting(false); }
-  }
-
-  const isExtracting = stem?.status === "pending" || extracting;
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-      <span className="text-sm text-white/70">{stemDef.label}</span>
-      {error && <span className="text-[11px] text-red-300">{error}</span>}
-      {stem?.status === "completed" && stem.audioUrl ? (
-        <a href={stem.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
-      ) : isExtracting ? (
-        <span className="text-[11px] text-white/40">Extracting…</span>
-      ) : (
-        <button type="button" onClick={handleExtract} disabled={extracting} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
-          {stem?.status === "failed" ? "Retry" : "Extract"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Inline master row (self-fetching) ────────────────────────────────────────
-type MasterDef = { value: string; label: string };
-type MasterRecord = { id: string; variationCategory: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
-
-function MasterRow({ variationDef, trackId }: { variationDef: MasterDef; trackId: string }) {
-  const [master, setMaster] = useState<MasterRecord | null>(null);
-  const [mastering, setMastering] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/tracks/${trackId}/masters`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
-      .catch(() => null);
-  }, [trackId, variationDef.value]);
-
-  // Poll while pending
-  useEffect(() => {
-    if (master?.status !== "pending") return;
-    const id = setTimeout(() => {
-      fetch(`/api/tracks/${trackId}/masters`)
-        .then((r) => r.ok ? r.json() : [])
-        .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
-        .catch(() => null);
-    }, 4000);
-    return () => clearTimeout(id);
-  }, [master, trackId, variationDef.value]);
-
-  async function handleMaster() {
-    setMastering(true); setError(null);
-    try {
-      const res = await fetch(`/api/tracks/${trackId}/masters`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variationCategory: variationDef.value }) });
-      if (!res.ok) { const p = await res.json().catch(() => null); setError(p?.error ?? "Failed"); return; }
-      setMaster(await res.json());
-    } catch { setError("Failed to start mastering"); }
-    finally { setMastering(false); }
-  }
-
-  const isMastering = master?.status === "pending" || mastering;
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-      <span className="text-sm text-white/70">{variationDef.label}</span>
-      {error && <span className="text-[11px] text-red-300">{error}</span>}
-      {master?.status === "completed" && master.audioUrl ? (
-        <a href={master.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
-      ) : isMastering ? (
-        <span className="text-[11px] text-white/40">Mastering…</span>
-      ) : (
-        <button type="button" onClick={handleMaster} disabled={mastering} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
-          {master?.status === "failed" ? "Retry" : "Master"}
-        </button>
-      )}
-    </div>
-  );
 }
 
 const TrackCard = memo(function TrackCard({
