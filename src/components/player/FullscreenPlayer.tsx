@@ -250,9 +250,9 @@ export default function FullscreenPlayer({
       coverUrl, 
       title: cleanTitle || currentTrack?.prompt.substring(0, 50) || "", 
       artist: artistLabel,
-      publishDate: currentTrack?.publishDate,
-      writerName: currentTrack?.writerName,
-      composerName: currentTrack?.composerName
+      publishDate: currentTrack?.publishDate ?? undefined,
+      writerName: currentTrack?.writerName ?? undefined,
+      composerName: currentTrack?.composerName ?? undefined
     };
     if (lastTrackIdRef.current && trackId && lastTrackIdRef.current !== trackId && lastVisualRef.current) {
       if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);

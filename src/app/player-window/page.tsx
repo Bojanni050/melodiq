@@ -180,9 +180,9 @@ export default function PlayerWindowPage() {
       coverUrl, 
       title: cleanTitle || track?.prompt.substring(0, 50) || "", 
       artist: artistLabel,
-      publishDate: track?.publishDate,
-      writerName: track?.writerName,
-      composerName: track?.composerName
+      publishDate: track?.publishDate ?? undefined,
+      writerName: track?.writerName ?? undefined,
+      composerName: track?.composerName ?? undefined
     };
     if (lastTrackIdRef.current && trackId && lastTrackIdRef.current !== trackId && lastVisualRef.current) {
       if (outgoingTimersRef.current.raf) cancelAnimationFrame(outgoingTimersRef.current.raf);

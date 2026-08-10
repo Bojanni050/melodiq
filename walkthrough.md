@@ -1,5 +1,15 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-10 ma 18:26 (Docker build type-fout TrackVisual)
+
+- Findings: Tijdens Docker-build faalde `npm run build` met TS2322 op `player-window/page.tsx:183` — `track?.publishDate` (string | null | undefined) kon niet worden toegewezen aan `TrackVisual.publishDate: string | undefined`. Dezelfde constructie zat ook in `FullscreenPlayer.tsx:253`.
+- Conclusions: Met `?? undefined` wordt `null` netjes omgezet naar `undefined` zonder de runtime-semantiek te veranderen. Daarmee matcht het type TrackVisual en kan Next.js de type-check voltooien.
+- Actions:
+  - Modified `src/app/player-window/page.tsx` — `publishDate/writerName/composerName` omgezet naar `track?.X ?? undefined` (regel 183-185)
+  - Modified `src/components/player/FullscreenPlayer.tsx` — zelfde aanpassing voor `currentTrack?.X ?? undefined` (regel 253-255)
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608101826`
+  - Validated via Docker-build op de server (lokale `npm run build` niet mogelijk omdat dependencies niet lokaal geinstalleerd zijn)
+
 ## 2026-08-04 di 19:04 (Style Suggestion: 500 tekens limiet verwijderd)
 
 - Findings: De style suggestion werd afgekapt op 500 tekens. De hard limit in zowel het LLM prompt als de sanitize function zorgde voor onvolledige antwoorden.
