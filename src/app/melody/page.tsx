@@ -18,6 +18,7 @@ export default function MelodyPage() {
   const { title, language, customLanguage } = useStudioStore();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
 
   const [credits] = useState<number | null>(null);
   const [notice, setNotice] = useState<LyricsStudioNotice | null>(null);
@@ -93,7 +94,7 @@ export default function MelodyPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}>
+    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}>
       <Sidebar credits={credits} />
 
       <main className="flex-1 flex flex-col lg:ml-[240px] overflow-hidden pt-[65px] lg:pt-0">

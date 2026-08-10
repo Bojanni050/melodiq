@@ -39,6 +39,7 @@ export default function WorkspaceDetailPage() {
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
   const workspaceId = params?.workspaceId;
 
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -322,7 +323,7 @@ export default function WorkspaceDetailPage() {
     return (
       <div className="h-screen bg-[#09090d] overflow-hidden text-white">
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
             <p className="text-sm text-white/70">Workspace not found.</p>
             <button
@@ -342,7 +343,7 @@ export default function WorkspaceDetailPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-[73px] lg:pt-5">
           <div className="max-w-[1600px] mx-auto space-y-6">
             <section className="relative overflow-hidden px-1 py-2 sm:px-2">

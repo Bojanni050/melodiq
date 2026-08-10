@@ -177,13 +177,22 @@ export const useArchiveLinksStore = create<ArchiveLinksState>()((set, get) => ({
 interface SidebarState {
   collapsed: boolean;
   isQHD: boolean;
+  // True once the viewport is >= the `lg` breakpoint (1024px), i.e. once the
+  // fixed desktop <aside> in Sidebar.tsx is actually rendered (`hidden lg:flex`).
+  // Pages use this to zero out their sidebar-offset margin below that
+  // breakpoint instead of always reserving 240/300px of space that no visible
+  // sidebar occupies.
+  isDesktop: boolean;
   setCollapsed: (v: boolean) => void;
   setIsQHD: (v: boolean) => void;
+  setIsDesktop: (v: boolean) => void;
 }
 
 export const useSidebarStore = create<SidebarState>()((set) => ({
   collapsed: false,
   isQHD: false,
+  isDesktop: false,
   setCollapsed: (v) => set({ collapsed: v }),
   setIsQHD: (v) => set({ isQHD: v }),
+  setIsDesktop: (v) => set({ isDesktop: v }),
 }));

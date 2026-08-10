@@ -21,13 +21,30 @@ function useIsQHD() {
   return isQHD;
 }
 
+// Mirrors the `lg` Tailwind breakpoint (1024px) that the desktop <aside>
+// below is gated on (`hidden lg:flex`), so pages know when it's actually safe
+// to reserve horizontal space for it.
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 export default function Sidebar({ credits }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isQHD = useIsQHD();
+  const isDesktop = useIsDesktop();
   const collapsed = useSidebarStore((s) => s.collapsed);
   const setCollapsed = useSidebarStore((s) => s.setCollapsed);
   const setIsQHD = useSidebarStore((s) => s.setIsQHD);
+  const setIsDesktop = useSidebarStore((s) => s.setIsDesktop);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
@@ -39,6 +56,10 @@ export default function Sidebar({ credits }: SidebarProps) {
   useEffect(() => {
     setIsQHD(isQHD);
   }, [isQHD, setIsQHD]);
+
+  useEffect(() => {
+    setIsDesktop(isDesktop);
+  }, [isDesktop, setIsDesktop]);
 
   useEffect(() => {
     if (!user) void loadUser();
@@ -421,7 +442,7 @@ export default function Sidebar({ credits }: SidebarProps) {
 
       {/* Mobile navigation drawer */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
+        <div className="fixed inset-0 z-[70] lg:hidden flex">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}

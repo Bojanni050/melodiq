@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -76,6 +76,7 @@ export default function DiscoverPage() {
   const [selectedTrack, setSelectedTrack] = useState<TrackDetailTrack | null>(null);
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
 
@@ -477,7 +478,7 @@ export default function DiscoverPage() {
       {isLoggedIn && <Sidebar credits={null} />}
       <div
         className={isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" : "min-h-screen flex"}
-        style={isLoggedIn ? { marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
+        style={isLoggedIn ? { marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
       >
       <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
         {authChecked && !isLoggedIn && (

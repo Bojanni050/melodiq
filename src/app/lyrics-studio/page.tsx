@@ -55,6 +55,7 @@ export default function LyricsStudioPage() {
   const { title, setTitle, language, customLanguage, structure, customStructure, setLanguage, setCustomLanguage, setStructure, setCustomStructure } = useStudioStore();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
 
   const [customPresets, setCustomPresets] = useState<Record<string, BlockType[]>>({});
 
@@ -598,7 +599,7 @@ export default function LyricsStudioPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={credits} />
 
       <main className="flex-1 flex flex-col overflow-hidden pt-[65px] lg:pt-0">

@@ -18,6 +18,7 @@ import type { StyleSnapshot } from "@/lib/style-studio-types";
 export default function StyleStudioPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
   const draft = useStyleDraft();
   const {
     primaryGenre,
@@ -147,11 +148,11 @@ export default function StyleStudioPage() {
   return (
     <div
       className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden"
-      style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}
+      style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}
     >
       <Sidebar credits={credits} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-[53px] lg:pt-0">
         <div className="flex-1 overflow-y-auto">
           <div className="w-full px-4 py-6 lg:px-6 lg:py-8">
             <LyricsNotice notice={notice} onClose={() => setNotice(null)} />

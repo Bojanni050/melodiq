@@ -58,6 +58,7 @@ export default function TrackDnaPage() {
   const isPlaying = isCurrentTrack && globalIsPlaying;
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
 
   useEffect(() => {
     let active = true;
@@ -146,7 +147,7 @@ export default function TrackDnaPage() {
       {isLoggedIn && <Sidebar credits={null} />}
       <main
         className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
-        style={isLoggedIn ? { paddingLeft: sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
+        style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
       >
         <div className="mx-auto max-w-2xl space-y-8 pb-16">
           <Link href="/discover" className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">

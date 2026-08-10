@@ -16,6 +16,7 @@ export default function PlaylistDetailPage() {
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
   const playlistId = params?.playlistId;
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
@@ -280,7 +281,7 @@ export default function PlaylistDetailPage() {
     return (
       <div className="h-screen bg-[#09090d] overflow-hidden text-white">
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
             <p className="text-sm text-white/70">Playlist not found.</p>
             <button
@@ -300,7 +301,7 @@ export default function PlaylistDetailPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
           <div className="max-w-400 mx-auto space-y-6">
             <div className="flex items-center">
