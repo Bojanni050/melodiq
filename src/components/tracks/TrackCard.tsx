@@ -484,10 +484,15 @@ const TrackCard = memo(function TrackCard({
   const workspaceCoverById = workspaceCoverByIdProp ?? new Map<string, string | null>();
 
   // Derived display values
+  const playCount = optimisticPlayCount;
+  const othersPlayCount = optimisticOthersPlayCount;
+  const isNewUnplayed = track.status === "done" && playCount === 0;
   const statusConfig = {
     pending: { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" },
     generating: { color: "bg-blue-500/20 text-blue-300", label: "Creating" },
-    done: { color: "bg-green-500/20 text-green-300", label: "Ready" },
+    done: isNewUnplayed
+      ? { color: "bg-yellow-500/20 text-yellow-300", label: "New" }
+      : { color: "bg-green-500/20 text-green-300", label: "Ready" },
     failed: { color: "bg-red-500/20 text-red-300", label: "Failed" },
   };
   const baseStatus = statusConfig[track.status];
@@ -501,9 +506,6 @@ const TrackCard = memo(function TrackCard({
   const generationTime = formatGenerationTime(track.createdAt, track.completedAt);
   const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
-  const playCount = optimisticPlayCount;
-  const othersPlayCount = optimisticOthersPlayCount;
-  const isNewUnplayed = track.status === "done" && playCount === 0;
   const mp3Label = (track.format ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
