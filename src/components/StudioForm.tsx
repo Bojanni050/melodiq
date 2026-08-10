@@ -234,6 +234,7 @@ export default memo(function StudioForm({
     styleInfluence,
     audioWeight,
     negativeTags,
+    usePersonaVoice,
     savedLyrics,
     savedLyricsLoaded,
     setSongIdea,
@@ -1196,27 +1197,29 @@ Your chorus here`}
               <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
             </div>
 
-            {/* Audio Weight */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">Audio weight</label>
-                <span className="text-sm text-white/40 font-mono">{(audioWeight / 100).toFixed(2)}</span>
+            {/* Audio Weight — only relevant when a cloned/uploaded voice is used */}
+            {usePersonaVoice && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-white/60">Audio weight</label>
+                  <span className="text-sm text-white/40 font-mono">{(audioWeight / 100).toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={audioWeight}
+                    onChange={(e) => setAudioWeight(Number(e.target.value))}
+                    className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                    style={{
+                      background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
+                    }}
+                  />
+                </div>
+                <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={audioWeight}
-                  onChange={(e) => setAudioWeight(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
-                  style={{
-                    background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
-            </div>
+            )}
           </>
         )}
 
