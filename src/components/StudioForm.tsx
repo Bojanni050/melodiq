@@ -1,22 +1,12 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import GenerateButton from "@/components/studio/GenerateButton";
 import VoiceCloneToggle from "@/components/studio/VoiceCloneToggle";
+import ProviderModelSection, { type ProviderCredits } from "@/components/studio/ProviderModelSection";
+import TitleSection from "@/components/studio/TitleSection";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore, usePresetsStore } from "@/lib/store";
-
-const PROVIDERS = {
-  lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3-pro-preview", "lyria-3-clip-preview"], icon: "G" },
-  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4", "minimax-music-2.6"], icon: "P" },
-  tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["TemPolor v4.6", "TemPolor v3.5", "TemPolor v3", "TemPolor i3.5", "TemPolor i3", "Mureka (MK)", "MiniMax Music (MM)", "Google Lyria 3 Pro (LY)"], icon: "T" },
-  musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
-  minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
-  mureka: { name: "Mureka", fullName: "Mureka V9 (WaveSpeed)", models: ["mureka-v9"], icon: "W" },
-  heartmula: { name: "HeartMuLa", fullName: "HeartMuLa (WaveSpeed)", models: ["heartmula"], icon: "H" },
-  apiframe: { name: "APIFrame", fullName: "APIFrame AI", models: ["Suno (suno)", "Udio (udio)", "Mureka (mureka)", "Google Lyria 3 Pro (lyria-3-pro)", "ElevenLabs Music (elevenlabs-music)"], icon: "A" },
-  apimart: { name: "APIMart", fullName: "APIMart (Suno)", models: ["v5.5", "v5", "v4.5-all", "v4.5+", "v4.5", "v4", "v3.5"], icon: "AM" },
-};
 
 const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
   {
@@ -223,7 +213,7 @@ export default memo(function StudioForm({
   onGenerateLyrics,
   onGenerateTitle,
 }: {
-  credits: { lyria: string | number; poyo: number | null; tempolor: number | null; apiframe: number | null; apimart: number | null };
+  credits: ProviderCredits;
   isGenerating: boolean;
   onGenerate: () => void;
   onOptimize: () => void;
@@ -336,8 +326,6 @@ export default memo(function StudioForm({
   const styleMaxChars = 1000;
   const lyricsCharCount = lyrics.length;
   const lyricsMaxChars = activeProviderKey === "apimart" ? 5000 : 3000;
-  const titleCharCount = title.length;
-  const titleMaxChars = 120;
   const [showStyleTooLongConfirm, setShowStyleTooLongConfirm] = useState(false);
 
   // Generate button logic:
@@ -418,243 +406,109 @@ export default memo(function StudioForm({
         </button>
       </div>
 
-      {showClearConfirm && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowClearConfirm(false)}
-          />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              <p className="text-sm text-white/80 leading-relaxed">
-                Clear all Studio input? Song idea, lyrics, title and style settings will all be reset.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowClearConfirm(false)}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  reset();
-                  setShowClearConfirm(false);
-                }}
-                className="rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-1.5 text-sm text-red-200 transition-colors hover:bg-red-500/20"
-              >
-                Clear all
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showClearConfirm && (
+        <ConfirmModal
+          icon={
+            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          }
+          iconBgClassName="bg-red-500/20"
+          message="Clear all Studio input? Song idea, lyrics, title and style settings will all be reset."
+          cancelLabel="Cancel"
+          confirmLabel="Clear all"
+          confirmClassName="border-red-400/20 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+          onCancel={() => setShowClearConfirm(false)}
+          onConfirm={() => {
+            reset();
+            setShowClearConfirm(false);
+          }}
+        />
       )}
 
-      {showVocalGenderConfirm && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowVocalGenderConfirm(false)}
-          />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <p className="text-sm text-white/80 leading-relaxed">
-                Geen Vocal Gender gekozen. Het model kiest zelf een stem. Is dat de bedoeling?
-              </p>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowVocalGenderConfirm(false)}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
-              >
-                Annuleren
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowVocalGenderConfirm(false);
-                  onGenerate();
-                }}
-                className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
-              >
-                Doorgaan
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showVocalGenderConfirm && (
+        <ConfirmModal
+          icon={
+            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          }
+          iconBgClassName="bg-amber-500/20"
+          message="Geen Vocal Gender gekozen. Het model kiest zelf een stem. Is dat de bedoeling?"
+          cancelLabel="Annuleren"
+          confirmLabel="Doorgaan"
+          confirmClassName="border-amber-400/20 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+          onCancel={() => setShowVocalGenderConfirm(false)}
+          onConfirm={() => {
+            setShowVocalGenderConfirm(false);
+            onGenerate();
+          }}
+        />
       )}
 
-      {showEmptyLyricsConfirm && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowEmptyLyricsConfirm(false)}
-          />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-[26rem] flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white mb-1">No lyrics entered</p>
-                <p className="text-sm text-white/65 leading-relaxed">
-                  The lyrics field is empty. The AI provider will make up its own lyrics. Continue anyway?
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowEmptyLyricsConfirm(false)}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmptyLyricsConfirm(false);
-                  if (!instrumental && vocalGender === "auto") {
-                    setShowVocalGenderConfirm(true);
-                  } else {
-                    onGenerate();
-                  }
-                }}
-                className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-4 py-1.5 text-sm text-violet-200 transition-colors hover:bg-violet-500/25"
-              >
-                Continue anyway
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showEmptyLyricsConfirm && (
+        <ConfirmModal
+          widthClassName="w-[26rem]"
+          icon={
+            <svg className="w-4 h-4 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          }
+          iconSizeClassName="w-9 h-9"
+          iconBgClassName="bg-violet-500/20"
+          message={
+            <>
+              <p className="text-sm font-semibold text-white mb-1">No lyrics entered</p>
+              <p className="text-sm text-white/65 leading-relaxed">
+                The lyrics field is empty. The AI provider will make up its own lyrics. Continue anyway?
+              </p>
+            </>
+          }
+          cancelLabel="Cancel"
+          confirmLabel="Continue anyway"
+          confirmClassName="border-violet-400/25 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25"
+          onCancel={() => setShowEmptyLyricsConfirm(false)}
+          onConfirm={() => {
+            setShowEmptyLyricsConfirm(false);
+            if (!instrumental && vocalGender === "auto") {
+              setShowVocalGenderConfirm(true);
+            } else {
+              onGenerate();
+            }
+          }}
+        />
       )}
 
-      {showStyleTooLongConfirm && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowStyleTooLongConfirm(false)}
-          />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-96 flex flex-col gap-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <p className="text-sm text-white/80 leading-relaxed">
-                Style &amp; Prompt is te lang ({promptCharCount}/{styleMaxChars} karakters). Er is niets naar de provider gestuurd. Wil je de prompt automatisch laten optimaliseren, of pas je hem liever zelf aan?
-              </p>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowStyleTooLongConfirm(false)}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
-              >
-                Zelf aanpassen
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowStyleTooLongConfirm(false);
-                  void handleOptimize();
-                }}
-                className="rounded-lg border border-primary-400/30 bg-primary-500/15 px-4 py-1.5 text-sm text-primary-200 transition-colors hover:bg-primary-500/25"
-              >
-                Optimaliseren
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {showStyleTooLongConfirm && (
+        <ConfirmModal
+          icon={
+            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          }
+          iconBgClassName="bg-red-500/20"
+          message={`Style & Prompt is te lang (${promptCharCount}/${styleMaxChars} karakters). Er is niets naar de provider gestuurd. Wil je de prompt automatisch laten optimaliseren, of pas je hem liever zelf aan?`}
+          cancelLabel="Zelf aanpassen"
+          confirmLabel="Optimaliseren"
+          confirmClassName="border-primary-400/30 bg-primary-500/15 text-primary-200 hover:bg-primary-500/25"
+          onCancel={() => setShowStyleTooLongConfirm(false)}
+          onConfirm={() => {
+            setShowStyleTooLongConfirm(false);
+            void handleOptimize();
+          }}
+        />
       )}
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-4 pr-1">
 
-      {/* Provider & Model Section */}
-      <section className="section-card lg:sticky lg:top-0 lg:z-20 lg:bg-[#0a0a0f]/98 lg:backdrop-blur-sm lg:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-        <h3 className="text-sm font-semibold text-white/80 mb-3">Provider & Model</h3>
-        <div className="flex gap-2">
-          <select
-            value={Object.keys(selectedProviders)[0] || ""}
-            onChange={(e) => {
-              const key = e.target.value;
-              if (key) {
-                setProvider(key, PROVIDERS[key as keyof typeof PROVIDERS].models[0]);
-              }
-            }}
-            aria-label="Select provider"
-            className="select-field text-sm flex-1"
-          >
-            <option value="" className="bg-gray-900">Select provider...</option>
-            {Object.entries(PROVIDERS)
-              .sort(([, a], [, b]) => a.fullName.localeCompare(b.fullName))
-              .map(([key, val]) => (
-                <option key={key} value={key} className="bg-gray-900">
-                  {val.fullName}
-                </option>
-              ))}
-          </select>
-          {Object.keys(selectedProviders).length > 0 && (
-            <select
-              value={selectedProviders[Object.keys(selectedProviders)[0]]}
-              onChange={(e) => setProviderModel(Object.keys(selectedProviders)[0], e.target.value)}
-              aria-label="Select model"
-              className="select-field text-sm flex-1"
-            >
-              {PROVIDERS[Object.keys(selectedProviders)[0] as keyof typeof PROVIDERS]?.models.map((model) => (
-                <option key={model} value={model} className="bg-gray-900">
-                  {model}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <label className="mt-2 flex items-center gap-1.5 text-xs text-white/40 cursor-pointer select-none w-fit">
-          <input
-            type="checkbox"
-            checked={rememberProviderChoice}
-            onChange={(e) => setRememberProviderChoice(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-white/20 bg-transparent accent-primary-500"
-          />
-          Remember choice
-        </label>
-        {Object.keys(selectedProviders).length > 0 && (
-          <div className="mt-2 text-xs text-white/30">
-            {(() => {
-              const key = Object.keys(selectedProviders)[0];
-              const currentCredits = credits[key as keyof typeof credits];
-              if (key === "lyria") return "Pay-per-use";
-              if (key === "apiframe") {
-                return currentCredits !== null && currentCredits !== undefined
-                  ? `Active (Limit: ${currentCredits} concurrent jobs)`
-                  : "Not configured";
-              }
-              return currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured";
-            })()}
-          </div>
-        )}
-      </section>
+      <ProviderModelSection
+        credits={credits}
+        selectedProviders={selectedProviders}
+        rememberProviderChoice={rememberProviderChoice}
+        setProvider={setProvider}
+        setProviderModel={setProviderModel}
+        setRememberProviderChoice={setRememberProviderChoice}
+      />
 
       {/* Lyrics Section */}
 
@@ -1405,46 +1259,14 @@ Your chorus here`}
         </section>
       )}
 
-      {/* Title Section */}
-      <section className="section-card">
-        <div className="flex items-center justify-between mb-3">
-          <label className="block text-sm font-semibold text-white/80">Song Title</label>
-          {!instrumental && !title.trim() && lyrics.trim() && (
-            <button
-              onClick={handleGenerateTitle}
-              disabled={generatingTitle || !lyrics.trim()}
-              className="btn-ghost text-sm flex items-center gap-1.5"
-            >
-              {generatingTitle ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              )}
-              {generatingTitle ? "Generating..." : "🤖 Generate Title"}
-            </button>
-          )}
-        </div>
-        <div className="relative">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give your track a name..."
-            className="input-field text-sm pr-16"
-            maxLength={titleMaxChars}
-          />
-          <span className={`absolute bottom-3 right-3 text-xs ${titleCharCount > titleMaxChars * 0.9 ? "text-red-400" : "text-white/20"}`}>
-            {titleCharCount}/{titleMaxChars}
-          </span>
-        </div>
-        {!title.trim() && (
-          <p className="text-xs text-white/40 mt-1">
-            Title is optional. Leave empty if you want.
-          </p>
-        )}
-      </section>
+      <TitleSection
+        title={title}
+        setTitle={setTitle}
+        instrumental={instrumental}
+        lyrics={lyrics}
+        generatingTitle={generatingTitle}
+        onGenerateTitle={handleGenerateTitle}
+      />
       </div>
 
       {/* Generate Button */}
