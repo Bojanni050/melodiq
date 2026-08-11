@@ -3,215 +3,16 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
+import TrackListHeader from "@/components/tracks/TrackListHeader";
+import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
-
-type SortOrder = "newest" | "oldest" | "title-asc" | "title-desc";
-type DropPosition = "before" | "after";
-const TRACK_ORDER_STORAGE_PREFIX = "melodiq.track-manual-order.v2.";
-
-function readPersistedTrackOrder(key: string): string[] | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(TRACK_ORDER_STORAGE_PREFIX + key);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return null;
-
-    return parsed.filter((value): value is string => typeof value === "string" && value.length > 0);
-  } catch {
-    return null;
-  }
-}
-
-function writePersistedTrackOrder(key: string, order: string[]) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.setItem(TRACK_ORDER_STORAGE_PREFIX + key, JSON.stringify(order));
-  } catch {
-    // Ignore storage failures (private mode/quota), keep runtime order in memory.
-  }
-}
-
-// Isolated header component with localized high-performance selection selectors
-const TrackListHeader = memo(function TrackListHeader({
-  displayedTracks,
-  sortOrder,
-  setSortOrder,
-  searchQuery,
-  setSearchQuery,
-  enableDragReorder,
-  hideSortOptions,
-  showJumpToCurrent,
-  onJumpToCurrent,
-}: {
-  displayedTracks: TrackItem[];
-  sortOrder: SortOrder;
-  setSortOrder: (order: SortOrder) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  enableDragReorder: boolean;
-  hideSortOptions?: boolean;
-  showJumpToCurrent?: boolean;
-  onJumpToCurrent?: () => void;
-}) {
-  const toggleSelectAll = useSelectionStore((state) => state.toggleSelectAll);
-
-  const allSelected = useSelectionStore((state) => {
-    if (displayedTracks.length === 0) return false;
-    return displayedTracks.every((t) => state.selectedIds.has(t.id));
-  });
-
-  const hasSelection = useSelectionStore((state) => {
-    return state.selectedIds.size > 0;
-  });
-
-  const visibleSelectedCount = useSelectionStore((state) => {
-    let count = 0;
-    for (let i = 0; i < displayedTracks.length; i++) {
-      if (state.selectedIds.has(displayedTracks[i].id)) {
-        count++;
-      }
-    }
-    return count;
-  });
-
-  return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-white/[0.04] backdrop-blur-md border-b border-white/8 mb-1">
-      <button
-        onClick={() => toggleSelectAll(displayedTracks.map((t) => t.id))}
-        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
-        title={allSelected ? "Deselect all" : "Select all"}
-      >
-        {allSelected ? (
-          <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        ) : hasSelection ? (
-          <div className="w-4 h-4 rounded-full bg-blue-500/50 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        ) : (
-          <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
-        )}
-      </button>
-      {enableDragReorder && (
-        <span className="text-[11px] text-white/25">Drag to reorder play order</span>
-      )}
-      <div className="flex flex-1 items-center gap-2">
-        <div className="relative flex-1">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search tracks"
-            className="h-7 w-full rounded-[20px] border border-white/10 bg-white/5 pl-2.5 pr-7 text-sm text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
-            aria-label="Search tracks"
-          />
-          {searchQuery.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white/75"
-              title="Clear search"
-              aria-label="Clear search"
-            >
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-        {!hideSortOptions && (<>
-        <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
-        <select
-          id="track-sort"
-          value={sortOrder}
-          onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-          className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white/75 outline-none hover:border-white/20"
-          aria-label="Sort tracks"
-        >
-          <option value="newest" className="bg-[#161621]">New to old</option>
-          <option value="oldest" className="bg-[#161621]">Old to new</option>
-          <option value="title-asc" className="bg-[#161621]">A to Z</option>
-          <option value="title-desc" className="bg-[#161621]">Z to A</option>
-        </select>
-        </>)}
-        <span className="shrink-0 text-xs text-white/30">
-          {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
-        </span>
-        {showJumpToCurrent && onJumpToCurrent && (
-          <button
-            type="button"
-            onClick={onJumpToCurrent}
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium border border-white/12 hover:bg-white hover:text-black hover:border-white transition-all"
-            title="Spring naar huidige track"
-          >
-            <span>Huidige track</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-});
-
-// Isolated selection pill component that reactively monitors selection count
-const SelectionActionPill = memo(function SelectionActionPill({
-  displayedTracks,
-  deleting,
-  onMassDelete,
-}: {
-  displayedTracks: TrackItem[];
-  deleting: boolean;
-  onMassDelete: () => void;
-}) {
-  const clearSelection = useSelectionStore((state) => state.clearSelection);
-
-  const visibleSelectedCount = useSelectionStore((state) => {
-    let count = 0;
-    for (let i = 0; i < displayedTracks.length; i++) {
-      if (state.selectedIds.has(displayedTracks[i].id)) {
-        count++;
-      }
-    }
-    return count;
-  });
-
-  if (visibleSelectedCount === 0) return null;
-
-  return (
-    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-1">
-      <span className="text-sm text-blue-300">{visibleSelectedCount} selected</span>
-      <button
-        onClick={clearSelection}
-        className="ml-auto text-sm text-white/40 hover:text-white/70 transition-colors"
-      >
-        Clear
-      </button>
-      <button
-        onClick={onMassDelete}
-        disabled={deleting}
-        className="p-1.5 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
-        title="Delete selected"
-      >
-        {deleting ? (
-          <div className="w-4 h-4 rounded-full border-2 border-red-400/30 border-t-red-400 animate-spin" />
-        ) : (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        )}
-      </button>
-    </div>
-  );
-});
+import {
+  readPersistedTrackOrder,
+  writePersistedTrackOrder,
+  type SortOrder,
+  type DropPosition,
+} from "@/components/tracks/trackListOrder";
 
 export default memo(function TrackList({
   tracks,
@@ -918,6 +719,12 @@ export default memo(function TrackList({
           hideSortOptions={!!dragOrderKey}
           showJumpToCurrent={!!currentTrack && !currentTrackVisible}
           onJumpToCurrent={scrollToCurrentTrack}
+        />
+
+        <SelectionActionPill
+          displayedTracks={displayedTracks}
+          deleting={deleting}
+          onMassDelete={handleMassDelete}
         />
 
         <div ref={sentinelRef} className="h-0 w-full" />
