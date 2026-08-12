@@ -15,6 +15,17 @@ export function buildStyleDraftPayload(payload: StyleDraftPayload): StyleDraftPa
     tempo: payload.tempo,
     era: payload.era,
     production: [...payload.production],
+    bpm: payload.bpm,
+    musicalKey: payload.musicalKey,
+    timeSignature: payload.timeSignature,
+    melodyCharacter: [...payload.melodyCharacter],
+    harmonyCharacter: [...payload.harmonyCharacter],
+    groove: [...payload.groove],
+    energy: payload.energy,
+    instrumentTexture: { ...payload.instrumentTexture },
+    vocalNegatives: [...payload.vocalNegatives],
+    productionAxes: { ...payload.productionAxes },
+    avoidTags: [...payload.avoidTags],
   };
 }
 

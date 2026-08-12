@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { buildStyleSummary } from "@/lib/style-utils";
+import { buildMusicPrompt, type LyricsPromptContext } from "@/lib/style-utils";
 import type { StyleDraftPayload } from "@/lib/style-studio-constants";
 
-export default function StyleSummary({ payload }: { payload: StyleDraftPayload }) {
-  const summary = buildStyleSummary(payload);
+export default function StyleSummary({
+  payload,
+  instrumental,
+  lyricsCtx,
+}: {
+  payload: StyleDraftPayload;
+  instrumental: boolean;
+  lyricsCtx?: LyricsPromptContext;
+}) {
+  const summary = buildMusicPrompt(payload, instrumental, lyricsCtx);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -26,7 +34,7 @@ export default function StyleSummary({ payload }: { payload: StyleDraftPayload }
   return (
     <section className="rounded-2xl border border-white/10 bg-[#181820]/80 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/85">Live Style Summary</h3>
+        <h3 className="text-sm font-semibold text-white/85">Generated Music Prompt</h3>
         <button
           type="button"
           onClick={copy}
@@ -37,8 +45,7 @@ export default function StyleSummary({ payload }: { payload: StyleDraftPayload }
       </div>
       <p className="text-sm leading-relaxed text-white/85">{summary}</p>
       <p className="text-xs text-white/40">
-        This summary is the canonical representation of your Style. PromptIQ will translate it into
-        provider-specific prompts.
+        Provider-neutral prompt, dynamically built from your song context and Music Builder settings.
       </p>
     </section>
   );

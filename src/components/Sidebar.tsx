@@ -99,7 +99,6 @@ export default function Sidebar({ credits }: SidebarProps) {
             items: [
               { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
               { href: "/melody", label: "Melody", icon: "melody" },
-              { href: "/style", label: "Style", icon: "style" },
               { href: "/studio", label: "Music", icon: "music" },
             ],
           },

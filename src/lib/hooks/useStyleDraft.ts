@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { STYLE_STORAGE_KEY, type StyleDraftPayload } from "@/lib/style-studio-constants";
+import {
+  STYLE_STORAGE_KEY,
+  DEFAULT_INSTRUMENT_TEXTURE_AXES,
+  DEFAULT_PRODUCTION_AXES,
+  type InstrumentTextureAxes,
+  type ProductionAxes,
+  type StyleDraftPayload,
+} from "@/lib/style-studio-constants";
 import {
   buildStyleDraftPayload,
   parseSavedStyleSnapshots,
@@ -19,6 +26,17 @@ const EMPTY_PAYLOAD: StyleDraftPayload = {
   tempo: "",
   era: "",
   production: [],
+  bpm: null,
+  musicalKey: "",
+  timeSignature: "",
+  melodyCharacter: [],
+  harmonyCharacter: [],
+  groove: [],
+  energy: 50,
+  instrumentTexture: { ...DEFAULT_INSTRUMENT_TEXTURE_AXES },
+  vocalNegatives: [],
+  productionAxes: { ...DEFAULT_PRODUCTION_AXES },
+  avoidTags: [],
 };
 
 function sanitizeString(value: unknown, fallback = ""): string {
@@ -28,6 +46,23 @@ function sanitizeString(value: unknown, fallback = ""): string {
 function sanitizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string");
+}
+
+function sanitizeNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function sanitizeAxes<T extends Record<string, number>>(value: unknown, defaults: T): T {
+  if (!value || typeof value !== "object") return { ...defaults };
+  const obj = value as Record<string, unknown>;
+  const result = { ...defaults };
+  for (const key of Object.keys(defaults) as (keyof T)[]) {
+    const raw = obj[key as string];
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      result[key] = Math.min(100, Math.max(0, raw)) as T[keyof T];
+    }
+  }
+  return result;
 }
 
 function sanitizePayload(parsed: unknown): StyleDraftPayload {
@@ -42,6 +77,17 @@ function sanitizePayload(parsed: unknown): StyleDraftPayload {
     tempo: sanitizeString(obj.tempo),
     era: sanitizeString(obj.era),
     production: sanitizeStringArray(obj.production),
+    bpm: typeof obj.bpm === "number" && Number.isFinite(obj.bpm) ? obj.bpm : null,
+    musicalKey: sanitizeString(obj.musicalKey),
+    timeSignature: sanitizeString(obj.timeSignature),
+    melodyCharacter: sanitizeStringArray(obj.melodyCharacter),
+    harmonyCharacter: sanitizeStringArray(obj.harmonyCharacter),
+    groove: sanitizeStringArray(obj.groove),
+    energy: sanitizeNumber(obj.energy, 50),
+    instrumentTexture: sanitizeAxes<InstrumentTextureAxes>(obj.instrumentTexture, DEFAULT_INSTRUMENT_TEXTURE_AXES),
+    vocalNegatives: sanitizeStringArray(obj.vocalNegatives),
+    productionAxes: sanitizeAxes<ProductionAxes>(obj.productionAxes, DEFAULT_PRODUCTION_AXES),
+    avoidTags: sanitizeStringArray(obj.avoidTags),
   };
 }
 
@@ -54,6 +100,18 @@ export function useStyleDraft() {
   const [tempo, setTempo] = useState("");
   const [era, setEra] = useState("");
   const [production, setProduction] = useState<string[]>([]);
+
+  const [bpm, setBpm] = useState<number | null>(null);
+  const [musicalKey, setMusicalKey] = useState("");
+  const [timeSignature, setTimeSignature] = useState("");
+  const [melodyCharacter, setMelodyCharacter] = useState<string[]>([]);
+  const [harmonyCharacter, setHarmonyCharacter] = useState<string[]>([]);
+  const [groove, setGroove] = useState<string[]>([]);
+  const [energy, setEnergy] = useState(50);
+  const [instrumentTexture, setInstrumentTexture] = useState<InstrumentTextureAxes>({ ...DEFAULT_INSTRUMENT_TEXTURE_AXES });
+  const [vocalNegatives, setVocalNegatives] = useState<string[]>([]);
+  const [productionAxes, setProductionAxes] = useState<ProductionAxes>({ ...DEFAULT_PRODUCTION_AXES });
+  const [avoidTags, setAvoidTags] = useState<string[]>([]);
 
   const [savedSnapshots, setSavedSnapshots] = useState<StyleSnapshot[]>([]);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
@@ -72,6 +130,17 @@ export function useStyleDraft() {
         setTempo(sanitized.tempo);
         setEra(sanitized.era);
         setProduction(sanitized.production);
+        setBpm(sanitized.bpm);
+        setMusicalKey(sanitized.musicalKey);
+        setTimeSignature(sanitized.timeSignature);
+        setMelodyCharacter(sanitized.melodyCharacter);
+        setHarmonyCharacter(sanitized.harmonyCharacter);
+        setGroove(sanitized.groove);
+        setEnergy(sanitized.energy);
+        setInstrumentTexture(sanitized.instrumentTexture);
+        setVocalNegatives(sanitized.vocalNegatives);
+        setProductionAxes(sanitized.productionAxes);
+        setAvoidTags(sanitized.avoidTags);
       }
     } catch (error) {
       console.error("Failed to restore style draft", error);
@@ -95,6 +164,17 @@ export function useStyleDraft() {
       tempo,
       era,
       production,
+      bpm,
+      musicalKey,
+      timeSignature,
+      melodyCharacter,
+      harmonyCharacter,
+      groove,
+      energy,
+      instrumentTexture,
+      vocalNegatives,
+      productionAxes,
+      avoidTags,
     });
     try {
       window.localStorage.setItem(STYLE_STORAGE_KEY, JSON.stringify(payload));
@@ -111,6 +191,17 @@ export function useStyleDraft() {
     tempo,
     era,
     production,
+    bpm,
+    musicalKey,
+    timeSignature,
+    melodyCharacter,
+    harmonyCharacter,
+    groove,
+    energy,
+    instrumentTexture,
+    vocalNegatives,
+    productionAxes,
+    avoidTags,
   ]);
 
   const saveSnapshotsToStorage = useCallback((snapshots: StyleSnapshot[]) => {
@@ -128,6 +219,17 @@ export function useStyleDraft() {
     setTempo(sanitized.tempo);
     setEra(sanitized.era);
     setProduction(sanitized.production);
+    setBpm(sanitized.bpm);
+    setMusicalKey(sanitized.musicalKey);
+    setTimeSignature(sanitized.timeSignature);
+    setMelodyCharacter(sanitized.melodyCharacter);
+    setHarmonyCharacter(sanitized.harmonyCharacter);
+    setGroove(sanitized.groove);
+    setEnergy(sanitized.energy);
+    setInstrumentTexture(sanitized.instrumentTexture);
+    setVocalNegatives(sanitized.vocalNegatives);
+    setProductionAxes(sanitized.productionAxes);
+    setAvoidTags(sanitized.avoidTags);
   }, []);
 
   return {
@@ -147,6 +249,28 @@ export function useStyleDraft() {
     setEra,
     production,
     setProduction,
+    bpm,
+    setBpm,
+    musicalKey,
+    setMusicalKey,
+    timeSignature,
+    setTimeSignature,
+    melodyCharacter,
+    setMelodyCharacter,
+    harmonyCharacter,
+    setHarmonyCharacter,
+    groove,
+    setGroove,
+    energy,
+    setEnergy,
+    instrumentTexture,
+    setInstrumentTexture,
+    vocalNegatives,
+    setVocalNegatives,
+    productionAxes,
+    setProductionAxes,
+    avoidTags,
+    setAvoidTags,
     savedSnapshots,
     setSavedSnapshots: saveSnapshotsToStorage,
     loadSnapshotIntoState,

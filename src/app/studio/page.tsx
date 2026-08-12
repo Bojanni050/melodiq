@@ -32,9 +32,7 @@ export default function StudioPage() {
     generating,
     notice,
     setNotice,
-    showLyricsOverlay,
     handleOptimize,
-    handleGenerateLyrics,
     handleGenerateTitle,
     handleGenerate,
     handleReusePrompt,
@@ -124,7 +122,6 @@ export default function StudioPage() {
                   isGenerating={generating}
                   onGenerate={handleGenerate}
                   onOptimize={handleOptimize}
-                  onGenerateLyrics={handleGenerateLyrics}
                   onGenerateTitle={handleGenerateTitle}
                 />
               </div>
@@ -213,23 +210,6 @@ export default function StudioPage() {
           </div>
         </ResizablePanel>
       </div>
-
-      {showLyricsOverlay && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1.5 mb-6">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 bg-primary-400 rounded-full animate-bounce ${i === 1 ? "animation-delay-150" : i === 2 ? "animation-delay-300" : ""}`}
-                />
-              ))}
-            </div>
-            <h2 className="text-xl font-bold mb-2">Writing lyrics</h2>
-            <p className="text-white/50 text-sm">Crafting your song lyrics...</p>
-          </div>
-        </div>
-      )}
 
       {showTrackDetailsPanel && selectedTrack && (
         <div className="lg:hidden">

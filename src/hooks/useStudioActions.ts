@@ -25,7 +25,6 @@ interface UseStudioActionsOptions {
 export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: UseStudioActionsOptions) {
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ type: "error" | "success"; message: string } | null>(null);
-  const [showLyricsOverlay, setShowLyricsOverlay] = useState(false);
 
   const getEffectiveLanguage = useCallback(() => {
     const { language, customLanguage } = useStudioStore.getState();
@@ -52,33 +51,6 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     if (res.ok) {
       const data = await res.json();
       useStudioStore.getState().setSongIdea(data.result);
-    }
-  }, [getEffectiveLanguage]);
-
-  const handleGenerateLyrics = useCallback(async () => {
-    setShowLyricsOverlay(true);
-    const { songIdea, lyricsContext, instrumental, structure, customStructure, vocalGender } = useStudioStore.getState();
-    try {
-      const res = await fetch("/api/llm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "lyrics",
-          idea: songIdea,
-          context: lyricsContext,
-          language: getEffectiveLanguage(),
-          instrumental,
-          structure,
-          customStructure,
-          vocalGender,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        useStudioStore.getState().setLyrics(data.result);
-      }
-    } finally {
-      setShowLyricsOverlay(false);
     }
   }, [getEffectiveLanguage]);
 
@@ -285,9 +257,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     generating,
     notice,
     setNotice,
-    showLyricsOverlay,
     handleOptimize,
-    handleGenerateLyrics,
     handleGenerateTitle,
     handleGenerate,
     handleReusePrompt,

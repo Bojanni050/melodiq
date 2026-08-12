@@ -68,6 +68,110 @@ export function isStylePayloadEmpty(payload: StyleDraftPayload): boolean {
     payload.vocalDirection.length === 0 &&
     !payload.tempo.trim() &&
     !payload.era.trim() &&
-    payload.production.length === 0
+    payload.production.length === 0 &&
+    !payload.bpm &&
+    !payload.musicalKey.trim() &&
+    !payload.timeSignature.trim() &&
+    payload.melodyCharacter.length === 0 &&
+    payload.harmonyCharacter.length === 0 &&
+    payload.groove.length === 0 &&
+    payload.vocalNegatives.length === 0 &&
+    payload.avoidTags.length === 0
   );
+}
+
+function axisPhrase(value: number, left: string, right: string): string | null {
+  if (value === 50) return null;
+  const leaning = value < 50 ? left : right;
+  const strength = Math.abs(value - 50);
+  const intensity = strength >= 35 ? "strongly " : strength >= 15 ? "" : "slightly ";
+  return `${intensity}${leaning.toLowerCase()}`.trim();
+}
+
+export type LyricsPromptContext = {
+  language?: string;
+  vocalistTag?: string;
+  structureLabel?: string;
+};
+
+/**
+ * Composes the human-readable, provider-neutral Music Prompt from the
+ * lyrics context (already known from the Lyrics Generator) and the
+ * Music Builder's structured payload. This is the text handed off to
+ * Studio as songIdea/prompt.
+ */
+export function buildMusicPrompt(
+  payload: StyleDraftPayload,
+  instrumental: boolean,
+  lyricsCtx: LyricsPromptContext = {}
+): string {
+  const parts: string[] = [];
+
+  const genreSegment = payload.secondaryGenre.trim()
+    ? `${payload.primaryGenre.trim() || "Contemporary"} with ${payload.secondaryGenre.trim().toLowerCase()} influences`
+    : payload.primaryGenre.trim() || "Contemporary";
+  let opener = genreSegment;
+  if (payload.moods.length > 0) opener += `, ${listToNaturalPhrase(payload.moods)}`;
+  if (payload.bpm) opener += `, ${payload.bpm} BPM`;
+  if (payload.musicalKey.trim()) opener += `, ${payload.musicalKey.trim()}`;
+  if (payload.timeSignature.trim()) opener += `, ${payload.timeSignature.trim()} time`;
+  parts.push(opener + ".");
+
+  const melodicBits: string[] = [];
+  if (payload.melodyCharacter.length > 0) melodicBits.push(`${listToNaturalPhrase(payload.melodyCharacter)} melody`);
+  if (payload.harmonyCharacter.length > 0) melodicBits.push(`${listToNaturalPhrase(payload.harmonyCharacter)} harmony`);
+  if (payload.groove.length > 0) melodicBits.push(`${listToNaturalPhrase(payload.groove)} groove`);
+  if (melodicBits.length > 0) parts.push(joinWithAnd(melodicBits).replace(/^./, (c) => c.toUpperCase()) + ".");
+
+  if (!instrumental) {
+    const vocalBits: string[] = [];
+    if (payload.vocalDirection.length > 0) vocalBits.push(listToNaturalPhrase(payload.vocalDirection));
+    if (lyricsCtx.vocalistTag && lyricsCtx.vocalistTag !== "auto") vocalBits.push(lyricsCtx.vocalistTag);
+    if (vocalBits.length > 0) {
+      parts.push(`${joinWithAnd(vocalBits)} vocal.`.replace(/^./, (c) => c.toUpperCase()));
+    }
+    if (payload.vocalNegatives.length > 0) {
+      parts.push(payload.vocalNegatives.join(", ") + ".");
+    }
+  } else {
+    parts.push("Instrumental — no vocals.");
+  }
+
+  const instrumentBits: string[] = [];
+  if (payload.instrumentation.length > 0) instrumentBits.push(listToNaturalPhrase(payload.instrumentation));
+  const textureAcoustic = axisPhrase(payload.instrumentTexture.acousticElectronic, "Acoustic", "Electronic");
+  const textureOrganic = axisPhrase(payload.instrumentTexture.organicSynthetic, "Organic", "Synthetic");
+  if (textureAcoustic) instrumentBits.push(textureAcoustic);
+  if (textureOrganic) instrumentBits.push(textureOrganic);
+  if (instrumentBits.length > 0) {
+    parts.push(`Instrumentation: ${joinWithAnd(instrumentBits)}.`);
+  }
+
+  const productionBits: string[] = [];
+  if (payload.production.length > 0) productionBits.push(...payload.production.map((p) => p.toLowerCase()));
+  for (const axis of [
+    { key: "modernVintage", left: "Modern", right: "Vintage" },
+    { key: "dryAtmospheric", left: "Dry", right: "Atmospheric" },
+    { key: "organicPolished", left: "Organic", right: "Polished" },
+    { key: "analogDigital", left: "Analog", right: "Digital" },
+    { key: "minimalLayered", left: "Minimal", right: "Layered" },
+    { key: "narrowWide", left: "Narrow", right: "Wide" },
+  ] as const) {
+    const phrase = axisPhrase(payload.productionAxes[axis.key], axis.left, axis.right);
+    if (phrase) productionBits.push(phrase);
+  }
+  if (payload.era.trim()) productionBits.push(`${payload.era.trim().toLowerCase()} aesthetic`);
+  if (productionBits.length > 0) {
+    parts.push(`Production: ${joinWithAnd(productionBits)}.`);
+  }
+
+  if (payload.avoidTags.length > 0) {
+    parts.push(`Avoid: ${payload.avoidTags.join(", ")}.`);
+  }
+
+  if (lyricsCtx.language && lyricsCtx.language.trim() && lyricsCtx.language !== "English") {
+    parts.push(`Lyrics language: ${lyricsCtx.language}.`);
+  }
+
+  return parts.join(" ");
 }

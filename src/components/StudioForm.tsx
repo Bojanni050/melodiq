@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import GenerateButton from "@/components/studio/GenerateButton";
 import VoiceCloneToggle from "@/components/studio/VoiceCloneToggle";
 import ProviderModelSection, { type ProviderCredits } from "@/components/studio/ProviderModelSection";
@@ -8,218 +9,20 @@ import TitleSection from "@/components/studio/TitleSection";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore, usePresetsStore } from "@/lib/store";
 
-const STYLE_TAG_GROUPS: { label: string; tags: string[] }[] = [
-  {
-    label: "Electronic",
-    tags: [
-      "House",
-      "Deep House",
-      "Tech House",
-      "Techno",
-      "Minimal Techno",
-      "Drum & Bass",
-      "Jungle",
-      "Trance",
-      "Progressive Trance",
-      "Psytrance",
-      "Synthwave",
-      "Retrowave",
-      "Vaporwave",
-      "IDM",
-      "Breakbeat",
-      "UK Garage",
-      "2-Step",
-      "Dubstep",
-      "Future Bass",
-      "Electro",
-    ],
-  },
-  {
-    label: "Urban & World",
-    tags: [
-      "Hip-Hop",
-      "Boom Bap",
-      "Trap",
-      "Drill",
-      "R&B",
-      "Neo Soul",
-      "Afrobeats",
-      "Amapiano",
-      "Dancehall",
-      "Reggaeton",
-      "Latin Pop",
-      "Baile Funk",
-      "Gqom",
-      "Kuduro",
-      "Afro House",
-    ],
-  },
-  {
-    label: "Band & Organic",
-    tags: [
-      "Indie Pop",
-      "Dream Pop",
-      "Shoegaze",
-      "Indie Rock",
-      "Post-Rock",
-      "Folk",
-      "Acoustic",
-      "Singer-Songwriter",
-      "Country",
-      "Bluegrass",
-      "Jazz",
-      "Nu Jazz",
-      "Blues",
-      "Gospel",
-      "Soul",
-    ],
-  },
-  {
-    label: "Cinematic & Classical",
-    tags: [
-      "Orchestral",
-      "Cinematic",
-      "Chamber Music",
-      "Baroque",
-      "Minimalist Classical",
-    ],
-  },
-  {
-    label: "Ambient & Texture",
-    tags: [
-      "Ambient",
-      "Dark Ambient",
-      "Drone",
-      "Soundscape",
-      "Granular",
-      "Noise",
-      "Glitch",
-      "Microsound",
-      "Field Recording",
-      "Lo-Fi",
-    ],
-  },
-  {
-    label: "Drums & Rhythm",
-    tags: [
-      "808 Bass",
-      "Boom Bap Drums",
-      "Live Drums",
-      "Drum Machine",
-      "Half-Time",
-      "Breakbeat",
-      "Polyrhythmic",
-      "Swing",
-      "Trap Hi-Hats",
-      "Brushed Snare",
-    ],
-  },
-  {
-    label: "Bass & Low End",
-    tags: [
-      "Sub Bass",
-      "Reese Bass",
-      "Wobble Bass",
-      "Sidechain Compression",
-      "Pumping Bass",
-      "Walking Bassline",
-      "Fretless Bass",
-      "Synth Bass",
-    ],
-  },
-  {
-    label: "Synths & Keys",
-    tags: [
-      "Analog Synth",
-      "FM Synthesis",
-      "Wavetable",
-      "Pad Chords",
-      "Layered Pads",
-      "Arpeggiated Synth",
-      "Rhodes Piano",
-      "Prepared Piano",
-      "Wurlitzer",
-      "Mellotron",
-    ],
-  },
-  {
-    label: "Guitar & Strings",
-    tags: [
-      "Fingerpicked Guitar",
-      "Slide Guitar",
-      "Tremolo Guitar",
-      "Plucked Strings",
-      "String Quartet",
-      "Pizzicato",
-      "Electric Guitar",
-      "Nylon Guitar",
-    ],
-  },
-  {
-    label: "FX & Processing",
-    tags: [
-      "Vinyl Crackle",
-      "Tape Hiss",
-      "Reverse Reverb",
-      "Pitch Shift",
-      "Vocal Chops",
-      "FX Risers",
-      "White Noise Sweeps",
-      "Bitcrusher",
-      "Saturated",
-      "Distorted",
-      "Glitchy",
-    ],
-  },
-  {
-    label: "Mood & Energy",
-    tags: [
-      "Melancholic",
-      "Euphoric",
-      "Brooding",
-      "Nostalgic",
-      "Hypnotic",
-      "Eerie",
-      "Uplifting",
-      "Tense",
-      "Dreamy",
-      "Aggressive",
-      "Romantic",
-      "Sparse",
-      "Lush",
-      "Intimate",
-      "Raw",
-    ],
-  },
-  {
-    label: "Vocal Style",
-    tags: [
-      "Close-Mic Vocals",
-      "Dry Vocals",
-      "Layered Harmonies",
-      "Falsetto",
-      "Whispered",
-      "Spoken Word",
-      "No Vocals",
-    ],
-  },
-];
-
 export default memo(function StudioForm({
   credits,
   isGenerating,
   onGenerate,
   onOptimize,
-  onGenerateLyrics,
   onGenerateTitle,
 }: {
   credits: ProviderCredits;
   isGenerating: boolean;
   onGenerate: () => void;
   onOptimize: () => void;
-  onGenerateLyrics: () => void;
   onGenerateTitle: (lyrics: string) => Promise<string | null>;
 }) {
+  const router = useRouter();
   const {
     songIdea,
     lyrics,
@@ -270,10 +73,7 @@ export default memo(function StudioForm({
   }, [savedLyricsLoaded, fetchSavedLyrics]);
 
   const [optimizing, setOptimizing] = useState(false);
-  const [generatingLyrics, setGeneratingLyrics] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [showTags, setShowTags] = useState(false);
   const [showProTips, setShowProTips] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
   const [lyricsExpanded, setLyricsExpanded] = useState(false);
@@ -347,17 +147,6 @@ export default memo(function StudioForm({
     }
   }
 
-  async function handleGenerateLyrics() {
-    if (!songIdea) return;
-    setGeneratingLyrics(true);
-    try {
-      await onGenerateLyrics();
-      setShowLyrics(true);
-    } finally {
-      setGeneratingLyrics(false);
-    }
-  }
-
   async function handleGenerateTitle() {
     if (!lyrics.trim()) return;
     setGeneratingTitle(true);
@@ -368,16 +157,6 @@ export default memo(function StudioForm({
       }
     } finally {
       setGeneratingTitle(false);
-    }
-  }
-
-  function addStyleTag(tag: string) {
-    const currentStyle = songIdea.trim();
-    const tagText = tag.toLowerCase();
-    if (currentStyle && !currentStyle.toLowerCase().includes(tagText)) {
-      setSongIdea(currentStyle + ", " + tag);
-    } else if (!currentStyle) {
-      setSongIdea(tag);
     }
   }
 
@@ -587,18 +366,14 @@ Your chorus here`}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleGenerateLyrics}
-                  disabled={!lyricsContext || generatingLyrics}
+                  onClick={() => router.push("/melody")}
                   className="btn-ghost text-sm flex items-center gap-1.5"
+                  title="Write and generate lyrics in Melody"
                 >
-                  {generatingLyrics ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  )}
-                  {generatingLyrics ? "Generating..." : "Generate Lyrics"}
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Generate Lyrics
                 </button>
                 <button
                   type="button"
@@ -792,63 +567,18 @@ Your chorus here`}
           />
         </div>
 
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setShowTags(!showTags)}
-            className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/60 transition-colors"
-          >
-            <svg
-              className={`w-3 h-3 transition-transform duration-200 ${showTags ? "rotate-90" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            {showTags ? "Hide style tags" : "Browse style tags"}
-          </button>
-
-          {showTags && (
-            <div className="mt-3 max-h-64 overflow-y-auto pr-1 space-y-3">
-              {STYLE_TAG_GROUPS.map((group) => (
-                <div key={group.label}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-white/25 mb-1.5">
-                    {group.label}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.tags.map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => addStyleTag(tag)}
-                        className="px-2.5 py-1 text-sm rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70 hover:border-white/20 transition-colors"
-                      >
-                        + {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
         <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleOptimize}
-              disabled={!songIdea || optimizing}
+              type="button"
+              onClick={() => router.push("/melody")}
               className="btn-ghost text-sm flex items-center gap-1.5"
+              title="Build your style in Melody"
             >
-              {optimizing ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              )}
-              {optimizing ? "Generating..." : "Generate Style"}
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Generate Style
             </button>
 
             <button
