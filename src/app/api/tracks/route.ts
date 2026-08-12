@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
     artistName: tracks.artistName,
     composerName: tracks.composerName,
     writerName: tracks.writerName,
+    archivedAt: tracks.archivedAt,
     deletedAt: tracks.deletedAt,
     completedAt: tracks.completedAt,
     createdAt: tracks.createdAt,
@@ -114,15 +115,20 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const statusFilter = url.searchParams.get("status");
   const trashOnly = url.searchParams.get("trash") === "true";
+  const archivedOnly = url.searchParams.get("archived") === "true";
 
-  const baseWhere = trashOnly
+  // archivedOnly wint: toon alleen gearchiveerde tracks (ongeacht trash/
+  // status), zodat het Archief-tabblad zelfstandig kan poll-en.
+  const baseWhere = archivedOnly
+    ? and(eq(tracks.userId, userId), isNotNull(tracks.archivedAt), isNull(tracks.deletedAt))
+    : trashOnly
     ? and(eq(tracks.userId, userId), isNotNull(tracks.deletedAt))
     : statusFilter
-    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter), isNull(tracks.deletedAt))
-    : and(eq(tracks.userId, userId), isNull(tracks.deletedAt));
+    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter), isNull(tracks.deletedAt), isNull(tracks.archivedAt))
+    : and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt));
 
   // Run database timeout check before fetching tracks
-  if (!statusFilter && !trashOnly) {
+  if (!statusFilter && !trashOnly && !archivedOnly) {
     const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
     await db.update(tracks)
       .set({ status: "failed", error: "Generation timed out. Please try again." })
@@ -132,13 +138,14 @@ export async function GET(request: NextRequest) {
           inArray(tracks.status, ["pending", "generating"]),
           ne(tracks.provider, "musicgpt"),
           lt(tracks.createdAt, timeoutCutoff),
-          isNull(tracks.deletedAt)
+          isNull(tracks.deletedAt),
+          isNull(tracks.archivedAt)
         )
       );
   }
 
   // Active-polling fallback: Check status of active (pending/generating) tracks
-  if (!statusFilter && !trashOnly) {
+  if (!statusFilter && !trashOnly && !archivedOnly) {
     const activeTracks = await db
       .select()
       .from(tracks)
@@ -146,7 +153,8 @@ export async function GET(request: NextRequest) {
         and(
           eq(tracks.userId, userId),
           inArray(tracks.status, ["pending", "generating"]),
-          isNull(tracks.deletedAt)
+          isNull(tracks.deletedAt),
+          isNull(tracks.archivedAt)
         )
       );
 

@@ -253,6 +253,7 @@ export async function retryStaleWavConversions(userId: string): Promise<void> {
         eq(tracks.provider, "poyo"),
         eq(tracks.status, "done"),
         isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt),
         isNull(tracks.s3KeyHd),
         or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
         lt(tracks.wavRetryCount, MAX_AUTO_WAV_RETRIES)
@@ -269,6 +270,7 @@ export async function retryStaleWavConversions(userId: string): Promise<void> {
         eq(tracks.provider, "apimart"),
         eq(tracks.status, "done"),
         isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt),
         isNull(tracks.s3KeyHd),
         or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
         lt(tracks.wavRetryCount, MAX_AUTO_WAV_RETRIES)

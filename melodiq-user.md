@@ -257,3 +257,19 @@ The Settings page lets you configure each provider independently:
 
 - On desktop Studio Create page, **Generate Track** stays anchored at the bottom of the Studio column while the form content above it scrolls
 - Als de Studio-kolom lang is, kun je door de velden scrollen terwijl de generate-sectie onderaan zichtbaar blijft, net boven de player
+
+---
+
+## Archief
+
+Naast de prullenbak (Recycle Bin) heeft de Library nu ook een **Archief**-tabblad:
+
+- **Archiveren** bewaart alleen de originele mp3 van de track en verwijdert de HD/WAV-versie, alle stems en alle masters. Dit bespaart S3-opslagruimte.
+- Gearchiveerde tracks zijn **niet afspeelbaar** (play-knop moet weg) en **niet bruikbaar** in releases of playlists.
+- De track blijft zichtbaar in het Archief-tabblad met de archiveringsdatum.
+- **Herstellen** haalt de track uit het archief terug naar de Library. Let op: WAV/stems/masters worden niet hersteld — alleen de mp3 was bewaard.
+- Archiveren gaat via het actiemenu (drie puntjes) op een TrackCard — kies "Archiveren".
+- Je **kunt niet archiveren** wanneer de track:
+  - gepubliceerd is in een release (publiceer-uitschakelen of uit de release halen eerst),
+  - een Master Track is in Song Archive (vertalingen mogen wel),
+  - in een of meer playlists zit (verwijder eerst uit alle playlists).

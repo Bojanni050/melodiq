@@ -48,7 +48,7 @@ export async function getPublishedTracksFeed(limit = 50): Promise<PublicTrackSum
   const rows = await db
     .select()
     .from(tracks)
-    .where(and(eq(tracks.releaseStatus, "published"), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
+    .where(and(eq(tracks.releaseStatus, "published"), eq(tracks.status, "done"), isNull(tracks.deletedAt), isNull(tracks.archivedAt)))
     .orderBy(desc(tracks.publishDate))
     .limit(limit);
 
@@ -76,7 +76,8 @@ export async function getPublishedTrackById(trackId: string) {
         eq(tracks.id, trackId),
         eq(tracks.releaseStatus, "published"),
         eq(tracks.status, "done"),
-        isNull(tracks.deletedAt)
+        isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt)
       )
     )
     .limit(1);

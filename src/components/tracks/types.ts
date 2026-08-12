@@ -44,6 +44,7 @@ export interface TrackItem {
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
   jobId?: string | null;
+  archivedAt?: string | null;
 }
 
 export interface PlaylistOption {

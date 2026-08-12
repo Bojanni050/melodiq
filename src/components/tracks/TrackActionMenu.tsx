@@ -21,6 +21,9 @@ interface TrackActionMenuProps {
   onOpenReleasePicker?: () => void;
   onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
   onEditDetails?: () => void;
+  onArchiveClick?: () => void;
+  archiveDisabled?: boolean;
+  archiveDisabledReason?: string;
   onLinkToArchiveClick?: () => void;
   onAnalyzeCompositionClick?: () => void;
   analyzingComposition?: boolean;
@@ -58,6 +61,9 @@ export default function TrackActionMenu({
   onOpenReleasePicker,
   onRemoveFromReleaseClick,
   onEditDetails,
+  onArchiveClick,
+  archiveDisabled,
+  archiveDisabledReason,
   onLinkToArchiveClick,
   onAnalyzeCompositionClick,
   analyzingComposition,
@@ -434,7 +440,25 @@ export default function TrackActionMenu({
               )}
             </>
           )}
-          </>
+           </>
+           )}
+           {onArchiveClick && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (archiveDisabled) return;
+                  onArchiveClick();
+                  setMenuOpen(false);
+                }}
+                disabled={archiveDisabled}
+                title={archiveDisabled ? archiveDisabledReason : undefined}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-amber-300/85 hover:bg-amber-500/10 hover:text-amber-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                Archiveren
+              </button>
+            </>
           )}
         </div>
       )}

@@ -36,6 +36,7 @@ export interface Track {
   composerName?: string | null;
   writerName?: string | null;
   deletedAt?: string | null;
+  archivedAt?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
@@ -137,7 +138,7 @@ export const usePlayerStore = create<PlayerState>()(
             if (index >= 0) {
               nextState.queue = state.playContext
                 .slice(index + 1)
-                .filter((t) => t.status === "done");
+                .filter((t) => t.status === "done" && !t.archivedAt);
             }
           }
 
@@ -264,7 +265,7 @@ export const usePlayerStore = create<PlayerState>()(
         if (!current || !context || context.length === 0) return;
         const index = context.findIndex((t) => t.id === current.id);
         if (index < 0) return;
-        set({ queue: context.slice(index + 1).filter((t) => t.status === "done") });
+        set({ queue: context.slice(index + 1).filter((t) => t.status === "done" && !t.archivedAt) });
       },
       syncTrackSnapshots: (tracks) =>
         set((state) => {

@@ -55,7 +55,8 @@ export async function GET(
         eq(tracks.userId, userId),
         eq(tracks.releaseStatus, "published"),
         eq(tracks.status, "done"),
-        isNull(tracks.deletedAt)
+        isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt)
       )
     )
     .orderBy(desc(tracks.publishDate));

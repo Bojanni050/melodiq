@@ -303,6 +303,27 @@ const TrackCard = memo(function TrackCard({
     }
   }
 
+  async function handleArchive() {
+    if (track.status !== "done") return;
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/archive`, { method: "POST" });
+      if (res.status === 409) {
+        const body = await res.json().catch(() => null);
+        const message = body?.error || "Track kan niet gearchiveerd worden.";
+        alert(message);
+        return;
+      }
+      if (!res.ok) {
+        console.error(`Failed to archive track: HTTP ${res.status}`);
+        return;
+      }
+      void mutate("/api/tracks");
+      window.dispatchEvent(new CustomEvent("tracks-changed"));
+    } catch (error) {
+      console.error("Failed to archive track:", error);
+    }
+  }
+
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
   }, [track.playCount]);
@@ -902,6 +923,15 @@ const TrackCard = memo(function TrackCard({
               onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
               onEditDetails={() => setEditTrackOpen((v) => !v)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
+              onArchiveClick={track.status === "done" && !isListenerRole ? handleArchive : undefined}
+              archiveDisabled={track.releaseStatus === "published" || archiveLinkKind === "original"}
+              archiveDisabledReason={
+                track.releaseStatus === "published"
+                  ? "Track is gepubliceerd in een release en kan niet gearchiveerd worden."
+                  : archiveLinkKind === "original"
+                    ? "Dit is een Master Track in Song Archive en kan niet gearchiveerd worden."
+                    : undefined
+              }
               onAnalyzeCompositionClick={handleAnalyzeComposition}
                             analyzingComposition={analyzingComposition}
                             onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
