@@ -305,6 +305,14 @@ const TrackCard = memo(function TrackCard({
 
   async function handleArchive() {
     if (track.status !== "done") return;
+    const trackTitle = track.title || track.prompt?.substring(0, 60) || "Deze track";
+    const confirmArchive = window.confirm(
+      `Weet je zeker dat je "${trackTitle}" wilt archiveren?\n\n` +
+      `- Alleen de originele mp3 wordt bewaard (s3Key)\n` +
+      `- De HD/WAV-versie, alle stems en alle masters worden permanently verwijderd van S3\n` +
+      `- Track DNA en lyrics worden behouden`
+    );
+    if (!confirmArchive) return;
     try {
       const res = await fetch(`/api/tracks/${track.id}/archive`, { method: "POST" });
       if (res.status === 409) {
