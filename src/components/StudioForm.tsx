@@ -26,7 +26,6 @@ export default memo(function StudioForm({
   const {
     songIdea,
     lyrics,
-    lyricsContext,
     title,
     autoCreateWorkspaceFromGeneratedTitle,
     selectedProviders,
@@ -42,7 +41,6 @@ export default memo(function StudioForm({
     savedLyricsLoaded,
     setSongIdea,
     setLyrics,
-    setLyricsContext,
     setTitle,
     setAutoCreateWorkspaceFromGeneratedTitle,
     setProvider,
@@ -329,16 +327,6 @@ export default memo(function StudioForm({
         )}
         {(!instrumental || isHeartMulaSelected) && (
           <>
-            <div className="mb-3">
-              <label className="block text-sm text-white/50 mb-1.5">Lyrics Topic & Mood</label>
-              <input
-                type="text"
-                value={lyricsContext}
-                onChange={(e) => setLyricsContext(e.target.value)}
-                placeholder="e.g. heartbreak, melancholic OR freedom, uplifting"
-                className="input-field text-sm"
-              />
-            </div>
             <div className="relative">
               <textarea
                 value={lyrics}

@@ -1135,3 +1135,12 @@
   - Release-uitsluiting: `/api/releases/[releaseId]`-pagina en `ReleasePickerDialog` lezen tracks via `/api/tracks?status=done` of via de reeds ingevulde release store — beide vanzelf gearchiveerde tracks uitsluiten zonder verdere code-wijziging.
   - Build versie bijgewerkt naar `202608121905` in `src/components/Sidebar.tsx`.
   - Validated with `npm run build` which succeeded completely.
+
+## 2026-08-12 wo 21:22 (Lyrics Topic & Mood veld verwijderd van Music pagina)
+
+- Findings: Het veld "Lyrics Topic & Mood" op de Music pagina (/studio) vulde alleen lyricsContext in de studio store. Dat veld ging uitsluitend mee als context bij het /api/llm optimise-call en werd nergens anders gebruikt. Voor de eigenaar was het overbodige input, waardoor de Lyrics sectie onnodig veel ruimte innam.
+- Conclusions: Het veld weghalen uit de UI; de store-field en de context-pass-through in handleOptimize blijven intact (default leeg) zodat de API contracten onveranderd blijven en er niets kan breken.
+- Actions:
+  - src/components/StudioForm.tsx ""  label + input voor "Lyrics Topic & Mood" verwijderd uit de Lyrics sectie (regel 332-341); ook de gedestructureerde lyricsContext/setLyricsContext uit useStudioStore() gehaald zodat er geen ongebruikte variabelen achterblijven.
+  - Build versie bijgewerkt naar 202608122122 in src/components/Sidebar.tsx.
+  - Validated with npm run build which succeeded completely.
