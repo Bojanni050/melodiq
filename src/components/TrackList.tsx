@@ -7,7 +7,7 @@ import TrackListHeader from "@/components/tracks/TrackListHeader";
 import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
-import { useArchiveTracks } from "@/lib/hooks/useArchiveTracks";
+import { useArchiveTracks } from "@/lib/hooks/use-archive-tracks";
 import {
   readPersistedTrackOrder,
   writePersistedTrackOrder,
@@ -445,8 +445,15 @@ export default memo(function TrackList({
     if (activeSelected.size === 0) return;
     const ids = Array.from(activeSelected);
     const getTitle = (id: string) => tracks.find((t) => t.id === id)?.title || "Untitled";
-    await archiveTrackIds(ids, getTitle, (id) => onDelete?.(id));
-    setSelectedIds(new Set());
+    const archivedIds = new Set<string>();
+    await archiveTrackIds(ids, getTitle, (id) => {
+      archivedIds.add(id);
+      onDelete?.(id);
+    });
+    // Only drop successfully archived tracks from the selection — blocked/failed
+    // ones stay selected so the user can retry after resolving the issue.
+    const remaining = new Set(Array.from(activeSelected).filter((id) => !archivedIds.has(id)));
+    setSelectedIds(remaining);
   }, [tracks, archiveTrackIds, onDelete, setSelectedIds]);
 
   const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
@@ -726,6 +733,7 @@ export default memo(function TrackList({
             <p className="text-sm text-white/80">
               Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
               {archiveResults.blocked.length > 0 && ` ${archiveResults.blocked.length} blocked.`}
+              {archiveResults.failed.length > 0 && ` ${archiveResults.failed.length} failed.`}
             </p>
             <button
               onClick={clearArchiveResults}
@@ -734,11 +742,16 @@ export default memo(function TrackList({
               ✕
             </button>
           </div>
-          {archiveResults.blocked.length > 0 && (
+          {(archiveResults.blocked.length > 0 || archiveResults.failed.length > 0) && (
             <ul className="text-xs text-white/50 space-y-1">
               {archiveResults.blocked.map((b) => (
                 <li key={b.trackId}>
                   {b.title}: {b.reasons.map((r) => r.detail).join(", ") || "blocked"}
+                </li>
+              ))}
+              {archiveResults.failed.map((f) => (
+                <li key={f.trackId}>
+                  {f.title}: {f.message}
                 </li>
               ))}
             </ul>

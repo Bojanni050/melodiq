@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore } from "@/lib/store";
-import { useArchiveTracks } from "@/lib/hooks/useArchiveTracks";
-import type { ArchiveBlockReason } from "@/lib/track-archive-guards";
+import { useArchiveTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
 
 type GroupTrack = {
   id: string;
@@ -52,10 +51,11 @@ export default function SmartArchivePage() {
         setCheckedByGroup((prev) => {
           const next: Record<string, Set<string>> = {};
           for (const group of nextGroups) {
-            // Default-checked for non-blocked tracks; blocked ones are never selectable.
+            // Nothing is preselected — the user must explicitly check each
+            // track before archiving it. Blocked tracks are never selectable.
             next[group.id] = prev[group.id]
               ? new Set(Array.from(prev[group.id]).filter((id) => group.tracks.some((t) => t.id === id && !t.blocked)))
-              : new Set(group.tracks.filter((t) => !t.blocked).map((t) => t.id));
+              : new Set<string>();
           }
           return next;
         });

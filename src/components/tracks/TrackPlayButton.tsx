@@ -21,12 +21,13 @@ export default function TrackPlayButton({
   onPlayClick,
 }: TrackPlayButtonProps) {
   const isGeneratingOrPending = track.status === "generating" || track.status === "pending";
+  const isArchived = Boolean(track.archivedAt);
 
   return (
     <button
       onClick={(e) => {
         e.stopPropagation();
-        if (track.status !== "done") return;
+        if (track.status !== "done" || isArchived) return;
         onPlayClick();
       }}
       onDoubleClick={(e) => {
@@ -38,7 +39,16 @@ export default function TrackPlayButton({
       data-now-playing={isCurrentlyPlaying ? "true" : undefined}
       aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
     >
-      {isGeneratingOrPending ? (
+      {isArchived ? (
+        <div
+          className="w-full h-full flex items-center justify-center bg-white/5"
+          title="Gearchiveerd — alleen mp3 bewaard"
+        >
+          <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6" />
+          </svg>
+        </div>
+      ) : isGeneratingOrPending ? (
         <div className="w-full h-full bg-white/5 flex items-center justify-center">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400/30 border-t-primary-300" />
         </div>

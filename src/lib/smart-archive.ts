@@ -57,6 +57,24 @@ export function computeTextSimilarity(a: string | null | undefined, b: string | 
   return jaccard(tokenize(a ?? ""), tokenize(b ?? ""));
 }
 
+// Per-track token cache keyed by object identity, so groupBySimilarity's
+// O(n^2) pairwise scan tokenizes each track's lyrics/prompt/title once
+// instead of ~n times (lyrics can be large — this matters at library scale).
+const tokenCache = new WeakMap<TrackForSimilarity, { lyrics: Set<string>; prompt: Set<string>; title: Set<string> }>();
+
+function tokensFor(track: TrackForSimilarity) {
+  let cached = tokenCache.get(track);
+  if (!cached) {
+    cached = {
+      lyrics: tokenize(track.lyrics ?? ""),
+      prompt: tokenize(track.prompt ?? ""),
+      title: tokenize(track.title ?? ""),
+    };
+    tokenCache.set(track, cached);
+  }
+  return cached;
+}
+
 // Heuristic 0..1 distance (lower = closer) over the existing AudioDna JSON
 // fields — there's no real audio fingerprint/embedding in this codebase, so
 // this approximates "audioDna nearness" from tempo/key/energy/loudness/tags.
@@ -98,12 +116,14 @@ export function computePairScore(
   trackB: TrackForSimilarity
 ): { score: number; matchedOn: SimilarityMatchSignal[] } {
   const signals: { key: SimilarityMatchSignal; value: number; weight: number }[] = [];
+  const tokensA = tokensFor(trackA);
+  const tokensB = tokensFor(trackB);
 
   if (trackA.lyrics?.trim() && trackB.lyrics?.trim()) {
-    signals.push({ key: "lyrics", value: computeTextSimilarity(trackA.lyrics, trackB.lyrics), weight: WEIGHTS.lyrics });
+    signals.push({ key: "lyrics", value: jaccard(tokensA.lyrics, tokensB.lyrics), weight: WEIGHTS.lyrics });
   }
   if (trackA.prompt?.trim() && trackB.prompt?.trim()) {
-    signals.push({ key: "prompt", value: computeTextSimilarity(trackA.prompt, trackB.prompt), weight: WEIGHTS.prompt });
+    signals.push({ key: "prompt", value: jaccard(tokensA.prompt, tokensB.prompt), weight: WEIGHTS.prompt });
   }
   if (trackA.audioDna && trackB.audioDna) {
     signals.push({
@@ -117,8 +137,10 @@ export function computePairScore(
 
   // Title is only ever added alongside at least one primary signal — with
   // no lyrics/prompt/audioDna to compare, there's no basis for a match.
-  if (hasPrimarySignal) {
-    signals.push({ key: "title", value: computeTextSimilarity(trackA.title, trackB.title), weight: WEIGHTS.title });
+  // Skipped when both titles are empty too, so two untitled tracks don't
+  // get penalized by a spurious empty-vs-empty comparison.
+  if (hasPrimarySignal && (trackA.title?.trim() || trackB.title?.trim())) {
+    signals.push({ key: "title", value: jaccard(tokensA.title, tokensB.title), weight: WEIGHTS.title });
   }
 
   if (!hasPrimarySignal) return { score: 0, matchedOn: [] };

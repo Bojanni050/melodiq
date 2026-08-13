@@ -311,11 +311,11 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_collaboration boolean NOT NULL DEFAULT false;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS archived_at timestamp;
+CREATE INDEX IF NOT EXISTS "tracks_archived_at_idx" ON "tracks"("archived_at");
 ALTER TABLE track_stems ADD COLUMN IF NOT EXISTS completed_at timestamp;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlist_tracks_playlist_position_unique" ON "playlist_tracks"("playlist_id", "position");
-CREATE INDEX IF NOT EXISTS "tracks_user_id_archived_at_idx" ON "tracks"("user_id", "archived_at");
 `;
 
 const alterUsersSql = `

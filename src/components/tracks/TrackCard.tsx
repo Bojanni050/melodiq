@@ -19,7 +19,6 @@ import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import ReleasePickerDialog from "./ReleasePickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import LinkToArchiveDialog from "./LinkToArchiveDialog";
-import ArchiveBlockedDialog from "./ArchiveBlockedDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import TrackPlayButton from "./TrackPlayButton";
@@ -304,6 +303,35 @@ const TrackCard = memo(function TrackCard({
     }
   }
 
+  async function handleArchive() {
+    if (track.status !== "done") return;
+    const trackTitle = track.title || track.prompt?.substring(0, 60) || "Deze track";
+    const confirmArchive = window.confirm(
+      `Weet je zeker dat je "${trackTitle}" wilt archiveren?\n\n` +
+      `- Alleen de originele mp3 wordt bewaard (s3Key)\n` +
+      `- De HD/WAV-versie, alle stems en alle masters worden permanently verwijderd van S3\n` +
+      `- Track DNA en lyrics worden behouden`
+    );
+    if (!confirmArchive) return;
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/archive`, { method: "POST" });
+      if (res.status === 409) {
+        const body = await res.json().catch(() => null);
+        const message = body?.error || "Track kan niet gearchiveerd worden.";
+        alert(message);
+        return;
+      }
+      if (!res.ok) {
+        console.error(`Failed to archive track: HTTP ${res.status}`);
+        return;
+      }
+      void mutate("/api/tracks");
+      window.dispatchEvent(new CustomEvent("tracks-changed"));
+    } catch (error) {
+      console.error("Failed to archive track:", error);
+    }
+  }
+
   useEffect(() => {
     setOptimisticPlayCount(track.playCount ?? 0);
   }, [track.playCount]);
@@ -332,7 +360,7 @@ const TrackCard = memo(function TrackCard({
   }, [track.id]);
 
   const edit = useTrackInlineEdit(track, onTitleUpdate);
-  const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onArchived: onDelete, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
+  const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
   // Workspace derived data (computed once in TrackList and passed as props)
   const workspaces = useMemo(() => {
@@ -506,13 +534,6 @@ const TrackCard = memo(function TrackCard({
         track={track}
         onClose={() => setShowLinkToArchiveDialog(false)}
       />
-
-      {actions.archiveBlockedReasons && (
-        <ArchiveBlockedDialog
-          reasons={actions.archiveBlockedReasons}
-          onClose={() => actions.setArchiveBlockedReasons(null)}
-        />
-      )}
 
       <MergeWorkspaceDialog
         isOpen={actions.showMergeWorkspaceDialog}
@@ -910,7 +931,15 @@ const TrackCard = memo(function TrackCard({
               onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
               onEditDetails={() => setEditTrackOpen((v) => !v)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
-              onArchiveClick={actions.handleArchiveClick}
+              onArchiveClick={track.status === "done" && !isListenerRole ? handleArchive : undefined}
+              archiveDisabled={track.releaseStatus === "published" || archiveLinkKind === "original"}
+              archiveDisabledReason={
+                track.releaseStatus === "published"
+                  ? "Track is gepubliceerd in een release en kan niet gearchiveerd worden."
+                  : archiveLinkKind === "original"
+                    ? "Dit is een Master Track in Song Archive en kan niet gearchiveerd worden."
+                    : undefined
+              }
               onAnalyzeCompositionClick={handleAnalyzeComposition}
                             analyzingComposition={analyzingComposition}
                             onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}

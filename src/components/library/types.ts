@@ -29,7 +29,7 @@ export interface LibraryTrack {
   uploadIndex?: number;
 }
 
-export type LibraryView = "songs" | "trash" | "archived";
+export type LibraryView = "songs" | "trash" | "archive";
 
 export const MAX_UPLOAD_QUEUE = 10;
 

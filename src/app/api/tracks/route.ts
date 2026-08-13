@@ -105,8 +105,8 @@ export async function GET(request: NextRequest) {
     artistName: tracks.artistName,
     composerName: tracks.composerName,
     writerName: tracks.writerName,
-    deletedAt: tracks.deletedAt,
     archivedAt: tracks.archivedAt,
+    deletedAt: tracks.deletedAt,
     completedAt: tracks.completedAt,
     createdAt: tracks.createdAt,
     updatedAt: tracks.updatedAt,
@@ -117,10 +117,12 @@ export async function GET(request: NextRequest) {
   const trashOnly = url.searchParams.get("trash") === "true";
   const archivedOnly = url.searchParams.get("archived") === "true";
 
-  const baseWhere = trashOnly
-    ? and(eq(tracks.userId, userId), isNotNull(tracks.deletedAt))
-    : archivedOnly
+  // archivedOnly wint: toon alleen gearchiveerde tracks (ongeacht trash/
+  // status), zodat het Archief-tabblad zelfstandig kan poll-en.
+  const baseWhere = archivedOnly
     ? and(eq(tracks.userId, userId), isNotNull(tracks.archivedAt), isNull(tracks.deletedAt))
+    : trashOnly
+    ? and(eq(tracks.userId, userId), isNotNull(tracks.deletedAt))
     : statusFilter
     ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter), isNull(tracks.deletedAt), isNull(tracks.archivedAt))
     : and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt));
@@ -136,7 +138,8 @@ export async function GET(request: NextRequest) {
           inArray(tracks.status, ["pending", "generating"]),
           ne(tracks.provider, "musicgpt"),
           lt(tracks.createdAt, timeoutCutoff),
-          isNull(tracks.deletedAt)
+          isNull(tracks.deletedAt),
+          isNull(tracks.archivedAt)
         )
       );
   }
@@ -150,7 +153,8 @@ export async function GET(request: NextRequest) {
         and(
           eq(tracks.userId, userId),
           inArray(tracks.status, ["pending", "generating"]),
-          isNull(tracks.deletedAt)
+          isNull(tracks.deletedAt),
+          isNull(tracks.archivedAt)
         )
       );
 

@@ -1111,3 +1111,36 @@
 - Findings: As listener, the Library page showed no track list and no artwork on melodiq.nl. Root cause (two coupled bugs): (1) library/page.tsx put raw /api/discover PublicTrackSummary objects straight into TrackCard — those have no `prompt`/`lyrics`/`audioUrl` fields, and TrackCard.tsx L417 calls `track.prompt.length`, throwing a TypeError that crashed the whole page. (2) The discover feed exposes `coverUrl: "/api/tracks/{id}/cover"`, an owner-only route that 404s for a listener.
 - Conclusions: Discover tracks must be normalized into a full LibraryTrack before rendering, and their cover must point at the public `/api/discover/{id}/cover` proxy route instead of the owner-only one.
 - Actions: `src/app/library/page.tsx` listener branch now maps each published track to a complete LibraryTrack (prompt:'', lyrics null, status 'done', provider 'discover', coverUrl=/api/discover/{id}/cover, publicSource true). Build clean; deployed to VPS via git pull + docker compose build/up. endpoints /api/discover, /api/discover/{id}/cover, /api/discover/{id}/stream all 200.
+
+## 2026-08-12 wo 19:05 (Track Archive feature)
+
+- Findings: Tracks accumuleerden in de Library zonder manier om ze op te bergen zonder ze definitief te wissen. Prullenbak (deletedAt) is natuurlijk een verwijder-functie; er ontbrak een apart, bewarend "Archief"-concept dat alleen de originele mp3 bewaart en de HD/WAV-versie + stems + masters verwijdert om S3-ruimte te besparen.
+- Conclusions: Voeg een `archivedAt`-kolom toe die los staat van `deletedAt`; gearchiveerde tracks blijven zichtbaar in een apart Archief-tabblad, zijn niet afspeelbaar, niet bruikbaar in releases/playlists en kunnen op elk moment hersteld worden (zonder dat de verwijderde WAV/stems herleven — alleen de mp3 was bewaard). Serverside guards (published, master_track, in_playlist) voorkomen dat locks-position tracks worden weggestopt.
+- Actions:
+  - `src/db/schema.ts` — `archivedAt` kolom + `tracks_archived_at_idx` index toegevoegd (apart van `deletedAt`).
+  - `src/db/init.ts` — `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS archived_at` + `CREATE INDEX IF NOT EXISTS tracks_archived_at_idx` toegevoegd, automatisch uitgevoerd bij startup (zelfde self-healing patroon als voorgaande kolommen).
+  - `src/lib/archive-guards.ts` — nieuwe herbruikbare `checkArchiveGuards(trackId, userId)`: published -> master_track (Song Archive zonder parent) -> in_playlist, stopt bij de eerste hit en geeft een Nederlandstalige reden.
+  - `src/app/api/tracks/[id]/archive/route.ts` — nieuwe route: POST archiveert (S3-opschoon van stems/masters/s3KeyHd, verwijdert release_tracks rijen, stelt `archivedAt` in, wist s3KeyHd/audioUrlHd/formatHd, raakt de mp3 en Track DNA/lyrics/prompt niet aan); DELETE herstelt door `archivedAt = null` en documenteert dat WAV/stems/masters definitief weg zijn.
+  - `src/app/api/tracks/route.ts` — `archivedAt` toegevoegd aan `trackListSelect`; nieuwe `?archived=true` query-param (zelfde patroon als `?trash=true`); alle bestaande lijst-queries + de active-poll/timeout-queries filteren nu op `isNull(tracks.archivedAt)`.
+  - `src/lib/songs.ts` — both published-track gates (`getPublishedTracksFeed` + `getPublishedTrackById`) sluiten gearchiveerde tracks uit.
+  - `src/app/api/discover/artist/[userId]/route.ts` — artist profile feed sluit nu ook archived tracks uit.
+  - `src/lib/apimart-wav.ts`, `src/lib/apimart-lyrics.ts`, `src/lib/request-wav-conversion.ts` — self-healing WAV/lyrics polls slaan gearchiveerde tracks over.
+  - `src/components/library/types.ts` — `LibraryView` uitgebreid met "archive"; `LibraryTrack` krijgt `archivedAt` veld.
+  - `src/components/tracks/types.ts` + `src/lib/stores/playerStore.ts` — `TrackItem`/player `Track` krijgen `archivedAt`; player-store autostart queue-filtert nu op `!archivedAt` zodat een gearchiveerde track nooit stiekem in de afspeelwachtrij belandt.
+  - `src/components/library/ArchivePanel.tsx` — nieuw panel (kopie van TrashPanel, NL teksten), Archief-tabblad met lege-staat en alleen een Herstellen-knop (geen permanent-delete — dat hoort bij de prullenbak).
+  - `src/app/library/page.tsx` — derde tab-knop toegevoegd naast Tracks/Recycle Bin, met `archivedTracks` state + `fetchArchived` + `handleRestoreArchivedTrack`; subtitel van de header schakelt mee.
+  - `src/components/tracks/TrackActionMenu.tsx` — nieuw `onArchiveClick` prop + amberkleurig "Archiveren" menu-item; disabled wanneer `releaseStatus === "published"` of `archiveLinkKind === "original"` (zelfde Song-Archive indicatie als reeds gebruikt in TrackCard), met een tooltip met de reden.
+  - `src/components/tracks/TrackCard.tsx` — `handleArchive` roept `POST /api/tracks/{id}/archive` aan: bij HTTP 409 wordt de nederlandstalige error uit de response als alert getoond; bij succes worden de tracklijsten gemuteerd; de actie is alleen zichtbaar voor eigenaars, niet voor listeners of niet-done tracks.
+  - `src/components/tracks/TrackPlayButton.tsx` — ipv de play-knop wordt voor een gearchiveerde track een archief-icoon + title="Gearchiveerd — alleen mp3 bewaard" getoond.
+  - Release-uitsluiting: `/api/releases/[releaseId]`-pagina en `ReleasePickerDialog` lezen tracks via `/api/tracks?status=done` of via de reeds ingevulde release store — beide vanzelf gearchiveerde tracks uitsluiten zonder verdere code-wijziging.
+  - Build versie bijgewerkt naar `202608121905` in `src/components/Sidebar.tsx`.
+  - Validated with `npm run build` which succeeded completely.
+
+## 2026-08-12 wo 21:22 (Lyrics Topic & Mood veld verwijderd van Music pagina)
+
+- Findings: Het veld "Lyrics Topic & Mood" op de Music pagina (/studio) vulde alleen lyricsContext in de studio store. Dat veld ging uitsluitend mee als context bij het /api/llm optimise-call en werd nergens anders gebruikt. Voor de eigenaar was het overbodige input, waardoor de Lyrics sectie onnodig veel ruimte innam.
+- Conclusions: Het veld weghalen uit de UI; de store-field en de context-pass-through in handleOptimize blijven intact (default leeg) zodat de API contracten onveranderd blijven en er niets kan breken.
+- Actions:
+  - src/components/StudioForm.tsx ""  label + input voor "Lyrics Topic & Mood" verwijderd uit de Lyrics sectie (regel 332-341); ook de gedestructureerde lyricsContext/setLyricsContext uit useStudioStore() gehaald zodat er geen ongebruikte variabelen achterblijven.
+  - Build versie bijgewerkt naar 202608122122 in src/components/Sidebar.tsx.
+  - Validated with npm run build which succeeded completely.

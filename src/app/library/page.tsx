@@ -9,7 +9,7 @@ import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import type { TrackItem } from "@/components/tracks/types";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import TrashPanel from "@/components/library/TrashPanel";
-import ArchivedPanel from "@/components/library/ArchivedPanel";
+import ArchivePanel from "@/components/library/ArchivePanel";
 import UploadPanel from "@/components/library/UploadPanel";
 import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
 import type { LibraryTrack, LibraryView } from "@/components/library/types";
@@ -75,7 +75,7 @@ export default function LibraryPage() {
   const [trashedTracks, setTrashedTracks] = useState<LibraryTrack[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
   const [archivedTracks, setArchivedTracks] = useState<LibraryTrack[]>([]);
-  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
@@ -153,6 +153,25 @@ export default function LibraryPage() {
     }
   }, []);
 
+  const fetchArchived = useCallback(async () => {
+    setArchiveLoading(true);
+    try {
+      const res = await fetch("/api/tracks?archived=true");
+      if (res.ok) {
+        const data = await res.json();
+        setArchivedTracks((data.tracks || []).map((t: any) => ({ ...t })));
+      }
+    } finally {
+      setArchiveLoading(false);
+    }
+  }, []);
+
+  const handleRestoreArchivedTrack = useCallback(async (trackId: string) => {
+    await fetch(`/api/tracks/${trackId}/archive`, { method: "DELETE" });
+    setArchivedTracks((prev) => prev.filter((t) => t.id !== trackId));
+    await fetchTracks();
+  }, [fetchTracks]);
+
   const handleRestoreTrack = useCallback(async (trackId: string) => {
     await fetch(`/api/tracks/${trackId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }) });
     setTrashedTracks((prev) => prev.filter((t) => t.id !== trackId));
@@ -165,25 +184,6 @@ export default function LibraryPage() {
     await fetch(`/api/tracks/${trackId}?permanent=true`, { method: "DELETE" });
     setTrashedTracks((prev) => prev.filter((t) => t.id !== trackId));
   }, [trashedTracks]);
-
-  const fetchArchived = useCallback(async () => {
-    setArchivedLoading(true);
-    try {
-      const res = await fetch("/api/tracks?archived=true");
-      if (res.ok) {
-        const data = await res.json();
-        setArchivedTracks((data.tracks || []).map((t: any) => ({ ...t })));
-      }
-    } finally {
-      setArchivedLoading(false);
-    }
-  }, []);
-
-  const handleUnarchiveTrack = useCallback(async (trackId: string) => {
-    await fetch(`/api/tracks/${trackId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ archived: false }) });
-    setArchivedTracks((prev) => prev.filter((t) => t.id !== trackId));
-    await fetchTracks();
-  }, [fetchTracks]);
 
   const handleUploadFinished = useCallback((uploadedTracks: LibraryTrack[], workspaceId: string) => {
     if (uploadedTracks.length > 0) {
@@ -512,7 +512,7 @@ export default function LibraryPage() {
                       Library
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {view === "trash" ? "Recycle Bin" : view === "archived" ? "Archived" : "Tracks"}
+                        {view === "trash" ? "Recycle Bin" : view === "archive" ? "Archief" : "Tracks"}
                       </span>
                     </h1>
                     {tracks.length > 0 && (
@@ -532,6 +532,7 @@ export default function LibraryPage() {
                     </button>
 
                     {/* Recycle Bin */}
+                    {/* Recycle Bin */}
                     <button
                       type="button"
                       onClick={() => { setView("trash"); void fetchTrash(); }}
@@ -543,16 +544,16 @@ export default function LibraryPage() {
                       Bin
                     </button>
 
-                    {/* Archived */}
+                    {/* Archive */}
                     <button
                       type="button"
-                      onClick={() => { setView("archived"); void fetchArchived(); }}
-                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "archived" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                      onClick={() => { setView("archive"); void fetchArchived(); }}
+                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "archive" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6" />
                       </svg>
-                      Archived
+                      Archief
                     </button>
                   </div>
                 </div>
@@ -618,12 +619,12 @@ export default function LibraryPage() {
               />
             )}
 
-            {/* Archived view */}
-            {view === "archived" && (
-              <ArchivedPanel
+            {/* Archive view */}
+            {view === "archive" && (
+              <ArchivePanel
                 tracks={archivedTracks}
-                loading={archivedLoading}
-                onUnarchive={handleUnarchiveTrack}
+                loading={archiveLoading}
+                onRestore={handleRestoreArchivedTrack}
               />
             )}
 
