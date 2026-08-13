@@ -614,7 +614,7 @@ const TrackCard = memo(function TrackCard({
 
         {/* Track info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0 w-full">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 w-full">
             {isNewUnplayed && (
               <span
                 className="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-[0_0_0_2px_rgba(253,224,71,0.25),0_0_10px_rgba(253,224,71,0.85)]"
@@ -647,7 +647,7 @@ const TrackCard = memo(function TrackCard({
               </div>
             ) : (
               <h3
-                className={`text-sm font-medium truncate cursor-text flex-1 min-w-0 ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
+                className={`text-sm font-medium truncate cursor-text flex-1 min-w-[6rem] ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
                 onClick={(e) => e.stopPropagation()}
                 onDoubleClick={edit.handleTitleDoubleClick}
                 title="Double-click to edit"
@@ -759,12 +759,12 @@ const TrackCard = memo(function TrackCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
-                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 shrink-0 transition-colors hover:bg-primary-500/20"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
                 title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+                aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
               >
-                Track DNA
                 <svg
-                  className={`w-2.5 h-2.5 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
+                  className={`w-3 h-3 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
