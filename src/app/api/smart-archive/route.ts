@@ -17,6 +17,13 @@ type GuardedTrack = {
   hasCover: boolean;
   blocked: boolean;
   reasons: { type: string; detail: string }[];
+  duration: number | null;
+  status: string;
+  releaseStatus: string | null;
+  publishDate: string | null;
+  playCount: number;
+  lyricsTimestamps: string | null;
+  instrumental: boolean;
 };
 
 export async function GET() {
@@ -43,6 +50,13 @@ export async function GET() {
           prompt: tracks.prompt,
           lyrics: tracks.lyrics,
           s3KeyCover: tracks.s3KeyCover,
+          duration: tracks.duration,
+          status: tracks.status,
+          releaseStatus: tracks.releaseStatus,
+          publishDate: tracks.publishDate,
+          playCount: tracks.playCount,
+          lyricsTimestamps: tracks.lyricsTimestamps,
+          instrumental: tracks.instrumental,
         })
         .from(tracks)
         .where(and(inArray(tracks.id, allTrackIds), eq(tracks.userId, userId))),
@@ -66,6 +80,13 @@ export async function GET() {
           hasCover: !!track?.s3KeyCover,
           blocked: guard?.blocked ?? false,
           reasons: guard?.blocked ? [{ type: guard.reason, detail: guard.message }] : [],
+          duration: track?.duration ?? null,
+          status: track?.status ?? "pending",
+          releaseStatus: track?.releaseStatus ?? null,
+          publishDate: track?.publishDate ? track.publishDate.toISOString() : null,
+          playCount: track?.playCount ?? 0,
+          lyricsTimestamps: track?.lyricsTimestamps ?? null,
+          instrumental: track?.instrumental ?? false,
         };
       }),
     }));
