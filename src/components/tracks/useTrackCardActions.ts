@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePlaylistStore, useReleaseStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import type { PlaylistOption, TrackItem } from "./types";
+import type { ArchiveBlockReason } from "@/lib/track-archive-guards";
 
 interface UseTrackCardActionsOptions {
   track: TrackItem;
@@ -11,6 +12,7 @@ interface UseTrackCardActionsOptions {
   tracksById?: Map<string, TrackItem>;
   onDelete?: (trackId: string) => void;
   onDeleteTracks?: (trackIds: string[]) => Promise<void> | void;
+  onArchived?: (trackId: string) => void;
   onAddToPlaylist?: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
 }
@@ -20,6 +22,7 @@ export function useTrackCardActions({
   tracksById,
   onDelete,
   onDeleteTracks,
+  onArchived,
   onAddToPlaylist,
   onMoveToWorkspace: onMoveToWorkspaceProp,
 }: UseTrackCardActionsOptions) {
@@ -62,6 +65,8 @@ export function useTrackCardActions({
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [showReleasePickerDialog, setShowReleasePickerDialog] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveBlockedReasons, setArchiveBlockedReasons] = useState<ArchiveBlockReason[] | null>(null);
 
   useEffect(() => {
     function handleCoverRegenerated(event: Event) {
@@ -169,6 +174,30 @@ export function useTrackCardActions({
       console.error("Failed to regenerate title:", error);
     } finally {
       setIsRegeneratingTitle(false);
+    }
+  }
+
+  async function handleArchiveClick() {
+    if (archiving) return;
+    setArchiving(true);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: true }),
+      });
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({ reasons: [] }));
+        setArchiveBlockedReasons(data.reasons ?? []);
+        return;
+      }
+      if (res.ok) {
+        onArchived?.(track.id);
+      }
+    } catch (error) {
+      console.error("Failed to archive track:", error);
+    } finally {
+      setArchiving(false);
     }
   }
 
@@ -374,8 +403,10 @@ export function useTrackCardActions({
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
     showReleasePickerDialog, setShowReleasePickerDialog,
+    archiving, archiveBlockedReasons, setArchiveBlockedReasons,
     // handlers
     executeDelete, handleDelete,
+    handleArchiveClick,
     handleRegenerateCover,
     handleRegenerateTitle,
     handleRating,

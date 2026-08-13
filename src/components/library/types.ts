@@ -25,10 +25,11 @@ export interface LibraryTrack {
   composerName?: string | null;
   writerName?: string | null;
   deletedAt?: string | null;
+  archivedAt?: string | null;
   uploadIndex?: number;
 }
 
-export type LibraryView = "songs" | "trash";
+export type LibraryView = "songs" | "trash" | "archived";
 
 export const MAX_UPLOAD_QUEUE = 10;
 

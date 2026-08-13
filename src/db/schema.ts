@@ -118,6 +118,7 @@ export const tracks = pgTable("tracks", {
   pollsOpenAt: timestamp("polls_open_at"),
   pollsCloseAt: timestamp("polls_close_at"),
   deletedAt: timestamp("deleted_at"),
+  archivedAt: timestamp("archived_at"),
   // Stamped by a DB trigger (see init.ts) the moment status first transitions
   // into "done"/"failed" — createdAt to completedAt is the generation time.
   completedAt: timestamp("completed_at"),
@@ -128,6 +129,7 @@ export const tracks = pgTable("tracks", {
   index("tracks_user_id_status_idx").on(table.userId, table.status),
   index("tracks_status_idx").on(table.status),
   index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
+  index("tracks_user_id_archived_at_idx").on(table.userId, table.archivedAt),
   uniqueIndex("tracks_user_provider_audio_id_unique").on(table.userId, table.provider, table.audioId),
 ]);
 

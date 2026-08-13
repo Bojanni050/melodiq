@@ -88,6 +88,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               { href: "/playlists", label: "Playlists", icon: "playlists" },
               { href: "/releases", label: "Releases", icon: "releases" },
               { href: "/archive", label: "Master Tracks", icon: "archive" },
+              { href: "/smart-archive", label: "Smart Archive", icon: "smart-archive" },
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
             ],
           },
@@ -208,6 +209,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M3 7v12a1 1 0 001 1h16a1 1 0 001-1V7M3 7l1.5-3h15L21 7M10 12h4" />
+          </svg>
+        );
+      case "smart-archive":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v4a1 1 0 001 1h4M9 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8l-5-5H9zm-2 11l2.5 2.5L15 11" />
           </svg>
         );
       case "admin":

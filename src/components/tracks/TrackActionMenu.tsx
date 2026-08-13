@@ -22,6 +22,7 @@ interface TrackActionMenuProps {
   onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
   onEditDetails?: () => void;
   onLinkToArchiveClick?: () => void;
+  onArchiveClick?: () => void;
   onAnalyzeCompositionClick?: () => void;
   analyzingComposition?: boolean;
   onAdvancedDnaClick?: () => void;
@@ -59,6 +60,7 @@ export default function TrackActionMenu({
   onRemoveFromReleaseClick,
   onEditDetails,
   onLinkToArchiveClick,
+  onArchiveClick,
   onAnalyzeCompositionClick,
   analyzingComposition,
   onAdvancedDnaClick,
@@ -432,6 +434,22 @@ export default function TrackActionMenu({
                   ))}
                 </>
               )}
+            </>
+          )}
+
+          {onArchiveClick && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onArchiveClick();
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              >
+                Archive
+              </button>
             </>
           )}
           </>

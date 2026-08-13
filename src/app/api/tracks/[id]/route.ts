@@ -26,6 +26,7 @@ import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { detectLanguageFromLyrics } from "@/lib/providers/llm";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
+import { checkTrackArchiveGuard } from "@/lib/track-archive-guards";
 import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
 import { logApi } from "@/lib/logger";
 
@@ -715,6 +716,7 @@ export async function PATCH(
     const provider = body.provider;
     const duration = body.duration;
     const restore = body.restore;
+    const archived = body.archived;
     const sunoStyleInfluence = body.sunoStyleInfluence;
     const sunoWeirdness = body.sunoWeirdness;
     const detectLanguage = body.detectLanguage;
@@ -725,6 +727,31 @@ export async function PATCH(
     if (restore === true) {
       await db.update(tracks).set({ deletedAt: null }).where(eq(tracks.id, id));
       return NextResponse.json({ success: true });
+    }
+
+    if (archived === true) {
+      const guard = await checkTrackArchiveGuard(id, userId);
+      if (guard.blocked) {
+        return NextResponse.json(
+          { error: "Track cannot be archived", reasons: guard.reasons },
+          { status: 409 }
+        );
+      }
+      const updated = await db
+        .update(tracks)
+        .set({ archivedAt: new Date() })
+        .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
+        .returning();
+      return NextResponse.json(updated[0]);
+    }
+
+    if (archived === false) {
+      const updated = await db
+        .update(tracks)
+        .set({ archivedAt: null })
+        .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
+        .returning();
+      return NextResponse.json(updated[0]);
     }
 
     if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {

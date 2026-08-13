@@ -19,6 +19,7 @@ import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import ReleasePickerDialog from "./ReleasePickerDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import LinkToArchiveDialog from "./LinkToArchiveDialog";
+import ArchiveBlockedDialog from "./ArchiveBlockedDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import TrackPlayButton from "./TrackPlayButton";
@@ -331,7 +332,7 @@ const TrackCard = memo(function TrackCard({
   }, [track.id]);
 
   const edit = useTrackInlineEdit(track, onTitleUpdate);
-  const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
+  const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onArchived: onDelete, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
   // Workspace derived data (computed once in TrackList and passed as props)
   const workspaces = useMemo(() => {
@@ -505,6 +506,13 @@ const TrackCard = memo(function TrackCard({
         track={track}
         onClose={() => setShowLinkToArchiveDialog(false)}
       />
+
+      {actions.archiveBlockedReasons && (
+        <ArchiveBlockedDialog
+          reasons={actions.archiveBlockedReasons}
+          onClose={() => actions.setArchiveBlockedReasons(null)}
+        />
+      )}
 
       <MergeWorkspaceDialog
         isOpen={actions.showMergeWorkspaceDialog}
@@ -902,6 +910,7 @@ const TrackCard = memo(function TrackCard({
               onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
               onEditDetails={() => setEditTrackOpen((v) => !v)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
+              onArchiveClick={actions.handleArchiveClick}
               onAnalyzeCompositionClick={handleAnalyzeComposition}
                             analyzingComposition={analyzingComposition}
                             onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
