@@ -344,6 +344,12 @@ export default function SmartArchivePage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-sm font-medium text-white/80 truncate">{track.title || "Untitled"}</p>
+                                  {isThisPlaying && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 shrink-0 font-medium">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                                      Now playing
+                                    </span>
+                                  )}
                                   {badge && (
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${badge.color}`}>{badge.label}</span>
                                   )}
