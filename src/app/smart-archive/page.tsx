@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore } from "@/lib/store";
 import { useArchiveTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 
 type GroupTrack = {
   id: string;
@@ -22,6 +24,9 @@ type GroupTrack = {
   playCount: number;
   lyricsTimestamps: string | null;
   instrumental: boolean;
+  hasHd: boolean;
+  stemsCount: number;
+  mastersCount: number;
 };
 
 type SmartArchiveGroup = {
@@ -56,6 +61,7 @@ function trackStatusBadge(track: GroupTrack): { color: string; label: string } |
 }
 
 export default function SmartArchivePage() {
+  const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -63,6 +69,19 @@ export default function SmartArchivePage() {
   const [groups, setGroups] = useState<SmartArchiveGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkedByGroup, setCheckedByGroup] = useState<Record<string, Set<string>>>({});
+  const [confirmGroup, setConfirmGroup] = useState<SmartArchiveGroup | null>(null);
+  const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
+  const [dnaMountedIds, setDnaMountedIds] = useState<Set<string>>(new Set());
+
+  function toggleDna(trackId: string) {
+    setDnaOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+    setDnaMountedIds((prev) => (prev.has(trackId) ? prev : new Set(prev).add(trackId)));
+  }
 
   const { archiving, archiveResults, archiveTrackIds, clearArchiveResults } = useArchiveTracks();
 
@@ -170,6 +189,11 @@ export default function SmartArchivePage() {
     void fetchGroups();
   }, [fetchGroups]);
 
+  function goToTrackInLibrary(trackId: string) {
+    sessionStorage.setItem("melodiq-jump-to-track", trackId);
+    router.push("/library");
+  }
+
   function toggleTrack(groupId: string, trackId: string) {
     setCheckedByGroup((prev) => {
       const current = new Set(prev[groupId] ?? []);
@@ -179,15 +203,30 @@ export default function SmartArchivePage() {
     });
   }
 
-  async function handleArchiveGroup(group: SmartArchiveGroup) {
+  function handleArchiveGroupClick(group: SmartArchiveGroup) {
+    const ids = checkedByGroup[group.id] ?? new Set<string>();
+    if (ids.size === 0) return;
+    setConfirmGroup(group);
+  }
+
+  async function executeArchiveConfirmedGroup() {
+    if (!confirmGroup) return;
+    const group = confirmGroup;
     const ids = Array.from(checkedByGroup[group.id] ?? []);
-    if (ids.length === 0) return;
+    if (ids.length === 0) {
+      setConfirmGroup(null);
+      return;
+    }
     const getTitle = (trackId: string) => group.tracks.find((t) => t.id === trackId)?.title || "Untitled";
     await archiveTrackIds(ids, getTitle);
+    setConfirmGroup(null);
     await fetchGroups();
   }
 
   const selectedOutputLabel = outputDevices.find((d) => d.deviceId === selectedOutputId)?.label;
+  const confirmTracks = confirmGroup
+    ? confirmGroup.tracks.filter((t) => (checkedByGroup[confirmGroup.id] ?? new Set()).has(t.id))
+    : [];
 
   return (
     <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
@@ -274,22 +313,12 @@ export default function SmartArchivePage() {
                   const checked = checkedByGroup[group.id] ?? new Set<string>();
                   return (
                     <div key={group.id} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {group.matchedOn.map((signal) => (
-                            <span key={signal} className="text-xs rounded-full bg-primary-500/20 text-primary-300 px-2.5 py-1">
-                              {MATCH_LABELS[signal] ?? signal} {Math.round(group.score * 100)}%
-                            </span>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleArchiveGroup(group)}
-                          disabled={archiving || checked.size === 0}
-                          className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
-                        >
-                          Archive selected ({checked.size})
-                        </button>
+                      <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b border-white/10">
+                        {group.matchedOn.map((signal) => (
+                          <span key={signal} className="text-xs rounded-full bg-primary-500/20 text-primary-300 px-2.5 py-1">
+                            {MATCH_LABELS[signal] ?? signal} {Math.round(group.score * 100)}%
+                          </span>
+                        ))}
                       </div>
 
                       <div className="divide-y divide-white/5">
@@ -298,9 +327,10 @@ export default function SmartArchivePage() {
                           const isPlayable = track.status === "done";
                           const isThisPlaying = previewTrackId === track.id && previewPlaying;
                           const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
+                          const dnaOpen = dnaOpenIds.has(track.id);
                           return (
+                            <div key={track.id}>
                             <div
-                              key={track.id}
                               className={`flex items-center gap-3 px-4 py-3 ${track.blocked ? "opacity-50" : ""}`}
                             >
                               <input
@@ -343,7 +373,20 @@ export default function SmartArchivePage() {
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-sm font-medium text-white/80 truncate">{track.title || "Untitled"}</p>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); goToTrackInLibrary(track.id); }}
+                                    title="Open in Library"
+                                    className="text-sm font-medium text-white/80 truncate hover:text-white hover:underline underline-offset-2 text-left"
+                                  >
+                                    {track.title || "Untitled"}
+                                  </button>
+                                  {isThisPlaying && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 shrink-0 font-medium">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                                      Now playing
+                                    </span>
+                                  )}
                                   {badge && (
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${badge.color}`}>{badge.label}</span>
                                   )}
@@ -370,6 +413,24 @@ export default function SmartArchivePage() {
                                     <span className="text-[10px] px-1.5 py-0.5 rounded border border-violet-300/30 bg-violet-400/10 text-violet-200 shrink-0" title="No vocals">Instrumental</span>
                                   )}
                                   <span className="text-[10px] text-white/40 shrink-0">{formatDuration(track.duration)}</span>
+                                  {track.status === "done" && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); toggleDna(track.id); }}
+                                      className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 shrink-0 transition-colors hover:bg-primary-500/20"
+                                      title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+                                    >
+                                      Track DNA
+                                      <svg
+                                        className={`w-2.5 h-2.5 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    </button>
+                                  )}
                                 </div>
                                 {track.lyricsSnippet && (
                                   <p className="text-xs text-white/40 mt-0.5 truncate">{track.lyricsSnippet}</p>
@@ -384,8 +445,30 @@ export default function SmartArchivePage() {
                                 )}
                               </div>
                             </div>
+
+                            <div
+                              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                                dnaOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                              }`}
+                            >
+                              <div className="overflow-hidden">
+                                {dnaMountedIds.has(track.id) && <TrackDnaPanel trackId={track.id} trackStatus={track.status} />}
+                              </div>
+                            </div>
+                            </div>
                           );
                         })}
+                      </div>
+
+                      <div className="flex items-center justify-end px-4 py-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveGroupClick(group)}
+                          disabled={archiving || checked.size === 0}
+                          className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                        >
+                          Archive selected ({checked.size})
+                        </button>
                       </div>
                     </div>
                   );
@@ -395,6 +478,74 @@ export default function SmartArchivePage() {
           </div>
         </main>
       </div>
+
+      {confirmGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmGroup(null)} />
+          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+            <div>
+              <h3 className="text-lg font-semibold text-white/90">
+                Archive {confirmTracks.length} track{confirmTracks.length === 1 ? "" : "s"}?
+              </h3>
+              <p className="text-sm text-white/50 mt-1">
+                The original MP3 and Track DNA are always kept. Anything listed below is permanently deleted.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {confirmTracks.map((track) => {
+                const deletions: string[] = [];
+                if (track.hasHd) deletions.push("HD/WAV audio file");
+                if (track.stemsCount > 0) deletions.push(`${track.stemsCount} stem${track.stemsCount === 1 ? "" : "s"}`);
+                if (track.mastersCount > 0) deletions.push(`${track.mastersCount} master version${track.mastersCount === 1 ? "" : "s"}`);
+                return (
+                  <div key={track.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
+                        {track.hasCover ? (
+                          <img src={`/api/tracks/${track.id}/cover`} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-white/80 truncate">{track.title || "Untitled"}</p>
+                    </div>
+                    {deletions.length > 0 ? (
+                      <ul className="text-xs text-red-300/80 mt-2 list-disc list-inside space-y-0.5">
+                        {deletions.map((d) => <li key={d}>{d}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-white/40 mt-2">Nothing extra to delete — just archiving.</p>
+                    )}
+                    <p className="text-xs text-emerald-300/70 mt-1">Kept: original MP3, Track DNA, lyrics &amp; prompt.</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmGroup(null)}
+                disabled={archiving}
+                className="px-4 py-1.5 rounded-lg text-sm text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeArchiveConfirmedGroup}
+                disabled={archiving}
+                className="px-4 py-1.5 rounded-lg text-sm bg-white hover:bg-white/90 text-black font-medium transition-colors disabled:opacity-50"
+              >
+                {archiving ? "Archiving…" : `Archive ${confirmTracks.length} track${confirmTracks.length === 1 ? "" : "s"}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
