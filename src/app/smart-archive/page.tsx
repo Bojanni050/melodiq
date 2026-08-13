@@ -377,7 +377,7 @@ export default function SmartArchivePage() {
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); goToTrackInLibrary(track.id); }}
                                     title="Open in Library"
-                                    className="text-sm font-medium text-white/80 truncate hover:text-white hover:underline underline-offset-2 text-left"
+                                    className="text-sm font-medium text-white/80 truncate hover:text-white hover:underline underline-offset-2 text-left min-w-[6rem] max-w-[60vw] sm:max-w-xs"
                                   >
                                     {track.title || "Untitled"}
                                   </button>
@@ -417,12 +417,12 @@ export default function SmartArchivePage() {
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); toggleDna(track.id); }}
-                                      className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 shrink-0 transition-colors hover:bg-primary-500/20"
+                                      className="inline-flex items-center justify-center w-5 h-5 rounded text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
                                       title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+                                      aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                                     >
-                                      Track DNA
                                       <svg
-                                        className={`w-2.5 h-2.5 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
+                                        className={`w-3 h-3 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
