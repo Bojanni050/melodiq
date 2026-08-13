@@ -23,6 +23,7 @@ export interface TrackItem {
   othersPlayCount?: number | null;
   votedAt?: string | null;
   workspaceId?: string | null;
+  archivedAt?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;
@@ -44,7 +45,6 @@ export interface TrackItem {
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
   jobId?: string | null;
-  archivedAt?: string | null;
 }
 
 export interface PlaylistOption {

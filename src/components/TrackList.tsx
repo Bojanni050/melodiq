@@ -7,6 +7,7 @@ import TrackListHeader from "@/components/tracks/TrackListHeader";
 import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
+import { useArchiveTracks } from "@/lib/hooks/use-archive-tracks";
 import {
   readPersistedTrackOrder,
   writePersistedTrackOrder,
@@ -437,6 +438,24 @@ export default memo(function TrackList({
     await deleteTrackIds(Array.from(activeSelected));
   }
 
+  const { archiving, archiveResults, archiveTrackIds, clearArchiveResults } = useArchiveTracks();
+
+  const handleMassArchive = useCallback(async () => {
+    const activeSelected = useSelectionStore.getState().selectedIds;
+    if (activeSelected.size === 0) return;
+    const ids = Array.from(activeSelected);
+    const getTitle = (id: string) => tracks.find((t) => t.id === id)?.title || "Untitled";
+    const archivedIds = new Set<string>();
+    await archiveTrackIds(ids, getTitle, (id) => {
+      archivedIds.add(id);
+      onDelete?.(id);
+    });
+    // Only drop successfully archived tracks from the selection — blocked/failed
+    // ones stay selected so the user can retry after resolving the issue.
+    const remaining = new Set(Array.from(activeSelected).filter((id) => !archivedIds.has(id)));
+    setSelectedIds(remaining);
+  }, [tracks, archiveTrackIds, onDelete, setSelectedIds]);
+
   const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
     const activeSelection = useSelectionStore.getState().selectedIds;
     const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
@@ -708,6 +727,37 @@ export default memo(function TrackList({
           onCancel={() => setConfirmMassDelete(false)}
         />
       )}
+      {archiveResults && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] rounded-xl border border-white/10 bg-[#1a1a2e] shadow-2xl p-4 flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm text-white/80">
+              Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
+              {archiveResults.blocked.length > 0 && ` ${archiveResults.blocked.length} blocked.`}
+              {archiveResults.failed.length > 0 && ` ${archiveResults.failed.length} failed.`}
+            </p>
+            <button
+              onClick={clearArchiveResults}
+              className="text-white/40 hover:text-white/70 transition-colors shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+          {(archiveResults.blocked.length > 0 || archiveResults.failed.length > 0) && (
+            <ul className="text-xs text-white/50 space-y-1">
+              {archiveResults.blocked.map((b) => (
+                <li key={b.trackId}>
+                  {b.title}: {b.reasons.map((r) => r.detail).join(", ") || "blocked"}
+                </li>
+              ))}
+              {archiveResults.failed.map((f) => (
+                <li key={f.trackId}>
+                  {f.title}: {f.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       <div className="space-y-1">
         <TrackListHeader
           displayedTracks={displayedTracks}
@@ -725,6 +775,8 @@ export default memo(function TrackList({
           displayedTracks={displayedTracks}
           deleting={deleting}
           onMassDelete={handleMassDelete}
+          archiving={archiving}
+          onMassArchive={handleMassArchive}
         />
 
         <div ref={sentinelRef} className="h-0 w-full" />
