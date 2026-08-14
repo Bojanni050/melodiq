@@ -1,5 +1,15 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-14 vr (Algemeen songwriting-kader toegevoegd aan alle lyric-prompts)
+
+- Findings: Het algemene schrijf-kader ("write with the sensibility of an experienced songwriter...") zat alleen in de generate-block system prompt, niet in LyricIQ of de timecoded-editor.
+- Conclusions: Voeg dezelfde richtlijn als algemeen kader toe aan alle LLM-endpoints die lyrics genereren/bewerken, zodat de stijl consistent is.
+- Actions:
+  - Modified `src/app/api/lyric-studio/generate-block/route.ts` — richtlijn toegevoegd aan system prompt (tussen syllable-flow en literalness-instructie)
+  - Modified `src/app/api/lyric-studio/lyric-iq/route.ts` — zelfde richtlijn na de "lived-in" regels, vóór de Section Awareness
+  - Modified `src/app/api/timecoded-editor/ai-edit/route.ts` — compacte versie toegevoegd aan het basis-systeemprompt van de line-editor
+  - Validated with `npm run build` — ✅ succesvol (éénmalige EPERM bestandslot op `.next/standalone/.git` opgelost door cache te verwijderen)
+
 ## 2026-08-14 vr (Lyric Studio: "Lyrics generator" toont echte modelnaam)
 
 - Findings: De display toonde "Standaard (uit Instellingen)" in plaats van de naam van het actieve LLM. De default-modelresolutie gebeurt server-side (`OPENROUTER_LYRICS_MODEL` → `OPENROUTER_MODEL` → env → fallback) en was client-side niet bekend. Daarnaast laadden modellen pas na een handmatige klik, dus er was nooit een naam beschikbaar.

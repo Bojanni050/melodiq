@@ -33,7 +33,9 @@ CRITICAL RULES:
 - Do not add lineIds that were not in the input.
 - Do not modify any lineId values.
 - Only modify the "text" field.
-- If a line needs no change, return it with its original text unchanged.`;
+- If a line needs no change, return it with its original text unchanged.
+
+Keep the sensibility of an experienced songwriter. Lyrics should feel naturally written, specific to the story and emotionally believable rather than polished for the sake of sounding poetic. Favor fresh observations, concrete situations, human behavior and subtle tension. Use simple language when simple language is right — allow conversational phrasing and unexpected turns without forcing imagery, metaphors, rhyme or symmetry. Keep the writing understated and confident: trust the listener to understand what is happening without explaining every emotion. Choose the less obvious expression when a familiar phrase comes naturally to mind. The result should feel lived-in, distinctive and effortless rather than "written."`;
 
   const actionInstructions: Record<AIEditAction, string> = {
     spelling:
