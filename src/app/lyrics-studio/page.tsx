@@ -519,8 +519,14 @@ export default function LyricsStudioPage() {
   }
 
   function useInStudio() {
-    useStudioStore.getState().setLyrics(combinedLyrics);
-    router.push("/");
+    const nextLyrics = combinedLyrics.trim();
+    if (!nextLyrics) return;
+    sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: nextLyrics, style: "", title: title.trim() }));
+    router.push("/studio");
+  }
+
+  function goToMelody() {
+    router.push("/melody");
   }
 
   async function generateTitleFromLyrics() {
@@ -740,12 +746,11 @@ export default function LyricsStudioPage() {
                 <LyricsBottomActions
                   translationLanguage={translationLanguage}
                   customTranslationLanguage={customTranslationLanguage}
-                  translatingLyrics={translatingLyrics} combinedLyrics={combinedLyrics} copied={copied}
+                  combinedLyrics={combinedLyrics}
                   onTranslationLanguageChange={setTranslationLanguage}
                   onCustomTranslationLanguageChange={setCustomTranslationLanguage}
-                  onTranslateAllLyrics={translateAllLyrics}
-                  onCopyAllLyrics={copyAllLyrics}
-                  onUseInStudio={useInStudio}
+                  onGoToMusic={useInStudio}
+                  onGoToMelody={goToMelody}
                 />
               </section>
 
@@ -753,14 +758,29 @@ export default function LyricsStudioPage() {
                 <div className="min-h-[620px] rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold text-white/70">Lyrics</h3>
-                    <button
-                      type="button"
-                      onClick={copyAllLyrics}
-                      disabled={!combinedLyrics}
-                      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                    >
-                      {copied ? "Copied!" : "Copy"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={translateAllLyrics}
+                        disabled={
+                          !combinedLyrics ||
+                          translatingLyrics ||
+                          (translationLanguage === "other" && !customTranslationLanguage.trim())
+                        }
+                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                        title="Vertaal de songtekst naar de gekozen taal"
+                      >
+                        {translatingLyrics ? "Vertalen..." : "Translate"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={copyAllLyrics}
+                        disabled={!combinedLyrics}
+                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                      >
+                        {copied ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
                   </div>
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-white/90">{combinedLyrics || "(nog geen lyrics)"}</pre>
                 </div>

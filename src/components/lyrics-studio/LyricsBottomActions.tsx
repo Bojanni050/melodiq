@@ -5,27 +5,21 @@ import { TRANSLATION_LANGUAGES } from "@/lib/lyrics-studio-constants";
 type LyricsBottomActionsProps = {
   translationLanguage: string;
   customTranslationLanguage: string;
-  translatingLyrics: boolean;
   combinedLyrics: string;
-  copied: boolean;
   onTranslationLanguageChange: (value: string) => void;
   onCustomTranslationLanguageChange: (value: string) => void;
-  onTranslateAllLyrics: () => void;
-  onCopyAllLyrics: () => void;
-  onUseInStudio: () => void;
+  onGoToMusic: () => void;
+  onGoToMelody: () => void;
 };
 
 export default function LyricsBottomActions({
   translationLanguage,
   customTranslationLanguage,
-  translatingLyrics,
   combinedLyrics,
-  copied,
   onTranslationLanguageChange,
   onCustomTranslationLanguageChange,
-  onTranslateAllLyrics,
-  onCopyAllLyrics,
-  onUseInStudio,
+  onGoToMusic,
+  onGoToMelody,
 }: LyricsBottomActionsProps) {
   return (
     <>
@@ -55,32 +49,19 @@ export default function LyricsBottomActions({
         </div>
         <button
           type="button"
-          onClick={onTranslateAllLyrics}
-          disabled={
-            !combinedLyrics.trim() ||
-            translatingLyrics ||
-            (translationLanguage === "other" && !customTranslationLanguage.trim())
-          }
+          onClick={onGoToMelody}
+          disabled={!combinedLyrics.trim()}
           className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-          title="Vertaal alle lyric blokken naar de gekozen taal"
         >
-          {translatingLyrics ? "Vertalen..." : "Translate lyrics"}
+          Go to Melody
         </button>
         <button
           type="button"
-          onClick={onCopyAllLyrics}
-          disabled={!combinedLyrics}
-          className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-        >
-          {copied ? "Copied!" : "Copy all lyrics"}
-        </button>
-        <button
-          type="button"
-          onClick={onUseInStudio}
-          disabled={!combinedLyrics}
+          onClick={onGoToMusic}
+          disabled={!combinedLyrics.trim()}
           className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-35"
         >
-          Use in Studio &rarr;
+          Go to Music &rarr;
         </button>
       </div>
     </>

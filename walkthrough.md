@@ -1,5 +1,14 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-14 vr (Lyrics pagina: bottom-actions vereenvoudigd + Translate in rechterkolom)
+
+- Findings: De bottom bar van de Lyrics pagina had Copy- en Translate-knoppen naast de taal-select; "Use in Studio" navigeerde naar "/" (redirect naar /discover, dus nooit naar de studio). De rechterkolom (alle lyrics) had alleen een Copy-knop.
+- Conclusions: Vereenvoudig de bottom bar tot taal-select + navigatieknoppen, en verplaats de vertaalactie naar de rechterkolom naast Copy.
+- Actions:
+  - Modified `src/components/lyrics-studio/LyricsBottomActions.tsx` — Translate- en Copy-knoppen verwijderd; "Use in Studio" → "Go to Music" (naar /studio), nieuwe "Go to Melody" (naar /melody); overbodige props verwijderd
+  - Modified `src/app/lyrics-studio/page.tsx` — `useInStudio` schrijft nu `lyrics-studio-payload` naar sessionStorage en pusht naar `/studio`; nieuwe `goToMelody()` naar `/melody`; Translate-knop naast Copy toegevoegd in de rechterkolom (gebruikt `translateAllLyrics`)
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-08-14 vr (Line editor: artistieke expressie boven spelling/grammatica)
 
 - Findings: De line-editor (ai-edit) kon door de algemene "choose the less obvious expression"-richtlijn in conflict komen met spelling-/grammaticacorrecties; risico was dat bewuste artistieke keuzes (dialect, slang, stijl) werden genormaliseerd.
