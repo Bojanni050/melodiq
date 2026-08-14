@@ -150,13 +150,15 @@ export default function LyricsControlPanel({
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
 
-  const [modelOptions, setModelOptions] = useState<{ recommended: LLMModel[]; others: LLMModel[] } | null>(null);
+  const [modelOptions, setModelOptions] = useState<{ recommended: LLMModel[]; others: LLMModel[]; defaultModel?: LLMModel | null } | null>(null);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
 
-  const selectedModelName = modelOptions && llmModel
-    ? [...modelOptions.recommended, ...modelOptions.others].find((m) => m.id === llmModel)?.name || "Standaard (uit Instellingen)"
-    : "Standaard (uit Instellingen)";
+  const selectedModelName = llmModel
+    ? modelOptions
+      ? [...modelOptions.recommended, ...modelOptions.others].find((m) => m.id === llmModel)?.name || llmModel.split("/").pop() || llmModel
+      : llmModel.split("/").pop() || llmModel
+    : modelOptions?.defaultModel?.name || "Standaard (uit Instellingen)";
 
   function loadModelOptions() {
     if (modelsLoading) return;
@@ -169,7 +171,7 @@ export default function LyricsControlPanel({
           setModelsError(data?.error || "Kon modellen niet laden.");
           return;
         }
-        setModelOptions({ recommended: data.recommended ?? [], others: data.others ?? [] });
+        setModelOptions({ recommended: data.recommended ?? [], others: data.others ?? [], defaultModel: data.defaultModel ?? null });
       })
       .catch(() => {
         setModelsError("Kon modellen niet laden.");
@@ -187,6 +189,11 @@ export default function LyricsControlPanel({
   useEffect(() => {
     setDisplayedMoods(getRandomSubset(MOOD_SUGGESTIONS));
     setDisplayedStyles(getRandomSubset(STYLE_SUGGESTIONS));
+  }, []);
+
+  useEffect(() => {
+    loadModelOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function shuffleMoods() {

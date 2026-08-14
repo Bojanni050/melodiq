@@ -4,6 +4,8 @@ import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
 import type { LLMModel } from "@/lib/settings-utils";
 
+const FALLBACK_LYRICS_MODEL = "google/gemini-2.5-flash";
+
 export type LyricStudioModelOption = LLMModel;
 
 // Priority order for the "recommended" group — flagship, strong-at-creative-writing
@@ -73,7 +75,19 @@ export async function GET() {
       .filter((m) => !recommendedIds.has(m.id))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    return NextResponse.json({ recommended, others });
+    const defaultModelId =
+      (await getSetting("OPENROUTER_LYRICS_MODEL")) ||
+      (await getSetting("OPENROUTER_MODEL")) ||
+      process.env.OPENROUTER_MODEL ||
+      FALLBACK_LYRICS_MODEL;
+    const defaultModel = byId.get(defaultModelId) || {
+      id: defaultModelId,
+      name: defaultModelId.split("/").pop() || defaultModelId,
+      description: "",
+      pricing: { prompt: null, completion: null },
+    };
+
+    return NextResponse.json({ recommended, others, defaultModel });
   } catch (error: any) {
     const message = error?.response?.data?.error?.message || error?.message || "Could not load models";
     return NextResponse.json({ error: message }, { status: error?.response?.status || 500 });

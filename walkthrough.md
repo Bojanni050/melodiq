@@ -1,5 +1,14 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-14 vr (Lyric Studio: "Lyrics generator" toont echte modelnaam)
+
+- Findings: De display toonde "Standaard (uit Instellingen)" in plaats van de naam van het actieve LLM. De default-modelresolutie gebeurt server-side (`OPENROUTER_LYRICS_MODEL` → `OPENROUTER_MODEL` → env → fallback) en was client-side niet bekend. Daarnaast laadden modellen pas na een handmatige klik, dus er was nooit een naam beschikbaar.
+- Conclusions: Laat de models-API het effectieve default-model meeleveren en autoload de modellen bij mount, zodat de display direct de juiste modelnaam toont.
+- Actions:
+  - Modified `src/app/api/lyric-studio/models/route.ts` — respons uitgebreid met `defaultModel` (id + naam), resolved via dezelfde fallback-keten als in `lib/providers/llm.ts`
+  - Modified `src/components/lyrics-studio/LyricsControlPanel.tsx` — `selectedModelName` toont nu de naam van het gekozen model (of het `defaultModel`); `loadModelOptions()` wordt bij mount automatisch aangeroepen
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-08-14 vr (Lyric Studio: huidig LLM model zichtbaar boven Geavanceerde instellingen)
 
 - Findings: De modelpicker zat in de standaard ingeklapte "Geavanceerde instellingen" sectie, waardoor gebruikers niet zagen welk LLM actief is zonder de sectie open te klappen.
