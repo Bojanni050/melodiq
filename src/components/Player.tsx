@@ -83,7 +83,6 @@ export default function Player() {
   const languageDetectRequestedTrackIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
-  const activeBlobUrlRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -767,33 +766,19 @@ export default function Player() {
         return;
       }
 
-      // Download the full audio file as a Blob so playback is network-independent.
-      // This prevents mid-song stops on flaky mobile connections.
-      let playUrl = normalizedTargetUrl;
-      try {
-        const blobResponse = await fetch(normalizedTargetUrl);
-        if (blobResponse.ok && !isSuperseded()) {
-          const blob = await blobResponse.blob();
-          if (!isSuperseded()) {
-            // Revoke previous blob URL to free memory
-            if (activeBlobUrlRef.current) {
-              URL.revokeObjectURL(activeBlobUrlRef.current);
-            }
-            const blobUrl = URL.createObjectURL(blob);
-            activeBlobUrlRef.current = blobUrl;
-            playUrl = blobUrl;
-          }
-        }
-      } catch {
-        // Network failed — fall back to streaming URL
-      }
+      // Stream via the <audio> element's native HTTP range-request support
+      // instead of fetching the whole file as a Blob up front — the
+      // stream endpoints already serve 206 Partial Content (see the
+      // Range: bytes=0-0 probe above), and the stall/error listeners below
+      // already reload+resume the src on flaky connections, so a full
+      // up-front download bought no real resilience while costing the full
+      // file size in data for every track, including skips.
+      const playUrl = normalizedTargetUrl;
 
       if (isSuperseded() || audioRef.current !== audioEl) {
         return;
       }
 
-      const wasPlaying = !audioEl.paused;
-      const currentPosition = audioEl.currentTime;
       audioEl.pause();
       audioEl.src = playUrl;
       audioEl.load();

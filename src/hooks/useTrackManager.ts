@@ -218,10 +218,37 @@ export function useTrackManager() {
   const hasDoneWithoutCover = useMemo(() => tracks.some((t) => t.status === "done" && !t.coverUrl), [tracks]);
   const hasDoneWithoutHd = useMemo(() => tracks.some((t) => t.status === "done" && t.provider === "poyo" && !t.s3KeyHd), [tracks]);
 
+  // Paused while the tab/app is backgrounded (mobile screen off, app-switch)
+  // so an idle background tab doesn't keep waking the device to poll the API
+  // every few seconds. Catches up immediately on return to the foreground.
   useEffect(() => {
     const interval = hasGenerating ? 5000 : hasDoneWithoutCover || hasDoneWithoutHd ? 8000 : 30000;
-    const timer = setInterval(() => { fetchTracks(); }, interval);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (timer) return;
+      timer = setInterval(() => { fetchTracks(); }, interval);
+    };
+    const stop = () => {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchTracks();
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      stop();
+    };
   }, [hasGenerating, hasDoneWithoutCover, hasDoneWithoutHd, fetchTracks]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {

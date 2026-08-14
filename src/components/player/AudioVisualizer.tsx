@@ -55,6 +55,19 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 5;
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  // Starts/stops the analyser's internal rAF/render loop to match `enabled`
+  // and tab visibility. Called both when those inputs change and right after
+  // the analyser is (re)created, since creation happens asynchronously and
+  // may land after `enabled` has already changed.
+  function syncAnalyzerRunning(analyzer: any) {
+    if (!analyzer) return;
+    try {
+      analyzer.toggleAnalyzer(enabledRef.current && document.visibilityState === "visible");
+    } catch {}
+  }
 
   async function registerCoverGradient(analyzer: any, url: string) {
     if (coverGradientRegistered.current === url) return;
@@ -134,6 +147,7 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
 
         analyzerRef.current = analyzer;
         retryCountRef.current = 0;
+        syncAnalyzerRunning(analyzer);
 
         // Auto-resume if browser suspends the AudioContext (tab switch, etc.)
         const ctx = audioCtxRef.current!;
@@ -188,6 +202,18 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
     if (!analyzerRef.current) return;
     analyzerRef.current.mode = mode;
   }, [mode]);
+
+  // Stop the analyser's internal rAF/render loop whenever the visualizer is
+  // disabled (opacity 0) or the tab/app is backgrounded — the previous
+  // implementation only hid it with CSS, leaving audiomotion-analyzer
+  // rendering to a canvas nobody sees, burning CPU/GPU (and battery) the
+  // entire time a track plays.
+  useEffect(() => {
+    syncAnalyzerRunning(analyzerRef.current);
+    const onVisibility = () => syncAnalyzerRunning(analyzerRef.current);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [enabled]);
 
   useEffect(() => {
     if (!analyzerRef.current) return;
