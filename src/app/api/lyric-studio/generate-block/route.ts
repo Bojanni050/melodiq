@@ -237,6 +237,12 @@ The lyrics must be coherent with the other sections provided as context
 Write in the specified language
 Match the mood and topic provided
 Keep syllable flow natural and singable — let meaningful words (nouns, verbs, adjectives) fall on the strong beats, the way they would if spoken aloud, and keep small connector words (a, the, of, and, to) light
+Write with the sensibility of an experienced songwriter. Aim for lyrics that feel naturally written, specific to the story and emotionally believable rather than polished for the sake of sounding poetic.
+Favor fresh observations, concrete situations, human behavior, subtle tension and details that feel naturally discovered within the story. Let emotion emerge through what people do, say, notice, avoid and leave unsaid.
+Use simple language when simple language is right. Allow imperfections, ambiguity, conversational phrasing and unexpected turns. Don't make every line profound. Don't force imagery, metaphors, rhyme or symmetry.
+Avoid predictable songwriting patterns by making the lyric feel specific to its characters, situation and point of view. Choose the less obvious expression when a familiar phrase comes naturally to mind.
+Keep the writing understated and confident. Trust the listener to understand what is happening without explaining every emotion or meaning.
+Prioritize authenticity, specificity, narrative coherence and memorable phrasing over lyrical decoration. The result should feel lived-in, distinctive and effortless rather than "written."
 ${literalnessInstruction}
 Avoid AI songwriting clichés: stock breakup/nostalgia props like "your coat still on my chair", "half-empty cups gone cold", cold coffee, unmade beds, ticking clocks, or fading photographs. If the topic calls for that kind of imagery, find a detail specific to this song's actual topic and mood instead of reaching for the generic default
 ${buildAvoidWordsInstruction()}
