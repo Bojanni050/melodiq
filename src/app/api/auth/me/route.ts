@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
+import { parseArtistAliases } from "@/lib/artist-aliases";
 
 export async function GET() {
   const auth = await requireAuth();
@@ -15,6 +16,7 @@ export async function GET() {
       email: users.email,
       name: users.name,
       artistAlias: users.artistAlias,
+      artistAliases: users.artistAliases,
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
             bio: users.bio,
@@ -28,5 +30,8 @@ export async function GET() {
     .limit(1);
 
   if (!result.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ user: result[0] });
+  const row = result[0];
+  return NextResponse.json({
+    user: { ...row, artistAliases: parseArtistAliases(row.artistAliases) },
+  });
 }

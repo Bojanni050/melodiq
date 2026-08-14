@@ -6,11 +6,14 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, useUserStore } from "@/lib/store";
 
+const MAX_ARTIST_ALIASES = 5;
+
 interface User {
   id: string;
   email: string;
   name: string | null;
   artistAlias: string | null;
+  artistAliases: string[];
   composerAlias: string | null;
   writerAlias: string | null;
   bio: string | null;
@@ -55,7 +58,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [artistAlias, setArtistAlias] = useState("");
+  const [artistAliases, setArtistAliases] = useState<string[]>(Array(MAX_ARTIST_ALIASES).fill(""));
   const [composerAlias, setComposerAlias] = useState("");
   const [writerAlias, setWriterAlias] = useState("");
   const [bio, setBio] = useState("");
@@ -76,7 +79,14 @@ export default function AccountPage() {
         const data = await res.json();
         setUser(data.user);
         setName(data.user?.name || "");
-        setArtistAlias(data.user?.artistAlias || "");
+        const loadedAliases: string[] = data.user?.artistAliases?.length
+          ? data.user.artistAliases
+          : data.user?.artistAlias
+            ? [data.user.artistAlias]
+            : [];
+        setArtistAliases(
+          Array.from({ length: MAX_ARTIST_ALIASES }, (_, i) => loadedAliases[i] || "")
+        );
         setComposerAlias(data.user?.composerAlias || "");
         setWriterAlias(data.user?.writerAlias || "");
         setBio(data.user?.bio || "");
@@ -94,7 +104,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, artistAlias, composerAlias, writerAlias, bio }),
+      body: JSON.stringify({ name, artistAliases, composerAlias, writerAlias, bio }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -242,17 +252,25 @@ export default function AccountPage() {
 
                   <div className="h-px bg-white/8" />
 
+                  <Field label="Artist aliases" hint="Your public artist name(s) (optional). The first one is used wherever an artist name is shown but the track has none set.">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {artistAliases.map((alias, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          value={alias}
+                          onChange={(e) =>
+                            setArtistAliases((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
+                          }
+                          className="input-field text-sm"
+                          placeholder={i === 0 ? "e.g. DJ Bojan (primary)" : `Alias ${i + 1}`}
+                          maxLength={255}
+                        />
+                      ))}
+                    </div>
+                  </Field>
+
                   <div className="grid sm:grid-cols-2 gap-6">
-                    <Field label="Artist alias" hint="Your public artist name (optional).">
-                      <input
-                        type="text"
-                        value={artistAlias}
-                        onChange={(e) => setArtistAlias(e.target.value)}
-                        className="input-field text-sm"
-                        placeholder="e.g. DJ Bojan"
-                        maxLength={255}
-                      />
-                    </Field>
                     <Field label="Composer alias" hint="Default composer on new tracks. Falls back to your name.">
                       <input
                         type="text"

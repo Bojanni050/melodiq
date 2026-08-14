@@ -18,6 +18,11 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: varchar("name", { length: 255 }),
   artistAlias: varchar("artist_alias", { length: 255 }),
+  // Additional artist aliases beyond the primary one above, stored as a JSON
+  // array of strings (fixed at 5 slots for now — see account settings UI).
+  // artistAlias always mirrors the first entry so existing "unknown artist"
+  // fallback logic across the app keeps working unchanged.
+  artistAliases: text("artist_aliases"),
   composerAlias: varchar("composer_alias", { length: 255 }),
   writerAlias: varchar("writer_alias", { length: 255 }),
   bio: text("bio"),

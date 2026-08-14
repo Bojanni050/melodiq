@@ -7,6 +7,7 @@ export interface UserProfile {
   email: string;
   name: string | null;
   artistAlias: string | null;
+  artistAliases?: string[];
   composerAlias: string | null;
   writerAlias: string | null;
   role: UserRole;

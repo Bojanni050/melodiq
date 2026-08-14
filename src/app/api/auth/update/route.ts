@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
+import { parseArtistAliases, serializeArtistAliases, validateArtistAliases } from "@/lib/artist-aliases";
 
 type JsonObject = Record<string, unknown>;
 
@@ -23,6 +24,7 @@ export async function PUT(request: NextRequest) {
 
   const name = body.name;
   const artistAlias = body.artistAlias;
+  const artistAliases = body.artistAliases;
   const composerAlias = body.composerAlias;
   const writerAlias = body.writerAlias;
   const bio = body.bio;
@@ -61,6 +63,19 @@ export async function PUT(request: NextRequest) {
     } else {
       return NextResponse.json({ error: "Invalid artistAlias" }, { status: 400 });
     }
+  }
+
+  if (artistAliases !== undefined) {
+    const validated = validateArtistAliases(artistAliases);
+    if (!validated.ok) {
+      return NextResponse.json({ error: validated.error }, { status: 400 });
+    }
+    updates.artistAliases = serializeArtistAliases(validated.aliases);
+    // Keep the primary artistAlias column in sync with the first slot so
+    // every existing "unknown artist" fallback that reads user.artistAlias
+    // keeps working without changes.
+    const primary = validated.aliases[0]?.trim() || null;
+    updates.artistAlias = primary;
   }
 
   if (composerAlias !== undefined) {
@@ -135,6 +150,7 @@ export async function PUT(request: NextRequest) {
       email: users.email,
       name: users.name,
       artistAlias: users.artistAlias,
+      artistAliases: users.artistAliases,
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
       bio: users.bio,
@@ -143,5 +159,8 @@ export async function PUT(request: NextRequest) {
             createdAt: users.createdAt,
     });
 
-  return NextResponse.json({ user: updated[0] });
+  const row = updated[0];
+  return NextResponse.json({
+    user: { ...row, artistAliases: parseArtistAliases(row.artistAliases) },
+  });
 }
