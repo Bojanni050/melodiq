@@ -665,6 +665,17 @@ export default function Player() {
       const audioEl = audioRef.current;
       if (!audioEl) return;
 
+      // requestId/cancelled alone don't reliably catch every case where a
+      // newer track switch supersedes this run (e.g. two rapid track
+      // switches whose effects both end up in flight) — cross-check against
+      // the store's live currentTrack too, since that's updated synchronously
+      // by playTrackFromGesture and is the real source of truth for "which
+      // track should be loaded right now".
+      const isSuperseded = () =>
+        cancelled ||
+        requestId !== requestIdRef.current ||
+        usePlayerStore.getState().currentTrack?.id !== trackId;
+
       const streamUrl = `${mediaBase(trackSnapshot)}/stream${suffix}`;
       let resolvedUrl = streamUrl;
 
@@ -695,7 +706,7 @@ export default function Player() {
                     ? "hit"
                     : "unknown";
 
-          if (!cancelled && requestId === requestIdRef.current) {
+          if (!isSuperseded()) {
             setAudioSource(source);
             setAudioSourceState(state);
           }
@@ -738,7 +749,7 @@ export default function Player() {
       if (alreadyPlayingThisTrack) {
         lastLoadedTrackIdRef.current = trackId;
         setResolvingUrl(false);
-        if (usePlayerStore.getState().isPlaying || shouldResume) {
+        if (!isSuperseded() && (usePlayerStore.getState().isPlaying || shouldResume)) {
           void tryPlay();
         }
         return;
@@ -761,9 +772,9 @@ export default function Player() {
       let playUrl = normalizedTargetUrl;
       try {
         const blobResponse = await fetch(normalizedTargetUrl);
-        if (blobResponse.ok && !cancelled && requestId === requestIdRef.current) {
+        if (blobResponse.ok && !isSuperseded()) {
           const blob = await blobResponse.blob();
-          if (!cancelled && requestId === requestIdRef.current) {
+          if (!isSuperseded()) {
             // Revoke previous blob URL to free memory
             if (activeBlobUrlRef.current) {
               URL.revokeObjectURL(activeBlobUrlRef.current);
@@ -777,7 +788,7 @@ export default function Player() {
         // Network failed — fall back to streaming URL
       }
 
-      if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
+      if (isSuperseded() || audioRef.current !== audioEl) {
         return;
       }
 
@@ -799,7 +810,7 @@ export default function Player() {
 
       setResolvingUrl(false);
 
-      if (cancelled || requestId !== requestIdRef.current || audioRef.current !== audioEl) {
+      if (isSuperseded() || audioRef.current !== audioEl) {
         return;
       }
 
