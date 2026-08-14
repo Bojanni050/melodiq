@@ -768,6 +768,17 @@ export default function LyricsStudioPage() {
             </div>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => router.push("/melody")}
+          title="Your lyrics stay saved on this device so you can pick this up later, but they aren't synced anywhere else."
+          style={{ bottom: "calc(var(--player-height) + 1.5rem)" }}
+          className="fixed right-6 z-40 inline-flex items-center gap-2 rounded-full bg-primary-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-400"
+        >
+          Continue to Melody
+          <span aria-hidden="true">&rarr;</span>
+        </button>
       </main>
     </div>
   );
