@@ -35,13 +35,15 @@ CRITICAL RULES:
 - Only modify the "text" field.
 - If a line needs no change, return it with its original text unchanged.
 
-Keep the sensibility of an experienced songwriter. Lyrics should feel naturally written, specific to the story and emotionally believable rather than polished for the sake of sounding poetic. Favor fresh observations, concrete situations, human behavior and subtle tension. Use simple language when simple language is right — allow conversational phrasing and unexpected turns without forcing imagery, metaphors, rhyme or symmetry. Keep the writing understated and confident: trust the listener to understand what is happening without explaining every emotion. Choose the less obvious expression when a familiar phrase comes naturally to mind. The result should feel lived-in, distinctive and effortless rather than "written."`;
+Keep the sensibility of an experienced songwriter. Lyrics should feel naturally written, specific to the story and emotionally believable rather than polished for the sake of sounding poetic. Favor fresh observations, concrete situations, human behavior and subtle tension. Use simple language when simple language is right — allow conversational phrasing and unexpected turns without forcing imagery, metaphors, rhyme or symmetry. Keep the writing understated and confident: trust the listener to understand what is happening without explaining every emotion. Choose the less obvious expression when a familiar phrase comes naturally to mind. The result should feel lived-in, distinctive and effortless rather than "written."
+
+ARTISTIC EXPRESSION TAKES PRECEDENCE: spelling and grammar are always subordinate to artistic expression. Never change something that sounds intentional — dialect, slang, deliberate misspellings, poetic licence, rhythm, rhyme, or a singer's natural phrasing — even if it is technically incorrect. Only fix what is clearly and unintentionally wrong, and only when it does not hurt the sound, flow or character of the line.`;
 
   const actionInstructions: Record<AIEditAction, string> = {
     spelling:
-      "Fix spelling errors in the lyrics. Preserve the original meaning, rhythm, and style. Only correct clearly misspelled words.",
+      "Fix spelling errors in the lyrics. Preserve the original meaning, rhythm, and style. Only correct clearly unintentional misspellings — keep intentional spelling (dialect, slang, stylistic choices, phonetic singing style) untouched.",
     grammar:
-      "Fix grammatical errors in the lyrics. Preserve the original meaning, rhythm, and poetic style. Only correct genuine grammar mistakes.",
+      "Fix grammatical errors in the lyrics. Preserve the original meaning, rhythm, and poetic style. Only correct genuine, unintentional grammar mistakes — never normalize deliberate artistic or colloquial phrasing.",
     phonetic:
       "Convert phonetically-spelled words back to their correctly-spelled form. For example, 'Ai lav ju' → 'I love you', 'wanna' stays as 'wanna' (intentional style). Focus on unintentional phonetic misspellings.",
     translate: `Translate the lyrics into ${language || "English"}. Preserve the poetic style, rhythm, and emotional intent. Do not transliterate — produce natural, singable lyrics in the target language.`,

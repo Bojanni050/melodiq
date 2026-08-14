@@ -1,5 +1,13 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-14 vr (Line editor: artistieke expressie boven spelling/grammatica)
+
+- Findings: De line-editor (ai-edit) kon door de algemene "choose the less obvious expression"-richtlijn in conflict komen met spelling-/grammaticacorrecties; risico was dat bewuste artistieke keuzes (dialect, slang, stijl) werden genormaliseerd.
+- Conclusions: Maak expliciet dat artistieke expressie altijd boven spelling/grammatica gaat en alleen duidelijke, onbedoelde fouten gecorrigeerd mogen worden.
+- Actions:
+  - Modified `src/app/api/timecoded-editor/ai-edit/route.ts` — "ARTISTIC EXPRESSION TAKES PRECEDENCE"-regel toegevoegd aan basis-prompt; spelling- en grammatica-instructies verduidelijkt (alleen onbedoelde fouten, bewuste stijl intact)
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-08-14 vr (Algemeen songwriting-kader toegevoegd aan alle lyric-prompts)
 
 - Findings: Het algemene schrijf-kader ("write with the sensibility of an experienced songwriter...") zat alleen in de generate-block system prompt, niet in LyricIQ of de timecoded-editor.
