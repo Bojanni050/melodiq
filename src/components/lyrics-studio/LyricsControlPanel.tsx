@@ -154,6 +154,10 @@ export default function LyricsControlPanel({
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState<string | null>(null);
 
+  const selectedModelName = modelOptions && llmModel
+    ? [...modelOptions.recommended, ...modelOptions.others].find((m) => m.id === llmModel)?.name || "Standaard (uit Instellingen)"
+    : "Standaard (uit Instellingen)";
+
   function loadModelOptions() {
     if (modelsLoading) return;
     setModelsLoading(true);
@@ -537,6 +541,11 @@ export default function LyricsControlPanel({
         </div>
 
         <div className="border-t border-white/5 mt-4 pt-3">
+          <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+            <span className="shrink-0 text-white/85">Lyrics generator</span>
+            <span className="truncate text-right font-mono text-white/70">{selectedModelName}</span>
+          </div>
+
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}

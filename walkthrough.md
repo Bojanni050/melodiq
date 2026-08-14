@@ -1,5 +1,13 @@
 # MelodIQ — Walkthrough
 
+## 2026-08-14 vr (Lyric Studio: huidig LLM model zichtbaar boven Geavanceerde instellingen)
+
+- Findings: De modelpicker zat in de standaard ingeklapte "Geavanceerde instellingen" sectie, waardoor gebruikers niet zagen welk LLM actief is zonder de sectie open te klappen.
+- Conclusions: Houd de modelpicker in de collapsible (waar hij ook gewijzigd wordt), maar toon daar altijd boven — in de vorm "Lyrics generator: <model>" — het actief ingestelde model.
+- Actions:
+  - Modified `src/components/lyrics-studio/LyricsControlPanel.tsx` — `selectedModelName` afgeleid uit `modelOptions` + `llmModel` (valt terug op "Standaard (uit Instellingen)"); display-regel boven de "Geavanceerde instellingen" toggle; `LyricStudioModelPicker` teruggezet in de collapsible sectie
+  - Validated with `npm run build` — ✅ succesvol
+
 ## 2026-08-10 ma 18:26 (Docker build type-fout TrackVisual)
 
 - Findings: Tijdens Docker-build faalde `npm run build` met TS2322 op `player-window/page.tsx:183` — `track?.publishDate` (string | null | undefined) kon niet worden toegewezen aan `TrackVisual.publishDate: string | undefined`. Dezelfde constructie zat ook in `FullscreenPlayer.tsx:253`.
