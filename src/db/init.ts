@@ -24,6 +24,18 @@ CREATE TABLE IF NOT EXISTS "users" (
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS "magic_link_tokens" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "email" varchar(255) NOT NULL,
+  "token_hash" text NOT NULL,
+  "expires_at" timestamp NOT NULL,
+  "used_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "magic_link_tokens_email_idx" ON "magic_link_tokens"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "magic_link_tokens_token_hash_unique" ON "magic_link_tokens"("token_hash");
+
 CREATE TABLE IF NOT EXISTS "tracks" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id"),

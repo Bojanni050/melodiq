@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
 
 function getSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -20,4 +21,14 @@ export function verifyToken(token: string): { userId: string } | null {
   } catch {
     return null;
   }
+}
+
+export function setSessionCookie(response: NextResponse, userId: string): void {
+  const token = generateToken(userId);
+  response.cookies.set("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60,
+  });
 }

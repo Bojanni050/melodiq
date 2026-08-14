@@ -36,6 +36,20 @@ export const usersRelations = relations(users, ({ many }) => ({
   clonedVoices: many(clonedVoices),
 }));
 
+// Passwordless login: a raw token is emailed to the user, only its sha256
+// hash is stored here. One-time use (usedAt), short-lived (expiresAt).
+export const magicLinkTokens = pgTable("magic_link_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull(),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("magic_link_tokens_email_idx").on(table.email),
+  uniqueIndex("magic_link_tokens_token_hash_unique").on(table.tokenHash),
+]);
+
 export const clonedVoices = pgTable("cloned_voices", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),

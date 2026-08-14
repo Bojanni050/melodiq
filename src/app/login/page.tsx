@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<"password" | "magic">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,6 +39,39 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleMagicLinkSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/magic-link/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        return;
+      }
+
+      setMagicLinkSent(true);
+    } catch {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleMode() {
+    setMode((m) => (m === "password" ? "magic" : "password"));
+    setError("");
+    setMagicLinkSent(false);
   }
 
   return (
@@ -80,48 +115,96 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white/50 mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field text-sm"
-                placeholder="you@example.com"
-                required
-                autoComplete="email"
-              />
-            </div>
+          {mode === "password" ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/50 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field text-sm"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1.5">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading || !email || !password}
-              className="w-full btn-primary py-2.5 text-sm font-medium"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in...
-                </span>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading || !email || !password}
+                className="w-full btn-primary py-2.5 text-sm font-medium"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+          ) : magicLinkSent ? (
+            <div className="text-center py-2 space-y-2">
+              <p className="text-sm text-white/80">Check your email</p>
+              <p className="text-sm text-white/40">
+                If an account exists for <span className="text-white/60">{email}</span>, a sign-in link is on its way.
+                The link expires in 15 minutes.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleMagicLinkSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !email}
+                className="w-full btn-primary py-2.5 text-sm font-medium"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending...
+                  </span>
+                ) : (
+                  "Send me a sign-in link"
+                )}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            onClick={toggleMode}
+            className="mt-4 w-full text-center text-sm text-white/40 hover:text-white/70 transition"
+          >
+            {mode === "password" ? "Sign in with a magic link instead" : "Sign in with password instead"}
+          </button>
         </div>
       </div>
     </div>

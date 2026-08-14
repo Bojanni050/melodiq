@@ -6,6 +6,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
+  // The magic-link verify page must stay reachable while logged out (it's
+  // how login happens) and isn't subject to the isAuthPage "redirect away
+  // if already signed in" rule, since visiting it can switch accounts.
+  const isMagicLinkVerify = pathname === "/login/magic";
   const isPublicApi = pathname.startsWith("/api/webhooks/");
   const isPwaAsset = pathname === "/manifest.webmanifest" || pathname.startsWith("/icons/");
   const isApi = pathname.startsWith("/api/");
@@ -24,7 +28,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore || isMagicLinkVerify) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
