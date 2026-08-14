@@ -5,6 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import PlaylistCoverThumb from "@/components/playlists/PlaylistCoverThumb";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
@@ -582,11 +583,16 @@ export default function DiscoverPage() {
                         href={`/discover/playlist/${playlist.id}`}
                         className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
                       >
-                        <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40">
-                          <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
-                          </svg>
-                        </div>
+                        <PlaylistCoverThumb
+                          playlistId={playlist.id}
+                          alt={playlist.name}
+                          boxClassName="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40"
+                          fallback={
+                            <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
+                            </svg>
+                          }
+                        />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-white">{playlist.name}</p>
                           {playlist.description && (

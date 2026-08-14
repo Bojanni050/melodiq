@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
+import PlaylistCoverThumb from "@/components/playlists/PlaylistCoverThumb";
 
 interface PublicPlaylistTrack {
   id: string;
@@ -144,14 +145,26 @@ export default function PublicPlaylistPage() {
           ← Back to Discover
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold sm:text-4xl">{playlist.name}</h1>
-          {playlist.description && (
-            <p className="mt-2 text-white/60">{playlist.description}</p>
-          )}
-          <p className="mt-2 text-sm text-white/40">
-            by {playlist.artistName} · {playlist.tracks.length} {playlist.tracks.length === 1 ? "track" : "tracks"}
-          </p>
+        <div className="mb-8 flex items-center gap-5">
+          <PlaylistCoverThumb
+            playlistId={playlist.id}
+            alt={playlist.name}
+            boxClassName="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40 sm:h-32 sm:w-32"
+            fallback={
+              <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
+              </svg>
+            }
+          />
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold sm:text-4xl">{playlist.name}</h1>
+            {playlist.description && (
+              <p className="mt-2 text-white/60">{playlist.description}</p>
+            )}
+            <p className="mt-2 text-sm text-white/40">
+              by {playlist.artistName} · {playlist.tracks.length} {playlist.tracks.length === 1 ? "track" : "tracks"}
+            </p>
+          </div>
         </div>
 
         <div className="space-y-2">
