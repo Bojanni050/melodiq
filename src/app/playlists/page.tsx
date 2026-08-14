@@ -533,17 +533,6 @@ export default function PlaylistsPage() {
         </ResizablePanel>
       </div>
 
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={handlePlayTrack}
-            onDownload={handleDownloadTrack}
-            mode="overlay"
-          />
-        </div>
-      )}
 
       {coverPickerPlaylistId && (
         <div className="fixed inset-0 z-70">

@@ -424,18 +424,6 @@ export default function PlaylistDetailPage() {
         </ResizablePanel>
       </div>
 
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={handlePlayTrack}
-            onDownload={handleDownloadTrack}
-            mode="overlay"
-          />
-        </div>
-      )}
-
       {editingTrack && (
         <TrackEditPanel
           track={editingTrack}

@@ -558,17 +558,6 @@ export default function WorkspacesPage() {
         </ResizablePanel>
       </div>
 
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={handlePlayTrack}
-            onDownload={handleDownloadTrack}
-            mode="overlay"
-          />
-        </div>
-      )}
     </div>
   );
 }

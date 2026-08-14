@@ -734,18 +734,6 @@ export default function ArchivePage() {
         </ResizablePanel>
       </div>
 
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={activeTab === "master" ? handleDetailPlay : handleTabDetailPlay}
-            onDownload={handleDownloadTrack}
-            mode="overlay"
-          />
-        </div>
-      )}
-
       {editingTarget && (
         <EntryEditor target={editingTarget} onClose={() => setEditingTarget(null)} onSaved={handleSaved} />
       )}

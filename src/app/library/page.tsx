@@ -685,20 +685,6 @@ export default function LibraryPage() {
         onUploadFinished={handleUploadFinished}
       />
 
-      {showTrackDetailsPanel && selectedTrack && (
-        <div className="lg:hidden">
-          <TrackDetail
-            track={selectedTrack}
-            onClose={handleCloseTrackDetails}
-            onPlay={handlePlayTrack}
-            onDownload={handleDownloadTrack}
-            mode="overlay"
-            allowLyricsEdit={allowLyricsEdit}
-            onTrackUpdated={handleTrackUpdated}
-          />
-        </div>
-      )}
-
       {reuseConfirmTrack && (
         <ReuseConfirmDialog
           onConfirm={() => {
