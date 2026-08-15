@@ -1209,3 +1209,12 @@
   - `src/components/TrackList.tsx` — `sortOrder` now lazily initializes from `readPersistedSortOrder() ?? "newest"`, and the `setSortOrder` passed down to `TrackListHeader` now also writes through to localStorage on every change.
   - Build versie bijgewerkt naar 202608151256 in src/components/Sidebar.tsx.
   - Validated with `npx tsc --noEmit` (0 errors) and `npm run build`, which succeeded completely.
+
+## 2026-08-15 za 14:16 (Private stream route no longer marks responses Cache-Control: public)
+
+- Findings: `src/app/api/tracks/[id]/stream/route.ts` requires `requireAuth()` and re-checks track ownership per request, but all 4 of its response branches sent `Cache-Control: public, ...`. `public` tells any shared cache/proxy/CDN sitting in front of the app that the response is safe to store and replay to other, unauthenticated requesters — which it isn't, since this route serves private per-user audio. Came up while scoping whether a CDN could safely be added in front of the app: it can't, as long as this route claims to be publicly cacheable. The sibling `/api/discover/[trackId]/stream` route (genuinely public, no auth, published tracks only) was already correctly `public`, and `/api/tracks/[id]/cover` (also auth-gated) was already correctly `private` — this route was the one outlier.
+- Conclusions: Mark all of this route's responses `private` instead of `public` so a shared cache/CDN won't store them (the requesting user's own browser can still cache its own copy, which is what you want), independent of whether/when a CDN actually gets added in front of the domain.
+- Actions:
+  - `src/app/api/tracks/[id]/stream/route.ts` — changed `Cache-Control` from `public, max-age=31536000, immutable` to `private, max-age=31536000, immutable` on the cache-miss Range branch, the cached Range branch, and the full-file response; changed the direct-S3-fallback branch from `public, max-age=300` to `private, max-age=300`.
+  - Build versie bijgewerkt naar 202608151416 in src/components/Sidebar.tsx.
+  - Validated with `npx tsc --noEmit` (0 errors) and `npm run build`, which succeeded completely.
