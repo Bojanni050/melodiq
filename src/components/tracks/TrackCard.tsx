@@ -10,7 +10,7 @@ import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 import { useSWRConfig } from "swr";
 
 // Extracted Sub-components

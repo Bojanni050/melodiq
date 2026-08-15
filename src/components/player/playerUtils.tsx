@@ -1,7 +1,7 @@
 "use client";
 
 import type { Track } from "@/lib/store";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";

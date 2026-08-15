@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore } from "@/lib/store";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 interface TrackDetail {
   id: string;

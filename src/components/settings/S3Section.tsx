@@ -63,6 +63,11 @@ export default function S3Section({
         <label className="block text-sm font-medium text-white/50 mb-1">Bucket Name</label>
         <input type="text" value={values.S3_BUCKET || ""} onChange={(e) => onFieldChange("S3_BUCKET", e.target.value)} className="input-field font-mono text-sm" placeholder="melodiq-tracks" />
       </div>
+      <div>
+        <label className="block text-sm font-medium text-white/50 mb-1">CDN URL (optional)</label>
+        <input type="text" value={values.CDN_URL || ""} onChange={(e) => onFieldChange("CDN_URL", e.target.value)} className="input-field font-mono text-sm" placeholder="https://your-zone.b-cdn.net" />
+        <p className="text-xs text-white/30 mt-1">Pull-zone hostname (e.g. Bunny CDN) in front of this app. Only affects the public Discover audio/cover URLs — leave empty to serve those directly.</p>
+      </div>
       <div className="flex items-center gap-2 pt-1">
         <button onClick={handleTest} disabled={testing} className="btn-secondary text-sm px-3 py-1.5">
           {testing ? "Testing..." : "Test Connection"}

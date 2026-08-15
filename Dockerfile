@@ -11,13 +11,6 @@ COPY package.json package-lock.json ./
 RUN npm install
 COPY . .
 ENV NODE_ENV=production
-# NEXT_PUBLIC_* vars get statically inlined into client bundles at build time,
-# not read at container runtime — .env.production (runtime secrets) is
-# excluded from the build context on purpose (see .dockerignore), so any
-# NEXT_PUBLIC_* var a client component needs must come in as a build arg
-# instead. Optional: defaults to "" (no CDN), same as not setting it at all.
-ARG NEXT_PUBLIC_CDN_URL=""
-ENV NEXT_PUBLIC_CDN_URL=$NEXT_PUBLIC_CDN_URL
 RUN npm run build
 
 FROM base AS runner

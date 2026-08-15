@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Roboto_Slab, Outfit, DM_Mono } from "next/font/google";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore } from "@/lib/store";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 const robotoSlab = Roboto_Slab({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-artist-slab" });
 const outfit = Outfit({ subsets: ["latin"], weight: ["300", "400", "500", "600"], variable: "--font-artist-outfit" });

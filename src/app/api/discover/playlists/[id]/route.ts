@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { playlistTracks, playlists, tracks, users } from "@/db/schema";
-import { withCdn } from "@/lib/cdn";
+import { prefixCdn } from "@/lib/cdn";
+import { getCdnUrl } from "@/lib/cdn-server";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +49,12 @@ export async function GET(
     .where(eq(playlistTracks.playlistId, id))
     .orderBy(asc(playlistTracks.position));
 
+  const cdnUrl = await getCdnUrl();
   const serialized = playlistTracksRows.map((row) => ({
     id: row.trackId,
     title: row.title || "Untitled",
     coverUrl: row.coverUrl?.startsWith("/api/tracks/")
-      ? withCdn(row.coverUrl.replace("/api/tracks/", "/api/discover/"))
+      ? prefixCdn(cdnUrl, row.coverUrl.replace("/api/tracks/", "/api/discover/"))
       : row.coverUrl,
     hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
     duration: row.duration,

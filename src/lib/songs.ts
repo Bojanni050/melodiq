@@ -2,7 +2,8 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
-import { withCdn } from "@/lib/cdn";
+import { prefixCdn } from "@/lib/cdn";
+import { getCdnUrl } from "@/lib/cdn-server";
 
 export type PublicTrackSummary = {
   id: string;
@@ -21,7 +22,8 @@ export type PublicTrackSummary = {
 
 function toPublicTrackSummary(
   track: typeof tracks.$inferSelect,
-  ownerById: Map<string, { id: string; artistAlias: string | null; name: string | null }>
+  ownerById: Map<string, { id: string; artistAlias: string | null; name: string | null }>,
+  cdnUrl: string
 ): PublicTrackSummary {
   const owner = ownerById.get(track.userId);
   return {
@@ -30,7 +32,7 @@ function toPublicTrackSummary(
     artistName: track.artistName || owner?.artistAlias || owner?.name || null,
     artistId: owner?.id || track.userId,
     coverUrl: track.coverUrl?.startsWith("/api/tracks/")
-      ? withCdn(track.coverUrl.replace("/api/tracks/", "/api/discover/"))
+      ? prefixCdn(cdnUrl, track.coverUrl.replace("/api/tracks/", "/api/discover/"))
       : track.coverUrl || null,
     hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
     duration: track.duration,
@@ -56,13 +58,16 @@ export async function getPublishedTracksFeed(limit = 50): Promise<PublicTrackSum
   if (rows.length === 0) return [];
 
   const ownerIds = Array.from(new Set(rows.map((r) => r.userId)));
-  const owners = await db
-    .select({ id: users.id, artistAlias: users.artistAlias, name: users.name })
-    .from(users)
-    .where(inArray(users.id, ownerIds));
+  const [owners, cdnUrl] = await Promise.all([
+    db
+      .select({ id: users.id, artistAlias: users.artistAlias, name: users.name })
+      .from(users)
+      .where(inArray(users.id, ownerIds)),
+    getCdnUrl(),
+  ]);
   const ownerById = new Map(owners.map((o) => [o.id, o]));
 
-  return rows.map((track) => toPublicTrackSummary(track, ownerById));
+  return rows.map((track) => toPublicTrackSummary(track, ownerById, cdnUrl));
 }
 
 // Public, no auth: the gate for every discover media/vote route. Re-verifies

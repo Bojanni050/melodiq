@@ -24,7 +24,7 @@ import {
   useWorkspaceStore,
 } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 export default function LibraryPage() {
   const router = useRouter();

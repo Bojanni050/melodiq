@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 interface PublicTrack {
   id: string;

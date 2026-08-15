@@ -1,14 +1,11 @@
-// Rewrites a relative path to a CDN hostname when NEXT_PUBLIC_CDN_URL is
-// configured (e.g. a Bunny CDN pull zone pointed at this origin) — otherwise
-// returns the path unchanged, so the app works identically with no CDN set up.
-//
-// Only ever call this for genuinely public, unauthenticated resources
-// (the /api/discover/* routes). Never wrap /api/tracks/* URLs — those are
-// per-user and auth-gated, and have no business going through a public CDN
-// hostname.
-const CDN_URL = (process.env.NEXT_PUBLIC_CDN_URL || "").replace(/\/+$/, "");
-
-export function withCdn(path: string): string {
-  if (!CDN_URL) return path;
-  return `${CDN_URL}${path.startsWith("/") ? path : `/${path}`}`;
+// Pure, isomorphic helper — safe to import from client or server code (no
+// I/O, no framework imports). Prefixes `path` with `cdnUrl` when set, or
+// returns it unchanged. The actual CDN hostname is resolved differently on
+// each side:
+//   - server:  src/lib/cdn-server.ts  (Settings DB value, env var fallback)
+//   - client:  src/lib/cdn-client.ts  (fetched once from /api/config/public)
+export function prefixCdn(cdnUrl: string, path: string): string {
+  const trimmed = cdnUrl.replace(/\/+$/, "");
+  if (!trimmed) return path;
+  return `${trimmed}${path.startsWith("/") ? path : `/${path}`}`;
 }

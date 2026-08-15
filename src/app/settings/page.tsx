@@ -44,6 +44,7 @@ const TRACKED_SETTINGS_KEYS = [
   "S3_ACCESS_KEY",
   "S3_SECRET_KEY",
   "S3_BUCKET",
+  "CDN_URL",
 ];
 
 function formatBytes(bytes: number): string {

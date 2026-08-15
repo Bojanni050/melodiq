@@ -1231,3 +1231,20 @@
   - `.env.example` — documented `NEXT_PUBLIC_CDN_URL` (optional, empty by default) with a note that it's a build arg, not a runtime var.
   - Build versie bijgewerkt naar 202608151432 in src/components/Sidebar.tsx.
   - Validated with `npx tsc --noEmit` (0 errors), `npm run build` (succeeded, unset CDN var → identical output to before), and `docker compose config` (build arg resolves correctly).
+
+## 2026-08-15 za 15:22 (CDN hostname moves to Settings, matching the S3 config pattern; Docker build-arg plumbing reverted)
+
+- Findings: The previous entry's Docker build-arg approach worked, but only because `NEXT_PUBLIC_CDN_URL` had to be baked in at `next build` time — every other piece of infra config in this app (S3 endpoint/keys, APP_URL) instead lives in the Settings page (DB-backed, env var as fallback, editable without a rebuild). Asked whether CDN could follow that same pattern instead.
+- Conclusions: Split the CDN helper into three pieces so each side resolves the hostname the way it actually can: a pure `prefixCdn(cdnUrl, path)` with zero imports (safe anywhere), a server-only `getCdnUrl()` that reads the new `CDN_URL` DB setting with `NEXT_PUBLIC_CDN_URL` as fallback (`src/lib/cdn-server.ts`, mirrors `settings.ts`'s existing S3/APP_URL pattern), and a client-side cache (`src/lib/cdn-client.ts`) that fetches the value once from a new public `/api/config/public` endpoint (no auth — anonymous Discover visitors need it too, and a CDN hostname isn't sensitive) and serves it synchronously afterward from an in-memory cache, same call signature (`withCdn(path)`) as before so none of the ~10 call sites needed touching beyond their import line. This also let the Docker build-arg wiring from the previous entry be fully reverted — the env fallback is now only ever read server-side at runtime, sidestepping the build-time-inlining problem entirely instead of working around it.
+- Actions:
+  - `src/lib/cdn.ts` — reduced to the pure `prefixCdn(cdnUrl, path)` helper (no imports).
+  - `src/lib/cdn-server.ts` (new) — `getCdnUrl()`: `getSetting("CDN_URL")` with `NEXT_PUBLIC_CDN_URL` env fallback.
+  - `src/lib/cdn-client.ts` (new) — `loadCdnConfig()` (fire-and-forget fetch of `/api/config/public`, called once from `ClientLayout.tsx`) + `withCdn(path)` reading the cached value; no-op until loaded, same as no CDN configured.
+  - `src/app/api/config/public/route.ts` (new) — public, no-auth endpoint returning `{ cdnUrl }`.
+  - `src/lib/songs.ts` and `src/app/api/discover/playlists/[id]/route.ts` — now resolve `cdnUrl` once per request (`getCdnUrl()`) instead of a hidden per-track async call, then use the pure `prefixCdn()` in the row/track mapper.
+  - The 9 client-side call sites (`playerUtils.tsx`, `playerStore.ts`, `explore/page.tsx`, the 4 `discover/*` pages, `library/page.tsx`, `TrackCard.tsx`) now import `withCdn` from `@/lib/cdn-client` instead of `@/lib/cdn` — no other changes needed.
+  - `src/components/settings/S3Section.tsx` + `src/app/settings/page.tsx` (`TRACKED_SETTINGS_KEYS`) — added a "CDN URL (optional)" field, saved/loaded through the existing generic Settings key/value flow.
+  - `Dockerfile` / `docker-compose.yml` — reverted the `NEXT_PUBLIC_CDN_URL` build-arg plumbing from the previous entry; no longer needed.
+  - `.env.example` — `NEXT_PUBLIC_CDN_URL` now documented as the fallback-only env var (same framing as `S3_*`), not a build arg.
+  - Build versie bijgewerkt naar 202608151522 in src/components/Sidebar.tsx.
+  - Validated with `npx tsc --noEmit` (0 errors) and `npm run build` (succeeded, `/api/config/public` present in the route list, unset CDN → identical behavior to before).

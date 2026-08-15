@@ -8,7 +8,7 @@ import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
-import { withCdn } from "@/lib/cdn";
+import { withCdn } from "@/lib/cdn-client";
 
 interface PublicTrack {
   id: string;

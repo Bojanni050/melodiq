@@ -1,11 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      args:
-        # Build-time only (see Dockerfile) — sourced from the root .env file
-        # (same place DB_PASSWORD below comes from), not .env.production.
-        NEXT_PUBLIC_CDN_URL: ${NEXT_PUBLIC_CDN_URL:-}
+    build: .
     container_name: melodiq_app
     restart: unless-stopped
     ports:
