@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
+import { withCdn } from "@/lib/cdn";
 
 interface PublicPlaylistTrack {
   id: string;
@@ -62,7 +63,7 @@ export default function PublicPlaylistPage() {
   function coverSrc(track: PublicPlaylistTrack): string | null {
     const url = track.coverUrl;
     if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
-    if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
+    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
     return null;
   }
 

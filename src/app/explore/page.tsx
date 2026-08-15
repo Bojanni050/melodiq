@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
+import { withCdn } from "@/lib/cdn";
 
 interface PublicTrack {
   id: string;
@@ -44,7 +45,7 @@ export default function ExplorePage() {
 
   function coverSrc(track: PublicTrack): string | null {
     if (track.coverUrl) return track.coverUrl;
-    if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
+    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
     return null;
   }
 

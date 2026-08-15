@@ -10,6 +10,7 @@ import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
+import { withCdn } from "@/lib/cdn";
 import { useSWRConfig } from "swr";
 
 // Extracted Sub-components
@@ -451,7 +452,7 @@ const TrackCard = memo(function TrackCard({
   const effectiveThumbUrl = actions.coverOverrideUrl
     ? `${actions.coverOverrideUrl}&thumb=1`
     : track.publicSource
-      ? `/api/discover/${track.id}/cover?thumb=1`
+      ? withCdn(`/api/discover/${track.id}/cover?thumb=1`)
       : track.s3KeyCoverThumb
         ? `/api/tracks/${track.id}/cover?thumb=1`
         : effectiveCoverUrl;

@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
+import { withCdn } from "@/lib/cdn";
 
 export type PublicTrackSummary = {
   id: string;
@@ -29,7 +30,7 @@ function toPublicTrackSummary(
     artistName: track.artistName || owner?.artistAlias || owner?.name || null,
     artistId: owner?.id || track.userId,
     coverUrl: track.coverUrl?.startsWith("/api/tracks/")
-      ? track.coverUrl.replace("/api/tracks/", "/api/discover/")
+      ? withCdn(track.coverUrl.replace("/api/tracks/", "/api/discover/"))
       : track.coverUrl || null,
     hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
     duration: track.duration,

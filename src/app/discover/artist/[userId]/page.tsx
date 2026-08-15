@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Roboto_Slab, Outfit, DM_Mono } from "next/font/google";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore } from "@/lib/store";
+import { withCdn } from "@/lib/cdn";
 
 const robotoSlab = Roboto_Slab({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-artist-slab" });
 const outfit = Outfit({ subsets: ["latin"], weight: ["300", "400", "500", "600"], variable: "--font-artist-outfit" });
@@ -85,14 +86,14 @@ export default function ArtistPage() {
 
   function trackCoverSrc(track: ArtistTrack): string | null {
     if (track.coverUrl) return track.coverUrl;
-    if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
+    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
     return null;
   }
 
   function heroSrc(): string | null {
     if (!artist) return null;
     if (artist.heroCoverUrl) return artist.heroCoverUrl;
-    if (artist.heroHasCoverProxy && artist.heroTrackId) return `/api/discover/${artist.heroTrackId}/cover`;
+    if (artist.heroHasCoverProxy && artist.heroTrackId) return withCdn(`/api/discover/${artist.heroTrackId}/cover`);
     return null;
   }
 

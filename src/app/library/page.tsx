@@ -24,6 +24,7 @@ import {
   useWorkspaceStore,
 } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
+import { withCdn } from "@/lib/cdn";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -112,7 +113,7 @@ export default function LibraryPage() {
           error: null,
           s3Key: null,
           s3KeyHd: null,
-          coverUrl: `/api/discover/${t.id}/cover`,
+          coverUrl: withCdn(`/api/discover/${t.id}/cover`),
           s3KeyCover: null,
           artistName: t.artistName ?? null,
           artistId: t.artistId ?? null,

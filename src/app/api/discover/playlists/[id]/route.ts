@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { playlistTracks, playlists, tracks, users } from "@/db/schema";
+import { withCdn } from "@/lib/cdn";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export async function GET(
     id: row.trackId,
     title: row.title || "Untitled",
     coverUrl: row.coverUrl?.startsWith("/api/tracks/")
-      ? row.coverUrl.replace("/api/tracks/", "/api/discover/")
+      ? withCdn(row.coverUrl.replace("/api/tracks/", "/api/discover/"))
       : row.coverUrl,
     hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
     duration: row.duration,

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore } from "@/lib/store";
+import { withCdn } from "@/lib/cdn";
 
 interface TrackDetail {
   id: string;
@@ -103,7 +104,7 @@ export default function TrackDnaPage() {
   function coverSrc() {
     if (!track) return null;
     if (track.coverUrl) return track.coverUrl;
-    if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
+    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
     return null;
   }
 

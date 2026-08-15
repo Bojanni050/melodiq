@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
+import { withCdn } from "@/lib/cdn";
 
 export interface Track {
   id: string;
@@ -224,7 +225,7 @@ export const usePlayerStore = create<PlayerState>()(
         } else {
           // Fallback naar MelodIQ API
           const wantsHd = (track.audioUrl || "").includes("hd=true");
-          const base = track.publicSource ? `/api/discover/${track.id}` : `/api/tracks/${track.id}`;
+          const base = track.publicSource ? withCdn(`/api/discover/${track.id}`) : `/api/tracks/${track.id}`;
           url = `${base}/stream${wantsHd ? "?hd=true" : ""}`;
         }
 

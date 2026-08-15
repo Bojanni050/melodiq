@@ -8,6 +8,7 @@ import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
+import { withCdn } from "@/lib/cdn";
 
 interface PublicTrack {
   id: string;
@@ -356,7 +357,7 @@ export default function DiscoverPage() {
   function coverSrc(track: PublicTrack) {
     const url = track.coverUrl;
     if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
-    if (track.hasCoverProxy) return `/api/discover/${track.id}/cover`;
+    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
     return null;
   }
 

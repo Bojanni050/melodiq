@@ -1,15 +1,18 @@
 "use client";
 
 import type { Track } from "@/lib/store";
+import { withCdn } from "@/lib/cdn";
 
 export type AudioSource = "cache" | "s3" | "unknown";
 export type AudioSourceState = "hit" | "miss" | "fallback" | "unknown";
 
 // Public Discover tracks may not be owned by the viewer — route their media
 // and side-effect calls through the public /api/discover/{id}/* endpoints
-// instead of the private, ownership-gated /api/tracks/{id}/* ones.
+// instead of the private, ownership-gated /api/tracks/{id}/* ones. The
+// discover base additionally goes through withCdn() since it's the only one
+// of the two that's safe to serve from a public CDN hostname.
 export function mediaBase(track: Track): string {
-  return track.publicSource ? `/api/discover/${track.id}` : `/api/tracks/${track.id}`;
+  return track.publicSource ? withCdn(`/api/discover/${track.id}`) : `/api/tracks/${track.id}`;
 }
 
 export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
