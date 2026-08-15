@@ -234,28 +234,45 @@ export const usePlayerStore = create<PlayerState>()(
           console.log("[Player] playTrackFromGesture:", { track, url });
         }
 
-        const isSameTrackAlreadyLoaded =
-          audioElement.dataset.gestureTrackId === track.id &&
-          !!audioElement.src &&
-          !audioElement.error &&
-          audioElement.readyState >= 1;
+        // The "now playing" highlight above is driven by currentTrack, set
+        // synchronously already — but on slower (tablet) hardware the
+        // .load() call below can occupy the main thread for a noticeable
+        // moment, and the browser won't paint the highlight until this whole
+        // synchronous handler returns. Deferring the actual audio element
+        // work one frame lets the highlight paint first, so selecting a
+        // track feels instant even while the stream is still loading.
+        // Still fires within the same transient user-activation window as
+        // the click, so autoplay isn't blocked.
+        const runAudioSetup = () => {
+          const isSameTrackAlreadyLoaded =
+            audioElement.dataset.gestureTrackId === track.id &&
+            !!audioElement.src &&
+            !audioElement.error &&
+            audioElement.readyState >= 1;
 
-        if (!isSameTrackAlreadyLoaded) {
-          audioElement.pause();
-          audioElement.currentTime = 0;
-          audioElement.src = url || "";
-          audioElement.volume = get().volume;
-          audioElement.dataset.gestureTrackId = track.id;
-          audioElement.load();
-        }
+          if (!isSameTrackAlreadyLoaded) {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            audioElement.src = url || "";
+            audioElement.volume = get().volume;
+            audioElement.dataset.gestureTrackId = track.id;
+            audioElement.load();
+          }
 
-        const playPromise = audioElement.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch((error) => {
-            if (error instanceof DOMException && error.name === "NotAllowedError") {
-              set({ isPlaying: false });
-            }
-          });
+          const playPromise = audioElement.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch((error) => {
+              if (error instanceof DOMException && error.name === "NotAllowedError") {
+                set({ isPlaying: false });
+              }
+            });
+          }
+        };
+
+        if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
+          window.requestAnimationFrame(runAudioSetup);
+        } else {
+          runAudioSetup();
         }
       },
       setPlayContext: (tracks) => set({ playContext: tracks }),
