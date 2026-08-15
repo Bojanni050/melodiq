@@ -3,6 +3,45 @@ import { NodeHttpHandler } from "@smithy/node-http-handler";
 import https from "node:https";
 import { getSetting } from "@/lib/settings";
 
+interface S3Config {
+  endpoint: string;
+  region: string;
+  accessKey: string;
+  secretKey: string;
+  bucket: string;
+}
+
+let s3ConfigCache: S3Config | null = null;
+let s3ConfigCachedAt = 0;
+const S3_CONFIG_TTL_MS = 5 * 60 * 1000;
+
+// getPresignedUrl() is on the hot path for every track load/skip — cache the
+// resolved settings (in-memory, per server process) instead of hitting the DB
+// for all 5 settings on every single call.
+async function getS3Config(): Promise<S3Config> {
+  if (s3ConfigCache && Date.now() - s3ConfigCachedAt < S3_CONFIG_TTL_MS) {
+    return s3ConfigCache;
+  }
+
+  const [endpoint, region, accessKey, secretKey, bucket] = await Promise.all([
+    getSetting("S3_ENDPOINT"),
+    getSetting("AWS_REGION"),
+    getSetting("S3_ACCESS_KEY"),
+    getSetting("S3_SECRET_KEY"),
+    getSetting("S3_BUCKET"),
+  ]);
+
+  s3ConfigCache = {
+    endpoint: endpoint || process.env.S3_ENDPOINT || "",
+    region: region || process.env.S3_REGION || "auto",
+    accessKey: accessKey || process.env.S3_ACCESS_KEY || "",
+    secretKey: secretKey || process.env.S3_SECRET_KEY || "",
+    bucket: bucket || process.env.S3_BUCKET || "melodiq-tracks",
+  };
+  s3ConfigCachedAt = Date.now();
+  return s3ConfigCache;
+}
+
 export async function uploadToS3(
   key: string,
   body: Buffer | Uint8Array,
@@ -39,11 +78,7 @@ export async function uploadToS3(
 }
 
 export async function getPresignedUrl(key: string, expiresIn = 3600) {
-  const endpoint = (await getSetting("S3_ENDPOINT")) || process.env.S3_ENDPOINT || "";
-  const region = (await getSetting("AWS_REGION")) || process.env.S3_REGION || "auto";
-  const accessKey = (await getSetting("S3_ACCESS_KEY")) || process.env.S3_ACCESS_KEY || "";
-  const secretKey = (await getSetting("S3_SECRET_KEY")) || process.env.S3_SECRET_KEY || "";
-  const bucket = (await getSetting("S3_BUCKET")) || process.env.S3_BUCKET || "melodiq-tracks";
+  const { endpoint, region, accessKey, secretKey, bucket } = await getS3Config();
 
   const s3 = new S3({
     endpoint: endpoint || undefined,

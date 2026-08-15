@@ -81,6 +81,8 @@ export default function Player() {
   const coverAutoRequestedTrackIdsRef = useRef<Set<string>>(new Set());
   const languageDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const languageDetectRequestedTrackIdsRef = useRef<Set<string>>(new Set());
+  const nextTrackPrefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextTrackPrefetchedIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -212,6 +214,13 @@ export default function Player() {
       }
     };
 
+    const clearNextTrackPrefetchTimer = () => {
+      if (nextTrackPrefetchTimerRef.current) {
+        clearTimeout(nextTrackPrefetchTimerRef.current);
+        nextTrackPrefetchTimerRef.current = null;
+      }
+    };
+
     const trackHasCover = (track: Track | null | undefined) => {
       if (!track) return false;
       return Boolean(track.coverUrl || track.s3KeyCover || track.s3KeyCoverThumb);
@@ -322,6 +331,49 @@ export default function Player() {
           }
         })();
       }, 15_000);
+    };
+
+    const scheduleNextTrackPrefetchIfNeeded = () => {
+      const track = currentTrackRef.current;
+      if (!track) return;
+      if (!usePlayerStore.getState().autoPlayNext) return;
+      const nextTrack = usePlayerStore.getState().queue[0];
+      if (!nextTrack || nextTrack.status !== "done") return;
+      if (nextTrackPrefetchedIdsRef.current.has(nextTrack.id)) return;
+      if (nextTrackPrefetchTimerRef.current) return;
+
+      const trackId = track.id;
+      const nextTrackId = nextTrack.id;
+
+      nextTrackPrefetchTimerRef.current = setTimeout(() => {
+        nextTrackPrefetchTimerRef.current = null;
+
+        const audioEl = audioRef.current;
+        if (currentTrackRef.current?.id !== trackId) return; // track changed since scheduling
+        if (!audioEl || audioEl.paused) return;
+        if (!usePlayerStore.getState().autoPlayNext) return;
+
+        // The queue may have been reordered, skipped past, or emptied since
+        // this warm-up was scheduled — only prefetch the track that's still
+        // next up.
+        const liveNext = usePlayerStore.getState().queue[0];
+        if (!liveNext || liveNext.id !== nextTrackId) return;
+        if (nextTrackPrefetchedIdsRef.current.has(nextTrackId)) return;
+
+        nextTrackPrefetchedIdsRef.current.add(nextTrackId);
+
+        const suffix = resolveStreamSuffix(liveNext, usePlayerStore.getState().playHighestQuality);
+        const url = `${mediaBase(liveNext)}/stream${suffix}`;
+        // A Range: bytes=0-0 GET hits the same route real playback uses, so
+        // it kicks off the S3 fetch + background disk-cache write (see
+        // getCachedAudioStream) well before the current track ends —
+        // low-priority so it doesn't compete with the track that's actually
+        // playing right now.
+        void fetch(url, {
+          headers: { Range: "bytes=0-0" },
+          priority: "low",
+        }).catch(() => {});
+      }, 10_000);
     };
 
     const countPlayIfNeeded = () => {
@@ -579,10 +631,12 @@ export default function Player() {
     audioRef.current.addEventListener("playing", countPlayIfNeeded);
     audioRef.current.addEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
     audioRef.current.addEventListener("playing", scheduleLanguageDetectionIfNeeded);
+    audioRef.current.addEventListener("playing", scheduleNextTrackPrefetchIfNeeded);
     audioRef.current.addEventListener("playing", clearStallTimer);
     audioRef.current.addEventListener("pause", clearPlayTimer);
     audioRef.current.addEventListener("pause", clearCoverAutoGenerateTimer);
     audioRef.current.addEventListener("pause", clearLanguageDetectTimer);
+    audioRef.current.addEventListener("pause", clearNextTrackPrefetchTimer);
     audioRef.current.addEventListener("pause", clearStallTimer);
     audioRef.current.addEventListener("pause", handleUnexpectedPause);
     audioRef.current.addEventListener("stalled", handleStalled);
@@ -607,10 +661,12 @@ export default function Player() {
         audioRef.current.removeEventListener("playing", countPlayIfNeeded);
         audioRef.current.removeEventListener("playing", scheduleAutoCoverGenerationIfNeeded);
         audioRef.current.removeEventListener("playing", scheduleLanguageDetectionIfNeeded);
+        audioRef.current.removeEventListener("playing", scheduleNextTrackPrefetchIfNeeded);
         audioRef.current.removeEventListener("playing", clearStallTimer);
         audioRef.current.removeEventListener("pause", clearPlayTimer);
         audioRef.current.removeEventListener("pause", clearCoverAutoGenerateTimer);
         audioRef.current.removeEventListener("pause", clearLanguageDetectTimer);
+        audioRef.current.removeEventListener("pause", clearNextTrackPrefetchTimer);
         audioRef.current.removeEventListener("pause", clearStallTimer);
         audioRef.current.removeEventListener("pause", handleUnexpectedPause);
         audioRef.current.removeEventListener("stalled", handleStalled);
@@ -622,6 +678,7 @@ export default function Player() {
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
       clearLanguageDetectTimer();
+      clearNextTrackPrefetchTimer();
       clearStallTimer();
     };
   }, [volume]);
@@ -676,20 +733,21 @@ export default function Player() {
         usePlayerStore.getState().currentTrack?.id !== trackId;
 
       const streamUrl = `${mediaBase(trackSnapshot)}/stream${suffix}`;
-      let resolvedUrl = streamUrl;
+      const normalizedTargetUrl = new URL(streamUrl, window.location.href).toString();
 
       setResolvingUrl(true);
       setAudioSource("unknown");
       setAudioSourceState("unknown");
 
-      try {
-        const response = await fetch(streamUrl, {
-          headers: {
-            Range: "bytes=0-0",
-          },
-        });
-
-        if (response.ok) {
+      // Cache/source-detection probe for the AudioSourceBadge only — fired
+      // in parallel, never awaited, so it can't delay audioEl.src/load()
+      // below. It used to be awaited before the src was set, which stalled
+      // the actual start of playback on every track (worst on mobile, where
+      // this extra round-trip lands on top of the network being throttled
+      // once the screen turns off).
+      void fetch(streamUrl, { headers: { Range: "bytes=0-0" } })
+        .then((response) => {
+          if (!response.ok || isSuperseded()) return;
           const cacheStateHeader = (response.headers.get("x-melodiq-audio-cache-state") || "").toLowerCase();
           const sourceHeader = (response.headers.get("x-melodiq-audio-source") || "").toLowerCase();
           const source: AudioSource =
@@ -704,27 +762,10 @@ export default function Player() {
                   : sourceHeader === "cache"
                     ? "hit"
                     : "unknown";
-
-          if (!isSuperseded()) {
-            setAudioSource(source);
-            setAudioSourceState(state);
-          }
-        } else {
-          const hdFallback = suffix ? trackSnapshot.audioUrlHd : null;
-          const fallback = hdFallback || trackSnapshot.audioUrl;
-          if (typeof fallback === "string" && /^https?:\/\//i.test(fallback)) {
-            resolvedUrl = fallback;
-          }
-        }
-      } catch {
-        const hdFallback = suffix ? trackSnapshot.audioUrlHd : null;
-        const fallback = hdFallback || trackSnapshot.audioUrl;
-        if (typeof fallback === "string" && /^https?:\/\//i.test(fallback)) {
-          resolvedUrl = fallback;
-        }
-      }
-
-      const normalizedTargetUrl = new URL(resolvedUrl, window.location.href).toString();
+          setAudioSource(source);
+          setAudioSourceState(state);
+        })
+        .catch(() => {});
 
       const isInitialLoad = lastLoadedTrackIdRef.current === null;
       // playTrackFromGesture (store.ts) may have already loaded and started
@@ -755,11 +796,9 @@ export default function Player() {
       }
 
       // If playTrackFromGesture already started this track playing from the
-      // streaming URL, skip the blob fetch entirely. The blob download is
-      // only for cold starts (e.g. restoring progress from localStorage on
-      // page load). Fetching and swapping to a blob URL mid-playback
-      // restarts the track from 0 because the new <audio> element src
-      // doesn't carry over the currentTime.
+      // streaming URL, there's nothing left for this effect to do — reloading
+      // the src here would restart the track from 0 because a fresh
+      // audioEl.src assignment doesn't carry over the currentTime.
       if (gestureLoadedThisTrack && usePlayerStore.getState().isPlaying) {
         lastLoadedTrackIdRef.current = trackId;
         setResolvingUrl(false);

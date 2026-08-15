@@ -51,26 +51,60 @@ export async function GET(
     const fileSize = size;
 
     if (rangeHeader) {
-      stream.destroy(); // not needed for range requests — close the full-file stream
-
       const parts = rangeHeader.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
 
       if (!cached) {
-        // The disk copy may still be mid-write in the background — proxy
-        // the ranged request straight from S3 instead of racing it.
-        const presignedUrl = await getPresignedUrl(s3Key);
-        const s3Response = await fetch(presignedUrl, { headers: { Range: rangeHeader } });
-        if (!s3Response.ok || !s3Response.body) {
-          return NextResponse.json({ error: "Failed to stream audio" }, { status: 502 });
-        }
-        return new NextResponse(s3Response.body, {
-          status: s3Response.status === 206 ? 206 : 200,
+        // The disk copy is still being written in the background by the
+        // tee'd branch inside getCachedAudioStream — `stream` here is the
+        // other (client-side) branch of that same tee, already reading from
+        // S3. Reuse it instead of discarding it and firing a second,
+        // separate presigned-URL fetch, which used to skip the disk cache
+        // entirely for range requests. There's no true byte-range support on
+        // this from-byte-0 branch, so slice out just the requested range for
+        // the client while the underlying stream keeps flowing to disk.
+        let bytesEmitted = 0;
+        let clientDone = false;
+        const readable = new ReadableStream({
+          start(controller) {
+            stream.on("data", (chunk: Buffer) => {
+              if (clientDone) return;
+              const chunkStart = bytesEmitted;
+              bytesEmitted += chunk.length;
+              const chunkEnd = bytesEmitted; // exclusive
+
+              if (chunkEnd > start && chunkStart <= end) {
+                const sliceStart = Math.max(0, start - chunkStart);
+                const sliceEnd = Math.min(chunk.length, end - chunkStart + 1);
+                controller.enqueue(chunk.subarray(sliceStart, sliceEnd));
+              }
+
+              if (bytesEmitted > end && !clientDone) {
+                clientDone = true;
+                controller.close();
+                stream.destroy(); // tears down only this tee branch — the disk-side branch keeps writing independently
+              }
+            });
+            stream.on("end", () => {
+              if (!clientDone) controller.close();
+            });
+            stream.on("error", (err) => {
+              if (!clientDone) controller.error(err);
+            });
+          },
+          cancel() {
+            stream.destroy();
+          },
+        });
+
+        return new NextResponse(readable, {
+          status: 206,
           headers: {
-            "Content-Type": s3Response.headers.get("content-type") || contentType,
-            ...(s3Response.headers.get("content-length") ? { "Content-Length": s3Response.headers.get("content-length")! } : {}),
-            ...(s3Response.headers.get("content-range") ? { "Content-Range": s3Response.headers.get("content-range")! } : {}),
+            "Content-Type": contentType,
+            "Content-Length": String(chunkSize),
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
             "Accept-Ranges": "bytes",
             "Cache-Control": "public, max-age=31536000, immutable",
             "x-melodiq-audio-source": "s3",
@@ -79,7 +113,9 @@ export async function GET(
         });
       }
 
-      const chunkSize = end - start + 1;
+      // Cached: the full-file stream from getCachedAudioStream isn't needed
+      // for a range request straight from disk.
+      stream.destroy();
       const readStream = fs.createReadStream(filePath, { start, end });
       const readable = new ReadableStream({
         start(controller) {
