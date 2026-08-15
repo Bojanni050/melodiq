@@ -1199,3 +1199,13 @@
   - `src/components/Player.tsx` — the `Range: bytes=0-0` source-detection probe in the track-loading effect is now a fire-and-forget `fetch(...).then(...).catch(() => {})` that only updates `audioSource`/`audioSourceState` for the badge; `audioEl.src`/`load()` happen immediately without waiting on it. Also added a `scheduleNextTrackPrefetchIfNeeded` "playing"-event handler (same timer/guard pattern as the existing cover-art/language-detection schedulers) that, 10s into playback with `autoPlayNext` on, fires a low-priority `Range: bytes=0-0` request for `queue[0]` — guarded against the queue having changed by re-reading `usePlayerStore.getState().queue[0]` right before firing.
   - Build versie bijgewerkt naar 202608151253 in src/components/Sidebar.tsx.
   - Validated with `npx tsc --noEmit` (0 errors) and `npm run build`, which succeeded completely.
+
+## 2026-08-15 za 12:56 (Persist selected track sort order across navigation)
+
+- Findings: `TrackList.tsx`'s sort dropdown (New/Old/A-Z/Z-A) was local `useState<SortOrder>("newest")`, so it reset to "newest" every time the component remounted — which happens on every navigation between Library, Playlists, Workspaces, Archive, Releases, and the Studio panels, since each renders its own `<TrackList>` instance.
+- Conclusions: Persist the selected sort order the same way the existing manual drag-order is already persisted (`trackListOrder.ts`, localStorage-backed), but as a single shared key rather than per-list, so picking a sort once applies everywhere and survives navigation.
+- Actions:
+  - `src/components/tracks/trackListOrder.ts` — added `readPersistedSortOrder()`/`writePersistedSortOrder()` (localStorage key `melodiq.track-sort-order.v1`), mirroring the existing persisted-manual-order helpers.
+  - `src/components/TrackList.tsx` — `sortOrder` now lazily initializes from `readPersistedSortOrder() ?? "newest"`, and the `setSortOrder` passed down to `TrackListHeader` now also writes through to localStorage on every change.
+  - Build versie bijgewerkt naar 202608151256 in src/components/Sidebar.tsx.
+  - Validated with `npx tsc --noEmit` (0 errors) and `npm run build`, which succeeded completely.

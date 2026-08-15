@@ -11,6 +11,8 @@ import { useArchiveTracks } from "@/lib/hooks/use-archive-tracks";
 import {
   readPersistedTrackOrder,
   writePersistedTrackOrder,
+  readPersistedSortOrder,
+  writePersistedSortOrder,
   type SortOrder,
   type DropPosition,
 } from "@/components/tracks/trackListOrder";
@@ -94,7 +96,11 @@ export default memo(function TrackList({
   const setSelectedIds = useSelectionStore((state) => state.setSelectedIds);
 
   const hasScrolledToRestoredTrack = useRef(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [sortOrder, setSortOrderState] = useState<SortOrder>(() => readPersistedSortOrder() ?? "newest");
+  const setSortOrder = useCallback((order: SortOrder) => {
+    setSortOrderState(order);
+    writePersistedSortOrder(order);
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
   const [hasLoadedPersistedManualOrder, setHasLoadedPersistedManualOrder] = useState(false);
