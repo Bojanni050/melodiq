@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, clonedVoices } from "@/db/schema";
+import { tracks, clonedVoices, users } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
@@ -118,14 +118,24 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
 
+  const [ownerForArtistName] = await db
+    .select({ artistAlias: users.artistAlias, name: users.name, writerAlias: users.writerAlias })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const defaultArtistName = ownerForArtistName?.artistAlias?.trim() || ownerForArtistName?.name?.trim() || null;
+  const defaultWriterName = ownerForArtistName?.writerAlias?.trim() || defaultArtistName;
+
   if (!checkRateLimit(userId)) {
     return NextResponse.json({ error: "Too many requests. Try again in a minute." }, { status: 429 });
   }
 
   const body = await request.json();
-  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId } = body;
+  const { provider, providerModel, prompt, lyrics, instrumental, title, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId, artistName, writerName } = body;
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
+  const resolvedArtistName = (typeof artistName === "string" ? artistName.trim() : "") || defaultArtistName;
+  const resolvedWriterName = (typeof writerName === "string" ? writerName.trim() : "") || defaultWriterName;
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe", "apimart"];
   const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
@@ -207,6 +217,8 @@ export async function POST(request: NextRequest) {
         lyrics: lyrics || null,
         instrumental: instrumental || false,
         title: resolvedTitle,
+        artistName: resolvedArtistName,
+        writerName: resolvedWriterName,
         status: "pending",
       })
       .returning();
@@ -326,6 +338,8 @@ export async function POST(request: NextRequest) {
           lyrics: lyrics || null,
           instrumental: instrumental || false,
           title: resolvedTitle,
+          artistName: resolvedArtistName,
+        writerName: resolvedWriterName,
           status: "pending",
         })
         .returning(),
@@ -339,6 +353,8 @@ export async function POST(request: NextRequest) {
           lyrics: lyrics || null,
           instrumental: instrumental || false,
           title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          artistName: resolvedArtistName,
+        writerName: resolvedWriterName,
           status: "pending",
         })
         .returning(),
@@ -502,6 +518,8 @@ export async function POST(request: NextRequest) {
       lyrics: lyrics || null,
       instrumental: instrumental || false,
       title: resolvedTitle,
+      artistName: resolvedArtistName,
+      writerName: resolvedWriterName,
       status: "pending",
     })
     .returning();
@@ -790,6 +808,8 @@ export async function POST(request: NextRequest) {
               lyrics: lyrics || null,
               instrumental: instrumental || false,
               title: resolvedTitle,
+              artistName: resolvedArtistName,
+              writerName: resolvedWriterName,
               status: "generating",
               jobId,
             })
@@ -856,6 +876,8 @@ export async function POST(request: NextRequest) {
           lyrics: lyrics || null,
           instrumental: instrumental || false,
           title: resolvedTitle,
+          artistName: resolvedArtistName,
+          writerName: resolvedWriterName,
           status: "generating",
           jobId: genResult.taskId,
           conversionId: genResult.conversionId2,
@@ -913,6 +935,8 @@ export async function POST(request: NextRequest) {
           lyrics: instrumental ? null : (lyrics || null),
           instrumental: instrumental || false,
           title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+          artistName: resolvedArtistName,
+          writerName: resolvedWriterName,
           status: "generating",
           jobId: `${genResult.requestId}:1`,
         }).returning(),
@@ -1017,6 +1041,8 @@ export async function POST(request: NextRequest) {
               lyrics: instrumental ? null : (lyrics || null),
               instrumental: instrumental || false,
               title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+              artistName: resolvedArtistName,
+              writerName: resolvedWriterName,
               status: "generating",
               jobId: `${genResult.jobId}:1`,
             })
@@ -1109,6 +1135,8 @@ export async function POST(request: NextRequest) {
             lyrics: instrumental ? null : (lyrics || null),
             instrumental: instrumental || false,
             title: resolvedTitle ? `${resolvedTitle} (2)` : null,
+            artistName: resolvedArtistName,
+            writerName: resolvedWriterName,
             status: "generating",
             jobId: `${genResult.taskId}:1`,
           })

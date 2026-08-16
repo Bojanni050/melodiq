@@ -14,6 +14,8 @@ interface StudioState {
   lyrics: string;
   lyricsContext: string;
   title: string;
+  artistName: string;
+  writerName: string;
   autoCreateWorkspaceFromGeneratedTitle: boolean;
   selectedProviders: Record<string, string>;
   rememberProviderChoice: boolean;
@@ -34,6 +36,8 @@ interface StudioState {
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
   setTitle: (title: string) => void;
+  setArtistName: (name: string) => void;
+  setWriterName: (name: string) => void;
   setAutoCreateWorkspaceFromGeneratedTitle: (enabled: boolean) => void;
   setProvider: (key: string, model: string) => void;
   toggleProvider: (key: string, defaultModel: string) => void;
@@ -64,6 +68,8 @@ export const useStudioStore = create<StudioState>()(
       lyrics: "",
       lyricsContext: "",
       title: "",
+      artistName: "",
+      writerName: "",
       autoCreateWorkspaceFromGeneratedTitle: false,
       selectedProviders: { apimart: "v5.5" },
       rememberProviderChoice: true,
@@ -84,6 +90,8 @@ export const useStudioStore = create<StudioState>()(
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
       setTitle: (title) => set({ title }),
+      setArtistName: (name) => set({ artistName: name }),
+      setWriterName: (name) => set({ writerName: name }),
       setAutoCreateWorkspaceFromGeneratedTitle: (enabled) =>
         set({ autoCreateWorkspaceFromGeneratedTitle: enabled }),
       setProvider: (key, model) => set({ selectedProviders: { [key]: model } }),
@@ -158,6 +166,8 @@ export const useStudioStore = create<StudioState>()(
           lyrics: "",
           lyricsContext: "",
           title: "",
+          artistName: "",
+          writerName: "",
           autoCreateWorkspaceFromGeneratedTitle: false,
           selectedProviders: { apimart: "v5.5" },
           language: "English",

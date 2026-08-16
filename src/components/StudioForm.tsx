@@ -8,6 +8,7 @@ import ProviderModelSection, { type ProviderCredits } from "@/components/studio/
 import TitleSection from "@/components/studio/TitleSection";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore, usePresetsStore } from "@/lib/store";
+import { useUserStore } from "@/lib/stores/userStore";
 
 export default memo(function StudioForm({
   credits,
@@ -27,6 +28,8 @@ export default memo(function StudioForm({
     songIdea,
     lyrics,
     title,
+    artistName,
+    writerName,
     autoCreateWorkspaceFromGeneratedTitle,
     selectedProviders,
     rememberProviderChoice,
@@ -42,6 +45,8 @@ export default memo(function StudioForm({
     setSongIdea,
     setLyrics,
     setTitle,
+    setArtistName,
+    setWriterName,
     setAutoCreateWorkspaceFromGeneratedTitle,
     setProvider,
     toggleProvider,
@@ -59,6 +64,15 @@ export default memo(function StudioForm({
     deleteSavedLyric,
     reset,
   } = useStudioStore();
+
+  const user = useUserStore((state) => state.user);
+  const loadUser = useUserStore((state) => state.loadUser);
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
+  const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
+  const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
+  const defaultWriterLabel = user?.writerAlias?.trim() || defaultArtistLabel;
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showVocalGenderConfirm, setShowVocalGenderConfirm] = useState(false);
@@ -988,6 +1002,50 @@ Your chorus here`}
         generatingTitle={generatingTitle}
         onGenerateTitle={handleGenerateTitle}
       />
+
+      {/* Credits Section */}
+      <section className="section-card">
+        <h3 className="text-sm font-semibold text-white/80 mb-3">Credits</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] text-white/50 mb-1">Artist</label>
+            {artistAliasOptions.length > 0 ? (
+              <select
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                className="input-field text-sm py-1.5"
+              >
+                <option value="">{`Default (${defaultArtistLabel})`}</option>
+                {artistAliasOptions.map((alias) => (
+                  <option key={alias} value={alias}>
+                    {alias}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                placeholder={`Default (${defaultArtistLabel})`}
+                className="input-field text-sm py-1.5"
+                maxLength={255}
+              />
+            )}
+          </div>
+          <div>
+            <label className="block text-[10px] text-white/50 mb-1">Writer</label>
+            <input
+              type="text"
+              value={writerName}
+              onChange={(e) => setWriterName(e.target.value)}
+              placeholder={`Default (${defaultWriterLabel})`}
+              className="input-field text-sm py-1.5"
+              maxLength={255}
+            />
+          </div>
+        </div>
+      </section>
       </div>
 
       {/* Generate Button */}

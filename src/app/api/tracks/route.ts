@@ -518,6 +518,20 @@ export async function GET(request: NextRequest) {
     .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
 
+  if (finalTracks.some((track) => !track.artistName)) {
+    const [owner] = await db
+      .select({ artistAlias: users.artistAlias, name: users.name })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    const fallbackArtistName = owner?.artistAlias?.trim() || owner?.name?.trim() || null;
+    if (fallbackArtistName) {
+      for (const track of finalTracks) {
+        if (!track.artistName) track.artistName = fallbackArtistName;
+      }
+    }
+  }
+
   const workspacePayload = await getUserWorkspacesWithTrackIds(
     userId,
     finalTracks.map((track) => ({ id: track.id, workspaceId: track.workspaceId ?? null }))
