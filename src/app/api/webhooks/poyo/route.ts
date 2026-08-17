@@ -5,7 +5,6 @@ import { eq, and, inArray } from "drizzle-orm";
 import { logApi } from "@/lib/logger";
 import { extractPoYoErrorMessage, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
-import { requestMissingWavConversion } from "@/lib/request-wav-conversion";
 import { generateAndSaveCoverArtForBatch } from "@/lib/generate-cover";
 import { sendPushNotification } from "@/lib/push";
 
@@ -125,25 +124,14 @@ export async function POST(request: NextRequest) {
           })
         );
 
-        // Re-fetch after optional audioId updates so conversion requests see latest DB values.
+        // Re-fetch after optional audioId updates so downstream logic sees latest DB values.
         const refreshedSyncedTracks = await db
           .select()
           .from(tracks)
           .where(inArray(tracks.id, allSyncedIds));
 
-        // Stagger submissions instead of firing them all at once — a multi-variant
-        // batch hitting PoYo's convert-to-wav endpoint simultaneously can trip its
-        // "20 requests per 10 seconds" rate limit.
-        for (let i = 0; i < refreshedSyncedTracks.length; i++) {
-          const syncedTrack = refreshedSyncedTracks[i];
-          if (i > 0) await new Promise((resolve) => setTimeout(resolve, 400));
-          await requestMissingWavConversion({
-            ...syncedTrack,
-            jobId: syncedTrack.jobId ?? taskId,
-          }).catch((error) =>
-            console.error(`[webhook/poyo] WAV conversion request failed for track ${syncedTrack.id}:`, error)
-          );
-        }
+        // WAV/HD conversion is no longer requested automatically here — the user
+        // triggers it on-demand via the "Convert to WAV" track menu action instead.
 
         // Fire cover art for all synced tracks as one batch
         if (refreshedSyncedTracks.length > 0) {

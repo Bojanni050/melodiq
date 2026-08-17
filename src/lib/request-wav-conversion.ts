@@ -1,7 +1,4 @@
 import axios from "axios";
-import { db } from "@/db";
-import { tracks } from "@/db/schema";
-import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 import { logApi } from "@/lib/logger";
 import { createApimartWav } from "@/lib/providers/apimart";
@@ -9,12 +6,6 @@ import { apimartAudioIndexForJobId } from "@/lib/apimart-wav";
 
 const MAX_SUBMIT_ATTEMPTS = 3;
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
-
-// Self-healing retry for tracks whose WAV never came back (webhook lost, PoYo-side
-// failure, etc). Gated by cooldown + attempt cap so the polling loop in
-// /api/tracks can't hammer PoYo's rate limit every time a client polls.
-export const WAV_RETRY_COOLDOWN_MS = 10 * 60 * 1000;
-export const MAX_AUTO_WAV_RETRIES = 8;
 
 export function getOriginalPoYoTaskId(jobId: string): string {
   return jobId.replace(/:v\d+$/i, "");
@@ -203,100 +194,3 @@ export async function requestWavConversion(track: {
   return null;
 }
 
-export async function requestMissingWavConversion(track: {
-  id: string | null;
-  jobId: string | null;
-  audioId: string | null;
-  userId?: string | null;
-  wavJobId?: string | null;
-  s3KeyHd?: string | null;
-  provider?: string | null;
-}): Promise<string | null> {
-  if (!track.id || !track.jobId || !track.audioId || track.wavJobId || track.s3KeyHd) {
-    return null;
-  }
-
-  const wavTaskId = await requestWavConversion({
-    id: track.id,
-    jobId: track.jobId,
-    audioId: track.audioId,
-    userId: track.userId,
-    provider: track.provider,
-  });
-
-  if (!wavTaskId) return null;
-
-  await db
-    .update(tracks)
-    .set({ wavJobId: wavTaskId })
-    .where(eq(tracks.id, track.id));
-
-  return wavTaskId;
-}
-
-/**
- * Self-healing retry for "done" PoYo tracks that still have no WAV/FLAC, whether the
- * original submit failed, PoYo's own conversion task errored, or the callback was
- * lost. Called from the /api/tracks polling path — gated by wavRetryAt/wavRetryCount
- * so repeated client polling can't spam PoYo's rate limit for the same track.
- */
-export async function retryStaleWavConversions(userId: string): Promise<void> {
-  const cutoff = new Date(Date.now() - WAV_RETRY_COOLDOWN_MS);
-
-  // PoYo tracks
-  const poyoCandidates = await db
-    .select()
-    .from(tracks)
-    .where(
-      and(
-        eq(tracks.userId, userId),
-        eq(tracks.provider, "poyo"),
-        eq(tracks.status, "done"),
-        isNull(tracks.deletedAt),
-        isNull(tracks.archivedAt),
-        isNull(tracks.s3KeyHd),
-        or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
-        lt(tracks.wavRetryCount, MAX_AUTO_WAV_RETRIES)
-      )
-    );
-
-  // APIMart tracks
-  const apimartCandidates = await db
-    .select()
-    .from(tracks)
-    .where(
-      and(
-        eq(tracks.userId, userId),
-        eq(tracks.provider, "apimart"),
-        eq(tracks.status, "done"),
-        isNull(tracks.deletedAt),
-        isNull(tracks.archivedAt),
-        isNull(tracks.s3KeyHd),
-        or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
-        lt(tracks.wavRetryCount, MAX_AUTO_WAV_RETRIES)
-      )
-    );
-
-  const candidates = [...poyoCandidates, ...apimartCandidates];
-  const eligible = candidates.filter((track) => track.jobId && track.audioId);
-  if (eligible.length === 0) return;
-
-  for (const track of eligible) {
-    const wavTaskId = await requestWavConversion({
-      id: track.id!,
-      jobId: track.jobId!,
-      audioId: track.audioId!,
-      userId: track.userId,
-      provider: track.provider,
-    });
-
-    await db
-      .update(tracks)
-      .set({
-        wavJobId: wavTaskId ?? track.wavJobId,
-        wavRetryAt: new Date(),
-        wavRetryCount: track.wavRetryCount + 1,
-      })
-      .where(eq(tracks.id, track.id!));
-  }
-}

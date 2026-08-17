@@ -5,8 +5,7 @@ import { eq, desc, and, inArray, ne, lt, isNull, isNotNull } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
-import { getOriginalPoYoTaskId, requestMissingWavConversion, retryStaleWavConversions } from "@/lib/request-wav-conversion";
-import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
+import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
 import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
@@ -23,9 +22,8 @@ import { generateAndSaveCoverArtForBatch, generateAndSaveCoverArt, processAndUpl
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus, createApimartAlignedLyrics, createApimartWav } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
-import { logApi } from "@/lib/logger";
 import axios from "axios";
 import {
   extractAudioUrls,
@@ -169,18 +167,9 @@ export async function GET(request: NextRequest) {
               const statusValue = getPoYoStatusValue(status);
 
               if (statusValue === "completed" || statusValue === "finished") {
-                const syncResult = await syncPoYoTaskResult(sourceJobId, status);
-                const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
-                if (syncedTrackIds.length > 0) {
-                  const syncedTracks = await db
-                    .select()
-                    .from(tracks)
-                    .where(inArray(tracks.id, syncedTrackIds));
-
-                  await Promise.allSettled(
-                    syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
-                  );
-                }
+                // WAV/HD conversion is no longer requested automatically here — the
+                // user triggers it on-demand via the "Convert to WAV" track menu action.
+                await syncPoYoTaskResult(sourceJobId, status);
               } else if (statusValue === "failed" || statusValue === "error") {
                 const errorMessage = extractPoYoErrorMessage(status) || "Generation failed";
                 console.error(`[tracks-api] PoYo generation failed for task ${sourceJobId} (track ${track.id}): ${errorMessage}`);
@@ -371,40 +360,8 @@ export async function GET(request: NextRequest) {
                       .catch((error) => console.error("[tracks-api] aligned lyrics submit failed (apimart)", error));
                   }
 
-                  {
-                    const audioIndex = isSecond ? 2 : 1;
-                    const wavStartTime = Date.now();
-                    createApimartWav(parentJobId, audioIndex)
-                      .then((submitRes) => {
-                        logApi({
-                          userId: track.userId,
-                          type: "webhook",
-                          provider: "apimart",
-                          endpoint: "/api/generate/submit (convert-to-wav)",
-                          request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
-                          response: JSON.stringify({ wavJobId: submitRes.taskId }),
-                          statusCode: 200,
-                          duration: Date.now() - wavStartTime,
-                        }).catch(() => {});
-                        return db
-                          .update(tracks)
-                          .set({ wavJobId: submitRes.taskId })
-                          .where(eq(tracks.id, track.id));
-                      })
-                      .catch((error) => {
-                        console.error("[tracks-api] wav export submit failed (apimart)", error);
-                        logApi({
-                          userId: track.userId,
-                          type: "webhook",
-                          provider: "apimart",
-                          endpoint: "/api/generate/submit (convert-to-wav)",
-                          request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
-                          response: JSON.stringify({ error: error?.message ?? String(error) }),
-                          statusCode: 500,
-                          duration: Date.now() - wavStartTime,
-                        }).catch(() => {});
-                      });
-                  }
+                  // WAV/HD conversion is no longer requested automatically here — the
+                  // user triggers it on-demand via the "Convert to WAV" track menu action.
                 }
               } else if (status.status === "failed") {
                 await db
@@ -490,20 +447,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Self-healing retry for "done" PoYo tracks whose WAV/FLAC never arrived
-    // (lost callback, PoYo-side failure, rate limit at submit time). Cooldown +
-    // attempt cap are enforced inside so repeated polling can't spam PoYo.
-    await retryStaleWavConversions(userId).catch((e: any) =>
-      console.error("[tracks-api] retryStaleWavConversions failed:", e?.message ?? e)
-    );
-
-    // Same idea for APIMart, but active polling instead of a webhook callback.
-    // Fire-and-forget: these call out to APIMart per stale track and would
-    // otherwise add unpredictable latency to every list poll. Any resulting
-    // row updates get picked up on the *next* poll instead of blocking this one.
-    void retryStaleApimartWavConversions(userId).catch((e: any) =>
-      console.error("[tracks-api] retryStaleApimartWavConversions failed:", e?.message ?? e)
-    );
+    // WAV/HD conversion (PoYo and APIMart) is no longer auto-healed on every list
+    // poll — the user triggers it on-demand via the "Convert to WAV" track menu
+    // action (POST /api/tracks/retry-wav), which reuses these same functions.
 
     // Resolve APIMart aligned-lyrics receipts that outlived the in-component
     // poller's ~75s window (see apimart-lyrics.ts for why that's needed).

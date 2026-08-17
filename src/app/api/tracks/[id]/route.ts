@@ -9,11 +9,11 @@ import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
-import { getApimartTaskStatus, getApimartRawTaskStatus, createApimartAlignedLyrics, createApimartWav } from "@/lib/providers/apimart";
+import { getApimartTaskStatus, getApimartRawTaskStatus, createApimartAlignedLyrics } from "@/lib/providers/apimart";
 import { getMusicGptConversionById } from "@/lib/providers/musicgpt";
 import { uploadToS3 } from "@/lib/s3";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
-import { getOriginalPoYoTaskId, requestMissingWavConversion } from "@/lib/request-wav-conversion";
+import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import {
   contentTypeForFormat,
   detectFormatFromContentType,
@@ -27,7 +27,6 @@ import { detectLanguageFromLyrics } from "@/lib/providers/llm";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
-import { logApi } from "@/lib/logger";
 
 const GENERATION_TIMEOUT_MS = 15 * 60 * 1000;
 const DEFAULT_WORKSPACE_SENTINEL = "workspace-default";
@@ -228,18 +227,9 @@ export async function GET(
       const statusValue = getPoYoStatusValue(status);
 
       if (statusValue === "completed" || statusValue === "finished") {
-        const syncResult = await syncPoYoTaskResult(sourceJobId, status);
-        const syncedTrackIds = [...syncResult.updatedTrackIds, ...syncResult.createdTrackIds];
-        if (syncedTrackIds.length > 0) {
-          const syncedTracks = await db
-            .select()
-            .from(tracks)
-            .where(inArray(tracks.id, syncedTrackIds));
-
-          await Promise.allSettled(
-            syncedTracks.map((syncedTrack) => requestMissingWavConversion(syncedTrack))
-          );
-        }
+        await syncPoYoTaskResult(sourceJobId, status);
+        // WAV/HD conversion is no longer requested automatically here — the user
+        // triggers it on-demand via the "Convert to WAV" track menu action instead.
 
         const refreshed = await db
           .select()
@@ -471,40 +461,8 @@ export async function GET(
               .catch((error) => console.error("[tracks/[id]] aligned lyrics submit failed (apimart)", error));
           }
 
-          {
-            const audioIndex = isSecond ? 2 : 1;
-            const wavStartTime = Date.now();
-            createApimartWav(parentJobId, audioIndex)
-              .then((submitRes) => {
-                logApi({
-                  userId: track.userId,
-                  type: "webhook",
-                  provider: "apimart",
-                  endpoint: "/api/generate/submit (convert-to-wav)",
-                  request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
-                  response: JSON.stringify({ wavJobId: submitRes.taskId }),
-                  statusCode: 200,
-                  duration: Date.now() - wavStartTime,
-                }).catch(() => {});
-                return db
-                  .update(tracks)
-                  .set({ wavJobId: submitRes.taskId })
-                  .where(eq(tracks.id, track.id!));
-              })
-              .catch((error) => {
-                console.error("[tracks/[id]] wav export submit failed (apimart)", error);
-                logApi({
-                  userId: track.userId,
-                  type: "webhook",
-                  provider: "apimart",
-                  endpoint: "/api/generate/submit (convert-to-wav)",
-                  request: JSON.stringify({ trackId: track.id, parentJobId, audioIndex }),
-                  response: JSON.stringify({ error: error?.message ?? String(error) }),
-                  statusCode: 500,
-                  duration: Date.now() - wavStartTime,
-                }).catch(() => {});
-              });
-          }
+          // WAV/HD conversion is no longer requested automatically here — the user
+          // triggers it on-demand via the "Convert to WAV" track menu action instead.
 
           return NextResponse.json(updated[0]);
         }

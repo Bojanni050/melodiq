@@ -44,11 +44,11 @@ export default function WavRecoverySection() {
 
   return (
     <section className="section-card">
-      <h2 className="text-sm font-semibold mb-1">Herstel Ontbrekende WAV/FLAC Bestanden</h2>
+      <h2 className="text-sm font-semibold mb-1">WAV/FLAC-conversie</h2>
       <p className="text-sm text-white/40 mb-3">
-        Vraag WAV/HD-conversie opnieuw aan voor PoYo- en APIMart-tracks die wel succesvol zijn
-        gegenereerd (Ready/Done), maar waarvan het HD-bestand ontbreekt. Reset ook de auto-retry
-        teller voor APIMart-tracks die hun automatische pogingen al hebben opgebruikt.
+        WAV/HD-conversie gebeurt niet meer automatisch — vraag het per track aan via "Convert to WAV"
+        in het trackmenu, of gebruik deze knop om het in één keer aan te vragen voor alle PoYo- en
+        APIMart-tracks die succesvol zijn gegenereerd (Ready/Done) maar nog geen HD-bestand hebben.
         Veilig om meerdere keren uit te voeren.
       </p>
       <div className="flex items-center gap-2">

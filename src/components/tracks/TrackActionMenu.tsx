@@ -342,12 +342,12 @@ export default function TrackActionMenu({
               } disabled:opacity-50`}
             >
               {retryingWav
-                ? "Retrying WAV..."
+                ? "Converting to WAV..."
                 : retryWavResult === "success"
-                  ? "WAV retry aangevraagd ✓"
+                  ? "WAV conversie aangevraagd ✓"
                   : retryWavResult === "error"
-                    ? "Retry mislukt — probeer opnieuw"
-                    : "Retry WAV"}
+                    ? "Mislukt — probeer opnieuw"
+                    : "Convert to WAV"}
             </button>
           )}
           <button
