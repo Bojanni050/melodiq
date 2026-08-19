@@ -11,6 +11,14 @@ export async function GET(request: NextRequest) {
     const auth = await requireAuth();
     if (auth instanceof NextResponse) return auth;
 
+    // Ensure bojan_listen@melodiq.nl account exists with listener role
+    const listenerUser = await ensureListenerUser();
+
+    // If already logged in as the listener user, redirect to /discover
+    if (auth.userId === listenerUser.id) {
+      return NextResponse.redirect(new URL("/discover", request.url));
+    }
+
     // Verify current authenticated user has admin role
     const [user] = await db
       .select({ role: users.role })
@@ -21,9 +29,6 @@ export async function GET(request: NextRequest) {
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
-
-    // Ensure bojan_listen@melodiq.nl account exists with listener role
-    const listenerUser = await ensureListenerUser();
 
     // Generate token for listener account
     const token = generateToken(listenerUser.id);
