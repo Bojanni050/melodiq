@@ -68,7 +68,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const isAdmin = user?.role === "admin";
   const isListener = user?.role === "listener" || user?.role == null;
 
-  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean; indent?: boolean; external?: boolean }> }> = [
+  const navGroups: Array<{ label: string; items: Array<{ href: string; label: string; icon: string; placeholder?: boolean; indent?: boolean }> }> = [
     ...(isListener
       ? [
           {
@@ -125,7 +125,6 @@ export default function Sidebar({ credits }: SidebarProps) {
             items: [
               { href: "/logs", label: "Logs", icon: "logs" },
               { href: "/admin", label: "Admin", icon: "admin" },
-              { href: "/api/auth/listener-mode", label: "Listener Mode", icon: "listener", external: true },
             ],
           },
         ]
@@ -250,12 +249,6 @@ export default function Sidebar({ credits }: SidebarProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 18V5l10-2v13M9 18a3 3 0 11-3-3 3 3 0 013 3zm10-2a3 3 0 11-3-3 3 3 0 013 3z" />
           </svg>
         );
-      case "listener":
-        return (
-          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.114 12c0-4.04-3.23-7.314-7.214-7.314S4.686 7.96 4.686 12v3.6c0 1.988 1.612 3.6 3.6 3.6h.4v-6.4h-.4a1.2 1.2 0 01-1.2-1.2v-.8c0-2.65 2.15-4.8 4.8-4.8s4.8 2.15 4.8 4.8v.8a1.2 1.2 0 01-1.2 1.2h-.4v6.4h.4c1.988 0 3.6-1.612 3.6-3.6V12z" />
-          </svg>
-        );
       default:
         return null;
     }
@@ -345,8 +338,6 @@ export default function Sidebar({ credits }: SidebarProps) {
                     <Link
                       key={item.href + item.label}
                       href={targetHref}
-                      target={item.external ? "_blank" : undefined}
-                      rel={item.external ? "noopener noreferrer" : undefined}
                       onClick={isPlaceholder ? (e) => e.preventDefault() : undefined}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                         active
@@ -508,8 +499,6 @@ export default function Sidebar({ credits }: SidebarProps) {
                         <Link
                           key={item.href + item.label}
                           href={targetHref}
-                          target={item.external ? "_blank" : undefined}
-                          rel={item.external ? "noopener noreferrer" : undefined}
                           onClick={isPlaceholder ? (e) => e.preventDefault() : () => setMobileMenuOpen(false)}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                             active

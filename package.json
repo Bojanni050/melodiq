@@ -15,8 +15,7 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
     "script:backfill-covers": "tsx --tsconfig tsconfig.json scripts/backfill-cover-webp.ts",
-    "script:grant-first-admin": "tsx --tsconfig tsconfig.json scripts/grant-first-admin.ts",
-    "script:seed-listener": "tsx --tsconfig tsconfig.json scripts/seed-listener-user.ts"
+    "script:grant-first-admin": "tsx --tsconfig tsconfig.json scripts/grant-first-admin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
