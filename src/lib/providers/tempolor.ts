@@ -2,46 +2,64 @@ import axios from "axios";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 
 const TEMPOLOR_VALID_MODELS = [
-  "TemPolor v4.6",
-  "TemPolor v3.5",
-  "TemPolor v3",
-  "TemPolor i3.5",
+  "tempolor-latest",
+  "TemPolor i4",
   "TemPolor i3",
-  "MK",
-  "MM",
-  "LY",
+  "Eleven Music V2",
+  "Lyria 3 Pro",
+  "Mureka V9.5",
+  "Mureka V9",
+  "MiniMax 3.0",
 ];
 
 // Map legacy/short names → full API model names
 const TEMPOLOR_MODEL_ALIASES: Record<string, string> = {
-  "v4.6": "TemPolor v4.6",
-  "v4.5": "TemPolor v4.6",
-  "v4.0": "TemPolor v4.6",
-  "v3.5": "TemPolor v3.5",
-  "v3":   "TemPolor v3",
-  "i3.5": "TemPolor i3.5",
+  // Legacy version mappings
+  "tempolor v4.6": "tempolor-latest",
+  "tempolor v4.5": "tempolor-latest",
+  "tempolor v4.0": "tempolor-latest",
+  "tempolor v3.5": "tempolor-latest",
+  "tempolor v3":   "tempolor-latest",
+  "v4.6": "tempolor-latest",
+  "v4.5": "tempolor-latest",
+  "v4.0": "tempolor-latest",
+  "v3.5": "tempolor-latest",
+  "v3":   "tempolor-latest",
+  "tempolor i3.5": "TemPolor i4",
+  "i3.5": "TemPolor i4",
   "i3":   "TemPolor i3",
-  "mureka (mk)": "MK",
-  "minimax music (mm)": "MM",
-  "google lyria 3 pro (ly)": "LY",
-  "mureka": "MK",
-  "minimax": "MM",
-  "lyria": "LY",
-  "mk": "MK",
-  "mm": "MM",
-  "ly": "LY",
+  "i4":   "TemPolor i4",
+  // Provider / short remappings
+  "eleven music v2": "Eleven Music V2",
+  "elevenlabs": "Eleven Music V2",
+  "eleven": "Eleven Music V2",
+  "lyria 3 pro": "Lyria 3 Pro",
+  "google lyria 3 pro (ly)": "Lyria 3 Pro",
+  "lyria": "Lyria 3 Pro",
+  "ly": "Lyria 3 Pro",
+  "mureka v9.5": "Mureka V9.5",
+  "mureka v9": "Mureka V9",
+  "mureka (mk)": "Mureka V9",
+  "mureka": "Mureka V9",
+  "mk": "Mureka V9",
+  "minimax 3.0": "MiniMax 3.0",
+  "minimax music (mm)": "MiniMax 3.0",
+  "minimax": "MiniMax 3.0",
+  "mm": "MiniMax 3.0",
 };
 
 function normalizeTempolorModel(model?: string): string {
-  if (!model) return "TemPolor v4.6";
+  if (!model) return "tempolor-latest";
   if (TEMPOLOR_VALID_MODELS.includes(model)) return model;
-  const alias = TEMPOLOR_MODEL_ALIASES[model.toLowerCase().replace("tempolor ", "").trim()];
+  const rawKey = model.toLowerCase().trim();
+  const strippedKey = rawKey.replace(/^tempolor\s+/, "");
+  const alias = TEMPOLOR_MODEL_ALIASES[strippedKey] || TEMPOLOR_MODEL_ALIASES[rawKey];
   if (alias) {
     console.warn(`[tempolor] Remapped model "${model}" → "${alias}"`);
     return alias;
   }
-  console.warn(`[tempolor] Unknown model "${model}", falling back to TemPolor v4.6`);
-  return "TemPolor v4.6";
+  console.warn(`[tempolor] Unknown model "${model}", falling back to tempolor-latest`);
+  return "tempolor-latest";
 }
 
 export async function generateTempolor({
