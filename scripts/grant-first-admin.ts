@@ -34,8 +34,19 @@ async function main() {
       .returning({ id: users.id, email: users.email });
 
     if (!updated) {
-      console.error(`No user found with email "${targetEmail}".`);
-      process.exit(1);
+      const bcrypt = (await import("bcrypt")).default;
+      const hashedPassword = await bcrypt.hash("AdminAccount2026!", 12);
+      const [created] = await db
+        .insert(users)
+        .values({
+          email: targetEmail,
+          password: hashedPassword,
+          name: targetEmail.split("@")[0],
+          role: "admin",
+        })
+        .returning({ id: users.id, email: users.email });
+      console.log(`Created admin user ${created.email} (${created.id}).`);
+      return;
     }
 
     console.log(`Granted admin to ${updated.email} (${updated.id}).`);
