@@ -7,6 +7,7 @@ import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/li
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
+import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
 import { uploadToS3 } from "@/lib/s3";
 import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
@@ -447,9 +448,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // WAV/HD conversion (PoYo and APIMart) is no longer auto-healed on every list
-    // poll — the user triggers it on-demand via the "Convert to WAV" track menu
-    // action (POST /api/tracks/retry-wav), which reuses these same functions.
+    // WAV/HD conversion is still opt-in — a brand-new conversion is only ever
+    // started via the "Convert to WAV" track menu action. But once a
+    // conversion has been requested (wavJobId set), poll it here so a
+    // completed APIMart job gets downloaded and attached to the track
+    // automatically on the next Library load, instead of requiring the user
+    // to manually click retry again after it finishes.
+    void retryStaleApimartWavConversions(userId, undefined, { onlyPollPending: true }).catch((e: any) =>
+      console.error("[tracks-api] retryStaleApimartWavConversions failed:", e?.message ?? e)
+    );
 
     // Resolve APIMart aligned-lyrics receipts that outlived the in-component
     // poller's ~75s window (see apimart-lyrics.ts for why that's needed).

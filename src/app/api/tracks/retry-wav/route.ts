@@ -83,17 +83,24 @@ export async function POST(request: Request) {
           eq(tracks.status, "done"),
           isNotNull(tracks.jobId),
           isNull(tracks.s3KeyHd),
-          trackId ? eq(tracks.id, trackId) : undefined
+          // A specific trackId (per-track "Convert to WAV" menu action) may
+          // submit a first-time request. Without one (bulk Settings recovery
+          // button) we only touch tracks that already have a wavJobId, so it
+          // never starts brand-new conversions for tracks nobody asked for.
+          trackId ? eq(tracks.id, trackId) : isNotNull(tracks.wavJobId)
         )
       );
 
     if (apimartTracksToRetry.length > 0) {
       // Manual retry bypasses the auto-heal cooldown/attempt cap entirely —
       // otherwise a track that already exhausted its 8 auto-retries would
-      // stay permanently stuck with no way to force another attempt.
+      // stay permanently stuck with no way to force another check. wavJobId
+      // is intentionally left alone: nulling it here would discard a job
+      // that's already in flight (or done) at APIMart, forcing a wasteful
+      // resubmit instead of polling the existing one for its result.
       await db
         .update(tracks)
-        .set({ wavJobId: null, wavRetryAt: null, wavRetryCount: 0 })
+        .set({ wavRetryAt: null, wavRetryCount: 0 })
         .where(inArray(tracks.id, apimartTracksToRetry.map((t) => t.id!)));
 
       const apimartResult = await retryStaleApimartWavConversions(userId, trackId);

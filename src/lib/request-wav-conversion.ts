@@ -23,7 +23,8 @@ function sleep(ms: number) {
 
 /**
  * Vraagt WAV conversie aan bij APIMart's eigen endpoint.
- * APIMart stuurt het resultaat naar de webhook.
+ * APIMart heeft geen webhook — het resultaat wordt actief gepolld
+ * (zie retryStaleApimartWavConversions in apimart-wav.ts).
  */
 async function requestApimartWavConversion(track: {
   id: string;

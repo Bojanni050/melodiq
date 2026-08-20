@@ -1,7 +1,7 @@
 import axios from "axios";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
-import { and, eq, isNull, lt, or } from "drizzle-orm";
+import { and, eq, isNull, isNotNull, lt, or } from "drizzle-orm";
 import { createApimartWav, getApimartRawTaskStatus } from "@/lib/providers/apimart";
 import { convertWavToFlac } from "@/lib/wav-to-flac";
 import { detectFormatFromUrl, detectFormatFromContentType, contentTypeForFormat } from "@/lib/audio-format";
@@ -46,7 +46,21 @@ export interface ApimartWavRetryResult {
  * existing one and downloads/uploads the result once completed. Mirrors
  * retryStaleWavConversions (PoYo) but polls instead of waiting on a webhook.
  */
-export async function retryStaleApimartWavConversions(userId: string, trackId?: string): Promise<ApimartWavRetryResult> {
+export interface ApimartWavRetryOptions {
+  // When true, only poll tracks that already have a wavJobId (i.e. the user
+  // already requested a conversion) — never submits a first-time WAV job.
+  // Used by the passive auto-poll and the bulk Settings recovery button, so
+  // neither one silently starts (and pays for) new conversions the user
+  // never asked for. The per-track "Convert to WAV" menu action omits this
+  // so it can still submit a first request.
+  onlyPollPending?: boolean;
+}
+
+export async function retryStaleApimartWavConversions(
+  userId: string,
+  trackId?: string,
+  options?: ApimartWavRetryOptions
+): Promise<ApimartWavRetryResult> {
   const cutoff = new Date(Date.now() - APIMART_WAV_RETRY_COOLDOWN_MS);
   const result: ApimartWavRetryResult = { processedTrackIds: [], succeededTrackIds: [], failedTrackIds: [] };
 
@@ -63,7 +77,8 @@ export async function retryStaleApimartWavConversions(userId: string, trackId?: 
         isNull(tracks.s3KeyHd),
         or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
         lt(tracks.wavRetryCount, MAX_AUTO_APIMART_WAV_RETRIES),
-        trackId ? eq(tracks.id, trackId) : undefined
+        trackId ? eq(tracks.id, trackId) : undefined,
+        options?.onlyPollPending ? isNotNull(tracks.wavJobId) : undefined
       )
     );
 
