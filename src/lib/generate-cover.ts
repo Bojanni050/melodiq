@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { tracks } from "@/db/schema";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { releases, tracks } from "@/db/schema";
+import { eq, and, isNotNull, isNull } from "drizzle-orm";
 import { generateCoverArt } from "@/lib/providers/cover-art";
 import { uploadToS3 } from "@/lib/s3";
 import sharp from "sharp";
@@ -148,6 +148,71 @@ export async function generateAndSaveCoverArtForBatch(batch: {
     );
   } catch (error: any) {
     console.warn(`[cover-art] batch failed:`, error?.message ?? error);
+  }
+}
+
+/**
+ * Genereert cover art voor een release, geïnspireerd door één van zijn tracks
+ * (de eerste die wordt toegevoegd). Slaat over als de release al een cover heeft.
+ * Faalt altijd stil.
+ */
+export async function generateAndSaveReleaseCoverArt(release: {
+  id: string;
+  userId: string;
+}, inspirationTrack: {
+  title: string | null;
+  prompt: string;
+  instrumental: boolean;
+  lyrics?: string | null;
+}): Promise<void> {
+  try {
+    const existingRelease = await db
+      .select({ s3KeyCover: releases.s3KeyCover })
+      .from(releases)
+      .where(and(eq(releases.id, release.id), eq(releases.userId, release.userId)))
+      .limit(1);
+
+    if (!existingRelease[0] || existingRelease[0].s3KeyCover) {
+      // Release not found, or already has a cover (user-uploaded or previously generated) — don't overwrite.
+      return;
+    }
+
+    const existingTrackCover = await findExistingCover({
+      userId: release.userId,
+      prompt: inspirationTrack.prompt,
+    });
+
+    let s3KeyCover: string;
+    let s3KeyCoverThumb: string;
+
+    if (existingTrackCover?.s3KeyCover) {
+      s3KeyCover = existingTrackCover.s3KeyCover;
+      s3KeyCoverThumb = existingTrackCover.s3KeyCoverThumb ?? s3KeyCover.replace("cover.webp", "cover_thumb.webp");
+      console.log(`[cover-art] reused existing cover for release ${release.id}`);
+    } else {
+      const imageBuffer = await generateCoverArt({
+        prompt: inspirationTrack.prompt,
+        title: inspirationTrack.title || "Untitled",
+        instrumental: inspirationTrack.instrumental,
+        lyrics: inspirationTrack.lyrics,
+      });
+
+      const result = await processAndUploadCover(imageBuffer, `release-${release.id}`);
+      s3KeyCover = result.s3KeyCover;
+      s3KeyCoverThumb = result.s3KeyCoverThumb;
+      console.log(`[cover-art] generated new cover for release ${release.id}`);
+    }
+
+    await db
+      .update(releases)
+      .set({
+        s3KeyCover,
+        s3KeyCoverThumb,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(releases.id, release.id), eq(releases.userId, release.userId), isNull(releases.s3KeyCover)));
+  } catch (error: any) {
+    console.warn(`[cover-art] failed for release ${release.id}:`, error?.message ?? error);
   }
 }
 

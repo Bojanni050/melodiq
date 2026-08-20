@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { releaseTracks, releases, tracks } from "@/db/schema";
+import { generateAndSaveReleaseCoverArt } from "@/lib/generate-cover";
 import { getUserReleaseById, getUserReleasesWithTracks } from "@/lib/releases";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -88,7 +89,13 @@ export async function PATCH(
       }
 
       const track = await db
-        .select({ id: tracks.id })
+        .select({
+          id: tracks.id,
+          title: tracks.title,
+          prompt: tracks.prompt,
+          instrumental: tracks.instrumental,
+          lyrics: tracks.lyrics,
+        })
         .from(tracks)
         .where(and(eq(tracks.id, trackId), eq(tracks.userId, auth.userId)))
         .limit(1);
@@ -122,6 +129,20 @@ export async function PATCH(
         position: nextPosition,
         side,
       });
+
+      if (nextPosition === 0 && track[0].prompt) {
+        // First track added to this release — use it as inspiration for an auto-generated cover.
+        // Fire-and-forget: fails silently, response doesn't wait on it.
+        generateAndSaveReleaseCoverArt(
+          { id, userId: auth.userId },
+          {
+            title: track[0].title,
+            prompt: track[0].prompt,
+            instrumental: track[0].instrumental,
+            lyrics: track[0].lyrics,
+          }
+        ).catch((err) => console.error("[releases/add-track] cover generation failed:", err));
+      }
 
       return respondWithRelease(auth.userId, id);
     }
