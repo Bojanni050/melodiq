@@ -27,6 +27,7 @@ export async function ensureWorkspaceSchema(): Promise<void> {
   workspaceSchemaEnsured = (async () => {
     try {
       await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_user_requested boolean NOT NULL DEFAULT false`);
 
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS workspaces (

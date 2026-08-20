@@ -85,9 +85,10 @@ export async function POST(request: Request) {
           isNull(tracks.s3KeyHd),
           // A specific trackId (per-track "Convert to WAV" menu action) may
           // submit a first-time request. Without one (bulk Settings recovery
-          // button) we only touch tracks that already have a wavJobId, so it
-          // never starts brand-new conversions for tracks nobody asked for.
-          trackId ? eq(tracks.id, trackId) : isNotNull(tracks.wavJobId)
+          // button) we only touch tracks the user has explicitly requested a
+          // WAV for — wavJobId alone isn't a safe signal, since it can also
+          // be set from the old always-on auto-conversion era.
+          trackId ? eq(tracks.id, trackId) : eq(tracks.wavUserRequested, true)
         )
       );
 
@@ -100,7 +101,14 @@ export async function POST(request: Request) {
       // resubmit instead of polling the existing one for its result.
       await db
         .update(tracks)
-        .set({ wavRetryAt: null, wavRetryCount: 0 })
+        .set({
+          wavRetryAt: null,
+          wavRetryCount: 0,
+          // Only a targeted, explicit request (menu action) marks the track
+          // as user-requested — the bulk button must never grant this flag,
+          // or it would start including previously-untouched tracks itself.
+          ...(trackId ? { wavUserRequested: true } : {}),
+        })
         .where(inArray(tracks.id, apimartTracksToRetry.map((t) => t.id!)));
 
       const apimartResult = await retryStaleApimartWavConversions(userId, trackId);

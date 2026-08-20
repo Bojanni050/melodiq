@@ -92,6 +92,11 @@ export const tracks = pgTable("tracks", {
   wavJobId: varchar("wav_job_id", { length: 255 }),
   wavRetryAt: timestamp("wav_retry_at"),
   wavRetryCount: integer("wav_retry_count").default(0).notNull(),
+  // True only when the user explicitly clicked "Convert to WAV" on this
+  // track. Distinguishes genuine requests from wavJobId values left over
+  // from the old auto-conversion behavior, so bulk/passive polling never
+  // surfaces tracks nobody asked to convert.
+  wavUserRequested: boolean("wav_user_requested").default(false).notNull(),
   creditsUsed: integer("credits_used").default(0).notNull(),
   error: text("error"),
   coverUrl: text("cover_url"),
