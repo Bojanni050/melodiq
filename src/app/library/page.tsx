@@ -228,6 +228,23 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || tracks.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetTrackId = params.get("trackId");
+    if (!targetTrackId) return;
+
+    const foundTrack = tracks.find((t) => t.id === targetTrackId);
+    if (foundTrack) {
+      setSelectedTrack(foundTrack);
+      setShowTrackDetailsPanel(true);
+      setView("songs");
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("melodiq:scroll-to-track", { detail: { trackId: targetTrackId } }));
+      }, 300);
+    }
+  }, [tracks, setShowTrackDetailsPanel]);
+
+  useEffect(() => {
     let active = true;
     fetchTracks(() => active);
     void loadPlaylists();
