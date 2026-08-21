@@ -139,10 +139,13 @@ export default function AudioVisualizer({ audioElement, mode, gradient, enabled,
           channelLayout: "single",
           // Most music has very little energy above ~5-8kHz, so raw dB values
           // leave the treble end of the spectrum looking empty even though the
-          // canvas genuinely spans the full width. A-weighting boosts
-          // mid/high frequencies (closer to human hearing sensitivity) so the
-          // bars fill out visually across the whole range.
-          weightingFilter: "A",
+          // canvas genuinely spans the full width. A-weighting was tried here
+          // first, but it attenuates bass so aggressively (~-39dB at 20Hz)
+          // that the low end went visually dead instead — looking like left
+          // padding on the canvas. C-weighting is nearly flat through the low
+          // end while still lifting mid/high frequencies a bit, so bars fill
+          // out across the whole range without emptying out the left side.
+          weightingFilter: "C",
         });
 
         analyzerRef.current = analyzer;
