@@ -168,6 +168,74 @@ export default function ArchivePage() {
     return result;
   }, [entries]);
 
+  // Keep the Track Details panel in sync with the currently-playing track,
+  // same as Library/Playlist/Workspace/Release pages — otherwise pressing
+  // play (on the master-tab rows or the published/all TrackList) opens the
+  // panel via playerStore without ever pointing it at the now-playing track,
+  // so it shows a stale/empty selection and TCL/lyrics never render.
+  useEffect(() => {
+    if (!showTrackDetailsPanel) return;
+
+    setSelectedTrack((prev) => {
+      if (prev) {
+        const matched = playableTracks.find((t) => t.id === prev.id) || allTracks.find((t) => t.id === prev.id);
+        if (matched) return { ...matched, format: matched.format ?? null, formatHd: matched.formatHd ?? null };
+        return prev;
+      }
+      if (currentTrack) {
+        const matchedTrack =
+          playableTracks.find((t) => t.id === currentTrack.id) || allTracks.find((t) => t.id === currentTrack.id);
+        if (matchedTrack) {
+          return { ...matchedTrack, format: matchedTrack.format ?? null, formatHd: matchedTrack.formatHd ?? null };
+        }
+
+        return {
+          id: currentTrack.id,
+          title: currentTrack.title,
+          provider: currentTrack.provider,
+          providerModel: currentTrack.providerModel,
+          prompt: currentTrack.prompt,
+          lyrics: currentTrack.lyrics,
+          lyricsTimestamps: currentTrack.lyricsTimestamps,
+          status: currentTrack.status,
+          audioUrl: currentTrack.audioUrl,
+          audioUrlHd: currentTrack.audioUrlHd,
+          format: currentTrack.format ?? null,
+          formatHd: currentTrack.formatHd ?? null,
+          duration: currentTrack.duration ?? null,
+          createdAt: currentTrack.createdAt,
+          error: currentTrack.error,
+          s3KeyHd: currentTrack.s3KeyHd,
+          coverUrl: currentTrack.coverUrl ?? null,
+          s3KeyCover: currentTrack.s3KeyCover ?? null,
+          rating: currentTrack.rating ?? null,
+          instrumental: currentTrack.instrumental ?? null,
+        };
+      }
+      return null;
+    });
+  }, [showTrackDetailsPanel, currentTrack, allTracks, playableTracks]);
+
+  const prevIsPlaying = useRef(isPlaying);
+  const prevCurrentTrackId = useRef(currentTrack?.id);
+
+  useEffect(() => {
+    const playResumed = isPlaying && !prevIsPlaying.current;
+    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
+
+    prevIsPlaying.current = isPlaying;
+    prevCurrentTrackId.current = currentTrack?.id;
+
+    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
+      setSelectedTrack((prev) => {
+        if (prev?.id === currentTrack.id) return prev;
+        const matched = playableTracks.find((t) => t.id === currentTrack.id) || allTracks.find((t) => t.id === currentTrack.id);
+        if (matched) return { ...matched, format: matched.format ?? null, formatHd: matched.formatHd ?? null };
+        return currentTrack as unknown as TrackDetailTrack;
+      });
+    }
+  }, [isPlaying, currentTrack, showTrackDetailsPanel, allTracks, playableTracks]);
+
   useEffect(() => {
     loadEntries();
   }, []);
