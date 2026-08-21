@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
-import { parseLyricsToBlocks } from "@/lib/lyrics-to-blocks";
 import { formatGenerationTime } from "@/lib/track-utils";
 import type { TrackDetailTrack } from "@/components/track-detail/types";
 import { useTrackDetailSync } from "@/components/track-detail/useTrackDetailSync";
@@ -287,24 +286,6 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
                   >
                     {track.lyrics ? "Edit" : "Add"}
-                  </button>
-                )}
-                {allowLyricsEdit && track.lyrics && !lyricsEdit.lyricsEditing && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const rawLyrics = track.lyrics ?? "";
-                      const blocks = parseLyricsToBlocks(rawLyrics);
-                      sessionStorage.setItem(
-                        "lyrics-studio-track-edit",
-                        JSON.stringify({ trackId: track.id, blocks, title: track.title, style: track.prompt })
-                      );
-                      router.push("/lyrics-studio");
-                    }}
-                    className="rounded px-2 py-1 text-[11px] text-amber-200/80 hover:bg-amber-500/10 hover:text-amber-200 transition-colors"
-                    title="Open in Lyric Studio with sections identified"
-                  >
-                    Edit Lyrics
                   </button>
                 )}
                 {allowLyricsEdit && lyricsEdit.lyricsEditing && (
