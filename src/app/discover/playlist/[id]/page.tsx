@@ -23,6 +23,7 @@ interface PublicPlaylistData {
   description: string | null;
   artistName: string;
   publishedAt: string | null;
+  coverUrl: string | null;
   tracks: PublicPlaylistTrack[];
 }
 
@@ -145,14 +146,29 @@ export default function PublicPlaylistPage() {
           ← Back to Discover
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold sm:text-4xl">{playlist.name}</h1>
-          {playlist.description && (
-            <p className="mt-2 text-white/60">{playlist.description}</p>
+        <div className="mb-8 flex items-end gap-5">
+          {playlist.coverUrl ? (
+            <img
+              src={playlist.coverUrl}
+              alt={playlist.name}
+              className="h-32 w-32 shrink-0 rounded-xl object-cover sm:h-40 sm:w-40"
+            />
+          ) : (
+            <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40 sm:h-40 sm:w-40">
+              <svg className="h-12 w-12 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
+              </svg>
+            </div>
           )}
-          <p className="mt-2 text-sm text-white/40">
-            by {playlist.artistName} · {playlist.tracks.length} {playlist.tracks.length === 1 ? "track" : "tracks"}
-          </p>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold sm:text-4xl">{playlist.name}</h1>
+            {playlist.description && (
+              <p className="mt-2 text-white/60">{playlist.description}</p>
+            )}
+            <p className="mt-2 text-sm text-white/40">
+              by {playlist.artistName} · {playlist.tracks.length} {playlist.tracks.length === 1 ? "track" : "tracks"}
+            </p>
+          </div>
         </div>
 
         <div className="space-y-2">

@@ -20,6 +20,7 @@ export async function GET(
       description: playlists.description,
       publishedAt: playlists.publishedAt,
       userId: playlists.userId,
+      s3KeyCover: playlists.s3KeyCover,
       artistName: users.artistAlias,
       artistFallback: users.name,
     })
@@ -62,6 +63,10 @@ export async function GET(
     lyricsTimestamps: row.lyricsTimestamps || null,
   }));
 
+  // Own cover, or a random cover among the playlist's tracks — the proxy
+  // route resolves the fallback itself, this just decides whether one exists.
+  const hasCover = !!playlist.s3KeyCover || playlistTracksRows.some((row) => !!row.s3KeyCover);
+
   return NextResponse.json({
     playlist: {
       id: playlist.id,
@@ -69,6 +74,7 @@ export async function GET(
       description: playlist.description,
       artistName: playlist.artistName || playlist.artistFallback || "Unknown Artist",
       publishedAt: playlist.publishedAt,
+      coverUrl: hasCover ? prefixCdn(cdnUrl, `/api/discover/playlists/${playlist.id}/cover`) : null,
       tracks: serialized,
     },
   });
