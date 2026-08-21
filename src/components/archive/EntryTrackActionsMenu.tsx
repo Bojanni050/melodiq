@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useReleaseStore } from "@/lib/store";
 import type { ArchiveEntry } from "./types";
 
 // Compact ⋯ menu for the track linked to a Master Tracks entry — kept
@@ -18,6 +19,8 @@ export default function EntryTrackActionsMenu({
   isPublished,
   onTogglePublish,
   togglingPublish,
+  onOpenReleasePicker,
+  onRemoveFromReleaseClick,
 }: {
   entry: ArchiveEntry;
   onEdit: () => void;
@@ -29,9 +32,15 @@ export default function EntryTrackActionsMenu({
   isPublished?: boolean;
   onTogglePublish?: () => void;
   togglingPublish?: boolean;
+  onOpenReleasePicker?: () => void;
+  onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const allReleases = useReleaseStore((state) => state.releases);
+  const releasesContainingTrack = entry.trackId
+    ? allReleases.filter((release) => release.tracks.some((t) => t.trackId === entry.trackId))
+    : [];
 
   useEffect(() => {
     if (!open) return;
@@ -145,6 +154,42 @@ export default function EntryTrackActionsMenu({
                       ? "Unpublish"
                       : "Publish"}
                 </button>
+              )}
+              {onOpenReleasePicker && (
+                <>
+                  <div className="my-1 h-px bg-white/10" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenReleasePicker();
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                  >
+                    <span>Add to release</span>
+                    <span className="text-white/30">›</span>
+                  </button>
+
+                  {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
+                    <>
+                      <div className="my-1 h-px bg-white/10" />
+                      <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from release</p>
+                      {releasesContainingTrack.map((release) => (
+                        <button
+                          key={`remove-release-${release.id}`}
+                          type="button"
+                          onClick={() => {
+                            setOpen(false);
+                            onRemoveFromReleaseClick(release.id, release.title);
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 rounded text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+                        >
+                          {release.title}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </>
               )}
               <div className="my-1 h-px bg-white/10" />
               <button

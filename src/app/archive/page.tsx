@@ -15,6 +15,7 @@ import type { TrackItem } from "@/components/tracks/types";
 import EntryEditor from "@/components/archive/EntryEditor";
 import TranslationRow from "@/components/archive/TranslationRow";
 import EntryTrackActionsMenu from "@/components/archive/EntryTrackActionsMenu";
+import ReleasePickerDialog from "@/components/tracks/ReleasePickerDialog";
 import { entryCoverSrc, entryToTrack, type ArchiveEntry, type EditingTarget } from "@/components/archive/types";
 
 type MasterTracksTab = "master" | "published" | "all";
@@ -50,6 +51,29 @@ export default function ArchivePage() {
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
   const loadReleases = useReleaseStore((state) => state.loadReleases);
+  const addTrackToRelease = useReleaseStore((state) => state.addTrackToRelease);
+  const removeTrackFromRelease = useReleaseStore((state) => state.removeTrackFromRelease);
+  const [releasePickerTrack, setReleasePickerTrack] = useState<TrackItem | null>(null);
+
+  function handleOpenReleasePickerForEntry(entry: ArchiveEntry) {
+    const track = entryToTrack(entry);
+    if (track) {
+      setReleasePickerTrack(track as TrackItem);
+    } else if (entry.trackId) {
+      setReleasePickerTrack({
+        id: entry.trackId,
+        title: entry.trackTitle ?? entry.title,
+        prompt: entry.prompt,
+        lyrics: entry.trackLyrics ?? entry.lyrics,
+        status: "done",
+        audioUrl: entry.trackAudioUrl ?? null,
+        coverUrl: entry.trackCoverUrl ?? null,
+        createdAt: entry.trackCreatedAt ?? entry.createdAt,
+        provider: entry.trackProvider ?? "upload",
+        providerModel: entry.trackProviderModel ?? "",
+      } as TrackItem);
+    }
+  }
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -627,6 +651,8 @@ export default function ArchivePage() {
                           isPublished={entry.releaseStatus === "published"}
                           onTogglePublish={entry.trackId ? () => void handleTogglePublish(entry) : undefined}
                           togglingPublish={togglingPublishIds.has(entry.id)}
+                          onOpenReleasePicker={entry.trackId ? () => handleOpenReleasePickerForEntry(entry) : undefined}
+                          onRemoveFromReleaseClick={entry.trackId ? (releaseId) => removeTrackFromRelease(releaseId, entry.trackId!) : undefined}
                         />
                         <button
                           type="button"
@@ -833,6 +859,20 @@ export default function ArchivePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {releasePickerTrack && (
+        <ReleasePickerDialog
+          isOpen={!!releasePickerTrack}
+          onClose={() => setReleasePickerTrack(null)}
+          track={releasePickerTrack}
+          onAddToRelease={(releaseId, _releaseTitle, isDuplicate) => {
+            if (!isDuplicate) {
+              addTrackToRelease(releaseId, releasePickerTrack.id);
+            }
+            setReleasePickerTrack(null);
+          }}
+        />
       )}
     </div>
   );
