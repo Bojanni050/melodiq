@@ -775,6 +775,13 @@ export default function Player() {
       // effect's blob fetch completes and swaps the src.
       const gestureLoadedThisTrack = audioEl.dataset.gestureTrackId === trackId &&
         !!audioEl.src && audioEl.src !== "" && !audioEl.error;
+      // A gesture-driven load for this exact track is queued (rAF-deferred,
+      // see playTrackFromGesture) but hasn't run yet — this effect fires
+      // first, on the same commit. Defer to it entirely rather than also
+      // calling audioEl.src/.load() here: two loads racing for the same
+      // track aborts/restarts the first one's buffering and is what made
+      // switching tracks feel delayed.
+      const gestureLoadPending = audioEl.dataset.gesturePendingTrackId === trackId;
       const shouldResumeTime = lastLoadedTrackIdRef.current === trackId || gestureLoadedThisTrack;
       const storedProgress = usePlayerStore.getState().progress;
       const resumeTime = shouldResumeTime
@@ -795,11 +802,12 @@ export default function Player() {
         return;
       }
 
-      // If playTrackFromGesture already started this track playing from the
-      // streaming URL, there's nothing left for this effect to do — reloading
-      // the src here would restart the track from 0 because a fresh
-      // audioEl.src assignment doesn't carry over the currentTime.
-      if (gestureLoadedThisTrack && usePlayerStore.getState().isPlaying) {
+      // If playTrackFromGesture already started (or is about to start, via
+      // its queued rAF callback) this track playing from the streaming URL,
+      // there's nothing left for this effect to do — loading it again here
+      // would restart the track from 0 (a fresh audioEl.src assignment
+      // doesn't carry over currentTime) and race the store's own load.
+      if ((gestureLoadedThisTrack || gestureLoadPending) && usePlayerStore.getState().isPlaying) {
         lastLoadedTrackIdRef.current = trackId;
         setResolvingUrl(false);
         return;

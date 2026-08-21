@@ -216,6 +216,15 @@ export const usePlayerStore = create<PlayerState>()(
         const audioElement = get().audioElement;
         if (!audioElement) return;
 
+        // Marked synchronously, before the rAF-deferred load below runs.
+        // Player.tsx's currentTrack-change effect fires on this same commit
+        // (ahead of the next animation frame) and checks this marker to
+        // avoid kicking off its own competing .src/.load() for the same
+        // track — without it, both this store and that effect would each
+        // load the stream once, and the second .load() call aborts/restarts
+        // whatever buffering the first one had already started.
+        audioElement.dataset.gesturePendingTrackId = track.id;
+
         // Kies juiste url: absolute (http/https), of fallback naar /api/tracks/[id]/stream
         let url = track.audioUrl || undefined;
         if (url && /^https?:\/\//i.test(url)) {
@@ -259,6 +268,7 @@ export const usePlayerStore = create<PlayerState>()(
             audioElement.dataset.gestureTrackId = track.id;
             audioElement.load();
           }
+          delete audioElement.dataset.gesturePendingTrackId;
 
           const playPromise = audioElement.play();
           if (playPromise && typeof playPromise.catch === "function") {
