@@ -199,6 +199,12 @@ export const PROVIDERS: ProviderConfig[] = [
         type: "text",
         placeholder: "gpt-4o",
       },
+      {
+        key: "OPENAI_TIMECODED_MODEL",
+        label: "Timecoded Editor Model",
+        type: "text",
+        placeholder: "gpt-4o",
+      },
     ],
     testEndpoint: "openai",
   },
@@ -252,6 +258,12 @@ export const PROVIDERS: ProviderConfig[] = [
       {
         key: "EDENAI_LYRICIQ_MODEL",
         label: "LyricIQ Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "EDENAI_TIMECODED_MODEL",
+        label: "Timecoded Editor Model",
         type: "text",
         placeholder: "openai/gpt-4o-mini",
       },

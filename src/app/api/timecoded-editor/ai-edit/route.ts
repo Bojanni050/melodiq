@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { callLLM } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
 import { getSetting } from "@/lib/settings";
 import { requireAuth } from "@/lib/require-auth";
 import { db } from "@/db";
@@ -133,21 +133,39 @@ export async function POST(request: NextRequest) {
 
   const validatedLines = lines as LineInput[];
 
-  // Resolve model — dedicated timecoded model with fallbacks
+  // Resolve model — dedicated timecoded model with fallbacks. This purpose
+  // has no dedicated provider setting of its own; it follows LYRICS_LLM_PROVIDER
+  // (same as the rest of the "lyrics" purpose), so the model override needs to
+  // match whichever provider that resolves to.
   const timecodedModel =
     (await getSetting("OPENROUTER_TIMECODED_MODEL")) ||
     (await getSetting("OPENROUTER_LYRICS_MODEL")) ||
     (await getSetting("OPENROUTER_MODEL")) ||
     process.env.OPENROUTER_MODEL ||
     "google/gemini-2.5-flash";
+  const timecodedModelOpenAi =
+    (await getSetting("OPENAI_TIMECODED_MODEL")) ||
+    (await getSetting("OPENAI_LYRICS_MODEL")) ||
+    (await getSetting("OPENAI_MODEL")) ||
+    process.env.OPENAI_MODEL ||
+    "gpt-4o";
+  const timecodedModelEdenAi =
+    (await getSetting("EDENAI_TIMECODED_MODEL")) ||
+    (await getSetting("EDENAI_LYRICS_MODEL")) ||
+    (await getSetting("EDENAI_MODEL")) ||
+    process.env.EDENAI_MODEL ||
+    "openai/gpt-4o-mini";
 
   const systemPrompt = buildSystemPrompt(action as AIEditAction, typeof language === "string" ? language : undefined);
   const userPrompt = JSON.stringify(validatedLines, null, 2);
+  const resolvedProvider = await getLLMProviderForPurpose("lyrics");
 
   try {
     const rawResult = await callLLM(userPrompt, systemPrompt, {
       purpose: "lyrics",
       openRouterModelOverride: timecodedModel,
+      openAiModelOverride: timecodedModelOpenAi,
+      edenAiModelOverride: timecodedModelEdenAi,
       temperature: 0.3, // low temperature for editing tasks
     });
 
@@ -179,7 +197,7 @@ export async function POST(request: NextRequest) {
     await logApi({
       userId: auth.userId,
       type: "llm",
-      provider: "openrouter",
+      provider: resolvedProvider,
       endpoint: "/api/timecoded-editor/ai-edit",
       request: JSON.stringify({ action, lineCount: validatedLines.length, language }),
       response: JSON.stringify({ lineCount: (parsed as unknown[]).length }),
@@ -194,7 +212,7 @@ export async function POST(request: NextRequest) {
     await logApi({
       userId: auth.userId,
       type: "llm",
-      provider: "openrouter",
+      provider: resolvedProvider,
       endpoint: "/api/timecoded-editor/ai-edit",
       request: JSON.stringify({ action, lineCount: validatedLines.length }),
       response: JSON.stringify({ error: message }),

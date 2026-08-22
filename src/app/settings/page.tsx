@@ -75,6 +75,7 @@ export default function SettingsPage() {
   useEffect(() => { if (isListener) setActiveSection("playback"); }, [isListener]);
   const [activeProvidersTab, setActiveProvidersTab] = useState<ProvidersTabId>("music");
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
+  const [edenAiModels, setEdenAiModels] = useState<LLMModel[]>([]);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showPromptModelDropdown, setShowPromptModelDropdown] = useState(false);
   const [showLyricsModelDropdown, setShowLyricsModelDropdown] = useState(false);
@@ -133,10 +134,60 @@ export default function SettingsPage() {
         if (settings.OPENROUTER_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.OPENROUTER_ADVANCED_DNA_MODEL));
         if (settings.OPENROUTER_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.OPENROUTER_LYRICIQ_MODEL));
         if (settings.OPENROUTER_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.OPENROUTER_TIMECODED_MODEL));
+        if (settings.EDENAI_PROMPT_MODEL) setSelectedPromptModel(createModelPlaceholder(settings.EDENAI_PROMPT_MODEL));
+        if (settings.EDENAI_LYRICS_MODEL) setSelectedLyricsModel(createModelPlaceholder(settings.EDENAI_LYRICS_MODEL));
+        if (settings.EDENAI_IMAGE_MODEL) setSelectedImageModel(createModelPlaceholder(settings.EDENAI_IMAGE_MODEL));
+        if (settings.EDENAI_TRACKDNA_MODEL) setSelectedTrackDnaModel(createModelPlaceholder(settings.EDENAI_TRACKDNA_MODEL));
+        if (settings.EDENAI_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.EDENAI_ADVANCED_DNA_MODEL));
+        if (settings.EDENAI_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.EDENAI_LYRICIQ_MODEL));
+        if (settings.EDENAI_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.EDENAI_TIMECODED_MODEL));
       }
     }
     loadSettings();
   }, []);
+
+  // Eden AI's model catalog is public — fetch it eagerly (unlike OpenRouter's,
+  // which requires an API key and a manual "Retrieve Models" click) so its
+  // dropdowns work immediately, no key needed.
+  useEffect(() => {
+    async function loadEdenAiModels() {
+      const res = await fetch("/api/settings/edenai-models");
+      if (res.ok) {
+        const data = await res.json();
+        setEdenAiModels(data.models || []);
+      }
+    }
+    loadEdenAiModels();
+  }, []);
+
+  // Upgrade the id-only placeholders set above into full model objects
+  // (name, pricing, description) once the Eden AI catalog has loaded.
+  useEffect(() => {
+    if (edenAiModels.length === 0) return;
+    const upgrade = (key: string, setter: (m: LLMModel) => void) => {
+      const id = values[key];
+      if (!id) return;
+      const match = edenAiModels.find((m) => m.id === id);
+      if (match) setter(match);
+    };
+    upgrade("EDENAI_PROMPT_MODEL", setSelectedPromptModel);
+    upgrade("EDENAI_LYRICS_MODEL", setSelectedLyricsModel);
+    upgrade("EDENAI_IMAGE_MODEL", setSelectedImageModel);
+    upgrade("EDENAI_TRACKDNA_MODEL", setSelectedTrackDnaModel);
+    upgrade("EDENAI_ADVANCED_DNA_MODEL", setSelectedAdvancedDnaModel);
+    upgrade("EDENAI_LYRICIQ_MODEL", setSelectedLyricIqModel);
+    upgrade("EDENAI_TIMECODED_MODEL", setSelectedTimecodedModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    edenAiModels,
+    values.EDENAI_PROMPT_MODEL,
+    values.EDENAI_LYRICS_MODEL,
+    values.EDENAI_IMAGE_MODEL,
+    values.EDENAI_TRACKDNA_MODEL,
+    values.EDENAI_ADVANCED_DNA_MODEL,
+    values.EDENAI_LYRICIQ_MODEL,
+    values.EDENAI_TIMECODED_MODEL,
+  ]);
 
   function updateField(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -179,43 +230,44 @@ export default function SettingsPage() {
 
   function selectPromptModel(model: LLMModel) {
     setSelectedPromptModel(model);
-    updateField("OPENROUTER_PROMPT_MODEL", model.id);
+    updateField(values.PROMPT_LLM_PROVIDER === "edenai" ? "EDENAI_PROMPT_MODEL" : "OPENROUTER_PROMPT_MODEL", model.id);
     setShowPromptModelDropdown(false);
   }
 
   function selectLyricsModel(model: LLMModel) {
     setSelectedLyricsModel(model);
-    updateField("OPENROUTER_LYRICS_MODEL", model.id);
+    updateField(values.LYRICS_LLM_PROVIDER === "edenai" ? "EDENAI_LYRICS_MODEL" : "OPENROUTER_LYRICS_MODEL", model.id);
     setShowLyricsModelDropdown(false);
   }
 
   function selectImageModel(model: LLMModel) {
     setSelectedImageModel(model);
-    updateField("OPENROUTER_IMAGE_MODEL", model.id);
+    updateField(values.IMAGE_LLM_PROVIDER === "edenai" ? "EDENAI_IMAGE_MODEL" : "OPENROUTER_IMAGE_MODEL", model.id);
     setShowImageModelDropdown(false);
   }
 
   function selectTrackDnaModel(model: LLMModel) {
     setSelectedTrackDnaModel(model);
-    updateField("OPENROUTER_TRACKDNA_MODEL", model.id);
+    updateField(values.TRACKDNA_LLM_PROVIDER === "edenai" ? "EDENAI_TRACKDNA_MODEL" : "OPENROUTER_TRACKDNA_MODEL", model.id);
     setShowTrackDnaModelDropdown(false);
   }
 
   function selectAdvancedDnaModel(model: LLMModel) {
     setSelectedAdvancedDnaModel(model);
-    updateField("OPENROUTER_ADVANCED_DNA_MODEL", model.id);
+    updateField(values.ADVANCED_LLM_PROVIDER === "edenai" ? "EDENAI_ADVANCED_DNA_MODEL" : "OPENROUTER_ADVANCED_DNA_MODEL", model.id);
     setShowAdvancedDnaModelDropdown(false);
   }
 
   function selectLyricIqModel(model: LLMModel) {
     setSelectedLyricIqModel(model);
-    updateField("OPENROUTER_LYRICIQ_MODEL", model.id);
+    updateField(values.LYRICIQ_LLM_PROVIDER === "edenai" ? "EDENAI_LYRICIQ_MODEL" : "OPENROUTER_LYRICIQ_MODEL", model.id);
     setShowLyricIqModelDropdown(false);
   }
 
   function selectTimecodedModel(model: LLMModel) {
     setSelectedTimecodedModel(model);
-    updateField("OPENROUTER_TIMECODED_MODEL", model.id);
+    // Timecoded has no dedicated provider setting — it follows LYRICS_LLM_PROVIDER.
+    updateField(values.LYRICS_LLM_PROVIDER === "edenai" ? "EDENAI_TIMECODED_MODEL" : "OPENROUTER_TIMECODED_MODEL", model.id);
     setShowTimecodedModelDropdown(false);
   }
 
@@ -382,6 +434,10 @@ export default function SettingsPage() {
     ? allModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
     : allModels;
 
+  const filteredEdenAiModels = modelSearchQuery
+    ? edenAiModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
+    : edenAiModels;
+
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc"].includes(p.id));
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
@@ -446,6 +502,8 @@ export default function SettingsPage() {
                   onFieldChange={updateField}
                   allModels={allModels}
                   filteredModels={filteredModels}
+                  edenAiModels={edenAiModels}
+                  filteredEdenAiModels={filteredEdenAiModels}
                   modelSearchQuery={modelSearchQuery}
                   selectedPromptModel={selectedPromptModel}
                   selectedLyricsModel={selectedLyricsModel}
