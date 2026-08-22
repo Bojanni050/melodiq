@@ -430,13 +430,26 @@ export default function SettingsPage() {
     }
   }
 
-  const filteredModels = modelSearchQuery
-    ? allModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
-    : allModels;
+  function sortByName(models: LLMModel[]): LLMModel[] {
+    return [...models].sort((a, b) => a.name.localeCompare(b.name));
+  }
 
-  const filteredEdenAiModels = modelSearchQuery
-    ? edenAiModels.filter((m) => m.id.toLowerCase().includes(modelSearchQuery.toLowerCase()) || m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
-    : edenAiModels;
+  function searchModels(models: LLMModel[]): LLMModel[] {
+    if (!modelSearchQuery) return models;
+    const q = modelSearchQuery.toLowerCase();
+    return models.filter((m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q));
+  }
+
+  const filteredModels = sortByName(searchModels(allModels));
+  const filteredEdenAiModels = sortByName(searchModels(edenAiModels));
+
+  // Advanced DNA's composition critique is the one DNA purpose that benefits
+  // from actually listening to the track rather than judging from text alone
+  // — so its picker only offers models that can take audio input.
+  const audioCapableModels = (models: LLMModel[]) =>
+    models.filter((m) => m.capabilities?.inputModalities?.includes("audio"));
+  const filteredModelsForAdvancedDna = audioCapableModels(filteredModels);
+  const filteredEdenAiModelsForAdvancedDna = audioCapableModels(filteredEdenAiModels);
 
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc"].includes(p.id));
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai"].includes(p.id));
@@ -504,6 +517,8 @@ export default function SettingsPage() {
                   filteredModels={filteredModels}
                   edenAiModels={edenAiModels}
                   filteredEdenAiModels={filteredEdenAiModels}
+                  filteredModelsForAdvancedDna={filteredModelsForAdvancedDna}
+                  filteredEdenAiModelsForAdvancedDna={filteredEdenAiModelsForAdvancedDna}
                   modelSearchQuery={modelSearchQuery}
                   selectedPromptModel={selectedPromptModel}
                   selectedLyricsModel={selectedLyricsModel}

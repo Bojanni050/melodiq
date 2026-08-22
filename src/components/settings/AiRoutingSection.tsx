@@ -58,6 +58,8 @@ export default function AiRoutingSection({
   filteredModels,
   edenAiModels,
   filteredEdenAiModels,
+  filteredModelsForAdvancedDna,
+  filteredEdenAiModelsForAdvancedDna,
   modelSearchQuery,
   selectedPromptModel,
   selectedLyricsModel,
@@ -103,6 +105,8 @@ export default function AiRoutingSection({
   filteredModels: LLMModel[];
   edenAiModels: LLMModel[];
   filteredEdenAiModels: LLMModel[];
+  filteredModelsForAdvancedDna: LLMModel[];
+  filteredEdenAiModelsForAdvancedDna: LLMModel[];
   modelSearchQuery: string;
   selectedPromptModel: LLMModel | null;
   selectedLyricsModel: LLMModel | null;
@@ -468,41 +472,44 @@ export default function AiRoutingSection({
               />
             }
           />
-          <ModelField
-            label="Advanced DNA Model"
-            provider={values.ADVANCED_LLM_PROVIDER || "openrouter"}
-            openAiKey="OPENAI_ADVANCED_DNA_MODEL"
-            values={values}
-            onFieldChange={onFieldChange}
-            openRouterDropdown={
-              <OpenRouterModelDropdown
-                label="Advanced DNA Model"
-                selected={selectedAdvancedDnaModel}
-                open={showAdvancedDnaDropdown}
-                options={filteredModels}
-                allModelsLoaded={allModels.length > 0}
-                searchQuery={modelSearchQuery}
-                onToggle={onToggleAdvancedDnaDropdown}
-                onSelect={onAdvancedDnaModelSelect}
-                onSearchQueryChange={onSearchQueryChange}
-                onReadMore={onReadMore}
-              />
-            }
-            edenAiDropdown={
-              <OpenRouterModelDropdown
-                label="Advanced DNA Model (Eden AI)"
-                selected={selectedAdvancedDnaModel}
-                open={showAdvancedDnaDropdown}
-                options={filteredEdenAiModels}
-                allModelsLoaded={edenAiModels.length > 0}
-                searchQuery={modelSearchQuery}
-                onToggle={onToggleAdvancedDnaDropdown}
-                onSelect={onAdvancedDnaModelSelect}
-                onSearchQueryChange={onSearchQueryChange}
-                onReadMore={onReadMore}
-              />
-            }
-          />
+          <div>
+            <ModelField
+              label="Advanced DNA Model"
+              provider={values.ADVANCED_LLM_PROVIDER || "openrouter"}
+              openAiKey="OPENAI_ADVANCED_DNA_MODEL"
+              values={values}
+              onFieldChange={onFieldChange}
+              openRouterDropdown={
+                <OpenRouterModelDropdown
+                  label="Advanced DNA Model"
+                  selected={selectedAdvancedDnaModel}
+                  open={showAdvancedDnaDropdown}
+                  options={filteredModelsForAdvancedDna}
+                  allModelsLoaded={allModels.length > 0}
+                  searchQuery={modelSearchQuery}
+                  onToggle={onToggleAdvancedDnaDropdown}
+                  onSelect={onAdvancedDnaModelSelect}
+                  onSearchQueryChange={onSearchQueryChange}
+                  onReadMore={onReadMore}
+                />
+              }
+              edenAiDropdown={
+                <OpenRouterModelDropdown
+                  label="Advanced DNA Model (Eden AI)"
+                  selected={selectedAdvancedDnaModel}
+                  open={showAdvancedDnaDropdown}
+                  options={filteredEdenAiModelsForAdvancedDna}
+                  allModelsLoaded={edenAiModels.length > 0}
+                  searchQuery={modelSearchQuery}
+                  onToggle={onToggleAdvancedDnaDropdown}
+                  onSelect={onAdvancedDnaModelSelect}
+                  onSearchQueryChange={onSearchQueryChange}
+                  onReadMore={onReadMore}
+                />
+              }
+            />
+            <p className="text-xs text-white/25 mt-1">Only models that can process audio input are listed, for future composition analysis from the actual track.</p>
+          </div>
           <ModelField
             label="LyricIQ Model"
             provider={values.LYRICIQ_LLM_PROVIDER || "openrouter"}
