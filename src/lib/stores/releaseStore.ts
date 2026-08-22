@@ -20,6 +20,7 @@ export interface Release {
   isPublic?: boolean;
   publishedAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
   tracks: ReleaseTrack[];
 }
 
@@ -48,6 +49,7 @@ interface ReleaseState {
   updateReleaseType: (releaseId: string, type: string) => void;
   updateReleaseCover: (releaseId: string, coverUrl: string) => void;
   toggleReleasePublic: (releaseId: string) => Promise<void>;
+  regenerateReleaseCover: (releaseId: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 function persistReleaseDelete(releaseId: string) {
@@ -307,6 +309,41 @@ export const useReleaseStore = create<ReleaseState>()(
           }
         } catch (error) {
           console.error("[store] toggleReleasePublic error", error);
+        }
+      },
+      regenerateReleaseCover: async (releaseId) => {
+        try {
+          const res = await fetch(`/api/releases/${releaseId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "regenerate-cover" }),
+          });
+
+          if (res.status !== 202) {
+            const body = await res.json().catch(() => null);
+            return { ok: false, error: body?.error || "Failed to regenerate cover." };
+          }
+
+          const { requestedAt } = await res.json().catch(() => ({ requestedAt: Date.now() }));
+
+          // AI image generation can take a while — poll until the release's
+          // updatedAt moves past requestedAt, same pattern as track regenerate.
+          const started = Date.now();
+          while (Date.now() - started < 120_000) {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            await get().loadReleases();
+            const release = get().releases.find((r) => r.id === releaseId);
+            const updatedAt = release?.updatedAt ? new Date(release.updatedAt).getTime() : 0;
+            if (release?.coverUrl && updatedAt >= requestedAt) {
+              get().updateReleaseCover(releaseId, `${release.coverUrl}?t=${Date.now()}`);
+              return { ok: true };
+            }
+          }
+
+          return { ok: false, error: "Timed out waiting for the new cover." };
+        } catch (error) {
+          console.error("[store] regenerateReleaseCover error", error);
+          return { ok: false, error: "Failed to regenerate cover." };
         }
       },
     }),

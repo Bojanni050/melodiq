@@ -153,7 +153,9 @@ export async function generateAndSaveCoverArtForBatch(batch: {
 
 /**
  * Genereert cover art voor een release, geïnspireerd door één van zijn tracks
- * (de eerste die wordt toegevoegd). Slaat over als de release al een cover heeft.
+ * (de eerste die wordt toegevoegd). Slaat over als de release al een cover heeft,
+ * tenzij options.forceNew — dan wordt altijd een verse afbeelding gegenereerd en
+ * de bestaande cover overschreven (gebruikt door de "Regenerate cover" actie).
  * Faalt altijd stil.
  */
 export async function generateAndSaveReleaseCoverArt(release: {
@@ -164,7 +166,7 @@ export async function generateAndSaveReleaseCoverArt(release: {
   prompt: string;
   instrumental: boolean;
   lyrics?: string | null;
-}): Promise<void> {
+}, options?: { forceNew?: boolean }): Promise<void> {
   try {
     const existingRelease = await db
       .select({ s3KeyCover: releases.s3KeyCover })
@@ -172,15 +174,19 @@ export async function generateAndSaveReleaseCoverArt(release: {
       .where(and(eq(releases.id, release.id), eq(releases.userId, release.userId)))
       .limit(1);
 
-    if (!existingRelease[0] || existingRelease[0].s3KeyCover) {
-      // Release not found, or already has a cover (user-uploaded or previously generated) — don't overwrite.
+    if (!existingRelease[0]) return;
+    if (existingRelease[0].s3KeyCover && !options?.forceNew) {
+      // Already has a cover (user-uploaded or previously generated) — don't overwrite.
       return;
     }
 
-    const existingTrackCover = await findExistingCover({
-      userId: release.userId,
-      prompt: inspirationTrack.prompt,
-    });
+    const shouldReuse = !options?.forceNew;
+    const existingTrackCover = shouldReuse
+      ? await findExistingCover({
+          userId: release.userId,
+          prompt: inspirationTrack.prompt,
+        })
+      : null;
 
     let s3KeyCover: string;
     let s3KeyCoverThumb: string;
@@ -203,6 +209,10 @@ export async function generateAndSaveReleaseCoverArt(release: {
       console.log(`[cover-art] generated new cover for release ${release.id}`);
     }
 
+    const whereClause = options?.forceNew
+      ? and(eq(releases.id, release.id), eq(releases.userId, release.userId))
+      : and(eq(releases.id, release.id), eq(releases.userId, release.userId), isNull(releases.s3KeyCover));
+
     await db
       .update(releases)
       .set({
@@ -210,7 +220,7 @@ export async function generateAndSaveReleaseCoverArt(release: {
         s3KeyCoverThumb,
         updatedAt: new Date(),
       })
-      .where(and(eq(releases.id, release.id), eq(releases.userId, release.userId), isNull(releases.s3KeyCover)));
+      .where(whereClause);
   } catch (error: any) {
     console.warn(`[cover-art] failed for release ${release.id}:`, error?.message ?? error);
   }

@@ -264,6 +264,38 @@ export async function PATCH(
       return respondWithRelease(auth.userId, id);
     }
 
+    if (action === "regenerate-cover") {
+      const releaseTrackRows = await db
+        .select({
+          title: tracks.title,
+          prompt: tracks.prompt,
+          instrumental: tracks.instrumental,
+          lyrics: tracks.lyrics,
+        })
+        .from(releaseTracks)
+        .innerJoin(tracks, eq(tracks.id, releaseTracks.trackId))
+        .where(eq(releaseTracks.releaseId, id))
+        .orderBy(asc(releaseTracks.position));
+
+      const inspirationTrack = releaseTrackRows.find((row) => row.prompt);
+      if (!inspirationTrack) {
+        return NextResponse.json(
+          { error: "No track with a usable prompt found to generate a cover from." },
+          { status: 400 }
+        );
+      }
+
+      // AI image generation can take a while — respond immediately and let
+      // the client poll, same pattern as the per-track regenerate-cover flow.
+      generateAndSaveReleaseCoverArt(
+        { id, userId: auth.userId },
+        inspirationTrack,
+        { forceNew: true }
+      ).catch((err) => console.error("[releases/regenerate-cover] cover generation failed:", err));
+
+      return NextResponse.json({ accepted: true, requestedAt: Date.now() }, { status: 202 });
+    }
+
     if (action === "toggle-public") {
       const nextPublic = !existing.isPublic;
       const now = new Date();

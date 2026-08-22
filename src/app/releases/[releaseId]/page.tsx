@@ -40,6 +40,7 @@ export default function ReleaseDetailPage() {
     updateReleaseType,
     updateReleaseCover,
     toggleReleasePublic,
+    regenerateReleaseCover,
   } = useReleaseStore();
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
@@ -50,6 +51,8 @@ export default function ReleaseDetailPage() {
   const [titleDraft, setTitleDraft] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [regeneratingCover, setRegeneratingCover] = useState(false);
+  const [regenerateCoverError, setRegenerateCoverError] = useState<string | null>(null);
   const [publishingRelease, setPublishingRelease] = useState(false);
   // null = closed, string[] = list of unpublished track titles waiting for confirm
   const [publishConfirmTracks, setPublishConfirmTracks] = useState<string[] | null>(null);
@@ -162,6 +165,20 @@ export default function ReleaseDetailPage() {
       console.error("[release-cover] upload error", err);
     } finally {
       setUploadingCover(false);
+    }
+  }
+
+  async function handleRegenerateCover() {
+    if (!selectedRelease || regeneratingCover) return;
+    setRegeneratingCover(true);
+    setRegenerateCoverError(null);
+    try {
+      const result = await regenerateReleaseCover(selectedRelease.id);
+      if (!result.ok) {
+        setRegenerateCoverError(result.error || "Failed to regenerate cover.");
+      }
+    } finally {
+      setRegeneratingCover(false);
     }
   }
 
@@ -331,6 +348,23 @@ export default function ReleaseDetailPage() {
                     {isEditingOrder ? "Save order" : "Edit order"}
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={handleRegenerateCover}
+                    disabled={regeneratingCover}
+                    className="h-9 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {regeneratingCover ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                        Regenerating…
+                      </span>
+                    ) : "Regenerate cover"}
+                  </button>
+
                   {/* Publish / Unpublish button */}
                   <button
                     type="button"
@@ -358,6 +392,10 @@ export default function ReleaseDetailPage() {
                     ) : "Publish"}
                   </button>
               </div>
+
+              {regenerateCoverError && (
+                <p className="text-xs text-red-400">{regenerateCoverError}</p>
+              )}
 
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (
                 <p className="text-xs text-white/35">

@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { releases, releaseTracks } from "@/db/schema";
+import { releases, releaseTracks, tracks } from "@/db/schema";
 
 export type ReleaseTrackPayload = {
   trackId: string;
@@ -66,21 +66,54 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
     tracksByReleaseId.set(row.releaseId, list);
   });
 
-  return releaseRows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    type: row.type,
-    kind: row.kind ?? null,
-    artistName: row.artistName ?? null,
-    description: row.description ?? null,
-    coverUrl: row.s3KeyCover ? `/api/releases/${row.id}/cover` : null,
-    releaseDate: row.releaseDate?.toISOString() ?? null,
-    isPublic: row.isPublic,
-    publishedAt: row.publishedAt?.toISOString() ?? null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    tracks: tracksByReleaseId.get(row.id) ?? [],
-  }));
+  // A release with no cover of its own and exactly one track adopts that
+  // track's cover art by default, so single-track releases don't show a
+  // blank placeholder.
+  const soleTrackIdByReleaseId = new Map<string, string>();
+  releaseRows.forEach((row) => {
+    if (row.s3KeyCover) return;
+    const releaseTracksList = tracksByReleaseId.get(row.id) ?? [];
+    if (releaseTracksList.length === 1) {
+      soleTrackIdByReleaseId.set(row.id, releaseTracksList[0].trackId);
+    }
+  });
+
+  const fallbackCoverByTrackId = new Map<string, string | null>();
+  if (soleTrackIdByReleaseId.size > 0) {
+    const trackRows = await db
+      .select({ id: tracks.id, coverUrl: tracks.coverUrl, s3KeyCover: tracks.s3KeyCover })
+      .from(tracks)
+      .where(inArray(tracks.id, Array.from(soleTrackIdByReleaseId.values())));
+
+    trackRows.forEach((row) => {
+      fallbackCoverByTrackId.set(row.id, row.coverUrl || (row.s3KeyCover ? `/api/tracks/${row.id}/cover` : null));
+    });
+  }
+
+  return releaseRows.map((row) => {
+    const soleTrackId = soleTrackIdByReleaseId.get(row.id);
+    const coverUrl = row.s3KeyCover
+      ? `/api/releases/${row.id}/cover`
+      : soleTrackId
+        ? fallbackCoverByTrackId.get(soleTrackId) ?? null
+        : null;
+
+    return {
+      id: row.id,
+      title: row.title,
+      type: row.type,
+      kind: row.kind ?? null,
+      artistName: row.artistName ?? null,
+      description: row.description ?? null,
+      coverUrl,
+      releaseDate: row.releaseDate?.toISOString() ?? null,
+      isPublic: row.isPublic,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      tracks: tracksByReleaseId.get(row.id) ?? [],
+    };
+  });
 }
 
 export async function getUserReleaseById(userId: string, releaseId: string) {
