@@ -9,14 +9,6 @@ import { useShallow } from "zustand/react/shallow";
 import { parseLyrics } from "@/lib/parse-lyrics";
 import FullscreenPlayer from "@/components/player/FullscreenPlayer";
 import {
-  PLAYER_POPUP_CHANNEL,
-  PLAYER_POPUP_WINDOW_NAME,
-  type PlayerPopupMessage,
-  type PlayerPopupStateMessage,
-  type PlayerPopupVizMessage,
-} from "@/lib/playerPopupSync";
-import { getSharedAudioGraph } from "@/lib/sharedAudioGraph";
-import {
   type AudioSource,
   type AudioSourceState,
   type ActionTimestampRef,
@@ -27,6 +19,10 @@ import {
   formatProviderLabel,
   allowWithDelay,
 } from "@/components/player/playerUtils";
+import { useMediaSession } from "@/components/player/hooks/useMediaSession";
+import { usePopupPlayerSync } from "@/components/player/hooks/usePopupPlayerSync";
+import { usePlayerHotkeys } from "@/components/player/hooks/usePlayerHotkeys";
+import { useTrackBackgroundServices } from "@/components/player/hooks/useTrackBackgroundServices";
 
 export default function Player() {
   const {
@@ -75,14 +71,6 @@ export default function Player() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playToggleCooldownRef = useRef(0);
   const currentTrackRef = useRef<Track | null>(null);
-  const playCountedTrackIdRef = useRef<string | null>(null);
-  const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const coverAutoGenerateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const coverAutoRequestedTrackIdsRef = useRef<Set<string>>(new Set());
-  const languageDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const languageDetectRequestedTrackIdsRef = useRef<Set<string>>(new Set());
-  const nextTrackPrefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nextTrackPrefetchedIdsRef = useRef<Set<string>>(new Set());
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -92,12 +80,6 @@ export default function Player() {
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
-  const popupChannelRef = useRef<BroadcastChannel | null>(null);
-  const popupWindowRef = useRef<Window | null>(null);
-  const vizAnalyserRef = useRef<AnalyserNode | null>(null);
-  const vizIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioSourceRef = useRef<AudioSource>("unknown");
-  const audioSourceStateRef = useRef<AudioSourceState>("unknown");
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const artistLabel = (currentTrack?.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
@@ -143,22 +125,9 @@ export default function Player() {
 
   useEffect(() => {
     currentTrackRef.current = currentTrack;
-
-    // Keep MediaSession metadata in sync so the OS lock screen shows the
-    // correct track info and artwork while playing in the background.
-    if ("mediaSession" in navigator && currentTrack) {
-      const artwork: MediaImage[] = [];
-      const coverSrc = currentTrack.coverUrl || (currentTrack.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
-      if (coverSrc) {
-        artwork.push({ src: coverSrc, sizes: "512x512", type: "image/jpeg" });
-      }
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.title?.replace(/\s*\(2\)\s*$/, "") || currentTrack.prompt.substring(0, 60),
-        artist: "",
-        artwork,
-      });
-    }
   }, [currentTrack]);
+
+  useMediaSession(currentTrack, audioRef);
 
   const tryPlay = useCallback(async () => {
     if (!audioRef.current) return;
@@ -185,6 +154,19 @@ export default function Player() {
     }
   }, []);
 
+  const {
+    clearPlayTimer,
+    clearCoverAutoGenerateTimer,
+    clearLanguageDetectTimer,
+    clearNextTrackPrefetchTimer,
+    scheduleAutoCoverGenerationIfNeeded,
+    scheduleLanguageDetectionIfNeeded,
+    scheduleNextTrackPrefetchIfNeeded,
+    countPlayIfNeeded,
+  } = useTrackBackgroundServices(audioRef, currentTrackRef);
+
+  usePlayerHotkeys({ audioRef, tryPlay });
+
   useEffect(() => {
     const sharedAudioElement = getSharedAudioElement();
     if (!sharedAudioElement) return;
@@ -193,264 +175,10 @@ export default function Player() {
     audioRef.current.volume = volume;
     usePlayerStore.getState().setAudioElement(audioRef.current);
 
-    const clearPlayTimer = () => {
-      if (playCountTimerRef.current) {
-        clearTimeout(playCountTimerRef.current);
-        playCountTimerRef.current = null;
-      }
-    };
-
-    const clearCoverAutoGenerateTimer = () => {
-      if (coverAutoGenerateTimerRef.current) {
-        clearTimeout(coverAutoGenerateTimerRef.current);
-        coverAutoGenerateTimerRef.current = null;
-      }
-    };
-
-    const clearLanguageDetectTimer = () => {
-      if (languageDetectTimerRef.current) {
-        clearTimeout(languageDetectTimerRef.current);
-        languageDetectTimerRef.current = null;
-      }
-    };
-
-    const clearNextTrackPrefetchTimer = () => {
-      if (nextTrackPrefetchTimerRef.current) {
-        clearTimeout(nextTrackPrefetchTimerRef.current);
-        nextTrackPrefetchTimerRef.current = null;
-      }
-    };
-
-    const trackHasCover = (track: Track | null | undefined) => {
-      if (!track) return false;
-      return Boolean(track.coverUrl || track.s3KeyCover || track.s3KeyCoverThumb);
-    };
-
-    const scheduleAutoCoverGenerationIfNeeded = () => {
-      const track = currentTrackRef.current;
-      if (!track || track.status !== "done") return;
-      if (track.publicSource) return;
-      if (trackHasCover(track)) return;
-      if (coverAutoRequestedTrackIdsRef.current.has(track.id)) return;
-      if (coverAutoGenerateTimerRef.current) return;
-
-      coverAutoGenerateTimerRef.current = setTimeout(() => {
-        coverAutoGenerateTimerRef.current = null;
-
-        const latestTrack = currentTrackRef.current;
-        const audioEl = audioRef.current;
-        if (!latestTrack || latestTrack.id !== track.id) return;
-        if (!audioEl || audioEl.paused) return;
-        if (trackHasCover(latestTrack)) return;
-        if (coverAutoRequestedTrackIdsRef.current.has(track.id)) return;
-
-        coverAutoRequestedTrackIdsRef.current.add(track.id);
-
-        void (async () => {
-          try {
-            const response = await fetch(`/api/tracks/${track.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ regenerateCoverArt: true }),
-            });
-
-            if (!response.ok) {
-              coverAutoRequestedTrackIdsRef.current.delete(track.id);
-              return;
-            }
-
-            const refreshedTrack = await response.json().catch(() => null) as Partial<Track> | null;
-            const cacheBust = Date.now();
-            const nextCoverUrl = `/api/tracks/${track.id}/cover?t=${cacheBust}`;
-
-            usePlayerStore.setState((state) => {
-              if (state.currentTrack?.id !== track.id) return {};
-
-              return {
-                currentTrack: {
-                  ...state.currentTrack,
-                  ...(refreshedTrack ? refreshedTrack : {}),
-                  coverUrl: nextCoverUrl,
-                },
-              };
-            });
-
-            window.dispatchEvent(
-              new CustomEvent("melodiq:cover-regenerated", {
-                detail: { trackIds: [track.id], ts: cacheBust },
-              })
-            );
-          } catch (error) {
-            console.error("Failed to auto-generate cover art:", error);
-            coverAutoRequestedTrackIdsRef.current.delete(track.id);
-          }
-        })();
-      }, 30_000);
-    };
-
-    const scheduleLanguageDetectionIfNeeded = () => {
-      const track = currentTrackRef.current;
-      if (!track || track.status !== "done") return;
-      if (track.publicSource) return;
-      if (track.language || track.instrumental || !track.lyrics?.trim()) return;
-      if (languageDetectRequestedTrackIdsRef.current.has(track.id)) return;
-      if (languageDetectTimerRef.current) return;
-
-      languageDetectTimerRef.current = setTimeout(() => {
-        languageDetectTimerRef.current = null;
-
-        const latestTrack = currentTrackRef.current;
-        const audioEl = audioRef.current;
-        if (!latestTrack || latestTrack.id !== track.id) return;
-        if (!audioEl || audioEl.paused) return;
-        if (latestTrack.language) return;
-        if (languageDetectRequestedTrackIdsRef.current.has(track.id)) return;
-
-        languageDetectRequestedTrackIdsRef.current.add(track.id);
-
-        void (async () => {
-          try {
-            const response = await fetch(`/api/tracks/${track.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ detectLanguage: true }),
-            });
-
-            if (!response.ok) return;
-
-            const refreshedTrack = await response.json().catch(() => null) as Partial<Track> | null;
-            if (!refreshedTrack?.language) return;
-
-            usePlayerStore.setState((state) =>
-              state.currentTrack?.id === track.id
-                ? { currentTrack: { ...state.currentTrack, language: refreshedTrack.language } }
-                : {}
-            );
-          } catch (error) {
-            console.error("Failed to auto-detect language:", error);
-          }
-        })();
-      }, 15_000);
-    };
-
-    const scheduleNextTrackPrefetchIfNeeded = () => {
-      const track = currentTrackRef.current;
-      if (!track) return;
-      if (!usePlayerStore.getState().autoPlayNext) return;
-      const nextTrack = usePlayerStore.getState().queue[0];
-      if (!nextTrack || nextTrack.status !== "done") return;
-      if (nextTrackPrefetchedIdsRef.current.has(nextTrack.id)) return;
-      if (nextTrackPrefetchTimerRef.current) return;
-
-      const trackId = track.id;
-      const nextTrackId = nextTrack.id;
-
-      nextTrackPrefetchTimerRef.current = setTimeout(() => {
-        nextTrackPrefetchTimerRef.current = null;
-
-        const audioEl = audioRef.current;
-        if (currentTrackRef.current?.id !== trackId) return; // track changed since scheduling
-        if (!audioEl || audioEl.paused) return;
-        if (!usePlayerStore.getState().autoPlayNext) return;
-
-        // The queue may have been reordered, skipped past, or emptied since
-        // this warm-up was scheduled — only prefetch the track that's still
-        // next up.
-        const liveNext = usePlayerStore.getState().queue[0];
-        if (!liveNext || liveNext.id !== nextTrackId) return;
-        if (nextTrackPrefetchedIdsRef.current.has(nextTrackId)) return;
-
-        nextTrackPrefetchedIdsRef.current.add(nextTrackId);
-
-        const suffix = resolveStreamSuffix(liveNext, usePlayerStore.getState().playHighestQuality);
-        const url = `${mediaBase(liveNext)}/stream${suffix}`;
-        // A Range: bytes=0-0 GET hits the same route real playback uses, so
-        // it kicks off the S3 fetch + background disk-cache write (see
-        // getCachedAudioStream) well before the current track ends —
-        // low-priority so it doesn't compete with the track that's actually
-        // playing right now.
-        void fetch(url, {
-          headers: { Range: "bytes=0-0" },
-          priority: "low",
-        }).catch(() => {});
-      }, 10_000);
-    };
-
-    const countPlayIfNeeded = () => {
-      const track = currentTrackRef.current;
-      const trackId = track?.id;
-      if (!trackId || !track) return;
-      if (playCountedTrackIdRef.current === trackId) return;
-      if (playCountTimerRef.current) return;
-
-      playCountTimerRef.current = setTimeout(() => {
-        playCountTimerRef.current = null;
-
-        const currentId = currentTrackRef.current?.id;
-        if (!currentId || currentId !== trackId) return;
-        if (playCountedTrackIdRef.current === trackId) return;
-
-        playCountedTrackIdRef.current = trackId;
-
-        void (async () => {
-          try {
-            const res = await fetch(`${mediaBase(track)}/play`, { method: "POST" });
-            if (!res.ok) return;
-            const data: unknown = await res.json().catch(() => null);
-            const readCount = (key: "playCount" | "othersPlayCount") =>
-              data && typeof data === "object" && key in data && typeof (data as Record<string, unknown>)[key] === "number"
-                ? (data as Record<string, number>)[key]
-                : null;
-            const playCount = readCount("playCount");
-            const othersPlayCount = readCount("othersPlayCount");
-
-            if (typeof playCount === "number") {
-              usePlayerStore.setState((state) =>
-                state.currentTrack?.id === trackId
-                  ? { currentTrack: { ...state.currentTrack, playCount } }
-                  : {}
-              );
-            }
-
-            window.dispatchEvent(
-              new CustomEvent("melodiq:track-played", {
-                detail: {
-                  trackId,
-                  ...(typeof playCount === "number" ? { playCount } : {}),
-                  ...(typeof othersPlayCount === "number" ? { othersPlayCount } : {}),
-                },
-              })
-            );
-          } catch (error) {
-            console.error("Failed to record play:", error);
-          }
-        })();
-      }, 30_000);
-    };
-
     const handleTimeUpdate = () => {
       const time = audioRef.current?.currentTime || 0;
       setCurrentTime(time);
       usePlayerStore.getState().setProgress(time);
-
-      const channel = popupChannelRef.current;
-      if (channel) {
-        const state = usePlayerStore.getState();
-        const message: PlayerPopupStateMessage = {
-          type: "state",
-          payload: {
-            track: state.currentTrack,
-            isPlaying: state.isPlaying,
-            currentTime: time,
-            duration: audioRef.current?.duration || 0,
-            audioSource: audioSourceRef.current,
-            audioSourceState: audioSourceStateRef.current,
-            hasNext: state.queue.length > 0,
-            hasPrevious: state.history.length > 0 || time > 3,
-          },
-        };
-        channel.postMessage(message);
-      }
     };
 
     const handleLoadedMetadata = () => {
@@ -606,25 +334,6 @@ export default function Player() {
       }, 5000);
     };
 
-    // Register MediaSession so iOS/Android treat this as active media and
-    // don't suspend the network connection after extended background use.
-    if ("mediaSession" in navigator) {
-      navigator.mediaSession.setActionHandler("play", () => {
-        void audioRef.current?.play();
-        usePlayerStore.getState().setIsPlaying(true);
-      });
-      navigator.mediaSession.setActionHandler("pause", () => {
-        audioRef.current?.pause();
-        usePlayerStore.getState().setIsPlaying(false);
-      });
-      navigator.mediaSession.setActionHandler("previoustrack", () => {
-        usePlayerStore.getState().playPrevious();
-      });
-      navigator.mediaSession.setActionHandler("nexttrack", () => {
-        usePlayerStore.getState().playNext();
-      });
-    }
-
     audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
     audioRef.current.addEventListener("loadedmetadata", handleLoadedMetadata);
     audioRef.current.addEventListener("ended", handleEnded);
@@ -648,12 +357,6 @@ export default function Player() {
 
     return () => {
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if ("mediaSession" in navigator) {
-        navigator.mediaSession.setActionHandler("play", null);
-        navigator.mediaSession.setActionHandler("pause", null);
-        navigator.mediaSession.setActionHandler("previoustrack", null);
-        navigator.mediaSession.setActionHandler("nexttrack", null);
-      }
       if (audioRef.current) {
         audioRef.current.removeEventListener("timeupdate", handleTimeUpdate);
         audioRef.current.removeEventListener("loadedmetadata", handleLoadedMetadata);
@@ -681,30 +384,7 @@ export default function Player() {
       clearNextTrackPrefetchTimer();
       clearStallTimer();
     };
-  }, [volume]);
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.code !== "Space") return;
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
-      }
-      if (!usePlayerStore.getState().currentTrack) return;
-      event.preventDefault();
-      const isPlaying = usePlayerStore.getState().isPlaying;
-      if (isPlaying) {
-        audioRef.current?.pause();
-        usePlayerStore.getState().setIsPlaying(false);
-      } else {
-        usePlayerStore.getState().setIsPlaying(true);
-        void tryPlay();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [tryPlay]);
+  }, [volume, clearPlayTimer, clearCoverAutoGenerateTimer, clearLanguageDetectTimer, clearNextTrackPrefetchTimer, countPlayIfNeeded, scheduleAutoCoverGenerationIfNeeded, scheduleLanguageDetectionIfNeeded, scheduleNextTrackPrefetchIfNeeded]);
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack?.id) return;
@@ -949,148 +629,15 @@ export default function Player() {
     playNext();
   }, [playNext]);
 
-  const broadcastPopupState = useCallback(() => {
-    const channel = popupChannelRef.current;
-    if (!channel) return;
-    const state = usePlayerStore.getState();
-    const message: PlayerPopupStateMessage = {
-      type: "state",
-      payload: {
-        track: state.currentTrack,
-        isPlaying: state.isPlaying,
-        currentTime: audioRef.current?.currentTime || 0,
-        duration: audioRef.current?.duration || 0,
-        audioSource: audioSourceRef.current,
-        audioSourceState: audioSourceStateRef.current,
-        hasNext: state.queue.length > 0,
-        hasPrevious: state.history.length > 0 || (audioRef.current?.currentTime || 0) > 3,
-      },
-    };
-    channel.postMessage(message);
-  }, []);
-
-  // Streams frequency data to the pop-out window so it can render its own
-  // visualizer — the audio element (and its Web Audio graph) never leaves
-  // this window, so raw analyser bytes are pushed over the channel instead.
-  const startVizBroadcast = useCallback(() => {
-    if (vizIntervalRef.current || !audioRef.current) return;
-    try {
-      const { sourceNode } = getSharedAudioGraph(audioRef.current);
-      if (!vizAnalyserRef.current) {
-        const analyser = sourceNode.context.createAnalyser();
-        analyser.fftSize = 1024;
-        analyser.smoothingTimeConstant = 0.7;
-        sourceNode.connect(analyser);
-        vizAnalyserRef.current = analyser;
-      }
-      const analyser = vizAnalyserRef.current;
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      vizIntervalRef.current = setInterval(() => {
-        const channel = popupChannelRef.current;
-        if (!channel) return;
-        analyser.getByteFrequencyData(data);
-        const message: PlayerPopupVizMessage = { type: "viz", payload: { data: Array.from(data) } };
-        channel.postMessage(message);
-      }, 50);
-    } catch (e) {
-      console.warn("[Player] viz broadcast start error:", e);
-    }
-  }, []);
-
-  const stopVizBroadcast = useCallback(() => {
-    if (vizIntervalRef.current) {
-      clearInterval(vizIntervalRef.current);
-      vizIntervalRef.current = null;
-    }
-  }, []);
-
-  const controlHandlersRef = useRef({ togglePlay, handleNext, handlePrevious, broadcastPopupState, startVizBroadcast, stopVizBroadcast });
-  useEffect(() => {
-    controlHandlersRef.current = { togglePlay, handleNext, handlePrevious, broadcastPopupState, startVizBroadcast, stopVizBroadcast };
+  const { popupOpen, handlePopOutPlayer } = usePopupPlayerSync({
+    audioRef,
+    audioSource,
+    audioSourceState,
+    togglePlay,
+    handleNext,
+    handlePrevious,
+    setCurrentTime,
   });
-
-  useEffect(() => {
-    audioSourceRef.current = audioSource;
-  }, [audioSource]);
-
-  useEffect(() => {
-    audioSourceStateRef.current = audioSourceState;
-  }, [audioSourceState]);
-
-  // Popup ("pop out to second screen") sync: the audio element and playback
-  // state stay owned by this window; the popup window is a read-only mirror
-  // driven by BroadcastChannel messages, and sends control commands back.
-  useEffect(() => {
-    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
-    const channel = new BroadcastChannel(PLAYER_POPUP_CHANNEL);
-    popupChannelRef.current = channel;
-
-    channel.onmessage = (event: MessageEvent<PlayerPopupMessage>) => {
-      const data = event.data;
-      if (!data) return;
-      const handlers = controlHandlersRef.current;
-
-      if (data.type === "request-state") {
-        handlers.broadcastPopupState();
-        return;
-      }
-
-      if (data.type === "control") {
-        if (data.action === "toggle-play") handlers.togglePlay();
-        else if (data.action === "next") handlers.handleNext();
-        else if (data.action === "previous") handlers.handlePrevious();
-        else if (data.action === "seek" && typeof data.value === "number" && audioRef.current) {
-          audioRef.current.currentTime = data.value;
-          setCurrentTime(data.value);
-        } else if (data.action === "viz-subscribe") handlers.startVizBroadcast();
-        else if (data.action === "viz-unsubscribe") handlers.stopVizBroadcast();
-      }
-    };
-
-    return () => {
-      channel.close();
-      popupChannelRef.current = null;
-      stopVizBroadcast();
-    };
-  }, [stopVizBroadcast]);
-
-  useEffect(() => {
-    broadcastPopupState();
-  }, [currentTrack, isPlaying, queue.length, history.length, audioSource, audioSourceState, broadcastPopupState]);
-
-  const [popupOpen, setPopupOpen] = useState(false);
-
-  // Polls because a window closed via its own OS chrome (the "X" button)
-  // doesn't fire any event we can listen for cross-window.
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (popupWindowRef.current?.closed) {
-        popupWindowRef.current = null;
-        setPopupOpen(false);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handlePopOutPlayer = useCallback(() => {
-    if (typeof window === "undefined") return;
-    if (popupWindowRef.current && !popupWindowRef.current.closed) {
-      popupWindowRef.current.close();
-      popupWindowRef.current = null;
-      setPopupOpen(false);
-      return;
-    }
-    const popup = window.open(
-      "/player-window",
-      PLAYER_POPUP_WINDOW_NAME,
-      "width=1100,height=720,menubar=no,toolbar=no,location=no,status=no"
-    );
-    if (popup) {
-      popupWindowRef.current = popup;
-      popup.focus();
-      setPopupOpen(true);
-    }
-  }, []);
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
