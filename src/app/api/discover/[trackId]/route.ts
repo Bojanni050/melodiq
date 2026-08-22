@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 import { verifyToken } from "@/lib/auth";
 import { getAudioDna, getTrackDnaAccess } from "@/lib/songs";
+import { getCdnUrl } from "@/lib/cdn-server";
+import { prefixCdn } from "@/lib/cdn";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -34,6 +36,19 @@ export async function GET(
     .where(eq(users.id, track.userId))
     .limit(1);
 
+  // A generated track's coverUrl in the DB is often the owner-gated
+  // /api/tracks/{id}/cover proxy (requireAuth + ownership check) — fine for
+  // the owner viewing their own track, but a 401 for anyone else, which is
+  // most viewers of this public page. Rewrite it to the public
+  // /api/discover/{id}/cover proxy for non-owner viewers, same as the
+  // discover feed does in getPublishedTracksFeed.
+  const isOwner = payload?.userId === track.userId;
+  const cdnUrl = await getCdnUrl();
+  const coverUrl =
+    !isOwner && track.coverUrl?.startsWith("/api/tracks/")
+      ? prefixCdn(cdnUrl, track.coverUrl.replace("/api/tracks/", "/api/discover/"))
+      : track.coverUrl || null;
+
   return NextResponse.json({
     track: {
       id: track.id,
@@ -41,7 +56,7 @@ export async function GET(
       artistName: track.artistName || owner?.artistAlias || owner?.name || null,
       writerName: track.writerName || null,
       composerName: track.composerName || null,
-      coverUrl: track.coverUrl || null,
+      coverUrl,
       hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
       duration: track.duration,
       totalPlays: track.playCount + track.othersPlayCount,

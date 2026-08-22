@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
+import { getCdnUrl } from "@/lib/cdn-server";
+import { prefixCdn } from "@/lib/cdn";
 
 interface AudioDnaShape {
   atmosphereTags?: string[] | null;
@@ -61,13 +63,23 @@ export async function GET(
     )
     .orderBy(desc(tracks.publishDate));
 
+  // Every track here is already published (query filter above), so any
+  // owner-gated /api/tracks/{id}/cover coverUrl is always rewritten to the
+  // public /api/discover/{id}/cover proxy — otherwise it 404s for every
+  // viewer except the track's own owner. Mirrors getPublishedTracksFeed.
+  const cdnUrl = await getCdnUrl();
+  const rewriteCoverUrl = (url: string | null) =>
+    url?.startsWith("/api/tracks/")
+      ? prefixCdn(cdnUrl, url.replace("/api/tracks/", "/api/discover/"))
+      : url || null;
+
   const trackList = rows.map((row) => {
     const year = (row.publishDate ?? row.createdAt).getFullYear();
     return {
       id: row.id,
       title: row.title || "Untitled",
       hasCoverProxy: Boolean(!row.coverUrl && row.s3KeyCover),
-      coverUrl: row.coverUrl,
+      coverUrl: rewriteCoverUrl(row.coverUrl),
       duration: row.duration,
       plays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
       year,
@@ -102,7 +114,7 @@ export async function GET(
         totalPlays,
         sinceYear,
       },
-      heroCoverUrl: heroTrack?.coverUrl || null,
+      heroCoverUrl: rewriteCoverUrl(heroTrack?.coverUrl ?? null),
       heroHasCoverProxy: heroTrack ? Boolean(!heroTrack.coverUrl && heroTrack.s3KeyCover) : false,
       heroTrackId: heroTrack?.id ?? null,
     },
