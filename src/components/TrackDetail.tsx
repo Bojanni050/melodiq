@@ -53,15 +53,14 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
-  // Role-based visibility: a listener only ever browses published community
-  // tracks read-only, so the generation prompt and any editing affordances
-  // (which the server never gives them the underlying data for anyway) are
-  // hidden here too, rather than relying on each page to remember to pass
-  // allowLyricsEdit={false}. Admin/user roles get the full admin-shaped view;
-  // callers can still override allowLyricsEdit explicitly if they need to.
-  const isListenerRole = user?.role === "listener" || user?.role == null;
-  const canSeePrompt = !isListenerRole;
-  const resolvedAllowLyricsEdit = allowLyricsEdit ?? user?.role === "admin";
+  // Role-based visibility: the prompt/lyrics content itself is shown to
+  // every role (a listener browsing a public track sees whatever the API
+  // actually sent — public tracks just never carry a prompt, see
+  // PublicTrackSummary), but the editing and translation affordances are
+  // admin-only. Callers can still override allowLyricsEdit explicitly if
+  // they need to.
+  const isAdmin = user?.role === "admin";
+  const resolvedAllowLyricsEdit = allowLyricsEdit ?? isAdmin;
 
   // central track state that self-heals via polling (TCL sync, cover art)
   const { track, setLocalTrack, mutate } = useTrackDetailSync(initialTrack, onTrackUpdated);
@@ -102,7 +101,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const artistLabel = (track.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (track.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (track.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
-  const canEditPrompt = isUploadedTrack && canSeePrompt;
+  const canEditPrompt = isUploadedTrack && isAdmin;
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
 
   const displayDuration = track.duration
@@ -320,7 +319,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     {translation.showingTranslation ? "Original" : track.translatedLanguage ?? "Translated"}
                   </button>
                 )}
-                {track.lyrics && !lyricsEdit.lyricsEditing && (
+                {isAdmin && track.lyrics && !lyricsEdit.lyricsEditing && (
                   <div className="relative">
                     <button
                       type="button"
@@ -411,10 +410,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           </div>
         )}
 
-        {/* Prompt — listeners never see the generation prompt (public tracks
-            never carry one anyway, see PublicTrackSummary), so hide the
-            whole section rather than showing an empty/blank one. */}
-        {canSeePrompt && (
+        {/* Prompt — shown to every role when there's actual content; public
+            tracks never carry a prompt (see PublicTrackSummary) so this
+            naturally stays hidden there unless the viewer is an admin, who
+            can add one via Edit. */}
+        {(track.prompt || isAdmin) && (
         <div className="shrink-0">
           <div className="flex items-center justify-between mb-2">
             <button
