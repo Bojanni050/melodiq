@@ -77,6 +77,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               { href: "/discover", label: "Discover", icon: "discover" },
               { href: "/library", label: "Library", icon: "library" },
               { href: "/playlists", label: "Playlists", icon: "playlists" },
+              { href: "/discover/releases", label: "Releases", icon: "releases" },
             ],
           },
         ]
