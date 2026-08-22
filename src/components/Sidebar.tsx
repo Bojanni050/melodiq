@@ -139,8 +139,16 @@ export default function Sidebar({ credits }: SidebarProps) {
       : []),
   ];
 
+  const allNavHrefs = navGroups.flatMap((group) => group.items.map((item) => item.href));
+
   function isNavItemActive(href: string) {
-    return pathname === href || pathname.startsWith(href + "/");
+    if (pathname === href) return true;
+    if (!pathname.startsWith(href + "/")) return false;
+    // Only claim active if no more specific nav item also matches this path,
+    // so e.g. "/discover" doesn't light up while on "/discover/releases".
+    return !allNavHrefs.some(
+      (other) => other !== href && other.length > href.length && (pathname === other || pathname.startsWith(other + "/"))
+    );
   }
 
   async function handleLogout() {
