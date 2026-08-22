@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore } from "@/lib/store";
 
@@ -19,6 +19,12 @@ function StatTile({ label, value }: { label: string; value: number }) {
   );
 }
 
+const ROLES = [
+  { value: "user", label: "User" },
+  { value: "listener", label: "Listener" },
+  { value: "admin", label: "Admin" },
+];
+
 export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -27,6 +33,43 @@ export default function AdminPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
+
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState("user");
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
+  const [createUserNotice, setCreateUserNotice] = useState<string | null>(null);
+
+  async function createUser(e: FormEvent) {
+    e.preventDefault();
+    setCreatingUser(true);
+    setCreateUserError(null);
+    setCreateUserNotice(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmail, password: newPassword, name: newName, role: newRole }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setCreateUserError(data?.error || "Failed to create user");
+        return;
+      }
+      setCreateUserNotice(`Created ${data.user.email} with role "${data.user.role}".`);
+      setNewEmail("");
+      setNewPassword("");
+      setNewName("");
+      setNewRole("user");
+      setStats((prev) => (prev ? { ...prev, totalUsers: prev.totalUsers + 1 } : prev));
+    } catch {
+      setCreateUserError("Network error — could not reach the server.");
+    } finally {
+      setCreatingUser(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -108,6 +151,71 @@ export default function AdminPage() {
               <StatTile label="Total Plays" value={stats.totalPlays} />
             </div>
           )}
+
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <h2 className="text-lg font-semibold">Add User</h2>
+            <p className="mt-1 text-sm text-white/40">Creates an account directly — bypasses the registration gate.</p>
+
+            <form onSubmit={createUser} className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/50">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/50">Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/50">Name (optional)</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  placeholder="Display name"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-white/50">Role</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="sm:col-span-2 flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={creatingUser}
+                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingUser ? "Creating…" : "Create user"}
+                </button>
+                {createUserError && <p className="text-sm text-red-400">{createUserError}</p>}
+                {createUserNotice && <p className="text-sm text-emerald-400">{createUserNotice}</p>}
+              </div>
+            </form>
+          </section>
         </div>
       </main>
     </div>
