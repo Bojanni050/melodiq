@@ -83,11 +83,18 @@ export default function Sidebar({ credits }: SidebarProps) {
         ]
       : [
           {
+            label: "BROWSE",
+            items: [
+              { href: "/discover", label: "Discover", icon: "discover" },
+              { href: "/discover/releases", label: "Releases", icon: "releases" },
+            ],
+          },
+          {
             label: "ORGANIZE",
             items: [
               { href: "/library", label: "Library", icon: "library" },
               { href: "/playlists", label: "Playlists", icon: "playlists" },
-              { href: "/releases", label: "Releases", icon: "releases" },
+              { href: "/releases", label: "My Releases", icon: "releases" },
               { href: "/archive", label: "Master Tracks", icon: "archive" },
               { href: "/smart-archive", label: "Smart Archive", icon: "smart-archive" },
               { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
