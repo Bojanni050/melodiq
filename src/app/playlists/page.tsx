@@ -11,18 +11,6 @@ import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
-const RELEASE_TYPES: { value: "single" | "ep" | "album"; label: string }[] = [
-  { value: "single", label: "Single" },
-  { value: "ep", label: "EP" },
-  { value: "album", label: "Album" },
-];
-
-function defaultReleaseTypeForTrackCount(count: number): "single" | "ep" | "album" {
-  if (count <= 1) return "single";
-  if (count <= 6) return "ep";
-  return "album";
-}
-
 type Track = {
   id: string;
   title: string | null;
@@ -71,11 +59,10 @@ export default function PlaylistsPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const user = useUserStore((s) => s.user);
   const isListener = user?.role === "listener" || user?.role == null;
-  const isAdmin = user?.role === "admin";
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const { playlists, loadPlaylists, createPlaylist, updatePlaylistDescription, deletePlaylist } = usePlaylistStore();
-  const { loadReleases, createRelease, toggleReleasePublic } = useReleaseStore();
+  const { playlists, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
 
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,15 +75,6 @@ export default function PlaylistsPage() {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
   const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [convertPlaylistId, setConvertPlaylistId] = useState<string | null>(null);
-  const [convertTitle, setConvertTitle] = useState("");
-  const [convertType, setConvertType] = useState<"single" | "ep" | "album">("single");
-  const [convertArtistAlias, setConvertArtistAlias] = useState("");
-  const [converting, setConverting] = useState(false);
-  const [convertError, setConvertError] = useState<string | null>(null);
-  const [publishPromptRelease, setPublishPromptRelease] = useState<{ id: string; title: string; trackCount: number } | null>(null);
-  const [publishing, setPublishing] = useState(false);
 
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
@@ -287,78 +265,6 @@ export default function PlaylistsPage() {
     router.push(`/playlists/${playlistId}`);
   }
 
-  function openConvertDialog(playlist: { id: string; name: string; trackIds: string[] }) {
-    setConvertPlaylistId(playlist.id);
-    setConvertTitle(playlist.name);
-    setConvertType(defaultReleaseTypeForTrackCount(playlist.trackIds.length));
-    setConvertArtistAlias("");
-    setConvertError(null);
-  }
-
-  async function handleConvertToRelease() {
-    const playlist = playlists.find((p) => p.id === convertPlaylistId);
-    if (!playlist || playlist.isSystem) return;
-
-    const title = convertTitle.trim();
-    if (!title) {
-      setConvertError("Title is required.");
-      return;
-    }
-
-    setConverting(true);
-    setConvertError(null);
-
-    try {
-      const releaseId = await createRelease({
-        title,
-        type: convertType,
-        artistName: convertArtistAlias || undefined,
-      });
-      if (!releaseId) {
-        setConvertError("Failed to create the release. Try again.");
-        setConverting(false);
-        return;
-      }
-
-      // Sequential + awaited: the server assigns each track's position as
-      // max(existing)+1, so firing these in parallel could race and land
-      // two tracks on the same position.
-      for (const trackId of playlist.trackIds) {
-        const res = await fetch(`/api/releases/${releaseId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "add-track", trackId, allowDuplicate: true }),
-        });
-        if (!res.ok) {
-          console.error("[convert-to-release] failed to add track", trackId, res.status);
-        }
-      }
-
-      await loadReleases();
-      deletePlaylist(playlist.id);
-
-      setConvertPlaylistId(null);
-      setPublishPromptRelease({ id: releaseId, title, trackCount: playlist.trackIds.length });
-    } catch (error) {
-      console.error("[convert-to-release] failed", error);
-      setConvertError("Something went wrong converting this playlist. Try again.");
-    } finally {
-      setConverting(false);
-    }
-  }
-
-  async function handlePublishDecision(publish: boolean) {
-    if (!publishPromptRelease) return;
-    const releaseId = publishPromptRelease.id;
-    if (publish) {
-      setPublishing(true);
-      await toggleReleasePublic(releaseId);
-      setPublishing(false);
-    }
-    setPublishPromptRelease(null);
-    router.push(`/releases/${releaseId}`);
-  }
-
   return (
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
@@ -523,15 +429,6 @@ export default function PlaylistsPage() {
                             >
                               Change cover
                             </button>
-                            {isAdmin && !playlist.isSystem && (
-                              <button
-                                type="button"
-                                onClick={() => openConvertDialog(playlist)}
-                                className="text-sm text-white/45 transition-colors hover:text-white"
-                              >
-                                Convert to release
-                              </button>
-                            )}
                           </div>
                         </div>
                       </article>
@@ -698,162 +595,6 @@ export default function PlaylistsPage() {
                 </>
               );
             })()}
-          </div>
-        </div>
-      )}
-
-      {convertPlaylistId && (() => {
-        const playlist = playlists.find((p) => p.id === convertPlaylistId);
-        if (!playlist || playlist.isSystem) return null;
-        const trackCount = playlist.trackIds.length;
-        const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
-        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
-
-        return (
-          <div className="fixed inset-0 z-70">
-            <button
-              type="button"
-              aria-label="Close convert to release dialog"
-              onClick={() => { if (!converting) setConvertPlaylistId(null); }}
-              className="absolute inset-0 bg-black/65"
-            />
-
-            <div className="absolute left-1/2 top-1/2 w-[min(480px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Convert to Release</h3>
-                  <p className="text-sm text-white/55">Move the {trackCount} {trackCount === 1 ? "track" : "tracks"} in &quot;{playlist.name}&quot; into a new release.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { if (!converting) setConvertPlaylistId(null); }}
-                  className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                  title="Close"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-3">
-                <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-                <p className="text-xs leading-relaxed text-amber-100/90">
-                  This playlist will be permanently deleted once its tracks are moved into the new release. This cannot be undone.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Title</label>
-                  <input
-                    value={convertTitle}
-                    onChange={(e) => setConvertTitle(e.target.value)}
-                    maxLength={200}
-                    disabled={converting}
-                    className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
-                    placeholder="Release title"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Kind of release</label>
-                  <div className="flex gap-2">
-                    {RELEASE_TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        type="button"
-                        disabled={converting}
-                        onClick={() => setConvertType(t.value)}
-                        className={`h-9 flex-1 rounded-full border text-sm font-medium transition-colors disabled:opacity-60 ${
-                          convertType === t.value
-                            ? "border-white bg-white text-black"
-                            : "border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Artist alias</label>
-                  {artistAliasOptions.length > 0 ? (
-                    <select
-                      value={convertArtistAlias}
-                      onChange={(e) => setConvertArtistAlias(e.target.value)}
-                      disabled={converting}
-                      className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 disabled:opacity-60"
-                    >
-                      <option value="">{`Default (${defaultArtistLabel})`}</option>
-                      {artistAliasOptions.map((alias) => (
-                        <option key={alias} value={alias}>{alias}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white/55">
-                      {defaultArtistLabel}
-                    </p>
-                  )}
-                </div>
-
-                {convertError && (
-                  <p className="text-sm text-red-300/90">{convertError}</p>
-                )}
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setConvertPlaylistId(null)}
-                    disabled={converting}
-                    className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConvertToRelease}
-                    disabled={converting || !convertTitle.trim()}
-                    className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {converting ? "Converting..." : "Convert"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {publishPromptRelease && (
-        <div className="fixed inset-0 z-70">
-          <div className="absolute inset-0 bg-black/65" />
-          <div className="absolute left-1/2 top-1/2 w-[min(420px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-            <h3 className="text-lg font-semibold text-white">Release created</h3>
-            <p className="mt-2 text-sm text-white/60 leading-relaxed">
-              Publish &quot;{publishPromptRelease.title}&quot; now? This makes the release and all {publishPromptRelease.trackCount} {publishPromptRelease.trackCount === 1 ? "track" : "tracks"} public immediately.
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => void handlePublishDecision(false)}
-                disabled={publishing}
-                className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-              >
-                Not now
-              </button>
-              <button
-                type="button"
-                onClick={() => void handlePublishDecision(true)}
-                disabled={publishing}
-                className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {publishing ? "Publishing..." : "Publish"}
-              </button>
-            </div>
           </div>
         </div>
       )}
