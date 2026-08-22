@@ -315,39 +315,50 @@ export default function DiscoverPage() {
     const cover = myTrackCoverSrc(track);
     const isPlaying = currentTrack?.id === track.id && globalIsPlaying;
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => handlePlayMyTrack(track)}
-        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-white/20"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handlePlayMyTrack(track);
+          }
+        }}
+        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-white/20 cursor-pointer"
       >
-        <div className="group relative aspect-square w-full overflow-hidden rounded-xl">
-          {cover ? (
-            <img src={cover} alt={track.title ?? "Track"} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-              <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          )}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
-                isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}
-            >
-              {isPlaying ? (
-                <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
+        <div className="group relative aspect-square w-full">
+          <div className="absolute inset-0 overflow-hidden rounded-xl">
+            {cover ? (
+              <img src={cover} alt={track.title ?? "Track"} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
+                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-              ) : (
-                <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
+                  isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
+                {isPlaying ? (
+                  <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </div>
             </div>
           </div>
+          {/* Sibling of the overflow-hidden cover box, not a child of it — its
+              dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
         </div>
         <div className="min-w-0">
@@ -358,7 +369,7 @@ export default function DiscoverPage() {
           <span>{formatDuration(track.duration)}</span>
           <span>{(track.playCount ?? 0).toLocaleString()} plays</span>
         </div>
-      </button>
+      </div>
     );
   }
 
@@ -432,45 +443,49 @@ export default function DiscoverPage() {
         href={`/discover/track/${track.id}`}
         className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
       >
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handlePlay(track);
-          }}
-          className="group relative aspect-square w-full overflow-hidden rounded-xl"
-          aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
-        >
-          {cover ? (
-            <img src={cover} alt={track.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-              <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          )}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
-                isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}
-            >
-              {isPlaying ? (
-                <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
+        <div className="group relative aspect-square w-full">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handlePlay(track);
+            }}
+            className="absolute inset-0 overflow-hidden rounded-xl"
+            aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
+          >
+            {cover ? (
+              <img src={cover} alt={track.title} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
+                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-              ) : (
-                <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
+                  isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
+                {isPlaying ? (
+                  <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </div>
             </div>
-          </div>
+          </button>
+          {/* Sibling of the overflow-hidden play button, not a child of it — its
+              dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
-        </button>
+        </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">{track.title}</p>
           <p className="truncate text-sm text-white/45">{track.artistName || "Unknown Artist"}</p>
