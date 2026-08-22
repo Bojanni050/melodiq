@@ -60,7 +60,7 @@ async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: st
   return { ok: false, info: `Failed (404): could not find a working WaveSpeed endpoint. Last: ${lastMessage}` };
 }
 
-const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string }> = {
+const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string; body?: Record<string, unknown> }> = {
   lyria: {
     url: "https://generativelanguage.googleapis.com/v1beta/models",
     keyPrefix: "",
@@ -97,6 +97,14 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     url: "https://api.openai.com/v1/models",
     keyPrefix: "",
     method: "GET",
+  },
+  edenai: {
+    // No dedicated "whoami" endpoint is documented; a minimal 1-token chat
+    // completion is cheap and returns 401/403 for an invalid key.
+    url: "https://api.edenai.run/v3/chat/completions",
+    keyPrefix: "",
+    method: "POST",
+    body: { model: "openai/gpt-4o-mini", messages: [{ role: "user", content: "hi" }], max_tokens: 1 },
   },
   apiframe: {
     url: "https://api.apiframe.ai/v2/me",
@@ -145,6 +153,7 @@ export async function POST(request: Request) {
     const response = await axios({
       method: endpoint.method,
       url: endpoint.url,
+      data: endpoint.body,
       headers: {
         ...(endpoint.authHeader
           ? { [endpoint.authHeader]: apiKey }
@@ -197,6 +206,8 @@ export async function POST(request: Request) {
       }
     } else if (provider === "openai") {
       info = `Connected — ${response.data.data?.length ?? 0} models available`;
+    } else if (provider === "edenai") {
+      info = `Connected — Eden AI API is active`;
     } else if (provider === "lyria") {
       info = `Connected — ${response.data.models?.length ?? response.data.data?.length ?? "unknown"} models available`;
     }

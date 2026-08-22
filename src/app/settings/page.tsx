@@ -27,6 +27,7 @@ const TRACKED_SETTINGS_KEYS = [
   "OPENROUTER_IMAGE_MODEL",
   "OPENROUTER_TRACKDNA_MODEL",
   "PROMPT_LLM_PROVIDER",
+  "IMAGE_LLM_PROVIDER",
   "LYRICS_LLM_PROVIDER",
   "TRACKDNA_LLM_PROVIDER",
   "ADVANCED_LLM_PROVIDER",
@@ -105,6 +106,7 @@ export default function SettingsPage() {
         const settings = {
           ...data,
           PROMPT_LLM_PROVIDER: data.PROMPT_LLM_PROVIDER || "openrouter",
+          IMAGE_LLM_PROVIDER: data.IMAGE_LLM_PROVIDER || "openrouter",
           LYRICS_LLM_PROVIDER: data.LYRICS_LLM_PROVIDER || "openrouter",
           TRACKDNA_LLM_PROVIDER: data.TRACKDNA_LLM_PROVIDER || "openrouter",
           ADVANCED_LLM_PROVIDER: data.ADVANCED_LLM_PROVIDER || "openrouter",
@@ -379,9 +381,10 @@ export default function SettingsPage() {
     : allModels;
 
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc"].includes(p.id));
-  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai"].includes(p.id));
+  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
+  const edenaiProvider = llmProviders.find((p) => p.id === "edenai")!;
   const diskCacheSizeBytes = Number(values.DISK_CACHE_SIZE_BYTES || "0");
 
   return (
@@ -418,6 +421,7 @@ export default function SettingsPage() {
                         testingModels={testingModels}
                       />
                       <ProviderSection provider={openaiProvider} values={values} onFieldChange={updateField} />
+                      <ProviderSection provider={edenaiProvider} values={values} onFieldChange={updateField} />
                     </div>
                   )}
 

@@ -107,8 +107,22 @@ export default function AiRoutingSection({
             >
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">Used by Generate Style / prompt optimization.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white/50 mb-1">Image prompt provider</label>
+            <select
+              value={values.IMAGE_LLM_PROVIDER || "openrouter"}
+              onChange={(e) => onFieldChange("IMAGE_LLM_PROVIDER", e.target.value)}
+              className="select-field font-mono text-sm"
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
+            </select>
+            <p className="text-xs text-white/25 mt-1">Used to write the visual scene description for auto-generated cover art.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-white/50 mb-1">Lyrics provider</label>
@@ -119,6 +133,7 @@ export default function AiRoutingSection({
             >
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">Used by Generate Lyrics and Lyric Studio block generation.</p>
           </div>
@@ -131,6 +146,7 @@ export default function AiRoutingSection({
             >
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
               Used by the automatic Track DNA analysis (atmosphere tags &amp; lyrics quality score) that runs once
@@ -147,6 +163,7 @@ export default function AiRoutingSection({
             >
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
               Used by the Advanced Track DNA analysis for more thorough lyrics &amp; composition critique with tips.
@@ -161,6 +178,7 @@ export default function AiRoutingSection({
             >
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
+              <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
               Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.

@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
-export type LLMProvider = "openrouter" | "openai";
+export type LLMProvider = "openrouter" | "openai" | "edenai";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
 
 interface CallLLMOptions {
@@ -10,12 +10,13 @@ interface CallLLMOptions {
   provider?: LLMProvider;
   openRouterModelOverride?: string;
   openAiModelOverride?: string;
+  edenAiModelOverride?: string;
   temperature?: number;
   topP?: number;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
-  if (value === "openrouter" || value === "openai") return value;
+  if (value === "openrouter" || value === "openai" || value === "edenai") return value;
   return "";
 }
 
@@ -27,7 +28,7 @@ async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""
     return normalizeProvider(await getSetting("LYRICS_LLM_PROVIDER")) || "openrouter";
   }
   if (purpose === "image") {
-    return "openrouter";
+    return normalizeProvider(await getSetting("IMAGE_LLM_PROVIDER")) || "openrouter";
   }
   if (purpose === "trackdna") {
       return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
@@ -72,12 +73,25 @@ export async function callLLM(
     normalizedOptions.openAiModelOverride ||
     (purpose === "prompt" ? await getSetting("OPENAI_PROMPT_MODEL") : "") ||
     (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
+    (purpose === "image" ? await getSetting("OPENAI_IMAGE_MODEL") : "") ||
     (purpose === "trackdna" ? await getSetting("OPENAI_TRACKDNA_MODEL") : "") ||
     (purpose === "advanced" ? await getSetting("OPENAI_ADVANCED_DNA_MODEL") : "") ||
     (purpose === "lyriciq" ? await getSetting("OPENAI_LYRICIQ_MODEL") : "") ||
     (await getSetting("OPENAI_MODEL")) ||
     process.env.OPENAI_MODEL ||
     "gpt-4o";
+  const EDENAI_KEY = (await getSetting("EDENAI_API_KEY")) || process.env.EDENAI_API_KEY || "";
+  const EDENAI_MODEL =
+    normalizedOptions.edenAiModelOverride ||
+    (purpose === "prompt" ? await getSetting("EDENAI_PROMPT_MODEL") : "") ||
+    (purpose === "lyrics" ? await getSetting("EDENAI_LYRICS_MODEL") : "") ||
+    (purpose === "image" ? await getSetting("EDENAI_IMAGE_MODEL") : "") ||
+    (purpose === "trackdna" ? await getSetting("EDENAI_TRACKDNA_MODEL") : "") ||
+    (purpose === "advanced" ? await getSetting("EDENAI_ADVANCED_DNA_MODEL") : "") ||
+    (purpose === "lyriciq" ? await getSetting("EDENAI_LYRICIQ_MODEL") : "") ||
+    (await getSetting("EDENAI_MODEL")) ||
+    process.env.EDENAI_MODEL ||
+    "openai/gpt-4o-mini";
 
   if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
     let res;
@@ -185,6 +199,64 @@ export async function callLLM(
     if (typeof content !== "string") {
       throw new Error(
         `OpenAI response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    return content;
+  }
+
+  if (requestedProvider === "edenai" && EDENAI_KEY) {
+    let res;
+    try {
+      // Eden AI's chat endpoint is OpenAI-compatible: same messages/choices
+      // shape, but the model is namespaced as "provider/model" (e.g.
+      // "openai/gpt-4o-mini") since Eden AI is itself a multi-provider router.
+      res = await axios.post(
+        "https://api.edenai.run/v3/chat/completions",
+        {
+          model: EDENAI_MODEL,
+          temperature: normalizedOptions.temperature,
+          top_p: normalizedOptions.topP,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${EDENAI_KEY}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 60_000,
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const looksLikeHtml =
+        typeof data === "string" && data.trimStart().startsWith("<");
+      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+
+      if (looksLikeHtml || isParseError) {
+        throw new Error(
+          `Eden AI (${EDENAI_MODEL}) returned a non-JSON response` +
+          (status ? ` (HTTP ${status})` : "") +
+          `. The model is likely overloaded or unavailable — try again or switch model.`
+        );
+      }
+
+      const apiMessage =
+        (typeof data === "object" && (data?.error?.message || data?.message)) ||
+        err?.message ||
+        "Eden AI request failed";
+      throw new Error(
+        `Eden AI request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+      );
+    }
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        `Eden AI response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
       );
     }
     return content;
@@ -467,10 +539,16 @@ Type: ${type}
 Musical Style/Genre Cues: ${songContent}
 ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
 
-  const imageModel = await getSetting("OPENROUTER_IMAGE_MODEL");
+  const [openRouterImageModel, openAiImageModel, edenAiImageModel] = await Promise.all([
+    getSetting("OPENROUTER_IMAGE_MODEL"),
+    getSetting("OPENAI_IMAGE_MODEL"),
+    getSetting("EDENAI_IMAGE_MODEL"),
+  ]);
   return callLLM(userPrompt, systemPrompt, {
     purpose: "image",
-    openRouterModelOverride: imageModel || undefined,
+    openRouterModelOverride: openRouterImageModel || undefined,
+    openAiModelOverride: openAiImageModel || undefined,
+    edenAiModelOverride: edenAiImageModel || undefined,
   });
 }
 
