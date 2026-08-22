@@ -1,23 +1,19 @@
 "use client";
 
-import { useSidebarStore, useUserStore } from "@/lib/store";
+import { useUserStore } from "@/lib/store";
 
 export default function NonAdminHeader() {
   const user = useUserStore((s) => s.user);
   const isListener = user?.role === "listener" || user?.role == null;
-  const collapsed = useSidebarStore((s) => s.collapsed);
-  const isQHD = useSidebarStore((s) => s.isQHD);
 
   if (!user || !isListener) return null;
 
-  const sidebarWidth = isQHD && !collapsed ? 300 : collapsed ? 60 : 240;
-
+  // Mobile-only: sits in normal document flow (not fixed) so the page
+  // content below it is pushed down instead of getting covered. Hidden
+  // entirely on desktop (lg+), where the sidebar already carries the brand.
   return (
-    <header
-      className="fixed top-0 right-0 z-20 flex h-14 items-center border-b border-white/5 bg-[#0d0d12]/95 px-6 backdrop-blur-sm lg:flex hidden pointer-events-none"
-      style={{ left: sidebarWidth }}
-    >
-      <span className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent pointer-events-auto">
+    <header className="relative z-20 flex h-14 items-center border-b border-white/5 bg-[#0d0d12]/95 px-6 backdrop-blur-sm lg:hidden">
+      <span className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
         MelodIQ
       </span>
     </header>
