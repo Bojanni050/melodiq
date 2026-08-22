@@ -52,6 +52,7 @@ export async function GET(
       duration: tracks.duration,
       playCount: tracks.playCount,
       othersPlayCount: tracks.othersPlayCount,
+      lyrics: tracks.lyrics,
       lyricsTimestamps: tracks.lyricsTimestamps,
       releaseStatus: tracks.releaseStatus,
     })
@@ -74,6 +75,7 @@ export async function GET(
     hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
     duration: row.duration,
     totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
+    lyrics: row.lyrics || null,
     lyricsTimestamps: row.lyricsTimestamps || null,
     side: row.side,
   }));

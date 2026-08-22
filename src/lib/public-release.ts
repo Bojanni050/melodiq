@@ -11,6 +11,7 @@ export interface PublicReleaseTrack {
   hasCoverProxy: boolean;
   duration: number | null;
   totalPlays: number;
+  lyrics: string | null;
   lyricsTimestamps: string | null;
   side: string | null;
 }
@@ -43,7 +44,7 @@ export function publicReleaseTracksToTrackItems(
     provider: "discover",
     providerModel: "discover",
     prompt: "",
-    lyrics: null,
+    lyrics: t.lyrics ?? null,
     lyricsTimestamps: t.lyricsTimestamps ?? null,
     status: "done",
     audioUrl: null,

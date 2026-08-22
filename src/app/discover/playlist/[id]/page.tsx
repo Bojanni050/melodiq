@@ -28,6 +28,7 @@ interface PublicPlaylistTrack {
   hasCoverProxy: boolean;
   duration: number | null;
   totalPlays: number;
+  lyrics: string | null;
   lyricsTimestamps: string | null;
 }
 
@@ -115,7 +116,7 @@ export default function PublicPlaylistPage() {
       provider: "discover",
       providerModel: "discover",
       prompt: "",
-      lyrics: null,
+      lyrics: t.lyrics ?? null,
       lyricsTimestamps: t.lyricsTimestamps ?? null,
       status: "done",
       audioUrl: null,
