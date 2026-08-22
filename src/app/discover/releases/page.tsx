@@ -48,6 +48,7 @@ function DiscoverReleasesPageInner() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("date");
 
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
   const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
@@ -171,6 +172,16 @@ function DiscoverReleasesPageInner() {
     player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
   }
 
+  function handlePlayAll() {
+    if (allTracks.length === 0) return;
+    if (currentTrack && allTracks.some((t) => t.id === currentTrack.id)) {
+      const player = usePlayerStore.getState();
+      player.setIsPlaying(!player.isPlaying);
+      return;
+    }
+    playReleaseTrack(allTracks, allTracks[0]);
+  }
+
   function handlePlayFromDetailsPanel(url: string) {
     if (!selectedTrack) return;
     const releaseId = releaseIdByTrackId.get(selectedTrack.id);
@@ -205,7 +216,22 @@ function DiscoverReleasesPageInner() {
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="space-y-1">
-                  <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Releases</h1>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Releases</h1>
+                    {allTracks.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handlePlayAll}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95"
+                        aria-label="Play all releases"
+                        title="Play all releases"
+                      >
+                        <svg className="h-4 w-4 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm text-white/45">
                     Published singles, EPs, and albums from every artist on Melodiq.
                   </p>
