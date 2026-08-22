@@ -11,7 +11,7 @@ export function useTrackRating(track: TrackDetailTrack, initialTrack: TrackDetai
     setCurrentRating(initialTrack.rating ?? null);
   }, [initialTrack]);
 
-  async function handleRating(newRating: "up" | "down") {
+  async function handleRating(newRating: "up") {
     // Toggle: if same rating clicked, set to null
     const rating = currentRating === newRating ? null : newRating;
 

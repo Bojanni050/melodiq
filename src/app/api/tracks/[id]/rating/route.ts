@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
+import { addTrackToFavoritesPlaylist, removeTrackFromFavoritesPlaylist } from "@/lib/playlists";
 
 export async function PATCH(
   request: NextRequest,
@@ -22,6 +23,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
 
+  const previousRating = result[0].rating;
+
   try {
     const body = await request.json();
     const { rating } = body;
@@ -35,6 +38,14 @@ export async function PATCH(
       .set({ rating })
       .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
       .returning();
+
+    // "up" (the heart / Favoriet button) keeps the Favorieten system
+    // playlist in sync — added when set, removed when un-favorited.
+    if (rating === "up" && previousRating !== "up") {
+      await addTrackToFavoritesPlaylist(userId, id);
+    } else if (rating !== "up" && previousRating === "up") {
+      await removeTrackFromFavoritesPlaylist(userId, id);
+    }
 
     return NextResponse.json(updated[0]);
   } catch (error) {

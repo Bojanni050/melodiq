@@ -4,12 +4,17 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { playlists } from "@/db/schema";
-import { getUserPlaylistsWithTrackIds } from "@/lib/playlists";
+import { ensureFavoritesPlaylist, getUserPlaylistsWithTrackIds } from "@/lib/playlists";
 import { requireAuth } from "@/lib/require-auth";
 
 export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+
+  // Guarantees every user has a Favorieten playlist, even with zero
+  // favorited tracks so far — Master Tracks only appears once a track is
+  // linked, but Favorieten should always be there to receive hearts.
+  await ensureFavoritesPlaylist(auth.userId);
 
   const payload = await getUserPlaylistsWithTrackIds(auth.userId);
   return NextResponse.json({ playlists: payload });

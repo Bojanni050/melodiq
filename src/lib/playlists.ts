@@ -138,3 +138,64 @@ export async function addTrackToMasterTracksPlaylist(userId: string, trackId: st
 
   await db.insert(playlistTracks).values({ playlistId, trackId, position: nextPosition });
 }
+
+const FAVORITES_PLAYLIST_NAME = "Favorieten";
+
+/**
+ * Find-or-create the user's system-managed "Favorieten" playlist — private
+ * (unpublished) by default, never deletable/renamable, and its tracks can
+ * only be reordered, never added/removed by hand (same isSystem guards as
+ * Master Tracks). Membership is instead driven entirely by a track's
+ * `rating` — see addTrackToFavoritesPlaylist / removeTrackFromFavoritesPlaylist.
+ */
+export async function ensureFavoritesPlaylist(userId: string): Promise<{ id: string }> {
+  const existing = await db
+    .select({ id: playlists.id })
+    .from(playlists)
+    .where(and(eq(playlists.userId, userId), eq(playlists.name, FAVORITES_PLAYLIST_NAME)))
+    .limit(1);
+  if (existing[0]) return existing[0];
+
+  const inserted = await db
+    .insert(playlists)
+    .values({ userId, name: FAVORITES_PLAYLIST_NAME, isSystem: true })
+    .onConflictDoNothing({ target: [playlists.userId, playlists.name] })
+    .returning({ id: playlists.id });
+  if (inserted[0]) return inserted[0];
+
+  // Lost the create race to a concurrent request — read back what it made.
+  const [row] = await db
+    .select({ id: playlists.id })
+    .from(playlists)
+    .where(and(eq(playlists.userId, userId), eq(playlists.name, FAVORITES_PLAYLIST_NAME)))
+    .limit(1);
+  return row;
+}
+
+/** Adds a track to the user's Favorieten playlist if it isn't already there. */
+export async function addTrackToFavoritesPlaylist(userId: string, trackId: string): Promise<void> {
+  const { id: playlistId } = await ensureFavoritesPlaylist(userId);
+
+  const already = await db
+    .select({ id: playlistTracks.id })
+    .from(playlistTracks)
+    .where(and(eq(playlistTracks.playlistId, playlistId), eq(playlistTracks.trackId, trackId)))
+    .limit(1);
+  if (already[0]) return;
+
+  const maxPos = await db
+    .select({ value: sql<number>`coalesce(max(${playlistTracks.position}), -1)` })
+    .from(playlistTracks)
+    .where(eq(playlistTracks.playlistId, playlistId));
+  const nextPosition = Number(maxPos[0]?.value ?? -1) + 1;
+
+  await db.insert(playlistTracks).values({ playlistId, trackId, position: nextPosition });
+}
+
+/** Removes a track from the user's Favorieten playlist, e.g. when un-favorited. */
+export async function removeTrackFromFavoritesPlaylist(userId: string, trackId: string): Promise<void> {
+  const { id: playlistId } = await ensureFavoritesPlaylist(userId);
+  await db
+    .delete(playlistTracks)
+    .where(and(eq(playlistTracks.playlistId, playlistId), eq(playlistTracks.trackId, trackId)));
+}

@@ -155,7 +155,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
         )}
 
-        {/* Rating Overlay (Top Right) */}
+        {/* Favoriet Overlay (Top Right) */}
         {track.status === "done" && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
             <button
@@ -163,29 +163,14 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               disabled={ratingLoading}
               className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
                 currentRating === "up"
-                  ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                  ? "bg-pink-500/20 text-pink-400 border border-pink-500/30"
                   : "bg-black/40 text-white/70 border border-white/10 hover:bg-black/60 hover:text-white"
               }`}
-              title="Thumbs up"
-              aria-label="Rate track positive"
+              title="Favoriet"
+              aria-label={currentRating === "up" ? "Remove from Favorieten" : "Add to Favorieten"}
             >
               <svg className="w-4 h-4" fill={currentRating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-              </svg>
-            </button>
-            <button
-              onClick={() => handleRating("down")}
-              disabled={ratingLoading}
-              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
-                currentRating === "down"
-                  ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                  : "bg-black/40 text-white/70 border border-white/10 hover:bg-black/60 hover:text-white"
-              }`}
-              title="Thumbs down"
-              aria-label="Rate track negative"
-            >
-              <svg className="w-4 h-4" fill={currentRating === "down" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </button>
           </div>

@@ -172,7 +172,7 @@ export function useTrackCardActions({
     }
   }
 
-  async function handleRating(newRating: "up" | "down") {
+  async function handleRating(newRating: "up") {
     const rating = currentRating === newRating ? null : newRating;
     setRatingLoading(true);
     try {
