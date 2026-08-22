@@ -32,6 +32,19 @@ export default function ModelDetailModal({ modelDetail, onClose }: ModelDetailMo
               <p className="font-mono text-sm">{modelDetail.id}</p>
             </div>
 
+            {modelDetail.capabilities && (modelDetail.capabilities.inputModalities.length > 0 || modelDetail.capabilities.outputModalities.length > 0) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-white/40 mb-1">Input</h4>
+                  <p className="text-sm text-white/60 capitalize">{modelDetail.capabilities.inputModalities.join(", ") || "—"}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-white/40 mb-1">Output</h4>
+                  <p className="text-sm text-white/60 capitalize">{modelDetail.capabilities.outputModalities.join(", ") || "—"}</p>
+                </div>
+              </div>
+            )}
+
             {modelDetail.description && (
               <div>
                 <h4 className="text-sm font-medium text-white/40 mb-1">Description</h4>

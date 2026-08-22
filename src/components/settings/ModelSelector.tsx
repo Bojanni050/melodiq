@@ -2,6 +2,24 @@
 
 import { formatPrice, truncateDescription, LLMModel } from "@/lib/settings-utils";
 
+const MODALITY_LABELS: Record<string, string> = {
+  image: "Vision",
+  video: "Video",
+  audio: "Audio",
+  file: "Files",
+};
+
+// Only worth calling out modalities beyond plain text (every LLM handles
+// text), and only for providers whose catalog reports this (see LLMModel.capabilities).
+function modalityBadges(model: LLMModel): string[] {
+  const modalities = new Set([
+    ...(model.capabilities?.inputModalities || []),
+    ...(model.capabilities?.outputModalities || []),
+  ]);
+  modalities.delete("text");
+  return [...modalities].map((m) => MODALITY_LABELS[m] || m);
+}
+
 export default function ModelSelector({
   label,
   selected,
@@ -36,6 +54,7 @@ export default function ModelSelector({
           options.map((model) => {
             const isSelected = selected?.id === model.id;
             const description = truncateDescription(model.description, 2);
+            const badges = modalityBadges(model);
             return (
               <div
                 key={model.id}
@@ -43,7 +62,17 @@ export default function ModelSelector({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{model.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm text-white truncate">{model.name}</p>
+                      {badges.map((badge) => (
+                        <span
+                          key={badge}
+                          className="shrink-0 rounded-full border border-primary-400/30 bg-primary-400/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-300"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
                     <p className="text-[11px] text-white/40 font-mono truncate">{model.id}</p>
                     <p className="text-[11px] text-white/50 mt-0.5">
                       In: {formatPrice(model.pricing.prompt)} · Out: {formatPrice(model.pricing.completion)}

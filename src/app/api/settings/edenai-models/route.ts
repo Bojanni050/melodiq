@@ -25,6 +25,10 @@ export async function GET() {
         tokenizer: "",
         instruct_type: "",
       },
+      capabilities: {
+        inputModalities: m.capabilities?.input_modalities || [],
+        outputModalities: m.capabilities?.output_modalities || [],
+      },
     }));
 
     return NextResponse.json({ models });

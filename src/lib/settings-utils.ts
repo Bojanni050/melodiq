@@ -12,6 +12,13 @@ export interface LLMModel {
     tokenizer: string;
     instruct_type: string;
   };
+  // Populated for Eden AI (from its capabilities.input/output_modalities) and
+  // OpenRouter (from architecture.input/output_modalities) model catalogs.
+  // Left undefined for providers without this data — badges just don't render.
+  capabilities?: {
+    inputModalities: string[];
+    outputModalities: string[];
+  };
 }
 
 const WEBHOOK_DEFAULTS = [

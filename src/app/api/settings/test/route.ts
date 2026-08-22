@@ -200,6 +200,10 @@ export async function POST(request: Request) {
           },
           context_length: m.context_length,
           architecture: m.architecture,
+          capabilities: {
+            inputModalities: m.architecture?.input_modalities || [],
+            outputModalities: m.architecture?.output_modalities || [],
+          },
         }));
       } catch {
         models = [];
