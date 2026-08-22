@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { releases, releaseTracks, tracks, users } from "@/db/schema";
+import { prefixCdn } from "@/lib/cdn";
+import { getCdnUrl } from "@/lib/cdn-server";
 
 export const dynamic = "force-dynamic";
 
-// Public, no auth: every published (isPublic) release, for the Discover
-// Releases browse grid. Mirrors /api/discover/playlists.
+// Public, no auth: every published (isPublic) release with its published
+// tracks, for the Discover Releases browse page. Mirrors
+// /api/discover/releases/[id], but for every release at once so the listing
+// page can render each release's tracklist inline without an extra
+// round-trip per release.
 export async function GET() {
-  const rows = await db
+  const releaseRows = await db
     .select({
       id: releases.id,
       title: releases.title,
@@ -16,43 +21,85 @@ export async function GET() {
       kind: releases.kind,
       artistName: releases.artistName,
       publishedAt: releases.publishedAt,
+      s3KeyCover: releases.s3KeyCover,
       ownerArtistAlias: users.artistAlias,
       ownerName: users.name,
-      trackCount: sql<number>`count(distinct ${releaseTracks.id})::int`,
-      totalDuration: sql<number>`coalesce(sum(${tracks.duration}), 0)::int`,
-      totalPlays: sql<number>`coalesce(sum(${tracks.playCount} + ${tracks.othersPlayCount}), 0)::int`,
-      hasCover: sql<boolean>`(${releases.s3KeyCover} is not null) or bool_or(${tracks.s3KeyCover} is not null)`,
     })
     .from(releases)
     .leftJoin(users, eq(users.id, releases.userId))
-    .leftJoin(releaseTracks, eq(releaseTracks.releaseId, releases.id))
-    .leftJoin(tracks, eq(tracks.id, releaseTracks.trackId))
     .where(eq(releases.isPublic, true))
-    .groupBy(
-      releases.id,
-      releases.title,
-      releases.type,
-      releases.kind,
-      releases.artistName,
-      releases.publishedAt,
-      releases.s3KeyCover,
-      users.artistAlias,
-      users.name
-    )
     .orderBy(desc(releases.publishedAt));
 
+  const trackRows = await db
+    .select({
+      releaseId: releaseTracks.releaseId,
+      trackId: releaseTracks.trackId,
+      position: releaseTracks.position,
+      side: releaseTracks.side,
+      title: tracks.title,
+      artistName: tracks.artistName,
+      composerName: tracks.composerName,
+      writerName: tracks.writerName,
+      coverUrl: tracks.coverUrl,
+      s3KeyCover: tracks.s3KeyCover,
+      duration: tracks.duration,
+      playCount: tracks.playCount,
+      othersPlayCount: tracks.othersPlayCount,
+      lyricsTimestamps: tracks.lyricsTimestamps,
+      releaseStatus: tracks.releaseStatus,
+    })
+    .from(releaseTracks)
+    .innerJoin(tracks, eq(tracks.id, releaseTracks.trackId))
+    .where(eq(tracks.releaseStatus, "published"))
+    .orderBy(asc(releaseTracks.position));
+
+  const cdnUrl = await getCdnUrl();
+  const tracksByRelease = new Map<string, typeof trackRows>();
+  for (const row of trackRows) {
+    const list = tracksByRelease.get(row.releaseId) ?? [];
+    list.push(row);
+    tracksByRelease.set(row.releaseId, list);
+  }
+
   return NextResponse.json({
-    releases: rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      type: row.type,
-      kind: row.kind,
-      artistName: row.artistName || row.ownerArtistAlias || row.ownerName || "Unknown Artist",
-      publishedAt: row.publishedAt,
-      trackCount: row.trackCount,
-      totalDuration: row.totalDuration,
-      totalPlays: row.totalPlays,
-      coverUrl: row.hasCover ? `/api/discover/releases/${row.id}/cover` : null,
-    })),
+    releases: releaseRows.map((release) => {
+      const releaseTrackRows = tracksByRelease.get(release.id) ?? [];
+      const serializedTracks = releaseTrackRows.map((row) => ({
+        id: row.trackId,
+        title: row.title || "Untitled",
+        artistName: row.artistName,
+        composerName: row.composerName,
+        writerName: row.writerName,
+        coverUrl: row.coverUrl?.startsWith("/api/tracks/")
+          ? prefixCdn(cdnUrl, row.coverUrl.replace("/api/tracks/", "/api/discover/"))
+          : row.coverUrl,
+        hasCoverProxy: !row.coverUrl && !!row.s3KeyCover,
+        duration: row.duration,
+        totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
+        lyricsTimestamps: row.lyricsTimestamps || null,
+        side: row.side,
+      }));
+
+      const hasCover = !!release.s3KeyCover || releaseTrackRows.some((row) => !!row.s3KeyCover);
+      const totalDuration = releaseTrackRows.reduce((sum, row) => sum + (row.duration ?? 0), 0);
+      const totalPlays = releaseTrackRows.reduce(
+        (sum, row) => sum + (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
+        0
+      );
+
+      return {
+        id: release.id,
+        title: release.title,
+        type: release.type,
+        kind: release.kind,
+        artistName: release.artistName || release.ownerArtistAlias || release.ownerName || "Unknown Artist",
+        publishedAt: release.publishedAt,
+        trackCount: serializedTracks.length,
+        totalDuration,
+        totalPlays,
+        coverUrl: hasCover ? prefixCdn(cdnUrl, `/api/discover/releases/${release.id}/cover`) : null,
+        tracks: serializedTracks,
+      };
+    }),
   });
 }

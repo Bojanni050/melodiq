@@ -14,35 +14,13 @@ import {
 } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
-import { withCdn } from "@/lib/cdn-client";
 import { useSmartBack } from "@/lib/smart-back";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { publicReleaseTracksToTrackItems, type PublicReleaseSummary } from "@/lib/public-release";
 
-interface PublicReleaseTrack {
-  id: string;
-  title: string;
-  artistName: string | null;
-  composerName: string | null;
-  writerName: string | null;
-  coverUrl: string | null;
-  hasCoverProxy: boolean;
-  duration: number | null;
-  totalPlays: number;
-  lyricsTimestamps: string | null;
-  side: string | null;
-}
-
-interface PublicReleaseData {
-  id: string;
-  title: string;
-  type: string;
-  kind: string | null;
+interface PublicReleaseData extends PublicReleaseSummary {
   description: string | null;
-  artistName: string;
-  publishedAt: string | null;
   releaseDate: string | null;
-  coverUrl: string | null;
-  tracks: PublicReleaseTrack[];
 }
 
 export default function PublicReleasePage() {
@@ -104,41 +82,9 @@ export default function PublicReleasePage() {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
-  function coverSrc(track: PublicReleaseTrack): string | null {
-    const url = track.coverUrl;
-    if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
-    if (track.hasCoverProxy) return withCdn(`/api/discover/${track.id}/cover`);
-    return null;
-  }
-
   const releaseTracks: TrackItem[] = useMemo(() => {
-    if (!release?.tracks) return [];
-    return release.tracks.map((t) => ({
-      id: t.id,
-      title: t.title ?? null,
-      provider: "discover",
-      providerModel: "discover",
-      prompt: "",
-      lyrics: null,
-      lyricsTimestamps: t.lyricsTimestamps ?? null,
-      status: "done",
-      audioUrl: null,
-      audioUrlHd: null,
-      format: null,
-      formatHd: null,
-      duration: t.duration ?? null,
-      createdAt: release.publishedAt ?? new Date().toISOString(),
-      error: null,
-      s3KeyHd: null,
-      coverUrl: coverSrc(t),
-      s3KeyCover: null,
-      rating: null,
-      instrumental: null,
-      publicSource: true,
-      artistName: t.artistName ?? release.artistName ?? null,
-      composerName: t.composerName ?? null,
-      writerName: t.writerName ?? null,
-    }));
+    if (!release) return [];
+    return publicReleaseTracksToTrackItems(release);
   }, [release]);
 
   const releaseTracksTotalDuration = useMemo(

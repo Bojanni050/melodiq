@@ -3,22 +3,15 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, useUserStore } from "@/lib/store";
-import { formatDuration } from "@/lib/track-utils";
+import TrackCard from "@/components/tracks/TrackCard";
+import TrackDetail from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
+import { usePlayerStore, usePlaylistStore, useSidebarStore, useUserStore } from "@/lib/store";
+import { formatTotalDuration } from "@/lib/track-utils";
 import { useSmartBack } from "@/lib/smart-back";
-
-interface PublicRelease {
-  id: string;
-  title: string;
-  type: string;
-  kind: string | null;
-  artistName: string;
-  publishedAt: string | null;
-  trackCount: number;
-  totalDuration: number;
-  totalPlays: number;
-  coverUrl: string | null;
-}
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { publicReleaseTracksToTrackItems, type PublicReleaseSummary } from "@/lib/public-release";
+import type { TrackItem } from "@/components/tracks/types";
 
 type TypeFilter = "all" | "single" | "ep" | "album";
 type SortOrder = "date" | "title";
@@ -50,10 +43,14 @@ function DiscoverReleasesPageInner() {
   const isListener = user?.role === "listener" || user?.role == null;
   const backTarget = useSmartBack({ href: "/discover", label: "Back to Discover" });
 
-  const [releases, setReleases] = useState<PublicRelease[]>([]);
+  const [releases, setReleases] = useState<PublicReleaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("date");
+
+  const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
+  const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
 
   useEffect(() => {
     if (!user) void loadUser();
@@ -74,10 +71,15 @@ function DiscoverReleasesPageInner() {
       }
     }
     fetchReleases();
+    void loadPlaylists();
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadPlaylists]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
+  }, [rightPanelWidth]);
 
   const displayedReleases = useMemo(() => {
     const filtered = typeFilter === "all" ? releases : releases.filter((r) => r.type === typeFilter);
@@ -94,16 +96,108 @@ function DiscoverReleasesPageInner() {
     return sorted;
   }, [releases, typeFilter, sortOrder]);
 
+  // Each release's tracks, keyed by release id, plus a flat pool of every
+  // track across every displayed release — the shared details panel and
+  // "which release is this track from" lookups both need the flat pool.
+  const trackItemsByRelease = useMemo(() => {
+    const map = new Map<string, TrackItem[]>();
+    displayedReleases.forEach((release) => {
+      map.set(release.id, publicReleaseTracksToTrackItems(release));
+    });
+    return map;
+  }, [displayedReleases]);
+
+  const allTracks = useMemo(
+    () => Array.from(trackItemsByRelease.values()).flat(),
+    [trackItemsByRelease]
+  );
+
+  const releaseIdByTrackId = useMemo(() => {
+    const map = new Map<string, string>();
+    trackItemsByRelease.forEach((items, releaseId) => {
+      items.forEach((item) => map.set(item.id, releaseId));
+    });
+    return map;
+  }, [trackItemsByRelease]);
+
+  const {
+    selectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(allTracks);
+
+  function toPlayContextTrack(t: TrackItem, audioUrlOverride?: string | null) {
+    return {
+      id: t.id,
+      title: t.title,
+      provider: t.provider,
+      providerModel: t.providerModel,
+      prompt: t.prompt,
+      status: t.status,
+      audioUrl: audioUrlOverride !== undefined ? audioUrlOverride : t.audioUrl,
+      audioUrlHd: t.audioUrlHd,
+      format: t.format,
+      formatHd: t.formatHd,
+      s3Key: null,
+      s3KeyHd: t.s3KeyHd,
+      duration: t.duration,
+      lyrics: t.lyrics,
+      lyricsTimestamps: t.lyricsTimestamps,
+      createdAt: t.createdAt,
+      error: t.error,
+      coverUrl: t.coverUrl ?? null,
+      s3KeyCover: t.s3KeyCover ?? null,
+      rating: t.rating ?? null,
+      artistName: t.artistName ?? null,
+      publicSource: true,
+    };
+  }
+
+  // Plays `track` while queueing the rest of `releaseTrackItems` (its own
+  // release) so Next/autoplay stays scoped to that one release.
+  function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
+    const player = usePlayerStore.getState();
+    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
+
+    player.setPlayContext(playContext);
+    if (player.autoPlayNext) {
+      const index = playContext.findIndex((t) => t.id === track.id);
+      if (index >= 0) {
+        player.setQueue(playContext.slice(index + 1));
+      }
+    }
+
+    player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
+  }
+
+  function handlePlayFromDetailsPanel(url: string) {
+    if (!selectedTrack) return;
+    const releaseId = releaseIdByTrackId.get(selectedTrack.id);
+    const releaseTrackItems = (releaseId && trackItemsByRelease.get(releaseId)) || [selectedTrack];
+    playReleaseTrack(releaseTrackItems, selectedTrack, url || null);
+  }
+
+  function handleDownloadFromDetailsPanel(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3"
+      : selectedTrack?.format ?? "mp3";
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
+  }
+
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
       <div
-        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]"
+        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
         style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
       >
         <main
-          className={`h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
+          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
             isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >
@@ -169,56 +263,104 @@ function DiscoverReleasesPageInner() {
                   Loading releases...
                 </div>
               ) : displayedReleases.length > 0 ? (
-                <div>
-                  {/* Header row */}
-                  <div className="flex items-center gap-3 border-b border-white/8 px-3 pb-2 text-xs uppercase tracking-wide text-white/35">
-                    <span className="w-5 text-center">#</span>
-                    <span className="flex-1">Title</span>
-                    <span className="hidden sm:block w-24 text-right">Plays</span>
-                    <span className="w-12 text-right">
-                      <svg className="ml-auto h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 7v5l3 3" />
-                      </svg>
-                    </span>
-                  </div>
+                <div className="space-y-8">
+                  {displayedReleases.map((release) => {
+                    const releaseTrackItems = trackItemsByRelease.get(release.id) ?? [];
+                    const totalDuration = formatTotalDuration(
+                      releaseTrackItems.reduce((s, t) => s + (t.duration ?? 0), 0)
+                    );
+                    const year = release.publishedAt ? new Date(release.publishedAt).getFullYear() : null;
 
-                  {displayedReleases.map((release, index) => (
-                    <Link
-                      key={release.id}
-                      href={`/discover/release/${release.id}`}
-                      className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/5"
-                    >
-                      <span className="w-5 shrink-0 text-center text-sm text-white/40">{index + 1}</span>
-                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
-                        {release.coverUrl ? (
-                          <img src={release.coverUrl} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
-                            <svg className="h-4 w-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                    return (
+                      <section
+                        key={release.id}
+                        className="rounded-3xl border border-white/8 bg-white/[0.02] p-4 sm:p-6 space-y-5"
+                      >
+                        {/* Hero — cover art left, meta to the right */}
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
+                          <Link
+                            href={`/discover/release/${release.id}`}
+                            className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-36 sm:w-36"
+                          >
+                            {release.coverUrl ? (
+                              <img src={release.coverUrl} alt={release.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
+                                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                              </div>
+                            )}
+                          </Link>
+
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <Link
+                              href={`/discover/release/${release.id}`}
+                              className="block truncate text-xl font-bold tracking-tight text-white hover:underline sm:text-2xl"
+                            >
+                              {release.title}
+                            </Link>
+                            <p className="text-sm text-white/60">
+                              <span className="text-white/85 font-semibold">{release.artistName}</span>
+                              <span className="mx-1.5 text-white/25">·</span>
+                              <span className="capitalize">{release.type}</span>
+                              {year && (
+                                <>
+                                  <span className="mx-1.5 text-white/25">·</span>
+                                  {year}
+                                </>
+                              )}
+                              <span className="mx-1.5 text-white/25">·</span>
+                              {releaseTrackItems.length} {releaseTrackItems.length === 1 ? "track" : "tracks"}
+                              {totalDuration ? `, ${totalDuration}` : ""}
+                            </p>
                           </div>
+
+                          {releaseTrackItems.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => playReleaseTrack(releaseTrackItems, releaseTrackItems[0])}
+                              className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 sm:self-end"
+                              aria-label={`Play ${release.title}`}
+                              title={`Play ${release.title}`}
+                            >
+                              <svg className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Tracks */}
+                        {releaseTrackItems.length > 0 ? (
+                          <div className="space-y-1">
+                            {releaseTrackItems.map((track) => (
+                              <TrackCard
+                                key={track.id}
+                                track={track}
+                                onPlay={(t) => playReleaseTrack(releaseTrackItems, t)}
+                                onSelect={(t) =>
+                                  openTrackDetails({
+                                    ...t,
+                                    coverUrl: t.coverUrl ?? null,
+                                    s3KeyCover: t.s3KeyCover ?? null,
+                                    rating: t.rating ?? null,
+                                  })
+                                }
+                                onAddToPlaylist={(trackId, targetPlaylistId, options) =>
+                                  addTrackToPlaylist(targetPlaylistId, trackId, options)
+                                }
+                                playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
+                                isDetailSelected={selectedTrack?.id === track.id}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="px-1 text-sm text-white/40">This release has no published tracks.</p>
                         )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-white">{release.title}</p>
-                        <p className="truncate text-xs text-white/45">
-                          {release.artistName}
-                          <span className="mx-1.5 text-white/25">·</span>
-                          <span className="capitalize">{release.type}</span>
-                          <span className="mx-1.5 text-white/25">·</span>
-                          {release.trackCount} {release.trackCount === 1 ? "track" : "tracks"}
-                        </p>
-                      </div>
-                      <span className="hidden sm:block w-24 shrink-0 text-right text-sm text-white/45">
-                        {release.totalPlays.toLocaleString()}
-                      </span>
-                      <span className="w-12 shrink-0 text-right text-sm text-white/45">
-                        {formatDuration(release.totalDuration)}
-                      </span>
-                    </Link>
-                  ))}
+                      </section>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-white/45 px-1">No published releases yet.</p>
@@ -226,6 +368,29 @@ function DiscoverReleasesPageInner() {
             </section>
           </div>
         </main>
+
+        <ResizablePanel
+          show={showTrackDetailsPanel}
+          width={rightPanelWidth}
+          setWidth={setRightPanelWidth}
+        >
+          <div className="h-full overflow-y-auto pb-4">
+            {selectedTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={selectedTrack}
+                onClose={closeTrackDetails}
+                onPlay={handlePlayFromDetailsPanel}
+                onDownload={handleDownloadFromDetailsPanel}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
     </div>
   );
