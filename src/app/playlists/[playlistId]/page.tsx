@@ -100,6 +100,7 @@ export default function PlaylistDetailPage() {
   const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     if (activeCheck && !activeCheck()) return;
@@ -692,53 +693,6 @@ export default function PlaylistDetailPage() {
                     All Playlists
                   </button>
 
-                  {selectedPlaylist && (
-                    <button
-                      type="button"
-                      onClick={openDescriptionEditor}
-                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-                    >
-                      {selectedPlaylist.description ? "Edit description" : "Add description"}
-                    </button>
-                  )}
-
-                  {selectedPlaylist && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCoverPicker(true)}
-                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-                    >
-                      Change cover
-                    </button>
-                  )}
-
-                  {selectedPlaylist && !selectedPlaylist.isSystem && isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => void handleTogglePlaylistPublic()}
-                      disabled={togglingPlaylistPublic}
-                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {togglingPlaylistPublic
-                        ? selectedPlaylist.isPublic
-                          ? "Unpublishing…"
-                          : "Publishing…"
-                        : selectedPlaylist.isPublic
-                          ? "Unpublish"
-                          : "Publish to Discover"}
-                    </button>
-                  )}
-
-                  {selectedPlaylist && !selectedPlaylist.isSystem && isAdmin && (
-                    <button
-                      type="button"
-                      onClick={openConvertDialog}
-                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-                    >
-                      Convert to release
-                    </button>
-                  )}
-
                   {playlistTracks.length > 1 && (
                     <button
                       type="button"
@@ -756,6 +710,82 @@ export default function PlaylistDetailPage() {
                     >
                       {isEditingPlaylistOrder ? "Save order" : "Edit order"}
                     </button>
+                  )}
+
+                  {selectedPlaylist && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setMoreMenuOpen((v) => !v)}
+                        aria-label="More playlist actions"
+                        title="More actions"
+                        className={`h-9 w-9 rounded-full border flex items-center justify-center transition-colors ${
+                          moreMenuOpen
+                            ? "border-white/25 bg-white/10 text-white"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <svg className="h-4.5 w-4.5" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="5" cy="12" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="19" cy="12" r="2" />
+                        </svg>
+                      </button>
+
+                      {moreMenuOpen && (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Close menu"
+                            onClick={() => setMoreMenuOpen(false)}
+                            className="fixed inset-0 z-10 cursor-default"
+                          />
+                          <div className="absolute right-0 top-full z-20 mt-1.5 w-56 overflow-hidden rounded-xl border border-white/12 bg-[#181920] py-1 shadow-xl">
+                            <button
+                              type="button"
+                              onClick={() => { openDescriptionEditor(); setMoreMenuOpen(false); }}
+                              className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                            >
+                              {selectedPlaylist.description ? "Edit description" : "Add description"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setShowCoverPicker(true); setMoreMenuOpen(false); }}
+                              className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                            >
+                              Change cover
+                            </button>
+
+                            {!selectedPlaylist.isSystem && isAdmin && (
+                              <>
+                                <div className="my-1 border-t border-white/8" />
+                                <button
+                                  type="button"
+                                  onClick={() => { void handleTogglePlaylistPublic(); setMoreMenuOpen(false); }}
+                                  disabled={togglingPlaylistPublic}
+                                  className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                                >
+                                  {togglingPlaylistPublic
+                                    ? selectedPlaylist.isPublic
+                                      ? "Unpublishing…"
+                                      : "Publishing…"
+                                    : selectedPlaylist.isPublic
+                                      ? "Unpublish"
+                                      : "Publish to Discover"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { openConvertDialog(); setMoreMenuOpen(false); }}
+                                  className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                                >
+                                  Convert to release
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
