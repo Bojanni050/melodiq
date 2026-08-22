@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
 
-const VALID_ROLES = new Set(["user", "admin", "listener"]);
+export const VALID_ROLES = new Set(["user", "admin", "listener"]);
+
+export async function GET() {
+  const admin = await requireAdmin();
+  if (admin instanceof NextResponse) return admin;
+
+  const rows = await db
+    .select({ id: users.id, email: users.email, name: users.name, role: users.role, createdAt: users.createdAt })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+
+  return NextResponse.json({ users: rows });
+}
 
 export async function POST(request: NextRequest) {
   const admin = await requireAdmin();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore } from "@/lib/store";
 
@@ -10,11 +11,23 @@ interface AdminStats {
   totalPlays: number;
 }
 
-function StatTile({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+function StatTile({ label, value, href }: { label: string; value: number; href?: string }) {
+  const content = (
+    <>
       <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-white">{value.toLocaleString()}</p>
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-2xl border border-white/10 bg-white/5 px-5 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.07]">
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+      {content}
     </div>
   );
 }
@@ -146,7 +159,7 @@ export default function AdminPage() {
             <p className="text-sm text-white/50">Loading...</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-              <StatTile label="Users" value={stats.totalUsers} />
+              <StatTile label="Users" value={stats.totalUsers} href="/admin/users" />
               <StatTile label="Tracks" value={stats.totalTracks} />
               <StatTile label="Total Plays" value={stats.totalPlays} />
             </div>
