@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
-import TrackDetail from "@/components/TrackDetail";
+import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { usePlayerStore, usePlaylistStore, useSidebarStore, useStudioStore, useUserStore } from "@/lib/store";
+import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
+import {
+  usePlayerStore,
+  usePlaylistStore,
+  useReleaseStore,
+  useSidebarStore,
+  useStudioStore,
+  useUserStore,
+  useWorkspaceStore,
+} from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
 
@@ -20,7 +29,11 @@ export default function PlaylistDetailPage() {
   const playlistId = params?.playlistId;
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
-  useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
+  const isListener = user?.role === "listener";
+  const allowLyricsEdit = user?.role === "admin";
+  useEffect(() => {
+    if (!user) void loadUser();
+  }, [user, loadUser]);
 
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
@@ -35,6 +48,8 @@ export default function PlaylistDetailPage() {
     localMovePlaylistTrack,
     loadPlaylists,
   } = usePlaylistStore();
+  const loadReleases = useReleaseStore((state) => state.loadReleases);
+  const moveTracksToWorkspace = useWorkspaceStore((state) => state.moveTracksToWorkspace);
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,28 +59,38 @@ export default function PlaylistDetailPage() {
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
 
+  const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
+    if (activeCheck && !activeCheck()) return;
+    const res = await fetch("/api/tracks?status=done");
+    if (activeCheck && !activeCheck()) return;
+    if (res.ok) {
+      const data = await res.json();
+      setTracks((data.tracks || []).map((t: TrackItem) => ({ ...t })));
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     let active = true;
-
-    async function fetchTracks() {
-      const res = await fetch("/api/tracks?status=done");
-      if (!active) return;
-
-      if (res.ok) {
-        const data = await res.json();
-        setTracks((data.tracks || []).map((t: TrackItem) => ({ ...t })));
-      }
-
-      if (active) setLoading(false);
-    }
-
-    fetchTracks();
+    fetchTracks(() => active);
     void loadPlaylists();
-
+    void loadReleases();
     return () => {
       active = false;
     };
-  }, [loadPlaylists, playlistId]);
+  }, [fetchTracks, loadPlaylists, loadReleases, playlistId]);
+
+  useEffect(() => {
+    function onTracksChanged() {
+      let active = true;
+      fetchTracks(() => active);
+      return () => {
+        active = false;
+      };
+    }
+    window.addEventListener("tracks-changed", onTracksChanged);
+    return () => window.removeEventListener("tracks-changed", onTracksChanged);
+  }, [fetchTracks]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
@@ -84,7 +109,9 @@ export default function PlaylistDetailPage() {
   const playlistTracks = useMemo(() => {
     if (!selectedPlaylist) return [];
     const byId = new Map(tracks.map((t) => [t.id, t]));
-    return selectedPlaylist.trackIds.map((id) => byId.get(id)).filter((t): t is TrackItem => Boolean(t));
+    return selectedPlaylist.trackIds
+      .map((id) => byId.get(id))
+      .filter((t): t is TrackItem => Boolean(t));
   }, [selectedPlaylist, tracks]);
 
   const playlistTracksTotalDuration = useMemo(
@@ -94,21 +121,60 @@ export default function PlaylistDetailPage() {
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
-    tracks.forEach((t) => { if (t.artistName) names.add(t.artistName); });
+    tracks.forEach((t) => {
+      if (t.artistName) names.add(t.artistName);
+    });
     return Array.from(names).sort();
   }, [tracks]);
 
   const knownComposerNames = useMemo(() => {
     const names = new Set<string>();
-    tracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    tracks.forEach((t) => {
+      if (t.composerName) names.add(t.composerName);
+    });
     return Array.from(names).sort();
   }, [tracks]);
 
   const knownWriterNames = useMemo(() => {
     const names = new Set<string>();
-    tracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
+    tracks.forEach((t) => {
+      if (t.writerName) names.add(t.writerName);
+    });
     return Array.from(names).sort();
   }, [tracks]);
+
+  useEffect(() => {
+    function consumeJumpToTrack() {
+      const trackId = sessionStorage.getItem("melodiq-jump-to-track");
+      if (!trackId) return;
+      sessionStorage.removeItem("melodiq-jump-to-track");
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("melodiq:scroll-to-track", { detail: { trackId } }));
+      }, 300);
+    }
+
+    consumeJumpToTrack();
+    window.addEventListener("melodiq:jump-to-now-playing", consumeJumpToTrack);
+    return () => window.removeEventListener("melodiq:jump-to-now-playing", consumeJumpToTrack);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || tracks.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetTrackId = params.get("trackId");
+    if (!targetTrackId) return;
+
+    const foundTrack = tracks.find((t) => t.id === targetTrackId);
+    if (foundTrack) {
+      setSelectedTrack(foundTrack);
+      setShowTrackDetailsPanel(true);
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent("melodiq:scroll-to-track", { detail: { trackId: targetTrackId } }),
+        );
+      }, 300);
+    }
+  }, [tracks, setShowTrackDetailsPanel]);
 
   useEffect(() => {
     if (!showTrackDetailsPanel) return;
@@ -154,7 +220,7 @@ export default function PlaylistDetailPage() {
   function performReusePrompt(track: TrackItem) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" }),
     );
     router.push("/studio");
   }
@@ -168,15 +234,29 @@ export default function PlaylistDetailPage() {
     performReusePrompt(track);
   }
 
-
-  function handleSelectTrack(track: TrackItem) {
-    setSelectedTrack(track);
-    setShowTrackDetailsPanel(true);
-  }
-
   function handleCloseTrackDetails() {
+    setSelectedTrack(null);
     setShowTrackDetailsPanel(false);
   }
+
+  const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
+    const normalizedTrack: TrackItem = {
+      ...updatedTrack,
+      coverUrl: updatedTrack.coverUrl ?? null,
+      s3KeyCover: updatedTrack.s3KeyCover ?? null,
+      rating: updatedTrack.rating ?? null,
+    };
+
+    setTracks((current) =>
+      current.map((track) =>
+        track.id === normalizedTrack.id ? { ...track, ...normalizedTrack } : track,
+      ),
+    );
+
+    setSelectedTrack((current) =>
+      current && current.id === normalizedTrack.id ? { ...current, ...normalizedTrack } : current,
+    );
+  }, []);
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -205,6 +285,7 @@ export default function PlaylistDetailPage() {
         coverUrl: track.coverUrl ?? null,
         s3KeyCover: track.s3KeyCover ?? null,
         rating: track.rating ?? null,
+        artistName: track.artistName ?? null,
       }));
 
     player.setPlayContext(playContext);
@@ -237,6 +318,7 @@ export default function PlaylistDetailPage() {
       coverUrl: selectedTrack.coverUrl ?? null,
       s3KeyCover: selectedTrack.s3KeyCover ?? null,
       rating: selectedTrack.rating ?? null,
+      artistName: selectedTrack.artistName ?? null,
     });
   }
 
@@ -244,8 +326,8 @@ export default function PlaylistDetailPage() {
     const a = document.createElement("a");
     a.href = url;
     const fmt = hd
-      ? (selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3")
-      : (selectedTrack?.format ?? "mp3");
+      ? selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3"
+      : selectedTrack?.format ?? "mp3";
     a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
     a.click();
   }
@@ -266,8 +348,15 @@ export default function PlaylistDetailPage() {
       const data = await res.json().catch(() => null);
       const updated = data?.playlist;
       if (updated) {
-        const { hydratePlaylistsFromServer, playlists: storePlaylists } = usePlaylistStore.getState();
-        hydratePlaylistsFromServer(storePlaylists.map((p) => p.id === selectedPlaylist.id ? { ...p, isPublic: updated.isPublic, publishedAt: updated.publishedAt } : p));
+        const { hydratePlaylistsFromServer, playlists: storePlaylists } =
+          usePlaylistStore.getState();
+        hydratePlaylistsFromServer(
+          storePlaylists.map((p) =>
+            p.id === selectedPlaylist.id
+              ? { ...p, isPublic: updated.isPublic, publishedAt: updated.publishedAt }
+              : p,
+          ),
+        );
       }
       window.dispatchEvent(new CustomEvent("discover-playlists-changed"));
     } catch (error) {
@@ -277,17 +366,35 @@ export default function PlaylistDetailPage() {
     }
   }
 
+  const coverUrl =
+    currentTrack?.coverUrl ||
+    (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
+
   if (!loading && !selectedPlaylist) {
     return (
-      <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+      <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+        {coverUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-115 blur-[80px] opacity-20 saturate-200 pointer-events-none"
+            style={{ backgroundImage: `url(${coverUrl})` }}
+          />
+        )}
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/70">Playlist not found.</p>
+        <div
+          className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex items-center justify-center px-6"
+          style={{
+            marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+          }}
+        >
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center max-w-md">
+            <h2 className="text-lg font-semibold text-white">Playlist not found</h2>
+            <p className="text-sm text-white/60 mt-2">
+              This playlist might have been deleted or moved.
+            </p>
             <button
               type="button"
               onClick={() => router.push("/playlists")}
-              className="mt-4 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/12 hover:text-white"
+              className="mt-5 rounded-full border border-white/12 bg-white/8 px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white"
             >
               Back to playlists
             </button>
@@ -298,75 +405,126 @@ export default function PlaylistDetailPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+      {/* Blurred cover art as background */}
+      {coverUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center scale-115 blur-[80px] opacity-20 saturate-200 pointer-events-none"
+          style={{ backgroundImage: `url(${coverUrl})` }}
+        />
+      )}
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+      <div
+        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
+        style={{
+          marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+        }}
+      >
+        <main
+          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
+            isListener ? "lg:pt-20" : "lg:pt-5"
+          }`}
+        >
           <div className="max-w-400 mx-auto space-y-6">
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => router.push("/playlists")}
-                className="inline-flex items-center gap-1.5 text-sm text-white/55 transition-colors hover:text-white"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                All playlists
-              </button>
-            </div>
-
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-lg font-semibold truncate">{selectedPlaylist?.name}</h2>
+            {/* Header section matching Library styling */}
+            <section className="px-1 py-2 sm:px-2">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                      Playlists
+                      <span className="mx-2 text-white/25 font-light">/</span>
+                      <span className="text-white/60">
+                        {selectedPlaylist?.name ?? "Playlist"}
+                      </span>
+                    </h1>
                     {selectedPlaylist?.isPublic && (
-                      <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
+                      <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
                         ● Published
                       </span>
                     )}
-                    {selectedPlaylist && !selectedPlaylist.isSystem && user?.role === "admin" && (
-                      <button
-                        type="button"
-                        onClick={() => void handleTogglePlaylistPublic()}
-                        disabled={togglingPlaylistPublic}
-                        className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {togglingPlaylistPublic
-                          ? selectedPlaylist.isPublic
-                            ? "Unpublishing…"
-                            : "Publishing…"
-                          : selectedPlaylist.isPublic
-                            ? "Unpublish"
-                            : "Publish"}
-                      </button>
+                    {playlistTracks.length > 0 && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                        {playlistTracks.length} tracks
+                        {playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}
+                      </span>
                     )}
                   </div>
-                  <p className="text-sm text-white/55">{playlistTracks.length} songs in this playlist{playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}.</p>
                   {selectedPlaylist?.description && (
-                    <p className="text-sm text-white/40 mt-1 max-w-xl">{selectedPlaylist.description}</p>
+                    <p className="text-sm text-white/50 max-w-xl">
+                      {selectedPlaylist.description}
+                    </p>
                   )}
                 </div>
-                <div className="shrink-0">
+
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (isEditingPlaylistOrder && selectedPlaylist) {
-                        reorderPlaylistTracks(selectedPlaylist.id, selectedPlaylist.trackIds);
-                      }
-                      setIsEditingPlaylistOrder((v) => !v);
-                    }}
-                    className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingPlaylistOrder ? "border-white bg-white text-black hover:bg-white/90" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
+                    onClick={() => router.push("/playlists")}
+                    className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white inline-flex items-center gap-1.5"
                   >
-                    {isEditingPlaylistOrder ? "Save order" : "Edit order"}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    All Playlists
                   </button>
+
+                  {selectedPlaylist && !selectedPlaylist.isSystem && user?.role === "admin" && (
+                    <button
+                      type="button"
+                      onClick={() => void handleTogglePlaylistPublic()}
+                      disabled={togglingPlaylistPublic}
+                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {togglingPlaylistPublic
+                        ? selectedPlaylist.isPublic
+                          ? "Unpublishing…"
+                          : "Publishing…"
+                        : selectedPlaylist.isPublic
+                          ? "Unpublish"
+                          : "Publish to Discover"}
+                    </button>
+                  )}
+
+                  {playlistTracks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isEditingPlaylistOrder && selectedPlaylist) {
+                          reorderPlaylistTracks(selectedPlaylist.id, selectedPlaylist.trackIds);
+                        }
+                        setIsEditingPlaylistOrder((v) => !v);
+                      }}
+                      className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${
+                        isEditingPlaylistOrder
+                          ? "border-white bg-white text-black hover:bg-white/90"
+                          : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      {isEditingPlaylistOrder ? "Save order" : "Edit order"}
+                    </button>
+                  )}
                 </div>
               </div>
+            </section>
 
+            {/* Track List Section */}
+            <section className="space-y-4">
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
+                  Loading tracks...
+                </div>
               ) : playlistTracks.length > 0 ? (
                 <TrackList
                   tracks={playlistTracks}
@@ -377,13 +535,28 @@ export default function PlaylistDetailPage() {
                     if (!selectedPlaylist) return;
                     localMovePlaylistTrack(selectedPlaylist.id, trackId, toIndex);
                   }}
-                  onSelect={handleSelectTrack}
+                  onSelect={(track) => {
+                    setSelectedTrack({
+                      ...track,
+                      coverUrl: track.coverUrl ?? null,
+                      s3KeyCover: track.s3KeyCover ?? null,
+                      rating: track.rating ?? null,
+                    });
+                    setShowTrackDetailsPanel(true);
+                  }}
                   onDelete={handleDeleteTrack}
                   onReusePrompt={handleReusePrompt}
-                  onAddToPlaylist={(trackId, targetPlaylistId, options) => addTrackToPlaylist(targetPlaylistId, trackId, options)}
+                  onAddToPlaylist={(trackId, targetPlaylistId, options) =>
+                    addTrackToPlaylist(targetPlaylistId, trackId, options)
+                  }
+                  onMoveToWorkspace={(trackId, workspaceId) =>
+                    moveTracksToWorkspace(workspaceId, [trackId])
+                  }
                   playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
                   onTitleUpdate={(trackId, newTitle) =>
-                    setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
+                    setTracks((prev) =>
+                      prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)),
+                    )
                   }
                   onEditDetails={(track) =>
                     setEditingTrack({
@@ -396,7 +569,7 @@ export default function PlaylistDetailPage() {
                   selectedTrackId={selectedTrack?.id ?? null}
                 />
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-center text-sm text-white/55">
                   This playlist has no tracks yet. Use track actions and choose Add to Playlist.
                 </div>
               )}
@@ -404,8 +577,12 @@ export default function PlaylistDetailPage() {
           </div>
         </main>
 
-        <ResizablePanel show={showTrackDetailsPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
-          <div className="h-full overflow-y-auto">
+        <ResizablePanel
+          show={showTrackDetailsPanel}
+          width={rightPanelWidth}
+          setWidth={setRightPanelWidth}
+        >
+          <div className="h-full overflow-y-auto pb-4">
             {selectedTrack ? (
               <TrackDetail
                 mode="sidebar"
@@ -413,11 +590,13 @@ export default function PlaylistDetailPage() {
                 onClose={handleCloseTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
+                allowLyricsEdit={allowLyricsEdit}
+                onTrackUpdated={handleTrackUpdated}
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
                 <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track to show track info and lyrics.</p>
+                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
               </div>
             )}
           </div>
@@ -438,54 +617,26 @@ export default function PlaylistDetailPage() {
               s3KeyCover: updated.s3KeyCover ?? null,
               rating: updated.rating ?? null,
             };
-            setTracks((prev) => prev.map((t) => (t.id === normalized.id ? { ...t, ...normalized } : t)));
-            setSelectedTrack((prev) => (prev?.id === normalized.id ? { ...prev, ...normalized } : prev));
+            setTracks((prev) =>
+              prev.map((t) => (t.id === normalized.id ? { ...t, ...normalized } : t)),
+            );
+            setSelectedTrack((prev) =>
+              prev?.id === normalized.id ? { ...prev, ...normalized } : prev,
+            );
             usePlayerStore.getState().syncTrackSnapshots([{ ...normalized, s3Key: null }]);
           }}
         />
       )}
 
       {reuseConfirmTrack && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
-          onClick={() => setReuseConfirmTrack(null)}
-        >
-          <div
-            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start gap-3">
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-              </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-amber-100">
-                  De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const track = reuseConfirmTrack;
-                      setReuseConfirmTrack(null);
-                      if (track) performReusePrompt(track);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
-                  >
-                    Doorgaan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReuseConfirmTrack(null)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
-                  >
-                    Annuleren
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReuseConfirmDialog
+          onConfirm={() => {
+            const track = reuseConfirmTrack;
+            setReuseConfirmTrack(null);
+            if (track) performReusePrompt(track);
+          }}
+          onCancel={() => setReuseConfirmTrack(null)}
+        />
       )}
     </div>
   );
