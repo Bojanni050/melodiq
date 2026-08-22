@@ -21,6 +21,9 @@ import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 interface PublicPlaylistTrack {
   id: string;
   title: string;
+  artistName: string | null;
+  composerName: string | null;
+  writerName: string | null;
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
@@ -128,7 +131,9 @@ export default function PublicPlaylistPage() {
       rating: null,
       instrumental: null,
       publicSource: true,
-      artistName: playlist.artistName ?? null,
+      artistName: t.artistName ?? playlist.artistName ?? null,
+      composerName: t.composerName ?? null,
+      writerName: t.writerName ?? null,
     }));
   }, [playlist]);
 

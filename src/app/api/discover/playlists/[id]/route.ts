@@ -38,6 +38,9 @@ export async function GET(
       trackId: playlistTracks.trackId,
       position: playlistTracks.position,
       title: tracks.title,
+      artistName: tracks.artistName,
+      composerName: tracks.composerName,
+      writerName: tracks.writerName,
       coverUrl: tracks.coverUrl,
       s3KeyCover: tracks.s3KeyCover,
       duration: tracks.duration,
@@ -54,6 +57,9 @@ export async function GET(
   const serialized = playlistTracksRows.map((row) => ({
     id: row.trackId,
     title: row.title || "Untitled",
+    artistName: row.artistName,
+    composerName: row.composerName,
+    writerName: row.writerName,
     coverUrl: row.coverUrl?.startsWith("/api/tracks/")
       ? prefixCdn(cdnUrl, row.coverUrl.replace("/api/tracks/", "/api/discover/"))
       : row.coverUrl,
