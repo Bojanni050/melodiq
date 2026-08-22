@@ -320,7 +320,7 @@ function DiscoverReleasesPageInner() {
                             <button
                               type="button"
                               onClick={() => playReleaseTrack(releaseTrackItems, releaseTrackItems[0])}
-                              className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-white text-black transition-transform hover:scale-105 active:scale-95 sm:self-end"
+                              className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95 sm:self-end"
                               aria-label={`Play ${release.title}`}
                               title={`Play ${release.title}`}
                             >

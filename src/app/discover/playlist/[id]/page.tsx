@@ -150,68 +150,61 @@ export default function PublicPlaylistPage() {
     closeTrackDetails,
   } = useTrackDetailsPanel<TrackItem>(playlistTracks);
 
-  function handlePlayTrack(url: string) {
-    if (!selectedTrack) return;
-
-    const player = usePlayerStore.getState();
-    const playContext = playlistTracks.map((track) => ({
-      id: track.id,
-      title: track.title,
-      provider: track.provider,
-      providerModel: track.providerModel,
-      prompt: track.prompt,
-      status: track.status,
-      audioUrl: track.audioUrl,
-      audioUrlHd: track.audioUrlHd,
-      format: track.format,
-      formatHd: track.formatHd,
+  function toPlayContextTrack(t: TrackItem, audioUrlOverride?: string | null) {
+    return {
+      id: t.id,
+      title: t.title,
+      provider: t.provider,
+      providerModel: t.providerModel,
+      prompt: t.prompt,
+      status: t.status,
+      audioUrl: audioUrlOverride !== undefined ? audioUrlOverride : t.audioUrl,
+      audioUrlHd: t.audioUrlHd,
+      format: t.format,
+      formatHd: t.formatHd,
       s3Key: null,
-      s3KeyHd: track.s3KeyHd,
-      duration: track.duration,
-      lyrics: track.lyrics,
-      lyricsTimestamps: track.lyricsTimestamps,
-      createdAt: track.createdAt,
-      error: track.error,
-      coverUrl: track.coverUrl ?? null,
-      s3KeyCover: track.s3KeyCover ?? null,
-      rating: track.rating ?? null,
-      artistName: track.artistName ?? null,
+      s3KeyHd: t.s3KeyHd,
+      duration: t.duration,
+      lyrics: t.lyrics,
+      lyricsTimestamps: t.lyricsTimestamps,
+      createdAt: t.createdAt,
+      error: t.error,
+      coverUrl: t.coverUrl ?? null,
+      s3KeyCover: t.s3KeyCover ?? null,
+      rating: t.rating ?? null,
+      artistName: t.artistName ?? null,
       publicSource: true,
-    }));
+    };
+  }
+
+  function playTrack(track: TrackItem, audioUrlOverride?: string | null) {
+    const player = usePlayerStore.getState();
+    const playContext = playlistTracks.map((t) => toPlayContextTrack(t));
 
     player.setPlayContext(playContext);
-
     if (player.autoPlayNext) {
-      const index = playContext.findIndex((track) => track.id === selectedTrack.id);
+      const index = playContext.findIndex((t) => t.id === track.id);
       if (index >= 0) {
         player.setQueue(playContext.slice(index + 1));
       }
     }
 
-    player.playTrackFromGesture({
-      id: selectedTrack.id,
-      title: selectedTrack.title,
-      provider: selectedTrack.provider,
-      providerModel: selectedTrack.providerModel,
-      prompt: selectedTrack.prompt,
-      status: selectedTrack.status,
-      audioUrl: url || null,
-      audioUrlHd: selectedTrack.audioUrlHd,
-      format: selectedTrack.format,
-      formatHd: selectedTrack.formatHd,
-      s3Key: null,
-      s3KeyHd: selectedTrack.s3KeyHd,
-      duration: selectedTrack.duration,
-      lyrics: selectedTrack.lyrics,
-      lyricsTimestamps: selectedTrack.lyricsTimestamps,
-      createdAt: selectedTrack.createdAt,
-      error: selectedTrack.error,
-      coverUrl: selectedTrack.coverUrl ?? null,
-      s3KeyCover: selectedTrack.s3KeyCover ?? null,
-      rating: selectedTrack.rating ?? null,
-      artistName: selectedTrack.artistName ?? null,
-      publicSource: true,
-    });
+    player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
+  }
+
+  function handlePlayTrack(url: string) {
+    if (!selectedTrack) return;
+    playTrack(selectedTrack, url || null);
+  }
+
+  function handlePlayFromStart() {
+    if (playlistTracks.length === 0) return;
+    if (currentTrack && playlistTracks.some((t) => t.id === currentTrack.id)) {
+      const player = usePlayerStore.getState();
+      player.setIsPlaying(!player.isPlaying);
+      return;
+    }
+    playTrack(playlistTracks[0]);
   }
 
   function handleDownloadTrack(url: string, hd: boolean) {
@@ -283,38 +276,65 @@ export default function PublicPlaylistPage() {
             {/* Header matching Library & Playlist styling */}
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                      Discover
-                      <span className="mx-2 text-white/25 font-light">/</span>
-                      <span className="text-white/60">
-                        {playlist?.name ?? "Playlist"}
-                      </span>
-                    </h1>
-                    <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
-                      ● Public
-                    </span>
-                    {playlistTracks.length > 0 && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
-                        {playlistTracks.length} tracks
-                        {playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}
-                      </span>
+                <div className="flex items-end gap-4 min-w-0">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-24 sm:w-24">
+                    {playlist?.coverUrl ? (
+                      <img src={playlist.coverUrl} alt={playlist.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
+                        <svg className="h-7 w-7 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
                     )}
                   </div>
-                  {playlist?.artistName && (
-                    <p className="text-xs text-white/40">
-                      Curated by <span className="text-white/70">{playlist.artistName}</span>
-                    </p>
-                  )}
-                  {playlist?.description && (
-                    <p className="text-sm text-white/50 max-w-xl">
-                      {playlist.description}
-                    </p>
-                  )}
+
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                        Discover
+                        <span className="mx-2 text-white/25 font-light">/</span>
+                        <span className="text-white/60">
+                          {playlist?.name ?? "Playlist"}
+                        </span>
+                      </h1>
+                      <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
+                        ● Public
+                      </span>
+                      {playlistTracks.length > 0 && (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                          {playlistTracks.length} tracks
+                          {playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}
+                        </span>
+                      )}
+                    </div>
+                    {playlist?.artistName && (
+                      <p className="text-xs text-white/40">
+                        Curated by <span className="text-white/70">{playlist.artistName}</span>
+                      </p>
+                    )}
+                    {playlist?.description && (
+                      <p className="text-sm text-white/50 max-w-xl">
+                        {playlist.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                  {playlistTracks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePlayFromStart}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95"
+                      aria-label={`Play ${playlist?.name ?? "playlist"}`}
+                      title={`Play ${playlist?.name ?? "playlist"}`}
+                    >
+                      <svg className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => router.push(backTarget.href)}
