@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -8,6 +8,7 @@ import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import {
   usePlayerStore,
   usePlaylistStore,
@@ -30,15 +31,12 @@ export default function PlaylistDetailPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener";
-  const allowLyricsEdit = user?.role === "admin";
   useEffect(() => {
     if (!user) void loadUser();
   }, [user, loadUser]);
 
   const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
   const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const {
@@ -53,7 +51,6 @@ export default function PlaylistDetailPage() {
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const [isEditingPlaylistOrder, setIsEditingPlaylistOrder] = useState(false);
   const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
@@ -100,6 +97,14 @@ export default function PlaylistDetailPage() {
     setShowTrackDetailsPanel(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const {
+    selectedTrack,
+    setSelectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(tracks);
 
   const selectedPlaylist = useMemo(
     () => (playlistId ? playlists.find((playlist) => playlist.id === playlistId) ?? null : null),
@@ -166,52 +171,14 @@ export default function PlaylistDetailPage() {
 
     const foundTrack = tracks.find((t) => t.id === targetTrackId);
     if (foundTrack) {
-      setSelectedTrack(foundTrack);
-      setShowTrackDetailsPanel(true);
+      openTrackDetails(foundTrack);
       window.setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent("melodiq:scroll-to-track", { detail: { trackId: targetTrackId } }),
         );
       }, 300);
     }
-  }, [tracks, setShowTrackDetailsPanel]);
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const found = tracks.find((t) => t.id === prev.id);
-        if (found) return found;
-        return prev;
-      }
-      if (currentTrack) {
-        const found = tracks.find((t) => t.id === currentTrack.id);
-        if (found) return found;
-        return currentTrack as unknown as TrackItem;
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, tracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as TrackItem);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
+  }, [tracks, openTrackDetails]);
 
   function handleDeleteTrack(trackId: string) {
     setTracks((current) => current.filter((track) => track.id !== trackId));
@@ -232,11 +199,6 @@ export default function PlaylistDetailPage() {
       return;
     }
     performReusePrompt(track);
-  }
-
-  function handleCloseTrackDetails() {
-    setSelectedTrack(null);
-    setShowTrackDetailsPanel(false);
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -536,13 +498,12 @@ export default function PlaylistDetailPage() {
                     localMovePlaylistTrack(selectedPlaylist.id, trackId, toIndex);
                   }}
                   onSelect={(track) => {
-                    setSelectedTrack({
+                    openTrackDetails({
                       ...track,
                       coverUrl: track.coverUrl ?? null,
                       s3KeyCover: track.s3KeyCover ?? null,
                       rating: track.rating ?? null,
                     });
-                    setShowTrackDetailsPanel(true);
                   }}
                   onDelete={handleDeleteTrack}
                   onReusePrompt={handleReusePrompt}
@@ -587,10 +548,9 @@ export default function PlaylistDetailPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
-                allowLyricsEdit={allowLyricsEdit}
                 onTrackUpdated={handleTrackUpdated}
               />
             ) : (

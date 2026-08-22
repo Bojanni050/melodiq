@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -16,6 +16,7 @@ import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
 import { useSmartBack } from "@/lib/smart-back";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 interface PublicPlaylistTrack {
   id: string;
@@ -59,12 +60,8 @@ export default function PublicPlaylistPage() {
   const [loading, setLoading] = useState(true);
 
   const currentTrack = usePlayerStore((s) => s.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((s) => s.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((s) => s.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((s) => s.isPlaying);
   const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
-  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
 
   useEffect(() => {
@@ -140,47 +137,13 @@ export default function PublicPlaylistPage() {
     [playlistTracks],
   );
 
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const found = playlistTracks.find((t) => t.id === prev.id);
-        if (found) return found;
-        return prev;
-      }
-      if (currentTrack) {
-        const found = playlistTracks.find((t) => t.id === currentTrack.id);
-        if (found) return found;
-        return currentTrack as unknown as TrackItem;
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, playlistTracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = playlistTracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as TrackItem);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, playlistTracks]);
-
-  function handleCloseTrackDetails() {
-    setSelectedTrack(null);
-    setShowTrackDetailsPanel(false);
-  }
+  const {
+    selectedTrack,
+    setSelectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(playlistTracks);
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -382,13 +345,12 @@ export default function PublicPlaylistPage() {
                   tracks={playlistTracks}
                   autoQueueAfterPlay
                   onSelect={(track) => {
-                    setSelectedTrack({
+                    openTrackDetails({
                       ...track,
                       coverUrl: track.coverUrl ?? null,
                       s3KeyCover: track.s3KeyCover ?? null,
                       rating: track.rating ?? null,
                     });
-                    setShowTrackDetailsPanel(true);
                   }}
                   onAddToPlaylist={(trackId, targetPlaylistId, options) =>
                     addTrackToPlaylist(targetPlaylistId, trackId, options)
@@ -415,7 +377,7 @@ export default function PublicPlaylistPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
               />

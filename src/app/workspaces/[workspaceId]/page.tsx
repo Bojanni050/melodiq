@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -10,6 +10,7 @@ import DeleteWorkspaceDialog from "@/components/tracks/DeleteWorkspaceDialog";
 import { getWorkspaceCoverCollage } from "@/lib/track-utils";
 import { DEFAULT_WORKSPACE_ID, usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useWorkspaceStore, type Workspace } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 function hashString(value: string) {
   let hash = 0;
@@ -43,9 +44,6 @@ export default function WorkspaceDetailPage() {
   const workspaceId = params?.workspaceId;
 
   const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
@@ -62,8 +60,14 @@ export default function WorkspaceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [newFolderName, setNewFolderName] = useState("");
   const [showCreateFolder, setShowCreateFolder] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState<Workspace | null>(null);
+
+  const {
+    selectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(tracks);
 
   useEffect(() => {
     if (workspaceId) {
@@ -142,43 +146,6 @@ export default function WorkspaceDetailPage() {
     [selectedWorkspace, tracks],
   );
 
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const found = tracks.find((t) => t.id === prev.id);
-        if (found) return found as TrackItem;
-        return prev;
-      }
-      if (currentTrack) {
-        const found = tracks.find((t) => t.id === currentTrack.id);
-        if (found) return found as TrackItem;
-        return currentTrack as TrackItem;
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, tracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-    
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as TrackItem);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
   const defaultSortedWorkspaceTracks = useMemo(() => {
     const list = [...selectedWorkspaceTracks];
     list.sort((left, right) => {
@@ -232,15 +199,6 @@ export default function WorkspaceDetailPage() {
 
   function handleDeleteTrack(trackId: string) {
     setTracks((current) => current.filter((track) => track.id !== trackId));
-  }
-
-  function handleSelectTrack(track: TrackItem) {
-    setSelectedTrack(track);
-    setShowTrackDetailsPanel(true);
-  }
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
   }
 
   function handlePlayTrack(url: string) {
@@ -397,7 +355,7 @@ export default function WorkspaceDetailPage() {
                 <TrackList
                   tracks={selectedWorkspaceTracks}
                   autoQueueAfterPlay
-                  onSelect={handleSelectTrack}
+                  onSelect={openTrackDetails}
                   onDelete={handleDeleteTrack}
                   onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
                   playlists={playlists.map((playlist) => ({ id: playlist.id, name: playlist.name }))}
@@ -531,7 +489,7 @@ export default function WorkspaceDetailPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
               />

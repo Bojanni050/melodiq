@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { useSidebarStore, usePlaylistStore, useReleaseStore, useUserStore, usePlayerStore } from "@/lib/store";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
@@ -75,59 +76,22 @@ export default function PlaylistsPage() {
   const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
   const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
 
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
+  const {
+    selectedTrack,
+    showTrackDetailsPanel,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<Track>(tracks);
 
+  // This page always shows the panel (even before a track is selected —
+  // it has its own "select a track" placeholder state), unlike other pages
+  // which only open it once a track is actually played.
   useEffect(() => {
     setShowTrackDetailsPanel(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const found = tracks.find((t) => t.id === prev.id);
-        if (found) return found;
-        return prev;
-      }
-      if (currentTrack) {
-        const found = tracks.find((t) => t.id === currentTrack.id);
-        if (found) return found;
-        return currentTrack as unknown as Track;
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, tracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as Track);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
-  }
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -519,7 +483,7 @@ export default function PlaylistsPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
               />

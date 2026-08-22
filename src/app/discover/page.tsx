@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import InlineAuthForm from "@/components/discover/InlineAuthForm";
@@ -10,6 +10,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useReleaseStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 interface PublicTrack {
   id: string;
@@ -74,11 +75,8 @@ export default function DiscoverPage() {
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
-  const showTrackDetailsPanel = usePlayerStore((s) => s.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((s) => s.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
-  const [selectedTrack, setSelectedTrack] = useState<TrackDetailTrack | null>(null);
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -180,6 +178,7 @@ export default function DiscoverPage() {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
+  const setShowTrackDetailsPanel = usePlayerStore((s) => s.setShowTrackDetailsPanel);
   useEffect(() => {
     if (isLoggedIn) setShowTrackDetailsPanel(true);
   }, [isLoggedIn, setShowTrackDetailsPanel]);
@@ -207,8 +206,8 @@ export default function DiscoverPage() {
     return track.coverUrl || (track.s3KeyCover ? `/api/tracks/${track.id}/cover` : null);
   }
 
-  function handlePlayMyTrack(track: MyTrack) {
-    setSelectedTrack({
+  function mapMyTrackToDetail(track: MyTrack): TrackDetailTrack {
+    return {
       id: track.id,
       title: track.title,
       provider: track.provider,
@@ -230,8 +229,26 @@ export default function DiscoverPage() {
       rating: track.rating,
       instrumental: track.instrumental,
       artistName: track.artistName,
-    });
-    setShowTrackDetailsPanel(true);
+    };
+  }
+
+  // Combined so the shared panel hook can follow the now-playing track
+  // regardless of which section (own tracks vs. published) it came from.
+  const combinedTracksForDetails = useMemo<TrackDetailTrack[]>(
+    () => [...myTracks.map(mapMyTrackToDetail), ...published.map(mapPublicTrackToDetail), ...trending.map(mapPublicTrackToDetail)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [myTracks, published, trending]
+  );
+
+  const {
+    selectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackDetailTrack>(combinedTracksForDetails);
+
+  function handlePlayMyTrack(track: MyTrack) {
+    openTrackDetails(mapMyTrackToDetail(track));
 
     if (currentTrack?.id === track.id) {
       setGlobalIsPlaying(!globalIsPlaying);
@@ -262,10 +279,6 @@ export default function DiscoverPage() {
       playCount: track.playCount,
       rating: track.rating,
     });
-  }
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
   }
 
   function handleDetailPlay(url: string) {
@@ -382,8 +395,8 @@ export default function DiscoverPage() {
     return null;
   }
 
-  function handlePlay(track: PublicTrack) {
-    setSelectedTrack({
+  function mapPublicTrackToDetail(track: PublicTrack): TrackDetailTrack {
+    return {
       id: track.id,
       title: track.title,
       provider: "discover",
@@ -406,8 +419,11 @@ export default function DiscoverPage() {
       composerName: track.composerName,
       writerName: track.writerName,
       instrumental: track.instrumental,
-    });
-    setShowTrackDetailsPanel(true);
+    };
+  }
+
+  function handlePlay(track: PublicTrack) {
+    openTrackDetails(mapPublicTrackToDetail(track));
 
     if (currentTrack?.id === track.id) {
       setGlobalIsPlaying(!globalIsPlaying);
@@ -665,7 +681,7 @@ export default function DiscoverPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handleDetailPlay}
                 onDownload={handleDownloadTrack}
               />

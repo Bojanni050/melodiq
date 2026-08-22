@@ -7,6 +7,7 @@ import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
 import { DEFAULT_WORKSPACE_ID, useWorkspaceStore, usePlayerStore, useSidebarStore } from "@/lib/store";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 type Track = {
   id: string;
@@ -73,59 +74,15 @@ export default function WorkspacesPage() {
 
   const [tracks, setTracks] = useState<Track[]>([]);
 
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
 
-  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const { selectedTrack, showTrackDetailsPanel, closeTrackDetails } =
+    useTrackDetailsPanel<Track>(tracks);
 
   useEffect(() => {
     setSelectedWorkspaceId(null);
   }, [setSelectedWorkspaceId]);
-
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const found = tracks.find((t) => t.id === prev.id);
-        if (found) return found as Track;
-        return prev;
-      }
-      if (currentTrack) {
-        const found = tracks.find((t) => t.id === currentTrack.id);
-        if (found) return found as Track;
-        return currentTrack as Track;
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, tracks, currentTrack]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-    
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as Track);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
-  }
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -544,7 +501,7 @@ export default function WorkspacesPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
               />

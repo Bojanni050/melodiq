@@ -10,6 +10,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
   { value: "single", label: "Single" },
@@ -25,10 +26,6 @@ export default function ReleaseDetailPage() {
   const isDesktop = useSidebarStore((s) => s.isDesktop);
   const releaseId = params?.releaseId;
 
-  const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const playlists = usePlaylistStore((state) => state.playlists);
@@ -47,7 +44,6 @@ export default function ReleaseDetailPage() {
 
   const [tracks, setTracks] = useState<TrackItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTrack, setSelectedTrack] = useState<TrackItem | null>(null);
   const [isEditingOrder, setIsEditingOrder] = useState(false);
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -98,78 +94,13 @@ export default function ReleaseDetailPage() {
     [releaseTracks]
   );
 
-  // Keep the Track Details panel in sync with the currently-playing track,
-  // same as Library/Playlist/Workspace — otherwise pressing play on a
-  // release's tracklist opens the panel (via playerStore) without ever
-  // pointing it at the now-playing track, so it shows the "select a track"
-  // placeholder and TCL/lyrics never render.
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const matched = tracks.find((t) => t.id === prev.id);
-        if (matched) return matched;
-        return prev;
-      }
-      if (currentTrack) {
-        const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-        if (matchedTrack) return matchedTrack;
-
-        return {
-          id: currentTrack.id,
-          title: currentTrack.title,
-          provider: currentTrack.provider,
-          providerModel: currentTrack.providerModel,
-          prompt: currentTrack.prompt,
-          lyrics: currentTrack.lyrics,
-          lyricsTimestamps: currentTrack.lyricsTimestamps,
-          status: currentTrack.status,
-          audioUrl: currentTrack.audioUrl,
-          audioUrlHd: currentTrack.audioUrlHd,
-          format: currentTrack.format ?? null,
-          formatHd: currentTrack.formatHd ?? null,
-          duration: currentTrack.duration ?? null,
-          createdAt: currentTrack.createdAt,
-          error: currentTrack.error,
-          s3KeyHd: currentTrack.s3KeyHd,
-          coverUrl: currentTrack.coverUrl ?? null,
-          s3KeyCover: currentTrack.s3KeyCover ?? null,
-          rating: currentTrack.rating ?? null,
-          instrumental: currentTrack.instrumental ?? null,
-        };
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, currentTrack, tracks]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as TrackItem);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
-  function handleSelectTrack(track: TrackItem) {
-    setSelectedTrack(track);
-    setShowTrackDetailsPanel(true);
-  }
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
-  }
+  const {
+    selectedTrack,
+    setSelectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(tracks);
 
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
@@ -446,7 +377,7 @@ export default function ReleaseDetailPage() {
                     if (!selectedRelease) return;
                     reorderReleaseTracks(selectedRelease.id, orderedTrackIds);
                   }}
-                  onSelect={handleSelectTrack}
+                  onSelect={openTrackDetails}
                   onDelete={handleDeleteTrack}
                   onAddToPlaylist={(trackId, targetPlaylistId, options) => addTrackToPlaylist(targetPlaylistId, trackId, options)}
                   playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
@@ -505,7 +436,7 @@ export default function ReleaseDetailPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
               />

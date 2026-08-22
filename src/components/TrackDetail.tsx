@@ -46,12 +46,22 @@ interface TrackDetailProps {
   onTrackUpdated?: (track: TrackDetailTrack) => void;
 }
 
-export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit = false, onTrackUpdated }: TrackDetailProps) {
+export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDownload, mode = "overlay", allowLyricsEdit, onTrackUpdated }: TrackDetailProps) {
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const { user, loadUser } = useUserStore();
   const { currentTrack, isPlaying, audioElement } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
+
+  // Role-based visibility: a listener only ever browses published community
+  // tracks read-only, so the generation prompt and any editing affordances
+  // (which the server never gives them the underlying data for anyway) are
+  // hidden here too, rather than relying on each page to remember to pass
+  // allowLyricsEdit={false}. Admin/user roles get the full admin-shaped view;
+  // callers can still override allowLyricsEdit explicitly if they need to.
+  const isListenerRole = user?.role === "listener" || user?.role == null;
+  const canSeePrompt = !isListenerRole;
+  const resolvedAllowLyricsEdit = allowLyricsEdit ?? user?.role === "admin";
 
   // central track state that self-heals via polling (TCL sync, cover art)
   const { track, setLocalTrack, mutate } = useTrackDetailSync(initialTrack, onTrackUpdated);
@@ -92,7 +102,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const artistLabel = (track.artistName || "").trim() || (user?.artistAlias || "").trim() || (user?.name || "").trim() || "";
   const composerLabel = (track.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (track.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
-  const canEditPrompt = isUploadedTrack;
+  const canEditPrompt = isUploadedTrack && canSeePrompt;
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
 
   const displayDuration = track.duration
@@ -235,7 +245,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
 
         {/* Lyrics */}
-        {(track.lyrics || allowLyricsEdit) && (
+        {(track.lyrics || resolvedAllowLyricsEdit) && (
           <div className={lyricsEdit.lyricsExpanded ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "shrink-0"}>
             <div className="shrink-0 flex items-center justify-between mb-2">
               <button
@@ -250,7 +260,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 Lyrics {lyricsSync.hasTimings && <span className="text-[10px] text-blue-400 font-medium px-1.5 py-0.5 rounded border border-blue-400/20 bg-blue-400/5 normal-case ml-1.5">TCL synced</span>}
               </button>
               <div className="flex items-center gap-1">
-                {allowLyricsEdit && !lyricsEdit.lyricsEditing && (
+                {resolvedAllowLyricsEdit && !lyricsEdit.lyricsEditing && (
                   <button
                     type="button"
                     onClick={lyricsEdit.startEditingLyrics}
@@ -260,7 +270,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     {track.lyrics ? "Edit" : "Add"}
                   </button>
                 )}
-                {allowLyricsEdit && lyricsEdit.lyricsEditing && (
+                {resolvedAllowLyricsEdit && lyricsEdit.lyricsEditing && (
                   <>
                     <button
                       type="button"
@@ -401,7 +411,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           </div>
         )}
 
-        {/* Prompt */}
+        {/* Prompt — listeners never see the generation prompt (public tracks
+            never carry one anyway, see PublicTrackSummary), so hide the
+            whole section rather than showing an empty/blank one. */}
+        {canSeePrompt && (
         <div className="shrink-0">
           <div className="flex items-center justify-between mb-2">
             <button
@@ -487,6 +500,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </p>
           )}
         </div>
+        )}
 
         {/* Error */}
         {track.error && (

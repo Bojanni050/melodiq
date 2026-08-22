@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -17,6 +17,7 @@ import TranslationRow from "@/components/archive/TranslationRow";
 import EntryTrackActionsMenu from "@/components/archive/EntryTrackActionsMenu";
 import ReleasePickerDialog from "@/components/tracks/ReleasePickerDialog";
 import { entryCoverSrc, entryToTrack, type ArchiveEntry, type EditingTarget } from "@/components/archive/types";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 
 type MasterTracksTab = "master" | "published" | "all";
 
@@ -25,11 +26,8 @@ export default function ArchivePage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
-  const [selectedTrack, setSelectedTrack] = useState<TrackDetailTrack | null>(null);
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -168,73 +166,25 @@ export default function ArchivePage() {
     return result;
   }, [entries]);
 
-  // Keep the Track Details panel in sync with the currently-playing track,
-  // same as Library/Playlist/Workspace/Release pages — otherwise pressing
-  // play (on the master-tab rows or the published/all TrackList) opens the
-  // panel via playerStore without ever pointing it at the now-playing track,
-  // so it shows a stale/empty selection and TCL/lyrics never render.
-  useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const matched = playableTracks.find((t) => t.id === prev.id) || allTracks.find((t) => t.id === prev.id);
-        if (matched) return { ...matched, format: matched.format ?? null, formatHd: matched.formatHd ?? null };
-        return prev;
-      }
-      if (currentTrack) {
-        const matchedTrack =
-          playableTracks.find((t) => t.id === currentTrack.id) || allTracks.find((t) => t.id === currentTrack.id);
-        if (matchedTrack) {
-          return { ...matchedTrack, format: matchedTrack.format ?? null, formatHd: matchedTrack.formatHd ?? null };
-        }
-
-        return {
-          id: currentTrack.id,
-          title: currentTrack.title,
-          provider: currentTrack.provider,
-          providerModel: currentTrack.providerModel,
-          prompt: currentTrack.prompt,
-          lyrics: currentTrack.lyrics,
-          lyricsTimestamps: currentTrack.lyricsTimestamps,
-          status: currentTrack.status,
-          audioUrl: currentTrack.audioUrl,
-          audioUrlHd: currentTrack.audioUrlHd,
-          format: currentTrack.format ?? null,
-          formatHd: currentTrack.formatHd ?? null,
-          duration: currentTrack.duration ?? null,
-          createdAt: currentTrack.createdAt,
-          error: currentTrack.error,
-          s3KeyHd: currentTrack.s3KeyHd,
-          coverUrl: currentTrack.coverUrl ?? null,
-          s3KeyCover: currentTrack.s3KeyCover ?? null,
-          rating: currentTrack.rating ?? null,
-          instrumental: currentTrack.instrumental ?? null,
-        };
-      }
-      return null;
+  // Master Tracks has two independent track sources (master-tab entries,
+  // and the published/all tab's plain track list) — combine them once so
+  // the shared panel hook can look a now-playing track up in either.
+  const combinedTracksForDetails = useMemo<TrackDetailTrack[]>(() => {
+    const normalize = (t: Track | TrackItem): TrackDetailTrack => ({
+      ...(t as unknown as TrackDetailTrack),
+      format: t.format ?? null,
+      formatHd: t.formatHd ?? null,
     });
-  }, [showTrackDetailsPanel, currentTrack, allTracks, playableTracks]);
+    return [...playableTracks.map(normalize), ...allTracks.map(normalize)];
+  }, [playableTracks, allTracks]);
 
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = playableTracks.find((t) => t.id === currentTrack.id) || allTracks.find((t) => t.id === currentTrack.id);
-        if (matched) return { ...matched, format: matched.format ?? null, formatHd: matched.formatHd ?? null };
-        return currentTrack as unknown as TrackDetailTrack;
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, allTracks, playableTracks]);
+  const {
+    selectedTrack,
+    setSelectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackDetailTrack>(combinedTracksForDetails);
 
   useEffect(() => {
     loadEntries();
@@ -314,16 +264,11 @@ export default function ArchivePage() {
   function handleOpenTrackDetails(entry: ArchiveEntry) {
     const track = entryToTrack(entry);
     if (!track) return;
-    setSelectedTrack({
-      ...track,
+    openTrackDetails({
+      ...(track as unknown as TrackDetailTrack),
       format: track.format ?? null,
       formatHd: track.formatHd ?? null,
     });
-    setShowTrackDetailsPanel(true);
-  }
-
-  function handleCloseTrackDetails() {
-    setShowTrackDetailsPanel(false);
   }
 
   function handleDetailPlay(url: string) {
@@ -584,8 +529,7 @@ export default function ArchivePage() {
                   autoQueueAfterPlay
                   onReusePrompt={handleReusePrompt}
                   onSelect={(track) => {
-                    setSelectedTrack(track);
-                    setShowTrackDetailsPanel(true);
+                    openTrackDetails(track as unknown as TrackDetailTrack);
                   }}
                   onDelete={handleDeleteTabTrack}
                   onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
@@ -814,7 +758,7 @@ export default function ArchivePage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={activeTab === "master" ? handleDetailPlay : handleTabDetailPlay}
                 onDownload={handleDownloadTrack}
               />

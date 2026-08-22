@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -13,6 +13,7 @@ import ArchivePanel from "@/components/library/ArchivePanel";
 import UploadPanel from "@/components/library/UploadPanel";
 import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
 import type { LibraryTrack, LibraryView } from "@/components/library/types";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import {
   DEFAULT_WORKSPACE_ID,
   usePlayerStore,
@@ -34,7 +35,6 @@ export default function LibraryPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener";
-  const allowLyricsEdit = user?.role === "admin";
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
@@ -47,13 +47,17 @@ export default function LibraryPage() {
     hydrateWorkspacesFromServer,
   } = useWorkspaceStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
-  const showTrackDetailsPanel = usePlayerStore((state) => state.showTrackDetailsPanel);
-  const setShowTrackDetailsPanel = usePlayerStore((state) => state.setShowTrackDetailsPanel);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
   const [tracks, setTracks] = useState<LibraryTrack[]>([]);
   const [loading, setLoading] = useState(true);
+  const {
+    selectedTrack,
+    setSelectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<LibraryTrack>(tracks);
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -77,7 +81,6 @@ export default function LibraryPage() {
   const [trashLoading, setTrashLoading] = useState(false);
   const [archivedTracks, setArchivedTracks] = useState<LibraryTrack[]>([]);
   const [archiveLoading, setArchiveLoading] = useState(false);
-  const [selectedTrack, setSelectedTrack] = useState<LibraryTrack | null>(null);
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
   const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
@@ -237,14 +240,13 @@ export default function LibraryPage() {
 
     const foundTrack = tracks.find((t) => t.id === targetTrackId);
     if (foundTrack) {
-      setSelectedTrack(foundTrack);
-      setShowTrackDetailsPanel(true);
+      openTrackDetails(foundTrack);
       setView("songs");
       window.setTimeout(() => {
         window.dispatchEvent(new CustomEvent("melodiq:scroll-to-track", { detail: { trackId: targetTrackId } }));
       }, 300);
     }
-  }, [tracks, setShowTrackDetailsPanel]);
+  }, [tracks, openTrackDetails]);
 
   useEffect(() => {
     let active = true;
@@ -302,65 +304,6 @@ export default function LibraryPage() {
   }, [selectedWorkspaceId, workspaces]);
 
   useEffect(() => {
-    if (!showTrackDetailsPanel) return;
-
-    setSelectedTrack((prev) => {
-      if (prev) {
-        const matched = tracks.find((t) => t.id === prev.id);
-        if (matched) return matched;
-        return prev;
-      }
-      if (currentTrack) {
-        const matchedTrack = tracks.find((track) => track.id === currentTrack.id);
-        if (matchedTrack) return matchedTrack;
-
-        return {
-          id: currentTrack.id,
-          title: currentTrack.title,
-          provider: currentTrack.provider,
-          providerModel: currentTrack.providerModel,
-          prompt: currentTrack.prompt,
-          lyrics: currentTrack.lyrics,
-          lyricsTimestamps: currentTrack.lyricsTimestamps,
-          status: currentTrack.status,
-          audioUrl: currentTrack.audioUrl,
-          audioUrlHd: currentTrack.audioUrlHd,
-          format: currentTrack.format ?? null,
-          formatHd: currentTrack.formatHd ?? null,
-          duration: currentTrack.duration ?? null,
-          createdAt: currentTrack.createdAt,
-          error: currentTrack.error,
-          s3KeyHd: currentTrack.s3KeyHd,
-          coverUrl: currentTrack.coverUrl ?? null,
-          s3KeyCover: currentTrack.s3KeyCover ?? null,
-          rating: currentTrack.rating ?? null,
-          instrumental: currentTrack.instrumental ?? null,
-        };
-      }
-      return null;
-    });
-  }, [showTrackDetailsPanel, currentTrack, tracks]);
-
-  const prevIsPlaying = useRef(isPlaying);
-  const prevCurrentTrackId = useRef(currentTrack?.id);
-
-  useEffect(() => {
-    const playResumed = isPlaying && !prevIsPlaying.current;
-    const trackChanged = currentTrack?.id !== prevCurrentTrackId.current;
-
-    prevIsPlaying.current = isPlaying;
-    prevCurrentTrackId.current = currentTrack?.id;
-
-    if (showTrackDetailsPanel && currentTrack && (playResumed || trackChanged)) {
-      setSelectedTrack((prev) => {
-        if (prev?.id === currentTrack.id) return prev;
-        const matched = tracks.find((t) => t.id === currentTrack.id);
-        return matched || (currentTrack as unknown as LibraryTrack);
-      });
-    }
-  }, [isPlaying, currentTrack, showTrackDetailsPanel, tracks]);
-
-  useEffect(() => {
     document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
   }, [rightPanelWidth]);
 
@@ -388,11 +331,6 @@ export default function LibraryPage() {
       })),
     [parentWorkspaceNameById, workspaces],
   );
-
-  function handleCloseTrackDetails() {
-    setSelectedTrack(null);
-    setShowTrackDetailsPanel(false);
-  }
 
   function performReusePrompt(track: TrackItem) {
     sessionStorage.setItem(
@@ -602,13 +540,12 @@ export default function LibraryPage() {
                     autoQueueAfterPlay
                     onReusePrompt={handleReusePrompt}
                     onSelect={(track) => {
-                      setSelectedTrack({
+                      openTrackDetails({
                         ...track,
                         coverUrl: track.coverUrl ?? null,
                         s3KeyCover: track.s3KeyCover ?? null,
                         rating: track.rating ?? null,
                       });
-                      setShowTrackDetailsPanel(true);
                     }}
                     onAddToPlaylist={(trackId, playlistId, options) => addTrackToPlaylist(playlistId, trackId, options)}
                     playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
@@ -657,10 +594,9 @@ export default function LibraryPage() {
               <TrackDetail
                 mode="sidebar"
                 track={selectedTrack}
-                onClose={handleCloseTrackDetails}
+                onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
-                allowLyricsEdit={allowLyricsEdit}
                 onTrackUpdated={handleTrackUpdated}
               />
             ) : (
