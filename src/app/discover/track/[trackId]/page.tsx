@@ -13,6 +13,8 @@ interface TrackDetail {
   id: string;
   title: string;
   artistName: string | null;
+  writerName: string | null;
+  composerName: string | null;
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
@@ -38,7 +40,7 @@ function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
       <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">{label}</div>
-      <div className="text-base font-medium text-white">{value}</div>
+      <div className="text-sm font-medium text-white">{value}</div>
     </div>
   );
 }
@@ -145,14 +147,28 @@ export default function TrackDnaPage() {
     audioDna &&
     (audioDna.tempo != null || audioDna.key != null || audioDna.energy != null || audioDna.loudness != null);
 
+  const releaseYear = track?.publishDate ? new Date(track.publishDate).getFullYear() : null;
+
+  // Credit line: artist, then writer/composer if different from the artist —
+  // mirrors how a streaming service lists collaborators under the title.
+  const credits = track
+    ? Array.from(
+        new Set(
+          [track.artistName, track.writerName, track.composerName].filter(
+            (name): name is string => Boolean(name)
+          )
+        )
+      )
+    : [];
+
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+    <div className="flex min-h-screen bg-[#09090d] text-white">
       {isLoggedIn && <Sidebar credits={null} />}
       <main
-        className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
-        style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
+        className="flex-1 overflow-y-auto"
+        style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
       >
-        <div className="mx-auto max-w-2xl space-y-8 pb-16">
+        <div className="px-4 py-6 sm:px-8 pb-16">
           <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -161,124 +177,231 @@ export default function TrackDnaPage() {
           </Link>
 
           {loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="mt-6 text-sm text-white/50">Loading…</p>
           ) : notFound || !track ? (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+            <div className="mx-auto mt-6 max-w-2xl rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
               <p className="text-sm text-white/60">This track isn&apos;t available.</p>
               <Link href={backTarget.href} className="mt-3 inline-block text-sm text-primary-400 hover:text-primary-300">
                 {backTarget.label}
               </Link>
             </div>
           ) : (
-            <>
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={handlePlayClick}
-                  className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl"
-                  aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
-                >
-                  {coverSrc() ? (
-                    <img src={coverSrc()!} alt={track.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-                      <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/90 transition-opacity ${
-                        isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                      }`}
+            <div className="mt-6 flex flex-col gap-6 xl:flex-row xl:items-start">
+              {/* Main column: hero header + track card list */}
+              <div className="min-w-0 flex-1 space-y-6">
+                {/* Hero header — cover art left, artist/writer info beside it */}
+                <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-900/60 via-primary-900/30 to-[#0d0e15]">
+                  <div className="flex flex-col items-start gap-6 p-6 sm:flex-row sm:items-end sm:p-8">
+                    <button
+                      type="button"
+                      onClick={handlePlayClick}
+                      className="group relative h-36 w-36 shrink-0 overflow-hidden rounded-xl shadow-2xl shadow-black/50 sm:h-48 sm:w-48"
+                      aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                     >
-                      {isPlaying ? (
-                        <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                          <rect x="6" y="4" width="4" height="16" rx="1" />
-                          <rect x="14" y="4" width="4" height="16" rx="1" />
-                        </svg>
+                      {coverSrc() ? (
+                        <img src={coverSrc()!} alt={track.title} className="h-full w-full object-cover" />
                       ) : (
-                        <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
+                          <svg className="h-10 w-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
                       )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/90 transition-opacity ${
+                            isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                        >
+                          {isPlaying ? (
+                            <svg className="h-5 w-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                              <rect x="6" y="4" width="4" height="16" rx="1" />
+                              <rect x="14" y="4" width="4" height="16" rx="1" />
+                            </svg>
+                          ) : (
+                            <svg className="ml-0.5 h-5 w-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Single</p>
+                      <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-white sm:text-5xl">
+                        {track.title}
+                      </h1>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white/70">
+                        {credits.map((name, i) => (
+                          <span key={name} className="flex items-center gap-1.5">
+                            {i > 0 && <span className="text-white/35">•</span>}
+                            <span className="font-semibold text-white/90">{name}</span>
+                          </span>
+                        ))}
+                        {releaseYear && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-white/35">•</span>
+                            {releaseYear}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-white/35">•</span>
+                          {formatDuration(track.duration)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </button>
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">Track DNA</p>
-                  <h1 className="truncate text-2xl font-semibold tracking-tight">{track.title}</h1>
-                  <p className="truncate text-sm text-white/50">{track.artistName || "Unknown Artist"}</p>
-                  <p className="mt-1 text-xs text-white/35">
-                    {formatDuration(track.duration)} · {track.totalPlays.toLocaleString()} plays
+                </section>
+
+                {/* Action row */}
+                <div className="flex items-center gap-4 px-1">
+                  <button
+                    type="button"
+                    onClick={handlePlayClick}
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-green-500 text-black shadow-lg shadow-green-500/20 transition-transform hover:scale-105"
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? (
+                      <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                      </svg>
+                    ) : (
+                      <svg className="ml-0.5 h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    )}
+                  </button>
+                  <p className="text-sm text-white/40">
+                    {track.totalPlays.toLocaleString()} {track.totalPlays === 1 ? "play" : "plays"}
                   </p>
                 </div>
+
+                {/* Track card row — single-track "list" styled like a streaming release page */}
+                <section>
+                  <div className="flex items-center gap-3 border-b border-white/8 px-3 pb-2 text-xs uppercase tracking-wide text-white/35">
+                    <span className="w-5 text-center">#</span>
+                    <span className="flex-1">Title</span>
+                    <span className="hidden sm:block w-24 text-right">Plays</span>
+                    <span className="w-12 text-right">
+                      <svg className="ml-auto h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 7v5l3 3" />
+                      </svg>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handlePlayClick}
+                    className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                  >
+                    <span className="relative w-5 shrink-0 text-center text-sm text-white/40">
+                      <span className="group-hover:hidden">{isCurrentTrack && isPlaying ? "▶" : "1"}</span>
+                      <svg className="hidden h-4 w-4 group-hover:inline text-white" fill="currentColor" viewBox="0 0 24 24">
+                        {isPlaying && isCurrentTrack ? (
+                          <>
+                            <rect x="6" y="4" width="4" height="16" rx="1" />
+                            <rect x="14" y="4" width="4" height="16" rx="1" />
+                          </>
+                        ) : (
+                          <path d="M8 5v14l11-7z" />
+                        )}
+                      </svg>
+                    </span>
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
+                      {coverSrc() ? (
+                        <img src={coverSrc()!} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-sm font-medium ${isCurrentTrack ? "text-primary-300" : "text-white"}`}>
+                        {track.title}
+                      </p>
+                      <p className="truncate text-xs text-white/45">{credits.join(", ") || "Unknown Artist"}</p>
+                    </div>
+                    <span className="hidden sm:block w-24 shrink-0 text-right text-sm text-white/45">
+                      {track.totalPlays.toLocaleString()}
+                    </span>
+                    <span className="w-12 shrink-0 text-right text-sm text-white/45">
+                      {formatDuration(track.duration)}
+                    </span>
+                  </button>
+                </section>
               </div>
 
-              <section className="relative space-y-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-                <div
-                  className="pointer-events-none absolute inset-0 -z-10 scale-110 bg-cover bg-center opacity-[0.16] blur-md"
-                  style={{ backgroundImage: "url(/images/track-dna-bg.png)" }}
-                />
-                <h2 className="text-base font-semibold">Stats</h2>
+              {/* Right sidebar: track detail / stats */}
+              <aside className="w-full shrink-0 space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 xl:w-80">
+                <h2 className="text-sm font-semibold text-white/80">Track Details</h2>
 
-                {!audioDna ? (
-                  <p className="text-sm text-white/50">
-                    Analysis in progress — Track DNA will appear once the track finishes rendering.
-                  </p>
-                ) : (
-                  <>
-                    {hasAudioFacts && (
-                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                        {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
-                        {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
-                        {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}
-                        {audioDna.loudness != null && (
-                          <Fact label="Loudness" value={`${audioDna.loudness.toFixed(1)} LUFS`} />
-                        )}
-                      </div>
-                    )}
+                <div className="space-y-3 border-t border-white/8 pt-4">
+                  <Fact label="Artist" value={track.artistName || "Unknown"} />
+                  {track.writerName && <Fact label="Writer" value={track.writerName} />}
+                  {track.composerName && <Fact label="Composer" value={track.composerName} />}
+                  <Fact label="Duration" value={formatDuration(track.duration)} />
+                  {track.instrumental && <Fact label="Vocals" value="Instrumental" />}
+                  {releaseYear && <Fact label="Released" value={String(releaseYear)} />}
+                </div>
 
-                    {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Atmosphere</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {audioDna.atmosphereTags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs text-white/80"
-                            >
-                              {tag}
-                            </span>
-                          ))}
+                <div className="relative space-y-4 overflow-hidden border-t border-white/8 pt-4">
+                  <h3 className="text-sm font-semibold text-white/80">Track DNA</h3>
+                  {!audioDna ? (
+                    <p className="text-sm text-white/50">
+                      Analysis in progress — Track DNA will appear once the track finishes rendering.
+                    </p>
+                  ) : (
+                    <>
+                      {hasAudioFacts && (
+                        <div className="grid grid-cols-2 gap-4">
+                          {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
+                          {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
+                          {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}
+                          {audioDna.loudness != null && (
+                            <Fact label="Loudness" value={`${audioDna.loudness.toFixed(1)} LUFS`} />
+                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {audioDna.lyricsScore != null && (
-                      <div className="space-y-1 border-t border-white/10 pt-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-white">Lyrics</span>
-                          <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+                      {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Atmosphere</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {audioDna.atmosphereTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs text-white/80"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
-                      </div>
-                    )}
+                      )}
 
-                    {audioDna.compositionScore != null && (
-                      <div className="space-y-1 border-t border-white/10 pt-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-white">Composition</span>
-                          <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
+                      {audioDna.lyricsScore != null && (
+                        <div className="space-y-1 border-t border-white/10 pt-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-white">Lyrics</span>
+                            <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+                          </div>
+                          {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
                         </div>
-                        {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
-                      </div>
-                    )}
-                  </>
-                )}
-              </section>
-            </>
+                      )}
+
+                      {audioDna.compositionScore != null && (
+                        <div className="space-y-1 border-t border-white/10 pt-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-white">Composition</span>
+                            <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
+                          </div>
+                          {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </aside>
+            </div>
           )}
         </div>
       </main>

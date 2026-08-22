@@ -39,6 +39,8 @@ export async function GET(
       id: track.id,
       title: track.title || "Untitled",
       artistName: track.artistName || owner?.artistAlias || owner?.name || null,
+      writerName: track.writerName || null,
+      composerName: track.composerName || null,
       coverUrl: track.coverUrl || null,
       hasCoverProxy: Boolean(!track.coverUrl && track.s3KeyCover),
       duration: track.duration,
