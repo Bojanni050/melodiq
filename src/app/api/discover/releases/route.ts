@@ -19,7 +19,8 @@ export async function GET() {
       ownerArtistAlias: users.artistAlias,
       ownerName: users.name,
       trackCount: sql<number>`count(distinct ${releaseTracks.id})::int`,
-      totalDuration: sql<number>`coalesce(sum(distinct ${tracks.duration}), 0)::int`,
+      totalDuration: sql<number>`coalesce(sum(${tracks.duration}), 0)::int`,
+      totalPlays: sql<number>`coalesce(sum(${tracks.playCount} + ${tracks.othersPlayCount}), 0)::int`,
       hasCover: sql<boolean>`(${releases.s3KeyCover} is not null) or bool_or(${tracks.s3KeyCover} is not null)`,
     })
     .from(releases)
@@ -50,6 +51,7 @@ export async function GET() {
       publishedAt: row.publishedAt,
       trackCount: row.trackCount,
       totalDuration: row.totalDuration,
+      totalPlays: row.totalPlays,
       coverUrl: row.hasCover ? `/api/discover/releases/${row.id}/cover` : null,
     })),
   });
