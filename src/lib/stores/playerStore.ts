@@ -83,6 +83,7 @@ interface PlayerState {
   visualizerMode: number;
   visualizerGradient: string;
   shuffleEnabled: boolean;
+  pauseBetweenTracks: boolean;
   setVolume: (volume: number) => void;
   setProgress: (progress: number) => void;
   setIsFullscreen: (fullscreen: boolean) => void;
@@ -91,6 +92,7 @@ interface PlayerState {
   setVisualizerMode: (mode: number) => void;
   setVisualizerGradient: (gradient: string) => void;
   setShuffleEnabled: (enabled: boolean) => void;
+  setPauseBetweenTracks: (enabled: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -113,6 +115,7 @@ export const usePlayerStore = create<PlayerState>()(
       visualizerMode: 2,
       visualizerGradient: "prism",
       shuffleEnabled: false,
+      pauseBetweenTracks: true,
       setCurrentTrack: (track) => {
         if (!track) {
           set({
@@ -353,6 +356,7 @@ export const usePlayerStore = create<PlayerState>()(
       setVisualizerMode: (mode) => set({ visualizerMode: mode }),
       setVisualizerGradient: (gradient) => set({ visualizerGradient: gradient }),
       setShuffleEnabled: (enabled) => set({ shuffleEnabled: enabled }),
+      setPauseBetweenTracks: (enabled) => set({ pauseBetweenTracks: enabled }),
     }),
     {
       name: "melodiq-player",
@@ -379,6 +383,7 @@ export const usePlayerStore = create<PlayerState>()(
           visualizerMode: state.visualizerMode,
           visualizerGradient: state.visualizerGradient,
           shuffleEnabled: state.shuffleEnabled,
+          pauseBetweenTracks: state.pauseBetweenTracks,
         };
       },
     }

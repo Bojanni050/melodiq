@@ -73,6 +73,7 @@ export default function Player() {
   const currentTrackRef = useRef<Track | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
+  const trackPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [resolvingUrl, setResolvingUrl] = useState(false);
@@ -199,9 +200,17 @@ export default function Player() {
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
       clearLanguageDetectTimer();
-      const { autoPlayNext, queue, playNext, setIsPlaying, setProgress } = usePlayerStore.getState();
+      const { autoPlayNext, queue, playNext, pauseBetweenTracks, setIsPlaying, setProgress } = usePlayerStore.getState();
       if (autoPlayNext && queue.length > 0) {
-        playNext();
+        if (pauseBetweenTracks) {
+          if (trackPauseTimerRef.current) clearTimeout(trackPauseTimerRef.current);
+          trackPauseTimerRef.current = setTimeout(() => {
+            trackPauseTimerRef.current = null;
+            playNext();
+          }, 1000);
+        } else {
+          playNext();
+        }
         return;
       }
 
@@ -377,6 +386,7 @@ export default function Player() {
         audioRef.current.removeEventListener("error", handleAudioError);
       }
       if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
+      if (trackPauseTimerRef.current) clearTimeout(trackPauseTimerRef.current);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
