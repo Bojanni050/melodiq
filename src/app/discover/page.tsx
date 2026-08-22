@@ -15,6 +15,8 @@ interface PublicTrack {
   id: string;
   title: string;
   artistName: string | null;
+  composerName: string | null;
+  writerName: string | null;
   coverUrl: string | null;
   hasCoverProxy: boolean;
   duration: number | null;
@@ -401,6 +403,8 @@ export default function DiscoverPage() {
       coverUrl: coverSrc(track),
       s3KeyCover: null,
       artistName: track.artistName,
+      composerName: track.composerName,
+      writerName: track.writerName,
       instrumental: track.instrumental,
     });
     setShowTrackDetailsPanel(true);
@@ -430,6 +434,8 @@ export default function DiscoverPage() {
       coverUrl: coverSrc(track),
       s3KeyCover: null,
       artistName: track.artistName,
+      composerName: track.composerName,
+      writerName: track.writerName,
       instrumental: track.instrumental,
       publicSource: true,
     });

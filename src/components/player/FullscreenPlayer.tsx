@@ -3,13 +3,13 @@
 import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import { usePlayerStore, useUserStore } from "@/lib/store";
 import { parseLyrics, isLyricsTaskSubmission } from "@/lib/parse-lyrics";
+import { formatDuration } from "@/lib/track-utils";
 import { useSWRConfig } from "swr";
 import dynamic from "next/dynamic";
 import {
   AudioSource,
   AudioSourceState,
   allowWithDelay,
-  formatProviderLabel,
   AudioSourceBadge,
 } from "./playerUtils";
 
@@ -78,9 +78,9 @@ export default function FullscreenPlayer({
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (currentTrack?.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
   const creditsLabel = [
-    writerLabel ? `Lyrics: ${writerLabel}` : "",
-    composerLabel ? `Composed by ${composerLabel}` : "",
-  ].filter(Boolean).join(" / ");
+    writerLabel ? `writer: ${writerLabel}` : "",
+    composerLabel ? `composer: ${composerLabel}` : "",
+  ].filter(Boolean).join(" · ");
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
 
   const { mutate } = useSWRConfig();
@@ -419,12 +419,6 @@ export default function FullscreenPlayer({
               </h2>
               {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
               {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
-              {currentTrack && (
-                <p className="text-xs text-white/40 capitalize">
-                  {formatProviderLabel(currentTrack.provider)}
-                  {currentTrack.providerModel && currentTrack.providerModel.toLowerCase() !== currentTrack.provider.toLowerCase() ? ` • ${currentTrack.providerModel}` : ""}
-                </p>
-              )}
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
@@ -453,8 +447,8 @@ export default function FullscreenPlayer({
                     {new Date(outgoingVisual.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </p>
                 )}
-                {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">Written by {outgoingVisual.writerName}</p>}
-                {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">Composed by {outgoingVisual.composerName}</p>}
+                {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">writer: {outgoingVisual.writerName}</p>}
+                {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">composer: {outgoingVisual.composerName}</p>}
               </div>
             </div>
           )}
@@ -487,8 +481,11 @@ export default function FullscreenPlayer({
                     {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </p>
                 )}
-                {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
-                {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                {writerLabel && <p className="mt-1 text-xs text-white/40">writer: {writerLabel}</p>}
+                {composerLabel && <p className="mt-0.5 text-xs text-white/40">composer: {composerLabel}</p>}
+                {currentTrack?.duration ? (
+                  <p className="mt-1 text-xs text-white/35">{formatDuration(currentTrack.duration)}</p>
+                ) : null}
               </div>
             </div>
           )}
@@ -521,11 +518,11 @@ export default function FullscreenPlayer({
                           {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                         </p>
                       )}
-                      {writerLabel && <p className="mt-1 text-xs lg:text-sm text-white/40">Written by {writerLabel}</p>}
-                      {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-white/40">Composed by {composerLabel}</p>}
-                      {currentTrack?.providerModel && currentTrack.providerModel.toLowerCase() !== currentTrack.provider.toLowerCase() && (
-                        <p className="mt-1 text-xs lg:text-sm text-white/35 font-mono">{currentTrack.providerModel}</p>
-                      )}
+                      {writerLabel && <p className="mt-1 text-xs lg:text-sm text-white/40">writer: {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-white/40">composer: {composerLabel}</p>}
+                      {currentTrack?.duration ? (
+                        <p className="mt-1 text-xs lg:text-sm text-white/35">{formatDuration(currentTrack.duration)}</p>
+                      ) : null}
                     </div>
                   </div>
                   <div
@@ -595,8 +592,11 @@ export default function FullscreenPlayer({
                           {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                         </p>
                       )}
-                      {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
-                      {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                      {writerLabel && <p className="mt-1 text-xs text-white/40">writer: {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs text-white/40">composer: {composerLabel}</p>}
+                      {currentTrack?.duration ? (
+                        <p className="mt-1 text-xs text-white/35">{formatDuration(currentTrack.duration)}</p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
