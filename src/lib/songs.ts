@@ -18,6 +18,8 @@ export type PublicTrackSummary = {
   publishDate: string | null;
   lyrics: string | null;
   lyricsTimestamps: string | null;
+  composerName: string | null;
+  writerName: string | null;
 };
 
 function toPublicTrackSummary(
@@ -41,6 +43,8 @@ function toPublicTrackSummary(
     publishDate: track.publishDate ? track.publishDate.toISOString() : null,
     lyrics: track.lyrics || null,
     lyricsTimestamps: track.lyricsTimestamps || null,
+    composerName: track.composerName || null,
+    writerName: track.writerName || null,
   };
 }
 

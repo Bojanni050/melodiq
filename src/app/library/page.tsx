@@ -117,6 +117,8 @@ export default function LibraryPage() {
           s3KeyCover: null,
           artistName: t.artistName ?? null,
           artistId: t.artistId ?? null,
+          composerName: t.composerName ?? null,
+          writerName: t.writerName ?? null,
           instrumental: t.instrumental ?? false,
           createdAt: t.publishDate ?? new Date().toISOString(),
           // Mark as public source so playback routes through the discover API

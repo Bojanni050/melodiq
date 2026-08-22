@@ -105,6 +105,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     return providerLabelBase[0].toUpperCase() + providerLabelBase.slice(1);
   })();
   const providerModelLabel = isUploadedTrack ? "Local file" : track.providerModel;
+  // For synthetic discover/listener tracks, provider and providerModel are
+  // both literally "discover" — showing both reads as a duplicated "Discover
+  // · discover". Only append the model when it's actually distinct info.
+  const showProviderModel = !!providerModelLabel && providerModelLabel.toLowerCase() !== providerLabelBase.toLowerCase();
   const canEditPrompt = isUploadedTrack;
   const currentWorkspace = workspaces.find((w) => !w.isDefault && w.trackIds.includes(track.id)) ?? null;
 
@@ -180,7 +184,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end z-10">
           <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
           <p className="text-sm text-white/80 mt-1.5 drop-shadow-sm font-medium">
-            {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{writerLabel ? `writer: ${writerLabel} — ` : ""}{providerLabel} • {providerModelLabel}
+            {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{writerLabel ? `writer: ${writerLabel} — ` : ""}{providerLabel}{showProviderModel ? ` • ${providerModelLabel}` : ""}
             {displayDuration && (
               <span className="ml-1.5 text-white/60">• {formatDuration(displayDuration)}</span>
             )}

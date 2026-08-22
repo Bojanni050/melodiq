@@ -419,7 +419,12 @@ export default function FullscreenPlayer({
               </h2>
               {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
               {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
-              {currentTrack && <p className="text-xs text-white/40 capitalize">{formatProviderLabel(currentTrack.provider)} • {currentTrack.providerModel}</p>}
+              {currentTrack && (
+                <p className="text-xs text-white/40 capitalize">
+                  {formatProviderLabel(currentTrack.provider)}
+                  {currentTrack.providerModel && currentTrack.providerModel.toLowerCase() !== currentTrack.provider.toLowerCase() ? ` • ${currentTrack.providerModel}` : ""}
+                </p>
+              )}
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
@@ -518,7 +523,7 @@ export default function FullscreenPlayer({
                       )}
                       {writerLabel && <p className="mt-1 text-xs lg:text-sm text-white/40">Written by {writerLabel}</p>}
                       {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-white/40">Composed by {composerLabel}</p>}
-                      {currentTrack?.providerModel && (
+                      {currentTrack?.providerModel && currentTrack.providerModel.toLowerCase() !== currentTrack.provider.toLowerCase() && (
                         <p className="mt-1 text-xs lg:text-sm text-white/35 font-mono">{currentTrack.providerModel}</p>
                       )}
                     </div>
