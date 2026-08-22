@@ -504,6 +504,7 @@ export default memo(function TrackList({
           error: t.error,
           coverUrl: t.coverUrl,
           s3KeyCover: t.s3KeyCover,
+          publicSource: t.publicSource,
         }));
 
       setPlayContext(orderedPlayContext);
@@ -539,6 +540,7 @@ export default memo(function TrackList({
       error: track.error,
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
+      publicSource: track.publicSource,
     });
   }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 
