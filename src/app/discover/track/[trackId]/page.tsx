@@ -7,6 +7,7 @@ import Sidebar from "@/components/Sidebar";
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useSidebarStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
+import { useSmartBack } from "@/lib/smart-back";
 
 interface TrackDetail {
   id: string;
@@ -60,6 +61,7 @@ export default function TrackDnaPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
+  const backTarget = useSmartBack({ href: "/discover", label: "Back to Discover" });
 
   useEffect(() => {
     let active = true;
@@ -151,11 +153,11 @@ export default function TrackDnaPage() {
         style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 76 : isQHD ? 316 : 272 } : undefined}
       >
         <div className="mx-auto max-w-2xl space-y-8 pb-16">
-          <Link href="/discover" className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
+          <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Discover
+            {backTarget.label}
           </Link>
 
           {loading ? (
@@ -163,8 +165,8 @@ export default function TrackDnaPage() {
           ) : notFound || !track ? (
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
               <p className="text-sm text-white/60">This track isn&apos;t available.</p>
-              <Link href="/discover" className="mt-3 inline-block text-sm text-primary-400 hover:text-primary-300">
-                Back to Discover
+              <Link href={backTarget.href} className="mt-3 inline-block text-sm text-primary-400 hover:text-primary-300">
+                {backTarget.label}
               </Link>
             </div>
           ) : (

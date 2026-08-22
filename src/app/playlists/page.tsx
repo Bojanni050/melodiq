@@ -326,7 +326,7 @@ export default function PlaylistsPage() {
                     {publishedPlaylists.map((playlist) => (
                       <Link
                         key={playlist.id}
-                        href={`/discover/playlist/${playlist.id}`}
+                        href={`/discover/playlist/${playlist.id}?from=playlists`}
                         className="group flex flex-col gap-3 rounded-[26px] border border-white/10 bg-[#0f1017] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition-colors hover:border-white/20"
                       >
                         <div className="flex aspect-4/3 w-full items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-600/40 to-primary-900/40 overflow-hidden relative">

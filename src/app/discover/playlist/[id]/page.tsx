@@ -15,6 +15,7 @@ import {
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
+import { useSmartBack } from "@/lib/smart-back";
 
 interface PublicPlaylistTrack {
   id: string;
@@ -47,6 +48,7 @@ export default function PublicPlaylistPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener" || user?.role == null;
+  const backTarget = useSmartBack({ href: "/discover", label: "Back to Discover" });
 
   useEffect(() => {
     if (!user) void loadUser();
@@ -276,10 +278,10 @@ export default function PublicPlaylistPage() {
             </p>
             <button
               type="button"
-              onClick={() => router.push("/discover")}
+              onClick={() => router.push(backTarget.href)}
               className="mt-5 rounded-full border border-white/12 bg-white/8 px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white"
             >
-              Back to Discover
+              {backTarget.label}
             </button>
           </div>
         </div>
@@ -347,7 +349,7 @@ export default function PublicPlaylistPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => router.push("/discover")}
+                    onClick={() => router.push(backTarget.href)}
                     className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white inline-flex items-center gap-1.5"
                   >
                     <svg
@@ -363,7 +365,7 @@ export default function PublicPlaylistPage() {
                         d="M15 19l-7-7 7-7"
                       />
                     </svg>
-                    Back to Discover
+                    {backTarget.label}
                   </button>
                 </div>
               </div>
