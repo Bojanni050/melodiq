@@ -33,6 +33,7 @@ const TRACKED_SETTINGS_KEYS = [
   "ADVANCED_LLM_PROVIDER",
   "LYRICIQ_LLM_PROVIDER",
   "PIXAZO_API_KEY",
+  "IMAGE_GEN_PROVIDER",
   "APP_URL",
   "POYO_WEBHOOK_URL",
   "POYO_WAV_WEBHOOK_URL",
@@ -107,6 +108,7 @@ export default function SettingsPage() {
           ...data,
           PROMPT_LLM_PROVIDER: data.PROMPT_LLM_PROVIDER || "openrouter",
           IMAGE_LLM_PROVIDER: data.IMAGE_LLM_PROVIDER || "openrouter",
+          IMAGE_GEN_PROVIDER: data.IMAGE_GEN_PROVIDER || "pixazo",
           LYRICS_LLM_PROVIDER: data.LYRICS_LLM_PROVIDER || "openrouter",
           TRACKDNA_LLM_PROVIDER: data.TRACKDNA_LLM_PROVIDER || "openrouter",
           ADVANCED_LLM_PROVIDER: data.ADVANCED_LLM_PROVIDER || "openrouter",
@@ -427,7 +429,12 @@ export default function SettingsPage() {
 
                   {activeProvidersTab === "images" && (
                     <div className="space-y-3">
-                      <CoverArtSection value={values.PIXAZO_API_KEY ?? ""} onChange={(v) => updateField("PIXAZO_API_KEY", v)} />
+                      <CoverArtSection
+                        value={values.PIXAZO_API_KEY ?? ""}
+                        onChange={(v) => updateField("PIXAZO_API_KEY", v)}
+                        providerValue={values.IMAGE_GEN_PROVIDER ?? "pixazo"}
+                        onProviderChange={(v) => updateField("IMAGE_GEN_PROVIDER", v)}
+                      />
                     </div>
                   )}
                 </>

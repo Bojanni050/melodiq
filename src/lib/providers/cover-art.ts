@@ -19,17 +19,33 @@ type PixazoStatusResponse = {
   error?: string;
 };
 
-export async function generateCoverArt({
-  prompt,
-  title,
-  instrumental,
-  lyrics,
-}: {
+interface GenerateCoverArtArgs {
   prompt: string;
   title: string;
   instrumental: boolean;
   lyrics?: string | null;
-}): Promise<Buffer> {
+}
+
+// Dispatches to the configured image-generation backend. Pixazo is the only
+// one implemented today, but this keeps the provider explicit and selectable
+// in Settings rather than hardcoded, so a second backend can slot in later
+// without touching every caller of generateCoverArt().
+export async function generateCoverArt(args: GenerateCoverArtArgs): Promise<Buffer> {
+  const provider = (await getSetting("IMAGE_GEN_PROVIDER")) || process.env.IMAGE_GEN_PROVIDER || "pixazo";
+
+  if (provider === "pixazo") {
+    return generateCoverArtViaPixazo(args);
+  }
+
+  throw new Error(`Unknown image generation provider "${provider}". Check IMAGE_GEN_PROVIDER in Settings.`);
+}
+
+async function generateCoverArtViaPixazo({
+  prompt,
+  title,
+  instrumental,
+  lyrics,
+}: GenerateCoverArtArgs): Promise<Buffer> {
   const apiKey = (await getSetting("PIXAZO_API_KEY")) || process.env.PIXAZO_API_KEY || "";
 
   if (!apiKey) {

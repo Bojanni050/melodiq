@@ -1,7 +1,66 @@
 "use client";
 
+import type { ReactNode } from "react";
 import OpenRouterModelDropdown from "@/components/settings/OpenRouterModelDropdown";
 import type { LLMModel } from "@/lib/settings-utils";
+
+// The OpenRouterModelDropdown fetches its option list from OpenRouter's own
+// /models endpoint, so it only ever makes sense — and only ever writes the
+// right setting key — when that purpose's provider is actually "openrouter".
+// When OpenAI or Eden AI is selected instead, fall back to a plain text
+// field bound to that provider's own model setting (e.g. OPENAI_PROMPT_MODEL
+// / EDENAI_PROMPT_MODEL), matching the fields already in their Settings
+// sections, rather than silently showing/editing OpenRouter models for a
+// purpose that isn't routed to OpenRouter.
+function ModelField({
+  label,
+  provider,
+  openAiKey,
+  edenAiKey,
+  values,
+  onFieldChange,
+  dropdown,
+}: {
+  label: string;
+  provider: string;
+  openAiKey: string;
+  edenAiKey: string;
+  values: Record<string, string>;
+  onFieldChange: (key: string, value: string) => void;
+  dropdown: ReactNode;
+}) {
+  if (provider === "openai") {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-white/50 mb-1">{label} (OpenAI)</label>
+        <input
+          type="text"
+          value={values[openAiKey] || ""}
+          onChange={(e) => onFieldChange(openAiKey, e.target.value)}
+          placeholder="gpt-4o"
+          className="input-field font-mono text-sm"
+        />
+      </div>
+    );
+  }
+
+  if (provider === "edenai") {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-white/50 mb-1">{label} (Eden AI)</label>
+        <input
+          type="text"
+          value={values[edenAiKey] || ""}
+          onChange={(e) => onFieldChange(edenAiKey, e.target.value)}
+          placeholder="openai/gpt-4o-mini"
+          className="input-field font-mono text-sm"
+        />
+      </div>
+    );
+  }
+
+  return <>{dropdown}</>;
+}
 
 export default function AiRoutingSection({
   values,
@@ -243,7 +302,8 @@ export default function AiRoutingSection({
           <div>
             <h2 className="text-sm font-semibold">Models</h2>
             <p className="text-sm text-white/30">
-              OpenRouter models used for prompt optimization, lyrics, and image prompts.
+              Model used per purpose. Shows the OpenRouter picker when that purpose is routed to OpenRouter above,
+              otherwise a plain model name for the selected provider (OpenAI / Eden AI).
             </p>
           </div>
           {onGetModels && (
@@ -275,77 +335,137 @@ export default function AiRoutingSection({
           )}
         </div>
         <div className="space-y-3">
-          <OpenRouterModelDropdown
+          <ModelField
             label="Prompt Model"
-            selected={selectedPromptModel}
-            open={showPromptDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onTogglePromptDropdown}
-            onSelect={onPromptModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.PROMPT_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_PROMPT_MODEL"
+            edenAiKey="EDENAI_PROMPT_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="Prompt Model"
+                selected={selectedPromptModel}
+                open={showPromptDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onTogglePromptDropdown}
+                onSelect={onPromptModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
-          <OpenRouterModelDropdown
+          <ModelField
             label="Lyrics Model"
-            selected={selectedLyricsModel}
-            open={showLyricsDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onToggleLyricsDropdown}
-            onSelect={onLyricsModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.LYRICS_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_LYRICS_MODEL"
+            edenAiKey="EDENAI_LYRICS_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="Lyrics Model"
+                selected={selectedLyricsModel}
+                open={showLyricsDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleLyricsDropdown}
+                onSelect={onLyricsModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
-          <OpenRouterModelDropdown
+          <ModelField
             label="Image Prompt Model"
-            selected={selectedImageModel}
-            open={showImageDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onToggleImageDropdown}
-            onSelect={onImageModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.IMAGE_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_IMAGE_MODEL"
+            edenAiKey="EDENAI_IMAGE_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="Image Prompt Model"
+                selected={selectedImageModel}
+                open={showImageDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleImageDropdown}
+                onSelect={onImageModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
-          <OpenRouterModelDropdown
+          <ModelField
             label="Track DNA Model"
-            selected={selectedTrackDnaModel}
-            open={showTrackDnaDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onToggleTrackDnaDropdown}
-            onSelect={onTrackDnaModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.TRACKDNA_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_TRACKDNA_MODEL"
+            edenAiKey="EDENAI_TRACKDNA_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="Track DNA Model"
+                selected={selectedTrackDnaModel}
+                open={showTrackDnaDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleTrackDnaDropdown}
+                onSelect={onTrackDnaModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
-          <OpenRouterModelDropdown
+          <ModelField
             label="Advanced DNA Model"
-            selected={selectedAdvancedDnaModel}
-            open={showAdvancedDnaDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onToggleAdvancedDnaDropdown}
-            onSelect={onAdvancedDnaModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.ADVANCED_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_ADVANCED_DNA_MODEL"
+            edenAiKey="EDENAI_ADVANCED_DNA_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="Advanced DNA Model"
+                selected={selectedAdvancedDnaModel}
+                open={showAdvancedDnaDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleAdvancedDnaDropdown}
+                onSelect={onAdvancedDnaModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
-          <OpenRouterModelDropdown
+          <ModelField
             label="LyricIQ Model"
-            selected={selectedLyricIqModel}
-            open={showLyricIqDropdown}
-            options={filteredModels}
-            allModelsLoaded={allModels.length > 0}
-            searchQuery={modelSearchQuery}
-            onToggle={onToggleLyricIqDropdown}
-            onSelect={onLyricIqModelSelect}
-            onSearchQueryChange={onSearchQueryChange}
-            onReadMore={onReadMore}
+            provider={values.LYRICIQ_LLM_PROVIDER || "openrouter"}
+            openAiKey="OPENAI_LYRICIQ_MODEL"
+            edenAiKey="EDENAI_LYRICIQ_MODEL"
+            values={values}
+            onFieldChange={onFieldChange}
+            dropdown={
+              <OpenRouterModelDropdown
+                label="LyricIQ Model"
+                selected={selectedLyricIqModel}
+                open={showLyricIqDropdown}
+                options={filteredModels}
+                allModelsLoaded={allModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleLyricIqDropdown}
+                onSelect={onLyricIqModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
           {isAdmin && onTimecodedModelSelect && onToggleTimecodedDropdown && (
             <OpenRouterModelDropdown
