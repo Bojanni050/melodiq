@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
@@ -33,6 +33,20 @@ function defaultReleaseTypeForTrackCount(count: number): "single" | "ep" | "albu
   return "album";
 }
 
+const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
 export default function PlaylistDetailPage() {
   const params = useParams<{ playlistId: string }>();
   const router = useRouter();
@@ -59,6 +73,7 @@ export default function PlaylistDetailPage() {
     localMovePlaylistTrack,
     loadPlaylists,
     deletePlaylist,
+    updatePlaylistDescription,
   } = usePlaylistStore();
   const { loadReleases, createRelease, toggleReleasePublic } = useReleaseStore();
   const moveTracksToWorkspace = useWorkspaceStore((state) => state.moveTracksToWorkspace);
@@ -78,6 +93,13 @@ export default function PlaylistDetailPage() {
   const [convertError, setConvertError] = useState<string | null>(null);
   const [publishPromptRelease, setPublishPromptRelease] = useState<{ id: string; title: string; trackCount: number } | null>(null);
   const [publishing, setPublishing] = useState(false);
+
+  const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     if (activeCheck && !activeCheck()) return;
@@ -121,6 +143,32 @@ export default function PlaylistDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(PLAYLIST_COVERS_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as unknown;
+      if (!isObjectRecord(parsed)) return;
+
+      const next: Record<string, string> = {};
+      for (const [key, value] of Object.entries(parsed)) {
+        if (typeof value === "string" && value.trim()) {
+          next[key] = value;
+        }
+      }
+
+      setPlaylistCoverOverrides(next);
+    } catch {
+      // Ignore malformed localStorage payload.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(PLAYLIST_COVERS_STORAGE_KEY, JSON.stringify(playlistCoverOverrides));
+  }, [playlistCoverOverrides]);
+
   const {
     selectedTrack,
     setSelectedTrack,
@@ -146,6 +194,74 @@ export default function PlaylistDetailPage() {
     () => formatTotalDuration(playlistTracks.reduce((s, t) => s + (t.duration ?? 0), 0)),
     [playlistTracks],
   );
+
+  const coverCandidates = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          playlistTracks
+            .map((t) => t.coverUrl)
+            .filter((coverUrl): coverUrl is string => Boolean(coverUrl)),
+        ),
+      ),
+    [playlistTracks],
+  );
+
+  const randomCover = useMemo(() => {
+    if (!selectedPlaylist || coverCandidates.length === 0) return null;
+    const index = hashString(`${selectedPlaylist.id}:${coverCandidates.join("|")}`) % coverCandidates.length;
+    return coverCandidates[index] ?? null;
+  }, [selectedPlaylist, coverCandidates]);
+
+  function handleSetPlaylistCover(coverUrl: string) {
+    if (!selectedPlaylist) return;
+    const playlistIdKey = selectedPlaylist.id;
+    setPlaylistCoverOverrides((current) => ({ ...current, [playlistIdKey]: coverUrl }));
+  }
+
+  function handleResetPlaylistCover() {
+    if (!selectedPlaylist) return;
+    const playlistIdKey = selectedPlaylist.id;
+    setPlaylistCoverOverrides((current) => {
+      const next = { ...current };
+      delete next[playlistIdKey];
+      return next;
+    });
+  }
+
+  async function handleUploadPlaylistCover(file: File) {
+    if (!selectedPlaylist) return;
+    const playlistIdKey = selectedPlaylist.id;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("cover", file);
+      const res = await fetch(`/api/playlists/${playlistIdKey}/cover`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { coverUrl } = await res.json() as { coverUrl: string };
+      const bustedUrl = `${coverUrl}?t=${Date.now()}`;
+      handleSetPlaylistCover(bustedUrl);
+      const { hydratePlaylistsFromServer, playlists: storePlaylists } = usePlaylistStore.getState();
+      hydratePlaylistsFromServer(storePlaylists.map((p) => p.id === playlistIdKey ? { ...p, coverUrl: bustedUrl } : p));
+    } catch (err) {
+      console.error("[playlist-cover] upload error", err);
+    } finally {
+      setUploadingCover(false);
+    }
+  }
+
+  function openDescriptionEditor() {
+    if (!selectedPlaylist) return;
+    setDescriptionDraft(selectedPlaylist.description ?? "");
+    setEditingDescription(true);
+  }
+
+  function handleSaveDescription() {
+    if (!selectedPlaylist) return;
+    updatePlaylistDescription(selectedPlaylist.id, descriptionDraft);
+    setEditingDescription(false);
+    setDescriptionDraft("");
+  }
 
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
@@ -509,11 +625,49 @@ export default function PlaylistDetailPage() {
                       </span>
                     )}
                   </div>
-                  {selectedPlaylist?.description && (
-                    <p className="text-sm text-white/50 max-w-xl">
+                  {editingDescription ? (
+                    <div className="max-w-xl space-y-2">
+                      <textarea
+                        autoFocus
+                        value={descriptionDraft}
+                        onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 500))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") { setEditingDescription(false); setDescriptionDraft(""); }
+                        }}
+                        rows={3}
+                        maxLength={500}
+                        placeholder="Add a description…"
+                        className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 resize-none"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-white/35">{descriptionDraft.length}/500</span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setEditingDescription(false); setDescriptionDraft(""); }}
+                            className="h-8 rounded-full px-3 text-sm text-white/50 hover:text-white transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveDescription}
+                            className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black hover:bg-white/90 transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : selectedPlaylist?.description ? (
+                    <button
+                      type="button"
+                      onClick={openDescriptionEditor}
+                      className="block max-w-xl text-left text-sm text-white/50 hover:text-white/80 transition-colors"
+                    >
                       {selectedPlaylist.description}
-                    </p>
-                  )}
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -537,6 +691,26 @@ export default function PlaylistDetailPage() {
                     </svg>
                     All Playlists
                   </button>
+
+                  {selectedPlaylist && (
+                    <button
+                      type="button"
+                      onClick={openDescriptionEditor}
+                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                    >
+                      {selectedPlaylist.description ? "Edit description" : "Add description"}
+                    </button>
+                  )}
+
+                  {selectedPlaylist && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCoverPicker(true)}
+                      className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                    >
+                      Change cover
+                    </button>
+                  )}
 
                   {selectedPlaylist && !selectedPlaylist.isSystem && isAdmin && (
                     <button
@@ -855,6 +1029,101 @@ export default function PlaylistDetailPage() {
                 {publishing ? "Publishing..." : "Publish"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCoverPicker && selectedPlaylist && (
+        <div className="fixed inset-0 z-70">
+          <button
+            type="button"
+            aria-label="Close playlist cover picker"
+            onClick={() => setShowCoverPicker(false)}
+            className="absolute inset-0 bg-black/65"
+          />
+
+          <div className="absolute left-1/2 top-1/2 w-[min(760px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Change Playlist Cover</h3>
+                <p className="text-sm text-white/55">Pick a cover from playlist songs, upload your own, or randomize it.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCoverPicker(false)}
+                className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                title="Close"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!randomCover}
+                onClick={() => {
+                  if (!randomCover) return;
+                  handleSetPlaylistCover(randomCover);
+                }}
+                className="h-9 rounded-full border border-white/12 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Use random
+              </button>
+              <button
+                type="button"
+                disabled={uploadingCover}
+                onClick={() => playlistCoverInputRef.current?.click()}
+                className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+              >
+                {uploadingCover ? "Uploading…" : "Upload image"}
+              </button>
+              <button
+                type="button"
+                onClick={handleResetPlaylistCover}
+                className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                Reset to auto
+              </button>
+              <input
+                ref={playlistCoverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleUploadPlaylistCover(file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {coverCandidates.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/15 bg-white/3 p-4 text-sm text-white/55">
+                No cover images found in this playlist yet.
+              </div>
+            ) : (
+              <div className="grid max-h-[52vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                {coverCandidates.map((candidateUrl) => {
+                  const activeCover = playlistCoverOverrides[selectedPlaylist.id] ?? null;
+                  const isActive = activeCover === candidateUrl;
+
+                  return (
+                    <button
+                      key={candidateUrl}
+                      type="button"
+                      onClick={() => handleSetPlaylistCover(candidateUrl)}
+                      className={`overflow-hidden rounded-2xl border transition ${isActive ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.5)]" : "border-white/12 hover:border-white/35"}`}
+                      title="Use this cover"
+                    >
+                      <img src={candidateUrl} alt="Playlist cover candidate" className="h-28 w-full object-cover" loading="lazy" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}

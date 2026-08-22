@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -61,7 +61,7 @@ export default function PlaylistsPage() {
   const isListener = user?.role === "listener" || user?.role == null;
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const { playlists, loadPlaylists, createPlaylist, updatePlaylistDescription } = usePlaylistStore();
+  const { playlists, loadPlaylists, createPlaylist } = usePlaylistStore();
   const loadReleases = useReleaseStore((state) => state.loadReleases);
 
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -69,12 +69,7 @@ export default function PlaylistsPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [playlistCoverOverrides, setPlaylistCoverOverrides] = useState<Record<string, string>>({});
-  const [coverPickerPlaylistId, setCoverPickerPlaylistId] = useState<string | null>(null);
-  const [uploadingPlaylistCover, setUploadingPlaylistCover] = useState(false);
-  const [editingDescriptionPlaylistId, setEditingDescriptionPlaylistId] = useState<string | null>(null);
-  const [descriptionDraft, setDescriptionDraft] = useState("");
   const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
-  const playlistCoverInputRef = useRef<HTMLInputElement | null>(null);
 
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
@@ -189,11 +184,6 @@ export default function PlaylistsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(PLAYLIST_COVERS_STORAGE_KEY, JSON.stringify(playlistCoverOverrides));
-  }, [playlistCoverOverrides]);
-
   function getPlaylistCoverCandidates(playlistId: string) {
     const playlist = playlists.find((item) => item.id === playlistId);
     if (!playlist) return [] as string[];
@@ -220,37 +210,6 @@ export default function PlaylistsPage() {
     const playlist = playlists.find((p) => p.id === playlistId);
     if (playlist?.coverUrl) return playlist.coverUrl;
     return getPlaylistRandomCover(playlistId);
-  }
-
-  function handleSetPlaylistCover(playlistId: string, coverUrl: string) {
-    setPlaylistCoverOverrides((current) => ({ ...current, [playlistId]: coverUrl }));
-  }
-
-  function handleResetPlaylistCover(playlistId: string) {
-    setPlaylistCoverOverrides((current) => {
-      const next = { ...current };
-      delete next[playlistId];
-      return next;
-    });
-  }
-
-  async function handleUploadPlaylistCover(playlistId: string, file: File) {
-    setUploadingPlaylistCover(true);
-    try {
-      const formData = new FormData();
-      formData.append("cover", file);
-      const res = await fetch(`/api/playlists/${playlistId}/cover`, { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed");
-      const { coverUrl } = await res.json() as { coverUrl: string };
-      const bustedUrl = `${coverUrl}?t=${Date.now()}`;
-      handleSetPlaylistCover(playlistId, bustedUrl);
-      const { hydratePlaylistsFromServer, playlists: storePlaylists } = usePlaylistStore.getState();
-      hydratePlaylistsFromServer(storePlaylists.map((p) => p.id === playlistId ? { ...p, coverUrl: bustedUrl } : p));
-    } catch (err) {
-      console.error("[playlist-cover] upload error", err);
-    } finally {
-      setUploadingPlaylistCover(false);
-    }
   }
 
   function handleCreatePlaylist() {
@@ -357,80 +316,6 @@ export default function PlaylistsPage() {
                             </div>
                           </div>
                         </button>
-
-                        {editingDescriptionPlaylistId === playlist.id ? (
-                          <div className="px-4 pb-3 pt-3 space-y-2">
-                            <textarea
-                              autoFocus
-                              value={descriptionDraft}
-                              onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 500))}
-                              onKeyDown={(e) => {
-                                if (e.key === "Escape") { setEditingDescriptionPlaylistId(null); setDescriptionDraft(""); }
-                              }}
-                              rows={3}
-                              maxLength={500}
-                              placeholder="Add a description…"
-                              className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 resize-none"
-                            />
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-white/35">{descriptionDraft.length}/500</span>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditingDescriptionPlaylistId(null); setDescriptionDraft(""); }}
-                                  className="h-8 rounded-full px-3 text-sm text-white/50 hover:text-white transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    updatePlaylistDescription(playlist.id, descriptionDraft);
-                                    setEditingDescriptionPlaylistId(null);
-                                    setDescriptionDraft("");
-                                  }}
-                                  className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black hover:bg-white/90 transition-colors"
-                                >
-                                  Save
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : playlist.description ? (
-                          <button
-                            type="button"
-                            onClick={() => { setEditingDescriptionPlaylistId(playlist.id); setDescriptionDraft(playlist.description ?? ""); }}
-                            className="mx-4 mb-2 mt-3 block w-[calc(100%-2rem)] text-left text-sm text-white/50 hover:text-white/80 transition-colors line-clamp-2"
-                          >
-                            {playlist.description}
-                          </button>
-                        ) : null}
-
-                        <div className="flex items-center justify-between gap-2 px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => openPlaylist(playlist.id)}
-                            className="text-sm text-white/60 transition-colors hover:text-white"
-                          >
-                            Open playlist
-                          </button>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => { setEditingDescriptionPlaylistId(playlist.id); setDescriptionDraft(playlist.description ?? ""); }}
-                              className="text-sm text-white/45 transition-colors hover:text-white"
-                            >
-                              {playlist.description ? "Edit description" : "Add description"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCoverPickerPlaylistId(playlist.id)}
-                              className="text-sm text-white/45 transition-colors hover:text-white"
-                            >
-                              Change cover
-                            </button>
-                          </div>
-                        </div>
                       </article>
                     );
                   })}
@@ -493,111 +378,6 @@ export default function PlaylistsPage() {
           </div>
         </ResizablePanel>
       </div>
-
-
-      {coverPickerPlaylistId && (
-        <div className="fixed inset-0 z-70">
-          <button
-            type="button"
-            aria-label="Close playlist cover picker"
-            onClick={() => setCoverPickerPlaylistId(null)}
-            className="absolute inset-0 bg-black/65"
-          />
-
-          <div className="absolute left-1/2 top-1/2 w-[min(760px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-white">Change Playlist Cover</h3>
-                <p className="text-sm text-white/55">Pick a cover from playlist songs, upload your own, or randomize it.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCoverPickerPlaylistId(null)}
-                className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                title="Close"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {(() => {
-              const candidates = getPlaylistCoverCandidates(coverPickerPlaylistId);
-              const randomCover = getPlaylistRandomCover(coverPickerPlaylistId);
-
-              return (
-                <>
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={!randomCover}
-                      onClick={() => {
-                        if (!randomCover) return;
-                        handleSetPlaylistCover(coverPickerPlaylistId, randomCover);
-                      }}
-                      className="h-9 rounded-full border border-white/12 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Use random
-                    </button>
-                    <button
-                      type="button"
-                      disabled={uploadingPlaylistCover}
-                      onClick={() => playlistCoverInputRef.current?.click()}
-                      className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
-                    >
-                      {uploadingPlaylistCover ? "Uploading…" : "Upload image"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleResetPlaylistCover(coverPickerPlaylistId)}
-                      className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
-                    >
-                      Reset to auto
-                    </button>
-                    <input
-                      ref={playlistCoverInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void handleUploadPlaylistCover(coverPickerPlaylistId, file);
-                        e.target.value = "";
-                      }}
-                    />
-                  </div>
-
-                  {candidates.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-white/15 bg-white/3 p-4 text-sm text-white/55">
-                      No cover images found in this playlist yet.
-                    </div>
-                  ) : (
-                    <div className="grid max-h-[52vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
-                      {candidates.map((coverUrl) => {
-                        const activeCover = playlistCoverOverrides[coverPickerPlaylistId] ?? null;
-                        const isActive = activeCover === coverUrl;
-
-                        return (
-                          <button
-                            key={coverUrl}
-                            type="button"
-                            onClick={() => handleSetPlaylistCover(coverPickerPlaylistId, coverUrl)}
-                            className={`overflow-hidden rounded-2xl border transition ${isActive ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.5)]" : "border-white/12 hover:border-white/35"}`}
-                            title="Use this cover"
-                          >
-                            <img src={coverUrl} alt="Playlist cover candidate" className="h-28 w-full object-cover" loading="lazy" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
