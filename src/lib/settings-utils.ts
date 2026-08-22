@@ -61,6 +61,57 @@ export function createModelPlaceholder(id: string): LLMModel {
   };
 }
 
+// Family/publisher patterns known for strong instruction-following and
+// reliable structured (JSON) output, roughly in priority order — used to
+// surface a handful of sane defaults at the top of a model picker rather
+// than making the user scroll a 400+ entry alphabetical list cold. This is
+// a heuristic, not a live benchmark: it matches on publisher+family (which
+// stays stable) rather than exact version suffixes (which don't), so it
+// keeps working as providers ship new point releases.
+const RECOMMENDED_MODEL_PATTERNS = [
+  "gpt-5",
+  "claude-sonnet",
+  "claude-opus",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-3",
+  "deepseek-v3",
+  "grok-4",
+  "qwen3",
+  "glm-5",
+  "glm-4",
+  "mistral-large",
+  "llama-4",
+];
+
+// Picks up to `count` models, at most one per recommended family, preferring
+// the cheapest matching entry within each family. Falls back to whatever
+// families are actually present in `models` — a picker with a smaller
+// catalog (e.g. a narrower Eden AI subset) may surface fewer than `count`.
+export function pickRecommendedModels(models: LLMModel[], count = 5): LLMModel[] {
+  const picked: LLMModel[] = [];
+  const usedIds = new Set<string>();
+
+  for (const pattern of RECOMMENDED_MODEL_PATTERNS) {
+    if (picked.length >= count) break;
+    const matches = models
+      .filter((m) => {
+        const id = m.id.toLowerCase();
+        // ":batch" variants are async/batch-processing endpoints (cheaper,
+        // but not a synchronous request/response) — wrong shape for our
+        // interactive callLLM() usage, so never recommend them even though
+        // they'd otherwise "win" on price.
+        return !usedIds.has(m.id) && id.includes(pattern) && !id.includes(":batch");
+      })
+      .sort((a, b) => Number(a.pricing.prompt || 0) - Number(b.pricing.prompt || 0));
+    if (matches.length === 0) continue;
+    picked.push(matches[0]);
+    usedIds.add(matches[0].id);
+  }
+
+  return picked;
+}
+
 export function buildWebhookUrl(appUrl: string, path: string): string {
   return `${appUrl.replace(/\/$/, "")}${path}`;
 }

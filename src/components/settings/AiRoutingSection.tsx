@@ -491,6 +491,7 @@ export default function AiRoutingSection({
                   onSelect={onAdvancedDnaModelSelect}
                   onSearchQueryChange={onSearchQueryChange}
                   onReadMore={onReadMore}
+                  showRecommended={false}
                 />
               }
               edenAiDropdown={
@@ -505,6 +506,7 @@ export default function AiRoutingSection({
                   onSelect={onAdvancedDnaModelSelect}
                   onSearchQueryChange={onSearchQueryChange}
                   onReadMore={onReadMore}
+                  showRecommended={false}
                 />
               }
             />

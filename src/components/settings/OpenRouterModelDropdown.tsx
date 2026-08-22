@@ -14,6 +14,7 @@ export default function OpenRouterModelDropdown({
   onSelect,
   onSearchQueryChange,
   onReadMore,
+  showRecommended,
 }: {
   label: string;
   selected: LLMModel | null;
@@ -25,6 +26,7 @@ export default function OpenRouterModelDropdown({
   onSelect: (model: LLMModel) => void;
   onSearchQueryChange: (value: string) => void;
   onReadMore: (model: LLMModel) => void;
+  showRecommended?: boolean;
 }) {
   return (
     <div className="relative">
@@ -61,6 +63,7 @@ export default function OpenRouterModelDropdown({
             onSearchQueryChange={onSearchQueryChange}
             onSelect={onSelect}
             onReadMore={onReadMore}
+            showRecommended={showRecommended}
           />
         </div>
       )}
