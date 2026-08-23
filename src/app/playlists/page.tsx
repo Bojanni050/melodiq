@@ -8,6 +8,7 @@ import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { useSidebarStore, usePlaylistStore, useReleaseStore, useUserStore, usePlayerStore } from "@/lib/store";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { useT } from "@/hooks/useT";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
@@ -56,6 +57,7 @@ function hashString(value: string) {
 
 export default function PlaylistsPage() {
   const router = useRouter();
+  const t = useT();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const user = useUserStore((s) => s.user);
   const isListener = user?.role === "listener" || user?.role == null;
@@ -233,15 +235,15 @@ export default function PlaylistsPage() {
           <div className="max-w-400 mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Playlist Manager</p>
-                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Playlists</h1>
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("playlists.tagline")}</p>
+                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{t("playlists.title")}</h1>
               </div>
             </section>
 
             <section className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                  {playlists.length} playlists
+                  {t("playlists.countLabel", { count: playlists.length })}
                 </div>
                 {showCreatePlaylist ? (
                   <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
@@ -249,16 +251,16 @@ export default function PlaylistsPage() {
                       value={newPlaylistName}
                       onChange={(e) => setNewPlaylistName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleCreatePlaylist(); if (e.key === "Escape") { setShowCreatePlaylist(false); setNewPlaylistName(""); } }}
-                      placeholder="Playlist name"
+                      placeholder={t("playlists.namePlaceholder")}
                       maxLength={100}
                       className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
                       autoFocus
                     />
                     <button type="button" onClick={handleCreatePlaylist} className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90">
-                      Add
+                      {t("playlists.add")}
                     </button>
                     <button type="button" onClick={() => { setShowCreatePlaylist(false); setNewPlaylistName(""); }} className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white">
-                      Cancel
+                      {t("playlists.cancel")}
                     </button>
                   </div>
                 ) : (
@@ -267,16 +269,16 @@ export default function PlaylistsPage() {
                     onClick={() => setShowCreatePlaylist(true)}
                     className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                   >
-                    + Create playlist
+                    {t("playlists.createPlaylist")}
                   </button>
                 )}
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading playlists...</div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("playlists.loading")}</div>
               ) : playlists.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
-                  No playlists yet. Create one above or add songs to a playlist from track actions.
+                  {t("playlists.noPlaylistsYet")}
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -312,7 +314,7 @@ export default function PlaylistsPage() {
                             <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10" />
                             <div className="absolute inset-x-0 bottom-0 p-4">
                               <h3 className="truncate text-lg font-semibold text-white">{playlist.name}</h3>
-                              <p className="text-sm text-white/75">{playlistTracks.length} songs</p>
+                              <p className="text-sm text-white/75">{t("playlists.songsCount", { count: playlistTracks.length })}</p>
                             </div>
                           </div>
                         </button>
@@ -324,7 +326,7 @@ export default function PlaylistsPage() {
 
               {publishedPlaylists.length > 0 && (
                 <div className="space-y-4 pt-10">
-                  <h2 className="text-xl font-semibold tracking-tight text-white">Curated by MelodIQ</h2>
+                  <h2 className="text-xl font-semibold tracking-tight text-white">{t("playlists.curatedByMelodiq")}</h2>
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {publishedPlaylists.map((playlist) => (
                       <Link
@@ -346,9 +348,11 @@ export default function PlaylistsPage() {
                         </div>
                         <div className="mt-auto flex items-center justify-between">
                           <p className="text-sm text-white/40">
-                            {playlist.trackCount} {playlist.trackCount === 1 ? "song" : "songs"}
+                            {playlist.trackCount === 1
+                              ? t("playlists.songCountSingular", { count: playlist.trackCount })
+                              : t("playlists.songCountPlural", { count: playlist.trackCount })}
                           </p>
-                          <span className="text-sm text-white/60 transition-colors group-hover:text-white">View</span>
+                          <span className="text-sm text-white/60 transition-colors group-hover:text-white">{t("playlists.view")}</span>
                         </div>
                       </Link>
                     ))}
@@ -371,8 +375,8 @@ export default function PlaylistsPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track or press play to show track info and lyrics.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("playlists.selectTrackHint")}</p>
               </div>
             )}
           </div>

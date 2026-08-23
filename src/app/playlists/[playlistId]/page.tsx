@@ -20,6 +20,7 @@ import {
 } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
+import { useT } from "@/hooks/useT";
 
 const RELEASE_TYPES: { value: "single" | "ep" | "album"; label: string }[] = [
   { value: "single", label: "Single" },
@@ -50,6 +51,7 @@ function hashString(value: string) {
 export default function PlaylistDetailPage() {
   const params = useParams<{ playlistId: string }>();
   const router = useRouter();
+  const t = useT();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -482,7 +484,7 @@ export default function PlaylistDetailPage() {
 
     const title = convertTitle.trim();
     if (!title) {
-      setConvertError("Title is required.");
+      setConvertError(t("playlists.titleRequired"));
       return;
     }
 
@@ -496,7 +498,7 @@ export default function PlaylistDetailPage() {
         artistName: convertArtistAlias || undefined,
       });
       if (!releaseId) {
-        setConvertError("Failed to create the release. Try again.");
+        setConvertError(t("playlists.convertFailedGeneric"));
         setConverting(false);
         return;
       }
@@ -523,7 +525,7 @@ export default function PlaylistDetailPage() {
       setPublishPromptRelease({ id: releaseId, title, trackCount });
     } catch (error) {
       console.error("[convert-to-release] failed", error);
-      setConvertError("Something went wrong converting this playlist. Try again.");
+      setConvertError(t("playlists.convertErrorGeneric"));
     } finally {
       setConverting(false);
     }
@@ -562,16 +564,16 @@ export default function PlaylistDetailPage() {
           }}
         >
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center max-w-md">
-            <h2 className="text-lg font-semibold text-white">Playlist not found</h2>
+            <h2 className="text-lg font-semibold text-white">{t("playlists.notFoundTitle")}</h2>
             <p className="text-sm text-white/60 mt-2">
-              This playlist might have been deleted or moved.
+              {t("playlists.notFoundBody")}
             </p>
             <button
               type="button"
               onClick={() => router.push("/playlists")}
               className="mt-5 rounded-full border border-white/12 bg-white/8 px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white"
             >
-              Back to playlists
+              {t("playlists.backToPlaylists")}
             </button>
           </div>
         </div>
@@ -608,20 +610,20 @@ export default function PlaylistDetailPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                      Playlists
+                      {t("playlists.title")}
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {selectedPlaylist?.name ?? "Playlist"}
+                        {selectedPlaylist?.name ?? t("playlists.fallbackName")}
                       </span>
                     </h1>
                     {selectedPlaylist?.isPublic && (
                       <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
-                        ● Published
+                        ● {t("playlists.published")}
                       </span>
                     )}
                     {playlistTracks.length > 0 && (
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
-                        {playlistTracks.length} tracks
+                        {t("playlists.tracksCount", { count: playlistTracks.length })}
                         {playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}
                       </span>
                     )}
@@ -637,7 +639,7 @@ export default function PlaylistDetailPage() {
                         }}
                         rows={3}
                         maxLength={500}
-                        placeholder="Add a description…"
+                        placeholder={t("playlists.descriptionPlaceholder")}
                         className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 resize-none"
                       />
                       <div className="flex items-center justify-between gap-2">
@@ -648,14 +650,14 @@ export default function PlaylistDetailPage() {
                             onClick={() => { setEditingDescription(false); setDescriptionDraft(""); }}
                             className="h-8 rounded-full px-3 text-sm text-white/50 hover:text-white transition-colors"
                           >
-                            Cancel
+                            {t("common.cancel")}
                           </button>
                           <button
                             type="button"
                             onClick={handleSaveDescription}
                             className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black hover:bg-white/90 transition-colors"
                           >
-                            Save
+                            {t("common.save")}
                           </button>
                         </div>
                       </div>
@@ -690,7 +692,7 @@ export default function PlaylistDetailPage() {
                         d="M15 19l-7-7 7-7"
                       />
                     </svg>
-                    All Playlists
+                    {t("playlists.allPlaylists")}
                   </button>
 
                   {playlistTracks.length > 1 && (
@@ -708,7 +710,7 @@ export default function PlaylistDetailPage() {
                           : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
                       }`}
                     >
-                      {isEditingPlaylistOrder ? "Save order" : "Edit order"}
+                      {isEditingPlaylistOrder ? t("playlists.saveOrder") : t("playlists.editOrder")}
                     </button>
                   )}
 
@@ -717,8 +719,8 @@ export default function PlaylistDetailPage() {
                       <button
                         type="button"
                         onClick={() => setMoreMenuOpen((v) => !v)}
-                        aria-label="More playlist actions"
-                        title="More actions"
+                        aria-label={t("playlists.moreActions")}
+                        title={t("playlists.moreActionsTitle")}
                         className={`h-9 w-9 rounded-full border flex items-center justify-center transition-colors ${
                           moreMenuOpen
                             ? "border-white/25 bg-white/10 text-white"
@@ -736,7 +738,7 @@ export default function PlaylistDetailPage() {
                         <>
                           <button
                             type="button"
-                            aria-label="Close menu"
+                            aria-label={t("playlists.close")}
                             onClick={() => setMoreMenuOpen(false)}
                             className="fixed inset-0 z-10 cursor-default"
                           />
@@ -746,14 +748,14 @@ export default function PlaylistDetailPage() {
                               onClick={() => { openDescriptionEditor(); setMoreMenuOpen(false); }}
                               className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                             >
-                              {selectedPlaylist.description ? "Edit description" : "Add description"}
+                              {selectedPlaylist.description ? t("playlists.editDescription") : t("playlists.addDescription")}
                             </button>
                             <button
                               type="button"
                               onClick={() => { setShowCoverPicker(true); setMoreMenuOpen(false); }}
                               className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                             >
-                              Change cover
+                              {t("playlists.changeCover")}
                             </button>
 
                             {!selectedPlaylist.isSystem && isAdmin && (
@@ -767,18 +769,18 @@ export default function PlaylistDetailPage() {
                                 >
                                   {togglingPlaylistPublic
                                     ? selectedPlaylist.isPublic
-                                      ? "Unpublishing…"
-                                      : "Publishing…"
+                                      ? t("playlists.unpublishing")
+                                      : t("playlists.publishing")
                                     : selectedPlaylist.isPublic
-                                      ? "Unpublish"
-                                      : "Publish to Discover"}
+                                      ? t("playlists.unpublish")
+                                      : t("playlists.publishToDiscover")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => { openConvertDialog(); setMoreMenuOpen(false); }}
                                   className="block w-full px-3.5 py-2 text-left text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                                 >
-                                  Convert to release
+                                  {t("playlists.convertToRelease")}
                                 </button>
                               </>
                             )}
@@ -795,7 +797,7 @@ export default function PlaylistDetailPage() {
             <section className="space-y-4">
               {loading ? (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
-                  Loading tracks...
+                  {t("playlists.loadingTracks")}
                 </div>
               ) : playlistTracks.length > 0 ? (
                 <TrackList
@@ -841,7 +843,7 @@ export default function PlaylistDetailPage() {
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-center text-sm text-white/55">
-                  This playlist has no tracks yet. Use track actions and choose Add to Playlist.
+                  {t("playlists.noTracksYet")}
                 </div>
               )}
             </section>
@@ -865,8 +867,8 @@ export default function PlaylistDetailPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
               </div>
             )}
           </div>
@@ -912,13 +914,13 @@ export default function PlaylistDetailPage() {
       {showConvertDialog && selectedPlaylist && (() => {
         const trackCount = selectedPlaylist.trackIds.length;
         const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
-        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
+        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || t("releases.unknownArtist");
 
         return (
           <div className="fixed inset-0 z-70">
             <button
               type="button"
-              aria-label="Close convert to release dialog"
+              aria-label={t("playlists.closeConvertDialog")}
               onClick={() => { if (!converting) setShowConvertDialog(false); }}
               className="absolute inset-0 bg-black/65"
             />
@@ -926,14 +928,20 @@ export default function PlaylistDetailPage() {
             <div className="absolute left-1/2 top-1/2 w-[min(480px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Convert to Release</h3>
-                  <p className="text-sm text-white/55">Move the {trackCount} {trackCount === 1 ? "track" : "tracks"} in &quot;{selectedPlaylist.name}&quot; into a new release.</p>
+                  <h3 className="text-lg font-semibold text-white">{t("playlists.convertDialogTitle")}</h3>
+                  <p className="text-sm text-white/55">
+                    {t("playlists.convertDialogBody", {
+                      count: trackCount,
+                      tracksWord: trackCount === 1 ? t("playlists.trackWord") : t("playlists.tracksWord"),
+                      name: selectedPlaylist.name,
+                    })}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => { if (!converting) setShowConvertDialog(false); }}
                   className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                  title="Close"
+                  title={t("playlists.close")}
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -946,25 +954,25 @@ export default function PlaylistDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
                 <p className="text-xs leading-relaxed text-amber-100/90">
-                  This playlist will be permanently deleted once its tracks are moved into the new release. This cannot be undone.
+                  {t("playlists.convertWarning")}
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Title</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("releases.titleLabel")}</label>
                   <input
                     value={convertTitle}
                     onChange={(e) => setConvertTitle(e.target.value)}
                     maxLength={200}
                     disabled={converting}
                     className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
-                    placeholder="Release title"
+                    placeholder={t("releases.releaseTitlePlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Kind of release</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("playlists.kindOfRelease")}</label>
                   <div className="flex gap-2">
                     {RELEASE_TYPES.map((t) => (
                       <button
@@ -985,7 +993,7 @@ export default function PlaylistDetailPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Artist alias</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("releases.artistAliasLabel")}</label>
                   {artistAliasOptions.length > 0 ? (
                     <select
                       value={convertArtistAlias}
@@ -993,7 +1001,7 @@ export default function PlaylistDetailPage() {
                       disabled={converting}
                       className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 disabled:opacity-60"
                     >
-                      <option value="">{`Default (${defaultArtistLabel})`}</option>
+                      <option value="">{t("releases.defaultArtist", { name: defaultArtistLabel })}</option>
                       {artistAliasOptions.map((alias) => (
                         <option key={alias} value={alias}>{alias}</option>
                       ))}
@@ -1016,7 +1024,7 @@ export default function PlaylistDetailPage() {
                     disabled={converting}
                     className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white disabled:opacity-50"
                   >
-                    Cancel
+                    {t("playlists.cancel")}
                   </button>
                   <button
                     type="button"
@@ -1024,7 +1032,7 @@ export default function PlaylistDetailPage() {
                     disabled={converting || !convertTitle.trim()}
                     className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {converting ? "Converting..." : "Convert"}
+                    {converting ? t("playlists.converting") : t("playlists.convert")}
                   </button>
                 </div>
               </div>
@@ -1037,9 +1045,16 @@ export default function PlaylistDetailPage() {
         <div className="fixed inset-0 z-70">
           <div className="absolute inset-0 bg-black/65" />
           <div className="absolute left-1/2 top-1/2 w-[min(420px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-            <h3 className="text-lg font-semibold text-white">Release created</h3>
+            <h3 className="text-lg font-semibold text-white">{t("playlists.releaseCreatedTitle")}</h3>
             <p className="mt-2 text-sm text-white/60 leading-relaxed">
-              Publish &quot;{publishPromptRelease.title}&quot; now? This makes the release and all {publishPromptRelease.trackCount} {publishPromptRelease.trackCount === 1 ? "track" : "tracks"} public immediately.
+              {t("playlists.publishPromptBody", {
+                title: publishPromptRelease.title,
+                count: publishPromptRelease.trackCount,
+                tracksWord:
+                  publishPromptRelease.trackCount === 1
+                    ? t("playlists.trackWord")
+                    : t("playlists.tracksWord"),
+              })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -1048,7 +1063,7 @@ export default function PlaylistDetailPage() {
                 disabled={publishing}
                 className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
               >
-                Not now
+                {t("playlists.notNow")}
               </button>
               <button
                 type="button"
@@ -1056,7 +1071,7 @@ export default function PlaylistDetailPage() {
                 disabled={publishing}
                 className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {publishing ? "Publishing..." : "Publish"}
+                {publishing ? t("playlists.publishing") : t("playlists.publish")}
               </button>
             </div>
           </div>
@@ -1067,7 +1082,7 @@ export default function PlaylistDetailPage() {
         <div className="fixed inset-0 z-70">
           <button
             type="button"
-            aria-label="Close playlist cover picker"
+            aria-label={t("playlists.closeCoverPicker")}
             onClick={() => setShowCoverPicker(false)}
             className="absolute inset-0 bg-black/65"
           />
@@ -1075,14 +1090,14 @@ export default function PlaylistDetailPage() {
           <div className="absolute left-1/2 top-1/2 w-[min(760px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-white">Change Playlist Cover</h3>
-                <p className="text-sm text-white/55">Pick a cover from playlist songs, upload your own, or randomize it.</p>
+                <h3 className="text-lg font-semibold text-white">{t("playlists.coverPickerTitle")}</h3>
+                <p className="text-sm text-white/55">{t("playlists.coverPickerSubtitle")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCoverPicker(false)}
                 className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                title="Close"
+                title={t("playlists.close")}
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1100,7 +1115,7 @@ export default function PlaylistDetailPage() {
                 }}
                 className="h-9 rounded-full border border-white/12 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Use random
+                {t("playlists.useRandom")}
               </button>
               <button
                 type="button"
@@ -1108,14 +1123,14 @@ export default function PlaylistDetailPage() {
                 onClick={() => playlistCoverInputRef.current?.click()}
                 className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
               >
-                {uploadingCover ? "Uploading…" : "Upload image"}
+                {uploadingCover ? t("playlists.uploading") : t("playlists.uploadImage")}
               </button>
               <button
                 type="button"
                 onClick={handleResetPlaylistCover}
                 className="h-9 rounded-full border border-white/12 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
               >
-                Reset to auto
+                {t("playlists.resetToAuto")}
               </button>
               <input
                 ref={playlistCoverInputRef}
@@ -1132,7 +1147,7 @@ export default function PlaylistDetailPage() {
 
             {coverCandidates.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/3 p-4 text-sm text-white/55">
-                No cover images found in this playlist yet.
+                {t("playlists.noCoverImages")}
               </div>
             ) : (
               <div className="grid max-h-[52vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
@@ -1146,9 +1161,9 @@ export default function PlaylistDetailPage() {
                       type="button"
                       onClick={() => handleSetPlaylistCover(candidateUrl)}
                       className={`overflow-hidden rounded-2xl border transition ${isActive ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.5)]" : "border-white/12 hover:border-white/35"}`}
-                      title="Use this cover"
+                      title={t("playlists.useThisCover")}
                     >
-                      <img src={candidateUrl} alt="Playlist cover candidate" className="h-28 w-full object-cover" loading="lazy" />
+                      <img src={candidateUrl} alt={t("playlists.coverCandidateAlt")} className="h-28 w-full object-cover" loading="lazy" />
                     </button>
                   );
                 })}
