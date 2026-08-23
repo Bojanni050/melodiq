@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useT } from "@/hooks/useT";
 import type { LyricsStudioNotice } from "@/lib/lyrics-studio-types";
 
 export default function LyricsNotice({
@@ -10,6 +11,7 @@ export default function LyricsNotice({
   notice: LyricsStudioNotice | null;
   onClose: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(onClose, 4000);
@@ -37,8 +39,8 @@ export default function LyricsNotice({
           type="button"
           onClick={onClose}
           className="text-fuchsia-200/70 hover:text-fuchsia-100"
-          aria-label="Sluit melding"
-          title="Sluiten"
+          aria-label={t("studio.closeNotification")}
+          title={t("melody.close")}
         >
           x
         </button>

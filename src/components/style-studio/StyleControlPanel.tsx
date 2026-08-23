@@ -25,13 +25,14 @@ import {
 } from "@/lib/style-studio-constants";
 import AxisSlider from "@/components/style-studio/AxisSlider";
 import TagInput from "@/components/ui/TagInput";
+import { useT } from "@/hooks/useT";
 
 function SearchableDropdown({
   label,
   value,
   options,
   onChange,
-  placeholder = "Selecteer…",
+  placeholder,
 }: {
   label: string;
   value: string;
@@ -39,12 +40,14 @@ function SearchableDropdown({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const filtered = useMemo(
     () => (query ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase())) : options),
     [options, query]
   );
+  const effectivePlaceholder = placeholder ?? t("melody.selectPlaceholder");
 
   return (
     <div className="relative">
@@ -54,7 +57,7 @@ function SearchableDropdown({
         onClick={() => setOpen((v) => !v)}
         className="w-full input-field text-left text-sm flex items-center justify-between"
       >
-        <span className={value ? "text-white" : "text-white/35"}>{value || placeholder}</span>
+        <span className={value ? "text-white" : "text-white/35"}>{value || effectivePlaceholder}</span>
         <svg className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -63,14 +66,14 @@ function SearchableDropdown({
         <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#1a1a24] shadow-2xl">
           <input
             type="text"
-            placeholder="Zoeken…"
+            placeholder={t("melody.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full px-3 py-2 bg-white/5 border-b border-white/10 rounded-t-lg text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
           />
           <div className="max-h-56 overflow-y-auto p-1">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-white/40">Geen resultaten</p>
+              <p className="px-3 py-2 text-xs text-white/40">{t("melody.noResults")}</p>
             ) : (
               filtered.map((option) => (
                 <button
@@ -214,6 +217,7 @@ export default function StyleControlPanel({
   setAvoidTags: (v: string[]) => void;
   instrumental: boolean;
 }) {
+  const t = useT();
   function toggleIn(list: string[], setter: (v: string[]) => void, value: string) {
     if (list.includes(value)) {
       setter(list.filter((v) => v !== value));
@@ -226,28 +230,28 @@ export default function StyleControlPanel({
     <div className="space-y-5">
       {/* Musical Foundation */}
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">Musical Foundation</h3>
+        <h3 className="text-sm font-semibold text-white/85">{t("melody.musicalFoundationHeading")}</h3>
 
-        <SearchableDropdown label="Primary Genre" value={primaryGenre} options={PRIMARY_GENRES} onChange={setPrimaryGenre} placeholder="Kies een genre…" />
-        <SearchableDropdown label="Secondary Genre (optional)" value={secondaryGenre} options={PRIMARY_GENRES} onChange={setSecondaryGenre} placeholder="Optioneel…" />
-        <ChipGroup label="Mood" options={MOOD_OPTIONS} selected={moods} onToggle={(v) => toggleIn(moods, setMoods, v)} />
+        <SearchableDropdown label={t("melody.primaryGenreLabel")} value={primaryGenre} options={PRIMARY_GENRES} onChange={setPrimaryGenre} placeholder={t("melody.chooseGenrePlaceholder")} />
+        <SearchableDropdown label={t("melody.secondaryGenreLabel")} value={secondaryGenre} options={PRIMARY_GENRES} onChange={setSecondaryGenre} placeholder={t("melody.optionalPlaceholder")} />
+        <ChipGroup label={t("melody.moodLabel")} options={MOOD_OPTIONS} selected={moods} onToggle={(v) => toggleIn(moods, setMoods, v)} />
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-white/45 mb-1.5">BPM</label>
+            <label className="block text-xs font-medium text-white/45 mb-1.5">{t("melody.bpmLabel")}</label>
             <input
               type="number"
               min={BPM_MIN}
               max={BPM_MAX}
               value={bpm ?? ""}
               onChange={(e) => setBpm(e.target.value ? Number(e.target.value) : null)}
-              placeholder="e.g. 96"
+              placeholder={t("melody.bpmPlaceholder")}
               className="w-full input-field text-sm"
             />
           </div>
-          <SearchableDropdown label="Time Signature" value={timeSignature} options={TIME_SIGNATURE_OPTIONS} onChange={setTimeSignature} placeholder="4/4" />
+          <SearchableDropdown label={t("melody.timeSignatureLabel")} value={timeSignature} options={TIME_SIGNATURE_OPTIONS} onChange={setTimeSignature} placeholder="4/4" />
         </div>
-        <SearchableDropdown label="Key" value={musicalKey} options={KEY_OPTIONS} onChange={setMusicalKey} placeholder="Kies een toonsoort…" />
+        <SearchableDropdown label={t("melody.keyLabel")} value={musicalKey} options={KEY_OPTIONS} onChange={setMusicalKey} placeholder={t("melody.chooseKeyPlaceholder")} />
 
         <div className="grid grid-cols-3 gap-2">
           {TEMPO_OPTIONS.map((option) => (
@@ -266,17 +270,17 @@ export default function StyleControlPanel({
           ))}
         </div>
 
-        <AxisSlider left="Low Energy" right="High Energy" value={energy} onChange={setEnergy} />
+        <AxisSlider left={t("melody.lowEnergyLabel")} right={t("melody.highEnergyLabel")} value={energy} onChange={setEnergy} />
 
-        <ChipGroup label="Melody Character" options={MELODY_CHARACTER_OPTIONS} selected={melodyCharacter} onToggle={(v) => toggleIn(melodyCharacter, setMelodyCharacter, v)} />
-        <ChipGroup label="Harmony Character" options={HARMONY_CHARACTER_OPTIONS} selected={harmonyCharacter} onToggle={(v) => toggleIn(harmonyCharacter, setHarmonyCharacter, v)} />
-        <ChipGroup label="Groove" options={GROOVE_OPTIONS} selected={groove} onToggle={(v) => toggleIn(groove, setGroove, v)} />
+        <ChipGroup label={t("melody.melodyCharacterLabel")} options={MELODY_CHARACTER_OPTIONS} selected={melodyCharacter} onToggle={(v) => toggleIn(melodyCharacter, setMelodyCharacter, v)} />
+        <ChipGroup label={t("melody.harmonyCharacterLabel")} options={HARMONY_CHARACTER_OPTIONS} selected={harmonyCharacter} onToggle={(v) => toggleIn(harmonyCharacter, setHarmonyCharacter, v)} />
+        <ChipGroup label={t("melody.grooveLabel")} options={GROOVE_OPTIONS} selected={groove} onToggle={(v) => toggleIn(groove, setGroove, v)} />
       </section>
 
       {/* Instrumentation */}
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">Instrumentation</h3>
-        <ChipGroup label="Instruments" options={INSTRUMENTATION_OPTIONS} selected={instrumentation} onToggle={(v) => toggleIn(instrumentation, setInstrumentation, v)} />
+        <h3 className="text-sm font-semibold text-white/85">{t("melody.instrumentationHeading")}</h3>
+        <ChipGroup label={t("melody.instrumentsLabel")} options={INSTRUMENTATION_OPTIONS} selected={instrumentation} onToggle={(v) => toggleIn(instrumentation, setInstrumentation, v)} />
         <div className="space-y-3">
           {INSTRUMENT_TEXTURE_AXES.map((axis) => (
             <AxisSlider
@@ -293,18 +297,18 @@ export default function StyleControlPanel({
       {/* Vocals — hidden for instrumental tracks */}
       {!instrumental && (
         <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-          <h3 className="text-sm font-semibold text-white/85">Vocals</h3>
-          <ChipGroup label="Vocal Delivery" options={VOCAL_DIRECTION_OPTIONS} selected={vocalDirection} onToggle={(v) => toggleIn(vocalDirection, setVocalDirection, v)} />
+          <h3 className="text-sm font-semibold text-white/85">{t("melody.vocalsHeading")}</h3>
+          <ChipGroup label={t("melody.vocalDeliveryLabel")} options={VOCAL_DIRECTION_OPTIONS} selected={vocalDirection} onToggle={(v) => toggleIn(vocalDirection, setVocalDirection, v)} />
           <div>
-            <label className="block text-xs font-medium text-white/45 mb-2">Avoid (vocal)</label>
-            <TagInput value={vocalNegatives} onChange={setVocalNegatives} suggestions={VOCAL_NEGATIVE_OPTIONS} placeholder="e.g. no belting…" />
+            <label className="block text-xs font-medium text-white/45 mb-2">{t("melody.avoidVocalLabel")}</label>
+            <TagInput value={vocalNegatives} onChange={setVocalNegatives} suggestions={VOCAL_NEGATIVE_OPTIONS} placeholder={t("melody.noBeltingPlaceholder")} />
           </div>
         </section>
       )}
 
       {/* Production */}
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">Production</h3>
+        <h3 className="text-sm font-semibold text-white/85">{t("melody.productionHeading")}</h3>
         <div className="flex flex-wrap gap-1.5">
           {ERA_OPTIONS.map((option) => {
             const isSelected = era === option;
@@ -324,7 +328,7 @@ export default function StyleControlPanel({
             );
           })}
         </div>
-        <ChipGroup label="Production Character" options={PRODUCTION_OPTIONS} selected={production} onToggle={(v) => toggleIn(production, setProduction, v)} />
+        <ChipGroup label={t("melody.productionCharacterLabel")} options={PRODUCTION_OPTIONS} selected={production} onToggle={(v) => toggleIn(production, setProduction, v)} />
         <div className="space-y-3">
           {PRODUCTION_AXES.map((axis) => (
             <AxisSlider
@@ -340,9 +344,9 @@ export default function StyleControlPanel({
 
       {/* Avoid */}
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-2">
-        <h3 className="text-sm font-semibold text-white/85">Avoid</h3>
-        <p className="text-xs text-white/40">Unwanted musical properties — kept out of the generated prompt as negative direction.</p>
-        <TagInput value={avoidTags} onChange={setAvoidTags} suggestions={AVOID_SUGGESTIONS} placeholder="e.g. no EDM, no big choir…" />
+        <h3 className="text-sm font-semibold text-white/85">{t("melody.avoidHeading")}</h3>
+        <p className="text-xs text-white/40">{t("melody.avoidHintText")}</p>
+        <TagInput value={avoidTags} onChange={setAvoidTags} suggestions={AVOID_SUGGESTIONS} placeholder={t("melody.avoidTagsPlaceholder")} />
       </section>
     </div>
   );

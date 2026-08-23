@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
 import type { ConfirmAction } from "@/lib/lyrics-studio-types";
 
 export default function LyricsConfirmModal({
@@ -11,6 +12,7 @@ export default function LyricsConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   if (!confirmAction) return null;
 
   return (
@@ -22,9 +24,9 @@ export default function LyricsConfirmModal({
           </svg>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-amber-100">
-              {confirmAction === "replaceBlocks" && "Huidige blocks vervangen door de gekozen preset?"}
-              {confirmAction === "replaceStudio" && "Studio bevat al data. Wil je die vervangen met deze lyrics en style?"}
-              {confirmAction === "clearAll" && "Weet je zeker dat je alle Lyric Studio data wilt wissen?"}
+              {confirmAction === "replaceBlocks" && t("melody.lyricsReplaceBlocksConfirm")}
+              {confirmAction === "replaceStudio" && t("melody.lyricsReplaceStudioConfirm")}
+              {confirmAction === "clearAll" && t("melody.lyricsClearAllConfirm")}
             </p>
             <div className="mt-3 flex items-center gap-2">
               <button
@@ -32,14 +34,14 @@ export default function LyricsConfirmModal({
                 onClick={onConfirm}
                 className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
               >
-                Bevestigen
+                {t("common.confirm")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
               >
-                Annuleren
+                {t("common.cancel")}
               </button>
             </div>
           </div>

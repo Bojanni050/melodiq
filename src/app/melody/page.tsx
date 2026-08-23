@@ -14,12 +14,14 @@ import { STRUCTURES } from "@/lib/lyrics-studio-constants";
 import { useLyricsDraft } from "@/lib/hooks/useLyricsDraft";
 import { useStyleDraft } from "@/lib/hooks/useStyleDraft";
 import { useStudioStore, useSidebarStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 import { buildStyleDraftPayload } from "@/lib/style-studio-draft";
 import { isStylePayloadEmpty, buildMusicPrompt } from "@/lib/style-utils";
 import type { StyleNotice, StyleConfirmAction, StyleSnapshot } from "@/lib/style-studio-types";
 import type { ConfirmAction } from "@/lib/lyrics-studio-types";
 
 export default function MusicBuilderPage() {
+  const t = useT();
   const router = useRouter();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
@@ -94,7 +96,7 @@ export default function MusicBuilderPage() {
 
   function handleSaveClick() {
     if (isStylePayloadEmpty(payload)) {
-      setNotice({ type: "error", message: "Music Builder is leeg. Vul eerst enkele properties in." });
+      setNotice({ type: "error", message: t("melody.emptyBuilderError") });
       return;
     }
     setSnapshotName("");
@@ -114,12 +116,12 @@ export default function MusicBuilderPage() {
     setSavedSnapshots(next);
     setShowSaveModal(false);
     setSnapshotName("");
-    setNotice({ type: "success", message: `"${trimmed}" is opgeslagen.` });
+    setNotice({ type: "success", message: t("melody.savedNotice", { name: trimmed }) });
   }
 
   function handleLoadClick() {
     if (savedSnapshots.length === 0) {
-      setNotice({ type: "info", message: "Geen opgeslagen instellingen om te laden." });
+      setNotice({ type: "info", message: t("melody.noSavedSettings") });
       return;
     }
     setShowLoadModal(true);
@@ -133,19 +135,19 @@ export default function MusicBuilderPage() {
     }
     loadSnapshotIntoState(snapshot);
     setShowLoadModal(false);
-    setNotice({ type: "success", message: `"${snapshot.name}" is geladen.` });
+    setNotice({ type: "success", message: t("melody.loadedNotice", { name: snapshot.name }) });
   }
 
   function handleDeleteSnapshot(id: string) {
     setSavedSnapshots(savedSnapshots.filter((s) => s.id !== id));
-    setNotice({ type: "info", message: "Verwijderd." });
+    setNotice({ type: "info", message: t("melody.deletedNotice") });
   }
 
   function handleStyleConfirmAction() {
     if (styleConfirmAction === "replaceStyle" && pendingSnapshot) {
       loadSnapshotIntoState(pendingSnapshot);
       setShowLoadModal(false);
-      setNotice({ type: "success", message: `"${pendingSnapshot.name}" is geladen.` });
+      setNotice({ type: "success", message: t("melody.loadedNotice", { name: pendingSnapshot.name }) });
     }
     setPendingSnapshot(null);
     setStyleConfirmAction(null);
@@ -196,8 +198,8 @@ export default function MusicBuilderPage() {
 
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Melody</h1>
-                <p className="text-white/60">You wrote your song. Now decide how it sounds.</p>
+                <h1 className="text-3xl font-bold mb-2">{t("melody.heading")}</h1>
+                <p className="text-white/60">{t("melody.subtitle")}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -205,7 +207,7 @@ export default function MusicBuilderPage() {
                   onClick={handleSaveClick}
                   className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                 >
-                  Save
+                  {t("common.save")}
                 </button>
                 <button
                   type="button"
@@ -213,7 +215,7 @@ export default function MusicBuilderPage() {
                   disabled={savedSnapshots.length === 0}
                   className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Load
+                  {t("studio.load")}
                 </button>
               </div>
             </div>
@@ -221,35 +223,35 @@ export default function MusicBuilderPage() {
             {/* YOUR SONG — read-only context from Lyrics */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-[#101018]/80 p-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40">Your Song</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("melody.yourSongHeading")}</h2>
                 <button
                   type="button"
                   onClick={() => router.push("/lyrics-studio")}
                   className="text-xs text-primary-400 underline underline-offset-2 hover:text-primary-300"
                 >
-                  Edit source
+                  {t("melody.editSource")}
                 </button>
               </div>
               {hasLyricsContext || instrumental ? (
                 <div className="flex flex-wrap gap-2 text-xs text-white/60">
                   <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-                    {instrumental ? "Instrumental" : "Song with lyrics"}
+                    {instrumental ? t("melody.instrumentalPill") : t("melody.songWithLyricsPill")}
                   </span>
                   {effectiveLanguage && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{effectiveLanguage}</span>}
-                  {topic.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Topic: {topic}</span>}
-                  {mood.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Mood: {mood}</span>}
-                  {style.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Style: {style}</span>}
+                  {topic.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.topicPill", { topic })}</span>}
+                  {mood.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.moodPill", { mood })}</span>}
+                  {style.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.stylePill", { style })}</span>}
                   {!instrumental && vocalistTag !== "auto" && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Vocal: {vocalistTag}</span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.vocalPill", { vocalistTag })}</span>
                   )}
                 </div>
               ) : (
                 <p className="text-sm text-white/45">
-                  Nog geen lyrics-context. Schrijf eerst topic, mood en lyrics in{" "}
+                  {t("melody.noLyricsContextPrefix")}
                   <button type="button" onClick={() => router.push("/lyrics-studio")} className="text-primary-400 underline underline-offset-2 hover:text-primary-300">
-                    Lyrics
+                    {t("studio.lyrics")}
                   </button>
-                  , of markeer dit project als Instrumental hieronder.
+                  {t("melody.noLyricsContextSuffix")}
                 </p>
               )}
 
@@ -261,10 +263,10 @@ export default function MusicBuilderPage() {
                   onClick={() => setInstrumental(!instrumental)}
                   className={`relative w-11 h-6 rounded-full transition-colors ${instrumental ? "bg-amber-500/30" : "bg-white/10"}`}
                 >
-                  <span className="sr-only">Instrumental</span>
+                  <span className="sr-only">{t("studio.instrumentalToggleSr")}</span>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${instrumental ? "translate-x-5" : ""}`} />
                 </button>
-                <span className="text-sm text-white/60">Instrumental (no vocals, no lyrics)</span>
+                <span className="text-sm text-white/60">{t("melody.instrumentalToggleLabel")}</span>
               </div>
             </div>
 
@@ -339,8 +341,8 @@ export default function MusicBuilderPage() {
               <aside className="flex flex-col gap-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
                 {arrangementLabels.length > 0 && (
                   <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-2">
-                    <h3 className="text-sm font-semibold text-white/85">Arrangement</h3>
-                    <p className="text-xs text-white/40">Structure comes from your lyrics — edit it there if needed.</p>
+                    <h3 className="text-sm font-semibold text-white/85">{t("melody.arrangementHeading")}</h3>
+                    <p className="text-xs text-white/40">{t("melody.arrangementHint")}</p>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/70">
                       {arrangementLabels.map((label, i) => (
                         <span key={`${label}-${i}`} className="flex items-center gap-1.5">
@@ -360,7 +362,7 @@ export default function MusicBuilderPage() {
                   disabled={isStylePayloadEmpty(payload)}
                   className="inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-3 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Use in Studio
+                  {t("melody.useInStudio")}
                 </button>
               </aside>
             </div>

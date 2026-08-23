@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
 import type { StyleConfirmAction } from "@/lib/style-studio-types";
 
 export default function StyleConfirmModal({
@@ -11,6 +12,7 @@ export default function StyleConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   if (!confirmAction) return null;
 
   return (
@@ -28,8 +30,8 @@ export default function StyleConfirmModal({
           </svg>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-amber-100">
-              {confirmAction === "clearAll" && "Weet je zeker dat je alle Style data wilt wissen?"}
-              {confirmAction === "replaceStyle" && "Huidige Style vervangen met de geselecteerde snapshot?"}
+              {confirmAction === "clearAll" && t("melody.clearAllStyleConfirm")}
+              {confirmAction === "replaceStyle" && t("melody.replaceStyleConfirm")}
             </p>
             <div className="mt-3 flex items-center gap-2">
               <button
@@ -37,14 +39,14 @@ export default function StyleConfirmModal({
                 onClick={onConfirm}
                 className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
               >
-                Bevestigen
+                {t("common.confirm")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
                 className="rounded-lg px-3 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
               >
-                Annuleren
+                {t("common.cancel")}
               </button>
             </div>
           </div>
