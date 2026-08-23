@@ -10,6 +10,7 @@ import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlay
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import type { TrackItem } from "@/components/tracks/types";
+import { useT } from "@/hooks/useT";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
   { value: "single", label: "Single" },
@@ -20,14 +21,14 @@ const RELEASE_TYPES: { value: string; label: string }[] = [
 type ViewMode = "grid" | "list";
 type SortBy = "recent" | "title" | "unpublished";
 
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: "recent", label: "Recent" },
-  { value: "title", label: "Title" },
-  { value: "unpublished", label: "Not Published" },
-];
-
 export default function ReleasesPage() {
   const router = useRouter();
+  const t = useT();
+  const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+    { value: "recent", label: t("releases.sortRecent") },
+    { value: "title", label: t("releases.sortTitle") },
+    { value: "unpublished", label: t("releases.sortUnpublished") },
+  ];
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -247,10 +248,10 @@ export default function ReleasesPage() {
           <div className="max-w-400 mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Discography</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("releases.tagline")}</p>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Releases</h1>
                 <p className="max-w-2xl text-sm sm:text-base text-white/60">
-                  Group tracks into singles, EPs, and albums — including remix singles or multi-track (A/B side) releases.
+                  {t("releases.description")}
                 </p>
               </div>
             </section>
@@ -265,8 +266,8 @@ export default function ReleasesPage() {
                     <button
                       type="button"
                       onClick={() => setViewMode("grid")}
-                      aria-label="Grid view"
-                      title="Grid view"
+                      aria-label={t("releases.gridView")}
+                      title={t("releases.gridView")}
                       className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                         viewMode === "grid" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
                       }`}
@@ -281,8 +282,8 @@ export default function ReleasesPage() {
                     <button
                       type="button"
                       onClick={() => setViewMode("list")}
-                      aria-label="List view"
-                      title="List view"
+                      aria-label={t("releases.listView")}
+                      title={t("releases.listView")}
                       className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                         viewMode === "list" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
                       }`}
@@ -298,7 +299,7 @@ export default function ReleasesPage() {
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as SortBy)}
                         className="appearance-none rounded-full border border-white/10 bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-white/80 outline-none transition-colors hover:bg-white/10"
-                        aria-label="Sort releases"
+                        aria-label={t("releases.sortReleases")}
                       >
                         {SORT_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value} className="bg-[#161621]">
@@ -318,7 +319,7 @@ export default function ReleasesPage() {
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") void handleCreateRelease(); if (e.key === "Escape") { setShowCreate(false); setNewTitle(""); } }}
-                      placeholder="Release title"
+                      placeholder={t("releases.releaseTitlePlaceholder")}
                       maxLength={255}
                       className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
                       autoFocus
@@ -338,10 +339,10 @@ export default function ReleasesPage() {
                       ))}
                     </div>
                     <button type="button" onClick={handleCreateRelease} disabled={creating} className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-50">
-                      {creating ? "Creating…" : "Add"}
+                      {creating ? t("releases.creating") : t("releases.add")}
                     </button>
                     <button type="button" onClick={() => { setShowCreate(false); setNewTitle(""); }} className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white">
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                   </div>
                 ) : (
@@ -350,16 +351,16 @@ export default function ReleasesPage() {
                     onClick={() => setShowCreate(true)}
                     className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
                   >
-                    + Create release
+                    {t("releases.createRelease")}
                   </button>
                 )}
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading releases...</div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("releases.loadingReleases")}</div>
               ) : releases.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
-                  No releases yet. Create one above, or add a track to a release from track actions.
+                  {t("releases.noReleasesYet")}
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -394,8 +395,8 @@ export default function ReleasesPage() {
                               {release.isPublic && (
                                 <span
                                   className="h-2 w-2 shrink-0 rounded-full bg-pink-400"
-                                  title="Published"
-                                  aria-label="Published"
+                                  title={t("releases.published")}
+                                  aria-label={t("releases.published")}
                                 />
                               )}
                               <span className="truncate">{release.title}</span>
@@ -407,7 +408,7 @@ export default function ReleasesPage() {
 
                       <div className="flex items-center justify-between gap-2 px-4 py-3">
                         <button type="button" onClick={() => openRelease(release.id)} className="text-sm text-white/60 transition-colors hover:text-white">
-                          Open release
+                          {t("releases.openRelease")}
                         </button>
                         <div className="flex items-center gap-3">
                           <button
@@ -415,14 +416,14 @@ export default function ReleasesPage() {
                             onClick={() => openEditRelease(release)}
                             className="text-sm text-white/45 transition-colors hover:text-white"
                           >
-                            Edit release
+                            {t("releases.editRelease")}
                           </button>
                           <button
                             type="button"
                             onClick={() => setPendingDelete({ id: release.id, title: release.title })}
                             className="text-sm text-white/45 transition-colors hover:text-red-300"
                           >
-                            Delete
+                            {t("releases.delete")}
                           </button>
                         </div>
                       </div>
@@ -469,8 +470,8 @@ export default function ReleasesPage() {
                               {release.isPublic && (
                                 <span
                                   className="h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400"
-                                  title="Published"
-                                  aria-label="Published"
+                                  title={t("releases.published")}
+                                  aria-label={t("releases.published")}
                                 />
                               )}
                               <span className="truncate">{release.title}</span>
@@ -484,12 +485,12 @@ export default function ReleasesPage() {
                                 </>
                               )}
                               <span className="mx-1.5 text-white/25">·</span>
-                              {releaseTrackItems.length} {releaseTrackItems.length === 1 ? "track" : "tracks"}
+                              {releaseTrackItems.length} {releaseTrackItems.length === 1 ? t("releases.track") : t("releases.tracks")}
                               {totalDuration ? `, ${totalDuration}` : ""}
                               {!release.isPublic && (
                                 <>
                                   <span className="mx-1.5 text-white/25">·</span>
-                                  <span className="text-white/40">Unpublished</span>
+                                  <span className="text-white/40">{t("releases.unpublished")}</span>
                                 </>
                               )}
                             </p>
@@ -499,14 +500,14 @@ export default function ReleasesPage() {
                                 onClick={() => openEditRelease(release)}
                                 className="text-sm text-white/45 transition-colors hover:text-white"
                               >
-                                Edit release
+                                {t("releases.editRelease")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setPendingDelete({ id: release.id, title: release.title })}
                                 className="text-sm text-white/45 transition-colors hover:text-red-300"
                               >
-                                Delete
+                                {t("releases.delete")}
                               </button>
                             </div>
                           </div>
@@ -516,8 +517,8 @@ export default function ReleasesPage() {
                               type="button"
                               onClick={() => playReleaseTrack(releaseTrackItems, releaseTrackItems[0])}
                               className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95 sm:self-end"
-                              aria-label={`Play ${release.title}`}
-                              title={`Play ${release.title}`}
+                              aria-label={t("releases.play", { title: release.title })}
+                              title={t("releases.play", { title: release.title })}
                             >
                               <svg className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M8 5v14l11-7z" />
@@ -552,7 +553,7 @@ export default function ReleasesPage() {
                           </div>
                         ) : (
                           <p className="px-1 text-sm text-white/40">
-                            {tracksById.size === 0 ? "Loading tracks…" : "This release has no tracks yet."}
+                            {tracksById.size === 0 ? t("releases.loadingTracksList") : t("releases.noTracksYet")}
                           </p>
                         )}
                       </section>
@@ -581,8 +582,8 @@ export default function ReleasesPage() {
                 />
               ) : (
                 <div className="h-full px-5 py-6 text-white/45">
-                  <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                  <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+                  <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                  <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
                 </div>
               )}
             </div>
@@ -592,34 +593,34 @@ export default function ReleasesPage() {
 
       {editingReleaseId && (() => {
         const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
-        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
+        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || t("releases.unknownArtist");
 
         return (
           <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
             <button
               type="button"
-              aria-label="Cancel edit release"
+              aria-label={t("releases.cancelEditRelease")}
               onClick={() => { if (!savingEdit) setEditingReleaseId(null); }}
               className="absolute inset-0 bg-black/65"
             />
             <div className="relative w-full max-w-[480px] rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-              <h3 className="text-lg font-semibold text-white">Edit release</h3>
+              <h3 className="text-lg font-semibold text-white">{t("releases.editRelease")}</h3>
 
               <div className="mt-4 space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Title</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("releases.titleLabel")}</label>
                   <input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     maxLength={255}
                     disabled={savingEdit}
                     className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
-                    placeholder="Release title"
+                    placeholder={t("releases.releaseTitlePlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Artist alias</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("releases.artistAliasLabel")}</label>
                   {artistAliasOptions.length > 0 ? (
                     <select
                       value={editArtistAlias}
@@ -627,7 +628,7 @@ export default function ReleasesPage() {
                       disabled={savingEdit}
                       className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 disabled:opacity-60"
                     >
-                      <option value="">{`Default (${defaultArtistLabel})`}</option>
+                      <option value="">{t("releases.defaultArtist", { name: defaultArtistLabel })}</option>
                       {artistAliasOptions.map((alias) => (
                         <option key={alias} value={alias}>{alias}</option>
                       ))}
@@ -640,13 +641,13 @@ export default function ReleasesPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Credits</label>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">{t("releases.creditsLabel")}</label>
                   <textarea
                     value={editCredits}
                     onChange={(e) => setEditCredits(e.target.value.slice(0, 2000))}
                     rows={3}
                     disabled={savingEdit}
-                    placeholder="e.g. Produced by, Written by, Mixed by…"
+                    placeholder={t("releases.creditsPlaceholder")}
                     className="w-full resize-none rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
                   />
                 </div>
@@ -659,7 +660,7 @@ export default function ReleasesPage() {
                   disabled={savingEdit}
                   className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14 disabled:opacity-50"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -667,7 +668,7 @@ export default function ReleasesPage() {
                   disabled={savingEdit || !editTitle.trim()}
                   className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {savingEdit ? "Saving…" : "Save"}
+                  {savingEdit ? t("common.saving") : t("common.save")}
                 </button>
               </div>
             </div>
@@ -677,22 +678,22 @@ export default function ReleasesPage() {
 
       {pendingDelete && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
-          <button type="button" aria-label="Cancel delete" onClick={() => setPendingDelete(null)} className="absolute inset-0 bg-black/65" />
+          <button type="button" aria-label={t("releases.cancelDelete")} onClick={() => setPendingDelete(null)} className="absolute inset-0 bg-black/65" />
           <div className="relative w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-            <h3 className="text-lg font-semibold text-white">Delete release?</h3>
+            <h3 className="text-lg font-semibold text-white">{t("releases.deleteReleaseTitle")}</h3>
             <p className="mt-2 text-sm text-white/60">
-              "{pendingDelete.title}" will be removed. Tracks themselves aren't deleted.
+              {t("releases.deleteReleaseBody", { title: pendingDelete.title })}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setPendingDelete(null)} className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14">
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
                 onClick={() => { deleteRelease(pendingDelete.id); setPendingDelete(null); }}
                 className="h-10 rounded-full bg-red-500/80 px-4 text-sm font-medium text-white transition-colors hover:bg-red-500"
               >
-                Delete
+                {t("releases.delete")}
               </button>
             </div>
           </div>
