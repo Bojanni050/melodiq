@@ -419,138 +419,40 @@ export interface CompositionQualityScore {
   notes: string;
 }
 
-// Automated Track DNA "Composition" signal — judges arrangement/structure by
-// actually listening to the rendered audio, not just its metadata. Needs an
-// audio-input-capable model, so it bypasses callLLM's text-only request body
-// and builds its own — but it still follows the same "trackdna" purpose
-// provider/key/model settings as everything else, so switching
-// TRACKDNA_LLM_PROVIDER (e.g. to edenai) is respected here too.
-const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
-  openrouter: "google/gemini-2.5-flash",
-  edenai: "google/gemini-2.5-flash",
-  openai: "gpt-4o-audio-preview",
-};
-
-interface AudioProviderConfig {
-  provider: LLMProvider;
-  apiKey: string;
-  model: string;
-  url: string;
-  headers: Record<string, string>;
-}
-
-async function resolveAudioProviderConfig(): Promise<AudioProviderConfig | null> {
-  const provider = await getLLMProviderForPurpose("trackdna");
-
-  if (provider === "openrouter") {
-    const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
-    if (!apiKey) return null;
-    const model =
-      (await getSetting("OPENROUTER_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.openrouter;
-    return {
-      provider,
-      apiKey,
-      model,
-      url: "https://openrouter.ai/api/v1/chat/completions",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      },
-    };
-  }
-
-  if (provider === "openai") {
-    const apiKey = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
-    if (!apiKey) return null;
-    const model = (await getSetting("OPENAI_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.openai;
-    return {
-      provider,
-      apiKey,
-      model,
-      url: "https://api.openai.com/v1/chat/completions",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    };
-  }
-
-  if (provider === "edenai") {
-    const apiKey = (await getSetting("EDENAI_API_KEY")) || process.env.EDENAI_API_KEY || "";
-    if (!apiKey) return null;
-    const model = (await getSetting("EDENAI_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.edenai;
-    return {
-      provider,
-      apiKey,
-      model,
-      url: "https://api.edenai.run/v3/chat/completions",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    };
-  }
-
-  return null;
-}
-
+// Automated Track DNA "Composition" signal — a quick, cheap text-based read
+// on arrangement/structure from the generation prompt and lyrics section
+// tags. Deliberately does NOT listen to the audio (that's what "Advanced
+// Track DNA" below does) — this one just needs to be fast, so it's a plain
+// callLLM() call under the "trackdna" purpose/provider setting.
 export async function scoreCompositionQuality(
-  audioBuffer: Buffer,
-  format: string = "mp3"
+  prompt: string | null,
+  lyrics: string | null
 ): Promise<CompositionQualityScore | null> {
-  if (!audioBuffer?.length) {
-    warnComposition("[llm][composition] skipped: empty audio buffer");
+  const promptText = prompt?.trim() || "";
+  const lyricsText = lyrics?.trim() || "";
+  if (!promptText && !lyricsText) {
+    warnComposition("[llm][composition] skipped: no prompt or lyrics to judge");
     return null;
   }
 
-  const config = await resolveAudioProviderConfig();
-  if (!config) {
-    warnComposition(
-      `[llm][composition] skipped: no API key configured for the TRACKDNA_LLM_PROVIDER setting`
-    );
-    return null;
-  }
+  const systemPrompt = `You are a professional music producer and arranger critiquing a finished track based on its style description and lyrics structure (you cannot hear the audio).
 
-  const systemPrompt = `You are a professional music producer and arranger critiquing a finished track.
-
-Listen to the audio and rate it 1-10 for composition and arrangement quality: structure (intro/verse/chorus/bridge flow), dynamic build across sections, instrumentation choices, and mix balance. Judge only what you actually hear — do not guess from genre conventions.
+Rate it 1-10 for composition and arrangement quality: how well the style/prompt implies a coherent structure (intro/verse/chorus/bridge flow), dynamic variety, and instrumentation choices, and how well the lyrics' section tags ([Verse], [Chorus], [Bridge], etc.) suggest a well-built song structure. Be honest about how much you can and can't judge without hearing the mix.
 
 Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
 - Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
 
-  logComposition(
-    `[llm][composition] calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`
-  );
+  const userContent = [
+    promptText ? `Style/prompt: ${promptText.slice(0, 2000)}` : "Style/prompt: not provided",
+    lyricsText ? `Lyrics:\n${lyricsText.slice(0, 4000)}` : "Lyrics: none (instrumental or not provided)",
+  ].join("\n\n");
+
+  logComposition(`[llm][composition] calling (promptLen=${promptText.length}, lyricsLen=${lyricsText.length})`);
 
   try {
-    const res = await axios.post(
-      config.url,
-      {
-        model: config.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Rate this track's composition and arrangement." },
-              { type: "input_audio", input_audio: { data: audioBuffer.toString("base64"), format } },
-            ],
-          },
-        ],
-      },
-      {
-        headers: config.headers,
-        timeout: 60_000,
-      }
-    );
-
-    const raw = res.data?.choices?.[0]?.message?.content;
-    logComposition(
-      `[llm][composition] response HTTP ${res.status}, content: ${
-        typeof raw === "string" ? JSON.stringify(raw.slice(0, 500)) : `<no content> body=${JSON.stringify(res.data).slice(0, 500)}`
-      }`
-    );
-
-    if (typeof raw !== "string") {
-      warnComposition("[llm][composition] rejected: response had no string content");
-      return null;
-    }
+    const raw = await callLLM(userContent, systemPrompt, { purpose: "trackdna" });
+    logComposition(`[llm][composition] response content: ${JSON.stringify(raw.slice(0, 500))}`);
 
     const parsed = parseJsonObject(raw);
     if (!parsed) {
@@ -568,15 +470,146 @@ Rules:
     logComposition(`[llm][composition] success: score=${score}, notes=${JSON.stringify(notes)}`);
     return { score: Math.round(score * 10) / 10, notes };
   } catch (error: any) {
-    const status = error?.response?.status;
-    const data = error?.response?.data;
-    warnComposition(
-      `[llm][composition] request failed${status ? ` (HTTP ${status})` : ""}: ${
-        data ? JSON.stringify(data).slice(0, 500) : error?.message || String(error)
-      }`
-    );
+    warnComposition(`[llm][composition] request failed: ${error?.message || String(error)}`);
     return null;
   }
+}
+
+// Shared audio-input plumbing for "Advanced Track DNA" (the one signal that
+// actually listens to the rendered audio). Needs an audio-input-capable
+// model, so it bypasses callLLM's text-only request body and builds its own
+// — but it still follows the "advanced" purpose provider/key/model settings
+// like everything else, so switching ADVANCED_LLM_PROVIDER is respected.
+const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
+  openrouter: "google/gemini-2.5-flash",
+  edenai: "google/gemini-2.5-flash",
+  openai: "gpt-4o-audio-preview",
+};
+
+interface AudioProviderConfig {
+  provider: LLMProvider;
+  apiKey: string;
+  model: string;
+  url: string;
+  headers: Record<string, string>;
+}
+
+const AUDIO_PURPOSE_MODEL_SETTING: Record<string, string> = {
+  trackdna: "TRACKDNA_MODEL",
+  advanced: "ADVANCED_DNA_MODEL",
+};
+
+async function resolveAudioProviderConfig(purpose: LLMPurpose): Promise<AudioProviderConfig | null> {
+  const provider = await getLLMProviderForPurpose(purpose);
+  const modelSettingSuffix = AUDIO_PURPOSE_MODEL_SETTING[purpose] || "TRACKDNA_MODEL";
+
+  if (provider === "openrouter") {
+    const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
+    if (!apiKey) return null;
+    const model =
+      (await getSetting(`OPENROUTER_${modelSettingSuffix}`)) || DEFAULT_AUDIO_MODEL.openrouter;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      },
+    };
+  }
+
+  if (provider === "openai") {
+    const apiKey = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
+    if (!apiKey) return null;
+    const model = (await getSetting(`OPENAI_${modelSettingSuffix}`)) || DEFAULT_AUDIO_MODEL.openai;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://api.openai.com/v1/chat/completions",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
+  }
+
+  if (provider === "edenai") {
+    const apiKey = (await getSetting("EDENAI_API_KEY")) || process.env.EDENAI_API_KEY || "";
+    if (!apiKey) return null;
+    const model = (await getSetting(`EDENAI_${modelSettingSuffix}`)) || DEFAULT_AUDIO_MODEL.edenai;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://api.edenai.run/v3/chat/completions",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Sends audio (+ optional extra text) to whichever provider/model is
+ * configured for `purpose`, following the same provider settings as callLLM.
+ * Returns the raw model text (caller parses it); throws on any failure so
+ * callers can log/handle it in their own context.
+ */
+export async function callLLMWithAudio(
+  purpose: LLMPurpose,
+  audioBuffer: Buffer,
+  format: string,
+  systemPrompt: string,
+  userText: string,
+  logTag: string = "[llm][audio]"
+): Promise<string> {
+  if (!audioBuffer?.length) {
+    throw new Error("empty audio buffer");
+  }
+
+  const config = await resolveAudioProviderConfig(purpose);
+  if (!config) {
+    throw new Error(`no API key configured for the ${purpose === "advanced" ? "ADVANCED_LLM_PROVIDER" : "TRACKDNA_LLM_PROVIDER"} setting`);
+  }
+
+  console.info(
+    `${logTag} calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`
+  );
+  logToFile(LOG_FILE, `${logTag} calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`);
+
+  const res = await axios.post(
+    config.url,
+    {
+      model: config.model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userText },
+            { type: "input_audio", input_audio: { data: audioBuffer.toString("base64"), format } },
+          ],
+        },
+      ],
+    },
+    {
+      headers: config.headers,
+      timeout: 90_000,
+    }
+  );
+
+  const raw = res.data?.choices?.[0]?.message?.content;
+  const logLine = `${logTag} response HTTP ${res.status}, content: ${
+    typeof raw === "string" ? JSON.stringify(raw.slice(0, 500)) : `<no content> body=${JSON.stringify(res.data).slice(0, 500)}`
+  }`;
+  console.info(logLine);
+  logToFile(LOG_FILE, logLine);
+
+  if (typeof raw !== "string") {
+    throw new Error("response had no string content");
+  }
+  return raw;
 }
 
 // Automated Track DNA "Atmosphere" signal — turns the generation prompt/style

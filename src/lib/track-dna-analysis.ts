@@ -32,7 +32,7 @@ export async function analyzeTrackDna(
   opts: { includeLyricsIfMissing?: boolean } = {}
 ): Promise<AudioDna | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
-  if (!track || track.status !== "done" || (!track.s3Key && !track.s3KeyMp3)) return null;
+  if (!track || track.status !== "done") return null;
 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
   const needsLyrics =
@@ -42,18 +42,10 @@ export async function analyzeTrackDna(
     !!track.lyrics?.trim();
 
   try {
-    // Prefer the mp3 (much smaller than the wav master) for the composition
-    // LLM call — sending the full wav as base64 was blowing past request-size
-    // limits and coming back as a gateway error.
-    const compositionS3Key = track.s3KeyMp3 || track.s3Key!;
-    const compositionFormat = track.s3KeyMp3 ? "mp3" : track.format || "mp3";
-    const audioBuffer = await downloadFromS3(compositionS3Key);
-    log(
-      `[track-dna-analysis] track ${trackId}: downloaded ${audioBuffer?.length ?? 0} bytes (format=${compositionFormat}), needsLyrics=${needsLyrics}`
-    );
+    log(`[track-dna-analysis] track ${trackId}: scoring composition from prompt/lyrics text, needsLyrics=${needsLyrics}`);
 
     const [composition, lyrics] = await Promise.all([
-      scoreCompositionQuality(audioBuffer, compositionFormat).catch((error) => {
+      scoreCompositionQuality(track.prompt, track.lyrics).catch((error) => {
         warn(`[track-dna-analysis] composition scoring failed for track ${trackId}:`, error);
         return null;
       }),

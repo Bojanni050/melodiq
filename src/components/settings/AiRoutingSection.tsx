@@ -205,9 +205,9 @@ export default function AiRoutingSection({
               <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
-              Used by the automatic Track DNA analysis (atmosphere tags &amp; lyrics quality score) that runs once
-              per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
-              creative writing.
+              Used by the automatic Track DNA analysis (atmosphere tags, lyrics quality score, and the text-only
+              composition score from the style prompt/lyrics structure) that runs once per finished track. Kept
+              separate from Lyrics since it needs reliable JSON output rather than creative writing.
             </p>
           </div>
           <div>
@@ -222,7 +222,8 @@ export default function AiRoutingSection({
               <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
-              Used by the Advanced Track DNA analysis for more thorough lyrics &amp; composition critique with tips.
+              Used by the Advanced Track DNA analysis, which listens to the actual audio (alongside the lyrics
+              and style prompt) for a thorough critique with tips — needs an audio-input-capable model.
             </p>
           </div>
           <div>
@@ -244,9 +245,10 @@ export default function AiRoutingSection({
             <div>
               <label className="block text-sm font-medium text-white/50">Auto-analyze composition</label>
               <p className="text-xs text-white/25 mt-1 max-w-md">
-                Automatically score composition/arrangement (by listening to the audio) on every newly finished
-                track. Off by default — existing tracks are never analyzed in bulk; use &ldquo;Analyze
-                Composition&rdquo; on a track&apos;s menu to run it on demand regardless of this setting.
+                Automatically score composition/arrangement (from the style prompt and lyrics structure) on every
+                newly finished track. Off by default — existing tracks are never analyzed in bulk; use
+                &ldquo;Analyze Composition&rdquo; on a track&apos;s menu to run it on demand regardless of this
+                setting.
               </p>
             </div>
             <button

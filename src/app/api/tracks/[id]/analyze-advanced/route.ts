@@ -16,7 +16,7 @@ export async function POST(
   const { id } = await params;
 
   const result = await db
-    .select({ id: tracks.id, status: tracks.status })
+    .select({ id: tracks.id, status: tracks.status, s3Key: tracks.s3Key, s3KeyMp3: tracks.s3KeyMp3 })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
@@ -24,8 +24,9 @@ export async function POST(
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
 
-  if (result[0].status !== "done") {
-    return NextResponse.json({ error: "Track isn't ready yet" }, { status: 400 });
+  const track = result[0];
+  if (track.status !== "done" || (!track.s3Key && !track.s3KeyMp3)) {
+    return NextResponse.json({ error: "Track audio isn't available yet" }, { status: 400 });
   }
 
   const url = new URL(request.url);

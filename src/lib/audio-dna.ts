@@ -35,12 +35,11 @@ export async function computeAudioDna(params: {
           return null;
         })
       : Promise.resolve(null),
-    // Off by default (Settings → AI Routing) — composition scoring costs an
-    // extra audio-model call per track, so it only runs automatically when
+    // Off by default (Settings → AI Routing) — only runs automatically when
     // explicitly opted in. Manual per-track analysis (the "Analyze
     // Composition" track action) always works regardless of this setting.
     autoAnalyzeComposition
-      ? scoreCompositionQuality(params.audioBuffer, "mp3").catch((error) => {
+      ? scoreCompositionQuality(params.prompt, params.lyrics).catch((error) => {
           console.warn("[audio-dna] Composition scoring failed:", error);
           return null;
         })
