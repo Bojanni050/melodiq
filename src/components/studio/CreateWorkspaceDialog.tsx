@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
+
 export default function CreateWorkspaceDialog({
   open,
   value,
@@ -17,6 +19,7 @@ export default function CreateWorkspaceDialog({
   onCancel: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
+  const t = useT();
   if (!open) {
     return (
       <button
@@ -24,7 +27,7 @@ export default function CreateWorkspaceDialog({
         onClick={onOpen}
         className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
       >
-        + Create Workspace
+        {t("studio.createWorkspace")}
       </button>
     );
   }
@@ -35,23 +38,23 @@ export default function CreateWorkspaceDialog({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Workspace name"
+        placeholder={t("studio.workspaceNamePlaceholder")}
         className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
-        aria-label="Workspace name"
+        aria-label={t("studio.workspaceNamePlaceholder")}
       />
       <button
         type="button"
         onClick={onSubmit}
         className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
       >
-        Add
+        {t("releases.add")}
       </button>
       <button
         type="button"
         onClick={onCancel}
         className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
       >
-        Cancel
+        {t("common.cancel")}
       </button>
     </div>
   );

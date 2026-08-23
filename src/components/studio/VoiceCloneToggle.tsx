@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStudioStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 interface ClonedVoice {
   id: string;
@@ -14,6 +15,7 @@ interface ClonedVoice {
 const POLL_INTERVAL_MS = 4000;
 
 export default function VoiceCloneToggle() {
+  const t = useT();
   const usePersonaVoice = useStudioStore((s) => s.usePersonaVoice);
   const setUsePersonaVoice = useStudioStore((s) => s.setUsePersonaVoice);
 
@@ -77,28 +79,28 @@ export default function VoiceCloneToggle() {
       const res = await fetch("/api/voice/create", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Voice cloning kon niet worden gestart");
+        setError(data.error || t("studio.voiceCloningFailedGeneric"));
         return;
       }
       setVoices((prev) => [data.voice, ...prev]);
     } catch {
-      setError("Uploaden mislukt");
+      setError(t("account.uploadFailed"));
     } finally {
       setUploading(false);
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-white/70">Mijn gekloonde stem</p>
+          <p className="text-sm font-medium text-white/70">{t("studio.myClonedVoice")}</p>
           <p className="text-[10px] text-white/40 mt-0.5">
-            {!loaded && "Laden…"}
-            {loaded && !activeVoice && "Nog geen stem geüpload"}
-            {loaded && activeVoice?.status === "pending" && "Stem klonen bezig…"}
-            {loaded && activeVoice?.status === "failed" && (activeVoice.error || "Klonen mislukt")}
-            {loaded && completedVoice && "Stem klaar voor gebruik"}
+            {!loaded && t("library.loading")}
+            {loaded && !activeVoice && t("studio.noVoiceUploadedYet")}
+            {loaded && activeVoice?.status === "pending" && t("studio.voiceCloningInProgress")}
+            {loaded && activeVoice?.status === "failed" && (activeVoice.error || t("studio.cloningFailed"))}
+            {loaded && completedVoice && t("studio.voiceReadyToUse")}
           </p>
         </div>
         <button
@@ -107,7 +109,7 @@ export default function VoiceCloneToggle() {
           disabled={uploading}
           className="text-sm px-3 py-1.5 rounded-md bg-primary-500/20 text-primary-300 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
         >
-          {uploading ? "Uploaden…" : activeVoice ? "Opnieuw uploaden" : "Upload stem"}
+          {uploading ? t("account.uploading") : activeVoice ? t("studio.reUploadVoice") : t("studio.uploadVoice")}
         </button>
         <input
           ref={fileInputRef}
@@ -133,11 +135,11 @@ export default function VoiceCloneToggle() {
           className="accent-primary-500 disabled:opacity-40"
         />
         <span className={`text-sm ${completedVoice ? "text-white/70" : "text-white/30"}`}>
-          Gebruik mijn stem voor dit nummer
+          {t("studio.useMyVoiceLabel")}
         </span>
       </label>
       {usePersonaVoice && (
-        <p className="text-[10px] text-white/25 mt-1">Vereist lyrics (custom mode) om je stem toe te passen.</p>
+        <p className="text-[10px] text-white/25 mt-1">{t("studio.personaVoiceHint")}</p>
       )}
     </div>
   );

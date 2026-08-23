@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
+
 export default function TitleSection({
   title,
   setTitle,
@@ -15,13 +17,14 @@ export default function TitleSection({
   generatingTitle: boolean;
   onGenerateTitle: () => void;
 }) {
+  const t = useT();
   const titleCharCount = title.length;
   const titleMaxChars = 120;
 
   return (
     <section className="section-card">
       <div className="flex items-center justify-between mb-3">
-        <label className="block text-sm font-semibold text-white/80">Song Title</label>
+        <label className="block text-sm font-semibold text-white/80">{t("studio.songTitleLabel")}</label>
         {!instrumental && !title.trim() && lyrics.trim() && (
           <button
             onClick={onGenerateTitle}
@@ -35,7 +38,7 @@ export default function TitleSection({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             )}
-            {generatingTitle ? "Generating..." : "🤖 Generate Title"}
+            {generatingTitle ? t("studio.generating") : t("studio.generateTitle")}
           </button>
         )}
       </div>
@@ -44,7 +47,7 @@ export default function TitleSection({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Give your track a name..."
+          placeholder={t("studio.titlePlaceholder")}
           className="input-field text-sm pr-16"
           maxLength={titleMaxChars}
         />
@@ -54,7 +57,7 @@ export default function TitleSection({
       </div>
       {!title.trim() && (
         <p className="text-xs text-white/40 mt-1">
-          Title is optional. Leave empty if you want.
+          {t("studio.titleOptionalHint")}
         </p>
       )}
     </section>

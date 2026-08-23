@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { usePresetsStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 export default function PresetsManager({
   songIdea,
@@ -10,6 +11,7 @@ export default function PresetsManager({
   songIdea: string;
   setSongIdea: (idea: string) => void;
 }) {
+  const t = useT();
   const presets = usePresetsStore((state) => state.presets);
   const presetsLoaded = usePresetsStore((state) => state.presetsLoaded);
   const fetchPresets = usePresetsStore((state) => state.fetchPresets);
@@ -40,12 +42,12 @@ export default function PresetsManager({
             setPresetNotes("");
           }}
           className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Sla huidige stijl op als preset"
+          title={t("studio.savePresetTitle")}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
           </svg>
-          Save Preset
+          {t("studio.savePreset")}
         </button>
 
         {presets.length > 0 && (
@@ -59,7 +61,7 @@ export default function PresetsManager({
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
-            My Presets ({presets.length})
+            {t("studio.myPresetsCount", { count: presets.length })}
           </button>
         )}
       </div>
@@ -67,25 +69,25 @@ export default function PresetsManager({
       {/* Save Preset Form */}
       {showSavePresetForm && (
         <div className="mt-4 p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
-          <p className="text-sm font-semibold text-primary-300">Save Style & Prompt Preset</p>
+          <p className="text-sm font-semibold text-primary-300">{t("studio.savePresetPromptHeading")}</p>
           <div className="space-y-2">
             <div>
-              <label className="block text-[10px] text-white/50 mb-1">Preset Name</label>
+              <label className="block text-[10px] text-white/50 mb-1">{t("studio.presetNameLabel")}</label>
               <input
                 type="text"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
-                placeholder="e.g. Dutch Melancholy, Summer Uplifting"
+                placeholder={t("studio.presetNamePlaceholder")}
                 className="input-field text-sm py-1.5 focus:border-primary-500/50 outline-none"
                 maxLength={100}
               />
             </div>
             <div>
-              <label className="block text-[10px] text-white/50 mb-1">Notes about this prompt</label>
+              <label className="block text-[10px] text-white/50 mb-1">{t("studio.presetNotesLabel")}</label>
               <textarea
                 value={presetNotes}
                 onChange={(e) => setPresetNotes(e.target.value)}
-                placeholder="Notes down specific ideas, instruments, or details..."
+                placeholder={t("studio.presetNotesPlaceholder")}
                 className="input-field text-sm py-1.5 min-h-[60px] resize-y focus:border-primary-500/50 outline-none"
                 maxLength={500}
               />
@@ -97,7 +99,7 @@ export default function PresetsManager({
               onClick={() => setShowSavePresetForm(false)}
               className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-white/60 transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -113,7 +115,7 @@ export default function PresetsManager({
               }}
               className="px-3 py-1.5 rounded-lg bg-primary-500/80 hover:bg-primary-500 text-sm text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save
+              {t("common.save")}
             </button>
           </div>
         </div>
@@ -123,13 +125,13 @@ export default function PresetsManager({
       {showSavedPresetsList && presets.length > 0 && (
         <div className="mt-4 border-t border-white/10 pt-4 space-y-2.5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white/60">My Saved Presets</p>
+            <p className="text-sm font-semibold text-white/60">{t("studio.mySavedPresets")}</p>
             <button
               type="button"
               onClick={() => setShowSavedPresetsList(false)}
               className="text-[10px] text-white/40 hover:text-white/60"
             >
-              Close list
+              {t("studio.closeList")}
             </button>
           </div>
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
@@ -144,7 +146,7 @@ export default function PresetsManager({
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-white/95 truncate">{preset.name}</p>
                       <p className="text-[10px] text-white/30 truncate mt-0.5" title={preset.prompt}>
-                        Prompt: {preset.prompt}
+                        {t("studio.promptLabel", { prompt: preset.prompt })}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -161,13 +163,13 @@ export default function PresetsManager({
                             : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white"
                         }`}
                       >
-                        {isLoaded ? "Loaded ✓" : "Load"}
+                        {isLoaded ? t("studio.loaded") : t("studio.load")}
                       </button>
                       <button
                         type="button"
                         onClick={() => void deletePreset(preset.id)}
                         className="p-1 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
-                        title="Delete Preset"
+                        title={t("studio.deletePresetTitle")}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -177,7 +179,7 @@ export default function PresetsManager({
                   </div>
                   {preset.notes && (
                     <div className="text-[10px] text-white/50 border-l border-primary-500/20 pl-2 py-0.5 bg-primary-500/[0.02] rounded-r">
-                      <span className="font-semibold text-white/70">Notes: </span>
+                      <span className="font-semibold text-white/70">{t("studio.notesLabel")}</span>
                       {preset.notes}
                     </div>
                   )}

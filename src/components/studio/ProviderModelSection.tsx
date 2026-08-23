@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
+
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3-pro-preview", "lyria-3-clip-preview"], icon: "G" },
   poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4", "minimax-music-2.6"], icon: "P" },
@@ -38,11 +40,12 @@ export default function ProviderModelSection({
   setProviderModel: (key: string, model: string) => void;
   setRememberProviderChoice: (v: boolean) => void;
 }) {
+  const t = useT();
   const activeProviderKey = Object.keys(selectedProviders)[0];
 
   return (
     <section className="section-card lg:sticky lg:top-0 lg:z-20 lg:bg-[#0a0a0f]/98 lg:backdrop-blur-sm lg:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-      <h3 className="text-sm font-semibold text-white/80 mb-3">Provider & Model</h3>
+      <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.providerAndModel")}</h3>
       <div className="flex gap-2">
         <select
           value={activeProviderKey || ""}
@@ -52,10 +55,10 @@ export default function ProviderModelSection({
               setProvider(key, PROVIDERS[key as ProviderKey].models[0]);
             }
           }}
-          aria-label="Select provider"
+          aria-label={t("studio.selectProvider")}
           className="select-field text-sm flex-1"
         >
-          <option value="" className="bg-gray-900">Select provider...</option>
+          <option value="" className="bg-gray-900">{t("studio.selectProviderPlaceholder")}</option>
           {Object.entries(PROVIDERS)
             .sort(([, a], [, b]) => a.fullName.localeCompare(b.fullName))
             .map(([key, val]) => (
@@ -68,7 +71,7 @@ export default function ProviderModelSection({
           <select
             value={selectedProviders[activeProviderKey]}
             onChange={(e) => setProviderModel(activeProviderKey, e.target.value)}
-            aria-label="Select model"
+            aria-label={t("studio.selectModel")}
             className="select-field text-sm flex-1"
           >
             {PROVIDERS[activeProviderKey as ProviderKey]?.models.map((model) => (
@@ -86,19 +89,19 @@ export default function ProviderModelSection({
           onChange={(e) => setRememberProviderChoice(e.target.checked)}
           className="h-3.5 w-3.5 rounded border-white/20 bg-transparent accent-primary-500"
         />
-        Remember choice
+        {t("studio.rememberChoice")}
       </label>
       {activeProviderKey && (
         <div className="mt-2 text-xs text-white/30">
           {(() => {
             const currentCredits = credits[activeProviderKey as keyof ProviderCredits];
-            if (activeProviderKey === "lyria") return "Pay-per-use";
+            if (activeProviderKey === "lyria") return t("studio.payPerUse");
             if (activeProviderKey === "apiframe") {
               return currentCredits !== null && currentCredits !== undefined
-                ? `Active (Limit: ${currentCredits} concurrent jobs)`
-                : "Not configured";
+                ? t("studio.activeConcurrentJobs", { count: currentCredits })
+                : t("studio.notConfigured");
             }
-            return currentCredits !== null && currentCredits !== undefined ? `${currentCredits} credits` : "Not configured";
+            return currentCredits !== null && currentCredits !== undefined ? t("studio.creditsCount", { count: currentCredits }) : t("studio.notConfigured");
           })()}
         </div>
       )}

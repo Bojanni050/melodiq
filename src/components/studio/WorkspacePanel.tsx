@@ -1,9 +1,12 @@
+"use client";
+
 import clsx from "clsx";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
 import CreateWorkspaceDialog from "@/components/studio/CreateWorkspaceDialog";
 import TrackList from "@/components/TrackList";
 import type { Track } from "@/hooks/useTrackManager";
 import type { Workspace } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 const SEGMENTED_ICON_BUTTON_BASE = "rounded-md p-1.5 transition";
 const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition";
@@ -89,6 +92,7 @@ export default function WorkspacePanel({
   onEditDetails,
   playlists,
 }: WorkspacePanelProps) {
+  const t = useT();
   const isWorkspaceFolderOpen = Boolean(selectedWorkspace);
   const workspaceGridClass = WORKSPACE_GRID_CLASS_BY_SIZE[workspaceGridSize];
 
@@ -97,13 +101,13 @@ export default function WorkspacePanel({
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-white/80">Workspace folders</h2>
+          <h2 className="text-sm font-semibold text-white/80">{t("studio.workspaceFolders")}</h2>
           <p className="text-sm text-white/40">
             {isWorkspaceFolderOpen
-              ? "Folder geopend. Alleen tracks uit deze workspace worden getoond."
+              ? t("studio.folderOpenedHint")
               : workspaceViewMode === "grid"
-                ? `${workspaceGridSize} columns per row.`
-                : `${rootWorkspaces.length} workspaces.`}
+                ? t("studio.columnsPerRow", { count: workspaceGridSize })
+                : t("studio.workspacesCountHint", { count: rootWorkspaces.length })}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -117,8 +121,8 @@ export default function WorkspacePanel({
                   SEGMENTED_ICON_BUTTON_BASE,
                   workspaceViewMode === "list" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
                 )}
-                title="List view"
-                aria-label="List view"
+                title={t("releases.listView")}
+                aria-label={t("releases.listView")}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 10h16" />
@@ -131,8 +135,8 @@ export default function WorkspacePanel({
                   SEGMENTED_ICON_BUTTON_BASE,
                   workspaceViewMode === "grid" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
                 )}
-                title="Grid view"
-                aria-label="Grid view"
+                title={t("releases.gridView")}
+                aria-label={t("releases.gridView")}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zm10 0a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z" />
@@ -153,8 +157,8 @@ export default function WorkspacePanel({
                     SEGMENTED_SIZE_BUTTON_BASE,
                     workspaceGridSize === size ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
                   )}
-                  title={`Show ${size} workspace cards`}
-                  aria-label={`Show ${size} workspace cards`}
+                  title={t("studio.showNWorkspaceCards", { count: size })}
+                  aria-label={t("studio.showNWorkspaceCards", { count: size })}
                 >
                   {size}
                 </button>
@@ -174,9 +178,9 @@ export default function WorkspacePanel({
                 setSelectedWorkspaceId(null);
               }}
               className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
-              title="Back to workspace overview"
+              title={t("studio.backToWorkspaceOverview")}
             >
-              {selectedWorkspace?.parentWorkspaceId ? "← Back to parent" : "← Back to folders"}
+              {selectedWorkspace?.parentWorkspaceId ? t("studio.backToParent") : t("studio.backToFolders")}
             </button>
           )}
 
@@ -204,23 +208,23 @@ export default function WorkspacePanel({
                   value={newFolderName}
                   onChange={(event) => setNewFolderName(event.target.value)}
                   onKeyDown={handleCreateFolderKeyDown}
-                  placeholder="Subfolder name"
+                  placeholder={t("studio.subfolderNamePlaceholder")}
                   className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
-                  aria-label="Subfolder name"
+                  aria-label={t("studio.subfolderNamePlaceholder")}
                 />
                 <button
                   type="button"
                   onClick={handleCreateFolder}
                   className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
                 >
-                  Add
+                  {t("releases.add")}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowCreateFolder(false); setNewFolderName(""); }}
                   className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             ) : (
@@ -229,7 +233,7 @@ export default function WorkspacePanel({
                 onClick={() => setShowCreateFolder(true)}
                 className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
               >
-                + Add Subfolder
+                {t("studio.addSubfolder")}
               </button>
             )
           )}
@@ -282,7 +286,7 @@ export default function WorkspacePanel({
                         <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
                           <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
                           <p className="text-xs text-white/65">
-                            {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} subfolders` : ""}
+                            {workspaceTracks.length} tracks{childCount > 0 ? t("studio.subfoldersSuffix", { count: childCount }) : ""}
                           </p>
                         </div>
                       </div>
@@ -318,7 +322,7 @@ export default function WorkspacePanel({
                     </div>
                     <span className="text-xs text-white/40 shrink-0">
                       {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
-                      {childCount > 0 ? ` • ${childCount} subfolders` : ""}
+                      {childCount > 0 ? t("studio.subfoldersSuffix", { count: childCount }) : ""}
                     </span>
                     <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -345,12 +349,12 @@ export default function WorkspacePanel({
                 setSelectedWorkspaceId(null);
               }}
               className="text-white/60 hover:text-white/80 transition-colors"
-              title="Back to workspace overview"
+              title={t("studio.backToWorkspaceOverview")}
             >
-              {selectedWorkspace?.parentWorkspaceId ? selectedWorkspaceParent?.name ?? "Workspaces" : "Workspaces"}
+              {selectedWorkspace?.parentWorkspaceId ? selectedWorkspaceParent?.name ?? t("nav.workspaces") : t("nav.workspaces")}
             </button>
             <span className="mx-1 text-white/20">&gt;</span>
-            <span className="text-white/70">{selectedWorkspace?.name ?? "Overview"}</span>
+            <span className="text-white/70">{selectedWorkspace?.name ?? t("discover.overview")}</span>
           </div>
         </div>
         <span className="text-xs text-white/30 shrink-0">
@@ -361,7 +365,7 @@ export default function WorkspacePanel({
       {/* Subfolders */}
       {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
         <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">Subfolders</p>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">{t("studio.subfoldersHeading")}</p>
           <div className="space-y-1.5">
             {selectedWorkspaceChildren.map((childWorkspace) => {
               const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
@@ -420,7 +424,7 @@ export default function WorkspacePanel({
         ) : (
           <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
             <p className="text-sm text-white/45">
-              Select or create a workspace above to pin its tracks here.
+              {t("studio.selectOrCreateWorkspaceHint")}
             </p>
           </div>
         )}

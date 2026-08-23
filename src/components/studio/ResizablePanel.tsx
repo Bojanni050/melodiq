@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useT } from "@/hooks/useT";
 
 export default function ResizablePanel({
   show,
@@ -13,6 +14,7 @@ export default function ResizablePanel({
   setWidth: (value: number) => void;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const panelRef = useRef<HTMLElement>(null);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(0);
@@ -55,10 +57,10 @@ export default function ResizablePanel({
       <div
         className="hidden lg:block w-1 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
         onMouseDown={startResize}
-        title="Resize details panel"
+        title={t("studio.resizeDetailsPanel")}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Resize details panel"
+        aria-label={t("studio.resizeDetailsPanel")}
       />
       <aside
         ref={panelRef}

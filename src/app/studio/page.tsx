@@ -16,8 +16,10 @@ import { useTrackManager, type Track } from "@/hooks/useTrackManager";
 import { useStudioActions } from "@/hooks/useStudioActions";
 import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
+import { useT } from "@/hooks/useT";
 
 export default function StudioPage() {
+  const t = useT();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -203,8 +205,8 @@ export default function StudioPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track or press play to show song info and lyrics.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
               </div>
             )}
           </div>

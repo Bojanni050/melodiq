@@ -11,6 +11,7 @@ import PresetsManager from "@/components/studio/PresetsManager";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore } from "@/lib/store";
 import { useUserStore } from "@/lib/stores/userStore";
+import { useT } from "@/hooks/useT";
 
 export default memo(function StudioForm({
   credits,
@@ -25,6 +26,7 @@ export default memo(function StudioForm({
   onOptimize: () => void;
   onGenerateTitle: (lyrics: string) => Promise<string | null>;
 }) {
+  const t = useT();
   const router = useRouter();
   const {
     songIdea,
@@ -73,7 +75,7 @@ export default memo(function StudioForm({
     void loadUser();
   }, [loadUser]);
   const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
-  const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
+  const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || t("releases.unknownArtist");
   const defaultWriterLabel = user?.writerAlias?.trim() || defaultArtistLabel;
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -170,13 +172,13 @@ export default memo(function StudioForm({
     <div className="relative flex h-full min-h-0 flex-col gap-4">
       {/* Top Bar: Studio Header & Clear All */}
       <div className="flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight text-white/90">Music</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-white/90">{t("nav.music")}</h2>
         <button
           type="button"
           onClick={() => setShowClearConfirm(true)}
           className="btn-secondary text-sm px-3 py-1.5"
         >
-          Clear All
+          {t("studio.clearAll")}
         </button>
       </div>
 
@@ -188,9 +190,9 @@ export default memo(function StudioForm({
             </svg>
           }
           iconBgClassName="bg-red-500/20"
-          message="Clear all Studio input? Song idea, lyrics, title and style settings will all be reset."
-          cancelLabel="Cancel"
-          confirmLabel="Clear all"
+          message={t("studio.clearConfirmMessage")}
+          cancelLabel={t("common.cancel")}
+          confirmLabel={t("studio.clearAllConfirm")}
           confirmClassName="border-red-400/20 bg-red-500/10 text-red-200 hover:bg-red-500/20"
           onCancel={() => setShowClearConfirm(false)}
           onConfirm={() => {
@@ -208,9 +210,9 @@ export default memo(function StudioForm({
             </svg>
           }
           iconBgClassName="bg-amber-500/20"
-          message="Geen Vocal Gender gekozen. Het model kiest zelf een stem. Is dat de bedoeling?"
-          cancelLabel="Annuleren"
-          confirmLabel="Doorgaan"
+          message={t("studio.vocalGenderConfirmMessage")}
+          cancelLabel={t("common.cancel")}
+          confirmLabel={t("library.continue")}
           confirmClassName="border-amber-400/20 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
           onCancel={() => setShowVocalGenderConfirm(false)}
           onConfirm={() => {
@@ -232,14 +234,14 @@ export default memo(function StudioForm({
           iconBgClassName="bg-violet-500/20"
           message={
             <>
-              <p className="text-sm font-semibold text-white mb-1">No lyrics entered</p>
+              <p className="text-sm font-semibold text-white mb-1">{t("studio.noLyricsTitle")}</p>
               <p className="text-sm text-white/65 leading-relaxed">
-                The lyrics field is empty. The AI provider will make up its own lyrics. Continue anyway?
+                {t("studio.noLyricsBody")}
               </p>
             </>
           }
-          cancelLabel="Cancel"
-          confirmLabel="Continue anyway"
+          cancelLabel={t("common.cancel")}
+          confirmLabel={t("studio.continueAnyway")}
           confirmClassName="border-violet-400/25 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25"
           onCancel={() => setShowEmptyLyricsConfirm(false)}
           onConfirm={() => {
@@ -261,9 +263,9 @@ export default memo(function StudioForm({
             </svg>
           }
           iconBgClassName="bg-red-500/20"
-          message={`Style & Prompt is te lang (${promptCharCount}/${styleMaxChars} karakters). Er is niets naar de provider gestuurd. Wil je de prompt automatisch laten optimaliseren, of pas je hem liever zelf aan?`}
-          cancelLabel="Zelf aanpassen"
-          confirmLabel="Optimaliseren"
+          message={t("studio.styleTooLongMessage", { count: promptCharCount, max: styleMaxChars })}
+          cancelLabel={t("studio.adjustMyself")}
+          confirmLabel={t("studio.optimize")}
           confirmClassName="border-primary-400/30 bg-primary-500/15 text-primary-200 hover:bg-primary-500/25"
           onCancel={() => setShowStyleTooLongConfirm(false)}
           onConfirm={() => {
@@ -289,9 +291,9 @@ export default memo(function StudioForm({
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+            <h3 className="text-sm font-semibold text-white/80">{t("studio.lyrics")}</h3>
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${instrumental ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" : "bg-primary-500/20 text-primary-400 border border-primary-500/30"}`}>
-              {instrumental ? "INSTRUMENTAL" : "VOCAL"}
+              {instrumental ? t("studio.instrumentalBadge") : t("studio.vocalBadge")}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -304,7 +306,7 @@ export default memo(function StudioForm({
                 instrumental ? "bg-amber-500/20" : "bg-emerald-500/20"
               }`}
             >
-              <span className="sr-only">Instrumental</span>
+              <span className="sr-only">{t("studio.instrumentalToggleSr")}</span>
               <span
                 className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                   instrumental ? "translate-x-6" : ""
@@ -318,7 +320,7 @@ export default memo(function StudioForm({
 
         {isHeartMulaSelected && (
           <p className="text-sm text-white/30 italic mb-2">
-            HeartMuLa reads structure directly from your lyrics — write your own tags: <span className="text-white/50 font-mono">[Verse]</span>, <span className="text-white/50 font-mono">[Chorus]</span>, <span className="text-white/50 font-mono">[Bridge]</span>, plus instrumental sections like <span className="text-white/50 font-mono">[intro-short]</span>, <span className="text-white/50 font-mono">[inst-medium]</span>, <span className="text-white/50 font-mono">[outro-short]</span>.
+            {t("studio.heartMulaLyricsHintPrefix")} <span className="text-white/50 font-mono">[Verse]</span>, <span className="text-white/50 font-mono">[Chorus]</span>, <span className="text-white/50 font-mono">[Bridge]</span>{t("studio.heartMulaLyricsHintSuffix")} <span className="text-white/50 font-mono">[intro-short]</span>, <span className="text-white/50 font-mono">[inst-medium]</span>, <span className="text-white/50 font-mono">[outro-short]</span>.
           </p>
         )}
         {(!instrumental || isHeartMulaSelected) && (
@@ -327,22 +329,22 @@ export default memo(function StudioForm({
               <textarea
                 value={lyrics}
                 onChange={(e) => setLyrics(e.target.value)}
-                placeholder={isHeartMulaSelected ? `Write your lyrics here, including structure tags...
+                placeholder={isHeartMulaSelected ? `${t("studio.lyricsPlaceholderHeartMulaIntro")}
 
 [Verse]
-Your lyrics here
+${t("studio.yourLyricsHere")}
 
 [Chorus]
-Your chorus here
+${t("studio.yourChorusHere")}
 
 [intro-short]
-[outro-short]` : `Write your lyrics here...
+[outro-short]` : `${t("studio.lyricsPlaceholderDefaultIntro")}
 
 [Verse]
-Your lyrics here
+${t("studio.yourLyricsHere")}
 
 [Chorus]
-Your chorus here`}
+${t("studio.yourChorusHere")}`}
                 className="input-field min-h-[220px] resize-y text-base leading-relaxed"
               />
             </div>
@@ -352,24 +354,24 @@ Your chorus here`}
                   type="button"
                   onClick={() => router.push("/melody")}
                   className="btn-ghost text-sm flex items-center gap-1.5"
-                  title="Write and generate lyrics in Melody"
+                  title={t("studio.writeGenerateLyricsInMelody")}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Generate Lyrics
+                  {t("studio.generateLyrics")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLyricsExpanded(true)}
                   className="btn-ghost text-sm flex items-center gap-1.5"
-                  title="Expand lyrics editor"
-                  aria-label="Expand lyrics editor"
+                  title={t("studio.expandLyricsEditor")}
+                  aria-label={t("studio.expandLyricsEditor")}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
                   </svg>
-                  Expand Editor
+                  {t("studio.expandEditor")}
                 </button>
               </div>
 
@@ -379,8 +381,8 @@ Your chorus here`}
                   onClick={() => handleCopy(lyrics, "lyrics")}
                   disabled={!lyrics.trim()}
                   className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Copy lyrics"
-                  aria-label="Copy lyrics"
+                  title={t("studio.copyLyrics")}
+                  aria-label={t("studio.copyLyrics")}
                 >
                   {copiedField === "lyrics" ? (
                     <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,8 +406,8 @@ Your chorus here`}
                   }}
                   disabled={!lyrics.trim()}
                   className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Save lyrics"
-                  aria-label="Save lyrics"
+                  title={t("studio.saveLyrics")}
+                  aria-label={t("studio.saveLyrics")}
                 >
                   {lyricsSaved ? (
                     <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,8 +425,8 @@ Your chorus here`}
                   onClick={() => setLyrics("")}
                   disabled={!lyrics.trim()}
                   className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Clear lyrics"
-                  aria-label="Clear lyrics"
+                  title={t("studio.clearLyrics")}
+                  aria-label={t("studio.clearLyrics")}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -445,7 +447,7 @@ Your chorus here`}
 
         {instrumental && !isHeartMulaSelected && (
           <p className="text-sm text-white/30 italic">
-            🎵 <span className="text-white/50">Instrumental mode</span> — no lyrics needed, focus on the style prompt
+            🎵 <span className="text-white/50">{t("studio.instrumentalModeLabel")}</span> {t("studio.instrumentalModeHint")}
           </p>
         )}
       </section>
@@ -457,27 +459,27 @@ Your chorus here`}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white/80">Lyrics</h3>
+              <h3 className="text-sm font-semibold text-white/80">{t("studio.lyrics")}</h3>
               <span className={`text-xs text-white/30`}>{lyricsCharCount}/{lyricsMaxChars}</span>
             </div>
             <button
               type="button"
               onClick={() => setLyricsExpanded(false)}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
-              title="Collapse lyrics editor"
+              title={t("studio.collapseLyricsEditor")}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
               </svg>
-              Close
+              {t("playlists.close")}
             </button>
           </div>
           <textarea
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
             placeholder={isHeartMulaSelected
-              ? `Write your lyrics here, including structure tags...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here\n\n[intro-short]\n[outro-short]`
-              : `Write your lyrics here...\n\n[Verse]\nYour lyrics here\n\n[Chorus]\nYour chorus here`}
+              ? `${t("studio.lyricsPlaceholderHeartMulaIntro")}\n\n[Verse]\n${t("studio.yourLyricsHere")}\n\n[Chorus]\n${t("studio.yourChorusHere")}\n\n[intro-short]\n[outro-short]`
+              : `${t("studio.lyricsPlaceholderDefaultIntro")}\n\n[Verse]\n${t("studio.yourLyricsHere")}\n\n[Chorus]\n${t("studio.yourChorusHere")}`}
             className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-base leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
             autoFocus
           />
@@ -487,11 +489,11 @@ Your chorus here`}
       {/* Style Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">{isHeartMulaSelected ? "Style Tags" : "Style & Prompt"}</h3>
+          <h3 className="text-sm font-semibold text-white/80">{isHeartMulaSelected ? t("studio.styleTagsHeading") : t("studio.stylePromptHeading")}</h3>
         </div>
         {isHeartMulaSelected && (
           <p className="text-sm text-white/30 italic mb-2">
-            Comma-separated style descriptors — gender, timbre, genre, emotion, instruments, tempo (e.g. 85bpm)
+            {t("studio.styleTagsHint")}
           </p>
         )}
 
@@ -500,8 +502,8 @@ Your chorus here`}
             value={songIdea}
             onChange={(e) => setSongIdea(e.target.value)}
             placeholder={isHeartMulaSelected
-              ? `e.g. "female, warm, indie folk, bittersweet, acoustic guitar and piano, 85bpm"`
-              : `Describe your song style... e.g. "Dark Dutch Folk, subdued introspective, piano with sparse arrangement"`}
+              ? t("studio.stylePlaceholderHeartMula")
+              : t("studio.stylePlaceholderDefault")}
             className="input-field min-h-[120px] resize-y text-sm leading-relaxed"
           />
         </div>
@@ -512,12 +514,12 @@ Your chorus here`}
               type="button"
               onClick={() => router.push("/melody")}
               className="btn-ghost text-sm flex items-center gap-1.5"
-              title="Build your style in Melody"
+              title={t("studio.buildStyleInMelody")}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Generate Style
+              {t("studio.generateStyle")}
             </button>
 
             <PresetsManager songIdea={songIdea} setSongIdea={setSongIdea} />
@@ -529,8 +531,8 @@ Your chorus here`}
               onClick={() => handleCopy(songIdea, "style")}
               disabled={!songIdea.trim()}
               className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Copy style"
-              aria-label="Copy style"
+              title={t("studio.copyStyle")}
+              aria-label={t("studio.copyStyle")}
             >
               {copiedField === "style" ? (
                 <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -547,8 +549,8 @@ Your chorus here`}
               onClick={() => setSongIdea("")}
               disabled={!songIdea.trim()}
               className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Clear style"
-              aria-label="Clear style"
+              title={t("studio.clearStyle")}
+              aria-label={t("studio.clearStyle")}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -571,7 +573,7 @@ Your chorus here`}
             <div className="my-4 h-px bg-white/10" />
 
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Sliders</h4>
+              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">{t("studio.slidersHeading")}</h4>
               <button
                 type="button"
                 onClick={() => setShowProTips(!showProTips)}
@@ -580,17 +582,17 @@ Your chorus here`}
                 <svg className={`w-3 h-3 transition-transform duration-200 ${showProTips ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                Pro Tips
+                {t("studio.proTips")}
               </button>
             </div>
 
             {showProTips && (
               <div className="mb-4 p-3 rounded-lg bg-primary-500/5 border border-primary-500/20 space-y-2">
-                <p className="text-sm text-primary-300 font-medium">Pro Tips for Best Results</p>
+                <p className="text-sm text-primary-300 font-medium">{t("studio.proTipsHeading")}</p>
                 <ul className="text-sm text-white/40 space-y-1.5 list-disc list-inside">
-                  <li><span className="text-white/60">Tweak One at a Time:</span> Altering all sliders at once makes it hard to trace what caused a specific output.</li>
-                  <li><span className="text-white/60">Detailed Prompts Need Lower Weirdness:</span> Keep Weirdness below 40% with hyper-specific prompts to avoid the AI tripping over itself.</li>
-                  <li><span className="text-white/60">Vocal Glitches:</span> If your singer stumbles or hallucinates lyrics, drop Weirdness and Style Influence down to correct the flow.</li>
+                  <li><span className="text-white/60">{t("studio.proTip1Label")}</span> {t("studio.proTip1Text")}</li>
+                  <li><span className="text-white/60">{t("studio.proTip2Label")}</span> {t("studio.proTip2Text")}</li>
+                  <li><span className="text-white/60">{t("studio.proTip3Label")}</span> {t("studio.proTip3Text")}</li>
                 </ul>
               </div>
             )}
@@ -598,11 +600,11 @@ Your chorus here`}
             {/* Weirdness Slider */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">Weirdness</label>
+                <label className="text-sm font-medium text-white/60">{t("studio.weirdnessLabel")}</label>
                 <span className="text-sm text-white/40 font-mono">{weirdness}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">Safe</span>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.safeLabel")}</span>
                 <input
                   type="range"
                   min="0"
@@ -614,21 +616,21 @@ Your chorus here`}
                     background: `linear-gradient(to right, #8b5cf6 ${weirdness}%, rgba(255,255,255,0.1) ${weirdness}%)`,
                   }}
                 />
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">Chaos</span>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.chaosLabel")}</span>
               </div>
               <p className="text-[10px] text-white/25 mt-1">
-                {weirdness <= 20 ? "Highly predictable, clean, radio-friendly" : weirdness <= 60 ? "Balanced — standard sounds with interesting choices" : "Experimental — wild instruments, strange effects, spontaneous moments"}
+                {weirdness <= 20 ? t("studio.weirdnessDescLow") : weirdness <= 60 ? t("studio.weirdnessDescMid") : t("studio.weirdnessDescHigh")}
               </p>
             </div>
 
             {/* Style Influence Slider */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">Style Influence</label>
+                <label className="text-sm font-medium text-white/60">{t("studio.styleInfluenceLabel")}</label>
                 <span className="text-sm text-white/40 font-mono">{styleInfluence}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">Loose</span>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.looseLabel")}</span>
                 <input
                   type="range"
                   min="0"
@@ -640,10 +642,10 @@ Your chorus here`}
                     background: `linear-gradient(to right, #8b5cf6 ${styleInfluence}%, rgba(255,255,255,0.1) ${styleInfluence}%)`,
                   }}
                 />
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">Strong</span>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.strongLabel")}</span>
               </div>
               <p className="text-[10px] text-white/25 mt-1">
-                {styleInfluence <= 40 ? "Model has freedom to invent melodies and deviate from genre" : styleInfluence <= 70 ? "Moderate — respects your tags but adds creative variation" : "Strict — forces the model to rigidly obey your style tags"}
+                {styleInfluence <= 40 ? t("studio.styleInfluenceDescLow") : styleInfluence <= 70 ? t("studio.styleInfluenceDescMid") : t("studio.styleInfluenceDescHigh")}
               </p>
             </div>
           </>
@@ -655,15 +657,15 @@ Your chorus here`}
             <div className="my-4 h-px bg-white/10" />
 
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">APIMart Settings</h4>
+              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">{t("studio.apiMartSettingsHeading")}</h4>
             </div>
 
             {/* Exclude Styles (Negative Tags) */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-white/60 mb-1.5">Exclude Styles</label>
+              <label className="block text-sm font-medium text-white/60 mb-1.5">{t("studio.excludeStylesLabel")}</label>
               <input
                 type="text"
-                placeholder="e.g. vocals, drums, lo-fi"
+                placeholder={t("studio.excludeStylesPlaceholder")}
                 value={negativeTags}
                 onChange={(e) => setNegativeTags(e.target.value)}
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
@@ -673,7 +675,7 @@ Your chorus here`}
             {/* Style Weight */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">Style weight</label>
+                <label className="text-sm font-medium text-white/60">{t("studio.styleWeightLabel")}</label>
                 <span className="text-sm text-white/40 font-mono">{(styleInfluence / 100).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -689,13 +691,13 @@ Your chorus here`}
                   }}
                 />
               </div>
-              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+              <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
             </div>
 
             {/* Weirdness Constraint (Creativity) */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">Creativity (Weirdness)</label>
+                <label className="text-sm font-medium text-white/60">{t("studio.creativityWeirdnessLabel")}</label>
                 <span className="text-sm text-white/40 font-mono">{(weirdness / 100).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -711,14 +713,14 @@ Your chorus here`}
                   }}
                 />
               </div>
-              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+              <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
             </div>
 
             {/* Audio Weight — only relevant when a cloned/uploaded voice is used */}
             {usePersonaVoice && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-white/60">Audio weight</label>
+                  <label className="text-sm font-medium text-white/60">{t("studio.audioWeightLabel")}</label>
                   <span className="text-sm text-white/40 font-mono">{(audioWeight / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -734,7 +736,7 @@ Your chorus here`}
                     }}
                   />
                 </div>
-                <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+                <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
               </div>
             )}
           </>
@@ -751,7 +753,7 @@ Your chorus here`}
 
       {!instrumental && (
         <section className="section-card">
-          <h3 className="text-sm font-semibold text-white/80 mb-3">Vocal Gender</h3>
+          <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.vocalGenderHeading")}</h3>
           <div className="flex rounded-lg overflow-hidden border border-white/10">
             <button
               type="button"
@@ -762,7 +764,7 @@ Your chorus here`}
                   : "bg-white/5 text-white/40 hover:bg-white/10"
               }`}
             >
-              👩‍🎤 Female
+              👩‍🎤 {t("studio.femaleOption")}
             </button>
             <button
               type="button"
@@ -773,7 +775,7 @@ Your chorus here`}
                   : "bg-white/5 text-white/40 hover:bg-white/10"
               }`}
             >
-              👨‍🎤 Male
+              👨‍🎤 {t("studio.maleOption")}
             </button>
           </div>
         </section>
@@ -790,17 +792,17 @@ Your chorus here`}
 
       {/* Credits Section */}
       <section className="section-card">
-        <h3 className="text-sm font-semibold text-white/80 mb-3">Credits</h3>
+        <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.creditsHeading")}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] text-white/50 mb-1">Artist</label>
+            <label className="block text-[10px] text-white/50 mb-1">{t("studio.artistLabel")}</label>
             {artistAliasOptions.length > 0 ? (
               <select
                 value={artistName}
                 onChange={(e) => setArtistName(e.target.value)}
                 className="input-field text-sm py-1.5"
               >
-                <option value="">{`Default (${defaultArtistLabel})`}</option>
+                <option value="">{t("releases.defaultArtist", { name: defaultArtistLabel })}</option>
                 {artistAliasOptions.map((alias) => (
                   <option key={alias} value={alias}>
                     {alias}
@@ -812,19 +814,19 @@ Your chorus here`}
                 type="text"
                 value={artistName}
                 onChange={(e) => setArtistName(e.target.value)}
-                placeholder={`Default (${defaultArtistLabel})`}
+                placeholder={t("releases.defaultArtist", { name: defaultArtistLabel })}
                 className="input-field text-sm py-1.5"
                 maxLength={255}
               />
             )}
           </div>
           <div>
-            <label className="block text-[10px] text-white/50 mb-1">Writer</label>
+            <label className="block text-[10px] text-white/50 mb-1">{t("studio.writerLabel")}</label>
             <input
               type="text"
               value={writerName}
               onChange={(e) => setWriterName(e.target.value)}
-              placeholder={`Default (${defaultWriterLabel})`}
+              placeholder={t("releases.defaultArtist", { name: defaultWriterLabel })}
               className="input-field text-sm py-1.5"
               maxLength={255}
             />
@@ -843,7 +845,7 @@ Your chorus here`}
             className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/5 text-primary-500 focus:ring-primary-500/40"
           />
           <span>
-            Auto-create workspace from generated title and open it
+            {t("studio.autoCreateWorkspaceLabel")}
           </span>
         </label>
 
@@ -865,8 +867,8 @@ Your chorus here`}
           }}
           loading={isGenerating}
           disabled={!canGenerate}
-          label="🎶 Generate Track"
-          loadingLabel="Generating..."
+          label={t("studio.generateTrackButton")}
+          loadingLabel={t("studio.generating")}
           className="w-full py-3 text-sm tracking-wide"
         />
 
@@ -874,8 +876,8 @@ Your chorus here`}
         {!canGenerate && (
           <p className="text-center text-sm text-red-400/60">
             {Object.keys(selectedProviders).length === 0
-              ? "Select at least one provider"
-              : "Describe a style or prompt to continue"}
+              ? t("studio.selectProviderHint")
+              : t("studio.describeStyleHint")}
           </p>
         )}
       </div>

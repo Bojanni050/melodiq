@@ -1,4 +1,7 @@
+"use client";
+
 import clsx from "clsx";
+import { useT } from "@/hooks/useT";
 
 const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-sm font-medium transition";
 const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
@@ -10,6 +13,7 @@ interface StudioTabBarProps {
 }
 
 export default function StudioTabBar({ activeTab, onTabChange }: StudioTabBarProps) {
+  const t = useT();
   return (
     <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
       <button
@@ -20,7 +24,7 @@ export default function StudioTabBar({ activeTab, onTabChange }: StudioTabBarPro
           activeTab === "recent" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
         )}
       >
-        Recent Tracks
+        {t("studio.recentTracks")}
       </button>
       <button
         type="button"
@@ -30,7 +34,7 @@ export default function StudioTabBar({ activeTab, onTabChange }: StudioTabBarPro
           activeTab === "workspaces" ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE
         )}
       >
-        Workspaces
+        {t("nav.workspaces")}
       </button>
     </div>
   );

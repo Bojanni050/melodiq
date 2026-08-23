@@ -1,12 +1,14 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
+
 export default function GenerateButton({
   loading,
   onClick,
   disabled,
   className,
-  label = "Generate",
-  loadingLabel = "Generating...",
+  label,
+  loadingLabel,
 }: {
   loading: boolean;
   onClick: () => void;
@@ -15,6 +17,9 @@ export default function GenerateButton({
   label?: string;
   loadingLabel?: string;
 }) {
+  const t = useT();
+  const resolvedLabel = label ?? t("studio.generate");
+  const resolvedLoadingLabel = loadingLabel ?? t("studio.generating");
   return (
     <button
       type="button"
@@ -25,10 +30,10 @@ export default function GenerateButton({
       {loading ? (
         <span className="inline-flex items-center gap-2">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          {loadingLabel}
+          {resolvedLoadingLabel}
         </span>
       ) : (
-        label
+        resolvedLabel
       )}
     </button>
   );

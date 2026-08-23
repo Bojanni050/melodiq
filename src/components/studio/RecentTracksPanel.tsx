@@ -1,5 +1,8 @@
+"use client";
+
 import TrackList from "@/components/TrackList";
 import type { Track } from "@/hooks/useTrackManager";
+import { useT } from "@/hooks/useT";
 
 interface RecentTracksPanelProps {
   tracks: Track[];
@@ -28,10 +31,11 @@ export default function RecentTracksPanel({
   onEditDetails,
   playlists,
 }: RecentTracksPanelProps) {
+  const t = useT();
   return (
     <section className="section-card flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white/60">Recent Tracks</h2>
+        <h2 className="text-sm font-semibold text-white/60">{t("studio.recentTracks")}</h2>
         <span className="text-xs text-white/30">{tracks.length} tracks</span>
       </div>
 

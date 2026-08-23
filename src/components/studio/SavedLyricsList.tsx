@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useStudioStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 export default function SavedLyricsList() {
+  const t = useT();
   const [showSavedLyrics, setShowSavedLyrics] = useState(false);
   const savedLyrics = useStudioStore((state) => state.savedLyrics);
   const loadSavedLyric = useStudioStore((state) => state.loadSavedLyric);
@@ -28,7 +30,7 @@ export default function SavedLyricsList() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        Saved lyrics ({savedLyrics.length})
+        {t("studio.savedLyricsCount", { count: savedLyrics.length })}
       </button>
       {showSavedLyrics && (
         <div className="mt-1.5 space-y-1 max-h-48 overflow-y-auto rounded-lg border border-white/8 bg-[#0d0d12] p-1.5">
@@ -47,16 +49,16 @@ export default function SavedLyricsList() {
                 type="button"
                 onClick={() => loadSavedLyric(entry.id)}
                 className="shrink-0 text-[10px] text-white/40 hover:text-white/80 transition-colors px-1.5 py-0.5 rounded hover:bg-white/10"
-                title="Load these lyrics"
+                title={t("studio.loadTheseLyrics")}
               >
-                Load
+                {t("studio.load")}
               </button>
               <button
                 type="button"
                 onClick={() => void deleteSavedLyric(entry.id)}
                 className="shrink-0 opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all p-0.5 rounded hover:bg-red-500/10"
-                title="Delete"
-                aria-label="Delete saved lyrics"
+                title={t("studio.delete")}
+                aria-label={t("studio.deleteSavedLyrics")}
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
