@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1779242346446,
+      "tag": "0000_common_santa_claus",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780007769045,
+      "tag": "0001_familiar_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780022189810,
+      "tag": "0002_military_sebastian_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780857600000,
+      "tag": "0003_robust_upload_audio_dedupe",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780863600000,
+      "tag": "0004_persistent_playlists",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1749549600000,
+      "tag": "0005_playlist_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749636000000,
+      "tag": "0006_track_artist_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781455853272,
+      "tag": "0007_misty_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782146738278,
+      "tag": "0008_motionless_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783170295039,
+      "tag": "0009_add_translated_lyrics",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783280881261,
+      "tag": "0010_confused_johnny_blaze",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785096832877,
+      "tag": "0011_charming_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785628800000,
+      "tag": "0012_track_stems",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785730000000,
+      "tag": "0013_user_profile_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785816400000,
+      "tag": "0014_advanced_dna",
+      "breakpoints": true
+    }
+  ]
+}
