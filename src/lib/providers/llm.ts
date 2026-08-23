@@ -421,11 +421,73 @@ export interface CompositionQualityScore {
 
 // Automated Track DNA "Composition" signal — judges arrangement/structure by
 // actually listening to the rendered audio, not just its metadata. Needs an
-// audio-input-capable model, so it bypasses callLLM (text-only) and talks to
-// OpenRouter directly. Model is intentionally fixed rather than following the
-// configurable "trackdna" purpose, since a text-only model there would just
-// fail on audio input.
-const COMPOSITION_AUDIO_MODEL = "google/gemini-2.5-flash";
+// audio-input-capable model, so it bypasses callLLM's text-only request body
+// and builds its own — but it still follows the same "trackdna" purpose
+// provider/key/model settings as everything else, so switching
+// TRACKDNA_LLM_PROVIDER (e.g. to edenai) is respected here too.
+const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
+  openrouter: "google/gemini-2.5-flash",
+  edenai: "google/gemini-2.5-flash",
+  openai: "gpt-4o-audio-preview",
+};
+
+interface AudioProviderConfig {
+  provider: LLMProvider;
+  apiKey: string;
+  model: string;
+  url: string;
+  headers: Record<string, string>;
+}
+
+async function resolveAudioProviderConfig(): Promise<AudioProviderConfig | null> {
+  const provider = await getLLMProviderForPurpose("trackdna");
+
+  if (provider === "openrouter") {
+    const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
+    if (!apiKey) return null;
+    const model =
+      (await getSetting("OPENROUTER_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.openrouter;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      },
+    };
+  }
+
+  if (provider === "openai") {
+    const apiKey = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
+    if (!apiKey) return null;
+    const model = (await getSetting("OPENAI_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.openai;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://api.openai.com/v1/chat/completions",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
+  }
+
+  if (provider === "edenai") {
+    const apiKey = (await getSetting("EDENAI_API_KEY")) || process.env.EDENAI_API_KEY || "";
+    if (!apiKey) return null;
+    const model = (await getSetting("EDENAI_TRACKDNA_MODEL")) || DEFAULT_AUDIO_MODEL.edenai;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: "https://api.edenai.run/v3/chat/completions",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
+  }
+
+  return null;
+}
 
 export async function scoreCompositionQuality(
   audioBuffer: Buffer,
@@ -436,9 +498,11 @@ export async function scoreCompositionQuality(
     return null;
   }
 
-  const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) {
-    warnComposition("[llm][composition] skipped: no OpenRouter API key configured");
+  const config = await resolveAudioProviderConfig();
+  if (!config) {
+    warnComposition(
+      `[llm][composition] skipped: no API key configured for the TRACKDNA_LLM_PROVIDER setting`
+    );
     return null;
   }
 
@@ -451,14 +515,14 @@ Rules:
 - Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
 
   logComposition(
-    `[llm][composition] calling ${COMPOSITION_AUDIO_MODEL} (format=${format}, audioBytes=${audioBuffer.length})`
+    `[llm][composition] calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`
   );
 
   try {
     const res = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
+      config.url,
       {
-        model: COMPOSITION_AUDIO_MODEL,
+        model: config.model,
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -471,10 +535,7 @@ Rules:
         ],
       },
       {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: config.headers,
         timeout: 60_000,
       }
     );
