@@ -65,6 +65,8 @@ const en = {
   },
   releases: {
     tagline: "Discography",
+    title: "Releases",
+    countLabel: "{count} releases",
     description: "Group tracks into singles, EPs, and albums — including remix singles or multi-track (A/B side) releases.",
     gridView: "Grid view",
     listView: "List view",

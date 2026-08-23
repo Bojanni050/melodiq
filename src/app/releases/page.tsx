@@ -249,7 +249,7 @@ export default function ReleasesPage() {
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
                 <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("releases.tagline")}</p>
-                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Releases</h1>
+                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{t("releases.title")}</h1>
                 <p className="max-w-2xl text-sm sm:text-base text-white/60">
                   {t("releases.description")}
                 </p>
@@ -260,7 +260,7 @@ export default function ReleasesPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                    {releases.length} releases
+                    {t("releases.countLabel", { count: releases.length })}
                   </div>
                   <div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/5 p-0.5">
                     <button
@@ -401,7 +401,7 @@ export default function ReleasesPage() {
                               )}
                               <span className="truncate">{release.title}</span>
                             </h3>
-                            <p className="text-sm text-white/75">{release.tracks.length} tracks{release.kind ? ` · ${release.kind}` : ""}</p>
+                            <p className="text-sm text-white/75">{release.tracks.length} {t("releases.tracks")}{release.kind ? ` · ${release.kind}` : ""}</p>
                           </div>
                         </div>
                       </button>

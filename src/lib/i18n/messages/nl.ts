@@ -68,6 +68,8 @@ const nl: typeof en = {
   },
   releases: {
     tagline: "Discografie",
+    title: "Releases",
+    countLabel: "{count} releases",
     description: "Groepeer tracks in singles, EP's en albums — inclusief remix-singles of releases met meerdere tracks (A/B-kant).",
     gridView: "Rasterweergave",
     listView: "Lijstweergave",
