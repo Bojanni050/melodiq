@@ -61,21 +61,24 @@ export async function analyzeAdvancedDna(
 
   const systemPrompt = `You are a professional music producer, songwriter, and critic.
 
-Listen to the audio and, together with the style/prompt and lyrics (if provided), perform a thorough analysis of the given song and provide up to 5 actionable tips for improvement.
+Listen closely to the audio and perform a thorough, in-depth analysis of the song, then give up to 5 actionable tips for improvement.
+
+Where to draw each judgment from — this matters:
+- Base compositionAnalysis primarily on what you actually HEAR: arrangement, structure (intro/verse/chorus/bridge flow), dynamics and build across sections, instrumentation, mix balance, vocal performance and delivery, production quality. Describe it as if you were listening blind.
+- Base lyricsAnalysis primarily on the LYRICS TEXT itself (if provided): rhyme scheme, imagery, structure, narrative/emotional throughline, word choice, how well the lyrics match the vocal delivery you hear.
+- The style/prompt is background context ONLY — it's the user's own generation instruction, not something to judge the song against or lean on for analysis. Use it at most to understand intended genre/mood; never cite it as evidence for a critique point. If your analysis would just be restating the prompt, that's a sign you're not listening/reading closely enough — dig into specifics only the audio or lyrics reveal.
 
 Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
-- Format exactly: {"summary": "max 2 short sentences describing the song", "lyricsAnalysis": "short paragraph on lyrics quality", "compositionAnalysis": "short paragraph on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"]}
+- Format exactly: {"summary": "max 2 short sentences describing the song", "lyricsAnalysis": "a thorough paragraph (4-6 sentences) on lyrics quality", "compositionAnalysis": "a thorough paragraph (4-6 sentences) on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"]}
 - summary: max 2 concise sentences capturing tempo/mood/genre feel and the song's subject or theme, e.g. "Midtempo ballad about losing your youth, built around warm acoustic guitar and soft strings." Ground the instrumentation part in what you actually hear.
-- Each tip: 1-2 sentences, specific and actionable.
+- Each tip: 1-2 sentences, specific and actionable, and grounded in something specific you heard or read — not generic songwriting advice.
 - Maximum 5 tips (fewer OK if not applicable).
 - If lyrics are not available, set lyricsAnalysis to null.
 - Be honest and critical — the goal is improvement.`;
 
-  let userText = `Song style/prompt: ${prompt || "Not provided"}`;
-  if (hasLyrics) {
-    userText += `\n\nLyrics:\n${lyrics!.slice(0, 4000)}`;
-  }
+  let userText = hasLyrics ? `Lyrics:\n${lyrics!.slice(0, 4000)}` : "Lyrics: none (instrumental or not provided)";
+  userText += `\n\nStyle/prompt (background context only, not the basis for your analysis): ${prompt || "Not provided"}`;
 
   try {
     const audioBuffer = await downloadFromS3(audioS3Key);
