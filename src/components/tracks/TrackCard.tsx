@@ -953,6 +953,8 @@ const TrackCard = memo(function TrackCard({
                             analyzingComposition={analyzingComposition}
                             onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
                             advancedDnaRunning={advancedDnaRunning}
+                            onAnalyzeAudioClick={handleReanalyzeAudio}
+                            analyzingAudio={reanalyzingAudio}
               onRetryWavClick={
                 (track.provider === "poyo" || track.provider === "apimart") && !track.s3KeyHd
                   ? handleRetryWav
