@@ -967,9 +967,9 @@ const TrackCard = memo(function TrackCard({
               refreshKey={dnaRefreshKey}
               advancedDnaResult={advancedDnaResult}
               advancedDnaRunning={advancedDnaRunning}
-              onRunAdvancedDna={handleAdvancedDna}
+              onRunAdvancedDna={isListenerRole ? undefined : handleAdvancedDna}
               trackStatus={track.status}
-              onReanalyzeAudio={handleReanalyzeAudio}
+              onReanalyzeAudio={isListenerRole ? undefined : handleReanalyzeAudio}
               reanalyzingAudio={reanalyzingAudio}
             />
           )}

@@ -132,7 +132,9 @@ export default function TrackDnaPanel({
       <TrackDnaCard onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-white/40">
-            No Track DNA yet — analyze this track to see tempo, key, and atmosphere.
+            {onReanalyzeAudio
+              ? "No Track DNA yet — analyze this track to see tempo, key, and atmosphere."
+              : "No Track DNA yet."}
           </p>
           {trackStatus === "done" && onReanalyzeAudio && (
             <button
