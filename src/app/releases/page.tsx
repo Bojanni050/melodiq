@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, useReleaseStore, useUserStore } from "@/lib/store";
+import TrackCard from "@/components/tracks/TrackCard";
+import TrackDetail from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
+import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
+import { formatTotalDuration } from "@/lib/track-utils";
+import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import type { TrackItem } from "@/components/tracks/types";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
   { value: "single", label: "Single" },
   { value: "ep", label: "EP" },
   { value: "album", label: "Album" },
 ];
+
+type ViewMode = "grid" | "list";
 
 export default function ReleasesPage() {
   const router = useRouter();
@@ -30,12 +38,137 @@ export default function ReleasesPage() {
   const [editArtistAlias, setEditArtistAlias] = useState("");
   const [editCredits, setEditCredits] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
 
   const createRelease = useReleaseStore((state) => state.createRelease);
+  const currentTrack = usePlayerStore((s) => s.currentTrack);
+  const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
+  const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
 
   useEffect(() => {
     void loadReleases().finally(() => setLoading(false));
   }, [loadReleases]);
+
+  useEffect(() => {
+    void loadPlaylists();
+  }, [loadPlaylists]);
+
+  // Only needed for the list view (full track cards) — fetched lazily so
+  // switching to list never blocks the default grid view on it.
+  useEffect(() => {
+    if (viewMode !== "list" || tracksById.size > 0) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/tracks?status=done");
+        if (!active || !res.ok) return;
+        const data = await res.json();
+        const list: TrackItem[] = Array.isArray(data) ? data : data.tracks ?? [];
+        setTracksById(new Map(list.map((t) => [t.id, t])));
+      } catch (error) {
+        console.error("Failed to load tracks for release list view:", error);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [viewMode, tracksById.size]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--right-panel-width", `${rightPanelWidth}px`);
+  }, [rightPanelWidth]);
+
+  const trackItemsByRelease = useMemo(() => {
+    const map = new Map<string, TrackItem[]>();
+    releases.forEach((release) => {
+      const items = [...release.tracks]
+        .sort((a, b) => a.position - b.position)
+        .map((rt) => tracksById.get(rt.trackId))
+        .filter((t): t is TrackItem => !!t);
+      map.set(release.id, items);
+    });
+    return map;
+  }, [releases, tracksById]);
+
+  const allTracks = useMemo(
+    () => Array.from(trackItemsByRelease.values()).flat(),
+    [trackItemsByRelease]
+  );
+
+  const releaseIdByTrackId = useMemo(() => {
+    const map = new Map<string, string>();
+    trackItemsByRelease.forEach((items, releaseId) => {
+      items.forEach((item) => map.set(item.id, releaseId));
+    });
+    return map;
+  }, [trackItemsByRelease]);
+
+  const {
+    selectedTrack,
+    showTrackDetailsPanel,
+    openTrackDetails,
+    closeTrackDetails,
+  } = useTrackDetailsPanel<TrackItem>(allTracks);
+
+  function toPlayContextTrack(t: TrackItem, audioUrlOverride?: string | null) {
+    return {
+      id: t.id,
+      title: t.title,
+      provider: t.provider,
+      providerModel: t.providerModel,
+      prompt: t.prompt,
+      status: t.status,
+      audioUrl: audioUrlOverride !== undefined ? audioUrlOverride : t.audioUrl,
+      audioUrlHd: t.audioUrlHd,
+      format: t.format,
+      formatHd: t.formatHd,
+      s3Key: null,
+      s3KeyHd: t.s3KeyHd,
+      duration: t.duration,
+      lyrics: t.lyrics,
+      lyricsTimestamps: t.lyricsTimestamps,
+      createdAt: t.createdAt,
+      error: t.error,
+      coverUrl: t.coverUrl ?? null,
+      s3KeyCover: t.s3KeyCover ?? null,
+      rating: t.rating ?? null,
+      artistName: t.artistName ?? null,
+    };
+  }
+
+  function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
+    const player = usePlayerStore.getState();
+    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
+
+    player.setPlayContext(playContext);
+    if (player.autoPlayNext) {
+      const index = playContext.findIndex((t) => t.id === track.id);
+      if (index >= 0) {
+        player.setQueue(playContext.slice(index + 1));
+      }
+    }
+
+    player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
+  }
+
+  function handlePlayFromDetailsPanel(url: string) {
+    if (!selectedTrack) return;
+    const releaseId = releaseIdByTrackId.get(selectedTrack.id);
+    const releaseTrackItems = (releaseId && trackItemsByRelease.get(releaseId)) || [selectedTrack];
+    playReleaseTrack(releaseTrackItems, selectedTrack, url || null);
+  }
+
+  function handleDownloadFromDetailsPanel(url: string, hd: boolean) {
+    const a = document.createElement("a");
+    a.href = url;
+    const fmt = hd
+      ? selectedTrack?.formatHd ?? selectedTrack?.format ?? "mp3"
+      : selectedTrack?.format ?? "mp3";
+    a.download = `${selectedTrack?.title || "track"}${hd ? "_hd" : ""}.${fmt}`;
+    a.click();
+  }
 
   async function handleCreateRelease() {
     if (!newTitle.trim() || creating) return;
@@ -82,8 +215,11 @@ export default function ReleasesPage() {
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))]" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <main className="h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
+      <div
+        className="h-[calc(100vh-var(--player-height))] flex"
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+      >
+        <main className="relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
           <div className="max-w-400 mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
@@ -97,8 +233,41 @@ export default function ReleasesPage() {
 
             <section className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
-                  {releases.length} releases
+                <div className="flex items-center gap-2">
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                    {releases.length} releases
+                  </div>
+                  <div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/5 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      aria-label="Grid view"
+                      title="Grid view"
+                      className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                        viewMode === "grid" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" strokeWidth={1.6} />
+                        <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" strokeWidth={1.6} />
+                        <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" strokeWidth={1.6} />
+                        <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" strokeWidth={1.6} />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      aria-label="List view"
+                      title="List view"
+                      className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                        viewMode === "list" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"
+                      }`}
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 {showCreate ? (
                   <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
@@ -149,7 +318,7 @@ export default function ReleasesPage() {
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
                   No releases yet. Create one above, or add a track to a release from track actions.
                 </div>
-              ) : (
+              ) : viewMode === "grid" ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {releases.map((release) => (
                     <article
@@ -208,10 +377,158 @@ export default function ReleasesPage() {
                     </article>
                   ))}
                 </div>
+              ) : (
+                <div className="space-y-8">
+                  {releases.map((release) => {
+                    const releaseTrackItems = trackItemsByRelease.get(release.id) ?? [];
+                    const totalDuration = formatTotalDuration(
+                      releaseTrackItems.reduce((s, t) => s + (t.duration ?? 0), 0)
+                    );
+
+                    return (
+                      <section
+                        key={release.id}
+                        className="rounded-3xl border border-white/8 bg-white/[0.02] p-4 sm:p-6 space-y-5"
+                      >
+                        {/* Hero — cover art left, meta to the right */}
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
+                          <button
+                            type="button"
+                            onClick={() => openRelease(release.id)}
+                            className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-36 sm:w-36"
+                          >
+                            {release.coverUrl ? (
+                              <img src={release.coverUrl} alt={release.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
+                                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openRelease(release.id)}
+                              className="block truncate text-left text-xl font-bold tracking-tight text-white hover:underline sm:text-2xl"
+                            >
+                              {release.title}
+                            </button>
+                            <p className="text-sm text-white/60">
+                              <span className="capitalize">{release.type}</span>
+                              {release.kind && (
+                                <>
+                                  <span className="mx-1.5 text-white/25">·</span>
+                                  {release.kind}
+                                </>
+                              )}
+                              <span className="mx-1.5 text-white/25">·</span>
+                              {releaseTrackItems.length} {releaseTrackItems.length === 1 ? "track" : "tracks"}
+                              {totalDuration ? `, ${totalDuration}` : ""}
+                              {!release.isPublic && (
+                                <>
+                                  <span className="mx-1.5 text-white/25">·</span>
+                                  <span className="text-white/40">Unpublished</span>
+                                </>
+                              )}
+                            </p>
+                            <div className="flex items-center gap-3 pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => openEditRelease(release)}
+                                className="text-sm text-white/45 transition-colors hover:text-white"
+                              >
+                                Edit release
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPendingDelete({ id: release.id, title: release.title })}
+                                className="text-sm text-white/45 transition-colors hover:text-red-300"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+
+                          {releaseTrackItems.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => playReleaseTrack(releaseTrackItems, releaseTrackItems[0])}
+                              className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95 sm:self-end"
+                              aria-label={`Play ${release.title}`}
+                              title={`Play ${release.title}`}
+                            >
+                              <svg className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Tracks */}
+                        {releaseTrackItems.length > 0 ? (
+                          <div className="space-y-1">
+                            {releaseTrackItems.map((track) => (
+                              <TrackCard
+                                key={track.id}
+                                track={track}
+                                onPlay={(t) => playReleaseTrack(releaseTrackItems, t)}
+                                onSelect={(t) =>
+                                  openTrackDetails({
+                                    ...t,
+                                    coverUrl: t.coverUrl ?? null,
+                                    s3KeyCover: t.s3KeyCover ?? null,
+                                    rating: t.rating ?? null,
+                                  })
+                                }
+                                onAddToPlaylist={(trackId, targetPlaylistId, options) =>
+                                  addTrackToPlaylist(targetPlaylistId, trackId, options)
+                                }
+                                playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
+                                isDetailSelected={selectedTrack?.id === track.id}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="px-1 text-sm text-white/40">
+                            {tracksById.size === 0 ? "Loading tracks…" : "This release has no tracks yet."}
+                          </p>
+                        )}
+                      </section>
+                    );
+                  })}
+                </div>
               )}
             </section>
           </div>
         </main>
+
+        {viewMode === "list" && (
+          <ResizablePanel
+            show={showTrackDetailsPanel}
+            width={rightPanelWidth}
+            setWidth={setRightPanelWidth}
+          >
+            <div className="h-full overflow-y-auto pb-4">
+              {selectedTrack ? (
+                <TrackDetail
+                  mode="sidebar"
+                  track={selectedTrack}
+                  onClose={closeTrackDetails}
+                  onPlay={handlePlayFromDetailsPanel}
+                  onDownload={handleDownloadFromDetailsPanel}
+                />
+              ) : (
+                <div className="h-full px-5 py-6 text-white/45">
+                  <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                  <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+                </div>
+              )}
+            </div>
+          </ResizablePanel>
+        )}
       </div>
 
       {editingReleaseId && (() => {
