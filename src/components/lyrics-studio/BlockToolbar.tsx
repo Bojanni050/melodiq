@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
 import type { BlockType } from "@/lib/lyrics-utils";
 
 export default function BlockToolbar({
@@ -21,27 +22,28 @@ export default function BlockToolbar({
   combinedLyrics: string;
   copied: boolean;
 }) {
+  const t = useT();
   return (
     <section className="section-card">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/80">Add Block</h3>
+        <h3 className="text-sm font-semibold text-white/80">{t("lyricsStudio.addBlockHeading")}</h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onCopyAll}
             disabled={!combinedLyrics}
             className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-            title="Combine + copy lyrics"
+            title={t("lyricsStudio.combineTooltip")}
           >
-            {copied ? "Copied!" : "Combine"}
+            {copied ? t("lyricsStudio.copiedButton") : t("lyricsStudio.combineButton")}
           </button>
           <button
             type="button"
             onClick={onClearAll}
             className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
-            title="Clear all lyric studio data"
+            title={t("lyricsStudio.clearTooltip")}
           >
-            Clear
+            {t("lyricsStudio.clearButton")}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useT } from "@/hooks/useT";
 import { formatPrice, truncateDescription, type LLMModel } from "@/lib/settings-utils";
 import { estimateSongGenerationCost } from "@/lib/lyrics-utils";
 
@@ -9,12 +10,13 @@ function matchesQuery(model: LLMModel, query: string): boolean {
   return model.id.toLowerCase().includes(q) || model.name.toLowerCase().includes(q);
 }
 
-function formatEstimatedCost(cost: number): string {
-  if (cost <= 0) return "Gratis";
+function formatEstimatedCost(cost: number, freeLabel: string): string {
+  if (cost <= 0) return freeLabel;
   return `$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(2)}`;
 }
 
 function ModelRow({ model, selected, blockCount, onSelect }: { model: LLMModel; selected: boolean; blockCount: number; onSelect: () => void }) {
+  const t = useT();
   const description = truncateDescription(model.description, 2);
   return (
     <button
@@ -24,15 +26,15 @@ function ModelRow({ model, selected, blockCount, onSelect }: { model: LLMModel; 
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-white truncate">{model.name}</p>
-        {selected && <span className="shrink-0 text-[11px] font-medium text-primary-300">Geselecteerd</span>}
+        {selected && <span className="shrink-0 text-[11px] font-medium text-primary-300">{t("lyricsStudio.selectedLabel")}</span>}
       </div>
       <p className="text-[11px] text-white/40 font-mono truncate">{model.id}</p>
       <p className="text-[11px] text-white/50 mt-0.5">
-        In: {formatPrice(model.pricing.prompt)} · Out: {formatPrice(model.pricing.completion)}
+        {t("lyricsStudio.priceInOut", { inPrice: formatPrice(model.pricing.prompt), outPrice: formatPrice(model.pricing.completion) })}
       </p>
       {blockCount > 0 && (
         <p className="text-[11px] text-white/50">
-          Geschat voor volledig lied (~{blockCount} secties): ~{formatEstimatedCost(estimateSongGenerationCost(model.pricing, blockCount))}
+          {t("lyricsStudio.estimatedFullSongCost", { count: blockCount, cost: formatEstimatedCost(estimateSongGenerationCost(model.pricing, blockCount), t("lyricsStudio.freeLabel")) })}
         </p>
       )}
       {description.text && <p className="text-[11px] text-white/35 mt-0.5 leading-snug">{description.text}</p>}
@@ -61,6 +63,7 @@ export default function LyricStudioModelPicker({
   onLoad: () => void;
   blockCount: number;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,17 +96,17 @@ export default function LyricStudioModelPicker({
     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <label className="text-sm text-white/85">
-          LLM model{selected ? ` — ${selected.name}` : ""}
+          {t("lyricsStudio.llmModelLabel")}{selected ? ` — ${selected.name}` : ""}
         </label>
         {(loaded || error) && (
           <button
             type="button"
             onClick={onLoad}
             disabled={loading}
-            title="Modellen opnieuw laden"
+            title={t("lyricsStudio.reloadModelsTooltip")}
             className="text-xs text-white/40 transition hover:text-white/70 disabled:opacity-40"
           >
-            {loading ? "Laden..." : "Vernieuwen"}
+            {loading ? t("lyricsStudio.loadingEllipsis") : t("lyricsStudio.refresh")}
           </button>
         )}
       </div>
@@ -115,7 +118,7 @@ export default function LyricStudioModelPicker({
           disabled={loading}
           className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Modellen laden..." : "Modellen ophalen"}
+          {loading ? t("lyricsStudio.loadingModels") : t("lyricsStudio.fetchModels")}
         </button>
       ) : (
         <div ref={containerRef} className="relative">
@@ -126,8 +129,8 @@ export default function LyricStudioModelPicker({
           >
             <span className="truncate">
               {selected
-                ? `${selected.name} — In: ${formatPrice(selected.pricing.prompt)} · Out: ${formatPrice(selected.pricing.completion)}`
-                : "Standaard (uit Instellingen)"}
+                ? `${selected.name} — ${t("lyricsStudio.priceInOut", { inPrice: formatPrice(selected.pricing.prompt), outPrice: formatPrice(selected.pricing.completion) })}`
+                : t("lyricsStudio.defaultFromSettings")}
             </span>
             <svg className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -136,7 +139,7 @@ export default function LyricStudioModelPicker({
 
           {estimatedCost !== null && (
             <p className="mt-1.5 text-xs text-white/50">
-              Geschat voor volledig lied (~{blockCount} secties): <span className="text-white/70">~{formatEstimatedCost(estimatedCost)}</span>
+              {t("lyricsStudio.estimatedFullSongCost", { count: blockCount, cost: formatEstimatedCost(estimatedCost, t("lyricsStudio.freeLabel")) })}
             </p>
           )}
 
@@ -144,7 +147,7 @@ export default function LyricStudioModelPicker({
             <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-[#1a1a24] p-2 shadow-xl">
               <input
                 type="text"
-                placeholder="Zoek modellen..."
+                placeholder={t("lyricsStudio.searchModelsPlaceholder")}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
@@ -155,13 +158,13 @@ export default function LyricStudioModelPicker({
                   onClick={() => select("")}
                   className={`w-full px-3 py-2 text-left border-b border-white/5 transition-colors ${!value ? "bg-primary-500/10" : "hover:bg-white/5"}`}
                 >
-                  <p className="text-sm text-white">Standaard (uit Instellingen)</p>
-                  <p className="text-[11px] text-white/40">Gebruikt het model dat in Instellingen is ingesteld</p>
+                  <p className="text-sm text-white">{t("lyricsStudio.defaultFromSettings")}</p>
+                  <p className="text-[11px] text-white/40">{t("lyricsStudio.usesSettingsModelHint")}</p>
                 </button>
 
                 {filteredRecommended.length > 0 && (
                   <>
-                    <div className="bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/30">Aanbevolen</div>
+                    <div className="bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/30">{t("lyricsStudio.recommended")}</div>
                     {filteredRecommended.map((model) => (
                       <ModelRow key={model.id} model={model} selected={model.id === value} blockCount={blockCount} onSelect={() => select(model.id)} />
                     ))}
@@ -170,7 +173,7 @@ export default function LyricStudioModelPicker({
 
                 {filteredOthers.length > 0 && (
                   <>
-                    <div className="bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/30">Overige (A-Z)</div>
+                    <div className="bg-white/5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/30">{t("lyricsStudio.otherModelsAZ")}</div>
                     {filteredOthers.map((model) => (
                       <ModelRow key={model.id} model={model} selected={model.id === value} blockCount={blockCount} onSelect={() => select(model.id)} />
                     ))}
@@ -178,7 +181,7 @@ export default function LyricStudioModelPicker({
                 )}
 
                 {filteredRecommended.length === 0 && filteredOthers.length === 0 && (
-                  <p className="px-3 py-2 text-sm text-white/40">Geen modellen gevonden</p>
+                  <p className="px-3 py-2 text-sm text-white/40">{t("lyricsStudio.noModelsFound")}</p>
                 )}
               </div>
             </div>
@@ -190,8 +193,8 @@ export default function LyricStudioModelPicker({
         {error
           ? error
           : value
-            ? "Overschrijft alleen dit Lyric Studio-project. Instellingen blijft de standaard — ook na Clear All."
-            : "Standaard: gebruikt het model dat in Instellingen is ingesteld."}
+            ? t("lyricsStudio.overridesProjectOnlyHint")
+            : t("lyricsStudio.defaultUsesSettingsModelHint")}
       </p>
     </div>
   );

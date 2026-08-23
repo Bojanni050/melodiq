@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useT } from "@/hooks/useT";
 import BlockToolbar from "@/components/lyrics-studio/BlockToolbar";
 import PresetSelector from "@/components/lyrics-studio/PresetSelector";
 import LyricStudioModelPicker from "@/components/lyrics-studio/LyricStudioModelPicker";
@@ -141,6 +142,7 @@ export default function LyricsControlPanel({
   onSaveCurrentStructure,
   onDeleteCustomPreset,
 }: LyricsControlPanelProps) {
+  const t = useT();
   const [displayedMoods, setDisplayedMoods] = useState<string[]>([]);
   const [displayedStyles, setDisplayedStyles] = useState<string[]>([]);
   const [isShufflingMoods, setIsShufflingMoods] = useState(false);
@@ -158,7 +160,7 @@ export default function LyricsControlPanel({
     ? modelOptions
       ? [...modelOptions.recommended, ...modelOptions.others].find((m) => m.id === llmModel)?.name || llmModel.split("/").pop() || llmModel
       : llmModel.split("/").pop() || llmModel
-    : modelOptions?.defaultModel?.name || "Standaard (uit Instellingen)";
+    : modelOptions?.defaultModel?.name || t("lyricsStudio.defaultFromSettings");
 
   function loadModelOptions() {
     if (modelsLoading) return;
@@ -168,13 +170,13 @@ export default function LyricsControlPanel({
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setModelsError(data?.error || "Kon modellen niet laden.");
+          setModelsError(data?.error || t("lyricsStudio.modelsLoadFailed"));
           return;
         }
         setModelOptions({ recommended: data.recommended ?? [], others: data.others ?? [], defaultModel: data.defaultModel ?? null });
       })
       .catch(() => {
-        setModelsError("Kon modellen niet laden.");
+        setModelsError(t("lyricsStudio.modelsLoadFailed"));
       })
       .finally(() => {
         setModelsLoading(false);
@@ -226,8 +228,8 @@ export default function LyricsControlPanel({
     <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
       <section className="section-card">
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-white/80">Song Metadata</h3>
-          <p className="mt-1 text-sm text-white/35">Used as context for each generated block.</p>
+          <h3 className="text-sm font-semibold text-white/80">{t("lyricsStudio.songMetadataHeading")}</h3>
+          <p className="mt-1 text-sm text-white/35">{t("lyricsStudio.songMetadataHint")}</p>
         </div>
 
         <div className="space-y-3">
@@ -235,7 +237,7 @@ export default function LyricsControlPanel({
             <textarea
               value={topic}
               onChange={(event) => onTopicChange(event.target.value)}
-              placeholder="Where is the song about?"
+              placeholder={t("lyricsStudio.topicPlaceholder")}
               rows={2}
               className="input-field text-sm min-h-[56px] resize-y py-2"
             />
@@ -246,14 +248,14 @@ export default function LyricsControlPanel({
               type="text"
               value={mood}
               onChange={(event) => onMoodChange(event.target.value)}
-              placeholder="Vibe / mood / atmosphere"
+              placeholder={t("lyricsStudio.moodPlaceholder")}
               className="input-field text-sm"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={shuffleMoods}
-                title="Ververs suggesties"
+                title={t("lyricsStudio.refreshSuggestionsTooltip")}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
               >
                 <svg className={`h-3.5 w-3.5 ${isShufflingMoods ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +288,7 @@ export default function LyricsControlPanel({
             <select
               value={selectedLanguage}
               onChange={(event) => onLanguageChange(event.target.value)}
-              aria-label="Language"
+              aria-label={t("lyricsStudio.languageAriaLabel")}
               className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none"
             >
               {LANGUAGES.map((lang) => (
@@ -305,7 +307,7 @@ export default function LyricsControlPanel({
               type="text"
               value={customLanguage}
               onChange={(event) => onCustomLanguageChange(event.target.value)}
-              placeholder="Custom language"
+              placeholder={t("lyricsStudio.customLanguagePlaceholder")}
               className="input-field text-sm"
             />
           )}
@@ -315,14 +317,14 @@ export default function LyricsControlPanel({
               type="text"
               value={style}
               onChange={(event) => onStyleChange(event.target.value)}
-              placeholder="Genre / style hints (optional)"
+              placeholder={t("lyricsStudio.stylePlaceholder")}
               className="input-field text-sm"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={shuffleStyles}
-                title="Ververs suggesties"
+                title={t("lyricsStudio.refreshSuggestionsTooltip")}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/50 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
               >
                 <svg className={`h-3.5 w-3.5 ${isShufflingStyles ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,14 +359,14 @@ export default function LyricsControlPanel({
               <select
                 value={vocalistTag}
                 onChange={(event) => onVocalistTagChange(event.target.value as "auto" | "male" | "female" | "together" | "duet")}
-                aria-label="Vocalist tag"
+                aria-label={t("lyricsStudio.vocalistTagAriaLabel")}
                 className="select-field w-full appearance-none border-0 bg-[#12121a] pr-10 text-sm shadow-none"
               >
-                <option value="auto" className="bg-gray-900">Vocal tag: auto</option>
+                <option value="auto" className="bg-gray-900">{t("lyricsStudio.vocalTagAuto")}</option>
                 <option value="male" className="bg-gray-900">[male]</option>
                 <option value="female" className="bg-gray-900">[female]</option>
                 <option value="together" className="bg-gray-900">[together]</option>
-                <option value="duet" className="bg-gray-900">Duet (auto m/f)</option>
+                <option value="duet" className="bg-gray-900">{t("lyricsStudio.vocalTagDuet")}</option>
               </select>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
                 v
@@ -375,8 +377,8 @@ export default function LyricsControlPanel({
               value={performerDirections}
               onChange={(event) => onPerformerDirectionsChange(event.target.value)}
               placeholder={vocalistTag === "duet"
-                ? "Describe how the duet is divided, e.g. 'verses solo, last line together, chorus mostly together with alternating lines'"
-                : "Vocal/musical direction (optional) — e.g. 'restrained, solo violin' — goes inside the tag"}
+                ? t("lyricsStudio.duetDirectionsPlaceholder")
+                : t("lyricsStudio.vocalDirectionPlaceholder")}
               className="input-field text-sm"
             />
           </div>
@@ -386,17 +388,17 @@ export default function LyricsControlPanel({
               type="text"
               value={titleValue}
               onChange={(event) => onTitleChange(event.target.value)}
-              placeholder="Song title"
+              placeholder={t("lyricsStudio.songTitlePlaceholder")}
               className="input-field text-sm"
             />
             <button
               type="button"
               onClick={onGenerateTitle}
               disabled={generatingTitle || !canGenerateTitle}
-              title={canGenerateTitle ? "Generate title from current lyrics" : "Add more lyrics first"}
+              title={canGenerateTitle ? t("lyricsStudio.generateTitleTooltip") : t("lyricsStudio.addMoreLyricsFirstTooltip")}
               className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {generatingTitle ? "Generating..." : "Generate title"}
+              {generatingTitle ? t("studio.generating") : t("lyricsStudio.generateTitleButton")}
             </button>
           </div>
         </div>
@@ -404,13 +406,13 @@ export default function LyricsControlPanel({
 
       <section className="section-card">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white/80">Song Structure</h3>
+          <h3 className="text-sm font-semibold text-white/80">{t("lyricsStudio.songStructureHeading")}</h3>
           {structure && (
             <button
               type="button"
               onClick={onActivePresetClear}
               className="text-white/30 transition-colors hover:text-white/60"
-              title="Clear"
+              title={t("lyricsStudio.clearStructureTooltip")}
             >
               x
             </button>
@@ -425,12 +427,12 @@ export default function LyricsControlPanel({
           >
             <span className={structure ? "text-white" : "text-white/40"}>
               {structure === "ai-choose"
-                ? "Kies jij maar"
+                ? t("lyricsStudio.aiChooseLabel")
                 : structure === "manual"
-                  ? "Handmatig"
+                  ? t("lyricsStudio.manualLabel")
                   : structure
-                    ? STRUCTURES.find((item) => item.value === structure)?.label || "Select..."
-                    : "Select song structure..."}
+                    ? STRUCTURES.find((item) => item.value === structure)?.label || t("lyricsStudio.selectEllipsis")
+                    : t("lyricsStudio.selectStructurePlaceholder")}
             </span>
             <span className={showStructureDropdown ? "rotate-180 transition-transform" : "transition-transform"}>
               v
@@ -476,7 +478,7 @@ export default function LyricsControlPanel({
           <textarea
             value={customStructure}
             onChange={(event) => onCustomStructureChange(event.target.value)}
-            placeholder="Describe your custom song structure..."
+            placeholder={t("lyricsStudio.customStructurePlaceholder")}
             className="input-field mt-3 min-h-[80px] resize-y text-sm"
           />
         )}
@@ -507,16 +509,16 @@ export default function LyricsControlPanel({
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Huidige structuur opslaan
+              {t("lyricsStudio.saveCurrentStructureButton")}
             </button>
           ) : (
             <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">Nieuwe structuur opslaan</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">{t("lyricsStudio.saveNewStructureHeading")}</p>
               <input
                 type="text"
                 value={newPresetName}
                 onChange={(e) => setNewPresetName(e.target.value)}
-                placeholder="Bijv. Pop Met Dubbel Refrein"
+                placeholder={t("lyricsStudio.presetNamePlaceholderExample")}
                 className="input-field text-sm py-1.5"
                 autoFocus
               />
@@ -526,7 +528,7 @@ export default function LyricsControlPanel({
                   onClick={() => setIsSavingPreset(false)}
                   className="rounded px-2.5 py-1 text-sm font-medium text-white/60 hover:text-white transition"
                 >
-                  Annuleren
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="button"
@@ -540,7 +542,7 @@ export default function LyricsControlPanel({
                   disabled={!newPresetName.trim()}
                   className="rounded bg-primary-500 px-3 py-1 text-sm font-semibold text-white hover:bg-primary-400 disabled:opacity-45 disabled:cursor-not-allowed transition"
                 >
-                  Opslaan
+                  {t("common.save")}
                 </button>
               </div>
             </div>
@@ -549,7 +551,7 @@ export default function LyricsControlPanel({
 
         <div className="border-t border-white/5 mt-4 pt-3">
           <div className="mb-2 flex items-center justify-between gap-2 text-sm">
-            <span className="shrink-0 text-white/85">Lyrics generator</span>
+            <span className="shrink-0 text-white/85">{t("lyricsStudio.lyricsGeneratorLabel")}</span>
             <span className="truncate text-right font-mono text-white/70">{selectedModelName}</span>
           </div>
 
@@ -558,7 +560,7 @@ export default function LyricsControlPanel({
             onClick={() => setShowAdvanced(!showAdvanced)}
             className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-white/35 transition hover:text-white/60 py-1"
           >
-            <span>Geavanceerde instellingen</span>
+            <span>{t("lyricsStudio.advancedSettings")}</span>
             <span className={`transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}>
               ▼
             </span>
@@ -574,11 +576,11 @@ export default function LyricsControlPanel({
                   className="mt-0.5"
                 />
                 <span>
-                  Repetitive chorus
+                  {t("lyricsStudio.repetitiveChorusLabel")}
                   <span className="block text-xs text-white/45">
                     {repetitiveChorus
-                      ? "AI writes one chorus and repeats it throughout the song."
-                      : "AI writes chorus variations throughout the song."}
+                      ? t("lyricsStudio.repetitiveChorusOnHint")
+                      : t("lyricsStudio.repetitiveChorusOffHint")}
                   </span>
                 </span>
               </label>
@@ -597,7 +599,7 @@ export default function LyricsControlPanel({
 
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
                 <div className="flex items-center justify-between text-sm text-white/85">
-                  <span>Creativity</span>
+                  <span>{t("lyricsStudio.creativityLabel")}</span>
                   <span>{creativityLevel}/10</span>
                 </div>
                 <input
@@ -611,13 +613,13 @@ export default function LyricsControlPanel({
                   className="mt-2 w-full accent-primary-500"
                 />
                 <p className="mt-1 text-xs text-white/50">
-                  {creativityZone} • temp {temperature.toFixed(2)} • zones: 1-3 laag, 4-7 middel, 8-10 hoog
+                  {t("lyricsStudio.creativityZonesHint", { zone: creativityZone, temp: temperature.toFixed(2) })}
                 </p>
               </div>
 
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
                 <div className="flex items-center justify-between text-sm text-white/85">
-                  <span>Letterlijkheid</span>
+                  <span>{t("lyricsStudio.literalnessLabel")}</span>
                   <span>{literalnessLevel}/10</span>
                 </div>
                 <input
@@ -631,13 +633,13 @@ export default function LyricsControlPanel({
                   className="mt-2 w-full accent-primary-500"
                 />
                 <p className="mt-1 text-xs text-white/50">
-                  {literalnessZone} • zones: 1-3 poëtisch/beeldspraak, 4-7 gebalanceerd, 8-10 letterlijk/direct
+                  {t("lyricsStudio.literalnessZonesHint", { zone: literalnessZone })}
                 </p>
               </div>
 
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
                 <div className="flex items-center justify-between text-sm text-white/85">
-                  <span>Context (Top-P)</span>
+                  <span>{t("lyricsStudio.contextLabel")}</span>
                   <span>{contextLevel}/10</span>
                 </div>
                 <input
@@ -651,7 +653,7 @@ export default function LyricsControlPanel({
                   className="mt-2 w-full accent-primary-500"
                 />
                 <p className="mt-1 text-xs text-white/50">
-                  {contextZone} • top-p {topP.toFixed(2)} • intern 0.1-1.0
+                  {t("lyricsStudio.contextZonesHint", { zone: contextZone, topP: topP.toFixed(2) })}
                 </p>
               </div>
             </div>
@@ -662,13 +664,13 @@ export default function LyricsControlPanel({
           type="button"
           onClick={onGenerateSong}
           disabled={!canGenerateBlocks || generatingSong}
-          title={canGenerateBlocks ? "Generate complete song lyrics" : "Add topic and mood first"}
+          title={canGenerateBlocks ? t("lyricsStudio.generateCompleteSongTooltip") : t("lyricsStudio.addTopicMoodFirstTooltip")}
           className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-45"
         >
           {generatingSong ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           ) : (
-            "Generate complete song"
+            t("lyricsStudio.generateCompleteSongButton")
           )}
         </button>
 
@@ -678,7 +680,7 @@ export default function LyricsControlPanel({
             onClick={onStopGenerating}
             className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
           >
-            Stop generating
+            {t("lyricsStudio.stopGeneratingButton")}
           </button>
         )}
       </section>

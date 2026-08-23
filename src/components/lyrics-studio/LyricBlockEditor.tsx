@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
 import { isEmptyLyricBlockType, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
 
 export default function LyricBlockEditor({
@@ -57,6 +58,7 @@ export default function LyricBlockEditor({
   onImproveBlock: (block: LyricBlock) => void;
   autoGrowTextarea: (element: HTMLTextAreaElement) => void;
 }) {
+  const t = useT();
   return (
     <>
       <div className="flex justify-end mb-2">
@@ -67,7 +69,7 @@ export default function LyricBlockEditor({
             checked={lyricCols === 1}
             onChange={() => setLyricCols(1)}
           />
-          1 kolom
+          {t("lyricsStudio.oneColumn")}
         </label>
         <label className="flex items-center gap-2 ml-4 text-xs text-white/50 select-none">
           <input
@@ -76,13 +78,13 @@ export default function LyricBlockEditor({
             checked={lyricCols === 2}
             onChange={() => setLyricCols(2)}
           />
-          2 kolommen
+          {t("lyricsStudio.twoColumns")}
         </label>
       </div>
 
       {blocks.length === 0 ? (
         <div className="flex min-h-[460px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
-          <p className="text-sm text-white/40">Add your first block to get started</p>
+          <p className="text-sm text-white/40">{t("lyricsStudio.emptyBlocksHint")}</p>
         </div>
       ) : (
         <div className={`grid gap-4 ${lyricCols === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
@@ -119,15 +121,15 @@ export default function LyricBlockEditor({
                     data-drag-handle
                     onMouseDown={() => onDragHandleMouseDown(block.id)}
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
-                    aria-label={`Drag ${block.label || blockLabels[block.type]} block`}
+                    aria-label={t("lyricsStudio.dragBlockAriaLabel", { label: block.label || blockLabels[block.type] })}
                     className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
-                    title="Drag to reorder"
+                    title={t("lyricsStudio.dragToReorder")}
                   >
                     <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />
                     </svg>
                   </button>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/25">Drag to reorder</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/25">{t("lyricsStudio.dragToReorder")}</div>
                   <span
                     className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
                     style={{ backgroundColor: blockColors[block.type] }}
@@ -139,7 +141,7 @@ export default function LyricBlockEditor({
                     value={block.label}
                     onChange={(event) => onUpdateBlock(block.id, { label: event.target.value })}
                     className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-primary-500/60"
-                    aria-label={`${blockLabels[block.type]} label`}
+                    aria-label={t("lyricsStudio.blockLabelAriaLabel", { label: blockLabels[block.type] })}
                   />
                   <div className="flex items-center gap-1">
                     <button
@@ -147,7 +149,7 @@ export default function LyricBlockEditor({
                       onClick={() => onMoveBlock(block.id, -1)}
                       disabled={index === 0}
                       className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                      title="Move up"
+                      title={t("lyricsStudio.moveUp")}
                     >
                       ↑
                     </button>
@@ -156,7 +158,7 @@ export default function LyricBlockEditor({
                       onClick={() => onMoveBlock(block.id, 1)}
                       disabled={index === blocks.length - 1}
                       className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                      title="Move down"
+                      title={t("lyricsStudio.moveDown")}
                     >
                       ↓
                     </button>
@@ -164,7 +166,7 @@ export default function LyricBlockEditor({
                       type="button"
                       onClick={() => onDuplicateBlock(block.id)}
                       className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white"
-                      title="Duplicate block"
+                      title={t("lyricsStudio.duplicateBlockTooltip")}
                     >
                       <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -174,7 +176,7 @@ export default function LyricBlockEditor({
                       type="button"
                       onClick={() => onDeleteBlock(block.id)}
                       className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-200"
-                      title="Delete block"
+                      title={t("lyricsStudio.deleteBlockTooltip")}
                     >
                       ×
                     </button>
@@ -188,7 +190,7 @@ export default function LyricBlockEditor({
                       checked={block.uniqueChorusOverride}
                       onChange={(event) => onUpdateBlock(block.id, { uniqueChorusOverride: event.target.checked })}
                     />
-                    Unique chorus override
+                    {t("lyricsStudio.uniqueChorusOverride")}
                   </label>
                 )}
 
@@ -199,7 +201,7 @@ export default function LyricBlockEditor({
                   onChange={(event) => {
                     if (!isEmptyLyricBlock) onUpdateBlock(block.id, { content: event.target.value });
                   }}
-                  placeholder={isEmptyLyricBlock ? "This section intentionally has no lyrics." : "Lyrics will appear here..."}
+                  placeholder={isEmptyLyricBlock ? t("lyricsStudio.markerBlockPlaceholder") : t("lyricsStudio.lyricsPlaceholder")}
                   rows={4}
                   className="min-h-[112px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
                   style={{ overflow: "auto" }}
@@ -213,17 +215,17 @@ export default function LyricBlockEditor({
                       disabled={isEmptyLyricBlock || block.generating || !canGenerateBlocks}
                       title={
                         isEmptyLyricBlock
-                          ? "This marker block has no lyrics"
+                          ? t("lyricsStudio.markerBlockTooltip")
                           : canGenerateBlocks
-                            ? "Generate block"
-                            : "Add topic and mood first"
+                            ? t("lyricsStudio.generateBlockTooltip")
+                            : t("lyricsStudio.addTopicMoodFirstTooltip")
                       }
                       className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
                     >
                       {block.generating ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       ) : (
-                        "✨ Generate"
+                        t("lyricsStudio.generateButton")
                       )}
                     </button>
                     <button
@@ -232,17 +234,17 @@ export default function LyricBlockEditor({
                       disabled={isEmptyLyricBlock || improvingBlockId === block.id || !block.content.trim()}
                       title={
                         isEmptyLyricBlock
-                          ? "This marker block has no lyrics"
+                          ? t("lyricsStudio.markerBlockTooltip")
                           : block.content.trim()
-                            ? "Improve this block with LyricIQ"
-                            : "Add lyrics to improve"
+                            ? t("lyricsStudio.improveTooltip")
+                            : t("lyricsStudio.addLyricsToImproveTooltip")
                       }
                       className="inline-flex items-center justify-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {improvingBlockId === block.id ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-200/30 border-t-amber-200" />
                       ) : (
-                        "✨ LyricIQ™"
+                        t("lyricsStudio.lyricIQButton")
                       )}
                     </button>
                     <button
@@ -251,10 +253,10 @@ export default function LyricBlockEditor({
                       disabled={isEmptyLyricBlock || translatingBlockId === block.id || !block.content.trim() || !effectiveTranslationLanguage.trim()}
                       title={
                         isEmptyLyricBlock
-                          ? "This marker block has no lyrics"
+                          ? t("lyricsStudio.markerBlockTooltip")
                           : block.content.trim()
-                            ? "Translate this block"
-                            : "Add content to translate"
+                            ? t("lyricsStudio.translateBlockTooltip")
+                            : t("lyricsStudio.addContentToTranslateTooltip")
                       }
                       className="inline-flex items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -265,10 +267,10 @@ export default function LyricBlockEditor({
                       )}
                     </button>
                   </div>
-                  <span className="text-xs text-white/35">{isEmptyLyricBlock ? "marker" : `${block.content.length} chars`}</span>
+                  <span className="text-xs text-white/35">{isEmptyLyricBlock ? t("lyricsStudio.markerLabel") : t("lyricsStudio.charsCount", { count: block.content.length })}</span>
                 </div>
                 {improvingBlockId === block.id && (
-                  <p className="mt-2 text-xs text-amber-200/80">✨ LyricIQ is improving your lyrics…</p>
+                  <p className="mt-2 text-xs text-amber-200/80">{t("lyricsStudio.lyricIQImprovingHint")}</p>
                 )}
                 {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
               </article>

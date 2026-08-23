@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
 import type { LyricBlock } from "@/lib/lyrics-utils";
 
 export default function TranslationReview({
@@ -19,16 +20,17 @@ export default function TranslationReview({
   onKeepBoth: (blockId: string, original: string, translated: string) => void;
   onDone: () => void;
 }) {
+  const t = useT();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-white/80">Translation Review</h3>
+        <h3 className="text-sm font-semibold text-white/80">{t("lyricsStudio.translationReviewHeading")}</h3>
         <button
           type="button"
           onClick={onDone}
           className="text-xs text-white/40 hover:text-white/70 transition-colors"
         >
-          {"<- Back to editor"}
+          {t("lyricsStudio.backToEditor")}
         </button>
       </div>
       {blocks.map((block) => {
@@ -40,7 +42,7 @@ export default function TranslationReview({
             <h4 className="text-xs font-semibold uppercase tracking-wider text-white/60 mb-3">{block.label}</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[11px] font-semibold text-white/40 mb-2">Original</p>
+                <p className="text-[11px] font-semibold text-white/40 mb-2">{t("lyricsStudio.originalLabel")}</p>
                 <p className="text-sm leading-6 text-white/90 whitespace-pre-wrap">{block.content}</p>
               </div>
               <div>
@@ -54,21 +56,21 @@ export default function TranslationReview({
                 onClick={() => onUseTranslation(block.id, translated)}
                 className="text-sm rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-green-200 hover:bg-green-500/20 transition-colors"
               >
-                ✓ Use translation
+                {t("lyricsStudio.useTranslationButton")}
               </button>
               <button
                 type="button"
                 onClick={() => onKeepOriginal(block.id)}
                 className="text-sm rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-blue-200 hover:bg-blue-500/20 transition-colors"
               >
-                ✓ Keep original
+                {t("lyricsStudio.keepOriginalButton")}
               </button>
               <button
                 type="button"
                 onClick={() => onKeepBoth(block.id, block.content, translated)}
                 className="text-sm rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-purple-200 hover:bg-purple-500/20 transition-colors"
               >
-                ✓ Keep both
+                {t("lyricsStudio.keepBothButton")}
               </button>
             </div>
           </div>
@@ -79,7 +81,7 @@ export default function TranslationReview({
         onClick={onDone}
         className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 hover:bg-white/10 transition-colors"
       >
-        Done reviewing translations
+        {t("lyricsStudio.doneReviewingButton")}
       </button>
     </div>
   );

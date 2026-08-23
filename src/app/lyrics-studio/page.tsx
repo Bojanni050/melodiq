@@ -34,8 +34,10 @@ import {
 import { useLyricBlockDrag } from "@/lib/hooks/useLyricBlockDrag";
 import { loadSnapshotIntoState, saveSnapshotsToStorage, useLyricsDraft } from "@/lib/hooks/useLyricsDraft";
 import { useStudioStore, useSidebarStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 export default function LyricsStudioPage() {
+  const t = useT();
   const router = useRouter();
   const draft = useLyricsDraft();
   const {
@@ -99,7 +101,7 @@ export default function LyricsStudioPage() {
       }
       if (payload.title) setTitle(payload.title);
       if (payload.style) setStyle(payload.style);
-      setNotice({ type: "success", message: "Lyrics geladen vanuit track. Je kunt nu per sectie bewerken." });
+      setNotice({ type: "success", message: t("lyricsStudio.noticeLoadedFromTrack") });
     } catch (error) {
       console.error("Failed to load track-edit payload", error);
     }
@@ -112,7 +114,7 @@ export default function LyricsStudioPage() {
 
   function handleSaveCurrentStructure(name: string) {
     if (blocks.length === 0) {
-      setNotice({ type: "error", message: "Voeg eerst blokken toe aan de songstructuur." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeAddBlocksFirst") });
       return;
     }
     const types = blocks.map((b) => b.type);
@@ -124,10 +126,10 @@ export default function LyricsStudioPage() {
     try {
       window.localStorage.setItem("melodiq-custom-presets", JSON.stringify(next));
       setActivePreset(name);
-      setNotice({ type: "success", message: `Structuur preset "${name}" is opgeslagen.` });
+      setNotice({ type: "success", message: t("lyricsStudio.noticePresetSaved", { name }) });
     } catch (error) {
       console.error("Failed to save custom preset", error);
-      setNotice({ type: "error", message: "Kon custom preset niet opslaan." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticePresetSaveFailed") });
     }
   }
 
@@ -137,7 +139,7 @@ export default function LyricsStudioPage() {
     setCustomPresets(next);
     try {
       window.localStorage.setItem("melodiq-custom-presets", JSON.stringify(next));
-      setNotice({ type: "info", message: `Structuur preset "${name}" is verwijderd.` });
+      setNotice({ type: "info", message: t("lyricsStudio.noticePresetDeleted", { name }) });
       if (activePreset === name) {
         setActivePreset("");
       }
@@ -185,9 +187,9 @@ export default function LyricsStudioPage() {
   const effectiveLanguage = isCustomLanguage ? customLanguage.trim() || "Other" : language;
   const temperature = Number((0.1 + ((creativityLevel - 1) / 9) * 1.1).toFixed(2));
   const topP = Number((0.1 + ((contextLevel - 1) / 9) * 0.9).toFixed(2));
-  const creativityZone = creativityLevel <= 3 ? "Laag" : creativityLevel <= 7 ? "Middel" : "Hoog";
-  const literalnessZone = literalnessLevel <= 3 ? "Poëtisch" : literalnessLevel <= 7 ? "Gebalanceerd" : "Letterlijk";
-  const contextZone = contextLevel <= 3 ? "Smal" : contextLevel <= 7 ? "Gebalanceerd" : "Breed";
+  const creativityZone = creativityLevel <= 3 ? t("lyricsStudio.zoneLow") : creativityLevel <= 7 ? t("lyricsStudio.zoneMid") : t("lyricsStudio.zoneHigh");
+  const literalnessZone = literalnessLevel <= 3 ? t("lyricsStudio.zonePoetic") : literalnessLevel <= 7 ? t("lyricsStudio.zoneBalanced") : t("lyricsStudio.zoneLiteral");
+  const contextZone = contextLevel <= 3 ? t("lyricsStudio.zoneNarrow") : contextLevel <= 7 ? t("lyricsStudio.zoneBalanced") : t("lyricsStudio.zoneWide");
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
   const canGenerateTitle = combinedLyrics.trim().length >= 20;
@@ -275,7 +277,7 @@ export default function LyricsStudioPage() {
   function saveLyricsSnapshot(name: string) {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setNotice({ type: "error", message: "Geef een snapshot-naam op." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeEnterSnapshotName") });
       return;
     }
     const snapshot: LyricStudioSnapshot = {
@@ -289,7 +291,7 @@ export default function LyricsStudioPage() {
     saveSnapshotsToStorage(next);
     setShowSaveSnapshotModal(false);
     setSaveTitleMode(false);
-    setNotice({ type: "success", message: "Lyrics snapshot opgeslagen." });
+    setNotice({ type: "success", message: t("lyricsStudio.noticeSnapshotSaved") });
   }
 
   function loadLyricsSnapshot(snapshot: LyricStudioSnapshot) {
@@ -332,7 +334,7 @@ export default function LyricsStudioPage() {
     } catch (error) {
       console.error(error);
       updateBlock(block.id, { generating: false });
-      setNotice({ type: "error", message: error instanceof Error ? error.message : "Kon dit blok niet genereren." });
+      setNotice({ type: "error", message: error instanceof Error ? error.message : t("lyricsStudio.noticeBlockGenerateFailed") });
     }
   }
 
@@ -365,7 +367,7 @@ export default function LyricsStudioPage() {
       }
     } catch (error) {
       console.error(error);
-      setNotice({ type: "error", message: "LyricIQ couldn't improve this section. Please try again." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeLyricIQFailed") });
     } finally {
       setImprovingBlockId(null);
     }
@@ -437,7 +439,7 @@ export default function LyricsStudioPage() {
           break;
         }
         console.error(error);
-        setNotice({ type: "error", message: error instanceof Error ? error.message : "Fout tijdens songgeneratie." });
+        setNotice({ type: "error", message: error instanceof Error ? error.message : t("lyricsStudio.noticeSongGenerationError") });
       }
 
       setBlocks([...generatedBlocks]);
@@ -460,14 +462,14 @@ export default function LyricsStudioPage() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      setNotice({ type: "error", message: "Kopieren mislukt. Probeer opnieuw." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeCopyFailed") });
     }
   }
 
   async function translateAllLyrics() {
     if (!combinedLyrics.trim() || translatingLyrics) return;
     if (!effectiveTranslationLanguage.trim()) {
-      setNotice({ type: "error", message: "Kies eerst een doeltaal." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeChooseTargetLanguage") });
       return;
     }
     setTranslatingLyrics(true);
@@ -478,17 +480,17 @@ export default function LyricsStudioPage() {
         body: JSON.stringify({ targetLanguage: effectiveTranslationLanguage, blocks: blocks.map(({ id, type, label, content }) => ({ id, type, label, content })) }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setNotice({ type: "error", message: data?.error || "Vertalen is mislukt." }); return; }
-      if (!Array.isArray(data?.blocks)) { setNotice({ type: "error", message: "Vertaling gaf een ongeldig antwoord." }); return; }
+      if (!res.ok) { setNotice({ type: "error", message: data?.error || t("lyricsStudio.noticeTranslationFailed") }); return; }
+      if (!Array.isArray(data?.blocks)) { setNotice({ type: "error", message: t("lyricsStudio.noticeTranslationInvalidResponse") }); return; }
       const map = new Map<string, string>();
       for (const item of data.blocks) {
         if (typeof item?.id === "string" && typeof item?.content === "string") map.set(item.id, item.content);
       }
       setTranslatedBlocks(map);
       setShowTranslationView(true);
-      setNotice({ type: "success", message: `Lyrics vertaald naar ${effectiveTranslationLanguage}.` });
+      setNotice({ type: "success", message: t("lyricsStudio.noticeTranslated", { language: effectiveTranslationLanguage }) });
     } catch {
-      setNotice({ type: "error", message: "Vertalen is mislukt." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeTranslationFailed") });
     } finally {
       setTranslatingLyrics(false);
     }
@@ -498,7 +500,7 @@ export default function LyricsStudioPage() {
     if (translatingBlockId) return;
     const block = blocks.find((b) => b.id === blockId);
     if (!block || !block.content.trim()) return;
-    if (!effectiveTranslationLanguage.trim()) { setNotice({ type: "error", message: "Kies eerst een doeltaal." }); return; }
+    if (!effectiveTranslationLanguage.trim()) { setNotice({ type: "error", message: t("lyricsStudio.noticeChooseTargetLanguage") }); return; }
     setTranslatingBlockId(blockId);
     try {
       const res = await fetch("/api/lyric-studio/translate", {
@@ -507,12 +509,12 @@ export default function LyricsStudioPage() {
         body: JSON.stringify({ targetLanguage: effectiveTranslationLanguage, blocks: [{ id: block.id, type: block.type, label: block.label, content: block.content }] }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setNotice({ type: "error", message: data?.error || "Vertalen is mislukt." }); return; }
-      if (!Array.isArray(data?.blocks) || !data.blocks[0]) { setNotice({ type: "error", message: "Vertaling gaf een ongeldig antwoord." }); return; }
+      if (!res.ok) { setNotice({ type: "error", message: data?.error || t("lyricsStudio.noticeTranslationFailed") }); return; }
+      if (!Array.isArray(data?.blocks) || !data.blocks[0]) { setNotice({ type: "error", message: t("lyricsStudio.noticeTranslationInvalidResponse") }); return; }
       setTranslatedBlocks(new Map([[blockId, data.blocks[0].content]]));
       setShowTranslationView(true);
     } catch {
-      setNotice({ type: "error", message: "Vertalen is mislukt." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeTranslationFailed") });
     } finally {
       setTranslatingBlockId(null);
     }
@@ -540,21 +542,21 @@ export default function LyricsStudioPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setNotice({ type: "error", message: data?.error || "Titel genereren is mislukt." });
+        setNotice({ type: "error", message: data?.error || t("lyricsStudio.noticeTitleGenerateFailed") });
         return;
       }
 
       const nextTitle = typeof data?.title === "string" ? data.title.trim() : "";
       if (!nextTitle) {
-        setNotice({ type: "error", message: "AI gaf geen geldige titel terug." });
+        setNotice({ type: "error", message: t("lyricsStudio.noticeTitleInvalid") });
         return;
       }
 
       setTitle(nextTitle);
-      setNotice({ type: "success", message: "Titel gegenereerd." });
+      setNotice({ type: "success", message: t("lyricsStudio.noticeTitleGenerated") });
       return nextTitle;
     } catch {
-      setNotice({ type: "error", message: "Titel genereren is mislukt." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeTitleGenerateFailed") });
     } finally {
       setGeneratingTitle(false);
     }
@@ -562,7 +564,7 @@ export default function LyricsStudioPage() {
 
   async function generateTitleAndSaveLyrics() {
     if (!canGenerateTitle) {
-      setNotice({ type: "error", message: "Voeg eerst wat meer lyrics toe om een titel te genereren." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeAddMoreLyricsForTitle") });
       return;
     }
     const nextTitle = await generateTitleFromLyrics();
@@ -573,7 +575,7 @@ export default function LyricsStudioPage() {
   function saveLyricsWithManualTitleInput() {
     const nextTitle = snapshotNameInput.trim();
     if (!nextTitle) {
-      setNotice({ type: "error", message: "Geef eerst een titel op." });
+      setNotice({ type: "error", message: t("lyricsStudio.noticeEnterTitleFirst") });
       return;
     }
     setTitle(nextTitle);
@@ -590,7 +592,7 @@ export default function LyricsStudioPage() {
     setLlmModel(""); setVocalistTag("auto");
     setStyleSuggestion(""); setShowLoadSnapshots(false);
     window.localStorage.removeItem("melodiq-lyrics-studio");
-    setNotice({ type: "info", message: "Lyric Studio is leeggemaakt." });
+    setNotice({ type: "info", message: t("lyricsStudio.noticeCleared") });
   }
 
   function handleConfirmAction() {
@@ -615,18 +617,18 @@ export default function LyricsStudioPage() {
 
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
-                <h1 className="text-3xl font-bold mb-2">Lyrics</h1>
-                <p className="text-white/60">Build songs section by section, then send the finished lyrics to Studio.</p>
+                <h1 className="text-3xl font-bold mb-2">{t("studio.lyrics")}</h1>
+                <p className="text-white/60">{t("lyricsStudio.subtitle")}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button type="button" onClick={handleSaveLyrics} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
-                  Save lyrics
+                  {t("studio.saveLyrics")}
                 </button>
                 <button type="button" onClick={() => setShowLoadSnapshots(true)} disabled={savedSnapshots.length === 0} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
-                  Load lyrics
+                  {t("lyricsStudio.loadLyrics")}
                 </button>
                 <button type="button" onClick={() => clearAllDraft()} className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20">
-                  Clear all
+                  {t("lyricsStudio.clearAllButton")}
                 </button>
               </div>
             </div>
@@ -757,7 +759,7 @@ export default function LyricsStudioPage() {
               <aside className="hidden lg:block">
                 <div className="min-h-[620px] rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-white/70">Lyrics</h3>
+                    <h3 className="text-sm font-semibold text-white/70">{t("studio.lyrics")}</h3>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -768,9 +770,9 @@ export default function LyricsStudioPage() {
                           (translationLanguage === "other" && !customTranslationLanguage.trim())
                         }
                         className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                        title="Vertaal de songtekst naar de gekozen taal"
+                        title={t("lyricsStudio.translateTooltip")}
                       >
-                        {translatingLyrics ? "Vertalen..." : "Translate"}
+                        {translatingLyrics ? t("lyricsStudio.translatingButton") : t("lyricsStudio.translateButton")}
                       </button>
                       <button
                         type="button"
@@ -778,11 +780,11 @@ export default function LyricsStudioPage() {
                         disabled={!combinedLyrics}
                         className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                       >
-                        {copied ? "Copied!" : "Copy"}
+                        {copied ? t("lyricsStudio.copiedButton") : t("lyricsStudio.copyButton")}
                       </button>
                     </div>
                   </div>
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-white/90">{combinedLyrics || "(nog geen lyrics)"}</pre>
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-white/90">{combinedLyrics || t("lyricsStudio.noLyricsPlaceholder")}</pre>
                 </div>
               </aside>
             </div>
