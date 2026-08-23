@@ -123,6 +123,10 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
         if (region.id !== selectionRegionRef.current?.id) return;
         setStart(region.start);
         setEnd(region.end);
+        // Jump the playhead to the start of the selection once the drag/resize
+        // settles, so previewing playback always starts from where you'll edit.
+        instance?.setTime(region.start);
+        setCurrentTime(region.start);
       });
 
       wsRef.current = instance;
@@ -145,6 +149,8 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
     setStart(clampedStart);
     setEnd(clampedEnd);
     selectionRegionRef.current?.setOptions({ start: clampedStart, end: clampedEnd });
+    wsRef.current?.setTime(clampedStart);
+    setCurrentTime(clampedStart);
   }
 
   function togglePlay() {
