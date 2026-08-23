@@ -26,9 +26,11 @@ import {
 } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
+import { useT } from "@/hooks/useT";
 
 export default function LibraryPage() {
   const router = useRouter();
+  const t = useT();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -186,7 +188,7 @@ export default function LibraryPage() {
 
   const handleDeleteTrackForever = useCallback(async (trackId: string) => {
     const track = trashedTracks.find((t) => t.id === trackId);
-    if (!confirm(`Permanently delete "${track?.title || "this track"}"? This cannot be undone.`)) return;
+    if (!confirm(t("library.confirmDeleteForever", { title: track?.title || t("library.thisTrack") }))) return;
     await fetch(`/api/tracks/${trackId}?permanent=true`, { method: "DELETE" });
     setTrashedTracks((prev) => prev.filter((t) => t.id !== trackId));
   }, [trashedTracks]);
@@ -467,15 +469,15 @@ export default function LibraryPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                      Library
+                      {t("library.title")}
                       <span className="mx-2 text-white/25 font-light">/</span>
                       <span className="text-white/60">
-                        {view === "trash" ? "Recycle Bin" : view === "archive" ? "Archief" : "Tracks"}
+                        {view === "trash" ? t("library.recycleBin") : view === "archive" ? t("library.archive") : t("library.tracksView")}
                       </span>
                     </h1>
                     {tracks.length > 0 && (
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
-                        {tracks.length} tracks{totalDuration ? ` (${totalDuration})` : ""}
+                        {tracks.length} {t("library.tracksSuffix")}{totalDuration ? ` (${totalDuration})` : ""}
                       </span>
                     )}
                   </div>
@@ -486,7 +488,7 @@ export default function LibraryPage() {
                       onClick={() => { setView("songs"); }}
                       className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${view === "songs" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
                     >
-                      Tracks
+                      {t("library.tracksTab")}
                     </button>
 
                     {/* Recycle Bin */}
@@ -499,7 +501,7 @@ export default function LibraryPage() {
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      Bin
+                      {t("library.binTab")}
                     </button>
 
                     {/* Archive */}
@@ -511,7 +513,7 @@ export default function LibraryPage() {
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6" />
                       </svg>
-                      Archief
+                      {t("library.archiveTab")}
                     </button>
                   </div>
                 </div>
@@ -522,7 +524,7 @@ export default function LibraryPage() {
                       onClick={() => setIsUploadPanelOpen(true)}
                       className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
                     >
-                      Upload Files
+                      {t("library.uploadFiles")}
                     </button>
                   </div>
                 )}
@@ -533,7 +535,7 @@ export default function LibraryPage() {
             {view === "songs" && (
               <section className="space-y-4">
                 {loading ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("library.loadingTracks")}</div>
                 ) : (
                   <TrackList
                     tracks={tracks}
@@ -601,8 +603,8 @@ export default function LibraryPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
               </div>
             )}
           </div>

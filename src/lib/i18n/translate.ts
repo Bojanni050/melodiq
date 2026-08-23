@@ -27,6 +27,12 @@ function getByPath(obj: unknown, path: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-export function translate(locale: Locale, key: TranslationKey): string {
-  return getByPath(MESSAGES[locale], key) ?? getByPath(en, key) ?? key;
+export function translate(
+  locale: Locale,
+  key: TranslationKey,
+  vars?: Record<string, string | number>
+): string {
+  const raw = getByPath(MESSAGES[locale], key) ?? getByPath(en, key) ?? key;
+  if (!vars) return raw;
+  return raw.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
 }

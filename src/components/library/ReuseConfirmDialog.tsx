@@ -1,11 +1,14 @@
 "use client";
 
+import { useT } from "@/hooks/useT";
+
 interface ReuseConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirmDialogProps) {
+  const t = useT();
   return (
     <div
       className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
@@ -21,7 +24,7 @@ export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirm
           </svg>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-amber-100">
-              De Studio bevat al een song idea en/of lyrics. Doorgaan met &quot;Reuse Prompt&quot; overschrijft deze.
+              {t("library.reuseConfirmMessage")}
             </p>
             <div className="mt-3 flex items-center gap-2">
               <button
@@ -29,14 +32,14 @@ export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirm
                 onClick={onConfirm}
                 className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
               >
-                Doorgaan
+                {t("library.continue")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
                 className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
               >
-                Annuleren
+                {t("common.cancel")}
               </button>
             </div>
           </div>
