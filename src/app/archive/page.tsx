@@ -293,12 +293,17 @@ export default function ArchivePage() {
     if (!entry.trackId) return;
     setAnalyzingIds((prev) => new Set(prev).add(entry.id));
     try {
-      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-advanced`, { method: "POST" });
+      const url = advancedDnaResults[entry.id]
+        ? `/api/tracks/${entry.trackId}/analyze-advanced?refresh=true`
+        : `/api/tracks/${entry.trackId}/analyze-advanced`;
+      const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         console.error(`Failed advanced DNA analysis: HTTP ${res.status}`, body);
         return;
       }
+      const data = await res.json();
+      setAdvancedDnaResults((prev) => ({ ...prev, [entry.id]: data }));
       // Refreshes the expanded Track DNA panel, if open, without a reload.
       setDnaRefreshKeys((prev) => ({ ...prev, [entry.trackId!]: (prev[entry.trackId!] ?? 0) + 1 }));
     } catch (error) {
@@ -353,7 +358,10 @@ export default function ArchivePage() {
     if (!entry.trackId) return;
     setAdvancedDnaRunningIds((prev) => new Set(prev).add(entry.id));
     try {
-      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-advanced`, { method: "POST" });
+      const url = advancedDnaResults[entry.id]
+        ? `/api/tracks/${entry.trackId}/analyze-advanced?refresh=true`
+        : `/api/tracks/${entry.trackId}/analyze-advanced`;
+      const res = await fetch(url, { method: "POST" });
       if (!res.ok) {
         console.error(`Failed advanced DNA: HTTP ${res.status}`);
         return;

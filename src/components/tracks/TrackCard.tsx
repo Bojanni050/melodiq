@@ -220,7 +220,10 @@ const TrackCard = memo(function TrackCard({
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
         try {
-          const res = await fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" });
+          const url = advancedDnaResult
+            ? `/api/tracks/${track.id}/analyze-advanced?refresh=true`
+            : `/api/tracks/${track.id}/analyze-advanced`;
+          const res = await fetch(url, { method: "POST" });
           if (!res.ok) return;
           const data = await res.json();
           setAdvancedDnaResult(data);
