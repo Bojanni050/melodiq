@@ -15,6 +15,7 @@ export type ReleasePayload = {
   type: string;
   kind: string | null;
   artistName: string | null;
+  credits: string | null;
   description: string | null;
   coverUrl: string | null;
   releaseDate: string | null;
@@ -33,6 +34,7 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
       type: releases.type,
       kind: releases.kind,
       artistName: releases.artistName,
+      credits: releases.credits,
       description: releases.description,
       s3KeyCover: releases.s3KeyCover,
       releaseDate: releases.releaseDate,
@@ -104,6 +106,7 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
       type: row.type,
       kind: row.kind ?? null,
       artistName: row.artistName ?? null,
+      credits: row.credits ?? null,
       description: row.description ?? null,
       coverUrl,
       releaseDate: row.releaseDate?.toISOString() ?? null,

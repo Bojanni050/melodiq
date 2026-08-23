@@ -14,6 +14,7 @@ export interface Release {
   type: string; // single | ep | album
   kind?: string | null;
   artistName?: string | null;
+  credits?: string | null;
   description?: string | null;
   coverUrl?: string | null;
   releaseDate?: string | null;
@@ -44,7 +45,7 @@ interface ReleaseState {
   renameRelease: (releaseId: string, title: string) => void;
   updateReleaseDetails: (
     releaseId: string,
-    details: { kind?: string | null; artistName?: string | null; description?: string | null; releaseDate?: string | null }
+    details: { kind?: string | null; artistName?: string | null; credits?: string | null; description?: string | null; releaseDate?: string | null }
   ) => void;
   updateReleaseType: (releaseId: string, type: string) => void;
   updateReleaseCover: (releaseId: string, coverUrl: string) => void;

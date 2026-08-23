@@ -245,6 +245,7 @@ export async function PATCH(
     if (action === "update-details") {
       const kind = typeof body?.kind === "string" ? body.kind.trim().slice(0, 30) || null : undefined;
       const artistName = typeof body?.artistName === "string" ? body.artistName.trim().slice(0, 255) || null : undefined;
+      const credits = typeof body?.credits === "string" ? body.credits.trim().slice(0, 2000) || null : undefined;
       const description = typeof body?.description === "string" ? body.description.trim() || null : undefined;
       const releaseDate = typeof body?.releaseDate === "string" && body.releaseDate.trim()
         ? new Date(body.releaseDate)
@@ -253,6 +254,7 @@ export async function PATCH(
       const updates: Record<string, unknown> = { updatedAt: new Date() };
       if (kind !== undefined) updates.kind = kind;
       if (artistName !== undefined) updates.artistName = artistName;
+      if (credits !== undefined) updates.credits = credits;
       if (description !== undefined) updates.description = description;
       if (releaseDate !== undefined) updates.releaseDate = releaseDate;
 

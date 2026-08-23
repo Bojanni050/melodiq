@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, useReleaseStore } from "@/lib/store";
+import { useSidebarStore, useReleaseStore, useUserStore } from "@/lib/store";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
   { value: "single", label: "Single" },
@@ -16,7 +16,8 @@ export default function ReleasesPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const { releases, loadReleases, deleteRelease } = useReleaseStore();
+  const { releases, loadReleases, deleteRelease, updateReleaseDetails, renameRelease } = useReleaseStore();
+  const user = useUserStore((s) => s.user);
 
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -24,6 +25,11 @@ export default function ReleasesPage() {
   const [newType, setNewType] = useState("single");
   const [creating, setCreating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+  const [editingReleaseId, setEditingReleaseId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editArtistAlias, setEditArtistAlias] = useState("");
+  const [editCredits, setEditCredits] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const createRelease = useReleaseStore((state) => state.createRelease);
 
@@ -48,6 +54,28 @@ export default function ReleasesPage() {
 
   function openRelease(releaseId: string) {
     router.push(`/releases/${releaseId}`);
+  }
+
+  function openEditRelease(release: { id: string; title: string; artistName?: string | null; credits?: string | null }) {
+    setEditingReleaseId(release.id);
+    setEditTitle(release.title);
+    setEditArtistAlias(release.artistName ?? "");
+    setEditCredits(release.credits ?? "");
+  }
+
+  async function handleSaveEditRelease() {
+    if (!editingReleaseId || savingEdit) return;
+    const releaseId = editingReleaseId;
+    const title = editTitle.trim();
+    if (!title) return;
+    setSavingEdit(true);
+    try {
+      renameRelease(releaseId, title);
+      updateReleaseDetails(releaseId, { artistName: editArtistAlias, credits: editCredits });
+      setEditingReleaseId(null);
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   return (
@@ -160,13 +188,22 @@ export default function ReleasesPage() {
                         <button type="button" onClick={() => openRelease(release.id)} className="text-sm text-white/60 transition-colors hover:text-white">
                           Open release
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDelete({ id: release.id, title: release.title })}
-                          className="text-sm text-white/45 transition-colors hover:text-red-300"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openEditRelease(release)}
+                            className="text-sm text-white/45 transition-colors hover:text-white"
+                          >
+                            Edit release
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDelete({ id: release.id, title: release.title })}
+                            className="text-sm text-white/45 transition-colors hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
@@ -176,6 +213,91 @@ export default function ReleasesPage() {
           </div>
         </main>
       </div>
+
+      {editingReleaseId && (() => {
+        const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
+        const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || "Unknown Artist";
+
+        return (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Cancel edit release"
+              onClick={() => { if (!savingEdit) setEditingReleaseId(null); }}
+              className="absolute inset-0 bg-black/65"
+            />
+            <div className="relative w-full max-w-[480px] rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+              <h3 className="text-lg font-semibold text-white">Edit release</h3>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Title</label>
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    maxLength={255}
+                    disabled={savingEdit}
+                    className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
+                    placeholder="Release title"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Artist alias</label>
+                  {artistAliasOptions.length > 0 ? (
+                    <select
+                      value={editArtistAlias}
+                      onChange={(e) => setEditArtistAlias(e.target.value)}
+                      disabled={savingEdit}
+                      className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 disabled:opacity-60"
+                    >
+                      <option value="">{`Default (${defaultArtistLabel})`}</option>
+                      {artistAliasOptions.map((alias) => (
+                        <option key={alias} value={alias}>{alias}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white/55">
+                      {defaultArtistLabel}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Credits</label>
+                  <textarea
+                    value={editCredits}
+                    onChange={(e) => setEditCredits(e.target.value.slice(0, 2000))}
+                    rows={3}
+                    disabled={savingEdit}
+                    placeholder="e.g. Produced by, Written by, Mixed by…"
+                    className="w-full resize-none rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingReleaseId(null)}
+                  disabled={savingEdit}
+                  className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditRelease}
+                  disabled={savingEdit || !editTitle.trim()}
+                  className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingEdit ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {pendingDelete && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
