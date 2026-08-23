@@ -239,8 +239,15 @@ const TrackCard = memo(function TrackCard({
 
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
+        // Advanced DNA implies the basic composition analysis too — run them
+        // together so a track never ends up with advanced insights but no
+        // tempo/key/atmosphere/composition score.
+        const compositionPromise = hasCompositionAnalysis ? Promise.resolve() : handleAnalyzeComposition();
         try {
-          const res = await fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" });
+          const [, res] = await Promise.all([
+            compositionPromise,
+            fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" }),
+          ]);
           if (!res.ok) return;
           const data = await res.json();
           setAdvancedDnaResult(data);
@@ -601,6 +608,7 @@ const TrackCard = memo(function TrackCard({
           isPlaying={isPlaying}
           effectiveCoverUrl={effectiveCoverUrl}
           effectiveThumbUrl={effectiveThumbUrl}
+          isAnalyzing={analyzingComposition || advancedDnaRunning}
           onPlayClick={() => {
             const now = Date.now();
             if (now - playClickCooldownRef.current < 350) return;
@@ -1003,6 +1011,8 @@ const TrackCard = memo(function TrackCard({
               trackStatus={track.status}
               onReanalyzeAudio={handleReanalyzeAudio}
               reanalyzingAudio={reanalyzingAudio}
+              onAnalyzeCompositionClick={handleAnalyzeComposition}
+              analyzingComposition={analyzingComposition}
             />
           )}
         </div>

@@ -10,6 +10,7 @@ interface TrackPlayButtonProps {
   effectiveCoverUrl: string | null;
   effectiveThumbUrl: string | null;
   onPlayClick: () => void;
+  isAnalyzing?: boolean;
 }
 
 export default function TrackPlayButton({
@@ -19,6 +20,7 @@ export default function TrackPlayButton({
   effectiveCoverUrl,
   effectiveThumbUrl,
   onPlayClick,
+  isAnalyzing = false,
 }: TrackPlayButtonProps) {
   const isGeneratingOrPending = track.status === "generating" || track.status === "pending";
   const isArchived = Boolean(track.archivedAt);
@@ -108,6 +110,19 @@ export default function TrackPlayButton({
           <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
+        </div>
+      )}
+      {isAnalyzing && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/60 backdrop-blur-[1px]"
+          title="Analyzing Track DNA…"
+        >
+          <span className="text-base leading-none animate-pulse">🧬</span>
+          <span className="flex items-end gap-0.5 h-3">
+            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar" />
+            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-150" />
+            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-300" />
+          </span>
         </div>
       )}
       {track.status === "done" && track.duration && (

@@ -70,6 +70,8 @@ export default function TrackDnaPanel({
   trackStatus,
   onReanalyzeAudio,
   reanalyzingAudio,
+  onAnalyzeCompositionClick,
+  analyzingComposition,
 }: {
   trackId: string;
   refreshKey?: number;
@@ -79,6 +81,8 @@ export default function TrackDnaPanel({
   trackStatus?: string;
   onReanalyzeAudio?: () => void;
   reanalyzingAudio?: boolean;
+  onAnalyzeCompositionClick?: () => void;
+  analyzingComposition?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -129,9 +133,28 @@ export default function TrackDnaPanel({
   if (!audioDna) {
     return (
       <TrackDnaCard onClick={(e) => e.stopPropagation()}>
-        <p className="text-sm text-white/40">
-          Analysis in progress — Track DNA will appear once the track finishes rendering.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-white/40">
+            No Track DNA yet — analyze this track to see tempo, key, atmosphere, and composition insights.
+          </p>
+          {trackStatus === "done" && onAnalyzeCompositionClick && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onAnalyzeCompositionClick(); }}
+              disabled={analyzingComposition}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-400/30 bg-primary-500/10 px-3 py-1.5 text-xs font-medium text-primary-200 transition-colors hover:bg-primary-500/20 disabled:opacity-50"
+            >
+              {analyzingComposition ? (
+                <>
+                  <span className="w-2 h-2 rounded-full border border-primary-200/50 border-t-transparent animate-spin" />
+                  Analyzing…
+                </>
+              ) : (
+                "Analyze Track"
+              )}
+            </button>
+          )}
+        </div>
       </TrackDnaCard>
     );
   }
