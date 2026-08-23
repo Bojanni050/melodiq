@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, workspaces } from "@/db/schema";
+import { tracks, workspaces, releases, releaseTracks } from "@/db/schema";
 import { RELEASE_STATUSES, type ReleaseStatus } from "@/lib/release-status";
 import { toTitleCase } from "@/lib/title-case";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
@@ -40,6 +40,82 @@ function isJsonObject(value: unknown): value is JsonObject {
 
 function isUuid(value: string): boolean {
   return UUID_REGEX.test(value);
+}
+
+/**
+ * Keeps the `releases` table in sync with a track's own releaseStatus toggle
+ * (the "Publish" action on a track card) — the two systems are otherwise
+ * unrelated (see releases table comment in db/schema.ts), so without this a
+ * "published" track that isn't already attached to a release would never
+ * show up on My Releases or the public Discover Releases page.
+ *
+ * - Publishing a track with no release membership auto-creates a "single"
+ *   release for it (isPublic, published now) and attaches it.
+ * - Publishing a track that's already on a release (EP/album, or a release
+ *   published via the release's own "toggle-public" action) leaves the
+ *   release alone — its own public status governs visibility.
+ * - Unpublishing a track that's the sole member of an auto-created single
+ *   release also unpublishes that release, so it doesn't linger publicly
+ *   with no visible tracks. Multi-track releases are left untouched.
+ */
+async function syncTrackReleaseStatus(
+  userId: string,
+  track: { id: string; title: string | null; artistName: string | null; releaseStatus: string | null }
+) {
+  const existingReleaseTrack = await db
+    .select({ releaseId: releaseTracks.releaseId })
+    .from(releaseTracks)
+    .innerJoin(releases, eq(releases.id, releaseTracks.releaseId))
+    .where(and(eq(releaseTracks.trackId, track.id), eq(releases.userId, userId)))
+    .limit(1);
+
+  if (track.releaseStatus === "published") {
+    if (existingReleaseTrack[0]) return;
+
+    const now = new Date();
+    const inserted = await db
+      .insert(releases)
+      .values({
+        userId,
+        title: track.title || "Untitled",
+        type: "single",
+        artistName: track.artistName ?? null,
+        isPublic: true,
+        publishedAt: now,
+        releaseDate: now,
+      })
+      .returning({ id: releases.id });
+
+    if (inserted[0]) {
+      await db.insert(releaseTracks).values({
+        releaseId: inserted[0].id,
+        trackId: track.id,
+        position: 0,
+        side: null,
+      });
+    }
+    return;
+  }
+
+  if (!existingReleaseTrack[0]) return;
+
+  const releaseId = existingReleaseTrack[0].releaseId;
+  const [release] = await db
+    .select({ type: releases.type })
+    .from(releases)
+    .where(eq(releases.id, releaseId))
+    .limit(1);
+  const memberCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(releaseTracks)
+    .where(eq(releaseTracks.releaseId, releaseId));
+
+  if (release?.type === "single" && Number(memberCount[0]?.count ?? 0) <= 1) {
+    await db
+      .update(releases)
+      .set({ isPublic: false, publishedAt: null, updatedAt: new Date() })
+      .where(eq(releases.id, releaseId));
+  }
 }
 
 function extractAudioUrls(body: any): string[] {
@@ -965,6 +1041,10 @@ export async function PATCH(
       .set(updates)
       .where(and(eq(tracks.id, id), eq(tracks.userId, userId)))
       .returning();
+
+    if (releaseStatus !== undefined && updated[0]) {
+      await syncTrackReleaseStatus(userId, updated[0]);
+    }
 
     return NextResponse.json(updated[0]);
   } catch (error: any) {
