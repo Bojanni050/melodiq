@@ -27,7 +27,6 @@ import TrackRating from "./TrackRating";
 import TrackActionMenu from "./TrackActionMenu";
 import TrackDnaPanel from "./TrackDnaPanel";
 import SectionReplaceEditor from "./SectionReplaceEditor";
-import TrackEditPanel from "./TrackEditPanel";
 
 import { useTrackInlineEdit } from "./useTrackInlineEdit";
 import { useTrackCardActions } from "./useTrackCardActions";
@@ -125,7 +124,6 @@ const TrackCard = memo(function TrackCard({
   const [editSectionOpen, setEditSectionOpen] = useState(false);
   const [editSectionMounted, setEditSectionMounted] = useState(false);
   useEffect(() => { if (editSectionOpen) setEditSectionMounted(true); }, [editSectionOpen]);
-  const [editTrackOpen, setEditTrackOpen] = useState(false);
   const { mutate } = useSWRConfig();
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
   const [reanalyzingAudio, setReanalyzingAudio] = useState(false);
@@ -898,7 +896,7 @@ const TrackCard = memo(function TrackCard({
               onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
               onOpenReleasePicker={() => actions.setShowReleasePickerDialog(true)}
               onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
-              onEditDetails={() => setEditTrackOpen((v) => !v)}
+              onEditDetails={() => onEditDetails?.(track)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onArchiveClick={track.status === "done" && !isListenerRole ? handleArchive : undefined}
               archiveDisabled={track.releaseStatus === "published" || archiveLinkKind === "original"}
@@ -975,19 +973,6 @@ const TrackCard = memo(function TrackCard({
           )}
         </div>
       </div>
-
-      {/* Inline Edit Track panel */}
-      {editTrackOpen && (
-        <TrackEditPanel
-          track={track}
-          inline
-          onClose={() => setEditTrackOpen(false)}
-          onSaved={(updated) => {
-            setEditTrackOpen(false);
-            onEditDetails?.(updated as TrackItem);
-          }}
-        />
-      )}
 
       {/* Inline Stems panel */}
       <div
