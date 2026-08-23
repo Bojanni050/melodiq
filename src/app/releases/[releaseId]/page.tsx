@@ -11,6 +11,7 @@ import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore } fr
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { useT } from "@/hooks/useT";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
   { value: "single", label: "Single" },
@@ -21,6 +22,7 @@ const RELEASE_TYPES: { value: string; label: string }[] = [
 export default function ReleaseDetailPage() {
   const params = useParams<{ releaseId: string }>();
   const router = useRouter();
+  const t = useT();
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
@@ -175,7 +177,7 @@ export default function ReleaseDetailPage() {
     try {
       const result = await regenerateReleaseCover(selectedRelease.id);
       if (!result.ok) {
-        setRegenerateCoverError(result.error || "Failed to regenerate cover.");
+        setRegenerateCoverError(result.error || t("releases.regenerateCoverErrorGeneric"));
       }
     } finally {
       setRegeneratingCover(false);
@@ -192,7 +194,7 @@ export default function ReleaseDetailPage() {
     // Publishing — find which tracks are not yet published
     const unpublishedTitles = releaseTracks
       .filter((t) => t.releaseStatus !== "published")
-      .map((t) => t.title || "Untitled");
+      .map((track) => track.title || t("library.untitled"));
     setPublishConfirmTracks(unpublishedTitles);
   }
 
@@ -213,13 +215,13 @@ export default function ReleaseDetailPage() {
         <Sidebar credits={null} />
         <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/70">Release not found.</p>
+            <p className="text-sm text-white/70">{t("releases.releaseNotFound")}</p>
             <button
               type="button"
               onClick={() => router.push("/releases")}
               className="mt-4 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/12 hover:text-white"
             >
-              Back to releases
+              {t("releases.backToReleases")}
             </button>
           </div>
         </div>
@@ -243,7 +245,7 @@ export default function ReleaseDetailPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                All releases
+                {t("releases.allReleases")}
               </button>
             </div>
 
@@ -254,13 +256,13 @@ export default function ReleaseDetailPage() {
                   type="button"
                   onClick={() => coverInputRef.current?.click()}
                   disabled={uploadingCover}
-                  title="Upload cover art"
+                  title={t("releases.uploadCoverArt")}
                   className="group relative shrink-0 h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] transition-opacity disabled:opacity-60"
                 >
                   {selectedRelease?.coverUrl ? (
                     <img
                       src={selectedRelease.coverUrl}
-                      alt="Release cover"
+                      alt={t("releases.releaseCoverAlt")}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
@@ -308,7 +310,7 @@ export default function ReleaseDetailPage() {
                       <h2
                         className="text-lg font-semibold truncate cursor-text"
                         onClick={() => { if (!selectedRelease) return; setTitleDraft(selectedRelease.title); setEditingTitle(true); }}
-                        title="Click to rename"
+                        title={t("releases.clickToRename")}
                       >
                         {selectedRelease?.title}
                       </h2>
@@ -318,7 +320,10 @@ export default function ReleaseDetailPage() {
                     </span>
                   </div>
                   <p className="text-sm text-white/55">
-                    {releaseTracks.length} tracks in this release{releaseTracksTotalDuration ? ` (${releaseTracksTotalDuration})` : ""}.
+                    {t("releases.tracksInRelease", {
+                      count: releaseTracks.length,
+                      duration: releaseTracksTotalDuration ? ` (${releaseTracksTotalDuration})` : "",
+                    })}
                   </p>
                 </div>
               </div>
@@ -345,7 +350,7 @@ export default function ReleaseDetailPage() {
                     }}
                     className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingOrder ? "border-white bg-white text-black hover:bg-white/90" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
                   >
-                    {isEditingOrder ? "Save order" : "Edit order"}
+                    {isEditingOrder ? t("releases.saveOrder") : t("releases.editOrder")}
                   </button>
 
                   <button
@@ -360,9 +365,9 @@ export default function ReleaseDetailPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                         </svg>
-                        Regenerating…
+                        {t("releases.regenerating")}
                       </span>
-                    ) : "Regenerate cover"}
+                    ) : t("releases.regenerateCover")}
                   </button>
 
                   {/* Publish / Unpublish button */}
@@ -382,14 +387,14 @@ export default function ReleaseDetailPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                         </svg>
-                        {selectedRelease?.isPublic ? "Unpublishing…" : "Publishing…"}
+                        {selectedRelease?.isPublic ? t("releases.unpublishing") : t("releases.publishing")}
                       </span>
                     ) : selectedRelease?.isPublic ? (
                       <span className="inline-flex items-center gap-1.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Published
+                        {t("releases.published")}
                       </span>
-                    ) : "Publish"}
+                    ) : t("releases.publish")}
                   </button>
               </div>
 
@@ -399,12 +404,12 @@ export default function ReleaseDetailPage() {
 
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (
                 <p className="text-xs text-white/35">
-                  Tip: use the A/B buttons below to mark sides for a classic single layout.
+                  {t("releases.abTip")}
                 </p>
               )}
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("releases.loadingTracksList")}</div>
               ) : releaseTracks.length > 0 ? (
                 <TrackList
                   tracks={releaseTracks}
@@ -434,7 +439,7 @@ export default function ReleaseDetailPage() {
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
-                  This release has no tracks yet. Use track actions and choose Add to Release.
+                  {t("releases.noTracksYetDetail")}
                 </div>
               )}
 
@@ -444,7 +449,7 @@ export default function ReleaseDetailPage() {
                     const rt = selectedRelease.tracks.find((t) => t.trackId === track.id);
                     return (
                       <div key={`side-${track.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-white/3 px-3 py-1.5 text-sm">
-                        <span className="min-w-0 truncate text-white/60">{track.title || "Untitled"}</span>
+                        <span className="min-w-0 truncate text-white/60">{track.title || t("library.untitled")}</span>
                         <div className="flex shrink-0 gap-1">
                           {(["A", "B", null] as const).map((side) => (
                             <button
@@ -480,8 +485,8 @@ export default function ReleaseDetailPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Select a track to show track info and lyrics.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("releases.selectTrackHint")}</p>
               </div>
             )}
           </div>
@@ -504,7 +509,7 @@ export default function ReleaseDetailPage() {
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
           <button
             type="button"
-            aria-label="Cancel"
+            aria-label={t("common.cancel")}
             onClick={() => setPublishConfirmTracks(null)}
             className="absolute inset-0 bg-black/65"
           />
@@ -512,10 +517,13 @@ export default function ReleaseDetailPage() {
             {selectedRelease.isPublic ? (
               /* Unpublish confirmation */
               <>
-                <h3 className="text-lg font-semibold text-white">Unpublish release?</h3>
+                <h3 className="text-lg font-semibold text-white">{t("releases.unpublishReleaseTitle")}</h3>
                 <p className="mt-2 text-sm text-white/60">
-                  <strong className="text-white">&ldquo;{selectedRelease.title}&rdquo;</strong> will be removed from public discovery.
-                  All {releaseTracks.length} track{releaseTracks.length !== 1 ? "s" : ""} in this release will also be set to unpublished.
+                  {t("releases.unpublishReleaseBody", {
+                    title: selectedRelease.title,
+                    count: releaseTracks.length,
+                    trackWord: releaseTracks.length === 1 ? t("releases.track") : t("releases.tracks"),
+                  })}
                 </p>
                 <div className="mt-5 flex justify-end gap-2">
                   <button
@@ -523,28 +531,31 @@ export default function ReleaseDetailPage() {
                     onClick={() => setPublishConfirmTracks(null)}
                     className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="button"
                     onClick={confirmPublishToggle}
                     className="h-10 rounded-full bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/15"
                   >
-                    Unpublish
+                    {t("releases.unpublish")}
                   </button>
                 </div>
               </>
             ) : (
               /* Publish confirmation */
               <>
-                <h3 className="text-lg font-semibold text-white">Publish release?</h3>
+                <h3 className="text-lg font-semibold text-white">{t("releases.publishReleaseTitle")}</h3>
                 <p className="mt-2 text-sm text-white/60">
-                  <strong className="text-white">&ldquo;{selectedRelease.title}&rdquo;</strong> will be made publicly visible.
+                  {t("releases.publishReleaseBody", { title: selectedRelease.title })}
                 </p>
                 {publishConfirmTracks.length > 0 && (
                   <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] p-4">
                     <p className="text-xs font-medium text-amber-400/90 mb-2">
-                      The following {publishConfirmTracks.length} track{publishConfirmTracks.length !== 1 ? "s" : ""} will also be published:
+                      {t("releases.willAlsoPublish", {
+                        count: publishConfirmTracks.length,
+                        trackWord: publishConfirmTracks.length === 1 ? t("releases.track") : t("releases.tracks"),
+                      })}
                     </p>
                     <ul className="space-y-1">
                       {publishConfirmTracks.map((title, i) => (
@@ -562,14 +573,14 @@ export default function ReleaseDetailPage() {
                     onClick={() => setPublishConfirmTracks(null)}
                     className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="button"
                     onClick={confirmPublishToggle}
                     className="h-10 rounded-full bg-emerald-600/80 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
                   >
-                    {publishConfirmTracks.length > 0 ? "Publish release & tracks" : "Publish release"}
+                    {publishConfirmTracks.length > 0 ? t("releases.publishReleaseAndTracks") : t("releases.publishReleaseOnly")}
                   </button>
                 </div>
               </>
