@@ -395,7 +395,7 @@ export default function TrackDnaPage() {
               </section>
 
               {/* Track DNA — auto-computed analysis, not part of the shared Track Details sidebar */}
-              {audioDna && (hasAudioFacts || (audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0) || audioDna.lyricsScore != null || audioDna.compositionScore != null) && (
+              {audioDna && (hasAudioFacts || (audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0) || audioDna.lyricsScore != null) && (
                 <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
                   <h2 className="text-sm font-semibold text-white/80">Track DNA</h2>
 
@@ -436,15 +436,6 @@ export default function TrackDnaPage() {
                     </div>
                   )}
 
-                  {audioDna.compositionScore != null && (
-                    <div className="space-y-1 border-t border-white/10 pt-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-white">Composition</span>
-                        <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
-                      </div>
-                      {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
-                    </div>
-                  )}
                 </section>
               )}
             </div>

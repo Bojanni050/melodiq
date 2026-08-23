@@ -4,14 +4,6 @@ import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 import { logToFile } from "@/lib/file-logger";
 
 const LOG_FILE = "track-dna.log";
-function logComposition(message: string): void {
-  console.info(message);
-  logToFile(LOG_FILE, message);
-}
-function warnComposition(message: string): void {
-  console.warn(message);
-  logToFile(LOG_FILE, message);
-}
 
 export type LLMProvider = "openrouter" | "openai" | "edenai";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
@@ -414,68 +406,11 @@ Rules:
   }
 }
 
-export interface CompositionQualityScore {
-  score: number;
-  notes: string;
-}
-
-// Automated Track DNA "Composition" signal — a quick, cheap text-based read
-// on arrangement/structure from the generation prompt and lyrics section
-// tags. Deliberately does NOT listen to the audio (that's what "Advanced
-// Track DNA" below does) — this one just needs to be fast, so it's a plain
-// callLLM() call under the "trackdna" purpose/provider setting.
-export async function scoreCompositionQuality(
-  prompt: string | null,
-  lyrics: string | null
-): Promise<CompositionQualityScore | null> {
-  const promptText = prompt?.trim() || "";
-  const lyricsText = lyrics?.trim() || "";
-  if (!promptText && !lyricsText) {
-    warnComposition("[llm][composition] skipped: no prompt or lyrics to judge");
-    return null;
-  }
-
-  const systemPrompt = `You are a professional music producer and arranger critiquing a finished track based on its style description and lyrics structure (you cannot hear the audio).
-
-Rate it 1-10 for composition and arrangement quality: how well the style/prompt implies a coherent structure (intro/verse/chorus/bridge flow), dynamic variety, and instrumentation choices, and how well the lyrics' section tags ([Verse], [Chorus], [Bridge], etc.) suggest a well-built song structure. Be honest about how much you can and can't judge without hearing the mix.
-
-Rules:
-- Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
-- Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
-
-  const userContent = [
-    promptText ? `Style/prompt: ${promptText.slice(0, 2000)}` : "Style/prompt: not provided",
-    lyricsText ? `Lyrics:\n${lyricsText.slice(0, 4000)}` : "Lyrics: none (instrumental or not provided)",
-  ].join("\n\n");
-
-  logComposition(`[llm][composition] calling (promptLen=${promptText.length}, lyricsLen=${lyricsText.length})`);
-
-  try {
-    const raw = await callLLM(userContent, systemPrompt, { purpose: "trackdna" });
-    logComposition(`[llm][composition] response content: ${JSON.stringify(raw.slice(0, 500))}`);
-
-    const parsed = parseJsonObject(raw);
-    if (!parsed) {
-      warnComposition(`[llm][composition] rejected: could not parse JSON out of model response: ${JSON.stringify(raw.slice(0, 500))}`);
-      return null;
-    }
-
-    const score = Number(parsed.score);
-    if (!Number.isFinite(score) || score < 1 || score > 10) {
-      warnComposition(`[llm][composition] rejected: score out of range/invalid: ${JSON.stringify(parsed)}`);
-      return null;
-    }
-    const notes = typeof parsed.notes === "string" ? parsed.notes.slice(0, 300) : "";
-
-    logComposition(`[llm][composition] success: score=${score}, notes=${JSON.stringify(notes)}`);
-    return { score: Math.round(score * 10) / 10, notes };
-  } catch (error: any) {
-    warnComposition(`[llm][composition] request failed: ${error?.message || String(error)}`);
-    return null;
-  }
-}
-
-// Shared audio-input plumbing for "Advanced Track DNA" (the one signal that
+// Shared audio-input plumbing for "Advanced Track DNA" — the single signal
+// that listens to the rendered audio, producing a lyrics analysis, an
+// audio-grounded composition/mix critique, and improvement tips all in one
+// call (the former standalone text-only "Analyze Composition" score has been
+// folded into this).
 // actually listens to the rendered audio). Needs an audio-input-capable
 // model, so it bypasses callLLM's text-only request body and builds its own
 // — but it still follows the "advanced" purpose provider/key/model settings

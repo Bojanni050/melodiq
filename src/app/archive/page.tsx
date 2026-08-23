@@ -293,16 +293,16 @@ export default function ArchivePage() {
     if (!entry.trackId) return;
     setAnalyzingIds((prev) => new Set(prev).add(entry.id));
     try {
-      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-composition`, { method: "POST" });
+      const res = await fetch(`/api/tracks/${entry.trackId}/analyze-advanced`, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        console.error(`Failed to analyze composition: HTTP ${res.status}`, body);
+        console.error(`Failed advanced DNA analysis: HTTP ${res.status}`, body);
         return;
       }
       // Refreshes the expanded Track DNA panel, if open, without a reload.
       setDnaRefreshKeys((prev) => ({ ...prev, [entry.trackId!]: (prev[entry.trackId!] ?? 0) + 1 }));
     } catch (error) {
-      console.error("Failed to analyze composition:", error);
+      console.error("Failed advanced DNA analysis:", error);
     } finally {
       setAnalyzingIds((prev) => {
         const next = new Set(prev);

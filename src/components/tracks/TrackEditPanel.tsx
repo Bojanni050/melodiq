@@ -700,19 +700,6 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               </div>
             )}
 
-            {/* Composition score */}
-            {parsedAudioDna?.compositionScore != null && (
-              <div className="space-y-1 border-t border-white/10 pt-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-white">Composition</span>
-                  <span className="text-white/50">{parsedAudioDna.compositionScore.toFixed(1)}/10</span>
-                </div>
-                {parsedAudioDna.compositionNotes && (
-                  <p className="text-sm text-white/40">{parsedAudioDna.compositionNotes}</p>
-                )}
-              </div>
-            )}
-
             {/* Fallback when no DNA data at all */}
             {!parsedAudioDna && (
               <p className="text-sm text-white/40">Track DNA is still being analysed…</p>

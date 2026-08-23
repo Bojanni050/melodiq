@@ -1,16 +1,18 @@
 import { extractAudioFeatures } from "@/lib/audio-features";
-import { extractAtmosphereTags, scoreLyricsQuality, scoreCompositionQuality } from "@/lib/providers/llm";
-import { getSetting } from "@/lib/settings";
+import { extractAtmosphereTags, scoreLyricsQuality } from "@/lib/providers/llm";
 import type { AudioDna } from "@/lib/songs";
 
 /**
  * Computes the full auto Track DNA payload for a just-finalized track: audio
- * DSP features (tempo/key/energy/loudness) plus LLM-derived atmosphere tags,
- * lyrics score, and composition/arrangement score. Called once from each
- * provider webhook right after the audio buffer is downloaded, alongside the
- * existing extractAudioDuration call. Returns a JSON string ready for the
- * tracks.audioDna column; never throws — a failing sub-analysis just leaves
- * that field null.
+ * DSP features (tempo/key/energy/loudness) plus LLM-derived atmosphere tags
+ * and lyrics score. Called once from each provider webhook right after the
+ * audio buffer is downloaded, alongside the existing extractAudioDuration
+ * call. Returns a JSON string ready for the tracks.audioDna column; never
+ * throws — a failing sub-analysis just leaves that field null.
+ *
+ * Composition/arrangement critique now lives entirely in "Advanced Track
+ * DNA" (advanced-dna-analysis.ts), which listens to the audio directly —
+ * there's no separate auto-computed composition score anymore.
  */
 export async function computeAudioDna(params: {
   audioBuffer: Buffer;
@@ -18,9 +20,7 @@ export async function computeAudioDna(params: {
   lyrics: string | null;
   instrumental: boolean;
 }): Promise<string> {
-  const autoAnalyzeComposition = (await getSetting("AUTO_ANALYZE_COMPOSITION")) === "true";
-
-  const [features, atmosphereTags, lyricsResult, compositionResult] = await Promise.all([
+  const [features, atmosphereTags, lyricsResult] = await Promise.all([
     extractAudioFeatures(params.audioBuffer).catch((error) => {
       console.warn("[audio-dna] Audio feature extraction failed:", error);
       return null;
@@ -35,15 +35,6 @@ export async function computeAudioDna(params: {
           return null;
         })
       : Promise.resolve(null),
-    // Off by default (Settings → AI Routing) — only runs automatically when
-    // explicitly opted in. Manual per-track analysis (the "Analyze
-    // Composition" track action) always works regardless of this setting.
-    autoAnalyzeComposition
-      ? scoreCompositionQuality(params.prompt, params.lyrics).catch((error) => {
-          console.warn("[audio-dna] Composition scoring failed:", error);
-          return null;
-        })
-      : Promise.resolve(null),
   ]);
 
   const audioDna: AudioDna = {
@@ -54,8 +45,8 @@ export async function computeAudioDna(params: {
     atmosphereTags: atmosphereTags ?? null,
     lyricsScore: lyricsResult?.score ?? null,
     lyricsNotes: lyricsResult?.notes ?? null,
-    compositionScore: compositionResult?.score ?? null,
-    compositionNotes: compositionResult?.notes ?? null,
+    compositionScore: null,
+    compositionNotes: null,
     computedAt: new Date().toISOString(),
   };
 

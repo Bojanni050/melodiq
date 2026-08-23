@@ -70,8 +70,6 @@ export default function TrackDnaPanel({
   trackStatus,
   onReanalyzeAudio,
   reanalyzingAudio,
-  onAnalyzeCompositionClick,
-  analyzingComposition,
 }: {
   trackId: string;
   refreshKey?: number;
@@ -81,8 +79,6 @@ export default function TrackDnaPanel({
   trackStatus?: string;
   onReanalyzeAudio?: () => void;
   reanalyzingAudio?: boolean;
-  onAnalyzeCompositionClick?: () => void;
-  analyzingComposition?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -135,22 +131,22 @@ export default function TrackDnaPanel({
       <TrackDnaCard onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-white/40">
-            No Track DNA yet — analyze this track to see tempo, key, atmosphere, and composition insights.
+            No Track DNA yet — analyze this track to see tempo, key, and atmosphere.
           </p>
-          {trackStatus === "done" && onAnalyzeCompositionClick && (
+          {trackStatus === "done" && onReanalyzeAudio && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onAnalyzeCompositionClick(); }}
-              disabled={analyzingComposition}
+              onClick={(e) => { e.stopPropagation(); onReanalyzeAudio(); }}
+              disabled={reanalyzingAudio}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-400/30 bg-primary-500/10 px-3 py-1.5 text-xs font-medium text-primary-200 transition-colors hover:bg-primary-500/20 disabled:opacity-50"
             >
-              {analyzingComposition ? (
+              {reanalyzingAudio ? (
                 <>
                   <span className="w-2 h-2 rounded-full border border-primary-200/50 border-t-transparent animate-spin" />
                   Analyzing…
                 </>
               ) : (
-                "Analyze Track"
+                "Analyze audio"
               )}
             </button>
           )}
@@ -223,17 +219,9 @@ export default function TrackDnaPanel({
           </div>
         )}
 
-        {audioDna.compositionScore != null && (
-          <div className="space-y-1 border-t border-white/10 pt-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-white">Composition</span>
-              <span className="text-white/50">{audioDna.compositionScore.toFixed(1)}/10</span>
-            </div>
-            {audioDna.compositionNotes && <p className="text-sm text-white/40">{audioDna.compositionNotes}</p>}
-          </div>
-        )}
-
-        {/* ── Advanced DNA section ───────────────────────────────────── */}
+        {/* ── Advanced DNA section — lyrics analysis, audio-based composition
+             critique, and improvement tips all live here now (folded in from
+             the former standalone "Analyze Composition" action). ────────── */}
         <div className="border-t border-white/10 pt-3 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">

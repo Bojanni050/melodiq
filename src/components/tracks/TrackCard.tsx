@@ -128,7 +128,6 @@ const TrackCard = memo(function TrackCard({
   const [editTrackOpen, setEditTrackOpen] = useState(false);
   const { mutate } = useSWRConfig();
   const [showLinkToArchiveDialog, setShowLinkToArchiveDialog] = useState(false);
-  const [analyzingComposition, setAnalyzingComposition] = useState(false);
   const [reanalyzingAudio, setReanalyzingAudio] = useState(false);
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
@@ -195,25 +194,6 @@ const TrackCard = memo(function TrackCard({
     setTimeout(poll, 4000);
   }
 
-  async function handleAnalyzeComposition() {
-    setAnalyzingComposition(true);
-    try {
-      const res = await fetch(`/api/tracks/${track.id}/analyze-composition`, { method: "POST" });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        console.error(`Failed to analyze composition: HTTP ${res.status}`, body);
-        return;
-      }
-      // Picks up the freshly-written compositionScore/notes on the expanded
-      // Track DNA panel, if it's currently open, without a full page reload.
-      setDnaRefreshKey((key) => key + 1);
-    } catch (error) {
-      console.error("Failed to analyze composition:", error);
-    } finally {
-          setAnalyzingComposition(false);
-        }
-      }
-
       async function handleReanalyzeAudio() {
         setReanalyzingAudio(true);
         try {
@@ -239,18 +219,12 @@ const TrackCard = memo(function TrackCard({
 
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
-        // Advanced DNA implies the basic composition analysis too — run them
-        // together so a track never ends up with advanced insights but no
-        // tempo/key/atmosphere/composition score.
-        const compositionPromise = hasCompositionAnalysis ? Promise.resolve() : handleAnalyzeComposition();
         try {
-          const [, res] = await Promise.all([
-            compositionPromise,
-            fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" }),
-          ]);
+          const res = await fetch(`/api/tracks/${track.id}/analyze-advanced`, { method: "POST" });
           if (!res.ok) return;
           const data = await res.json();
           setAdvancedDnaResult(data);
+          setDnaRefreshKey((key) => key + 1);
         } catch (error) {
           console.error("Failed advanced DNA analysis:", error);
         } finally {
@@ -450,7 +424,6 @@ const TrackCard = memo(function TrackCard({
       return null;
     }
   }, [track.audioDna]);
-  const hasCompositionAnalysis = audioDna?.compositionScore != null;
   const hasLyricsAnalysis = audioDna?.lyricsScore != null;
   const bpm = audioDna?.tempo ?? null;
   const generationCompletedOn = track.status === "done" && track.completedAt
@@ -608,7 +581,7 @@ const TrackCard = memo(function TrackCard({
           isPlaying={isPlaying}
           effectiveCoverUrl={effectiveCoverUrl}
           effectiveThumbUrl={effectiveThumbUrl}
-          isAnalyzing={analyzingComposition || advancedDnaRunning}
+          isAnalyzing={advancedDnaRunning}
           onPlayClick={() => {
             const now = Date.now();
             if (now - playClickCooldownRef.current < 350) return;
@@ -673,25 +646,9 @@ const TrackCard = memo(function TrackCard({
                 🧬
               </span>
             )}
-            {hasCompositionAnalysis && !analyzingComposition && (
-              <span className="shrink-0 text-xs leading-none" title="Composition analysis available" aria-label="Composition analysis available">
-                🎼
-              </span>
-            )}
             {hasLyricsAnalysis && (
               <span className="shrink-0 text-xs leading-none" title="Lyrics analysis available" aria-label="Lyrics analysis available">
                 📝
-              </span>
-            )}
-            {analyzingComposition && (
-              <span
-                className="flex shrink-0 items-end gap-0.5 h-3"
-                title="Analyzing composition…"
-                aria-label="Analyzing composition"
-              >
-                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar" />
-                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-150" />
-                <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-300" />
               </span>
             )}
             {generatingTcl && (
@@ -949,9 +906,7 @@ const TrackCard = memo(function TrackCard({
                     ? "Dit is een Master Track in Song Archive en kan niet gearchiveerd worden."
                     : undefined
               }
-              onAnalyzeCompositionClick={handleAnalyzeComposition}
-                            analyzingComposition={analyzingComposition}
-                            onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
+              onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
                             advancedDnaRunning={advancedDnaRunning}
                             onAnalyzeAudioClick={handleReanalyzeAudio}
                             analyzingAudio={reanalyzingAudio}
@@ -1013,8 +968,6 @@ const TrackCard = memo(function TrackCard({
               trackStatus={track.status}
               onReanalyzeAudio={handleReanalyzeAudio}
               reanalyzingAudio={reanalyzingAudio}
-              onAnalyzeCompositionClick={handleAnalyzeComposition}
-              analyzingComposition={analyzingComposition}
             />
           )}
         </div>

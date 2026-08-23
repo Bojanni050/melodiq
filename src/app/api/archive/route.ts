@@ -121,9 +121,8 @@ export async function POST(request: NextRequest) {
       console.error(`[archive] failed to add track ${row.trackId} to Master Tracks playlist:`, error);
     });
 
-    // Fire-and-forget: newly linking a track as a master track auto-runs
-    // composition analysis (and backfills lyrics analysis if it's missing),
-    // regardless of the AUTO_ANALYZE_COMPOSITION setting.
+    // Fire-and-forget: newly linking a track as a master track backfills its
+    // lyrics analysis if it's missing.
     void analyzeTrackDna(row.trackId, { includeLyricsIfMissing: true }).catch((error) => {
       console.error(`[archive] auto-analysis failed for track ${row.trackId}:`, error);
     });

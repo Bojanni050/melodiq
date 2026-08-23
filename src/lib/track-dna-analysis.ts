@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { scoreCompositionQuality, scoreLyricsQuality } from "@/lib/providers/llm";
+import { scoreLyricsQuality } from "@/lib/providers/llm";
 import { extractAudioFeatures } from "@/lib/audio-features";
 import { downloadFromS3 } from "@/lib/s3";
 import { logToFile } from "@/lib/file-logger";
@@ -18,11 +18,11 @@ function warn(message: string, error?: unknown): void {
 }
 
 /**
- * On-demand Track DNA analysis — same signals as the automatic Track DNA
- * computation (audio-dna.ts), but callable for a single already-finished
- * track instead of only running once at generation time. Used by the manual
- * "Analyze Composition" track action and by the Master Tracks link flow
- * (analyze automatically the moment a track is linked as a master track).
+ * On-demand lyrics scoring for a single already-finished track, backfilling
+ * the "Lyrics" Track DNA signal when it's missing. Used by the Master Tracks
+ * link flow (analyze automatically the moment a track is linked as a master
+ * track). Composition/arrangement critique now lives entirely in "Advanced
+ * Track DNA" (advanced-dna-analysis.ts), so it's not part of this anymore.
  *
  * Never throws — a failing sub-analysis just leaves that field untouched, so
  * callers can safely fire this without awaiting.
@@ -41,30 +41,17 @@ export async function analyzeTrackDna(
     !track.instrumental &&
     !!track.lyrics?.trim();
 
+  if (!needsLyrics) return null;
+
   try {
-    log(`[track-dna-analysis] track ${trackId}: scoring composition from prompt/lyrics text, needsLyrics=${needsLyrics}`);
-
-    const [composition, lyrics] = await Promise.all([
-      scoreCompositionQuality(track.prompt, track.lyrics).catch((error) => {
-        warn(`[track-dna-analysis] composition scoring failed for track ${trackId}:`, error);
-        return null;
-      }),
-      needsLyrics
-        ? scoreLyricsQuality(track.lyrics!).catch((error) => {
-            warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
-            return null;
-          })
-        : Promise.resolve(null),
-    ]);
-
-    log(
-      `[track-dna-analysis] track ${trackId}: composition=${composition ? JSON.stringify(composition) : "null"}, lyrics=${lyrics ? JSON.stringify(lyrics) : "null"}`
-    );
-
-    if (!composition && !lyrics) {
-      warn(`[track-dna-analysis] track ${trackId}: both composition and lyrics scoring returned null — nothing to save`);
+    const lyrics = await scoreLyricsQuality(track.lyrics!).catch((error) => {
+      warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
       return null;
-    }
+    });
+
+    log(`[track-dna-analysis] track ${trackId}: lyrics=${lyrics ? JSON.stringify(lyrics) : "null"}`);
+
+    if (!lyrics) return null;
 
     const audioDna: AudioDna = {
       tempo: existing.tempo ?? null,
@@ -72,10 +59,10 @@ export async function analyzeTrackDna(
       energy: existing.energy ?? null,
       loudness: existing.loudness ?? null,
       atmosphereTags: existing.atmosphereTags ?? null,
-      lyricsScore: lyrics?.score ?? existing.lyricsScore ?? null,
-      lyricsNotes: lyrics?.notes ?? existing.lyricsNotes ?? null,
-      compositionScore: composition?.score ?? existing.compositionScore ?? null,
-      compositionNotes: composition?.notes ?? existing.compositionNotes ?? null,
+      lyricsScore: lyrics.score,
+      lyricsNotes: lyrics.notes,
+      compositionScore: existing.compositionScore ?? null,
+      compositionNotes: existing.compositionNotes ?? null,
       computedAt: new Date().toISOString(),
     };
 

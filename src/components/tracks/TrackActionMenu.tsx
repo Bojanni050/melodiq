@@ -25,8 +25,6 @@ interface TrackActionMenuProps {
   archiveDisabled?: boolean;
   archiveDisabledReason?: string;
   onLinkToArchiveClick?: () => void;
-  onAnalyzeCompositionClick?: () => void;
-  analyzingComposition?: boolean;
   onAdvancedDnaClick?: () => void;
   advancedDnaRunning?: boolean;
   onAnalyzeAudioClick?: () => void;
@@ -67,8 +65,6 @@ export default function TrackActionMenu({
   archiveDisabled,
   archiveDisabledReason,
   onLinkToArchiveClick,
-  onAnalyzeCompositionClick,
-  analyzingComposition,
   onAdvancedDnaClick,
   advancedDnaRunning,
   onAnalyzeAudioClick,
@@ -241,7 +237,7 @@ export default function TrackActionMenu({
                         Link to Master Tracks
                       </button>
                     )}
-                    {(onAnalyzeCompositionClick || onAdvancedDnaClick || onAnalyzeAudioClick) && (
+                    {(onAdvancedDnaClick || onAnalyzeAudioClick) && (
                       <>
                         <div className="my-1 h-px bg-white/10" />
                         <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Track DNA</p>
@@ -256,19 +252,6 @@ export default function TrackActionMenu({
                             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {analyzingAudio ? "Analyzing audio..." : "Analyze Audio (Tempo/Key)"}
-                          </button>
-                        )}
-                        {onAnalyzeCompositionClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAnalyzeCompositionClick();
-                              setMenuOpen(false);
-                            }}
-                            disabled={analyzingComposition}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {analyzingComposition ? "Analyzing composition..." : "Analyze Composition"}
                           </button>
                         )}
                         {onAdvancedDnaClick && (

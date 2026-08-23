@@ -281,16 +281,6 @@ export default function SettingsPage() {
     });
   }
 
-  async function toggleAutoAnalyzeComposition() {
-    const next = values.AUTO_ANALYZE_COMPOSITION === "true" ? "false" : "true";
-    setValues((prev) => ({ ...prev, AUTO_ANALYZE_COMPOSITION: next }));
-    await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "AUTO_ANALYZE_COMPOSITION", value: next }),
-    });
-  }
-
   async function toggleTclAutoJumpToEditor() {
     const next = values.TCL_AUTO_JUMP_EDITOR === "false" ? "true" : "false";
     setValues((prev) => ({ ...prev, TCL_AUTO_JUMP_EDITOR: next }));
@@ -551,8 +541,6 @@ export default function SettingsPage() {
                   onToggleTimecodedDropdown={() => { setShowTimecodedModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); setShowAdvancedDnaModelDropdown(false); setShowLyricIqModelDropdown(false); }}
                   isAdmin={user?.role === "admin"}
                   onReadMore={setModelDetail}
-                  autoAnalyzeComposition={values.AUTO_ANALYZE_COMPOSITION === "true"}
-                  onToggleAutoAnalyzeComposition={toggleAutoAnalyzeComposition}
                   tclAutoJumpToEditor={values.TCL_AUTO_JUMP_EDITOR !== "false"}
                   onToggleTclAutoJumpToEditor={toggleTclAutoJumpToEditor}
                   onGetModels={getOpenRouterModels}

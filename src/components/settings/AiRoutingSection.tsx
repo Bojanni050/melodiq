@@ -92,8 +92,6 @@ export default function AiRoutingSection({
   onToggleTimecodedDropdown,
   isAdmin,
   onReadMore,
-  autoAnalyzeComposition,
-  onToggleAutoAnalyzeComposition,
   tclAutoJumpToEditor,
   onToggleTclAutoJumpToEditor,
   onGetModels,
@@ -139,8 +137,6 @@ export default function AiRoutingSection({
   onToggleTimecodedDropdown?: () => void;
   isAdmin?: boolean;
   onReadMore: (model: LLMModel) => void;
-  autoAnalyzeComposition: boolean;
-  onToggleAutoAnalyzeComposition: () => void;
   tclAutoJumpToEditor: boolean;
   onToggleTclAutoJumpToEditor: () => void;
   onGetModels?: () => void;
@@ -205,9 +201,9 @@ export default function AiRoutingSection({
               <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
-              Used by the automatic Track DNA analysis (atmosphere tags, lyrics quality score, and the text-only
-              composition score from the style prompt/lyrics structure) that runs once per finished track. Kept
-              separate from Lyrics since it needs reliable JSON output rather than creative writing.
+              Used by the automatic Track DNA analysis (atmosphere tags and lyrics quality score) that runs once
+              per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
+              creative writing.
             </p>
           </div>
           <div>
@@ -222,8 +218,9 @@ export default function AiRoutingSection({
               <option value="edenai">Eden AI</option>
             </select>
             <p className="text-xs text-white/25 mt-1">
-              Used by the Advanced Track DNA analysis, which listens to the actual audio (alongside the lyrics
-              and style prompt) for a thorough critique with tips — needs an audio-input-capable model.
+              Used by Advanced Track DNA, which listens to the actual audio (alongside the lyrics and style
+              prompt) to produce a lyrics analysis, a composition/mix critique, and tips — needs an
+              audio-input-capable model.
             </p>
           </div>
           <div>
@@ -240,32 +237,6 @@ export default function AiRoutingSection({
             <p className="text-xs text-white/25 mt-1">
               Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.
             </p>
-          </div>
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <div>
-              <label className="block text-sm font-medium text-white/50">Auto-analyze composition</label>
-              <p className="text-xs text-white/25 mt-1 max-w-md">
-                Automatically score composition/arrangement (from the style prompt and lyrics structure) on every
-                newly finished track. Off by default — existing tracks are never analyzed in bulk; use
-                &ldquo;Analyze Composition&rdquo; on a track&apos;s menu to run it on demand regardless of this
-                setting.
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label="Toggle auto-analyze composition"
-              onClick={onToggleAutoAnalyzeComposition}
-              className={`relative w-12 h-6 rounded-full shrink-0 transition-colors ${
-                autoAnalyzeComposition ? "bg-emerald-500/20" : "bg-white/10"
-              }`}
-            >
-              <span className="sr-only">Toggle auto-analyze composition</span>
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  autoAnalyzeComposition ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
           </div>
           <div className="flex items-center justify-between gap-3 pt-1">
             <div>

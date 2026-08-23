@@ -127,7 +127,7 @@ export default function EntryTrackActionsMenu({
                 disabled={analyzing}
                 className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {analyzing ? "Analyzing composition…" : "Analyze Composition"}
+                {analyzing ? "Running advanced analysis…" : "Advanced Track DNA"}
               </button>
               <Link
                 href="/library"
