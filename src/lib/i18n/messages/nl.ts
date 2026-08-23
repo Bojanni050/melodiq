@@ -1,7 +1,7 @@
 import type en from "./en";
 
-// "Release", "Single", and "Album" are deliberately left untranslated
-// throughout the app (see releasesBrowse/myReleases below) — they're used as
+// "Release", "Single", "Album", "EP", "track(s)", and "Discover" are
+// deliberately left untranslated throughout the app — they're used as
 // English terms of art even in the Dutch interface.
 const nl: typeof en = {
   nav: {
@@ -11,7 +11,7 @@ const nl: typeof en = {
     refine: "VERFIJNEN",
     account: "ACCOUNT",
     developer: "ONTWIKKELAAR",
-    discover: "Ontdekken",
+    discover: "Discover",
     releasesBrowse: "Releases",
     library: "Bibliotheek",
     playlists: "Afspeellijsten",
@@ -101,6 +101,45 @@ const nl: typeof en = {
     deleteReleaseTitle: "Release verwijderen?",
     deleteReleaseBody: '"{title}" wordt verwijderd. De tracks zelf worden niet verwijderd.',
     cancelDelete: "Verwijderen annuleren",
+  },
+  discover: {
+    overview: "Overzicht",
+    subtitle: "Jouw tracks, en gepubliceerde tracks van de MelodIQ-community.",
+    yourTracks: "Jouw Tracks",
+    generatedCount: "{count} gegenereerd",
+    thisWeekCount: "{count} deze week",
+    thisMonthCount: "{count} deze maand",
+    topMostPlayed: "Top {count} meest afgespeeld",
+    noTracksYetPrefix: "Nog geen tracks. Ga naar ",
+    noTracksYetSuffix: " om je eerste te maken.",
+    recentlyGenerated: "Recent gegenereerd",
+    viewAll: "Alles bekijken",
+    yourLatestTracks: "Jouw {count} laatste {tracksWord}",
+    currentTrends: "Actuele Trends",
+    nothingTrending: "Nog niets trending.",
+    publishedPlaylists: "Gepubliceerde Afspeellijsten",
+    publishedTracks: "Gepubliceerde Tracks",
+    noPublishedTracksYet: "Nog geen gepubliceerde tracks.",
+    trackDetailsHint: "Speel een van je tracks af om hier info en songtekst te tonen.",
+    play: "{title} afspelen",
+    pause: "{title} pauzeren",
+    plays: "{count} keer afgespeeld",
+    trackOptions: "Trackopties",
+    goToTrack: "Naar track",
+    goToRelease: "Naar release",
+    trackNotInRelease: "Track staat op geen enkele release",
+  },
+  auth: {
+    signIn: "Inloggen",
+    signUp: "Registreren",
+    namePlaceholder: "Naam (optioneel)",
+    passwordPlaceholder: "Wachtwoord",
+    genericError: "Er ging iets mis",
+    unexpectedError: "Er is een onverwachte fout opgetreden",
+    newHere: "Nieuw hier?",
+    createAccount: "Account aanmaken",
+    alreadyHaveAccount: "Heb je al een account?",
+    signInLower: "Inloggen",
   },
 };
 

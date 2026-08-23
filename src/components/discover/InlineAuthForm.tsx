@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/hooks/useT";
 
 export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: () => void }) {
+  const t = useT();
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,13 +31,13 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setAuthError(data.error || "Something went wrong");
+        setAuthError(data.error || t("auth.genericError"));
         return;
       }
 
       onAuthenticated();
     } catch {
-      setAuthError("An unexpected error occurred");
+      setAuthError(t("auth.unexpectedError"));
     } finally {
       setAuthLoading(false);
     }
@@ -52,7 +54,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           }}
           className={`rounded-full px-3 py-1.5 transition-colors ${authMode === "login" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
         >
-          Sign In
+          {t("auth.signIn")}
         </button>
         <button
           type="button"
@@ -62,7 +64,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           }}
           className={`rounded-full px-3 py-1.5 transition-colors ${authMode === "register" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
         >
-          Sign Up
+          {t("auth.signUp")}
         </button>
       </div>
       <form onSubmit={handleAuthSubmit} className="space-y-3">
@@ -71,7 +73,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Name (optional)"
+            placeholder={t("auth.namePlaceholder")}
             className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
           />
         )}
@@ -88,7 +90,7 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
+          placeholder={t("auth.passwordPlaceholder")}
           required
           autoComplete={authMode === "login" ? "current-password" : "new-password"}
           className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
@@ -99,22 +101,22 @@ export default function InlineAuthForm({ onAuthenticated }: { onAuthenticated: (
           disabled={authLoading || !email || !password}
           className="h-10 w-full rounded-xl bg-white text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-60"
         >
-          {authLoading ? "…" : authMode === "login" ? "Sign In" : "Sign Up"}
+          {authLoading ? "…" : authMode === "login" ? t("auth.signIn") : t("auth.signUp")}
         </button>
       </form>
       <p className="mt-3 text-center text-sm text-white/35">
         {authMode === "login" ? (
           <>
-            New here?{" "}
+            {t("auth.newHere")}{" "}
             <button type="button" onClick={() => setAuthMode("register")} className="text-white/60 hover:text-white">
-              Create an account
+              {t("auth.createAccount")}
             </button>
           </>
         ) : (
           <>
-            Already have an account?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <button type="button" onClick={() => setAuthMode("login")} className="text-white/60 hover:text-white">
-              Sign in
+              {t("auth.signInLower")}
             </button>
           </>
         )}

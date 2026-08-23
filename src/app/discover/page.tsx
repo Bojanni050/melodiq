@@ -11,6 +11,7 @@ import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore, useReleaseStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { useT } from "@/hooks/useT";
 
 interface PublicTrack {
   id: string;
@@ -63,6 +64,7 @@ interface MyTrack {
 }
 
 export default function DiscoverPage() {
+  const t = useT();
   const [authChecked, setAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [published, setPublished] = useState<PublicTrack[]>([]);
@@ -378,11 +380,11 @@ export default function DiscoverPage() {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">{track.title || track.prompt.substring(0, 40)}</p>
-          <p className="truncate text-sm text-white/45">{track.artistName || "Unknown Artist"}</p>
+          <p className="truncate text-sm text-white/45">{track.artistName || t("releases.unknownArtist")}</p>
         </div>
         <div className="flex items-center justify-between text-[11px] text-white/35">
           <span>{formatDuration(track.duration)}</span>
-          <span>{(track.playCount ?? 0).toLocaleString()} plays</span>
+          <span>{t("discover.plays", { count: (track.playCount ?? 0).toLocaleString() })}</span>
         </div>
       </div>
     );
@@ -474,7 +476,7 @@ export default function DiscoverPage() {
               handlePlay(track);
             }}
             className="absolute inset-0 overflow-hidden rounded-xl"
-            aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
+            aria-label={isPlaying ? t("discover.pause", { title: track.title }) : t("discover.play", { title: track.title })}
           >
             {cover ? (
               <img src={cover} alt={track.title} className="h-full w-full object-cover" />
@@ -510,11 +512,11 @@ export default function DiscoverPage() {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">{track.title}</p>
-          <p className="truncate text-sm text-white/45">{track.artistName || "Unknown Artist"}</p>
+          <p className="truncate text-sm text-white/45">{track.artistName || t("releases.unknownArtist")}</p>
         </div>
         <div className="flex items-center justify-between text-[11px] text-white/35">
           <span>{formatDuration(track.duration)}</span>
-          <span>{track.totalPlays.toLocaleString()} plays</span>
+          <span>{t("discover.plays", { count: track.totalPlays.toLocaleString() })}</span>
         </div>
       </Link>
     );
@@ -541,9 +543,9 @@ export default function DiscoverPage() {
 
         <div className="space-y-8 pb-16">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/35">Overview</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("discover.overview")}</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Discover</h1>
-            <p className="mt-1 text-sm text-white/55">Your tracks, and published tracks from the MelodIQ community.</p>
+            <p className="mt-1 text-sm text-white/55">{t("discover.subtitle")}</p>
           </div>
 
           {authChecked && !isLoggedIn && <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />}
@@ -551,26 +553,26 @@ export default function DiscoverPage() {
           {showOwnerSections && (
             <section className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">Your Tracks</h2>
+                <h2 className="text-base font-semibold">{t("discover.yourTracks")}</h2>
                 {!myTracksLoading && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
-                      {totalTrackCount} generated
+                      {t("discover.generatedCount", { count: totalTrackCount })}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
-                      {tracksThisWeek} this week
+                      {t("discover.thisWeekCount", { count: tracksThisWeek })}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
-                      {tracksThisMonth} this month
+                      {t("discover.thisMonthCount", { count: tracksThisMonth })}
                     </span>
                   </div>
                 )}
               </div>
               {myTracksLoading ? (
-                <p className="text-sm text-white/50">Loadingâ€¦</p>
+                <p className="text-sm text-white/50">{t("library.loading")}</p>
               ) : topPlayedTracks.length > 0 ? (
                 <>
-                  <p className="text-xs text-white/40">Top {topPlayedTracks.length} most played</p>
+                  <p className="text-xs text-white/40">{t("discover.topMostPlayed", { count: topPlayedTracks.length })}</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {topPlayedTracks.map((track) => (
                       <MyTrackCard key={track.id} track={track} />
@@ -579,7 +581,7 @@ export default function DiscoverPage() {
                 </>
               ) : (
                 <p className="text-sm text-white/45">
-                  No tracks yet. Head to <Link href="/studio" className="text-primary-400 hover:underline">Music</Link> to generate your first one.
+                  {t("discover.noTracksYetPrefix")}<Link href="/studio" className="text-primary-400 hover:underline">{t("nav.music")}</Link>{t("discover.noTracksYetSuffix")}
                 </p>
               )}
             </section>
@@ -588,12 +590,14 @@ export default function DiscoverPage() {
           {showOwnerSections && recentTracks.length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Recently Generated</h2>
+                <h2 className="text-base font-semibold">{t("discover.recentlyGenerated")}</h2>
                 <Link href="/library" className="text-xs text-white/40 hover:text-white/70 transition-colors">
-                  View all
+                  {t("discover.viewAll")}
                 </Link>
               </div>
-              <p className="text-xs text-white/40">Your {recentTracks.length} latest track{recentTracks.length !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-white/40">
+                {t("discover.yourLatestTracks", { count: recentTracks.length, tracksWord: recentTracks.length === 1 ? t("releases.track") : t("releases.tracks") })}
+              </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {recentTracks.map((track) => (
                   <MyTrackCard key={track.id} track={track} />
@@ -603,11 +607,11 @@ export default function DiscoverPage() {
           )}
 
           {loading ? (
-            <p className="text-sm text-white/50">Loadingâ€¦</p>
+            <p className="text-sm text-white/50">{t("library.loading")}</p>
           ) : (
             <>
               <section className="space-y-3">
-                <h2 className="text-base font-semibold">Current Trends</h2>
+                <h2 className="text-base font-semibold">{t("discover.currentTrends")}</h2>
                 {trending.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {trending.map((track) => (
@@ -615,13 +619,13 @@ export default function DiscoverPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-white/45">Nothing trending yet.</p>
+                  <p className="text-sm text-white/45">{t("discover.nothingTrending")}</p>
                 )}
               </section>
 
               {publishedPlaylists.length > 0 && (
                 <section className="space-y-3">
-                  <h2 className="text-base font-semibold">Published Playlists</h2>
+                  <h2 className="text-base font-semibold">{t("discover.publishedPlaylists")}</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {publishedPlaylists.map((playlist) => (
                       <Link
@@ -649,7 +653,7 @@ export default function DiscoverPage() {
                           )}
                         </div>
                         <p className="text-[11px] text-white/35">
-                          {playlist.trackCount} {playlist.trackCount === 1 ? "track" : "tracks"}
+                          {playlist.trackCount} {playlist.trackCount === 1 ? t("releases.track") : t("releases.tracks")}
                         </p>
                       </Link>
                     ))}
@@ -658,7 +662,7 @@ export default function DiscoverPage() {
               )}
 
               <section className="space-y-3">
-                <h2 className="text-base font-semibold">Published Tracks</h2>
+                <h2 className="text-base font-semibold">{t("discover.publishedTracks")}</h2>
                 {published.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {published.map((track) => (
@@ -666,7 +670,7 @@ export default function DiscoverPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-white/45">No published tracks yet.</p>
+                  <p className="text-sm text-white/45">{t("discover.noPublishedTracksYet")}</p>
                 )}
               </section>
             </>
@@ -687,8 +691,8 @@ export default function DiscoverPage() {
               />
             ) : (
               <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-                <p className="text-sm mt-3">Play one of your tracks to show its info and lyrics here.</p>
+                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+                <p className="text-sm mt-3">{t("discover.trackDetailsHint")}</p>
               </div>
             )}
           </div>

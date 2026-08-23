@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReleaseStore } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 interface DiscoverTrackOptionsMenuProps {
   trackId: string;
 }
 
 export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptionsMenuProps) {
+  const t = useT();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
@@ -65,8 +67,8 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
           setSubmenuOpen(false);
         }}
         className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/75 backdrop-blur-sm transition-colors hover:bg-black/85 hover:text-white shadow-md"
-        title="Track options"
-        aria-label="Track options"
+        title={t("discover.trackOptions")}
+        aria-label={t("discover.trackOptions")}
       >
         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
@@ -87,7 +89,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
             onClick={handleGoToTrack}
             className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
           >
-            <span>Go to track</span>
+            <span>{t("discover.goToTrack")}</span>
           </button>
 
           <div className="my-1 h-px bg-white/10" />
@@ -98,9 +100,9 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
               type="button"
               disabled
               className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs text-white/30 cursor-not-allowed opacity-50"
-              title="Track is not in any release"
+              title={t("discover.trackNotInRelease")}
             >
-              <span>Go to release</span>
+              <span>{t("discover.goToRelease")}</span>
             </button>
           ) : trackReleases.length === 1 ? (
             <button
@@ -108,7 +110,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
               onClick={(e) => handleGoToSingleRelease(e, trackReleases[0].id)}
               className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
             >
-              <span>Go to release</span>
+              <span>{t("discover.goToRelease")}</span>
             </button>
           ) : (
             <div>
@@ -121,7 +123,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
                 }}
                 className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
               >
-                <span>Go to release</span>
+                <span>{t("discover.goToRelease")}</span>
                 <span className={`text-xs text-white/40 transition-transform ${submenuOpen ? "rotate-90" : ""}`}>›</span>
               </button>
 
