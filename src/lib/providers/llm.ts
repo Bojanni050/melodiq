@@ -1,6 +1,17 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
+import { logToFile } from "@/lib/file-logger";
+
+const LOG_FILE = "track-dna.log";
+function logComposition(message: string): void {
+  console.info(message);
+  logToFile(LOG_FILE, message);
+}
+function warnComposition(message: string): void {
+  console.warn(message);
+  logToFile(LOG_FILE, message);
+}
 
 export type LLMProvider = "openrouter" | "openai" | "edenai";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
@@ -420,10 +431,16 @@ export async function scoreCompositionQuality(
   audioBuffer: Buffer,
   format: string = "mp3"
 ): Promise<CompositionQualityScore | null> {
-  if (!audioBuffer?.length) return null;
+  if (!audioBuffer?.length) {
+    warnComposition("[llm][composition] skipped: empty audio buffer");
+    return null;
+  }
 
   const apiKey = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
-  if (!apiKey) return null;
+  if (!apiKey) {
+    warnComposition("[llm][composition] skipped: no OpenRouter API key configured");
+    return null;
+  }
 
   const systemPrompt = `You are a professional music producer and arranger critiquing a finished track.
 
@@ -432,6 +449,10 @@ Listen to the audio and rate it 1-10 for composition and arrangement quality: st
 Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
 - Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
+
+  logComposition(
+    `[llm][composition] calling ${COMPOSITION_AUDIO_MODEL} (format=${format}, audioBytes=${audioBuffer.length})`
+  );
 
   try {
     const res = await axios.post(
@@ -459,18 +480,40 @@ Rules:
     );
 
     const raw = res.data?.choices?.[0]?.message?.content;
-    if (typeof raw !== "string") return null;
+    logComposition(
+      `[llm][composition] response HTTP ${res.status}, content: ${
+        typeof raw === "string" ? JSON.stringify(raw.slice(0, 500)) : `<no content> body=${JSON.stringify(res.data).slice(0, 500)}`
+      }`
+    );
+
+    if (typeof raw !== "string") {
+      warnComposition("[llm][composition] rejected: response had no string content");
+      return null;
+    }
 
     const parsed = parseJsonObject(raw);
-    if (!parsed) return null;
+    if (!parsed) {
+      warnComposition(`[llm][composition] rejected: could not parse JSON out of model response: ${JSON.stringify(raw.slice(0, 500))}`);
+      return null;
+    }
 
     const score = Number(parsed.score);
-    if (!Number.isFinite(score) || score < 1 || score > 10) return null;
+    if (!Number.isFinite(score) || score < 1 || score > 10) {
+      warnComposition(`[llm][composition] rejected: score out of range/invalid: ${JSON.stringify(parsed)}`);
+      return null;
+    }
     const notes = typeof parsed.notes === "string" ? parsed.notes.slice(0, 300) : "";
 
+    logComposition(`[llm][composition] success: score=${score}, notes=${JSON.stringify(notes)}`);
     return { score: Math.round(score * 10) / 10, notes };
-  } catch (error) {
-    console.warn("[llm] Failed to score composition quality:", error);
+  } catch (error: any) {
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    warnComposition(
+      `[llm][composition] request failed${status ? ` (HTTP ${status})` : ""}: ${
+        data ? JSON.stringify(data).slice(0, 500) : error?.message || String(error)
+      }`
+    );
     return null;
   }
 }

@@ -10,12 +10,14 @@ services:
     environment:
       - CACHE_DIR=/data/audio-cache
       - COVER_CACHE_DIR=/data/cover-cache
+      - LOG_DIR=/data/logs
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - audio_cache:/data/audio-cache
       - cover_cache:/data/cover-cache
+      - app_logs:/data/logs
     networks:
       - melodiq_net
 
@@ -41,6 +43,7 @@ volumes:
   postgres_data:
   audio_cache:
   cover_cache:
+  app_logs:
 
 networks:
   melodiq_net:

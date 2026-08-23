@@ -17,3 +17,6 @@ kilo.json
 # Build artifacts
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# Local disk cache / log dirs (Windows dev fallback for CACHE_DIR/LOG_DIR)
+/data

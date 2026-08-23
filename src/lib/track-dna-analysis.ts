@@ -4,7 +4,18 @@ import { eq } from "drizzle-orm";
 import { scoreCompositionQuality, scoreLyricsQuality } from "@/lib/providers/llm";
 import { extractAudioFeatures } from "@/lib/audio-features";
 import { downloadFromS3 } from "@/lib/s3";
+import { logToFile } from "@/lib/file-logger";
 import type { AudioDna } from "@/lib/songs";
+
+const LOG_FILE = "track-dna.log";
+function log(message: string): void {
+  console.info(message);
+  logToFile(LOG_FILE, message);
+}
+function warn(message: string, error?: unknown): void {
+  console.warn(message, error ?? "");
+  logToFile(LOG_FILE, error ? `${message} ${error instanceof Error ? error.stack || error.message : String(error)}` : message);
+}
 
 /**
  * On-demand Track DNA analysis — same signals as the automatic Track DNA
@@ -32,21 +43,31 @@ export async function analyzeTrackDna(
 
   try {
     const audioBuffer = await downloadFromS3(track.s3Key);
+    log(
+      `[track-dna-analysis] track ${trackId}: downloaded ${audioBuffer?.length ?? 0} bytes (format=${track.format || "mp3"}), needsLyrics=${needsLyrics}`
+    );
 
     const [composition, lyrics] = await Promise.all([
       scoreCompositionQuality(audioBuffer, track.format || "mp3").catch((error) => {
-        console.warn(`[track-dna-analysis] composition scoring failed for track ${trackId}:`, error);
+        warn(`[track-dna-analysis] composition scoring failed for track ${trackId}:`, error);
         return null;
       }),
       needsLyrics
         ? scoreLyricsQuality(track.lyrics!).catch((error) => {
-            console.warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
+            warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
             return null;
           })
         : Promise.resolve(null),
     ]);
 
-    if (!composition && !lyrics) return null;
+    log(
+      `[track-dna-analysis] track ${trackId}: composition=${composition ? JSON.stringify(composition) : "null"}, lyrics=${lyrics ? JSON.stringify(lyrics) : "null"}`
+    );
+
+    if (!composition && !lyrics) {
+      warn(`[track-dna-analysis] track ${trackId}: both composition and lyrics scoring returned null — nothing to save`);
+      return null;
+    }
 
     const audioDna: AudioDna = {
       tempo: existing.tempo ?? null,
@@ -64,7 +85,7 @@ export async function analyzeTrackDna(
     await db.update(tracks).set({ audioDna: JSON.stringify(audioDna) }).where(eq(tracks.id, trackId));
     return audioDna;
   } catch (error) {
-    console.error(`[track-dna-analysis] failed for track ${trackId}:`, error);
+    warn(`[track-dna-analysis] failed for track ${trackId}:`, error);
     return null;
   }
 }
