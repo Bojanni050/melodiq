@@ -1,6 +1,7 @@
 "use client";
 
 interface AdvancedDnaResultProps {
+  summary: string | null;
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
@@ -8,6 +9,7 @@ interface AdvancedDnaResultProps {
 }
 
 export default function AdvancedDnaResult({
+  summary,
   lyricsAnalysis,
   compositionAnalysis,
   tips,
@@ -33,6 +35,10 @@ export default function AdvancedDnaResult({
             </svg>
           </button>
         </div>
+
+        {summary && (
+          <p className="text-sm text-white/80 leading-relaxed border-b border-white/10 pb-4">{summary}</p>
+        )}
 
         {lyricsAnalysis && (
           <div className="space-y-1">

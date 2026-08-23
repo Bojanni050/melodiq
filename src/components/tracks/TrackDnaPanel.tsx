@@ -16,6 +16,7 @@ interface AudioDna {
 }
 
 interface AdvancedDnaResult {
+  summary: string | null;
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
@@ -257,6 +258,11 @@ export default function TrackDnaPanel({
 
           {advancedDnaResult ? (
             <div className="space-y-3">
+              {advancedDnaResult.summary && (
+                <p className="text-sm text-white/80 leading-relaxed border-b border-white/10 pb-3">
+                  {advancedDnaResult.summary}
+                </p>
+              )}
               {advancedDnaResult.lyricsAnalysis && (
                 <div className="space-y-1">
                   <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Lyrics</div>

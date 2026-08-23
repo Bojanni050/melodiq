@@ -16,6 +16,7 @@ function warn(message: string, error?: unknown): void {
 }
 
 export interface AdvancedDnaResult {
+  summary: string | null;
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
@@ -64,7 +65,8 @@ Listen to the audio and, together with the style/prompt and lyrics (if provided)
 
 Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
-- Format exactly: {"lyricsAnalysis": "short paragraph on lyrics quality", "compositionAnalysis": "short paragraph on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"]}
+- Format exactly: {"summary": "max 2 short sentences describing the song", "lyricsAnalysis": "short paragraph on lyrics quality", "compositionAnalysis": "short paragraph on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"]}
+- summary: max 2 concise sentences capturing tempo/mood/genre feel and the song's subject or theme, e.g. "Midtempo ballad about losing your youth, built around warm acoustic guitar and soft strings." Ground the instrumentation part in what you actually hear.
 - Each tip: 1-2 sentences, specific and actionable.
 - Maximum 5 tips (fewer OK if not applicable).
 - If lyrics are not available, set lyricsAnalysis to null.
@@ -100,6 +102,7 @@ Rules:
 
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
     const result: AdvancedDnaResult = {
+      summary: typeof parsed.summary === "string" ? parsed.summary.slice(0, 400) : null,
       lyricsAnalysis: typeof parsed.lyricsAnalysis === "string" ? parsed.lyricsAnalysis : null,
       compositionAnalysis: typeof parsed.compositionAnalysis === "string" ? parsed.compositionAnalysis : null,
       tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t: unknown): t is string => typeof t === "string").slice(0, 5) : [],
