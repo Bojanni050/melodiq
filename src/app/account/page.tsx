@@ -26,11 +26,6 @@ interface User {
 
 type AccountTab = "profile" | "security";
 
-const TABS: { id: AccountTab; label: string }[] = [
-  { id: "profile", label: "Profile" },
-  { id: "security", label: "Security" },
-];
-
 function Field({
   label,
   hint,
@@ -78,6 +73,11 @@ export default function AccountPage() {
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
 
+  const TABS: { id: AccountTab; label: string }[] = [
+    { id: "profile", label: t("account.tabProfile") },
+    { id: "security", label: t("account.tabSecurity") },
+  ];
+
   useEffect(() => {
     async function loadUser() {
       const res = await fetch("/api/auth/me");
@@ -115,9 +115,9 @@ export default function AccountPage() {
     const data = await res.json();
     if (res.ok) {
       setUser(data.user);
-      setProfileMessage("Profile updated successfully");
+      setProfileMessage(t("account.profileUpdated"));
     } else {
-      setProfileMessage(data.error || "Failed to update profile");
+      setProfileMessage(data.error || t("account.profileUpdateFailed"));
     }
     setSavingProfile(false);
   }
@@ -145,12 +145,12 @@ export default function AccountPage() {
     setSavingSecurity(true);
     setSecurityMessage("");
     if (newPassword !== confirmPassword) {
-      setSecurityMessage("Passwords do not match");
+      setSecurityMessage(t("account.passwordsDontMatch"));
       setSavingSecurity(false);
       return;
     }
     if (newPassword.length < 8) {
-      setSecurityMessage("Password must be at least 8 characters");
+      setSecurityMessage(t("account.passwordTooShort"));
       setSavingSecurity(false);
       return;
     }
@@ -161,12 +161,12 @@ export default function AccountPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setSecurityMessage("Password updated successfully");
+      setSecurityMessage(t("account.passwordUpdated"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } else {
-      setSecurityMessage(data.error || "Failed to update password");
+      setSecurityMessage(data.error || t("account.passwordUpdateFailed"));
     }
     setSavingSecurity(false);
   }
@@ -181,7 +181,7 @@ export default function AccountPage() {
       });
       URL.revokeObjectURL(url);
       if (dimensions.width < 1920 || dimensions.height < 1080) {
-        setProfileMessage(`Hero image must be at least 1920×1080 (uploaded: ${dimensions.width}×${dimensions.height})`);
+        setProfileMessage(t("account.heroImageTooSmall", { width: dimensions.width, height: dimensions.height }));
         return;
       }
     }
@@ -196,12 +196,12 @@ export default function AccountPage() {
       const data = await res.json();
       if (res.ok) {
         setUser((prev) => prev ? { ...prev, [type === "profile" ? "profileImageUrl" : "heroImageUrl"]: data.url } : prev);
-        setProfileMessage("Image uploaded");
+        setProfileMessage(t("account.imageUploaded"));
       } else {
-        setProfileMessage(data.error || "Upload failed");
+        setProfileMessage(data.error || t("account.uploadFailed"));
       }
     } catch {
-      setProfileMessage("Upload failed");
+      setProfileMessage(t("account.uploadFailed"));
     } finally {
       upload(false);
     }
@@ -217,7 +217,7 @@ export default function AccountPage() {
         <Sidebar credits={null} />
         <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="flex items-center justify-center h-full">
-            <p className="text-white/50">Loading...</p>
+            <p className="text-white/50">{t("account.loading")}</p>
           </div>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function AccountPage() {
       <Sidebar credits={null} />
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="px-4 pt-[68px] pb-10 sm:px-6 lg:pt-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">Account</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">{t("account.title")}</h1>
 
           {/* Tabs */}
           <nav className="mt-8 flex items-center gap-8 border-b border-white/10">
@@ -278,19 +278,19 @@ export default function AccountPage() {
               </section>
 
               <section>
-                <h2 className="text-lg font-semibold text-white mb-4">Identity</h2>
+                <h2 className="text-lg font-semibold text-white mb-4">{t("account.identity")}</h2>
                 <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
-                    <Field label="Name">
+                    <Field label={t("account.nameLabel")}>
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="Your name"
+                        placeholder={t("account.namePlaceholder")}
                       />
                     </Field>
-                    <Field label="Email">
+                    <Field label={t("account.emailLabel")}>
                       <input
                         type="text"
                         value={user?.email || ""}
@@ -302,7 +302,7 @@ export default function AccountPage() {
 
                   <div className="h-px bg-white/8" />
 
-                  <Field label="Artist aliases" hint="Your public artist name(s) (optional). The first one is used wherever an artist name is shown but the track has none set.">
+                  <Field label={t("account.artistAliases")} hint={t("account.artistAliasesHint")}>
                     <div className="grid sm:grid-cols-2 gap-3">
                       {artistAliases.map((alias, i) => (
                         <input
@@ -313,7 +313,7 @@ export default function AccountPage() {
                             setArtistAliases((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
                           }
                           className="input-field text-sm"
-                          placeholder={i === 0 ? "e.g. DJ Bojan (primary)" : `Alias ${i + 1}`}
+                          placeholder={i === 0 ? t("account.aliasPlaceholderPrimary") : t("account.aliasPlaceholder", { n: i + 1 })}
                           maxLength={255}
                         />
                       ))}
@@ -321,27 +321,27 @@ export default function AccountPage() {
                   </Field>
 
                   <div className="grid sm:grid-cols-2 gap-6">
-                    <Field label="Composer alias" hint="Default composer on new tracks. Falls back to your name.">
+                    <Field label={t("account.composerAlias")} hint={t("account.composerAliasHint")}>
                       <input
                         type="text"
                         value={composerAlias}
                         onChange={(e) => setComposerAlias(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="e.g. Bojan van den Hoek"
+                        placeholder={t("account.aliasNamePlaceholder")}
                         maxLength={255}
                       />
                     </Field>
-                    <Field label="Writer alias" hint="Default lyrics writer on new tracks. Falls back to your artist alias.">
+                    <Field label={t("account.writerAlias")} hint={t("account.writerAliasHint")}>
                       <input
                         type="text"
                         value={writerAlias}
                         onChange={(e) => setWriterAlias(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="e.g. Bojan van den Hoek"
+                        placeholder={t("account.aliasNamePlaceholder")}
                         maxLength={255}
                       />
                     </Field>
-                    <Field label="Member since">
+                    <Field label={t("account.memberSince")}>
                       <p className="text-sm text-white/70 py-2">{memberSince}</p>
                     </Field>
                   </div>
@@ -351,7 +351,7 @@ export default function AccountPage() {
                   <div className="h-px bg-white/8" />
                   <div className="grid sm:grid-cols-2 gap-6">
                     <div>
-                      <Field label="Profile photo">
+                      <Field label={t("account.profilePhoto")}>
                         <div className="flex items-center gap-3">
                           {user?.profileImageUrl ? (
                             <img src={user.profileImageUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
@@ -363,14 +363,14 @@ export default function AccountPage() {
                             </div>
                           )}
                           <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
-                            {uploadingProfile ? "Uploading..." : "Upload"}
+                            {uploadingProfile ? t("account.uploading") : t("account.upload")}
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("profile", f); }} />
                           </label>
                         </div>
                       </Field>
                     </div>
                     <div>
-                      <Field label="Hero image" hint="Min. 1920×1080 — shown on your public artist page.">
+                      <Field label={t("account.heroImage")} hint={t("account.heroImageHint")}>
                         <div className="flex items-center gap-3">
                           {user?.heroImageUrl ? (
                             <img src={user.heroImageUrl} alt="" className="w-28 h-14 rounded-lg object-cover" />
@@ -382,7 +382,7 @@ export default function AccountPage() {
                             </div>
                           )}
                           <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
-                            {uploadingHero ? "Uploading..." : "Upload"}
+                            {uploadingHero ? t("account.uploading") : t("account.upload")}
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("hero", f); }} />
                           </label>
                         </div>
@@ -393,25 +393,25 @@ export default function AccountPage() {
 
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white">Artist bio</h2>
+                  <h2 className="text-lg font-semibold text-white">{t("account.artistBio")}</h2>
                   {user?.id && (
                     <Link
                       href={`/discover/artist/${user.id}`}
                       target="_blank"
                       className="text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
                     >
-                      View public artist page →
+                      {t("account.viewPublicPage")}
                     </Link>
                   )}
                 </div>
                 <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8">
-                  <Field label="Bio" hint="Shown on your public artist page. Separate paragraphs with a blank line.">
+                  <Field label={t("account.bioLabel")} hint={t("account.bioHint")}>
                     <textarea
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={6}
                       className="input-field text-sm resize-y"
-                      placeholder="Tell listeners who you are and what you make..."
+                      placeholder={t("account.bioPlaceholder")}
                       maxLength={4000}
                     />
                   </Field>
@@ -424,7 +424,7 @@ export default function AccountPage() {
                   disabled={savingProfile}
                   className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  {savingProfile ? "Saving..." : "Save profile"}
+                  {savingProfile ? t("account.saving") : t("account.saveProfile")}
                 </button>
                 {profileMessage && (
                   <p className={`text-sm ${profileMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
@@ -438,35 +438,35 @@ export default function AccountPage() {
           {activeTab === "security" && (
             <div className="mt-8 space-y-6">
               <section>
-                <h2 className="text-lg font-semibold text-white mb-4">Change password</h2>
+                <h2 className="text-lg font-semibold text-white mb-4">{t("account.changePassword")}</h2>
                 <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
-                    <Field label="Current password">
+                    <Field label={t("account.currentPassword")}>
                       <input
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="Enter current password"
+                        placeholder={t("account.currentPasswordPlaceholder")}
                       />
                     </Field>
                     <div />
-                    <Field label="New password">
+                    <Field label={t("account.newPassword")}>
                       <input
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="At least 8 characters"
+                        placeholder={t("account.newPasswordPlaceholder")}
                       />
                     </Field>
-                    <Field label="Confirm new password">
+                    <Field label={t("account.confirmPassword")}>
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="input-field text-sm"
-                        placeholder="Re-enter new password"
+                        placeholder={t("account.confirmPasswordPlaceholder")}
                       />
                     </Field>
                   </div>
@@ -479,7 +479,7 @@ export default function AccountPage() {
                   disabled={savingSecurity || !currentPassword || !newPassword || !confirmPassword}
                   className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {savingSecurity ? "Saving..." : "Change password"}
+                  {savingSecurity ? t("account.saving") : t("account.changePassword")}
                 </button>
                 {securityMessage && (
                   <p className={`text-sm ${securityMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>

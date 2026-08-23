@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useT } from "@/hooks/useT";
 
 export default function LoginPage() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,14 +28,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        setError(data.error || t("auth.loginFailed"));
         return;
       }
 
       router.push("/");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
+      setError(t("auth.unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white">MelodIQ</h1>
-          <p className="text-sm text-white/40 mt-1">AI Music Studio</p>
+          <p className="text-sm text-white/40 mt-1">{t("auth.tagline")}</p>
         </div>
 
         {/* Form card */}
@@ -82,7 +84,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/50 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-white/50 mb-1.5">{t("auth.emailLabel")}</label>
               <input
                 type="email"
                 value={email}
@@ -95,7 +97,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/50 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-white/50 mb-1.5">{t("auth.passwordLabel")}</label>
               <input
                 type="password"
                 value={password}
@@ -115,10 +117,10 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in...
+                  {t("auth.signingIn")}
                 </span>
               ) : (
-                "Sign In"
+                t("auth.signIn")
               )}
             </button>
           </form>
