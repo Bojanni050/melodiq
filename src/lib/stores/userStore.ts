@@ -11,6 +11,7 @@ export interface UserProfile {
   composerAlias: string | null;
   writerAlias: string | null;
   role: UserRole;
+  language: string;
   createdAt: string;
 }
 

@@ -29,6 +29,9 @@ export const users = pgTable("users", {
   profileImageUrl: text("profile_image_url"),
   heroImageUrl: text("hero_image_url"),
   role: varchar("role", { length: 20 }).default("user").notNull(),
+  // UI language ("en" | "nl") — also passed to LLM analysis prompts (Advanced
+  // Track DNA etc.) so generated text matches the interface language.
+  language: varchar("language", { length: 5 }).default("en").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

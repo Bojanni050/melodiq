@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, useUserStore } from "@/lib/store";
+import { useSidebarStore, useUserStore, useLocaleStore, LOCALES, type Locale } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 const MAX_ARTIST_ALIASES = 5;
 
@@ -19,6 +20,7 @@ interface User {
   bio: string | null;
   profileImageUrl: string | null;
   heroImageUrl: string | null;
+  language: string;
   createdAt: string;
 }
 
@@ -53,7 +55,11 @@ export default function AccountPage() {
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
   const authUser = useUserStore((s) => s.user);
+  const setAuthUser = useUserStore((s) => s.setUser);
+  const setLocale = useLocaleStore((s) => s.setLocale);
   const isListener = authUser?.role === "listener" || authUser?.role == null;
+  const t = useT();
+  const [savingLanguage, setSavingLanguage] = useState(false);
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,6 +120,25 @@ export default function AccountPage() {
       setProfileMessage(data.error || "Failed to update profile");
     }
     setSavingProfile(false);
+  }
+
+  async function handleLanguageChange(language: Locale) {
+    setSavingLanguage(true);
+    try {
+      const res = await fetch("/api/auth/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser((prev) => (prev ? { ...prev, language } : prev));
+        setLocale(language);
+        if (authUser) setAuthUser({ ...authUser, language: data.user?.language ?? language });
+      }
+    } finally {
+      setSavingLanguage(false);
+    }
   }
 
   async function savePassword() {
@@ -227,6 +252,31 @@ export default function AccountPage() {
 
           {activeTab === "profile" && (
             <div className="mt-8 space-y-6">
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4">{t("settings.language")}</h2>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8">
+                  <Field label={t("settings.language")} hint={t("settings.languageHint")}>
+                    <div className="flex gap-2">
+                      {LOCALES.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          disabled={savingLanguage}
+                          onClick={() => handleLanguageChange(opt.value)}
+                          className={`h-10 rounded-full px-4 text-sm font-medium transition-colors disabled:opacity-50 ${
+                            (user?.language || "en") === opt.value
+                              ? "bg-primary-500/80 text-white"
+                              : "bg-white/5 text-white/60 hover:bg-white/10"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                </div>
+              </section>
+
               <section>
                 <h2 className="text-lg font-semibold text-white mb-4">Identity</h2>
                 <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">

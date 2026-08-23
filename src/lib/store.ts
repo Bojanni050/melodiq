@@ -37,3 +37,6 @@ export {
   useArchiveLinksStore,
   useSidebarStore,
 } from "./stores/uiStores";
+
+export type { Locale } from "./stores/localeStore";
+export { useLocaleStore, LOCALES } from "./stores/localeStore";

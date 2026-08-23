@@ -1,9 +1,14 @@
 import { callLLMWithAudio } from "@/lib/providers/llm";
 import { db } from "@/db";
-import { tracks } from "@/db/schema";
+import { tracks, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { downloadFromS3 } from "@/lib/s3";
 import { logToFile } from "@/lib/file-logger";
+
+const ANALYSIS_LANGUAGE_NAME: Record<string, string> = {
+  en: "English",
+  nl: "Dutch",
+};
 
 const LOG_FILE = "track-dna.log";
 function log(message: string): void {
@@ -59,7 +64,12 @@ export async function analyzeAdvancedDna(
   const prompt = track.prompt || null;
   const hasLyrics = !!lyrics && !track.instrumental;
 
+  const [owner] = await db.select({ language: users.language }).from(users).where(eq(users.id, track.userId)).limit(1);
+  const languageName = ANALYSIS_LANGUAGE_NAME[owner?.language || "en"] || ANALYSIS_LANGUAGE_NAME.en;
+
   const systemPrompt = `You are a professional music producer, songwriter, and critic.
+
+Write your entire analysis (summary, lyricsAnalysis, compositionAnalysis, tips) in ${languageName} — that's the app's interface language for this user. This applies regardless of what language the lyrics or the style/prompt are in.
 
 Listen closely to the audio and perform a thorough, in-depth analysis of the song, then give up to 5 actionable tips for improvement.
 

@@ -23,6 +23,7 @@ export async function GET() {
             profileImageUrl: users.profileImageUrl,
             heroImageUrl: users.heroImageUrl,
             role: users.role,
+      language: users.language,
       createdAt: users.createdAt,
     })
     .from(users)

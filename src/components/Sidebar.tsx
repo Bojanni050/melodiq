@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useWorkspaceStore, usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
+import { useWorkspaceStore, usePlayerStore, useSidebarStore, useUserStore, useLocaleStore, type Locale } from "@/lib/store";
+import { useT } from "@/hooks/useT";
 
 interface SidebarProps {
   credits: number | null;
@@ -48,6 +49,8 @@ export default function Sidebar({ credits }: SidebarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
+  const setLocale = useLocaleStore((s) => s.setLocale);
+  const t = useT();
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
@@ -65,6 +68,14 @@ export default function Sidebar({ credits }: SidebarProps) {
     if (!user) void loadUser();
   }, [user, loadUser]);
 
+  // The account's saved language is the source of truth once logged in —
+  // overrides whatever locale localStorage had from before login/on this device.
+  useEffect(() => {
+    if (user?.language === "en" || user?.language === "nl") {
+      setLocale(user.language as Locale);
+    }
+  }, [user?.language, setLocale]);
+
   const isAdmin = user?.role === "admin";
   const isListener = user?.role === "listener" || user?.role == null;
 
@@ -72,67 +83,67 @@ export default function Sidebar({ credits }: SidebarProps) {
     ...(isListener
       ? [
           {
-            label: "BROWSE",
+            label: t("nav.browse"),
             items: [
-              { href: "/discover", label: "Discover", icon: "discover" },
-              { href: "/discover/releases", label: "Releases", icon: "releases" },
-              { href: "/library", label: "Library", icon: "library" },
-              { href: "/playlists", label: "Playlists", icon: "playlists" },
+              { href: "/discover", label: t("nav.discover"), icon: "discover" },
+              { href: "/discover/releases", label: t("nav.releasesBrowse"), icon: "releases" },
+              { href: "/library", label: t("nav.library"), icon: "library" },
+              { href: "/playlists", label: t("nav.playlists"), icon: "playlists" },
             ],
           },
         ]
       : [
           {
-            label: "BROWSE",
+            label: t("nav.browse"),
             items: [
-              { href: "/discover", label: "Discover", icon: "discover" },
-              { href: "/discover/releases", label: "Releases", icon: "releases" },
+              { href: "/discover", label: t("nav.discover"), icon: "discover" },
+              { href: "/discover/releases", label: t("nav.releasesBrowse"), icon: "releases" },
             ],
           },
           {
-            label: "ORGANIZE",
+            label: t("nav.organize"),
             items: [
-              { href: "/library", label: "Library", icon: "library" },
-              { href: "/playlists", label: "Playlists", icon: "playlists" },
-              { href: "/releases", label: "My Releases", icon: "releases" },
-              { href: "/archive", label: "Master Tracks", icon: "archive" },
-              { href: "/smart-archive", label: "Smart Archive", icon: "smart-archive" },
-              { href: "/workspaces", label: "Workspaces", icon: "workspaces" },
+              { href: "/library", label: t("nav.library"), icon: "library" },
+              { href: "/playlists", label: t("nav.playlists"), icon: "playlists" },
+              { href: "/releases", label: t("nav.myReleases"), icon: "releases" },
+              { href: "/archive", label: t("nav.masterTracks"), icon: "archive" },
+              { href: "/smart-archive", label: t("nav.smartArchive"), icon: "smart-archive" },
+              { href: "/workspaces", label: t("nav.workspaces"), icon: "workspaces" },
             ],
           },
         ]),
     ...(!isListener
       ? [
           {
-            label: "CREATE",
+            label: t("nav.create"),
             items: [
-              { href: "/lyrics-studio", label: "Lyrics", icon: "lyrics" },
-              { href: "/melody", label: "Melody", icon: "melody" },
-              { href: "/studio", label: "Music", icon: "music" },
+              { href: "/lyrics-studio", label: t("nav.lyrics"), icon: "lyrics" },
+              { href: "/melody", label: t("nav.melody"), icon: "melody" },
+              { href: "/studio", label: t("nav.music"), icon: "music" },
             ],
           },
           {
-            label: "REFINE",
+            label: t("nav.refine"),
             items: [
-              { href: "/timecoded-editor", label: "Timecode Editor", icon: "timecode" },
+              { href: "/timecoded-editor", label: t("nav.timecodeEditor"), icon: "timecode" },
             ],
           },
         ]
       : []),
     {
-      label: "ACCOUNT",
+      label: t("nav.account"),
       items: [
-        { href: "/account", label: "Account", icon: "account" },
-        { href: "/settings", label: "Settings", icon: "settings" },
+        { href: "/account", label: t("nav.accountLink"), icon: "account" },
+        { href: "/settings", label: t("nav.settings"), icon: "settings" },
       ],
     },
     ...(isAdmin
       ? [
           {
-            label: "DEVELOPER",
+            label: t("nav.developer"),
             items: [
-              { href: "/logs", label: "Logs", icon: "logs" },
-              { href: "/admin", label: "Admin", icon: "admin" },
+              { href: "/logs", label: t("nav.logs"), icon: "logs" },
+              { href: "/admin", label: t("nav.admin"), icon: "admin" },
             ],
           },
         ]

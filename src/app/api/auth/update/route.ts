@@ -28,6 +28,7 @@ export async function PUT(request: NextRequest) {
   const composerAlias = body.composerAlias;
   const writerAlias = body.writerAlias;
   const bio = body.bio;
+  const language = body.language;
   const currentPassword = body.currentPassword;
   const newPassword = body.newPassword;
 
@@ -76,6 +77,13 @@ export async function PUT(request: NextRequest) {
     // keeps working without changes.
     const primary = validated.aliases[0]?.trim() || null;
     updates.artistAlias = primary;
+  }
+
+  if (language !== undefined) {
+    if (language !== "en" && language !== "nl") {
+      return NextResponse.json({ error: "Invalid language" }, { status: 400 });
+    }
+    updates.language = language;
   }
 
   if (composerAlias !== undefined) {
@@ -156,6 +164,7 @@ export async function PUT(request: NextRequest) {
       bio: users.bio,
             profileImageUrl: users.profileImageUrl,
             heroImageUrl: users.heroImageUrl,
+            language: users.language,
             createdAt: users.createdAt,
     });
 
