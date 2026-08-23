@@ -18,6 +18,13 @@ const RELEASE_TYPES: { value: string; label: string }[] = [
 ];
 
 type ViewMode = "grid" | "list";
+type SortBy = "recent" | "title" | "unpublished";
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: "recent", label: "Recent" },
+  { value: "title", label: "Title" },
+  { value: "unpublished", label: "Not Published" },
+];
 
 export default function ReleasesPage() {
   const router = useRouter();
@@ -40,6 +47,7 @@ export default function ReleasesPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
 
   const createRelease = useReleaseStore((state) => state.createRelease);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -96,6 +104,22 @@ export default function ReleasesPage() {
     () => Array.from(trackItemsByRelease.values()).flat(),
     [trackItemsByRelease]
   );
+
+  const sortedReleases = useMemo(() => {
+    const sorted = [...releases];
+    if (sortBy === "title") {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === "unpublished") {
+      // Not-published releases first (so drafts are easy to find), newest first within each group.
+      sorted.sort((a, b) => {
+        if (!!a.isPublic !== !!b.isPublic) return a.isPublic ? 1 : -1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    } else {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return sorted;
+  }, [releases, sortBy]);
 
   const releaseIdByTrackId = useMemo(() => {
     const map = new Map<string, string>();
@@ -268,6 +292,25 @@ export default function ReleasesPage() {
                       </svg>
                     </button>
                   </div>
+                  {viewMode === "list" && (
+                    <div className="relative">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as SortBy)}
+                        className="appearance-none rounded-full border border-white/10 bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-white/80 outline-none transition-colors hover:bg-white/10"
+                        aria-label="Sort releases"
+                      >
+                        {SORT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value} className="bg-[#161621]">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 {showCreate ? (
                   <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
@@ -347,7 +390,16 @@ export default function ReleasesPage() {
                             {release.type}
                           </span>
                           <div className="absolute inset-x-0 bottom-0 p-4">
-                            <h3 className="truncate text-lg font-semibold text-white">{release.title}</h3>
+                            <h3 className="flex items-center gap-1.5 truncate text-lg font-semibold text-white">
+                              {release.isPublic && (
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full bg-pink-400"
+                                  title="Published"
+                                  aria-label="Published"
+                                />
+                              )}
+                              <span className="truncate">{release.title}</span>
+                            </h3>
                             <p className="text-sm text-white/75">{release.tracks.length} tracks{release.kind ? ` · ${release.kind}` : ""}</p>
                           </div>
                         </div>
@@ -379,7 +431,7 @@ export default function ReleasesPage() {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {releases.map((release) => {
+                  {sortedReleases.map((release) => {
                     const releaseTrackItems = trackItemsByRelease.get(release.id) ?? [];
                     const totalDuration = formatTotalDuration(
                       releaseTrackItems.reduce((s, t) => s + (t.duration ?? 0), 0)
@@ -412,9 +464,16 @@ export default function ReleasesPage() {
                             <button
                               type="button"
                               onClick={() => openRelease(release.id)}
-                              className="block truncate text-left text-xl font-bold tracking-tight text-white hover:underline sm:text-2xl"
+                              className="flex items-center gap-2 truncate text-left text-xl font-bold tracking-tight text-white hover:underline sm:text-2xl"
                             >
-                              {release.title}
+                              {release.isPublic && (
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400"
+                                  title="Published"
+                                  aria-label="Published"
+                                />
+                              )}
+                              <span className="truncate">{release.title}</span>
                             </button>
                             <p className="text-sm text-white/60">
                               <span className="capitalize">{release.type}</span>
