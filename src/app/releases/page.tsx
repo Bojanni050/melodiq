@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackDetail from "@/components/TrackDetail";
+import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
+import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore, useStudioStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import type { TrackItem } from "@/components/tracks/types";
@@ -51,6 +52,7 @@ export default function ReleasesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
   const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
 
   const createRelease = useReleaseStore((state) => state.createRelease);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -189,6 +191,16 @@ export default function ReleasesPage() {
     }
 
     player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
+  }
+
+  function handleReusePrompt(track: TrackItem) {
+    const { songIdea, lyrics } = useStudioStore.getState();
+    if (songIdea.trim() || lyrics.trim()) {
+      // If there's already content in studio, confirm before overwriting
+      if (!window.confirm("This will replace your current studio content. Continue?")) return;
+    }
+    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" }));
+    router.push("/studio");
   }
 
   function handlePlayFromDetailsPanel(url: string) {
@@ -571,10 +583,27 @@ export default function ReleasesPage() {
                                     rating: t.rating ?? null,
                                   })
                                 }
+                                onReusePrompt={handleReusePrompt}
                                 onAddToPlaylist={(trackId, targetPlaylistId, options) =>
                                   addTrackToPlaylist(targetPlaylistId, trackId, options)
                                 }
                                 playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
+                                onTitleUpdate={(trackId, newTitle) => {
+                                  setTracksById((prev) => {
+                                    const next = new Map(prev);
+                                    const t = next.get(trackId);
+                                    if (t) next.set(trackId, { ...t, title: newTitle });
+                                    return next;
+                                  });
+                                }}
+                                onEditDetails={(t) =>
+                                  setEditingTrack({
+                                    ...t,
+                                    coverUrl: t.coverUrl ?? null,
+                                    s3KeyCover: t.s3KeyCover ?? null,
+                                    rating: t.rating ?? null,
+                                  })
+                                }
                                 isDetailSelected={selectedTrack?.id === track.id}
                               />
                             ))}
@@ -765,6 +794,21 @@ export default function ReleasesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {editingTrack && (
+        <TrackEditPanel
+          track={editingTrack}
+          onClose={() => setEditingTrack(null)}
+          onSaved={(updated) => {
+            setTracksById((prev) => {
+              const next = new Map(prev);
+              next.set(updated.id, updated);
+              return next;
+            });
+            setEditingTrack(null);
+          }}
+        />
       )}
     </div>
   );
