@@ -13,6 +13,7 @@ export default function EntryTrackActionsMenu({
   onEdit,
   onPlay,
   onDetails,
+  onEditTrackDetails,
   onAnalyze,
   analyzing,
   onUnlink,
@@ -26,6 +27,7 @@ export default function EntryTrackActionsMenu({
   onEdit: () => void;
   onPlay: () => void;
   onDetails: () => void;
+  onEditTrackDetails?: () => void;
   onAnalyze: () => void;
   analyzing: boolean;
   onUnlink: () => void;
@@ -108,6 +110,18 @@ export default function EntryTrackActionsMenu({
               >
                 Track Details
               </button>
+              {onEditTrackDetails && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onEditTrackDetails();
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Edit Track Details
+                </button>
+              )}
               {downloadUrl && (
                 <a
                   href={downloadUrl}

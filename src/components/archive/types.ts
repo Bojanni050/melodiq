@@ -56,7 +56,7 @@ export function entryToTrack(entry: ArchiveEntry): Track | null {
   if (!entry.trackId || entry.trackStatus !== "done") return null;
   return {
     id: entry.trackId,
-    title: entry.trackTitle ?? entry.title,
+    title: entry.title || entry.trackTitle,
     provider: entry.trackProvider ?? "upload",
     providerModel: entry.trackProviderModel ?? "",
     prompt: entry.prompt,

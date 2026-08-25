@@ -9,7 +9,7 @@ import TrackList from "@/components/TrackList";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
-import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useStudioStore } from "@/lib/store";
+import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useStudioStore, useUserStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import EntryEditor from "@/components/archive/EntryEditor";
@@ -28,6 +28,7 @@ export default function ArchivePage() {
   const isDesktop = useSidebarStore((s) => s.isDesktop);
   const rightPanelWidth = usePlayerStore((state) => state.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((state) => state.setRightPanelWidth);
+  const user = useUserStore((state) => state.user);
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -77,20 +78,24 @@ export default function ArchivePage() {
   const knownArtistNames = useMemo(() => {
     const names = new Set<string>();
     allTracks.forEach((t) => { if (t.artistName) names.add(t.artistName); });
+    if (user?.artistAlias) names.add(user.artistAlias);
+    (user?.artistAliases ?? []).forEach((a) => { if (a) names.add(a); });
     return Array.from(names).sort();
-  }, [allTracks]);
+  }, [allTracks, user]);
 
   const knownComposerNames = useMemo(() => {
     const names = new Set<string>();
     allTracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
+    if (user?.composerAlias) names.add(user.composerAlias);
     return Array.from(names).sort();
-  }, [allTracks]);
+  }, [allTracks, user]);
 
   const knownWriterNames = useMemo(() => {
     const names = new Set<string>();
     allTracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
+    if (user?.writerAlias) names.add(user.writerAlias);
     return Array.from(names).sort();
-  }, [allTracks]);
+  }, [allTracks, user]);
 
   const publishedTracks = useMemo(
     () => allTracks.filter((t) => t.releaseStatus === "published"),
@@ -669,6 +674,15 @@ export default function ArchivePage() {
                           onEdit={() => setEditingTarget({ mode: "edit", entry })}
                           onPlay={() => { if (playable) handlePlayTrack(playable); }}
                           onDetails={() => handleOpenTrackDetails(entry)}
+                          onEditTrackDetails={entry.trackId ? () => {
+                            const track = entryToTrack(entry);
+                            if (track) setEditingTrack({
+                              ...(track as unknown as TrackItem),
+                              coverUrl: track.coverUrl ?? null,
+                              s3KeyCover: track.s3KeyCover ?? null,
+                              rating: track.rating ?? null,
+                            });
+                          } : undefined}
                           onAnalyze={() => void handleAnalyzeComposition(entry)}
                           analyzing={analyzingIds.has(entry.id)}
                           onUnlink={() => void handleUnlinkTrack(entry)}

@@ -161,6 +161,26 @@ interface TrackEditPanelProps {
 
 export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNames = [], knownComposerNames = [], knownWriterNames = [] }: TrackEditPanelProps) {
   const user = useUserStore((state) => state.user);
+
+  const mergedArtistNames = useMemo(() => {
+    const names = new Set<string>(knownArtistNames);
+    if (user?.artistAlias) names.add(user.artistAlias);
+    (user?.artistAliases ?? []).forEach((a) => { if (a) names.add(a); });
+    return Array.from(names).sort();
+  }, [knownArtistNames, user]);
+
+  const mergedComposerNames = useMemo(() => {
+    const names = new Set<string>(knownComposerNames);
+    if (user?.composerAlias) names.add(user.composerAlias);
+    return Array.from(names).sort();
+  }, [knownComposerNames, user]);
+
+  const mergedWriterNames = useMemo(() => {
+    const names = new Set<string>(knownWriterNames);
+    if (user?.writerAlias) names.add(user.writerAlias);
+    return Array.from(names).sort();
+  }, [knownWriterNames, user]);
+
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? user?.artistAlias ?? "");
   const [composerName, setComposerName] = useState(track.composerName ?? user?.composerAlias ?? "");
@@ -368,7 +388,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={artistName}
                 onChange={setArtistName}
                 placeholder="Artist name"
-                suggestions={knownArtistNames}
+                suggestions={mergedArtistNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>
@@ -378,7 +398,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={composerName}
                 onChange={setComposerName}
                 placeholder="Composer name"
-                suggestions={knownComposerNames}
+                suggestions={mergedComposerNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>
@@ -388,7 +408,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={writerName}
                 onChange={setWriterName}
                 placeholder="Lyrics writer"
-                suggestions={knownWriterNames}
+                suggestions={mergedWriterNames}
                 className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
               />
             </div>
