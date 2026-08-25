@@ -112,6 +112,39 @@ export default function ReleaseDetailPage() {
   function handlePlayTrack(url: string) {
     if (!selectedTrack) return;
     const player = usePlayerStore.getState();
+
+    // Set playContext to all release tracks for autoplay
+    const playContext = releaseTracks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      provider: t.provider,
+      providerModel: t.providerModel,
+      prompt: t.prompt,
+      status: t.status,
+      audioUrl: t.audioUrl,
+      audioUrlHd: t.audioUrlHd,
+      format: t.format,
+      formatHd: t.formatHd,
+      s3Key: null,
+      s3KeyHd: t.s3KeyHd,
+      duration: t.duration,
+      lyrics: t.lyrics,
+      lyricsTimestamps: t.lyricsTimestamps,
+      createdAt: t.createdAt,
+      error: t.error,
+      coverUrl: t.coverUrl ?? null,
+      s3KeyCover: t.s3KeyCover ?? null,
+      rating: t.rating ?? null,
+    }));
+    player.setPlayContext(playContext);
+
+    if (player.autoPlayNext) {
+      const index = playContext.findIndex((t) => t.id === selectedTrack.id);
+      if (index >= 0) {
+        player.setQueue(playContext.slice(index + 1));
+      }
+    }
+
     player.playTrackFromGesture({
       id: selectedTrack.id,
       title: selectedTrack.title,
