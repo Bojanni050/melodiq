@@ -33,7 +33,7 @@ export default function ReleasesPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const { releases, loadReleases, deleteRelease, updateReleaseDetails, renameRelease, toggleReleasePublic } = useReleaseStore();
+  const { releases, loadReleases, deleteRelease, updateReleaseDetails, renameRelease, toggleReleasePublic, toggleReleaseSpotlight } = useReleaseStore();
   const user = useUserStore((s) => s.user);
 
   const [loading, setLoading] = useState(true);
@@ -178,24 +178,25 @@ export default function ReleasesPage() {
   function handlePlayAll() {
     if (allTracks.length === 0) return;
     const player = usePlayerStore.getState();
-    const playContext = allTracks.map((t) => toPlayContextTrack(t));
+    const playContext = allTracks
+      .filter((t) => t.status === "done")
+      .map((t) => toPlayContextTrack(t));
+    if (playContext.length === 0) return;
     player.setPlayContext(playContext);
-    if (player.autoPlayNext) {
-      player.setQueue(playContext.slice(1));
-    }
+    player.setQueue(playContext.slice(1));
     player.playTrackFromGesture(playContext[0]);
   }
 
   function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
     const player = usePlayerStore.getState();
-    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
+    const playContext = releaseTrackItems
+      .filter((t) => t.status === "done")
+      .map((t) => toPlayContextTrack(t));
 
     player.setPlayContext(playContext);
-    if (player.autoPlayNext) {
-      const index = playContext.findIndex((t) => t.id === track.id);
-      if (index >= 0) {
-        player.setQueue(playContext.slice(index + 1));
-      }
+    const index = playContext.findIndex((t) => t.id === track.id);
+    if (index >= 0) {
+      player.setQueue(playContext.slice(index + 1));
     }
 
     player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
@@ -784,6 +785,26 @@ export default function ReleasesPage() {
                     placeholder={t("releases.creditsPlaceholder")}
                     className="w-full resize-none rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
                   />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-white/12 bg-[#11121a] px-3 py-2.5">
+                  <div>
+                    <p className="text-sm text-white/80">Spotlight</p>
+                    <p className="text-[11px] text-white/40">Show this release prominently on the Discover page</p>
+                  </div>
+                  {editingReleaseId && (() => {
+                    const release = releases.find((r) => r.id === editingReleaseId);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => toggleReleaseSpotlight(editingReleaseId)}
+                        disabled={savingEdit}
+                        className={`relative h-6 w-11 rounded-full transition-colors ${release?.isSpotlight ? "bg-primary-500" : "bg-white/15"}`}
+                      >
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${release?.isSpotlight ? "left-[22px]" : "left-0.5"}`} />
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
 

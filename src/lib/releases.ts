@@ -22,6 +22,7 @@ export type ReleasePayload = {
   coverUrl: string | null;
   releaseDate: string | null;
   isPublic: boolean;
+  isSpotlight: boolean;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -43,6 +44,7 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
       s3KeyCover: releases.s3KeyCover,
       releaseDate: releases.releaseDate,
       isPublic: releases.isPublic,
+      isSpotlight: releases.isSpotlight,
       publishedAt: releases.publishedAt,
       createdAt: releases.createdAt,
       updatedAt: releases.updatedAt,
@@ -117,6 +119,7 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
       coverUrl,
       releaseDate: row.releaseDate?.toISOString() ?? null,
       isPublic: row.isPublic,
+      isSpotlight: row.isSpotlight,
       publishedAt: row.publishedAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -134,6 +137,7 @@ export async function getUserReleaseById(userId: string, releaseId: string) {
       type: releases.type,
       kind: releases.kind,
       isPublic: releases.isPublic,
+      isSpotlight: releases.isSpotlight,
       createdAt: releases.createdAt,
     })
     .from(releases)

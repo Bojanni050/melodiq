@@ -70,6 +70,23 @@ export default function DiscoverPage() {
   const [published, setPublished] = useState<PublicTrack[]>([]);
   const [trending, setTrending] = useState<PublicTrack[]>([]);
   const [publishedPlaylists, setPublishedPlaylists] = useState<PublicPlaylist[]>([]);
+  const [spotlight, setSpotlight] = useState<{
+    releaseId: string;
+    releaseTitle: string;
+    releaseType: string;
+    releaseKind: string | null;
+    releaseArtistName: string | null;
+    releaseCoverUrl: string | null;
+    releaseS3KeyCover: string | null;
+    releasePublishedAt: string | null;
+    trackId: string;
+    trackTitle: string | null;
+    trackAudioUrl: string | null;
+    trackDuration: number | null;
+    trackCoverUrl: string | null;
+    trackS3KeyCover: string | null;
+    trackTotalPlays: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [myTracks, setMyTracks] = useState<MyTrack[]>([]);
   const [myTracksLoading, setMyTracksLoading] = useState(true);
@@ -127,6 +144,7 @@ export default function DiscoverPage() {
         const data = await res.json();
         setPublished(data.published || []);
         setTrending(data.trending || []);
+        setSpotlight(data.spotlight || null);
       }
       setLoading(false);
     }
@@ -505,18 +523,18 @@ export default function DiscoverPage() {
                 )}
               </div>
             </div>
+            {/* Duration overlay at bottom center */}
+            {track.duration != null && (
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm">
+                {formatDuration(track.duration)}
+              </span>
+            )}
           </button>
-          {/* Sibling of the overflow-hidden play button, not a child of it — its
-              dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-white">{track.title}</p>
           <p className="truncate text-sm text-white/45">{track.artistName || t("releases.unknownArtist")}</p>
-        </div>
-        <div className="flex items-center justify-between text-[11px] text-white/35">
-          <span>{formatDuration(track.duration)}</span>
-          <span>{t("discover.plays", { count: track.totalPlays.toLocaleString() })}</span>
         </div>
       </Link>
     );
@@ -612,9 +630,71 @@ export default function DiscoverPage() {
             <>
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">{t("discover.currentTrends")}</h2>
-                {trending.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {trending.map((track) => (
+                {spotlight || trending.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {/* Spotlight track first */}
+                    {spotlight && (
+                      <Link
+                        href={`/discover/release/${spotlight.releaseId}`}
+                        className="flex flex-col gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-3 transition-colors hover:border-amber-400/50 sm:col-span-1"
+                      >
+                        <div className="group relative aspect-square w-full">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handlePlay({
+                                id: spotlight.trackId,
+                                title: spotlight.trackTitle,
+                                audioUrl: spotlight.trackAudioUrl,
+                                duration: spotlight.trackDuration,
+                                coverUrl: spotlight.trackCoverUrl,
+                                s3KeyCover: spotlight.trackS3KeyCover,
+                                totalPlays: spotlight.trackTotalPlays,
+                                artistName: spotlight.releaseArtistName,
+                                status: "done",
+                              } as unknown as PublicTrack);
+                            }}
+                            className="absolute inset-0 overflow-hidden rounded-xl"
+                          >
+                            {spotlight.releaseCoverUrl ? (
+                              <img src={spotlight.releaseCoverUrl} alt={spotlight.releaseTitle} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-600/40 to-amber-900/40">
+                                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 opacity-0 transition-opacity group-hover:opacity-100">
+                                <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8 5v14l11-7z" />
+                                </svg>
+                              </div>
+                            </div>
+                            {spotlight.trackDuration != null && (
+                              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm">
+                                {formatDuration(spotlight.trackDuration)}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <svg className="h-3 w-3 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">Spotlight</span>
+                          </div>
+                          <p className="truncate text-sm font-medium text-white">{spotlight.releaseTitle}</p>
+                          <p className="truncate text-xs text-white/45">{spotlight.releaseArtistName || t("releases.unknownArtist")}</p>
+                        </div>
+                      </Link>
+                    )}
+                    {/* Top played tracks */}
+                    {trending.slice(0, spotlight ? 11 : 12).map((track) => (
                       <TrackCard key={track.id} track={track} />
                     ))}
                   </div>

@@ -353,6 +353,15 @@ export async function PATCH(
       return respondWithRelease(auth.userId, id);
     }
 
+    if (action === "toggle-spotlight") {
+      const nextSpotlight = !existing.isSpotlight;
+      await db
+        .update(releases)
+        .set({ isSpotlight: nextSpotlight, updatedAt: new Date() })
+        .where(and(eq(releases.id, id), eq(releases.userId, auth.userId)));
+      return respondWithRelease(auth.userId, id);
+    }
+
     return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
   } catch (error) {
     console.error("[releases/patch]", error);

@@ -354,6 +354,7 @@ export const releases = pgTable("releases", {
   s3KeyCoverThumb: text("s3_key_cover_thumb"),
   releaseDate: timestamp("release_date"),
   isPublic: boolean("is_public").default(false).notNull(),
+  isSpotlight: boolean("is_spotlight").default(false).notNull(),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -21,6 +21,7 @@ export interface Release {
   coverUrl?: string | null;
   releaseDate?: string | null;
   isPublic?: boolean;
+  isSpotlight?: boolean;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -52,6 +53,7 @@ interface ReleaseState {
   updateReleaseType: (releaseId: string, type: string) => void;
   updateReleaseCover: (releaseId: string, coverUrl: string) => void;
   toggleReleasePublic: (releaseId: string) => Promise<void>;
+  toggleReleaseSpotlight: (releaseId: string) => Promise<void>;
   regenerateReleaseCover: (releaseId: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
@@ -312,6 +314,28 @@ export const useReleaseStore = create<ReleaseState>()(
           }
         } catch (error) {
           console.error("[store] toggleReleasePublic error", error);
+        }
+      },
+      toggleReleaseSpotlight: async (releaseId) => {
+        try {
+          const res = await fetch(`/api/releases/${releaseId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "toggle-spotlight" }),
+          });
+          if (!res.ok) {
+            console.error("[store] toggleReleaseSpotlight failed", res.status);
+            return;
+          }
+          const data = await res.json().catch(() => null);
+          const updated = data?.release;
+          if (updated) {
+            get().hydrateReleasesFromServer(
+              get().releases.map((r) => (r.id === releaseId ? { ...r, ...updated } : r))
+            );
+          }
+        } catch (error) {
+          console.error("[store] toggleReleaseSpotlight error", error);
         }
       },
       regenerateReleaseCover: async (releaseId) => {

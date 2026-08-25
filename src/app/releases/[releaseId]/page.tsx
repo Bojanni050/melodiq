@@ -445,6 +445,18 @@ export default function ReleaseDetailPage() {
                 <p className="text-xs text-red-400">{regenerateCoverError}</p>
               )}
 
+              {selectedRelease?.isSpotlight && (
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-amber-300">Spotlight Release</span>
+                  </div>
+                  <p className="text-xs text-amber-200/70">This release is featured prominently on the Discover page.</p>
+                </div>
+              )}
+
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (
                 <p className="text-xs text-white/35">
                   {t("releases.abTip")}
