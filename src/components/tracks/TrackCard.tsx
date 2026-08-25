@@ -683,12 +683,12 @@ const TrackCard = memo(function TrackCard({
             <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
               {status.label}
             </span>
-            {track.status === "done" && track.releaseStatus && track.releaseStatus !== "concept" && (
+            {track.status === "done" && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
                   track.releaseStatus === "published"
                     ? "border border-green-300/30 bg-green-400/10 text-green-200"
-                    : "border border-red-300/30 bg-red-400/10 text-red-200"
+                    : "border border-white/15 bg-white/[0.05] text-white/40"
                 }`}
                 title={
                   track.releaseStatus === "published" && track.publishDate
@@ -696,7 +696,7 @@ const TrackCard = memo(function TrackCard({
                     : undefined
                 }
               >
-                {track.releaseStatus === "published" ? "Published" : "Unpublished"}
+                {track.releaseStatus === "published" ? "Released" : "Unreleased"}
               </span>
             )}
             {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (

@@ -639,12 +639,16 @@ export default function ArchivePage() {
                                 Linked: {entry.trackTitle}
                               </span>
                             )}
-                            {entry.releaseStatus === "published" && (
+                            {entry.releaseStatus === "published" ? (
                               <span
                                 className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
                                 title={entry.publishDate ? `Published ${new Date(entry.publishDate).toLocaleDateString()}` : "Published"}
                               >
-                                ● Published
+                                Released
+                              </span>
+                            ) : (
+                              <span className="shrink-0 rounded-full border border-white/15 bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/40">
+                                Unreleased
                               </span>
                             )}
                             {isCurrent && (

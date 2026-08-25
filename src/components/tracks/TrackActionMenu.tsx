@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { usePlaylistStore, useReleaseStore } from "@/lib/store";
 import type { PlaylistOption, TrackItem } from "./types";
 
@@ -84,7 +85,9 @@ export default function TrackActionMenu({
   isListener,
   onGoToArtist,
 }: TrackActionMenuProps) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [releaseSubmenuOpen, setReleaseSubmenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
@@ -419,6 +422,49 @@ export default function TrackActionMenu({
                 <span className="text-white/30">›</span>
               </button>
 
+              {releasesContainingTrack.length === 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    router.push(`/releases/${releasesContainingTrack[0].id}`);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                >
+                  Go To Release
+                </button>
+              )}
+              {releasesContainingTrack.length > 1 && (
+                <div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReleaseSubmenuOpen((prev) => !prev);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                  >
+                    <span>Go To Release</span>
+                    <span className={`text-white/30 transition-transform ${releaseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
+                  </button>
+                  {releaseSubmenuOpen && (
+                    <div className="my-1 space-y-0.5 border-l border-white/10 pl-2.5 py-0.5">
+                      {releasesContainingTrack.map((release) => (
+                        <button
+                          key={`goto-release-${release.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpen(false);
+                            router.push(`/releases/${release.id}`);
+                          }}
+                          className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-white/70 hover:bg-white/10 hover:text-white"
+                        >
+                          {release.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
                 <>
                   <div className="my-1 h-px bg-white/10" />
