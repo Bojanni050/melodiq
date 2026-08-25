@@ -53,6 +53,7 @@ export default function ReleasesPage() {
   const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
+  const [gridMenuReleaseId, setGridMenuReleaseId] = useState<string | null>(null);
 
   const createRelease = useReleaseStore((state) => state.createRelease);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -67,6 +68,13 @@ export default function ReleasesPage() {
   useEffect(() => {
     void loadPlaylists();
   }, [loadPlaylists]);
+
+  useEffect(() => {
+    if (!gridMenuReleaseId) return;
+    function handleClick() { setGridMenuReleaseId(null); }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [gridMenuReleaseId]);
 
   // Only needed for the list view (full track cards) — fetched lazily so
   // switching to list never blocks the default grid view on it.
@@ -430,6 +438,45 @@ export default function ReleasesPage() {
                           <span className="absolute left-4 top-4 rounded-full bg-black/60 px-2.5 py-1 text-[11px] uppercase tracking-wide text-white/80 backdrop-blur-sm">
                             {release.type}
                           </span>
+                          {/* Three-dot menu */}
+                          <div className="absolute right-3 top-3" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setGridMenuReleaseId(gridMenuReleaseId === release.id ? null : release.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/70 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white"
+                              title="Release actions"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
+                              </svg>
+                            </button>
+                            {gridMenuReleaseId === release.id && (
+                              <div className="absolute right-0 top-10 z-30 min-w-[160px] rounded-xl border border-white/10 bg-[#12121a] p-1.5 shadow-2xl">
+                                <button
+                                  type="button"
+                                  onClick={() => { setGridMenuReleaseId(null); openEditRelease(release); }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg text-sm text-white/80 hover:bg-white/5"
+                                >
+                                  {t("releases.editRelease")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setGridMenuReleaseId(null); toggleReleasePublic(release.id); }}
+                                  className={`w-full text-left px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 ${release.isPublic ? "text-emerald-400/80 hover:text-emerald-300" : "text-white/80"}`}
+                                >
+                                  {release.isPublic ? t("releases.unpublish") : t("releases.publish")}
+                                </button>
+                                <div className="my-1 h-px bg-white/10" />
+                                <button
+                                  type="button"
+                                  onClick={() => { setGridMenuReleaseId(null); setPendingDelete({ id: release.id, title: release.title }); }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg text-sm text-red-300/85 hover:bg-red-500/10 hover:text-red-200"
+                                >
+                                  {t("releases.delete")}
+                                </button>
+                              </div>
+                            )}
+                          </div>
                           <div className="absolute inset-x-0 bottom-0 p-4">
                             <h3 className="flex items-center gap-1.5 truncate text-lg font-semibold text-white">
                               {release.isPublic && (
@@ -446,33 +493,10 @@ export default function ReleasesPage() {
                         </div>
                       </button>
 
-                      <div className="flex items-center justify-between gap-2 px-4 py-3">
+                      <div className="px-4 py-3">
                         <button type="button" onClick={() => openRelease(release.id)} className="text-sm text-white/60 transition-colors hover:text-white">
                           {t("releases.openRelease")}
                         </button>
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => openEditRelease(release)}
-                            className="text-sm text-white/45 transition-colors hover:text-white"
-                          >
-                            {t("releases.editRelease")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleReleasePublic(release.id)}
-                            className={`text-sm transition-colors ${release.isPublic ? "text-emerald-400/70 hover:text-emerald-300" : "text-white/45 hover:text-white"}`}
-                          >
-                            {release.isPublic ? t("releases.unpublish") : t("releases.publish")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPendingDelete({ id: release.id, title: release.title })}
-                            className="text-sm text-white/45 transition-colors hover:text-red-300"
-                          >
-                            {t("releases.delete")}
-                          </button>
-                        </div>
                       </div>
                     </article>
                   ))}
