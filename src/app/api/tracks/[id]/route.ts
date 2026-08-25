@@ -66,21 +66,22 @@ async function syncTrackReleaseStatus(
   userId: string,
   track: { id: string; title: string | null; artistName: string | null; releaseStatus: string | null }
 ) {
-  const existingSingle = await db
-    .select({ releaseId: releaseTracks.releaseId })
+  // Check if the track is already in ANY release (not just singles)
+  const existingRelease = await db
+    .select({ releaseId: releaseTracks.releaseId, releaseType: releases.type })
     .from(releaseTracks)
     .innerJoin(releases, eq(releases.id, releaseTracks.releaseId))
     .where(
       and(
         eq(releaseTracks.trackId, track.id),
-        eq(releases.userId, userId),
-        eq(releases.type, "single")
+        eq(releases.userId, userId)
       )
     )
     .limit(1);
 
   if (track.releaseStatus === "published") {
-    if (existingSingle[0]) return;
+    // If the track is already in any release, don't auto-create a single
+    if (existingRelease[0]) return;
 
     const now = new Date();
     const inserted = await db
@@ -107,12 +108,14 @@ async function syncTrackReleaseStatus(
     return;
   }
 
-  if (!existingSingle[0]) return;
+  // When unpublishing, only auto-unpublish if the track's only release is an auto-created single
+  if (!existingRelease[0]) return;
+  if (existingRelease[0].releaseType !== "single") return;
 
   await db
     .update(releases)
     .set({ isPublic: false, publishedAt: null, updatedAt: new Date() })
-    .where(eq(releases.id, existingSingle[0].releaseId));
+    .where(eq(releases.id, existingRelease[0].releaseId));
 }
 
 function extractAudioUrls(body: any): string[] {
