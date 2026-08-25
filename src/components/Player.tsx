@@ -1007,6 +1007,81 @@ export default function Player() {
           </div>
         </div>
       </div>
+
+      {/* PWA install hint — mobile only, shown once per session while playing */}
+      {currentTrack && <PwaInstallHint />}
     </>
+  );
+}
+
+function PwaInstallHint() {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return sessionStorage.getItem("melodiq-pwa-hint-dismissed") === "1";
+  });
+
+  const [canInstall, setCanInstall] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    function onBeforeInstallPrompt(e: Event) {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    }
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+  }, []);
+
+  // Check if already installed (standalone mode)
+  const isStandalone =
+    typeof window !== "undefined" &&
+    ((window.navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches);
+
+  if (dismissed || isStandalone || !canInstall) return null;
+
+  async function handleInstall() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      sessionStorage.setItem("melodiq-pwa-hint-dismissed", "1");
+      setDismissed(true);
+    }
+    setDeferredPrompt(null);
+  }
+
+  function handleDismiss() {
+    sessionStorage.setItem("melodiq-pwa-hint-dismissed", "1");
+    setDismissed(true);
+  }
+
+  return (
+    <div className="fixed bottom-[var(--player-height,72px)] left-0 right-0 z-40 flex justify-center px-4 pb-2 sm:hidden pointer-events-none">
+      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b25]/95 px-3 py-2 shadow-lg backdrop-blur-md pointer-events-auto">
+        <svg className="h-4 w-4 shrink-0 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        <p className="text-[11px] text-white/70">
+          Installeer MelodIQ voor ononderbroken afspelen op je telefoon
+        </p>
+        <button
+          type="button"
+          onClick={handleInstall}
+          className="shrink-0 rounded-lg bg-primary-500/80 px-2 py-1 text-[10px] font-semibold text-white hover:bg-primary-400 transition-colors"
+        >
+          Installeer
+        </button>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="shrink-0 p-0.5 text-white/30 hover:text-white/60 transition-colors"
+        >
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }
