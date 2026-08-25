@@ -48,7 +48,7 @@ export default function ReleasesPage() {
   const [editComposerName, setEditComposerName] = useState("");
   const [editCredits, setEditCredits] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
   const [sortBy, setSortBy] = useState<SortBy>("recent");
 
@@ -163,6 +163,17 @@ export default function ReleasesPage() {
       rating: t.rating ?? null,
       artistName: t.artistName ?? null,
     };
+  }
+
+  function handlePlayAll() {
+    if (allTracks.length === 0) return;
+    const player = usePlayerStore.getState();
+    const playContext = allTracks.map((t) => toPlayContextTrack(t));
+    player.setPlayContext(playContext);
+    if (player.autoPlayNext) {
+      player.setQueue(playContext.slice(1));
+    }
+    player.playTrackFromGesture(playContext[0]);
   }
 
   function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
@@ -315,6 +326,19 @@ export default function ReleasesPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
+                  )}
+                  {allTracks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handlePlayAll}
+                      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                      title="Play all tracks from all releases"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      Play all
+                    </button>
                   )}
                 </div>
                 {showCreate ? (
