@@ -49,6 +49,7 @@ export default function ArchivePage() {
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
   const loadReleases = useReleaseStore((state) => state.loadReleases);
+  const releases = useReleaseStore((state) => state.releases);
   const addTrackToRelease = useReleaseStore((state) => state.addTrackToRelease);
   const removeTrackFromRelease = useReleaseStore((state) => state.removeTrackFromRelease);
   const [releasePickerTrack, setReleasePickerTrack] = useState<TrackItem | null>(null);
@@ -639,10 +640,9 @@ export default function ArchivePage() {
                                 Linked: {entry.trackTitle}
                               </span>
                             )}
-                            {entry.releaseStatus === "published" ? (
+                            {entry.trackId && releases.some((r) => r.tracks.some((t) => t.trackId === entry.trackId)) ? (
                               <span
                                 className="shrink-0 rounded-full border border-emerald-400/40 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
-                                title={entry.publishDate ? `Published ${new Date(entry.publishDate).toLocaleDateString()}` : "Published"}
                               >
                                 Released
                               </span>

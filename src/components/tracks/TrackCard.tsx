@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import useSWR from "swr";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
@@ -100,6 +100,11 @@ const TrackCard = memo(function TrackCard({
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const archiveLinkKind = useArchiveLinksStore((state) => state.links[track.id]);
+  const releases = useReleaseStore((state) => state.releases);
+  const isInRelease = useMemo(
+    () => releases.some((r) => r.tracks.some((t) => t.trackId === track.id)),
+    [releases, track.id]
+  );
   const loadArchiveLinks = useArchiveLinksStore((state) => state.load);
   useEffect(() => {
     loadArchiveLinks();
@@ -686,17 +691,12 @@ const TrackCard = memo(function TrackCard({
             {track.status === "done" && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
-                  track.releaseStatus === "published"
+                  isInRelease
                     ? "border border-green-300/30 bg-green-400/10 text-green-200"
                     : "border border-white/15 bg-white/[0.05] text-white/40"
                 }`}
-                title={
-                  track.releaseStatus === "published" && track.publishDate
-                    ? `Published ${new Date(track.publishDate).toLocaleDateString()}`
-                    : undefined
-                }
               >
-                {track.releaseStatus === "published" ? "Released" : "Unreleased"}
+                {isInRelease ? "Released" : "Unreleased"}
               </span>
             )}
             {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (
