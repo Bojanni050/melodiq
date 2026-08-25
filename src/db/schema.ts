@@ -531,3 +531,28 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   index("push_subscriptions_user_id_idx").on(table.userId),
   uniqueIndex("push_subscriptions_endpoint_unique").on(table.endpoint),
 ]);
+
+// ─── Cover Images ──────────────────────────────────────────────────────────────
+// Tracks and releases can have up to 5 cover images each. The first image
+// (position 0, isMain = true) is used as the default cover everywhere.
+export const coverImages = pgTable("cover_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  entityType: varchar("entity_type", { length: 20 }).notNull(), // "track" | "release"
+  entityId: uuid("entity_id").notNull(),
+  s3Key: text("s3_key").notNull(),
+  s3KeyThumb: text("s3_key_thumb"),
+  position: integer("position").notNull().default(0),
+  isMain: boolean("is_main").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("cover_images_entity_idx").on(table.entityType, table.entityId),
+  index("cover_images_user_idx").on(table.userId),
+]);
+
+export const coverImagesRelations = relations(coverImages, ({ one }) => ({
+  user: one(users, {
+    fields: [coverImages.userId],
+    references: [users.id],
+  }),
+}));

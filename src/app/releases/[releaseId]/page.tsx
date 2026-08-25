@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
+import CoverManager from "@/components/tracks/CoverManager";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
@@ -55,6 +56,7 @@ export default function ReleaseDetailPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [regeneratingCover, setRegeneratingCover] = useState(false);
   const [regenerateCoverError, setRegenerateCoverError] = useState<string | null>(null);
+  const [showCoverManager, setShowCoverManager] = useState(false);
   const [publishingRelease, setPublishingRelease] = useState(false);
   // null = closed, string[] = list of unpublished track titles waiting for confirm
   const [publishConfirmTracks, setPublishConfirmTracks] = useState<string[] | null>(null);
@@ -370,6 +372,14 @@ export default function ReleaseDetailPage() {
                     ) : t("releases.regenerateCover")}
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => setShowCoverManager(true)}
+                    className="h-9 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    Manage Covers
+                  </button>
+
                   {/* Publish / Unpublish button */}
                   <button
                     type="button"
@@ -587,6 +597,13 @@ export default function ReleaseDetailPage() {
             )}
           </div>
         </div>
+      )}
+      {showCoverManager && releaseId && (
+        <CoverManager
+          entityType="release"
+          entityId={releaseId}
+          onClose={() => setShowCoverManager(false)}
+        />
       )}
     </div>
   );

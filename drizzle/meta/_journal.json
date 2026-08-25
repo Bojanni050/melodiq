@@ -8,6 +8,13 @@
       "when": 1787447084155,
       "tag": "0000_flaky_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787661625594,
+      "tag": "0001_light_hercules",
+      "breakpoints": true
     }
   ]
 }

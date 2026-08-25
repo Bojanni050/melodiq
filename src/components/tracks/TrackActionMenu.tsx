@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlaylistStore, useReleaseStore } from "@/lib/store";
+import CoverManager from "./CoverManager";
 import type { PlaylistOption, TrackItem } from "./types";
 
 interface TrackActionMenuProps {
@@ -88,6 +89,7 @@ export default function TrackActionMenu({
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [releaseSubmenuOpen, setReleaseSubmenuOpen] = useState(false);
+  const [showCoverManager, setShowCoverManager] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
@@ -214,6 +216,16 @@ export default function TrackActionMenu({
             className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(false);
+              setShowCoverManager(true);
+            }}
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+          >
+            Manage Covers
           </button>
           {onRegenerateTitle && (
             <button
@@ -507,6 +519,13 @@ export default function TrackActionMenu({
             </>
           )}
         </div>
+      )}
+      {showCoverManager && (
+        <CoverManager
+          entityType="track"
+          entityId={track.id}
+          onClose={() => setShowCoverManager(false)}
+        />
       )}
     </div>
   );
