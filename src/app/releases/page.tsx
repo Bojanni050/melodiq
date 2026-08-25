@@ -551,6 +551,13 @@ export default function ReleasesPage() {
                               </button>
                               <button
                                 type="button"
+                                onClick={() => toggleReleasePublic(release.id)}
+                                className={`text-sm transition-colors ${release.isPublic ? "text-emerald-400/70 hover:text-emerald-300" : "text-white/45 hover:text-white"}`}
+                              >
+                                {release.isPublic ? t("releases.unpublish") : t("releases.publish")}
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => setPendingDelete({ id: release.id, title: release.title })}
                                 className="text-sm text-white/45 transition-colors hover:text-red-300"
                               >
