@@ -58,14 +58,13 @@ export default function CoverManager({
     void fetchCovers();
   }, [fetchCovers]);
 
+  // Close on Escape key only — not on backdrop click (backdrop is outside menuRef)
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -125,10 +124,6 @@ export default function CoverManager({
     }
   }
 
-  function getCoverUrl(cover: CoverImage): string {
-    return `/api/${entityType === "track" ? "tracks" : "releases"}/${entityId}/covers/image/${cover.id}`;
-  }
-
   function getThumbUrl(cover: CoverImage): string {
     return `/api/${entityType === "track" ? "tracks" : "releases"}/${entityId}/covers/image/${cover.id}?thumb=1`;
   }
@@ -138,11 +133,16 @@ export default function CoverManager({
   const totalCount = (hasExistingCover ? 1 : 0) + covers.length;
   const canAddMore = totalCount < 5;
 
+  // Check if any uploaded cover is marked as main
+  const hasUploadedMain = covers.some((c) => c.isMain);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      {/* Backdrop click closes */}
+      <div className="absolute inset-0" onClick={onClose} />
       <div
         ref={menuRef}
-        className="relative w-full max-w-lg rounded-xl border border-white/10 bg-[#12121a] p-5 shadow-2xl"
+        className="relative w-full max-w-lg rounded-xl border border-white/10 bg-[#12121a] p-5 shadow-2xl z-10"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -173,18 +173,11 @@ export default function CoverManager({
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-3 mb-4">
-            {/* Current/existing cover (position 1) */}
+            {/* Current/existing cover — not draggable, shows Main only if no uploaded cover is main */}
             {hasExistingCover && (
               <div
-                draggable
-                onDragStart={() => setDragIndex(0)}
-                onDragOver={(e) => { e.preventDefault(); setDragOverIndex(0); }}
-                onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
-                onDrop={(e) => { e.preventDefault(); setDragIndex(null); setDragOverIndex(null); }}
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group cursor-grab active:cursor-grabbing ${
-                  dragOverIndex === 0
-                    ? "border-white/40 scale-105"
-                    : "border-emerald-400/60"
+                className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
+                  !hasUploadedMain ? "border-emerald-400/60" : "border-white/15"
                 }`}
               >
                 <img
@@ -192,30 +185,33 @@ export default function CoverManager({
                   alt="Current cover"
                   className="w-full h-full object-cover"
                 />
-                <span className="absolute top-1 left-1 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
-                  Main
-                </span>
+                {!hasUploadedMain && (
+                  <span className="absolute top-1 left-1 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+                    Main
+                  </span>
+                )}
                 <span className="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white/70">
                   1
                 </span>
               </div>
             )}
 
-            {/* Additional covers from cover_images table */}
+            {/* Additional covers from cover_images table — draggable */}
             {covers.map((cover, index) => {
               const displayIndex = (hasExistingCover ? 1 : 0) + index;
               return (
                 <div
                   key={cover.id}
                   draggable
-                  onDragStart={() => setDragIndex(displayIndex)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverIndex(displayIndex); }}
+                  onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragIndex(index); }}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverIndex(index); }}
+                  onDragLeave={() => setDragOverIndex(null)}
                   onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
                   onDrop={(e) => { e.preventDefault(); if (dragIndex !== null) handleReorder(dragIndex, index); setDragIndex(null); setDragOverIndex(null); }}
                   className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group cursor-grab active:cursor-grabbing ${
                     cover.isMain
                       ? "border-emerald-400/60"
-                      : dragOverIndex === displayIndex
+                      : dragOverIndex === index
                         ? "border-white/40 scale-105"
                         : "border-transparent hover:border-white/20"
                   }`}
@@ -308,9 +304,9 @@ export default function CoverManager({
         )}
 
         {/* Hint */}
-        {totalCount > 1 && (
+        {covers.length > 0 && (
           <p className="mt-2 text-[11px] text-white/30 text-center">
-            Drag to reorder. The first image is used as the main cover.
+            Drag uploaded covers to reorder. First image is used as cover when no uploaded cover is set as main.
           </p>
         )}
       </div>
