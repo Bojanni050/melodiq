@@ -602,6 +602,8 @@ export default function ReleaseDetailPage() {
         <CoverManager
           entityType="release"
           entityId={releaseId}
+          currentCoverS3Key={selectedRelease?.coverUrl ? null : null}
+          currentCoverUrl={selectedRelease?.coverUrl}
           onClose={() => setShowCoverManager(false)}
         />
       )}

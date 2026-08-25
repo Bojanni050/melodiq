@@ -524,6 +524,8 @@ export default function TrackActionMenu({
         <CoverManager
           entityType="track"
           entityId={track.id}
+          currentCoverS3Key={track.s3KeyCover}
+          currentCoverUrl={track.coverUrl}
           onClose={() => setShowCoverManager(false)}
         />
       )}
