@@ -54,7 +54,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
-  const buildVersion = "202608251820";
+  const buildVersion = "202608251832";
 
   useEffect(() => {
     setIsQHD(isQHD);
@@ -347,6 +347,12 @@ export default function Sidebar({ credits }: SidebarProps) {
             </Link>
           )}
           {!collapsed && <div className="border-t border-white/5" />}
+          {!collapsed && user?.name && (
+            <p className="px-3 py-2 text-sm text-white/70">
+              Hi {user.name.split(" ")[0]}
+            </p>
+          )}
+          {!collapsed && <div className="border-t border-white/5" />}
           {navGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
@@ -509,6 +515,12 @@ export default function Sidebar({ credits }: SidebarProps) {
                 </svg>
                 <span>Dashboard</span>
               </Link>
+              <div className="border-t border-white/5" />
+              {user?.name && (
+                <p className="px-3 py-2 text-sm text-white/70">
+                  Hi {user.name.split(" ")[0]}
+                </p>
+              )}
               <div className="border-t border-white/5" />
               {navGroups.map((group) => (
                 <div key={group.label}>
