@@ -344,6 +344,8 @@ export const releases = pgTable("releases", {
   // soundtrack, solo, live, etc. Used for display/filtering only.
   kind: varchar("kind", { length: 30 }),
   artistName: varchar("artist_name", { length: 255 }),
+  writerName: varchar("writer_name", { length: 255 }),
+  composerName: varchar("composer_name", { length: 255 }),
   // Free-form credits text (producer, writer, mixed by, etc.) — display only.
   credits: text("credits"),
   description: text("description"),

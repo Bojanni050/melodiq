@@ -44,6 +44,8 @@ export default function ReleasesPage() {
   const [editingReleaseId, setEditingReleaseId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtistAlias, setEditArtistAlias] = useState("");
+  const [editWriterName, setEditWriterName] = useState("");
+  const [editComposerName, setEditComposerName] = useState("");
   const [editCredits, setEditCredits] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -214,10 +216,12 @@ export default function ReleasesPage() {
     router.push(`/releases/${releaseId}`);
   }
 
-  function openEditRelease(release: { id: string; title: string; artistName?: string | null; credits?: string | null }) {
+  function openEditRelease(release: { id: string; title: string; artistName?: string | null; writerName?: string | null; composerName?: string | null; credits?: string | null }) {
     setEditingReleaseId(release.id);
     setEditTitle(release.title);
     setEditArtistAlias(release.artistName ?? "");
+    setEditWriterName(release.writerName ?? "");
+    setEditComposerName(release.composerName ?? "");
     setEditCredits(release.credits ?? "");
   }
 
@@ -229,7 +233,7 @@ export default function ReleasesPage() {
     setSavingEdit(true);
     try {
       renameRelease(releaseId, title);
-      updateReleaseDetails(releaseId, { artistName: editArtistAlias, credits: editCredits });
+      updateReleaseDetails(releaseId, { artistName: editArtistAlias, writerName: editWriterName, composerName: editComposerName, credits: editCredits });
       setEditingReleaseId(null);
     } finally {
       setSavingEdit(false);
@@ -594,6 +598,8 @@ export default function ReleasesPage() {
       {editingReleaseId && (() => {
         const artistAliasOptions = (user?.artistAliases ?? []).filter((alias) => alias.trim());
         const defaultArtistLabel = user?.artistAlias?.trim() || user?.name?.trim() || t("releases.unknownArtist");
+        const defaultWriterLabel = user?.writerAlias?.trim() || "";
+        const defaultComposerLabel = user?.composerAlias?.trim() || "";
 
         return (
           <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
@@ -638,6 +644,43 @@ export default function ReleasesPage() {
                       {defaultArtistLabel}
                     </p>
                   )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Composer</label>
+                    <input
+                      value={editComposerName}
+                      onChange={(e) => setEditComposerName(e.target.value)}
+                      maxLength={255}
+                      disabled={savingEdit}
+                      className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
+                      placeholder={defaultComposerLabel || "Composer name"}
+                      list="release-composer-options"
+                    />
+                    {defaultComposerLabel && (
+                      <datalist id="release-composer-options">
+                        <option value={defaultComposerLabel} />
+                      </datalist>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/45">Writer</label>
+                    <input
+                      value={editWriterName}
+                      onChange={(e) => setEditWriterName(e.target.value)}
+                      maxLength={255}
+                      disabled={savingEdit}
+                      className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-white/25 disabled:opacity-60"
+                      placeholder={defaultWriterLabel || "Writer name"}
+                      list="release-writer-options"
+                    />
+                    {defaultWriterLabel && (
+                      <datalist id="release-writer-options">
+                        <option value={defaultWriterLabel} />
+                      </datalist>
+                    )}
+                  </div>
                 </div>
 
                 <div>
