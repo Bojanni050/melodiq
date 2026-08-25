@@ -33,7 +33,7 @@ export default function ReleasesPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
-  const { releases, loadReleases, deleteRelease, updateReleaseDetails, renameRelease } = useReleaseStore();
+  const { releases, loadReleases, deleteRelease, updateReleaseDetails, renameRelease, toggleReleasePublic } = useReleaseStore();
   const user = useUserStore((s) => s.user);
 
   const [loading, setLoading] = useState(true);
@@ -457,6 +457,13 @@ export default function ReleasesPage() {
                             className="text-sm text-white/45 transition-colors hover:text-white"
                           >
                             {t("releases.editRelease")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleReleasePublic(release.id)}
+                            className={`text-sm transition-colors ${release.isPublic ? "text-emerald-400/70 hover:text-emerald-300" : "text-white/45 hover:text-white"}`}
+                          >
+                            {release.isPublic ? t("releases.unpublish") : t("releases.publish")}
                           </button>
                           <button
                             type="button"
