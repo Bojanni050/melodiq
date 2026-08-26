@@ -50,6 +50,45 @@ export async function processAndUploadCover(rawBuffer: Buffer, trackId: string):
 }
 
 /**
+ * Process a cover image for the multi-cover system (cover_images table).
+ */
+export async function processAndUploadCoverImage(rawBuffer: Buffer, entityId: string, coverId: string, entityType: "track" | "release"): Promise<{ s3Key: string; s3KeyThumb: string }> {
+  const format = await detectImageFormat(rawBuffer);
+  const isAvif = format === "avif";
+  const isWebp = format === "webp";
+
+  let fullBuffer: Buffer;
+  let thumbBuffer: Buffer;
+  let ext: string;
+  let contentType: string;
+
+  if (isAvif || isWebp) {
+    fullBuffer = rawBuffer;
+    thumbBuffer = await sharp(rawBuffer).resize(120, 120, { fit: "cover" }).toBuffer();
+    ext = isAvif ? "avif" : "webp";
+    contentType = isAvif ? "image/avif" : "image/webp";
+  } else {
+    [fullBuffer, thumbBuffer] = await Promise.all([
+      sharp(rawBuffer).avif({ quality: 80 }).toBuffer(),
+      sharp(rawBuffer).resize(120, 120, { fit: "cover" }).avif({ quality: 75 }).toBuffer(),
+    ]);
+    ext = "avif";
+    contentType = "image/avif";
+  }
+
+  const prefix = entityType === "release" ? `release-${entityId}` : entityId;
+  const s3Key = `tracks/${prefix}/covers/${coverId}.${ext}`;
+  const s3KeyThumb = `tracks/${prefix}/covers/${coverId}_thumb.${ext}`;
+
+  await Promise.all([
+    uploadToS3(s3Key, fullBuffer, contentType),
+    uploadToS3(s3KeyThumb, thumbBuffer, contentType),
+  ]);
+
+  return { s3Key, s3KeyThumb };
+}
+
+/**
  * Genereert cover art voor een enkele track (Lyria, MiniMax, MusicGPT).
  * Hergebruikt een bestaande cover als dezelfde prompt al eerder gebruikt werd.
  * Faalt altijd stil.

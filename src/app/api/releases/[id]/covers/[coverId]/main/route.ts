@@ -34,5 +34,5 @@ export async function PATCH(
     .set({ s3KeyCover: cover.s3Key, s3KeyCoverThumb: cover.s3KeyThumb, updatedAt: new Date() })
     .where(eq(releases.id, id));
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, coverUrl: `/api/releases/${id}/cover?t=${Date.now()}` });
 }

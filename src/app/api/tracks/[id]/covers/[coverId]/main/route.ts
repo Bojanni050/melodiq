@@ -35,7 +35,7 @@ export async function PATCH(
   // Update track's main cover
   await db
     .update(tracks)
-    .set({ s3KeyCover: cover.s3Key, s3KeyCoverThumb: cover.s3KeyThumb, updatedAt: new Date() })
+    .set({ s3KeyCover: cover.s3Key, s3KeyCoverThumb: cover.s3KeyThumb, coverUrl: `/api/tracks/${id}/cover?t=${Date.now()}`, updatedAt: new Date() })
     .where(eq(tracks.id, id));
 
   return NextResponse.json({ success: true });

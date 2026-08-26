@@ -160,6 +160,10 @@ export default function CoverManager({
       }
 
       onUpdated?.();
+      // Trigger UI refresh in other components (TrackCard, Player, Sidebar, etc.)
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("tracks-changed"));
+      }
       onClose();
     } finally {
       setSaving(false);
