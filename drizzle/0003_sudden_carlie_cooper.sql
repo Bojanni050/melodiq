@@ -1,0 +1,1 @@
+ALTER TABLE "cover_images" ADD COLUMN "is_generated" boolean DEFAULT false NOT NULL;

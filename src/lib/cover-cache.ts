@@ -33,7 +33,7 @@ function ensureCacheDir(): void {
 /** Derive a safe unique filename from an S3 key. */
 function cacheFilename(s3Key: string): string {
   const hash = crypto.createHash("sha256").update(s3Key).digest("hex").slice(0, 16);
-  const ext = s3Key.endsWith(".avif") ? "avif" : s3Key.endsWith(".webp") ? "webp" : s3Key.endsWith(".jpg") ? "jpg" : "webp";
+  const ext = s3Key.endsWith(".avif") ? "avif" : s3Key.endsWith(".webp") ? "webp" : s3Key.endsWith(".png") ? "png" : s3Key.endsWith(".jpg") || s3Key.endsWith(".jpeg") ? "jpg" : "webp";
   return `${hash}.${ext}`;
 }
 
@@ -76,7 +76,7 @@ export async function getCachedCover(
   }
 
   const buffer = fs.readFileSync(dest);
-  const contentType = dest.endsWith(".avif") ? "image/avif" : dest.endsWith(".webp") ? "image/webp" : "image/jpeg";
+  const contentType = dest.endsWith(".avif") ? "image/avif" : dest.endsWith(".webp") ? "image/webp" : dest.endsWith(".png") ? "image/png" : "image/jpeg";
 
   return { buffer, cached, contentType };
 }

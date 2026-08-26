@@ -172,31 +172,35 @@ export default function ReleasesPage() {
       s3KeyCover: t.s3KeyCover ?? null,
       rating: t.rating ?? null,
       artistName: t.artistName ?? null,
+      archivedAt: t.archivedAt,
     };
   }
 
   function handlePlayAll() {
     if (allTracks.length === 0) return;
     const player = usePlayerStore.getState();
-    const playContext = allTracks
-      .filter((t) => t.status === "done")
-      .map((t) => toPlayContextTrack(t));
-    if (playContext.length === 0) return;
+    const playContext = allTracks.map((t) => toPlayContextTrack(t));
     player.setPlayContext(playContext);
-    player.setQueue(playContext.slice(1));
+    if (player.autoPlayNext) {
+      const nextQueue = playContext.slice(1).filter((t) => t.status === "done");
+      player.setQueue(nextQueue);
+    }
     player.playTrackFromGesture(playContext[0]);
   }
 
   function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
     const player = usePlayerStore.getState();
-    const playContext = releaseTrackItems
-      .filter((t) => t.status === "done")
-      .map((t) => toPlayContextTrack(t));
+    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
 
     player.setPlayContext(playContext);
-    const index = playContext.findIndex((t) => t.id === track.id);
-    if (index >= 0) {
-      player.setQueue(playContext.slice(index + 1));
+    if (player.autoPlayNext) {
+      const index = playContext.findIndex((t) => t.id === track.id);
+      if (index >= 0) {
+        const nextQueue = playContext
+          .slice(index + 1)
+          .filter((t) => t.status === "done");
+        player.setQueue(nextQueue);
+      }
     }
 
     player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));

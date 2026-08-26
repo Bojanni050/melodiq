@@ -4,6 +4,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { uploadToS3 } from "@/lib/s3";
+import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -24,12 +25,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "File must be an image" }, { status: 400 });
   }
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const key = `users/${userId}/${type}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const contentType = file.type || "image/jpeg";
+  const rawBuffer = Buffer.from(await file.arrayBuffer());
 
-  await uploadToS3(key, buffer, contentType);
+  let uploadBuffer: Buffer;
+  let ext: string;
+  let contentType: string;
+
+  try {
+    const metadata = await sharp(rawBuffer).metadata();
+    const format = metadata.format;
+
+    if (format === "avif" || format === "webp") {
+      uploadBuffer = rawBuffer;
+      ext = format;
+      contentType = format === "avif" ? "image/avif" : "image/webp";
+    } else {
+      uploadBuffer = await sharp(rawBuffer).avif({ quality: 80 }).toBuffer();
+      ext = "avif";
+      contentType = "image/avif";
+    }
+  } catch {
+    uploadBuffer = rawBuffer;
+    ext = file.name.split(".").pop() || "jpg";
+    contentType = file.type || "image/jpeg";
+  }
+
+  const key = `users/${userId}/${type}.${ext}`;
+  await uploadToS3(key, uploadBuffer, contentType);
 
   const imageUrl = `/api/account/${key}`;
 

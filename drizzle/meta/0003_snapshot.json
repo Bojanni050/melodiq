@@ -1,6 +1,6 @@
 {
-  "id": "23192f2d-afe5-42ab-a086-db7fc60a52db",
-  "prevId": "4203cd6c-a3b4-4a25-a7cb-5990470fe905",
+  "id": "e78a3702-ff29-4391-a7b4-36e6609c67bb",
+  "prevId": "23192f2d-afe5-42ab-a086-db7fc60a52db",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -216,6 +216,13 @@
         },
         "is_main": {
           "name": "is_main",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_generated": {
+          "name": "is_generated",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

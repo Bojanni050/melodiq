@@ -17,7 +17,15 @@ export function useMediaSession(
         currentTrack.coverUrl ||
         (currentTrack.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
       if (coverSrc) {
-        artwork.push({ src: coverSrc, sizes: "512x512", type: "image/jpeg" });
+        const coverKey = currentTrack.s3KeyCover || "";
+        const coverType = coverKey.endsWith(".avif")
+          ? "image/avif"
+          : coverKey.endsWith(".webp")
+          ? "image/webp"
+          : coverKey.endsWith(".png")
+          ? "image/png"
+          : "image/jpeg";
+        artwork.push({ src: coverSrc, sizes: "512x512", type: coverType });
       }
       navigator.mediaSession.metadata = new MediaMetadata({
         title:

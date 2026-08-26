@@ -242,7 +242,7 @@ export async function generateAndSaveCoverArtForBatch(batch: {
 
     if (existing?.s3KeyCover) {
       s3KeyCover = existing.s3KeyCover;
-      s3KeyCoverThumb = existing.s3KeyCoverThumb ?? s3KeyCover.replace("cover.webp", "cover_thumb.webp");
+      s3KeyCoverThumb = existing.s3KeyCoverThumb ?? s3KeyCover.replace(/cover\.(webp|avif|jpg|png)$/, "cover_thumb.$1");
       console.log(`[cover-art] reusing existing cover for batch of ${batch.tracks.length}`);
     } else {
       const imageBuffer = await generateCoverArt({
@@ -318,7 +318,7 @@ export async function generateAndSaveReleaseCoverArt(release: {
 
     if (existingTrackCover?.s3KeyCover) {
       s3KeyCover = existingTrackCover.s3KeyCover;
-      s3KeyCoverThumb = existingTrackCover.s3KeyCoverThumb ?? s3KeyCover.replace("cover.webp", "cover_thumb.webp");
+      s3KeyCoverThumb = existingTrackCover.s3KeyCoverThumb ?? s3KeyCover.replace(/cover\.(webp|avif|jpg|png)$/, "cover_thumb.$1");
       console.log(`[cover-art] reused existing cover for release ${release.id}`);
     } else {
       const imageBuffer = await generateCoverArt({
