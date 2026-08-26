@@ -16,9 +16,7 @@ interface CoverImage {
 interface CoverManagerProps {
   entityType: "track" | "release";
   entityId: string;
-  /** The current/main cover's S3 key (from the tracks/releases table) */
   currentCoverS3Key?: string | null;
-  /** URL to display the current cover */
   currentCoverUrl?: string | null;
   onClose: () => void;
   onUpdated?: () => void;
@@ -35,8 +33,6 @@ export default function CoverManager({
   const [covers, setCovers] = useState<CoverImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +54,6 @@ export default function CoverManager({
     void fetchCovers();
   }, [fetchCovers]);
 
-  // Close on Escape key only — not on backdrop click (backdrop is outside menuRef)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -107,7 +102,7 @@ export default function CoverManager({
   }
 
   async function handleReorder(fromIndex: number, toIndex: number) {
-    if (fromIndex === toIndex) return;
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= covers.length) return;
     const reordered = [...covers];
     const [moved] = reordered.splice(fromIndex, 1);
     reordered.splice(toIndex, 0, moved);
@@ -128,17 +123,13 @@ export default function CoverManager({
     return `/api/${entityType === "track" ? "tracks" : "releases"}/${entityId}/covers/image/${cover.id}?thumb=1`;
   }
 
-  // Total count: existing cover (if any) + additional covers from cover_images table
   const hasExistingCover = !!currentCoverS3Key || !!currentCoverUrl;
   const totalCount = (hasExistingCover ? 1 : 0) + covers.length;
   const canAddMore = totalCount < 5;
-
-  // Check if any uploaded cover is marked as main
   const hasUploadedMain = covers.some((c) => c.isMain);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      {/* Backdrop click closes */}
       <div className="absolute inset-0" onClick={onClose} />
       <div
         ref={menuRef}
@@ -172,83 +163,98 @@ export default function CoverManager({
             <p className="text-sm">No cover images yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {/* Current/existing cover — not draggable, shows Main only if no uploaded cover is main */}
+          <div className="space-y-2 mb-4">
+            {/* Current/existing cover */}
             {hasExistingCover && (
-              <div
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
-                  !hasUploadedMain ? "border-emerald-400/60" : "border-white/15"
-                }`}
-              >
-                <img
-                  src={currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover?thumb=1` : `/api/releases/${entityId}/cover?thumb=1`)}
-                  alt="Current cover"
-                  className="w-full h-full object-cover"
-                />
-                {!hasUploadedMain && (
-                  <span className="absolute top-1 left-1 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
-                    Main
-                  </span>
-                )}
-                <span className="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white/70">
-                  1
-                </span>
+              <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-2">
+                <div className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${!hasUploadedMain ? "border-emerald-400/60" : "border-white/15"}`}>
+                  <img
+                    src={currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover?thumb=1` : `/api/releases/${entityId}/cover?thumb=1`)}
+                    alt="Current cover"
+                    className="h-full w-full object-cover"
+                  />
+                  {!hasUploadedMain && (
+                    <span className="absolute top-0.5 left-0.5 rounded bg-emerald-500/80 px-1 py-0.5 text-[8px] font-bold uppercase text-white">
+                      Main
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-white/80">Current cover</p>
+                  <p className="text-[11px] text-white/40">Original cover from track</p>
+                </div>
+                <span className="text-[10px] text-white/30">1</span>
               </div>
             )}
 
-            {/* Additional covers from cover_images table — draggable */}
+            {/* Uploaded covers */}
             {covers.map((cover, index) => {
               const displayIndex = (hasExistingCover ? 1 : 0) + index;
               return (
                 <div
                   key={cover.id}
-                  draggable
-                  onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragIndex(index); }}
-                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverIndex(index); }}
-                  onDragLeave={() => setDragOverIndex(null)}
-                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
-                  onDrop={(e) => { e.preventDefault(); if (dragIndex !== null) handleReorder(dragIndex, index); setDragIndex(null); setDragOverIndex(null); }}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group cursor-grab active:cursor-grabbing ${
+                  onDoubleClick={() => handleSetMain(cover.id)}
+                  className={`flex items-center gap-3 rounded-lg border-2 p-2 transition-colors ${
                     cover.isMain
-                      ? "border-emerald-400/60"
-                      : dragOverIndex === index
-                        ? "border-white/40 scale-105"
-                        : "border-transparent hover:border-white/20"
+                      ? "border-emerald-400/60 bg-emerald-400/5"
+                      : "border-white/10 bg-white/5 hover:border-white/20"
                   }`}
                 >
-                  <img
-                    src={getThumbUrl(cover)}
-                    alt={`Cover ${displayIndex + 1}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-
-                  {cover.isMain && (
-                    <span className="absolute top-1 left-1 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
-                      Main
-                    </span>
-                  )}
-
-                  <span className="absolute top-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white/70">
-                    {displayIndex + 1}
-                  </span>
-
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                    <img
+                      src={getThumbUrl(cover)}
+                      alt={`Cover ${displayIndex + 1}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    {cover.isMain && (
+                      <span className="absolute top-0.5 left-0.5 rounded bg-emerald-500/80 px-1 py-0.5 text-[8px] font-bold uppercase text-white">
+                        Main
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-white/80">Cover {displayIndex + 1}</p>
+                    <p className="text-[11px] text-white/40">Double-click to set as main</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleReorder(index, index - 1)}
+                      disabled={index === 0}
+                      className="p-1 rounded text-white/30 hover:text-white/70 hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                      title="Move up"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleReorder(index, index + 1)}
+                      disabled={index === covers.length - 1}
+                      className="p-1 rounded text-white/30 hover:text-white/70 hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                      title="Move down"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                     {!cover.isMain && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleSetMain(cover.id); }}
-                        className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/80 text-white hover:bg-emerald-400 transition-colors"
-                        title="Set as main cover"
+                        onClick={() => handleSetMain(cover.id)}
+                        className="p-1 rounded text-emerald-400/60 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+                        title="Set as main"
                       >
-                        Set main
+                        <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
                       </button>
                     )}
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(cover.id); }}
-                      className="p-1 rounded bg-red-500/80 text-white hover:bg-red-400 transition-colors"
-                      title="Delete cover"
+                      onClick={() => handleDelete(cover.id)}
+                      className="p-1 rounded text-red-400/50 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                      title="Delete"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
@@ -256,18 +262,6 @@ export default function CoverManager({
                 </div>
               );
             })}
-
-            {/* Empty slots */}
-            {Array.from({ length: Math.max(0, 3 - totalCount) }).map((_, i) => (
-              <div
-                key={`empty-${i}`}
-                className="relative aspect-square rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center"
-              >
-                <svg className="w-6 h-6 text-white/15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-            ))}
           </div>
         )}
 
@@ -301,13 +295,6 @@ export default function CoverManager({
               )}
             </button>
           </div>
-        )}
-
-        {/* Hint */}
-        {covers.length > 0 && (
-          <p className="mt-2 text-[11px] text-white/30 text-center">
-            Drag uploaded covers to reorder. First image is used as cover when no uploaded cover is set as main.
-          </p>
         )}
       </div>
     </div>
