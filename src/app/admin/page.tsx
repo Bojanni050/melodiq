@@ -4,11 +4,29 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore } from "@/lib/store";
+import { formatBytes } from "@/lib/perfMonitor";
 
 interface AdminStats {
   totalUsers: number;
   totalTracks: number;
   totalPlays: number;
+}
+
+interface PerfSnapshot {
+  sessionStartedAt: number;
+  uptimeMs: number;
+  visibleMs: number;
+  hiddenMs: number;
+  longTaskCount: number;
+  longTaskTotalMs: number;
+  longTaskMaxMs: number;
+  networkBytes: number;
+  networkBytesByCategory: Record<string, number>;
+  networkBytesFormatted: string;
+  networkUncounted: number;
+  storageUsageBytes: number | null;
+  storageQuotaBytes: number | null;
+  storageUsageFormatted: string | null;
 }
 
 function StatTile({ label, value, href }: { label: string; value: number; href?: string }) {
@@ -54,6 +72,9 @@ export default function AdminPage() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [createUserError, setCreateUserError] = useState<string | null>(null);
   const [createUserNotice, setCreateUserNotice] = useState<string | null>(null);
+  const [perfSnapshot, setPerfSnapshot] = useState<PerfSnapshot | null>(null);
+  const [perfLogging, setPerfLogging] = useState(false);
+  const [refreshingPerf, setRefreshingPerf] = useState(false);
 
   async function createUser(e: FormEvent) {
     e.preventDefault();
@@ -123,6 +144,24 @@ export default function AdminPage() {
     };
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+    function updateSnapshot() {
+      if (active && typeof window !== "undefined" && (window as any).__melodiqPerf) {
+        setPerfSnapshot((window as any).__melodiqPerf.snapshot());
+      }
+    }
+    
+    updateSnapshot();
+    const interval = setInterval(updateSnapshot, 5000);
+    
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [isAdmin]);
+
   if (checking) {
     return (
       <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -164,6 +203,117 @@ export default function AdminPage() {
               <StatTile label="Total Plays" value={stats.totalPlays} />
             </div>
           )}
+
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Performance Monitor</h2>
+                <p className="mt-1 text-sm text-white/40">Real-time prestatiegegevens en netwerkverbruik</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined" && (window as any).__melodiqPerf) {
+                    setPerfLogging(!perfLogging);
+                    (window as any).__melodiqPerf.setLogging(!perfLogging);
+                  }
+                }}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  perfLogging
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    : "bg-white/10 text-white/60 hover:bg-white/15"
+                }`}
+              >
+                {perfLogging ? "Logging aan" : "Logging uit"}
+              </button>
+            </div>
+
+            {perfSnapshot ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {/* Uptime & Visibility */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Sessie</p>
+                  <p className="mt-1 text-2xl font-semibold text-white">
+                    {(perfSnapshot.uptimeMs / 1000 / 60).toFixed(0)} min
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">
+                    Zichtbaar: {(perfSnapshot.visibleMs / 1000 / 60).toFixed(1)} min | 
+                    Verborgen: {(perfSnapshot.hiddenMs / 1000 / 60).toFixed(1)} min
+                  </p>
+                </div>
+
+                {/* Network Usage */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Netwerkverbruik</p>
+                  <p className="mt-1 text-2xl font-semibold text-white">
+                    {perfSnapshot.networkBytesFormatted}
+                  </p>
+                  <div className="mt-2 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-white/50">Audio</span>
+                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.audio)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/50">Afbeeldingen</span>
+                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.image)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/50">API</span>
+                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.api)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/50">Overig</span>
+                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.other)}</span>
+                    </div>
+                    {perfSnapshot.networkUncounted > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-white/50">Onbekend (cross-origin)</span>
+                        <span className="text-white/80">+{perfSnapshot.networkUncounted}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Storage Usage */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Browser opslag</p>
+                  <p className="mt-1 text-2xl font-semibold text-white">
+                    {perfSnapshot.storageUsageFormatted || "Onbekend"}
+                  </p>
+                  {perfSnapshot.storageQuotaBytes && (
+                    <p className="text-xs text-white/40 mt-1">
+                      Quota: {formatBytes(perfSnapshot.storageQuotaBytes)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Long Tasks */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Main-thread belasting</p>
+                  <p className="mt-1 text-2xl font-semibold text-white">
+                    {perfSnapshot.longTaskCount}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">
+                    Totaal: {Math.round(perfSnapshot.longTaskTotalMs)}ms | 
+                    Max: {Math.round(perfSnapshot.longTaskMaxMs)}ms
+                  </p>
+                </div>
+
+                {/* Session Start */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 md:col-span-2">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Sessie gestart</p>
+                  <p className="mt-1 text-lg font-semibold text-white">
+                    {new Date(perfSnapshot.sessionStartedAt).toLocaleTimeString()}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">
+                    {new Date(perfSnapshot.sessionStartedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-white/50">Performancedata wordt geladen...</p>
+            )}
+          </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <h2 className="text-lg font-semibold">Add User</h2>
