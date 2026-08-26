@@ -162,7 +162,10 @@ export default function CoverManager({
       onUpdated?.();
       // Trigger UI refresh in other components (TrackCard, Player, Sidebar, etc.)
       if (typeof window !== "undefined") {
+        const ts = Date.now();
         window.dispatchEvent(new CustomEvent("tracks-changed"));
+        // Also notify TrackCard cover override
+        window.dispatchEvent(new CustomEvent("melodiq:cover-regenerated", { detail: { trackIds: [entityId], ts } }));
       }
       onClose();
     } finally {
