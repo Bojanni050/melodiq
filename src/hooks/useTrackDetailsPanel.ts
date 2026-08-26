@@ -86,6 +86,22 @@ export function useTrackDetailsPanel<T extends HasId>(tracks: T[]) {
     setShowTrackDetailsPanel(false);
   }, [setShowTrackDetailsPanel]);
 
+  // When cover is regenerated or changed, update selectedTrack's coverUrl
+  useEffect(() => {
+    function handleCoverChanged(event: Event) {
+      const e = event as CustomEvent<{ trackIds?: string[]; ts?: number }>;
+      const ids = e.detail?.trackIds;
+      if (!Array.isArray(ids)) return;
+      const ts = typeof e.detail?.ts === "number" ? e.detail.ts : Date.now();
+      setSelectedTrack((prev) => {
+        if (!prev || !ids.includes(prev.id)) return prev;
+        return { ...prev, coverUrl: `/api/tracks/${prev.id}/cover?t=${ts}` } as T;
+      });
+    }
+    window.addEventListener("melodiq:cover-regenerated", handleCoverChanged);
+    return () => window.removeEventListener("melodiq:cover-regenerated", handleCoverChanged);
+  }, []);
+
   return {
     selectedTrack,
     setSelectedTrack,
