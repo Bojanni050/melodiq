@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { releases, tracks } from "@/db/schema";
+import { releases, tracks, coverImages } from "@/db/schema";
 import { eq, and, isNotNull, isNull } from "drizzle-orm";
 import { generateCoverArt } from "@/lib/providers/cover-art";
 import { uploadToS3 } from "@/lib/s3";
@@ -88,6 +88,62 @@ export async function processAndUploadCoverImage(rawBuffer: Buffer, entityId: st
   return { s3Key, s3KeyThumb };
 }
 
+async function insertGeneratedCoverIntoCoverImages(
+  userId: string,
+  entityType: "track" | "release",
+  entityId: string,
+  imageBuffer: Buffer
+): Promise<void> {
+  try {
+    const coverId = crypto.randomUUID();
+    const { s3Key, s3KeyThumb } = await processAndUploadCoverImage(imageBuffer, entityId, coverId, entityType);
+
+    // Get current max position for this entity
+    const existing = await db
+      .select({ position: coverImages.position })
+      .from(coverImages)
+      .where(and(eq(coverImages.entityType, entityType), eq(coverImages.entityId, entityId), eq(coverImages.userId, userId)))
+      .orderBy(coverImages.position);
+
+    const nextPosition = existing.length > 0 ? Math.max(...existing.map((e) => e.position)) + 1 : 0;
+
+    // Check if there's already a generated cover — if so, replace it
+    const existingGenerated = await db
+      .select({ id: coverImages.id })
+      .from(coverImages)
+      .where(and(eq(coverImages.entityType, entityType), eq(coverImages.entityId, entityId), eq(coverImages.userId, userId), eq(coverImages.isGenerated, true)))
+      .limit(1);
+
+    if (existingGenerated[0]) {
+      // Delete old generated cover from S3 and DB
+      const oldCover = await db.select().from(coverImages).where(eq(coverImages.id, existingGenerated[0].id));
+      if (oldCover[0]) {
+        try {
+          const { deleteFromS3 } = await import("@/lib/s3");
+          await deleteFromS3(oldCover[0].s3Key);
+          if (oldCover[0].s3KeyThumb) await deleteFromS3(oldCover[0].s3KeyThumb);
+        } catch { /* ignore S3 delete errors */ }
+        await db.delete(coverImages).where(eq(coverImages.id, existingGenerated[0].id));
+      }
+    }
+
+    await db.insert(coverImages).values({
+      userId,
+      entityType,
+      entityId,
+      s3Key,
+      s3KeyThumb,
+      position: existingGenerated[0] ? (existing.find((e) => e.position >= 0)?.position ?? 0) : nextPosition,
+      isMain: false,
+      isGenerated: true,
+    });
+
+    console.log(`[cover-art] inserted generated cover into cover_images for ${entityType} ${entityId}`);
+  } catch (error: any) {
+    console.warn(`[cover-art] failed to insert generated cover into cover_images:`, error?.message ?? error);
+  }
+}
+
 /**
  * Genereert cover art voor een enkele track (Lyria, MiniMax, MusicGPT).
  * Hergebruikt een bestaande cover als dezelfde prompt al eerder gebruikt werd.
@@ -144,6 +200,9 @@ export async function generateAndSaveCoverArt(track: {
       .where(eq(tracks.id, track.id));
 
     console.log(`[cover-art] generated new cover for track ${track.id}`);
+
+    // Also insert into cover_images table so it appears in CoverManager
+    await insertGeneratedCoverIntoCoverImages(track.userId, "track", track.id, imageBuffer);
   } catch (error: any) {
     console.warn(`[cover-art] failed for track ${track.id}:`, error?.message ?? error);
   }
@@ -273,6 +332,9 @@ export async function generateAndSaveReleaseCoverArt(release: {
       s3KeyCover = result.s3KeyCover;
       s3KeyCoverThumb = result.s3KeyCoverThumb;
       console.log(`[cover-art] generated new cover for release ${release.id}`);
+
+      // Also insert into cover_images table so it appears in CoverManager
+      await insertGeneratedCoverIntoCoverImages(release.userId, "release", release.id, imageBuffer);
     }
 
     const whereClause = options?.forceNew
