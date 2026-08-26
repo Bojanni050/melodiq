@@ -3,8 +3,7 @@ import { db } from "@/db";
 import { releases, coverImages } from "@/db/schema";
 import { eq, and, asc, count } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import sharp from "sharp";
-import { uploadToS3 } from "@/lib/s3";
+import { processAndUploadCoverImage } from "@/lib/generate-cover";
 
 const MAX_COVERS = 5;
 
@@ -65,18 +64,7 @@ export async function POST(
     const buffer = Buffer.from(await file.arrayBuffer());
     const coverId = crypto.randomUUID();
 
-    const [webpBuffer, thumbBuffer] = await Promise.all([
-      sharp(buffer).webp({ quality: 85 }).toBuffer(),
-      sharp(buffer).resize(120, 120, { fit: "cover" }).webp({ quality: 82 }).toBuffer(),
-    ]);
-
-    const s3Key = `tracks/release-${id}/covers/${coverId}.webp`;
-    const s3KeyThumb = `tracks/release-${id}/covers/${coverId}_thumb.webp`;
-
-    await Promise.all([
-      uploadToS3(s3Key, webpBuffer, "image/webp"),
-      uploadToS3(s3KeyThumb, thumbBuffer, "image/webp"),
-    ]);
+    const { s3Key, s3KeyThumb } = await processAndUploadCoverImage(buffer, id, coverId, "release");
 
     const isFirst = cnt === 0;
 

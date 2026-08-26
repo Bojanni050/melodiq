@@ -21,13 +21,27 @@ export async function POST(request: Request) {
   for (const track of all) {
     try {
       const fullBuffer = await downloadFromS3(track.s3KeyCover!);
-      const thumbBuffer = await sharp(fullBuffer)
-        .resize(120, 120, { fit: "cover" })
-        .webp({ quality: 82 })
-        .toBuffer();
+      const metadata = await sharp(fullBuffer).metadata();
+      const format = metadata.format;
+      const isAvif = format === "avif";
+      const isWebp = format === "webp";
 
-      const s3KeyCoverThumb = `tracks/${track.id}/cover_thumb.webp`;
-      await uploadToS3(s3KeyCoverThumb, thumbBuffer, "image/webp");
+      let thumbBuffer: Buffer;
+      let ext: string;
+      let contentType: string;
+
+      if (isAvif || isWebp) {
+        thumbBuffer = await sharp(fullBuffer).resize(120, 120, { fit: "cover" }).toBuffer();
+        ext = isAvif ? "avif" : "webp";
+        contentType = isAvif ? "image/avif" : "image/webp";
+      } else {
+        thumbBuffer = await sharp(fullBuffer).resize(120, 120, { fit: "cover" }).avif({ quality: 75 }).toBuffer();
+        ext = "avif";
+        contentType = "image/avif";
+      }
+
+      const s3KeyCoverThumb = `tracks/${track.id}/cover_thumb.${ext}`;
+      await uploadToS3(s3KeyCoverThumb, thumbBuffer, contentType);
 
       await db
         .update(tracks)

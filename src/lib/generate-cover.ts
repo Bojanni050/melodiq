@@ -5,18 +5,45 @@ import { generateCoverArt } from "@/lib/providers/cover-art";
 import { uploadToS3 } from "@/lib/s3";
 import sharp from "sharp";
 
-export async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
-  const [webpBuffer, thumbBuffer] = await Promise.all([
-    sharp(rawBuffer).webp({ quality: 85 }).toBuffer(),
-    sharp(rawBuffer).resize(120, 120, { fit: "cover" }).webp({ quality: 82 }).toBuffer(),
-  ]);
+async function detectImageFormat(buffer: Buffer): Promise<string | null> {
+  try {
+    const metadata = await sharp(buffer).metadata();
+    return metadata.format || null;
+  } catch {
+    return null;
+  }
+}
 
-  const s3KeyCover = `tracks/${trackId}/cover.webp`;
-  const s3KeyCoverThumb = `tracks/${trackId}/cover_thumb.webp`;
+export async function processAndUploadCover(rawBuffer: Buffer, trackId: string): Promise<{ s3KeyCover: string; s3KeyCoverThumb: string }> {
+  const format = await detectImageFormat(rawBuffer);
+  const isAvif = format === "avif";
+  const isWebp = format === "webp";
+
+  let fullBuffer: Buffer;
+  let thumbBuffer: Buffer;
+  let ext: string;
+  let contentType: string;
+
+  if (isAvif || isWebp) {
+    fullBuffer = rawBuffer;
+    thumbBuffer = await sharp(rawBuffer).resize(120, 120, { fit: "cover" }).toBuffer();
+    ext = isAvif ? "avif" : "webp";
+    contentType = isAvif ? "image/avif" : "image/webp";
+  } else {
+    [fullBuffer, thumbBuffer] = await Promise.all([
+      sharp(rawBuffer).avif({ quality: 80 }).toBuffer(),
+      sharp(rawBuffer).resize(120, 120, { fit: "cover" }).avif({ quality: 75 }).toBuffer(),
+    ]);
+    ext = "avif";
+    contentType = "image/avif";
+  }
+
+  const s3KeyCover = `tracks/${trackId}/cover.${ext}`;
+  const s3KeyCoverThumb = `tracks/${trackId}/cover_thumb.${ext}`;
 
   await Promise.all([
-    uploadToS3(s3KeyCover, webpBuffer, "image/webp"),
-    uploadToS3(s3KeyCoverThumb, thumbBuffer, "image/webp"),
+    uploadToS3(s3KeyCover, fullBuffer, contentType),
+    uploadToS3(s3KeyCoverThumb, thumbBuffer, contentType),
   ]);
 
   return { s3KeyCover, s3KeyCoverThumb };
