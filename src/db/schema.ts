@@ -547,6 +547,7 @@ export const coverImages = pgTable("cover_images", {
   s3KeyThumb: text("s3_key_thumb"),
   position: integer("position").notNull().default(0),
   isMain: boolean("is_main").default(false).notNull(),
+  isGenerated: boolean("is_generated").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("cover_images_entity_idx").on(table.entityType, table.entityId),

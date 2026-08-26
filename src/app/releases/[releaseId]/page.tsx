@@ -57,6 +57,7 @@ export default function ReleaseDetailPage() {
   const [regeneratingCover, setRegeneratingCover] = useState(false);
   const [regenerateCoverError, setRegenerateCoverError] = useState<string | null>(null);
   const [showCoverManager, setShowCoverManager] = useState(false);
+  const [coverCacheBust, setCoverCacheBust] = useState(0);
   const [publishingRelease, setPublishingRelease] = useState(false);
   // null = closed, string[] = list of unpublished track titles waiting for confirm
   const [publishConfirmTracks, setPublishConfirmTracks] = useState<string[] | null>(null);
@@ -296,7 +297,7 @@ export default function ReleaseDetailPage() {
                 >
                   {selectedRelease?.coverUrl ? (
                     <img
-                      src={selectedRelease.coverUrl}
+                      src={coverCacheBust ? `${selectedRelease.coverUrl}?t=${coverCacheBust}` : selectedRelease.coverUrl}
                       alt={t("releases.releaseCoverAlt")}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
@@ -647,9 +648,10 @@ export default function ReleaseDetailPage() {
         <CoverManager
           entityType="release"
           entityId={releaseId}
-          currentCoverS3Key={selectedRelease?.coverUrl ? null : null}
+          currentCoverS3Key={null}
           currentCoverUrl={selectedRelease?.coverUrl}
           onClose={() => setShowCoverManager(false)}
+          onUpdated={() => { void loadReleases(); setCoverCacheBust(Date.now()); }}
         />
       )}
     </div>
