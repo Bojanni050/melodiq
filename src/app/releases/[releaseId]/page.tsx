@@ -296,8 +296,7 @@ export default function ReleaseDetailPage() {
                   className="group relative shrink-0 h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] transition-opacity disabled:opacity-60"
                 >
                   {selectedRelease?.coverUrl ? (
-                    <img
-                      src={coverCacheBust ? `${selectedRelease.coverUrl}?t=${coverCacheBust}` : selectedRelease.coverUrl}
+                    <img loading="lazy" src={coverCacheBust ? `${selectedRelease.coverUrl}?t=${coverCacheBust}` : selectedRelease.coverUrl}
                       alt={t("releases.releaseCoverAlt")}
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />

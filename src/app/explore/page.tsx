@@ -139,7 +139,9 @@ export default function ExplorePage() {
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {cover ? (
-                      <img src={cover} alt={track.title} className="h-full w-full object-cover" />
+                      <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={cover} alt={track.title} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
                         <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

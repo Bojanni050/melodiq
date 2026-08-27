@@ -609,7 +609,9 @@ export default function ArchivePage() {
                         <div className="relative shrink-0 group">
                           <div className="w-12 h-12 rounded-lg bg-white/[0.06] overflow-hidden flex items-center justify-center">
                             {entryCoverSrc(entry) ? (
-                              <img src={entryCoverSrc(entry)!} alt="" className="w-full h-full object-cover" />
+                              <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={entryCoverSrc(entry)!} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />

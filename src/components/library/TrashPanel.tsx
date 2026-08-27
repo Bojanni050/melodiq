@@ -36,7 +36,7 @@ export default function TrashPanel({ tracks, loading, onRestore, onDeleteForever
             <div key={track.id} className="flex items-center gap-3 px-4 py-3 bg-white/2 hover:bg-white/5 transition-colors">
               <div className="w-10 h-10 rounded-md shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
                 {track.s3KeyCover ? (
-                  <img src={`/api/tracks/${track.id}/cover`} alt="" className="w-full h-full object-cover" />
+                  <img src={`/api/tracks/${track.id}/cover`} alt="" loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />

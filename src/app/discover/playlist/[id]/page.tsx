@@ -280,7 +280,9 @@ export default function PublicPlaylistPage() {
                 <div className="flex items-end gap-4 min-w-0">
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-24 sm:w-24">
                     {playlist?.coverUrl ? (
-                      <img src={playlist.coverUrl} alt={playlist.name} className="h-full w-full object-cover" />
+                      <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={playlist.coverUrl} alt={playlist.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
                         <svg className="h-7 w-7 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

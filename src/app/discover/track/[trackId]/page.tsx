@@ -264,7 +264,9 @@ export default function TrackDnaPage() {
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {coverSrc() ? (
-                      <img src={coverSrc()!} alt={track.title} className="h-full w-full object-cover" />
+                      <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={coverSrc()!} alt={track.title} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
                         <svg className="h-10 w-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +378,9 @@ export default function TrackDnaPage() {
                   </span>
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
                     {coverSrc() ? (
-                      <img src={coverSrc()!} alt="" className="h-full w-full object-cover" />
+                      <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={coverSrc()!} alt="" className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">

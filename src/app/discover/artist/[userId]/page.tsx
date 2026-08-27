@@ -158,8 +158,7 @@ export default function ArtistPage() {
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         {hero && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={hero}
+          <img loading="lazy" src={hero}
             alt=""
             style={{
               position: "absolute",

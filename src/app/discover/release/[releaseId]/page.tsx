@@ -234,7 +234,9 @@ export default function PublicReleasePage() {
               <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
                 <div className="h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-2xl shadow-black/50 sm:h-44 sm:w-44">
                   {release?.coverUrl ? (
-                    <img src={release.coverUrl} alt={release.title} className="h-full w-full object-cover" />
+                    <?xml encoding="UTF-8"?>
+<?xml encoding="UTF-8"?>
+<img loading="lazy" loading="lazy" src={release.coverUrl} alt={release.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
                       <svg className="h-10 w-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

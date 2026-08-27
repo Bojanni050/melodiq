@@ -56,8 +56,7 @@ export default function TrackPlayButton({
         </div>
       ) : effectiveCoverUrl ? (
         <>
-          <img
-            src={effectiveThumbUrl ?? effectiveCoverUrl}
+          <img loading="lazy" src={effectiveThumbUrl ?? effectiveCoverUrl}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
