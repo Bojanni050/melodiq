@@ -545,7 +545,8 @@ export default function UploadPanel({
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
                             {item.coverFile ? (
-                              <img loading="lazy" src={URL.createObjectURL(item.coverFile)}
+                              <img
+                                src={URL.createObjectURL(item.coverFile)}
                                 alt=""
                                 className="h-full w-full object-cover"
                               />

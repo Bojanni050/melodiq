@@ -133,7 +133,8 @@ export default function MoveToWorkspaceDialog({
                 ) : null}
                 <div className={`h-11 w-11 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`}>
                   {workspaceCoverById.get(workspace.id) ? (
-                    <img loading="lazy" src={workspaceCoverById.get(workspace.id) || ""}
+                    <img
+                      src={workspaceCoverById.get(workspace.id) || ""}
                       alt={workspace.name}
                       className="h-full w-full object-cover"
                     />

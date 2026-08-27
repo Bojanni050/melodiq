@@ -354,7 +354,7 @@ export default function AccountPage() {
                       <Field label={t("account.profilePhoto")}>
                         <div className="flex items-center gap-3">
                           {user?.profileImageUrl ? (
-                            <img src={user.profileImageUrl} alt="" loading="lazy" className="w-14 h-14 rounded-full object-cover" loading="lazy" loading="lazy" / loading="lazy" loading="lazy" loading="lazy" loading="lazy">
+                            <img src={user.profileImageUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
                           ) : (
                             <div className="w-14 h-14 rounded-full bg-white/[0.06] flex items-center justify-center">
                               <svg className="w-6 h-6 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,7 +373,7 @@ export default function AccountPage() {
                       <Field label={t("account.heroImage")} hint={t("account.heroImageHint")}>
                         <div className="flex items-center gap-3">
                           {user?.heroImageUrl ? (
-                            <img src={user.heroImageUrl} alt="" className="w-28 h-14 rounded-lg object-cover" loading="lazy" loading="lazy" / loading="lazy" loading="lazy" loading="lazy" loading="lazy">
+                            <img src={user.heroImageUrl} alt="" className="w-28 h-14 rounded-lg object-cover" />
                           ) : (
                             <div className="w-28 h-14 rounded-lg bg-white/[0.06] flex items-center justify-center">
                               <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
