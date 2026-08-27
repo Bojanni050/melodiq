@@ -30,7 +30,20 @@ export type TrackInsertParams = {
 export async function insertPendingTrack(params: Omit<TrackInsertParams, "status">) {
   const [track] = await db
     .insert(tracks)
-    .values({ ...params, status: "pending" })
+    .values({
+      userId: params.userId,
+      provider: params.provider,
+      providerModel: params.providerModel ?? "",
+      prompt: params.prompt,
+      lyrics: params.lyrics,
+      instrumental: params.instrumental,
+      title: params.title,
+      artistName: params.artistName,
+      writerName: params.writerName,
+      jobId: params.jobId,
+      conversionId: params.conversionId,
+      status: "pending" as const,
+    })
     .returning();
   return track;
 }
