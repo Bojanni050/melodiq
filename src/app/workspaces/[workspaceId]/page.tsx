@@ -437,7 +437,7 @@ export default function WorkspaceDetailPage() {
                             >
                               <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
                                 {childCover ? (
-                                  <img src={childCover} alt={childWorkspace.name} loading="lazy" className="h-full w-full object-cover" />
+                                  <img src={childCover} alt={childWorkspace.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center">
                                     <svg className="h-4 w-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">

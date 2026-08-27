@@ -548,6 +548,8 @@ export default function UploadPanel({
                               <img
                                 src={URL.createObjectURL(item.coverFile)}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="h-full w-full object-cover"
                               />
                             ) : (

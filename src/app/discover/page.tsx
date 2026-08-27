@@ -347,7 +347,7 @@ export default function DiscoverPage() {
         <div className="group relative aspect-square w-full">
           <div className="absolute inset-0 overflow-hidden rounded-xl">
             {cover ? (
-              <img src={cover} alt={track.title ?? "Track"} className="h-full w-full object-cover" />
+              <img src={cover} alt={track.title ?? "Track"} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
                 <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -479,7 +479,7 @@ export default function DiscoverPage() {
             aria-label={isPlaying ? t("discover.pause", { title: track.title }) : t("discover.play", { title: track.title })}
           >
             {cover ? (
-              <img src={cover} alt={track.title} className="h-full w-full object-cover" />
+              <img src={cover} alt={track.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
                 <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -637,6 +637,8 @@ export default function DiscoverPage() {
                           <img
                             src={playlist.coverUrl}
                             alt={playlist.name}
+                            loading="lazy"
+                            decoding="async"
                             className="aspect-square w-full rounded-xl object-cover"
                           />
                         ) : (

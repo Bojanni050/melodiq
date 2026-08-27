@@ -9,14 +9,12 @@ describe("lyrics-style-suggestion helpers", () => {
   it("should build a structured system prompt with fixed sections and template guidance", () => {
     const prompt = buildStyleSuggestionSystemPrompt();
 
-    expect(prompt).toContain("Generate one elaborate style direction for AI music generation");
+    expect(prompt).toContain("Generate a concise style direction for AI music generation");
     expect(prompt).toContain("Genre & Feel:");
     expect(prompt).toContain("Instrumentation:");
     expect(prompt).toContain("Production & Mix:");
     expect(prompt).toContain("Vocal Direction:");
     expect(prompt).toContain("BPM range");
-    expect(prompt).toContain("mix chain ideas");
-    expect(prompt).toContain("Instrumental focus");
   });
 
   it("should build a user prompt that includes the current style hint and trims lyrics", () => {

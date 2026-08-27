@@ -1163,7 +1163,7 @@ export default function PlaylistDetailPage() {
                       className={`overflow-hidden rounded-2xl border transition ${isActive ? "border-white shadow-[0_0_0_1px_rgba(255,255,255,0.5)]" : "border-white/12 hover:border-white/35"}`}
                       title={t("playlists.useThisCover")}
                     >
-                      <img src={candidateUrl} alt={t("playlists.coverCandidateAlt")} className="h-28 w-full object-cover" loading="lazy" />
+                      <img src={candidateUrl} alt={t("playlists.coverCandidateAlt")} className="h-28 w-full object-cover" loading="lazy" decoding="async" />
                     </button>
                   );
                 })}

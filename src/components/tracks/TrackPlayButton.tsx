@@ -59,6 +59,8 @@ export default function TrackPlayButton({
           <img
             src={effectiveThumbUrl ?? effectiveCoverUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
           />
           {isCurrentlyPlaying ? (

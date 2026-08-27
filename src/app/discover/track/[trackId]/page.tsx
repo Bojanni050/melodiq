@@ -376,7 +376,7 @@ export default function TrackDnaPage() {
                   </span>
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
                     {coverSrc() ? (
-                      <img src={coverSrc()!} alt="" className="h-full w-full object-cover" />
+                      <img src={coverSrc()!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">

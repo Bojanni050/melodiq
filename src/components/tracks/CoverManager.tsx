@@ -181,6 +181,8 @@ export default function CoverManager({
                   <img
                     src={currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover` : `/api/releases/${entityId}/cover`)}
                     alt="Current cover"
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                   {!hasUploadedMain && (
@@ -197,7 +199,7 @@ export default function CoverManager({
               return (
                 <div key={cover.id} className="flex flex-col items-center gap-2">
                   <div className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 transition-colors ${cover.isMain ? "border-emerald-400/60" : "border-white/10 hover:border-white/30"}`}>
-                    <img src={getThumbUrl(cover)} alt={`Cover ${displayIndex + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                    <img src={getThumbUrl(cover)} alt={`Cover ${displayIndex + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                     {cover.isMain && <span className="absolute top-1.5 left-1.5 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Main</span>}
                     {cover.isGenerated && <span className="absolute bottom-1.5 left-1.5 rounded bg-primary-500/80 px-1.5 py-0.5 text-[9px] font-medium text-white">AI</span>}
                     <span className="absolute top-1.5 right-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] text-white/70">{displayIndex + 1}</span>

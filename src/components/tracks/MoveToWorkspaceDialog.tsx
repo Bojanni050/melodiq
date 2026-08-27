@@ -136,6 +136,8 @@ export default function MoveToWorkspaceDialog({
                     <img
                       src={workspaceCoverById.get(workspace.id) || ""}
                       alt={workspace.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : null}
