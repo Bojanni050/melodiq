@@ -5,6 +5,7 @@ import axios from "axios";
 import { uploadToS3 } from "@/lib/s3";
 import { extractPoYoVariants } from "@/lib/providers/poyo";
 import {
+  type AudioFormat,
   contentTypeForFormat,
   detectFormatFromContentType,
   detectFormatFromUrl,
@@ -153,7 +154,7 @@ export async function syncPoYoTaskResult(taskId: string, payload: unknown): Prom
         ]);
 
         let s3KeyHd: string | null = null;
-        let formatHd: "mp3" | "wav" | "flac" | null = null;
+        let formatHd: AudioFormat | null = null;
         if (variant.audioUrlHd && variant.audioUrlHd !== primaryUrl) {
           const hdRes = await axios.get(variant.audioUrlHd, { responseType: "arraybuffer" });
           const hdHeaderType = String(hdRes.headers?.["content-type"] || "");

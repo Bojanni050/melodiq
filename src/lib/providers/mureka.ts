@@ -11,6 +11,8 @@ export interface MurekaResult {
   error?: string;
 }
 
+import type { AudioFormat } from "@/lib/audio-format";
+
 export async function generateMureka({
   lyrics,
   prompt,
@@ -22,7 +24,7 @@ export async function generateMureka({
   lyrics?: string;
   prompt?: string;
   numberOfSongs?: number;
-  outputFormat?: "mp3" | "wav" | "flac";
+  outputFormat?: AudioFormat;
   webhookUrl?: string;
   instrumental?: boolean;
 }): Promise<MurekaSubmitResponse> {

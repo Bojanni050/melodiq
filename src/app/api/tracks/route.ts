@@ -9,7 +9,7 @@ import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
 import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
 import { uploadToS3 } from "@/lib/s3";
-import { contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
+import { type AudioFormat, contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
@@ -756,7 +756,7 @@ export async function POST(request: NextRequest) {
         }
 
         let uploadBuffer: Buffer = audioBuffer;
-        let uploadFormat: "mp3" | "wav" | "flac" = format;
+        let uploadFormat: AudioFormat = format;
 
         if (format === "wav") {
           await saveWavLocally(trackId, audioBuffer).catch(() => {});

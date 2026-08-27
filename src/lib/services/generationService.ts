@@ -14,7 +14,7 @@ import { createApimartGeneration } from "@/lib/providers/apimart";
 import { uploadToS3 } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
-import { contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
+import { type AudioFormat, contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
 import {
@@ -143,7 +143,7 @@ export async function dispatchLyria(ctx: GenerationContext, track: any): Promise
     const format = detectFormatFromContentType(genResult.mimeType || "audio/mpeg");
     const s3Key = `tracks/${track.id}/audio.${format}`;
     let s3KeyHd: string | null = null;
-    let formatHd: "mp3" | "wav" | "flac" | null = null;
+    let formatHd: AudioFormat | null = null;
     let audioUrlHd: string | null = null;
 
     if (genResult.audioBufferHd && genResult.mimeTypeHd) {
