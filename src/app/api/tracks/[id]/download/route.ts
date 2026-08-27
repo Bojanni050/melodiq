@@ -13,6 +13,8 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const hd = searchParams.get("hd") === "true";
 
+  const reqFormat = searchParams.get("format")?.toLowerCase();
+
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
@@ -27,12 +29,26 @@ export async function GET(
   }
 
   const track = result[0];
-  if (!track.s3Key) {
+  if (!track.s3Key && !track.s3KeyHd && !track.s3KeyOgg && !track.s3KeyMp3) {
     return NextResponse.json({ error: "Track not found" }, { status: 404 });
   }
 
-  const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : track.s3Key;
-  const fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
+  let s3Key: string;
+  let fmt: string;
+
+  if (reqFormat === "ogg" && track.s3KeyOgg) {
+    s3Key = track.s3KeyOgg;
+    fmt = "ogg";
+  } else if (reqFormat === "mp3" && track.s3KeyMp3) {
+    s3Key = track.s3KeyMp3;
+    fmt = "mp3";
+  } else if (reqFormat && track.formatHd === reqFormat && track.s3KeyHd) {
+    s3Key = track.s3KeyHd;
+    fmt = reqFormat;
+  } else {
+    s3Key = hd && track.s3KeyHd ? track.s3KeyHd : (track.s3Key || track.s3KeyOgg || track.s3KeyMp3 || "");
+    fmt = hd && track.formatHd ? track.formatHd : (track.format ?? "mp3");
+  }
   const rawName = track.title ?? "track";
   // HTTP header values must stay within Latin-1 — a title with e.g. Polish,
   // Turkish, or Cyrillic characters (ł, ş, я, ...) throws ERR_INVALID_CHAR

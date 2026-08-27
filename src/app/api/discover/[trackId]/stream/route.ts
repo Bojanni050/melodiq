@@ -3,6 +3,7 @@ import fs from "fs";
 
 import { getPublishedTrackById } from "@/lib/songs";
 import { getCachedAudioStream, getContentType } from "@/lib/audio-cache";
+import { resolveTrackAudioSource } from "@/lib/audio-format";
 import { getPresignedUrl } from "@/lib/s3";
 
 // Public, no auth: only ever serves audio for a track with
@@ -15,12 +16,16 @@ export async function GET(
   const { trackId } = await params;
 
   const track = await getPublishedTrackById(trackId);
-  if (!track || !track.s3Key) {
+  if (!track) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 
-  const s3Key = track.s3KeyMp3 || track.s3Key;
-  const fmt = track.s3KeyMp3 ? "mp3" : track.format ?? "mp3";
+  const resolved = resolveTrackAudioSource(track);
+  if (!resolved || !resolved.s3Key) {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
+
+  const { s3Key, format: fmt } = resolved;
 
   try {
     const { filePath, stream, cached, size } = await getCachedAudioStream(s3Key, fmt);

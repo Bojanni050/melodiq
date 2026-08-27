@@ -26,6 +26,25 @@ export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): 
   return "";
 }
 
+export function getPlayingFormat(track: Track | null | undefined, playHighestQuality: boolean): string {
+  if (!track) return "mp3";
+  if (playHighestQuality) {
+    if (track.formatHd === "flac" && track.s3KeyHd) return "flac";
+    if (track.format === "flac" && track.s3Key) return "flac";
+    if (track.formatHd === "wav" && track.s3KeyHd) return "wav";
+    if (track.format === "wav" && track.s3Key) return "wav";
+    if (track.s3KeyOgg || track.format === "ogg" || track.formatHd === "ogg") return "ogg";
+    if (track.s3KeyMp3 || track.format === "mp3" || track.formatHd === "mp3") return "mp3";
+    return track.formatHd || track.format || "mp3";
+  }
+  // Default playback: OGG -> MP3 -> FLAC -> WAV
+  if (track.s3KeyOgg || track.format === "ogg") return "ogg";
+  if (track.s3KeyMp3 || track.format === "mp3") return "mp3";
+  if (track.formatHd === "flac" || track.format === "flac") return "flac";
+  if (track.formatHd === "wav" || track.format === "wav") return "wav";
+  return track.format || "mp3";
+}
+
 export function AudioSourceBadge({ source }: { source: AudioSource; state: AudioSourceState }) {
   // Only show a badge when streaming (not from cache)
   if (source !== "s3") return null;

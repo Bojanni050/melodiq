@@ -15,6 +15,7 @@ export interface Track {
   s3Key: string | null;
   s3KeyHd: string | null;
   s3KeyMp3?: string | null;
+  s3KeyOgg?: string | null;
   format?: string | null;
   formatHd?: string | null;
   duration: number | null;

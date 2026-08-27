@@ -14,7 +14,10 @@ export interface TrackItem {
   completedAt?: string | null;
   createdAt: string;
   error: string | null;
+  s3Key?: string | null;
   s3KeyHd: string | null;
+  s3KeyMp3?: string | null;
+  s3KeyOgg?: string | null;
   coverUrl?: string | null;
   s3KeyCover?: string | null;
   s3KeyCoverThumb?: string | null;

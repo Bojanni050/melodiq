@@ -19,8 +19,9 @@ export type TrackInsertParams = {
   conversionId?: string;
   s3Key?: string;
   s3KeyHd?: string;
-  format?: "mp3" | "wav" | "flac";
-  formatHd?: "mp3" | "wav" | "flac";
+  s3KeyOgg?: string;
+  format?: "mp3" | "wav" | "flac" | "ogg";
+  formatHd?: "mp3" | "wav" | "flac" | "ogg";
   audioUrl?: string;
   audioUrlHd?: string;
 };
@@ -29,20 +30,7 @@ export type TrackInsertParams = {
 export async function insertPendingTrack(params: Omit<TrackInsertParams, "status">) {
   const [track] = await db
     .insert(tracks)
-    .values({
-      userId: params.userId,
-      provider: params.provider,
-      providerModel: params.providerModel ?? "",
-      prompt: params.prompt,
-      lyrics: params.lyrics,
-      instrumental: params.instrumental,
-      title: params.title,
-      artistName: params.artistName,
-      writerName: params.writerName,
-      jobId: params.jobId,
-      conversionId: params.conversionId,
-      status: "pending" as const,
-    })
+    .values({ ...params, status: "pending" })
     .returning();
   return track;
 }
@@ -53,7 +41,7 @@ export async function insertPendingTrack(params: Omit<TrackInsertParams, "status
  */
 export async function reserveTrackS3Keys(
   trackId: string,
-  opts: { format?: "mp3" | "wav" | "flac"; formatHd?: "mp3" | "wav" | "flac" } = {}
+  opts: { format?: "mp3" | "wav" | "flac" | "ogg"; formatHd?: "mp3" | "wav" | "flac" | "ogg" } = {}
 ) {
   const format = opts.format ?? "mp3";
   const formatHd = opts.formatHd ?? "wav";
@@ -91,10 +79,11 @@ export async function markTrackDone(
   trackId: string,
   fields: {
     s3Key: string;
-    format: "mp3" | "wav" | "flac";
+    format: "mp3" | "wav" | "flac" | "ogg";
     audioUrl: string;
     s3KeyHd?: string | null;
-    formatHd?: "mp3" | "wav" | "flac" | null;
+    formatHd?: "mp3" | "wav" | "flac" | "ogg" | null;
+    s3KeyOgg?: string | null;
     audioUrlHd?: string | null;
     duration?: number | null;
     audioDna?: string | null;

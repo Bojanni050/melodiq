@@ -86,6 +86,7 @@ export const tracks = pgTable("tracks", {
   s3Key: text("s3_key"),
   s3KeyHd: text("s3_key_hd"),
   s3KeyMp3: text("s3_key_mp3"),
+  s3KeyOgg: text("s3_key_ogg"),
   format: varchar("format", { length: 10 }).default("mp3"),
   formatHd: varchar("format_hd", { length: 10 }),
   duration: integer("duration"),

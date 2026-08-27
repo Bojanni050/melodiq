@@ -14,6 +14,7 @@ import {
   type ActionTimestampRef,
   mediaBase,
   resolveStreamSuffix,
+  getPlayingFormat,
   AudioSourceBadge,
   getSharedAudioElement,
   formatProviderLabel,
@@ -870,7 +871,7 @@ export default function Player() {
                 <>
                   <AudioSourceBadge source={audioSource} state={audioSourceState} />
                   <span className="inline-flex items-center rounded-full border border-white/12 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
-                    {(playHighestQuality && currentTrack.formatHd ? currentTrack.formatHd : currentTrack.format) ?? "mp3"}
+                    {getPlayingFormat(currentTrack, playHighestQuality)}
                   </span>
                 </>
               )}

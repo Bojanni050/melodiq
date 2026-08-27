@@ -1081,6 +1081,8 @@ export async function DELETE(
     if (permanent) {
       if (track.s3Key) await deleteFromS3(track.s3Key);
       if (track.s3KeyHd) await deleteFromS3(track.s3KeyHd);
+      if (track.s3KeyMp3) await deleteFromS3(track.s3KeyMp3);
+      if (track.s3KeyOgg) await deleteFromS3(track.s3KeyOgg);
       if (track.s3KeyCover) await deleteFromS3(track.s3KeyCover);
       await db.delete(tracks).where(eq(tracks.id, id));
     } else {

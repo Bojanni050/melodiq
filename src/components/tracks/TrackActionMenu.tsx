@@ -34,6 +34,9 @@ interface TrackActionMenuProps {
   onRetryWavClick?: () => void;
   retryingWav?: boolean;
   retryWavResult?: "success" | "error" | null;
+  onConvertOggClick?: () => void;
+  convertingOgg?: boolean;
+  convertOggResult?: "success" | "error" | null;
   /** Stem / Mastering / Section-edit — only shown when canExtractStems is true */
   canExtractStems?: boolean;
   onStemsClick?: () => void;
@@ -74,6 +77,9 @@ export default function TrackActionMenu({
   onRetryWavClick,
   retryingWav,
   retryWavResult,
+  onConvertOggClick,
+  convertingOgg,
+  convertOggResult,
   canExtractStems,
   onStemsClick,
   onMasteringClick,
@@ -363,6 +369,26 @@ export default function TrackActionMenu({
                   : retryWavResult === "error"
                     ? "Mislukt — probeer opnieuw"
                     : "Convert to WAV"}
+            </button>
+          )}
+          {onConvertOggClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onConvertOggClick();
+              }}
+              disabled={convertingOgg}
+              className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-white/80"
+              } disabled:opacity-50`}
+            >
+              {convertingOgg
+                ? "Converting to OGG..."
+                : convertOggResult === "success"
+                  ? "OGG conversie voltooid ✓"
+                  : convertOggResult === "error"
+                    ? "Mislukt — probeer opnieuw"
+                    : "Convert to Ogg"}
             </button>
           )}
           <button

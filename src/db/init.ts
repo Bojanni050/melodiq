@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "audio_url_hd" text,
   "s3_key" text,
   "s3_key_hd" text,
+  "s3_key_mp3" text,
+  "s3_key_ogg" text,
   "duration" integer,
   "job_id" varchar(255),
   "credits_used" integer NOT NULL DEFAULT 0,
@@ -293,6 +295,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS writer_name VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_lyrics TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_language VARCHAR(50);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_mp3 TEXT;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_ogg TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_retry_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_retry_count integer NOT NULL DEFAULT 0;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS artist_name VARCHAR(255);

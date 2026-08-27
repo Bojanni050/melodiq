@@ -135,6 +135,8 @@ const TrackCard = memo(function TrackCard({
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
+  const [convertingOgg, setConvertingOgg] = useState(false);
+  const [convertOggResult, setConvertOggResult] = useState<"success" | "error" | null>(null);
   const [togglingPublish, setTogglingPublish] = useState(false);
   const [generatingTcl, setGeneratingTcl] = useState(false);
   const [tclError, setTclError] = useState<string | null>(null);
@@ -260,6 +262,37 @@ const TrackCard = memo(function TrackCard({
     } finally {
       setRetryingWav(false);
       setTimeout(() => setRetryWavResult(null), 4000);
+    }
+  }
+
+  async function handleConvertOgg() {
+    setConvertingOgg(true);
+    setConvertOggResult(null);
+    try {
+      const res = await fetch(`/api/tracks/${track.id}/convert-ogg`, {
+        method: "POST",
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.success) {
+        console.error(`Failed to convert to OGG: HTTP ${res.status}`, body);
+        setConvertOggResult("error");
+      } else {
+        setConvertOggResult("success");
+        mutate((key: any) => typeof key === "string" && key.startsWith("/api/tracks"), undefined, { revalidate: true });
+        const cur = usePlayerStore.getState().currentTrack;
+        if (cur && cur.id === track.id) {
+          usePlayerStore.getState().setCurrentTrack({
+            ...cur,
+            s3KeyOgg: body.s3KeyOgg,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to convert to OGG:", error);
+      setConvertOggResult("error");
+    } finally {
+      setConvertingOgg(false);
+      setTimeout(() => setConvertOggResult(null), 4000);
     }
   }
 
@@ -918,6 +951,13 @@ const TrackCard = memo(function TrackCard({
               }
               retryingWav={retryingWav}
               retryWavResult={retryWavResult}
+              onConvertOggClick={
+                track.status === "done" && !track.s3KeyOgg && track.format !== "ogg"
+                  ? handleConvertOgg
+                  : undefined
+              }
+              convertingOgg={convertingOgg}
+              convertOggResult={convertOggResult}
               canExtractStems={track.provider === "apimart" && !!track.jobId}
               onStemsClick={() => setStemsOpen((v) => !v)}
               onMasteringClick={() => setMasteringOpen((v) => !v)}

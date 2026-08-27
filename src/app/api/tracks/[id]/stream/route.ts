@@ -7,6 +7,7 @@ import {
   getCachedAudioStream,
   getContentType,
 } from "@/lib/audio-cache";
+import { resolveTrackAudioSource } from "@/lib/audio-format";
 import fs from "fs";
 import { getPresignedUrl } from "@/lib/s3";
 
@@ -32,13 +33,12 @@ export async function GET(
   }
 
   const track = result[0];
-  if (!track.s3Key) {
+  const resolved = resolveTrackAudioSource(track, { hd });
+  if (!resolved || !resolved.s3Key) {
     return NextResponse.json({ error: "No audio available" }, { status: 404 });
   }
 
-  // Prefer the MP3 transcoded version for default (non-HD) playback when available
-  const s3Key = hd && track.s3KeyHd ? track.s3KeyHd : (!hd && track.s3KeyMp3 ? track.s3KeyMp3 : track.s3Key);
-  const fmt = hd && track.formatHd ? track.formatHd : (!hd && track.s3KeyMp3 ? "mp3" : track.format ?? "mp3");
+  const { s3Key, format: fmt } = resolved;
 
   try {
     // Get audio from cache (streams from S3 and caches in the background on first request)

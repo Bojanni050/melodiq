@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
     audioUrlHd: tracks.audioUrlHd,
     s3Key: tracks.s3Key,
     s3KeyHd: tracks.s3KeyHd,
+    s3KeyMp3: tracks.s3KeyMp3,
+    s3KeyOgg: tracks.s3KeyOgg,
     format: tracks.format,
     formatHd: tracks.formatHd,
     duration: tracks.duration,
