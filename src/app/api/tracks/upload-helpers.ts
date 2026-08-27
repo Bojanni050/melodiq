@@ -53,7 +53,7 @@ export function isUuid(value: string): boolean {
   return UUID_REGEX.test(value);
 }
 
-export function detectUploadFormat(file: File): "mp3" | "wav" | null {
+export function detectUploadFormat(file: File): "mp3" | "wav" | "ogg" | "flac" | null {
   const type = file.type.toLowerCase();
   const filename = file.name.toLowerCase();
 
@@ -71,6 +71,22 @@ export function detectUploadFormat(file: File): "mp3" | "wav" | null {
     filename.endsWith(".wav")
   ) {
     return "wav";
+  }
+
+  if (
+    type.includes("ogg") ||
+    type.includes("vorbis") ||
+    filename.endsWith(".ogg") ||
+    filename.endsWith(".oga")
+  ) {
+    return "ogg";
+  }
+
+  if (
+    type.includes("flac") ||
+    filename.endsWith(".flac")
+  ) {
+    return "flac";
   }
 
   return null;
@@ -130,13 +146,13 @@ export function stripWavMetadata(buffer: Buffer): Buffer {
   return Buffer.concat(dataChunks);
 }
 
-export function getAudioOnlyBytesForHash(audioBuffer: Buffer, format: "mp3" | "wav"): Buffer {
+export function getAudioOnlyBytesForHash(audioBuffer: Buffer, format: string): Buffer {
   if (format === "mp3") return stripMp3Metadata(audioBuffer);
   if (format === "wav") return stripWavMetadata(audioBuffer);
   return audioBuffer;
 }
 
-export function computeUploadAudioHash(audioBuffer: Buffer, format: "mp3" | "wav"): string {
+export function computeUploadAudioHash(audioBuffer: Buffer, format: string): string {
   const hashBytes = getAudioOnlyBytesForHash(audioBuffer, format);
   return createHash("sha256").update(hashBytes).digest("hex");
 }

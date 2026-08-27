@@ -1248,3 +1248,18 @@
   - `.env.example` — `NEXT_PUBLIC_CDN_URL` now documented as the fallback-only env var (same framing as `S3_*`), not a build arg.
   - Build versie bijgewerkt naar 202608151522 in src/components/Sidebar.tsx.
   - Validated with `npx tsc --noEmit` (0 errors) and `npm run build` (succeeded, `/api/config/public` present in the route list, unset CDN → identical behavior to before).
+
+## 2026-08-28 vr 01:01 (Geüploade tracks automatisch transcoderen naar Ogg Vorbis + directe OGG-upload support)
+
+- Findings: Geüploade tracks (MP3 en WAV) werden opgeslagen als MP3 of FLAC/WAV, maar kregen bij het uploaden geen Ogg Vorbis-versie (`s3KeyOgg`). Daardoor moest de gebruiker handmatig per track op "Convert to OGG" klikken om de optimale streaming-codec en snelle buffering van MelodIQ te benutten. Ook accepteerden de upload-controllers nog geen directe `.ogg`-bestanden.
+- Conclusions: Transcodeer bij elke upload (MP3, WAV, FLAC) de audio direct naar Ogg Vorbis via `transcodeToOgg`, upload dit naar `tracks/${trackId}/audio.ogg` en sla `s3KeyOgg` op in de database. Accepteer tevens direct `.ogg` (en `.oga` / `.flac`) bestanden in de file pickers en backend detectie. Voeg tevens een batch-endpoint `POST /api/tracks/convert-ogg` toe voor het converteren van bestaande geüploade tracks.
+- Actions:
+  - Modified `src/app/api/tracks/upload-helpers.ts` — `detectUploadFormat` uitgebreid met detectie voor `ogg` en `flac`; `getAudioOnlyBytesForHash` en `computeUploadAudioHash` ondersteunen nu alle audioformaten.
+  - Modified `src/app/api/tracks/route.ts` — in `POST /api/tracks`: automatische transcodering naar OGG Vorbis (`tracks/${trackId}/audio.ogg`) via `transcodeToOgg` voor alle geüploade formaten; opslag van `s3KeyOgg` en `s3KeyMp3` op de `tracks`-tabel; directe OGG-bestanden worden zonder kwaliteitsverlies als OGG opgeslagen.
+  - Created `src/app/api/tracks/convert-ogg/route.ts` — batch endpoint `POST /api/tracks/convert-ogg` om bestaande (geüploade) tracks die nog geen OGG hebben in bulk te transcoderen.
+  - Modified `src/components/library/types.ts` — `LibraryTrack` type uitgebreid met `s3KeyOgg` en `s3KeyMp3`; `isSupportedAudioFile` ondersteunt nu ook `.ogg`, `.oga`, `.flac` en de bijbehorende MIME-types.
+  - Modified `src/components/library/UploadPanel.tsx` — file picker `accept` en dropzone-labels uitgebreid met OGG en FLAC; validatiemelding geüpdatet.
+  - Modified `src/components/tracks/TrackUpload.tsx` — file picker `accept` uitgebreid met OGG en FLAC.
+  - Modified `src/lib/__tests__/audio-format.test.ts` — unit tests toegevoegd voor `detectUploadFormat` en audio hash berekeningen met OGG/FLAC.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280101`.
+  - Validated with `npm test` (39/39 tests geslaagd) en `npm run build` (succesvol afgerond met 0 errors).

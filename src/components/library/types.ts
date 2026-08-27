@@ -15,7 +15,10 @@ export interface LibraryTrack {
   duration: number | null;
   createdAt: string;
   error: string | null;
+  s3Key?: string | null;
   s3KeyHd: string | null;
+  s3KeyMp3?: string | null;
+  s3KeyOgg?: string | null;
   coverUrl: string | null;
   s3KeyCover: string | null;
   rating?: string | null;
@@ -71,7 +74,20 @@ export function isObjectRecord(value: unknown): value is Record<string, unknown>
 export function isSupportedAudioFile(file: File) {
   const type = file.type.toLowerCase();
   const name = file.name.toLowerCase();
-  return type.includes("mpeg") || type.includes("mp3") || type.includes("wav") || type.includes("wave") || name.endsWith(".mp3") || name.endsWith(".wav");
+  return (
+    type.includes("mpeg") ||
+    type.includes("mp3") ||
+    type.includes("wav") ||
+    type.includes("wave") ||
+    type.includes("ogg") ||
+    type.includes("vorbis") ||
+    type.includes("flac") ||
+    name.endsWith(".mp3") ||
+    name.endsWith(".wav") ||
+    name.endsWith(".ogg") ||
+    name.endsWith(".oga") ||
+    name.endsWith(".flac")
+  );
 }
 
 export function titleFromUploadFilename(filename: string) {

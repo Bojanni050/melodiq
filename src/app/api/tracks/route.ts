@@ -11,6 +11,7 @@ import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
 import { uploadToS3 } from "@/lib/s3";
 import { type AudioFormat, contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
+import { transcodeToOgg } from "@/lib/transcode";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
 import { workspaces } from "@/db/schema";
@@ -717,7 +718,7 @@ export async function POST(request: NextRequest) {
     for (const [index, file] of files.entries()) {
       const format = detectUploadFormat(file);
       if (!format) {
-        rejected.push({ filename: file.name, reason: "Only MP3 and WAV files are supported." });
+        rejected.push({ filename: file.name, reason: "Only MP3, WAV, FLAC, and OGG files are supported." });
         continue;
       }
 
@@ -757,18 +758,59 @@ export async function POST(request: NextRequest) {
 
         let uploadBuffer: Buffer = audioBuffer;
         let uploadFormat: AudioFormat = format;
+        let s3KeyHd: string | null = null;
+        let formatHd: AudioFormat | null = null;
+        let s3KeyOgg: string | null = null;
+        let s3KeyMp3: string | null = null;
 
-        if (format === "wav") {
+        if (format === "ogg") {
+          s3KeyOgg = `tracks/${trackId}/audio.ogg`;
+          uploadFormat = "ogg";
+        } else if (format === "wav") {
           await saveWavLocally(trackId, audioBuffer).catch(() => {});
           const flacBuffer = await convertWavToFlac(audioBuffer);
           if (flacBuffer) {
             uploadBuffer = flacBuffer;
             uploadFormat = "flac";
+            s3KeyHd = `tracks/${trackId}/audio_hd.flac`;
+            formatHd = "flac";
+          } else {
+            s3KeyHd = `tracks/${trackId}/audio_hd.wav`;
+            formatHd = "wav";
           }
-          // If ffmpeg unavailable, uploadBuffer/uploadFormat stay as WAV — upload as-is
+          // Transcode WAV to Ogg Vorbis for standard playback streaming
+          try {
+            const oggBuffer = await transcodeToOgg(audioBuffer);
+            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
+            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
+          } catch (oggErr: any) {
+            console.error(`[tracks/upload] Failed to transcode WAV to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
+          }
+        } else if (format === "flac") {
+          s3KeyHd = `tracks/${trackId}/audio_hd.flac`;
+          formatHd = "flac";
+          // Transcode FLAC to Ogg Vorbis for standard playback streaming
+          try {
+            const oggBuffer = await transcodeToOgg(audioBuffer);
+            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
+            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
+          } catch (oggErr: any) {
+            console.error(`[tracks/upload] Failed to transcode FLAC to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
+          }
+        } else {
+          // mp3
+          s3KeyMp3 = `tracks/${trackId}/audio.mp3`;
+          // Transcode MP3 to Ogg Vorbis for standard playback streaming
+          try {
+            const oggBuffer = await transcodeToOgg(audioBuffer);
+            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
+            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
+          } catch (oggErr: any) {
+            console.error(`[tracks/upload] Failed to transcode MP3 to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
+          }
         }
 
-        const s3Key = `tracks/${trackId}/audio.${uploadFormat}`;
+        const s3Key = format === "ogg" ? s3KeyOgg! : `tracks/${trackId}/audio.${uploadFormat}`;
         const [duration, audioDna] = await Promise.all([
           extractAudioDuration(audioBuffer),
           computeAudioDna({
@@ -780,6 +822,9 @@ export async function POST(request: NextRequest) {
         ]);
 
         await uploadToS3(s3Key, uploadBuffer, contentTypeForFormat(uploadFormat));
+        if (s3KeyHd && s3KeyHd !== s3Key) {
+          await uploadToS3(s3KeyHd, uploadBuffer, contentTypeForFormat(formatHd || uploadFormat));
+        }
 
         let s3KeyLicense: string | null = null;
         const licenseFile = licenseFileByIndex.get(index);
@@ -807,12 +852,17 @@ export async function POST(request: NextRequest) {
             lyricsTimestamps: uploadLyricsTimestamps,
             status: "done",
             s3Key,
+            s3KeyHd,
+            s3KeyMp3,
+            s3KeyOgg,
             format: uploadFormat,
+            formatHd,
             duration,
             audioDna,
             audioId: uploadHash,
             workspaceId: targetWorkspaceId,
             audioUrl: `/api/tracks/${trackId}/download`,
+            audioUrlHd: s3KeyHd ? `/api/tracks/${trackId}/download?hd=true` : null,
             instrumental: isInstrumental,
             artistName: itemOverride?.artistName ?? defaultArtist,
             composerName: itemOverride?.composerName ?? defaultComposer,

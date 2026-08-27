@@ -36,7 +36,7 @@ export default function TrackUpload({ onUpload }: { onUpload?: (result: any) => 
         ref={inputRef}
         type="file"
         multiple
-        accept="audio/mp3,audio/wav"
+        accept="audio/mp3,audio/wav,audio/ogg,audio/flac,.mp3,.wav,.ogg,.oga,.flac"
         onChange={handleUpload}
         style={{ display: "none" }}
         id="track-upload-input"

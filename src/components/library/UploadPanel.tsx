@@ -72,7 +72,7 @@ export default function UploadPanel({
     if (invalid.length > 0) {
       setRejectedFiles((current) => [
         ...current,
-        ...invalid.map((file) => ({ filename: file.name, reason: "Only MP3 and WAV files are supported." })),
+        ...invalid.map((file) => ({ filename: file.name, reason: "Only MP3, WAV, FLAC, and OGG files are supported." })),
       ]);
     }
 
@@ -397,9 +397,9 @@ export default function UploadPanel({
                 ref={uploadInputRef}
                 type="file"
                 multiple
-                accept=".mp3,.wav,audio/mpeg,audio/wav"
-                aria-label="Queue MP3/WAV files"
-                title="Queue MP3/WAV files"
+                accept=".mp3,.wav,.ogg,.oga,.flac,audio/mpeg,audio/wav,audio/ogg,audio/flac"
+                aria-label="Queue audio files"
+                title="Queue audio files"
                 className="hidden"
                 disabled={uploading}
                 onChange={(event) => handleQueueAudioSelection(event.target.files)}
@@ -431,7 +431,7 @@ export default function UploadPanel({
                 onClick={() => uploadInputRef.current?.click()}
                 className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
               >
-                Add MP3/WAV Files
+                Add Audio Files
               </button>
 
               <span className="text-xs text-white/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
@@ -448,8 +448,8 @@ export default function UploadPanel({
                   : "border-white/15 bg-white/3"
               } ${uploading ? "opacity-60" : ""}`}
             >
-              <p className="text-sm font-medium text-white/85">Drag and drop MP3/WAV files here</p>
-              <p className="mt-1 text-xs text-white/55">Drop files to add them to the upload queue.</p>
+              <p className="text-sm font-medium text-white/85">Drag and drop audio files here</p>
+              <p className="mt-1 text-xs text-white/55">Drop MP3, WAV, OGG, or FLAC files to add them to the upload queue.</p>
             </div>
 
             {queuedUploads.length === 0 ? (

@@ -123,4 +123,29 @@ describe("audio-format", () => {
       expect(resWavHd).toEqual({ s3Key: "tracks/1/audio_hd.wav", format: "wav" });
     });
   });
+
+  describe("detectUploadFormat", () => {
+    it("detects MP3, WAV, OGG, and FLAC files", async () => {
+      const { detectUploadFormat, computeUploadAudioHash } = await import("../../app/api/tracks/upload-helpers");
+      
+      const mp3File = new File(["fake mp3 data"], "song.mp3", { type: "audio/mpeg" });
+      const wavFile = new File(["fake wav data"], "song.wav", { type: "audio/wav" });
+      const oggFile = new File(["fake ogg data"], "song.ogg", { type: "audio/ogg" });
+      const flacFile = new File(["fake flac data"], "song.flac", { type: "audio/flac" });
+      const txtFile = new File(["some text"], "song.txt", { type: "text/plain" });
+
+      expect(detectUploadFormat(mp3File)).toBe("mp3");
+      expect(detectUploadFormat(wavFile)).toBe("wav");
+      expect(detectUploadFormat(oggFile)).toBe("ogg");
+      expect(detectUploadFormat(flacFile)).toBe("flac");
+      expect(detectUploadFormat(txtFile)).toBeNull();
+
+      const buffer = Buffer.from("test-audio-content");
+      const hash1 = computeUploadAudioHash(buffer, "ogg");
+      const hash2 = computeUploadAudioHash(buffer, "mp3");
+      expect(typeof hash1).toBe("string");
+      expect(hash1.length).toBe(64);
+      expect(typeof hash2).toBe("string");
+    });
+  });
 });

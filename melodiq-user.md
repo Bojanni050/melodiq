@@ -152,8 +152,9 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 ### Library Views
 
 - **Songs view** — full track list with playlist filter chips (`All tracks` + each playlist)
-- In Library Songs view, use **Select MP3/WAV Files** to upload one or meerdere audiofiles tegelijk; MelodIQ ondersteunt batch-upload van MP3 en WAV
-- In het upload-zijpaneel kun je MP3/WAV nu ook direct naar een drag-and-drop veld slepen om ze aan de queue toe te voegen
+- In Library Songs view, use **Add Audio Files** to upload one or meerdere audiofiles tegelijk; MelodIQ ondersteunt batch-upload van MP3, WAV, OGG en FLAC
+- Geüploade tracks worden automatisch direct getranscodeerd naar Ogg Vorbis voor snelle playback streaming en buffering
+- In het upload-zijpaneel kun je audiobestanden nu ook direct naar een drag-and-drop veld slepen om ze aan de queue toe te voegen
 - In Library upload kun je per queued track nu ook een metadata sidecar als **TXT of LRC** koppelen; bij LRC worden timed lyrics automatisch in sync opgeslagen
 - Library upload ondersteunt maximaal 20 bestanden per keer; bij een te grote upload toont MelodIQ nu een duidelijke foutmelding in plaats van een technische JSON-parse fout
 - De workspace-dropdown in Library upload wordt nu gevuld na persist-hydratie zodat je direct alle bestaande (sub)workspaces ziet
