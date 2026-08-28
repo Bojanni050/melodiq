@@ -1274,3 +1274,14 @@
   - Modified `src/app/api/tracks/route.ts` — `format` meegegeven aan `extractAudioDuration(audioBuffer, format)`.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280159`.
   - Validated with `npm test` (39/39 tests geslaagd) en `npm run build` (succesvol afgerond met 0 errors).
+
+## 2026-08-28 vr 02:08 (Upload success confirmation UI & asynchrone Ogg Vorbis conversie na upload)
+
+- Findings: Na een succesvolle track upload ontbrak een duidelijke succesbevestiging (het uploadpanel bleef open met lege queue en geen duidelijke melding in de library). Daarnaast werd Ogg Vorbis-transcoding synchroon tijdens het upload-request uitgevoerd, wat de upload vertraagde.
+- Conclusions: Verplaats de OGG-transcoding naar een asynchrone achtergrondtaak die pas start nadat de track succesvol in de database en S3 is opgeslagen. Voeg een prominente succesbevestiging toe in het `UploadPanel` met overzicht van geüploade tracks, knoppen voor "Upload More" en "Done", en toon een zwevende succes-toast in `LibraryPage`.
+- Actions:
+  - Modified `src/app/api/tracks/route.ts` — synchrone transcodeToOgg verwijderd uit upload-loop; achtergrondtaak toegevoegd in `if (inserted[0])` die de audio pas na succesvolle upload naar Ogg Vorbis transcodeert en `s3KeyOgg` update.
+  - Modified `src/components/library/UploadPanel.tsx` — `uploadedHistory` state toegevoegd; prominente succesbevestigingskaart toegevoegd met geüploade tracks en duidelijke actieknoppen; footerknop toont "Done / View in Library".
+  - Modified `src/app/library/page.tsx` — `uploadToast` notificatietoast toegevoegd die direct na uploadbevestiging verschijnt en na 5 seconden automatisch verdwijnt.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280208`.
+  - Validated with `npm test` en `npm run build`.

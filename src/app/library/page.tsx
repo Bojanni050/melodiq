@@ -86,6 +86,7 @@ export default function LibraryPage() {
   const [editingTrack, setEditingTrack] = useState<LibraryTrack | null>(null);
   const [uploadWorkspaceId, setUploadWorkspaceId] = useState<string>(DEFAULT_WORKSPACE_ID);
   const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
+  const [uploadToast, setUploadToast] = useState<{ title: string; message: string } | null>(null);
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     if (activeCheck && !activeCheck()) return;
@@ -205,6 +206,14 @@ export default function LibraryPage() {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
       });
+
+      const count = uploadedTracks.length;
+      const firstTitle = uploadedTracks[0]?.title || "Track";
+      const message = count === 1 ? `"${firstTitle}" uploaded successfully` : `${count} tracks uploaded successfully`;
+      setUploadToast({ title: "Upload Successful", message });
+      window.setTimeout(() => {
+        setUploadToast((prev) => (prev?.message === message ? null : prev));
+      }, 5000);
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(
@@ -652,6 +661,29 @@ export default function LibraryPage() {
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />
+      )}
+
+      {uploadToast && (
+        <div className="fixed bottom-24 right-6 z-60 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-[#12131d]/95 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="min-w-0 pr-2">
+            <p className="text-sm font-semibold text-white">{uploadToast.title}</p>
+            <p className="truncate text-xs text-white/70">{uploadToast.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadToast(null)}
+            className="ml-1 rounded-full p-1 text-white/40 hover:bg-white/10 hover:text-white"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   );

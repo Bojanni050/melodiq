@@ -52,6 +52,7 @@ export default function UploadPanel({
   const [uploadPromptDraft, setUploadPromptDraft] = useState("");
   const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
   const [uploadInstrumental, setUploadInstrumental] = useState(false);
+  const [uploadedHistory, setUploadedHistory] = useState<LibraryTrack[]>([]);
 
   useEffect(() => {
     setUploadWorkspaceId((current) => {
@@ -64,6 +65,8 @@ export default function UploadPanel({
 
   function handleQueueAudioSelection(files: FileList | null) {
     if (!files || files.length === 0 || uploading) return;
+    setUploadedHistory([]);
+    setUploadNotice(null);
 
     const incoming = Array.from(files);
     const invalid = incoming.filter((file) => !isSupportedAudioFile(file));
@@ -275,6 +278,7 @@ export default function UploadPanel({
       );
 
       if (uploadedTracks.length > 0) {
+        setUploadedHistory(uploadedTracks);
         setQueuedUploads([]);
       }
 
@@ -452,7 +456,51 @@ export default function UploadPanel({
               <p className="mt-1 text-xs text-white/55">Drop MP3, WAV, OGG, or FLAC files to add them to the upload queue.</p>
             </div>
 
-            {queuedUploads.length === 0 ? (
+            {uploadedHistory.length > 0 && queuedUploads.length === 0 ? (
+              <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-base font-semibold text-white">Upload Successful!</h4>
+                  <p className="mt-1 text-xs text-emerald-200/80">
+                    {uploadedHistory.length} {uploadedHistory.length === 1 ? "track has" : "tracks have"} been uploaded to your library.
+                  </p>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-white/10 bg-black/40 p-2.5 text-left">
+                  {uploadedHistory.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium text-white/90">{t.title || "Untitled"}</span>
+                      <span className="shrink-0 uppercase text-emerald-400/80 font-mono text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                        {t.format || "audio"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadedHistory([]);
+                      setUploadNotice(null);
+                      setRejectedFiles([]);
+                    }}
+                    className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-white/10"
+                  >
+                    Upload More
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-xs font-semibold text-black transition-colors hover:bg-emerald-400"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : queuedUploads.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-4 text-sm text-white/55">
                 No files queued yet.
               </div>
@@ -791,14 +839,24 @@ export default function UploadPanel({
           </div>
 
           <div className="border-t border-white/10 px-5 py-4">
-            <button
-              type="button"
-              disabled={uploading || queuedUploads.length === 0}
-              onClick={handleStartUpload}
-              className="h-11 w-full rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
-            >
-              {uploading ? "Uploading..." : `Upload ${queuedUploads.length} file(s)`}
-            </button>
+            {uploadedHistory.length > 0 && queuedUploads.length === 0 ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-11 w-full rounded-xl bg-emerald-500 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+              >
+                Done / View in Library
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={uploading || queuedUploads.length === 0}
+                onClick={handleStartUpload}
+                className="h-11 w-full rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+              >
+                {uploading ? "Uploading..." : `Upload ${queuedUploads.length} file(s)`}
+              </button>
+            )}
           </div>
         </div>
       </aside>

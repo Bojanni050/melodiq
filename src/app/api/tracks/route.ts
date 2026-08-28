@@ -778,36 +778,12 @@ export async function POST(request: NextRequest) {
             s3KeyHd = `tracks/${trackId}/audio_hd.wav`;
             formatHd = "wav";
           }
-          // Transcode WAV to Ogg Vorbis for standard playback streaming
-          try {
-            const oggBuffer = await transcodeToOgg(audioBuffer);
-            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
-            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
-          } catch (oggErr: any) {
-            console.error(`[tracks/upload] Failed to transcode WAV to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
-          }
         } else if (format === "flac") {
           s3KeyHd = `tracks/${trackId}/audio_hd.flac`;
           formatHd = "flac";
-          // Transcode FLAC to Ogg Vorbis for standard playback streaming
-          try {
-            const oggBuffer = await transcodeToOgg(audioBuffer);
-            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
-            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
-          } catch (oggErr: any) {
-            console.error(`[tracks/upload] Failed to transcode FLAC to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
-          }
         } else {
           // mp3
           s3KeyMp3 = `tracks/${trackId}/audio.mp3`;
-          // Transcode MP3 to Ogg Vorbis for standard playback streaming
-          try {
-            const oggBuffer = await transcodeToOgg(audioBuffer);
-            s3KeyOgg = `tracks/${trackId}/audio.ogg`;
-            await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
-          } catch (oggErr: any) {
-            console.error(`[tracks/upload] Failed to transcode MP3 to OGG for track ${trackId}:`, oggErr?.message ?? oggErr);
-          }
         }
 
         const s3Key = format === "ogg" ? s3KeyOgg! : `tracks/${trackId}/audio.${uploadFormat}`;
@@ -909,6 +885,21 @@ export async function POST(request: NextRequest) {
             lyrics: uploadLyrics,
             instrumental: isInstrumental,
           }).catch((error) => console.error("[tracks/upload] language detection failed", error));
+
+          // Background OGG Vorbis transcoding ONLY after upload has succeeded
+          if (format !== "ogg") {
+            (async () => {
+              try {
+                const oggBuffer = await transcodeToOgg(audioBuffer);
+                const s3KeyOgg = `tracks/${trackId}/audio.ogg`;
+                await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
+                await db.update(tracks).set({ s3KeyOgg }).where(eq(tracks.id, trackId));
+                console.log(`[tracks/upload] Background OGG transcode completed for track ${trackId}`);
+              } catch (oggErr: any) {
+                console.error(`[tracks/upload] Background OGG transcode failed for track ${trackId}:`, oggErr?.message ?? oggErr);
+              }
+            })().catch(() => {});
+          }
 
           uploadedTracks.push({ ...inserted[0], uploadIndex: index });
         }
