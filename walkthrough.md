@@ -1263,3 +1263,14 @@
   - Modified `src/lib/__tests__/audio-format.test.ts` — unit tests toegevoegd voor `detectUploadFormat` en audio hash berekeningen met OGG/FLAC.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280101`.
   - Validated with `npm test` (39/39 tests geslaagd) en `npm run build` (succesvol afgerond met 0 errors).
+
+## 2026-08-28 vr 01:59 (Fix 400 Bad Request bij track upload: ontbrekende s3_key_mp3 kolom in runtime schema & audio duration detectie)
+
+- Findings: Na de toevoeging van `s3KeyMp3` en `s3KeyOgg` kregen gebruikers bij het uploaden van een track een HTTP 400 (Bad Request). De runtime helper `ensureWorkspaceSchema()` in `src/lib/workspaces.ts` bevatte wel `ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_ogg text`, maar niet `s3_key_mp3` en ontbrekende user/track alias kolommen. Als gevolg hiervan faalde de database insert query in PostgreSQL zodra `s3KeyMp3` werd weggeschreven, waardoor de upload in het catch-blok terechtkwam en werd afgewezen. Daarnaast forceerde `extractAudioDuration` hardcoded `audio/mpeg`, waardoor non-MP3 formaten (OGG, WAV, FLAC) geen duur konden bepalen.
+- Conclusions: Breid `ensureWorkspaceSchema()` uit met `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` voor alle actuele kolommen van `tracks` en `users` (inclusief `s3_key_mp3`). Update `extractAudioDuration` om het audioformaat / de MIME-type te accepteren zodat `music-metadata` ook voor OGG, WAV en FLAC de juiste trackduur uitleest.
+- Actions:
+  - Modified `src/lib/workspaces.ts` — `ensureWorkspaceSchema()` uitgebreid met `s3_key_mp3`, licentie-, DNA-, alias- en collaboration-kolommen voor `tracks` en `users`.
+  - Modified `src/lib/audio-duration.ts` — `extractAudioDuration` accepteert nu een optioneel `format` argument en selecteert de juiste MIME-type via `contentTypeForFormat`.
+  - Modified `src/app/api/tracks/route.ts` — `format` meegegeven aan `extractAudioDuration(audioBuffer, format)`.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280159`.
+  - Validated with `npm test` (39/39 tests geslaagd) en `npm run build` (succesvol afgerond met 0 errors).

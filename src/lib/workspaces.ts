@@ -29,6 +29,30 @@ export async function ensureWorkspaceSchema(): Promise<void> {
       await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS workspace_id uuid`);
       await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_user_requested boolean NOT NULL DEFAULT false`);
       await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_ogg text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_mp3 text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_style_influence integer`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_weirdness integer`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS composer_name varchar(255)`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS writer_name varchar(255)`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS artist_name varchar(255)`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS lyrics_timestamps text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_lyrics text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS translated_language varchar(50)`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS audio_dna text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS advanced_dna text`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_collaboration boolean NOT NULL DEFAULT false`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS archived_at timestamp`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp`);
+      await db.execute(sql`ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp`);
+
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_alias varchar(255)`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS artist_aliases text`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255)`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_alias varchar(255)`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user'`);
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS language varchar(5) NOT NULL DEFAULT 'en'`);
 
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS workspaces (

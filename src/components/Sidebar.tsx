@@ -54,7 +54,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   const selectedWorkspaceId = useWorkspaceStore((state) => state.selectedWorkspaceId);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const sidebarCoverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
-  const buildVersion = "202608280101";
+  const buildVersion = "202608280159";
 
   useEffect(() => {
     setIsQHD(isQHD);

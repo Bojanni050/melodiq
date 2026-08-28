@@ -812,7 +812,7 @@ export async function POST(request: NextRequest) {
 
         const s3Key = format === "ogg" ? s3KeyOgg! : `tracks/${trackId}/audio.${uploadFormat}`;
         const [duration, audioDna] = await Promise.all([
-          extractAudioDuration(audioBuffer),
+          extractAudioDuration(audioBuffer, format),
           computeAudioDna({
             audioBuffer,
             prompt: uploadPrompt,
