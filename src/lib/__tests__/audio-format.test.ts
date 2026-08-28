@@ -4,6 +4,7 @@ import {
   detectFormatFromContentType,
   contentTypeForFormat,
   resolveTrackAudioSource,
+  getBestSourceForOggConversion,
 } from "../audio-format";
 
 describe("audio-format", () => {
@@ -121,6 +122,54 @@ describe("audio-format", () => {
       };
       const resWavHd = resolveTrackAudioSource(trackWavHd, { hd: true });
       expect(resWavHd).toEqual({ s3Key: "tracks/1/audio_hd.wav", format: "wav" });
+    });
+  });
+
+  describe("getBestSourceForOggConversion", () => {
+    it("prefers WAV when available (even if MP3 or FLAC exist)", () => {
+      const trackWithWavAndMp3 = {
+        s3Key: "tracks/1/audio.mp3",
+        format: "mp3",
+        s3KeyHd: "tracks/1/audio_hd.wav",
+        formatHd: "wav",
+        s3KeyMp3: "tracks/1/audio.mp3",
+      };
+      const res = getBestSourceForOggConversion(trackWithWavAndMp3);
+      expect(res).toEqual({ s3Key: "tracks/1/audio_hd.wav", format: "wav" });
+    });
+
+    it("prefers FLAC when WAV is not available but MP3 exists", () => {
+      const trackWithFlacAndMp3 = {
+        s3Key: "tracks/2/audio.mp3",
+        format: "mp3",
+        s3KeyHd: "tracks/2/audio_hd.flac",
+        formatHd: "flac",
+        s3KeyMp3: "tracks/2/audio.mp3",
+      };
+      const res = getBestSourceForOggConversion(trackWithFlacAndMp3);
+      expect(res).toEqual({ s3Key: "tracks/2/audio_hd.flac", format: "flac" });
+    });
+
+    it("falls back to MP3 if neither WAV nor FLAC is available", () => {
+      const mp3OnlyTrack = {
+        s3Key: "tracks/3/audio.mp3",
+        format: "mp3",
+        s3KeyMp3: "tracks/3/audio.mp3",
+        s3KeyHd: null,
+        formatHd: null,
+      };
+      const res = getBestSourceForOggConversion(mp3OnlyTrack);
+      expect(res).toEqual({ s3Key: "tracks/3/audio.mp3", format: "mp3" });
+    });
+
+    it("returns null if no audio source key exists", () => {
+      const emptyTrack = {
+        s3Key: null,
+        s3KeyHd: null,
+        s3KeyMp3: null,
+      };
+      const res = getBestSourceForOggConversion(emptyTrack);
+      expect(res).toBeNull();
     });
   });
 

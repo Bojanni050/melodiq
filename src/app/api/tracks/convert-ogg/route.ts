@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { downloadFromS3, uploadToS3, deleteFromS3 } from "@/lib/s3";
 import { transcodeToOgg } from "@/lib/transcode";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
+import { getBestSourceForOggConversion } from "@/lib/audio-format";
 
 export const dynamic = "force-dynamic";
 
@@ -54,14 +55,14 @@ export async function POST(request: NextRequest) {
     const results: Array<{ trackId: string; success: boolean; s3KeyOgg?: string; deletedMp3?: boolean; error?: string }> = [];
 
     for (const track of candidateTracks) {
-      const sourceKey = track.s3KeyHd || track.s3Key || track.s3KeyMp3;
-      if (!sourceKey) {
+      const bestSource = getBestSourceForOggConversion(track);
+      if (!bestSource || !bestSource.s3Key) {
         results.push({ trackId: track.id, success: false, error: "No audio source key found" });
         continue;
       }
 
       try {
-        const sourceBuffer = await downloadFromS3(sourceKey);
+        const sourceBuffer = await downloadFromS3(bestSource.s3Key);
         const oggBuffer = await transcodeToOgg(sourceBuffer);
         const s3KeyOgg = `tracks/${track.id}/audio.ogg`;
 

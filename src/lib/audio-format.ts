@@ -118,3 +118,41 @@ export function resolveTrackAudioSource(
 
   return null;
 }
+
+/**
+ * Resolves the highest quality audio source available to transcode into Ogg Vorbis.
+ * Priority:
+ * 1. Uncompressed WAV (highest fidelity source)
+ * 2. Lossless FLAC
+ * 3. MP3 (fallback if no WAV or FLAC is available)
+ * 4. General fallback
+ */
+export function getBestSourceForOggConversion(
+  track: TrackAudioFields
+): ResolvedAudioSource | null {
+  // 1. WAV
+  if (track.formatHd === "wav" && track.s3KeyHd) return { s3Key: track.s3KeyHd, format: "wav" };
+  if (track.format === "wav" && track.s3Key) return { s3Key: track.s3Key, format: "wav" };
+  if (track.s3KeyHd?.toLowerCase().endsWith(".wav")) return { s3Key: track.s3KeyHd, format: "wav" };
+  if (track.s3Key?.toLowerCase().endsWith(".wav")) return { s3Key: track.s3Key, format: "wav" };
+
+  // 2. FLAC
+  if (track.formatHd === "flac" && track.s3KeyHd) return { s3Key: track.s3KeyHd, format: "flac" };
+  if (track.format === "flac" && track.s3Key) return { s3Key: track.s3Key, format: "flac" };
+  if (track.s3KeyHd?.toLowerCase().endsWith(".flac")) return { s3Key: track.s3KeyHd, format: "flac" };
+  if (track.s3Key?.toLowerCase().endsWith(".flac")) return { s3Key: track.s3Key, format: "flac" };
+
+  // 3. MP3
+  if (track.s3KeyMp3) return { s3Key: track.s3KeyMp3, format: "mp3" };
+  if (track.format === "mp3" && track.s3Key) return { s3Key: track.s3Key, format: "mp3" };
+  if (track.formatHd === "mp3" && track.s3KeyHd) return { s3Key: track.s3KeyHd, format: "mp3" };
+  if (track.s3Key?.toLowerCase().endsWith(".mp3")) return { s3Key: track.s3Key, format: "mp3" };
+  if (track.s3KeyHd?.toLowerCase().endsWith(".mp3")) return { s3Key: track.s3KeyHd, format: "mp3" };
+
+  // 4. Any remaining source key (excluding already converted OGG files)
+  if (track.s3KeyHd) return { s3Key: track.s3KeyHd, format: track.formatHd ?? "wav" };
+  if (track.s3Key && !track.s3Key.endsWith(".ogg")) return { s3Key: track.s3Key, format: track.format ?? "mp3" };
+
+  return null;
+}
+

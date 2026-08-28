@@ -1306,3 +1306,15 @@
   - Modified `src/app/api/tracks/route.ts` — achtergrondtaak na MP3-upload verwijdert het MP3-bestand van S3 zodra de OGG-versie gereed is en update het database-record naar OGG.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280455`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 13:06 (Beste audiobron selecteren bij OGG conversie: WAV > FLAC > MP3)
+
+- Findings: Bij OGG-conversies werd direct het eerste beschikbare bronbestand (`s3KeyHd || s3Key || s3KeyMp3`) gepakt, wat kon betekenen dat een lagere kwaliteit MP3 werd gekozen terwijl er ook een lossless WAV of FLAC bestand beschikbaar was.
+- Conclusions: Implementeer een strikte prioriteringsfunctie (`getBestSourceForOggConversion`) die altijd het beste audioformaat selecteert: ongecomprimeerd WAV eerst, daarna lossless FLAC, en pas daarna MP3 als fallback.
+- Actions:
+  - Modified `src/lib/audio-format.ts` — `getBestSourceForOggConversion` geïmplementeerd met prioriteit WAV > FLAC > MP3 > fallback.
+  - Modified `src/app/api/tracks/[id]/convert-ogg/route.ts` — `getBestSourceForOggConversion` toegepast voor individuele OGG-conversie.
+  - Modified `src/app/api/tracks/convert-ogg/route.ts` — `getBestSourceForOggConversion` toegepast voor batch OGG-conversie.
+  - Modified `src/lib/__tests__/audio-format.test.ts` — unit tests toegevoegd voor `getBestSourceForOggConversion`.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608281306`.
+  - Validated with `npm test` en `npm run build`.

@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { downloadFromS3, uploadToS3, deleteFromS3 } from "@/lib/s3";
 import { transcodeToOgg } from "@/lib/transcode";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
+import { getBestSourceForOggConversion } from "@/lib/audio-format";
 
 export async function POST(
   _request: NextRequest,
@@ -28,13 +29,13 @@ export async function POST(
   }
 
   const track = result[0];
-  const sourceKey = track.s3KeyHd || track.s3Key || track.s3KeyMp3;
-  if (!sourceKey) {
+  const bestSource = getBestSourceForOggConversion(track);
+  if (!bestSource || !bestSource.s3Key) {
     return NextResponse.json({ error: "No audio file available for conversion" }, { status: 400 });
   }
 
   try {
-    const sourceBuffer = await downloadFromS3(sourceKey);
+    const sourceBuffer = await downloadFromS3(bestSource.s3Key);
     const oggBuffer = await transcodeToOgg(sourceBuffer);
 
     const s3KeyOgg = `tracks/${track.id}/audio.ogg`;
