@@ -8,7 +8,7 @@ import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
 import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
-import { uploadToS3 } from "@/lib/s3";
+import { uploadToS3, deleteFromS3 } from "@/lib/s3";
 import { type AudioFormat, contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
 import { convertWavToFlac, saveWavLocally } from "@/lib/wav-to-flac";
 import { transcodeToOgg } from "@/lib/transcode";
@@ -893,7 +893,32 @@ export async function POST(request: NextRequest) {
                 const oggBuffer = await transcodeToOgg(audioBuffer);
                 const s3KeyOgg = `tracks/${trackId}/audio.ogg`;
                 await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
-                await db.update(tracks).set({ s3KeyOgg }).where(eq(tracks.id, trackId));
+
+                // If uploaded format was MP3, delete the MP3 version from S3 after successful OGG conversion
+                if (format === "mp3") {
+                  const mp3Key = s3KeyMp3 || `tracks/${trackId}/audio.mp3`;
+                  try {
+                    await deleteFromS3(mp3Key);
+                    console.log(`[tracks/upload] Deleted MP3 version ${mp3Key} for track ${trackId}`);
+                  } catch (delErr: any) {
+                    console.error(`[tracks/upload] Failed to delete MP3 for track ${trackId}:`, delErr?.message ?? delErr);
+                  }
+
+                  await db
+                    .update(tracks)
+                    .set({
+                      s3KeyOgg,
+                      s3Key: s3KeyOgg,
+                      format: "ogg",
+                      s3KeyMp3: null,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(tracks.id, trackId));
+                } else {
+                  // For WAV / FLAC, keep lossless HD file and set s3KeyOgg
+                  await db.update(tracks).set({ s3KeyOgg, updatedAt: new Date() }).where(eq(tracks.id, trackId));
+                }
+
                 console.log(`[tracks/upload] Background OGG transcode completed for track ${trackId}`);
               } catch (oggErr: any) {
                 console.error(`[tracks/upload] Background OGG transcode failed for track ${trackId}:`, oggErr?.message ?? oggErr);

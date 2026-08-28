@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and, isNull, ne, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { downloadFromS3, uploadToS3 } from "@/lib/s3";
+import { downloadFromS3, uploadToS3, deleteFromS3 } from "@/lib/s3";
 import { transcodeToOgg } from "@/lib/transcode";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const results: Array<{ trackId: string; success: boolean; s3KeyOgg?: string; error?: string }> = [];
+    const results: Array<{ trackId: string; success: boolean; s3KeyOgg?: string; deletedMp3?: boolean; error?: string }> = [];
 
     for (const track of candidateTracks) {
       const sourceKey = track.s3KeyHd || track.s3Key || track.s3KeyMp3;
@@ -67,15 +67,34 @@ export async function POST(request: NextRequest) {
 
         await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
 
+        // Check if MP3 version exists for this track and delete it after successful conversion
+        const mp3KeyToDelete = track.s3KeyMp3 || (track.s3Key && (track.s3Key.endsWith(".mp3") || track.format === "mp3") ? track.s3Key : null);
+        if (mp3KeyToDelete) {
+          try {
+            await deleteFromS3(mp3KeyToDelete);
+            console.log(`[batch-convert-ogg] Deleted MP3 version ${mp3KeyToDelete} for track ${track.id}`);
+          } catch (delErr: any) {
+            console.error(`[batch-convert-ogg] Failed to delete MP3 for track ${track.id}:`, delErr?.message ?? delErr);
+          }
+        }
+
+        const updates: Record<string, any> = {
+          s3KeyOgg,
+          s3KeyMp3: null,
+          updatedAt: new Date(),
+        };
+
+        if (track.s3Key === mp3KeyToDelete || track.format === "mp3" || !track.s3Key) {
+          updates.s3Key = s3KeyOgg;
+          updates.format = "ogg";
+        }
+
         await db
           .update(tracks)
-          .set({
-            s3KeyOgg,
-            updatedAt: new Date(),
-          })
+          .set(updates)
           .where(eq(tracks.id, track.id));
 
-        results.push({ trackId: track.id, success: true, s3KeyOgg });
+        results.push({ trackId: track.id, success: true, s3KeyOgg, deletedMp3: !!mp3KeyToDelete });
       } catch (err: any) {
         console.error(`[batch-convert-ogg] failed for track ${track.id}:`, err?.message ?? err);
         results.push({ trackId: track.id, success: false, error: err?.message || "Transcode error" });

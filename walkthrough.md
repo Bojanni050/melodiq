@@ -1295,3 +1295,14 @@
   - Modified `src/components/tracks/TrackCard.tsx` — OGG-downloadknop en label toegevoegd aan de desktop- en mobiele actiebalk wanneer `track.s3KeyOgg` aanwezig is.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280217`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 04:55 (MP3 verwijderen na succesvolle OGG conversie)
+
+- Findings: Wanneer een track met een MP3-bestand succesvol wordt omgezet naar Ogg Vorbis (via upload achtergrondtaak, single convert of batch convert), bleef het originele MP3-bestand dubbel op S3 en in de database bewaard, wat onnodige opslagruimte innam.
+- Conclusions: Controleer bij elke OGG-conversie of er een MP3-versie bestaat voor de track. Verwijder het MP3-bestand na een succesvolle OGG-upload van S3 en update het trackrecord zodat `s3KeyMp3` op `null` wordt gezet en `format` / `s3Key` naar het OGG-bestand wijzen.
+- Actions:
+  - Modified `src/app/api/tracks/[id]/convert-ogg/route.ts` — MP3-detectie en automatische S3-verwijdering + DB-update toegevoegd na succesvolle OGG-upload.
+  - Modified `src/app/api/tracks/convert-ogg/route.ts` — MP3-detectie en automatische S3-verwijdering + DB-update toegevoegd in batch-conversie.
+  - Modified `src/app/api/tracks/route.ts` — achtergrondtaak na MP3-upload verwijdert het MP3-bestand van S3 zodra de OGG-versie gereed is en update het database-record naar OGG.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280455`.
+  - Validated with `npm test` en `npm run build`.
