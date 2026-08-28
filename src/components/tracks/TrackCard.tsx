@@ -814,16 +814,31 @@ const TrackCard = memo(function TrackCard({
           )}
 
           {/* Mobile Download Buttons Row */}
-          {track.status === "done" && track.audioUrl && (
+          {track.status === "done" && (
             <div className="flex sm:hidden items-center gap-2 mt-1.5">
-              <button
-                onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
-                disabled={actions.downloading}
-                className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
-                title={`Download ${mp3Label}`}
-              >
-                📥 {mp3Label}
-              </button>
+              {track.audioUrl && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
+                  disabled={actions.downloading}
+                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
+                  title={`Download ${mp3Label}`}
+                >
+                  📥 {mp3Label}
+                </button>
+              )}
+              {track.s3KeyOgg && track.format !== "ogg" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.handleDownload(`/api/tracks/${track.id}/download?format=ogg`, false, "ogg");
+                  }}
+                  disabled={actions.downloading}
+                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
+                  title="Download OGG"
+                >
+                  📥 OGG
+                </button>
+              )}
               {track.s3KeyHd && track.audioUrlHd && (
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrlHd!, true); }}
@@ -890,16 +905,31 @@ const TrackCard = memo(function TrackCard({
               onRate={actions.handleRating}
             />
           )}
-          {track.status === "done" && track.audioUrl && (
+          {track.status === "done" && (
             <>
-              <button
-                onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
-                disabled={actions.downloading}
-                className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
-                title={`Download ${mp3Label}`}
-              >
-                {mp3Label}
-              </button>
+              {track.audioUrl && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
+                  disabled={actions.downloading}
+                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                  title={`Download ${mp3Label}`}
+                >
+                  {mp3Label}
+                </button>
+              )}
+              {track.s3KeyOgg && track.format !== "ogg" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    actions.handleDownload(`/api/tracks/${track.id}/download?format=ogg`, false, "ogg");
+                  }}
+                  disabled={actions.downloading}
+                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                  title="Download OGG"
+                >
+                  OGG
+                </button>
+              )}
               {track.s3KeyHd && track.audioUrlHd && (
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrlHd!, true); }}

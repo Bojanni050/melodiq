@@ -1285,3 +1285,13 @@
   - Modified `src/app/library/page.tsx` — `uploadToast` notificatietoast toegevoegd die direct na uploadbevestiging verschijnt en na 5 seconden automatisch verdwijnt.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280208`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 02:17 (OGG formaat-label en downloadknop toegevoegd aan TrackCard)
+
+- Findings: Op de track-rijen in de library en afspeellijsten ontbrak een specifiek OGG-formaatlabel (zoals MP3, WAV en FLAC die al hadden) wanneer er een Ogg Vorbis-versie (`s3KeyOgg`) van de track beschikbaar is.
+- Conclusions: Voeg een "OGG"-label en downloadactie toe aan zowel de desktop-actierij als de mobiele downloadrij in `TrackCard.tsx`, zodat gebruikers direct de OGG-versie kunnen downloaden en zien dat OGG beschikbaar is.
+- Actions:
+  - Modified `src/components/tracks/useTrackCardActions.ts` — `handleDownload` uitgebreid met optionele `formatOverride` parameter.
+  - Modified `src/components/tracks/TrackCard.tsx` — OGG-downloadknop en label toegevoegd aan de desktop- en mobiele actiebalk wanneer `track.s3KeyOgg` aanwezig is.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608280217`.
+  - Validated with `npm test` en `npm run build`.

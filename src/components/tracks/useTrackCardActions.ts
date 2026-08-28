@@ -209,12 +209,12 @@ export function useTrackCardActions({
     }
   }
 
-  function handleDownload(url: string, hd = false) {
+  function handleDownload(url: string, hd = false, formatOverride?: string) {
     setDownloading(true);
     const a = document.createElement("a");
     a.href = url;
-    const fmt = hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3");
-    a.download = `${(track.title || "track").replace(/\s*\(2\)\s*$/, "")}${hd ? "_hd" : ""}.${fmt}`;
+    const fmt = formatOverride ?? (hd ? (track.formatHd ?? track.format ?? "mp3") : (track.format ?? "mp3"));
+    a.download = `${(track.title || "track").replace(/\s*\(2\)\s*$/, "")}${hd && !formatOverride ? "_hd" : ""}.${fmt}`;
     a.click();
     setTimeout(() => setDownloading(false), 1000);
   }
