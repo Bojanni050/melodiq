@@ -495,8 +495,10 @@ export default memo(function TrackList({
           audioUrlHd: t.audioUrlHd,
           format: t.format,
           formatHd: t.formatHd,
-          s3Key: null,
-          s3KeyHd: t.s3KeyHd,
+          s3Key: t.s3Key ?? null,
+          s3KeyHd: t.s3KeyHd ?? null,
+          s3KeyMp3: t.s3KeyMp3 ?? null,
+          s3KeyOgg: t.s3KeyOgg ?? null,
           duration: t.duration,
           lyrics: t.lyrics,
           lyricsTimestamps: t.lyricsTimestamps,
@@ -504,7 +506,12 @@ export default memo(function TrackList({
           error: t.error,
           coverUrl: t.coverUrl,
           s3KeyCover: t.s3KeyCover,
+          s3KeyCoverThumb: t.s3KeyCoverThumb,
           publicSource: t.publicSource,
+          artistName: t.artistName ?? null,
+          composerName: t.composerName ?? null,
+          writerName: t.writerName ?? null,
+          rating: t.rating ?? null,
         }));
 
       setPlayContext(orderedPlayContext);
@@ -531,8 +538,10 @@ export default memo(function TrackList({
       audioUrlHd: track.audioUrlHd,
       format: track.format,
       formatHd: track.formatHd,
-      s3Key: null,
-      s3KeyHd: track.s3KeyHd,
+      s3Key: track.s3Key ?? null,
+      s3KeyHd: track.s3KeyHd ?? null,
+      s3KeyMp3: track.s3KeyMp3 ?? null,
+      s3KeyOgg: track.s3KeyOgg ?? null,
       duration: track.duration,
       lyrics: track.lyrics,
       lyricsTimestamps: track.lyricsTimestamps,
@@ -540,7 +549,12 @@ export default memo(function TrackList({
       error: track.error,
       coverUrl: track.coverUrl,
       s3KeyCover: track.s3KeyCover,
+      s3KeyCoverThumb: track.s3KeyCoverThumb,
       publicSource: track.publicSource,
+      artistName: track.artistName ?? null,
+      composerName: track.composerName ?? null,
+      writerName: track.writerName ?? null,
+      rating: track.rating ?? null,
     });
   }, [autoQueueAfterPlay, setPlayContext, autoPlayNext, setQueue, playTrackFromGesture]);
 

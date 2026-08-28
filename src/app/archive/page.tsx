@@ -153,7 +153,7 @@ export default function ArchivePage() {
     const track = allTracks.find((t) => t.id === selectedTrack.id);
     if (!track) return;
     clearQueue();
-    playTrackFromGesture({ ...track, s3Key: null, audioUrl: url });
+    playTrackFromGesture({ ...track, s3Key: track.s3Key ?? null, audioUrl: url });
   }
 
   const playTrackFromGesture = usePlayerStore((state) => state.playTrackFromGesture);

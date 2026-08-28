@@ -149,9 +149,11 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
         audioUrlHd: t.audioUrlHd,
         format: t.format,
         formatHd: t.formatHd,
-        s3Key: null,
-        s3KeyHd: t.s3KeyHd,
-        duration: null,
+        s3Key: t.s3Key ?? null,
+        s3KeyHd: t.s3KeyHd ?? null,
+        s3KeyMp3: t.s3KeyMp3 ?? null,
+        s3KeyOgg: t.s3KeyOgg ?? null,
+        duration: t.duration ?? null,
         lyrics: t.lyrics,
         lyricsTimestamps: t.lyricsTimestamps,
         createdAt: t.createdAt,
@@ -159,6 +161,10 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
         coverUrl: t.coverUrl,
         s3KeyCover: t.s3KeyCover,
         s3KeyCoverThumb: t.s3KeyCoverThumb,
+        artistName: t.artistName ?? null,
+        composerName: t.composerName ?? null,
+        writerName: t.writerName ?? null,
+        rating: t.rating ?? null,
       }));
 
     player.setPlayContext(playContext);
@@ -180,9 +186,11 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
       audioUrlHd: selectedTrack.audioUrlHd,
       format: selectedTrack.format,
       formatHd: selectedTrack.formatHd,
-      s3Key: null,
-      s3KeyHd: selectedTrack.s3KeyHd,
-      duration: null,
+      s3Key: selectedTrack.s3Key ?? null,
+      s3KeyHd: selectedTrack.s3KeyHd ?? null,
+      s3KeyMp3: selectedTrack.s3KeyMp3 ?? null,
+      s3KeyOgg: selectedTrack.s3KeyOgg ?? null,
+      duration: selectedTrack.duration ?? null,
       lyrics: selectedTrack.lyrics,
       lyricsTimestamps: selectedTrack.lyricsTimestamps,
       createdAt: selectedTrack.createdAt,
@@ -190,6 +198,10 @@ export function useTrackPlayer({ tracksRef }: UseTrackPlayerOptions) {
       coverUrl: selectedTrack.coverUrl,
       s3KeyCover: selectedTrack.s3KeyCover,
       s3KeyCoverThumb: selectedTrack.s3KeyCoverThumb,
+      artistName: selectedTrack.artistName ?? null,
+      composerName: selectedTrack.composerName ?? null,
+      writerName: selectedTrack.writerName ?? null,
+      rating: selectedTrack.rating ?? null,
     });
   }, [selectedTrack, tracksRef]);
 

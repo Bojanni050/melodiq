@@ -399,8 +399,10 @@ export default function LibraryPage() {
         audioUrlHd: track.audioUrlHd,
         format: track.format,
         formatHd: track.formatHd,
-        s3Key: null,
-        s3KeyHd: track.s3KeyHd,
+        s3Key: track.s3Key ?? null,
+        s3KeyHd: track.s3KeyHd ?? null,
+        s3KeyMp3: track.s3KeyMp3 ?? null,
+        s3KeyOgg: track.s3KeyOgg ?? null,
         duration: track.duration,
         lyrics: track.lyrics,
         lyricsTimestamps: track.lyricsTimestamps,
@@ -408,6 +410,11 @@ export default function LibraryPage() {
         error: track.error,
         coverUrl: track.coverUrl,
         s3KeyCover: track.s3KeyCover,
+        s3KeyCoverThumb: track.s3KeyCoverThumb,
+        artistName: track.artistName ?? null,
+        composerName: track.composerName ?? null,
+        writerName: track.writerName ?? null,
+        rating: track.rating ?? null,
       }));
 
     player.setPlayContext(playContext);
@@ -430,8 +437,10 @@ export default function LibraryPage() {
       audioUrlHd: selectedTrack.audioUrlHd,
       format: selectedTrack.format,
       formatHd: selectedTrack.formatHd,
-      s3Key: null,
-      s3KeyHd: selectedTrack.s3KeyHd,
+      s3Key: selectedTrack.s3Key ?? null,
+      s3KeyHd: selectedTrack.s3KeyHd ?? null,
+      s3KeyMp3: selectedTrack.s3KeyMp3 ?? null,
+      s3KeyOgg: selectedTrack.s3KeyOgg ?? null,
       duration: selectedTrack.duration,
       lyrics: selectedTrack.lyrics,
       lyricsTimestamps: selectedTrack.lyricsTimestamps,
@@ -439,8 +448,11 @@ export default function LibraryPage() {
       error: selectedTrack.error,
       coverUrl: selectedTrack.coverUrl,
       s3KeyCover: selectedTrack.s3KeyCover,
+      s3KeyCoverThumb: selectedTrack.s3KeyCoverThumb,
       rating: selectedTrack.rating ?? null,
       artistName: selectedTrack.artistName ?? null,
+      composerName: selectedTrack.composerName ?? null,
+      writerName: selectedTrack.writerName ?? null,
     });
   }
 

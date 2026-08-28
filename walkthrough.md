@@ -1318,3 +1318,18 @@
   - Modified `src/lib/__tests__/audio-format.test.ts` — unit tests toegevoegd voor `getBestSourceForOggConversion`.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608281306`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 13:50 (Fix track switching bij play op TrackCard in library)
+
+- Findings: Wanneer er al een track speelde en de gebruiker op de play-knop van een andere trackcard klikte, switchte de audiospeler niet naar de nieuwe track. Dit werd veroorzaakt doordat `playTrackFromGesture` de download-URL (`/api/tracks/[id]/download`) in de audio element `src` laadde (die `Content-Disposition: attachment` headers terugstuurde waardoor streaming faalde), en in `TrackList.tsx` audiokeys zoals `s3Key`, `s3KeyMp3` en `s3KeyOgg` niet correct werden doorgegeven.
+- Conclusions: Zorg dat `playTrackFromGesture` altijd het streaming endpoint (`/api/tracks/[id]/stream`) gebruikt in plaats van de download-route, en geef de volledige track-audiokeys door in `TrackList.tsx`, `library/page.tsx`, `useTrackPlayer.ts`, `playlists` en `workspaces`.
+- Actions:
+  - Modified `src/lib/stores/playerStore.ts` — streaming URL resolver gecorrigeerd zodat altijd `/api/tracks/[id]/stream` wordt gebruikt voor lokale streaming.
+  - Modified `src/components/TrackList.tsx` — alle audiokeys (`s3Key`, `s3KeyHd`, `s3KeyMp3`, `s3KeyOgg`) en metadata behouden in `handlePlay`.
+  - Modified `src/app/library/page.tsx` — alle audiokeys behouden in `handlePlayTrack`.
+  - Modified `src/hooks/useTrackPlayer.ts` — alle audiokeys behouden in `handlePlayTrack`.
+  - Modified `src/app/playlists/[playlistId]/page.tsx` — alle audiokeys behouden in `handlePlayTrack`.
+  - Modified `src/app/workspaces/[workspaceId]/page.tsx` — alle audiokeys behouden in `handlePlayTrack`.
+  - Modified `src/app/archive/page.tsx` — `s3Key: null` overwrite verwijderd.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608281537`.
+  - Validated with `npm test` en `npm run build`.

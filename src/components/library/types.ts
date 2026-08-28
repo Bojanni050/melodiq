@@ -21,6 +21,7 @@ export interface LibraryTrack {
   s3KeyOgg?: string | null;
   coverUrl: string | null;
   s3KeyCover: string | null;
+  s3KeyCoverThumb?: string | null;
   rating?: string | null;
   lyricsTimestamps?: string | null;
   artistName?: string | null;

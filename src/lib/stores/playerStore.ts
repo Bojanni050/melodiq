@@ -229,15 +229,17 @@ export const usePlayerStore = create<PlayerState>()(
         // whatever buffering the first one had already started.
         audioElement.dataset.gesturePendingTrackId = track.id;
 
-        // Kies juiste url: absolute (http/https), of fallback naar /api/tracks/[id]/stream
-        let url = track.audioUrl || undefined;
-        if (url && /^https?:\/\//i.test(url)) {
+        // Kies juiste url: absolute (http/https), of streaming endpoint /api/tracks/[id]/stream
+        let url: string;
+        if (track.audioUrl && /^https?:\/\//i.test(track.audioUrl)) {
           // Externe URL, gebruik direct
-        } else if (url && url.startsWith("/")) {
-          // Relatief pad, gebruik direct
+          url = track.audioUrl;
         } else {
-          // Fallback naar MelodIQ API
-          const wantsHd = (track.audioUrl || "").includes("hd=true");
+          // Streaming API endpoint via MelodIQ
+          const wantsHd = Boolean(
+            (track.audioUrl || "").includes("hd=true") ||
+            (get().playHighestQuality && (track.s3KeyHd || track.formatHd === "flac" || track.formatHd === "wav"))
+          );
           const base = track.publicSource ? withCdn(`/api/discover/${track.id}`) : `/api/tracks/${track.id}`;
           url = `${base}/stream${wantsHd ? "?hd=true" : ""}`;
         }
