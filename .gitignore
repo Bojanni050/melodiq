@@ -20,3 +20,6 @@ tsconfig.tsbuildinfo
 
 # Local disk cache / log dirs (Windows dev fallback for CACHE_DIR/LOG_DIR)
 /data
+
+# Archives
+*.zip

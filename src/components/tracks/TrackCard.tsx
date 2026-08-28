@@ -137,6 +137,19 @@ const TrackCard = memo(function TrackCard({
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
   const [convertingOgg, setConvertingOgg] = useState(false);
   const [convertOggResult, setConvertOggResult] = useState<"success" | "error" | null>(null);
+  const [localS3KeyOgg, setLocalS3KeyOgg] = useState<string | null>(track.s3KeyOgg ?? null);
+  const [localFormat, setLocalFormat] = useState<string | null>(track.format ?? null);
+
+  useEffect(() => {
+    setLocalS3KeyOgg(track.s3KeyOgg ?? null);
+  }, [track.s3KeyOgg]);
+
+  useEffect(() => {
+    setLocalFormat(track.format ?? null);
+  }, [track.format]);
+
+  const effectiveS3KeyOgg = localS3KeyOgg ?? track.s3KeyOgg ?? null;
+  const effectiveFormat = localFormat ?? track.format ?? "mp3";
   const [togglingPublish, setTogglingPublish] = useState(false);
   const [generatingTcl, setGeneratingTcl] = useState(false);
   const [tclError, setTclError] = useState<string | null>(null);
@@ -278,12 +291,19 @@ const TrackCard = memo(function TrackCard({
         setConvertOggResult("error");
       } else {
         setConvertOggResult("success");
+        const nextOggKey = body.s3KeyOgg || `tracks/${track.id}/audio.ogg`;
+        setLocalS3KeyOgg(nextOggKey);
+        if (body.deletedMp3 || track.format === "mp3") {
+          setLocalFormat("ogg");
+        }
         mutate((key: any) => typeof key === "string" && key.startsWith("/api/tracks"), undefined, { revalidate: true });
+        window.dispatchEvent(new CustomEvent("tracks-changed"));
         const cur = usePlayerStore.getState().currentTrack;
         if (cur && cur.id === track.id) {
           usePlayerStore.getState().setCurrentTrack({
             ...cur,
-            s3KeyOgg: body.s3KeyOgg,
+            s3KeyOgg: nextOggKey,
+            format: body.deletedMp3 || cur.format === "mp3" ? "ogg" : cur.format,
           });
         }
       }
@@ -446,7 +466,7 @@ const TrackCard = memo(function TrackCard({
   const generationTime = formatGenerationTime(track.createdAt, track.completedAt);
   const title = (track.title || track.prompt.substring(0, 50)).replace(/\s*\(2\)\s*$/, "");
   const styleDesc = track.prompt.length > 80 ? track.prompt.substring(0, 80) + "..." : track.prompt;
-  const mp3Label = (track.format ?? "mp3").toUpperCase();
+  const mp3Label = (effectiveFormat ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
@@ -826,7 +846,7 @@ const TrackCard = memo(function TrackCard({
                   📥 {mp3Label}
                 </button>
               )}
-              {track.s3KeyOgg && track.format !== "ogg" && (
+              {effectiveS3KeyOgg && effectiveFormat !== "ogg" && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -917,7 +937,7 @@ const TrackCard = memo(function TrackCard({
                   {mp3Label}
                 </button>
               )}
-              {track.s3KeyOgg && track.format !== "ogg" && (
+              {effectiveS3KeyOgg && effectiveFormat !== "ogg" && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -982,7 +1002,7 @@ const TrackCard = memo(function TrackCard({
               retryingWav={retryingWav}
               retryWavResult={retryWavResult}
               onConvertOggClick={
-                track.status === "done" && !track.s3KeyOgg && track.format !== "ogg"
+                track.status === "done" && !effectiveS3KeyOgg && effectiveFormat !== "ogg"
                   ? handleConvertOgg
                   : undefined
               }

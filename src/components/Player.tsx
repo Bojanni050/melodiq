@@ -24,8 +24,10 @@ import { useMediaSession } from "@/components/player/hooks/useMediaSession";
 import { usePopupPlayerSync } from "@/components/player/hooks/usePopupPlayerSync";
 import { usePlayerHotkeys } from "@/components/player/hooks/usePlayerHotkeys";
 import { useTrackBackgroundServices } from "@/components/player/hooks/useTrackBackgroundServices";
+import { useT } from "@/hooks/useT";
 
 export default function Player() {
+  const t = useT();
   const {
     currentTrack,
     queue,
@@ -950,7 +952,8 @@ export default function Player() {
                   type="button"
                   onClick={() => setActionsMenuOpen((o) => !o)}
                   className={`p-2 rounded-full transition-colors ${actionsMenuOpen ? "text-primary-400 bg-white/10" : "text-white/30 hover:text-white/70 hover:bg-white/5"}`}
-                  title="Track actions"
+                  title={t("discover.trackOptions") || "Track actions"}
+                  aria-label={t("discover.trackOptions") || "Track actions"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6h.01M12 12h.01M12 18h.01" />
@@ -958,7 +961,26 @@ export default function Player() {
                 </button>
 
                 {actionsMenuOpen && (
-                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 rounded-xl border border-white/10 bg-[#12121a] shadow-2xl p-1.5">
+                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 rounded-xl border border-white/10 bg-[#12121a] shadow-2xl p-1.5 space-y-1">
+                    {/* Go to track in library */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleJumpToNowPlaying();
+                        setActionsMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="7" strokeWidth={2} />
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                        <path strokeLinecap="round" strokeWidth={2} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                      </svg>
+                      <span>{t("discover.goToTrack") || "Go to track"}</span>
+                    </button>
+
+                    <div className="my-1 border-t border-white/10" />
+
                     <p className="px-2.5 pb-1 pt-0.5 text-[11px] uppercase tracking-wide text-white/35">Add to playlist</p>
                     {playlists.length === 0 ? (
                       <p className="px-2.5 py-1.5 text-xs text-white/40 italic">No playlists yet</p>

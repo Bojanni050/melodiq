@@ -1333,3 +1333,21 @@
   - Modified `src/app/archive/page.tsx` — `s3Key: null` overwrite verwijderd.
   - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608281537`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 16:11 (Go to track toegevoegd aan player track menu)
+
+- Findings: In het menu met de 3 puntjes op de audiospeler onderaan ontbrak een optie om direct naar de huidige afspelende track in de bibliotheek te springen.
+- Conclusions: Voeg de actie "Go to track" / "Naar track" toe bovenaan het actiemenu (3 puntjes) van `Player.tsx`, met direct scrollen en oplichten van de track in `TrackList`.
+- Actions:
+  - Modified `src/components/Player.tsx` — "Go to track" actieknop toegevoegd in het 3-dots dropdown menu dat `handleJumpToNowPlaying` aanroept.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608281611`.
+  - Validated with `npm test` en `npm run build`.
+
+## 2026-08-28 vr 16:28 (Direct OGG-label tonen op track card na succesvolle conversie)
+
+- Findings: Na het succesvol converteren van een track naar Ogg Vorbis via het menu, werd het OGG-label op de trackcard pas zichtbaar na een handmatige pagina-refresh, omdat de kaart geen lokale state voor het formaat bijhield en het globale `tracks-changed` event niet direct werd afgevuurd.
+- Conclusions: Voeg `localS3KeyOgg` en `localFormat` states toe aan `TrackCard.tsx` en update deze direct in `handleConvertOgg`. Vuur tevens `tracks-changed` af en gebruik `effectiveS3KeyOgg` / `effectiveFormat` voor de mobiele en desktop format-badges en de menuknop.
+- Actions:
+  - Modified `src/components/tracks/TrackCard.tsx` — reactieve lokale format en s3KeyOgg states geïmplementeerd; `handleConvertOgg` update de kaart direct en vuurt `tracks-changed` af.
+  - Updated `src/components/Sidebar.tsx` — buildVersion naar `202608282125`.
+  - Validated with `npm test` en `npm run build`.
