@@ -114,8 +114,9 @@ export default function ReleaseDetailPage() {
     if (!selectedTrack) return;
     const player = usePlayerStore.getState();
 
-    // Set playContext to all release tracks for autoplay
-    const playContext = releaseTracks.map((t) => ({
+    // Set playContext to all done release tracks for autoplay
+    const doneTracks = releaseTracks.filter((t) => t.status === "done");
+    const playContext = doneTracks.map((t) => ({
       id: t.id,
       title: t.title,
       provider: t.provider,
