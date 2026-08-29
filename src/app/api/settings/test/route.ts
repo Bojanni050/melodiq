@@ -127,9 +127,14 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     method: "POST",
   },
   elevenlabs: {
-    url: "https://api.elevenlabs.io/v1/user",
+    // /v1/user requires broad account-read scope, which a key restricted to
+    // just the Forced Alignment endpoint won't have — test against forced
+    // alignment itself instead. An empty body is missing the required
+    // file/text fields and returns 400/422 for a valid (even if restricted)
+    // key, 401 for an invalid one.
+    url: "https://api.elevenlabs.io/v1/forced-alignment",
     keyPrefix: "",
-    method: "GET",
+    method: "POST",
     authHeader: "xi-api-key",
   },
 };
@@ -221,8 +226,7 @@ export async function POST(request: Request) {
     } else if (provider === "lyria") {
       info = `Connected — ${response.data.models?.length ?? response.data.data?.length ?? "unknown"} models available`;
     } else if (provider === "elevenlabs") {
-      const tier = response.data?.subscription?.tier;
-      info = tier ? `Connected — ElevenLabs (${tier} plan)` : "Connected — ElevenLabs API is active";
+      info = "Connected — ElevenLabs API is active";
     }
 
     return NextResponse.json({ success: true, message: info, models });
@@ -248,6 +252,13 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         message: "Connected — QuickLRC API key is valid (test request rejected with 400 validation, expected).",
+      });
+    }
+
+    if (provider === "elevenlabs" && (status === 400 || status === 422)) {
+      return NextResponse.json({
+        success: true,
+        message: "Connected — ElevenLabs API key is valid (test request rejected with validation error, as expected).",
       });
     }
 

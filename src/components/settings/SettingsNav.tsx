@@ -1,7 +1,7 @@
 "use client";
 
 export type SettingsSectionId = "providers" | "ai-routing" | "storage" | "playback" | "data" | "advanced";
-export type ProvidersTabId = "music" | "llm" | "images";
+export type ProvidersTabId = "music" | "llm" | "images" | "tcl";
 
 function NavIcon({ id }: { id: SettingsSectionId }) {
   const cls = "w-4 h-4 shrink-0";
@@ -118,6 +118,7 @@ const PROVIDER_TABS: { id: ProvidersTabId; label: string }[] = [
   { id: "music", label: "Music" },
   { id: "llm", label: "LLM" },
   { id: "images", label: "Images" },
+  { id: "tcl", label: "TCL" },
 ];
 
 export function ProvidersTabBar({

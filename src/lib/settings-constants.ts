@@ -323,12 +323,6 @@ export const PROVIDERS: ProviderConfig[] = [
         type: "password",
         placeholder: "sk_...",
       },
-      {
-        key: "TCL_ENGINE",
-        label: "Active TCL Engine",
-        type: "text",
-        placeholder: "elevenlabs or quicklrc",
-      },
     ],
     testEndpoint: "elevenlabs",
   },

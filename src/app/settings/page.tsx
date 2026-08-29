@@ -15,6 +15,7 @@ import { SettingsSidebar, ProvidersTabBar, SettingsSectionId, ProvidersTabId } f
 import UnsavedChangesBar from "@/components/settings/UnsavedChangesBar";
 import VisualizerSection from "@/components/settings/VisualizerSection";
 import S3Section from "@/components/settings/S3Section";
+import TclEngineSection from "@/components/settings/TclEngineSection";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS, WEBHOOK_DEFAULTS } from "@/lib/settings-constants";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
@@ -34,6 +35,7 @@ const TRACKED_SETTINGS_KEYS = [
   "LYRICIQ_LLM_PROVIDER",
   "PIXAZO_API_KEY",
   "IMAGE_GEN_PROVIDER",
+  "TCL_ENGINE",
   "APP_URL",
   "POYO_WEBHOOK_URL",
   "POYO_WAV_WEBHOOK_URL",
@@ -493,6 +495,15 @@ export default function SettingsPage() {
                         onChange={(v) => updateField("PIXAZO_API_KEY", v)}
                         providerValue={values.IMAGE_GEN_PROVIDER ?? "pixazo"}
                         onProviderChange={(v) => updateField("IMAGE_GEN_PROVIDER", v)}
+                      />
+                    </div>
+                  )}
+
+                  {activeProvidersTab === "tcl" && (
+                    <div className="space-y-3">
+                      <TclEngineSection
+                        value={values.TCL_ENGINE ?? "elevenlabs"}
+                        onChange={(v) => updateField("TCL_ENGINE", v)}
                       />
                     </div>
                   )}
