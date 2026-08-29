@@ -52,7 +52,17 @@ export default function CoverManager({
   const [uploading, setUploading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ type: "main" | "delete"; coverId: string | null } | null>(null);
   const [working, setWorking] = useState(false);
+  // /api/{tracks,releases}/:id/cover is served with a long, "immutable"
+  // Cache-Control on a bare, unversioned URL — whatever image the browser
+  // first cached for that exact URL sticks around even after we upload or
+  // delete a cover behind it. Bust it ourselves on every mutation so this
+  // modal never shows stale bytes for what "current cover" actually is.
+  const [bustToken, setBustToken] = useState(() => Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function bustUrl(url: string): string {
+    return `${url}${url.includes("?") ? "&" : "?"}t=${bustToken}`;
+  }
 
   const baseUrl = `/api/${entityType === "track" ? "tracks" : "releases"}/${entityId}/covers`;
   const thumbBase = `/api/${entityType === "track" ? "tracks" : "releases"}/${entityId}/covers/image`;
@@ -88,6 +98,7 @@ export default function CoverManager({
       if (res.ok) {
         const data = await res.json();
         setCovers((prev) => [...prev, data.cover].sort((a, b) => a.position - b.position));
+        setBustToken(Date.now());
         notifyUIUpdate(entityType, entityId);
         onUpdated?.();
       }
@@ -103,6 +114,7 @@ export default function CoverManager({
       const res = await fetch(`${baseUrl}/${coverId}/main`, { method: "PATCH" });
       if (res.ok) {
         setCovers((prev) => prev.map((c) => ({ ...c, isMain: c.id === coverId })));
+        setBustToken(Date.now());
         notifyUIUpdate(entityType, entityId);
         onUpdated?.();
       }
@@ -117,6 +129,7 @@ export default function CoverManager({
       const res = await fetch(`${baseUrl}/${coverId}`, { method: "DELETE" });
       if (res.ok) {
         setCovers((prev) => prev.filter((c) => c.id !== coverId));
+        setBustToken(Date.now());
         notifyUIUpdate(entityType, entityId);
         onUpdated?.();
       }
@@ -192,7 +205,7 @@ export default function CoverManager({
                   className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 ${!hasUploadedMain ? (inheritedFromTrack ? "border-amber-400/50" : "border-emerald-400/60") : "border-white/15"}`}
                 >
                   <img
-                    src={currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover` : `/api/releases/${entityId}/cover`)}
+                    src={bustUrl(currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover` : `/api/releases/${entityId}/cover`))}
                     alt="Current cover"
                     loading="lazy"
                     decoding="async"
