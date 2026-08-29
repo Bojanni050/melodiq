@@ -840,16 +840,22 @@ export async function PATCH(
     }
 
     if (lyrics !== undefined) {
+      const currentLyrics = result[0].lyrics;
       if (lyrics === null) {
-        updates.lyrics = null;
-        updates.lyricsTimestamps = null;
+        if (currentLyrics !== null) {
+          updates.lyrics = null;
+          updates.lyricsTimestamps = null;
+        }
       } else if (typeof lyrics === "string") {
         const trimmedLyrics = lyrics.trim();
         if (trimmedLyrics.length > 20000) {
           return NextResponse.json({ error: "Lyrics too long (max 20000 characters)" }, { status: 400 });
         }
-        updates.lyrics = trimmedLyrics ? trimmedLyrics : null;
-        updates.lyricsTimestamps = null;
+        const newLyrics = trimmedLyrics ? trimmedLyrics : null;
+        if (newLyrics !== currentLyrics) {
+          updates.lyrics = newLyrics;
+          updates.lyricsTimestamps = null;
+        }
       } else {
         return NextResponse.json({ error: "Invalid lyrics" }, { status: 400 });
       }
