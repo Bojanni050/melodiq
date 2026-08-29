@@ -100,7 +100,7 @@ export default function SettingsPage() {
   const [importSqlFile, setImportSqlFile] = useState<File | null>(null);
   const [importingData, setImportingData] = useState(false);
   const [importNotice, setImportNotice] = useState<string | null>(null);
-  const { playHighestQuality, setPlayHighestQuality, pauseBetweenTracks, setPauseBetweenTracks } = usePlayerStore();
+  const { playHighestQuality, setPlayHighestQuality, pauseBetweenTracks, setPauseBetweenTracks, normalizeVolume, setNormalizeVolume } = usePlayerStore();
 
   useEffect(() => {
     async function loadSettings() {
@@ -609,6 +609,31 @@ export default function SettingsPage() {
                         <span
                           className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                             playHighestQuality ? "translate-x-6" : ""
+                          }`}
+                        />
+                      </button>
+                    </label>
+                  </section>
+
+                  <section className="section-card">
+                    <h2 className="text-sm font-semibold mb-1">Volume Normalization</h2>
+                    <p className="text-sm text-white/40 mb-3">
+                      Evens out perceived loudness between tracks by applying a constant gain per track — dynamics (quiet and loud passages within a song) are left untouched, unlike compression.
+                    </p>
+                    <label className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-white/70">Normalize volume</span>
+                      <button
+                        type="button"
+                        aria-label="Toggle volume normalization"
+                        onClick={() => setNormalizeVolume(!normalizeVolume)}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${
+                          normalizeVolume ? "bg-emerald-500/20" : "bg-white/10"
+                        }`}
+                      >
+                        <span className="sr-only">Normalize volume</span>
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                            normalizeVolume ? "translate-x-6" : ""
                           }`}
                         />
                       </button>

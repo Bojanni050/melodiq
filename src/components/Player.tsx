@@ -19,7 +19,10 @@ import {
   getSharedAudioElement,
   formatProviderLabel,
   allowWithDelay,
+  getTrackLoudness,
+  loudnessToGain,
 } from "@/components/player/playerUtils";
+import { getSharedAudioGraph, setNormalizationGain } from "@/lib/sharedAudioGraph";
 import { useMediaSession } from "@/components/player/hooks/useMediaSession";
 import { usePopupPlayerSync } from "@/components/player/hooks/usePopupPlayerSync";
 import { usePlayerHotkeys } from "@/components/player/hooks/usePlayerHotkeys";
@@ -38,6 +41,7 @@ export default function Player() {
     showTrackDetailsPanel,
     isFullscreen,
     playHighestQuality,
+    normalizeVolume,
     playNext,
     playPrevious,
     setAutoPlayNext,
@@ -57,6 +61,7 @@ export default function Player() {
       showTrackDetailsPanel: s.showTrackDetailsPanel,
       isFullscreen: s.isFullscreen,
       playHighestQuality: s.playHighestQuality,
+      normalizeVolume: s.normalizeVolume,
       playNext: s.playNext,
       playPrevious: s.playPrevious,
       setAutoPlayNext: s.setAutoPlayNext,
@@ -398,6 +403,41 @@ export default function Player() {
       clearStallTimer();
     };
   }, [volume, clearPlayTimer, clearCoverAutoGenerateTimer, clearLanguageDetectTimer, clearNextTrackPrefetchTimer, countPlayIfNeeded, scheduleAutoCoverGenerationIfNeeded, scheduleLanguageDetectionIfNeeded, scheduleNextTrackPrefetchIfNeeded]);
+
+  // Loudness normalization's gain stage lives in the shared Web Audio graph
+  // (see sharedAudioGraph.ts), alongside the fullscreen visualizer's
+  // analyser tap. Wire it up here, unconditionally, so normal (non-
+  // fullscreen) playback is routed through the gain node too — not just
+  // whenever the visualizer happens to have mounted it lazily.
+  useEffect(() => {
+    const sharedAudioElement = getSharedAudioElement();
+    if (!sharedAudioElement) return;
+    getSharedAudioGraph(sharedAudioElement);
+  }, []);
+
+  // Apply per-track loudness-normalization gain. A pure gain multiplier
+  // can't touch dynamics — it just rebalances level between tracks — so
+  // this is safe to leave running continuously while the toggle is on.
+  useEffect(() => {
+    if (!normalizeVolume || !currentTrack?.id) {
+      setNormalizationGain(1);
+      return;
+    }
+
+    let cancelled = false;
+    const trackId = currentTrack.id;
+    const trackSnapshot = currentTrack;
+
+    void getTrackLoudness(trackSnapshot).then((loudness) => {
+      if (cancelled || usePlayerStore.getState().currentTrack?.id !== trackId) return;
+      setNormalizationGain(loudnessToGain(loudness));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the track identity should retrigger this fetch, not every field-level update to currentTrack
+  }, [currentTrack?.id, normalizeVolume]);
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack?.id) return;

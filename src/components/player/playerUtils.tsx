@@ -15,6 +15,48 @@ export function mediaBase(track: Track): string {
   return track.publicSource ? withCdn(`/api/discover/${track.id}`) : `/api/tracks/${track.id}`;
 }
 
+// Loudness normalization: bring every track to the same integrated loudness
+// (LUFS) via one constant gain multiplier per track, rather than compressing
+// or limiting — a single scalar applied uniformly can't change a track's
+// internal dynamics, it only rebalances level between tracks. -14 LUFS
+// matches the reference level Spotify/YouTube normalize to.
+const TARGET_LUFS = -14;
+// A measured LUFS that's wildly off (bad analysis, silence, corrupt audio)
+// shouldn't be allowed to swing playback level wildly — clamp to a sane
+// +/-12dB range.
+const MIN_NORMALIZATION_GAIN = 10 ** (-12 / 20);
+const MAX_NORMALIZATION_GAIN = 10 ** (12 / 20);
+
+export function loudnessToGain(loudnessLufs: number | null | undefined): number {
+  if (loudnessLufs == null || !Number.isFinite(loudnessLufs)) return 1;
+  const gain = 10 ** ((TARGET_LUFS - loudnessLufs) / 20);
+  return Math.min(MAX_NORMALIZATION_GAIN, Math.max(MIN_NORMALIZATION_GAIN, gain));
+}
+
+const loudnessCache = new Map<string, number | null>();
+
+/** Fetches a track's measured integrated loudness (LUFS), cached in memory
+ * for the lifetime of the page since it never changes once analysis has run. */
+export async function getTrackLoudness(track: Track): Promise<number | null> {
+  const cached = loudnessCache.get(track.id);
+  if (cached !== undefined) return cached;
+
+  try {
+    const res = await fetch(`${mediaBase(track)}/loudness`);
+    if (!res.ok) {
+      loudnessCache.set(track.id, null);
+      return null;
+    }
+    const data = await res.json();
+    const loudness = typeof data?.loudness === "number" ? data.loudness : null;
+    loudnessCache.set(track.id, loudness);
+    return loudness;
+  } catch {
+    // Network hiccup — don't cache a transient failure, worth retrying next time.
+    return null;
+  }
+}
+
 export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
   if (!playHighestQuality) return "";
 
