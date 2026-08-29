@@ -2,8 +2,15 @@ import { db } from "@/db";
 import { tracks, trackAlignments } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getPresignedUrl } from "@/lib/s3";
+import { getSetting } from "@/lib/settings";
 import { getEngine } from "./engines";
 import type { TclDocument } from "./types";
+
+const DEFAULT_TCL_ENGINE = "elevenlabs";
+
+async function resolveEngineName(): Promise<string> {
+  return (await getSetting("TCL_ENGINE")) || DEFAULT_TCL_ENGINE;
+}
 
 export interface GenerateTimeCodedLyricsResult {
   success: boolean;
@@ -61,17 +68,19 @@ export async function beginTimeCodedLyricsGeneration(
     return { ok: false, error: "No finished audio available for this track" };
   }
 
+  const engineName = await resolveEngineName();
+
   await db
     .insert(trackAlignments)
     .values({
       trackId: track.id,
       userId: track.userId,
       status: "processing",
-      engine: "quicklrc",
+      engine: engineName,
     })
     .onConflictDoUpdate({
       target: trackAlignments.trackId,
-      set: { status: "processing", engine: "quicklrc", error: null, updatedAt: new Date() },
+      set: { status: "processing", engine: engineName, error: null, updatedAt: new Date() },
     });
 
   return { ok: true };
@@ -93,7 +102,8 @@ export async function runTimeCodedLyricsAlignment(songId: string): Promise<Gener
 
   try {
     const audioUrl = await getPresignedUrl(audioKey, 900);
-    const engine = getEngine("quicklrc");
+    const engineName = await resolveEngineName();
+    const engine = getEngine(engineName);
     const doc = await engine.align({ audioUrl, lyrics: track.lyrics });
     const confidence = computeConfidence(doc, track.lyrics);
 

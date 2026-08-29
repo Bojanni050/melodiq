@@ -312,6 +312,26 @@ export const PROVIDERS: ProviderConfig[] = [
     ],
     testEndpoint: "quicklrc",
   },
+  {
+    id: "elevenlabs",
+    name: "ElevenLabs",
+    description: "Forced-alignment engine for Time Coded Lyrics generation (default)",
+    fields: [
+      {
+        key: "ELEVENLABS_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "sk_...",
+      },
+      {
+        key: "TCL_ENGINE",
+        label: "Active TCL Engine",
+        type: "text",
+        placeholder: "elevenlabs or quicklrc",
+      },
+    ],
+    testEndpoint: "elevenlabs",
+  },
 ];
 
 export const WEBHOOK_DEFAULTS = [

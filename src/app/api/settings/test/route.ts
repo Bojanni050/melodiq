@@ -126,6 +126,12 @@ const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "
     keyPrefix: "",
     method: "POST",
   },
+  elevenlabs: {
+    url: "https://api.elevenlabs.io/v1/user",
+    keyPrefix: "",
+    method: "GET",
+    authHeader: "xi-api-key",
+  },
 };
 
 export async function POST(request: Request) {
@@ -214,6 +220,9 @@ export async function POST(request: Request) {
       info = `Connected — Eden AI API is active`;
     } else if (provider === "lyria") {
       info = `Connected — ${response.data.models?.length ?? response.data.data?.length ?? "unknown"} models available`;
+    } else if (provider === "elevenlabs") {
+      const tier = response.data?.subscription?.tier;
+      info = tier ? `Connected — ElevenLabs (${tier} plan)` : "Connected — ElevenLabs API is active";
     }
 
     return NextResponse.json({ success: true, message: info, models });

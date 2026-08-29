@@ -441,7 +441,7 @@ export default function SettingsPage() {
   const filteredModelsForAdvancedDna = audioCapableModels(filteredModels);
   const filteredEdenAiModelsForAdvancedDna = audioCapableModels(filteredEdenAiModels);
 
-  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc"].includes(p.id));
+  const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc", "elevenlabs"].includes(p.id));
   const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
