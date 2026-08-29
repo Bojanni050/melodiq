@@ -179,26 +179,27 @@ export default function ReleasesPage() {
   function handlePlayAll() {
     if (allTracks.length === 0) return;
     const player = usePlayerStore.getState();
-    const playContext = allTracks.map((t) => toPlayContextTrack(t));
+    const playContext = allTracks.filter((t) => t.status === "done").map((t) => toPlayContextTrack(t));
     player.setPlayContext(playContext);
-    if (player.autoPlayNext) {
-      const nextQueue = playContext.slice(1).filter((t) => t.status === "done");
+    if (player.autoPlayNext && playContext.length > 0) {
+      const nextQueue = playContext.slice(1);
       player.setQueue(nextQueue);
     }
-    player.playTrackFromGesture(playContext[0]);
+    if (playContext.length > 0) {
+      player.playTrackFromGesture(playContext[0]);
+    }
   }
 
   function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
     const player = usePlayerStore.getState();
-    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
+    const doneTracks = releaseTrackItems.filter((t) => t.status === "done");
+    const playContext = doneTracks.map((t) => toPlayContextTrack(t));
 
     player.setPlayContext(playContext);
     if (player.autoPlayNext) {
       const index = playContext.findIndex((t) => t.id === track.id);
       if (index >= 0) {
-        const nextQueue = playContext
-          .slice(index + 1)
-          .filter((t) => t.status === "done");
+        const nextQueue = playContext.slice(index + 1);
         player.setQueue(nextQueue);
       }
     }

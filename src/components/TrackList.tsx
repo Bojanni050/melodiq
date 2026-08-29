@@ -519,9 +519,7 @@ export default memo(function TrackList({
       if (autoPlayNext) {
         const index = orderedPlayContext.findIndex((t) => t.id === track.id);
         if (index >= 0) {
-          const nextQueue = orderedPlayContext
-            .slice(index + 1)
-            .filter((t) => t.status === "done");
+          const nextQueue = orderedPlayContext.slice(index + 1);
           setQueue(nextQueue);
         }
       }
