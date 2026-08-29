@@ -19,6 +19,8 @@ export interface Release {
   credits?: string | null;
   description?: string | null;
   coverUrl?: string | null;
+  /** False when `coverUrl` is only a borrowed fallback from the release's sole track. */
+  hasOwnCover?: boolean;
   releaseDate?: string | null;
   isPublic?: boolean;
   isSpotlight?: boolean;
@@ -290,7 +292,7 @@ export const useReleaseStore = create<ReleaseState>()(
       updateReleaseCover: (releaseId, coverUrl) => {
         set((state) => ({
           releases: state.releases.map((release) =>
-            release.id === releaseId ? { ...release, coverUrl } : release
+            release.id === releaseId ? { ...release, coverUrl, hasOwnCover: true } : release
           ),
         }));
       },

@@ -20,6 +20,8 @@ export type ReleasePayload = {
   credits: string | null;
   description: string | null;
   coverUrl: string | null;
+  /** False when `coverUrl` is only a borrowed fallback from the release's sole track. */
+  hasOwnCover: boolean;
   releaseDate: string | null;
   isPublic: boolean;
   isSpotlight: boolean;
@@ -117,6 +119,7 @@ export async function getUserReleasesWithTracks(userId: string): Promise<Release
       credits: row.credits ?? null,
       description: row.description ?? null,
       coverUrl,
+      hasOwnCover: !!row.s3KeyCover,
       releaseDate: row.releaseDate?.toISOString() ?? null,
       isPublic: row.isPublic,
       isSpotlight: row.isSpotlight,

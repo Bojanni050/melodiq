@@ -19,16 +19,23 @@ interface CoverManagerProps {
   entityId: string;
   currentCoverS3Key?: string | null;
   currentCoverUrl?: string | null;
+  /** True when `currentCoverUrl` is only a borrowed fallback (e.g. a single-track
+   * release showing its sole track's cover) rather than a cover the entity owns. */
+  inheritedFromTrack?: boolean;
   onClose: () => void;
   onUpdated?: () => void;
 }
 
-function notifyUIUpdate(entityType: string, entityId: string) {
-  const ts = Date.now();
+function notifyUIUpdate(entityType: "track" | "release", entityId: string) {
   window.dispatchEvent(new CustomEvent("tracks-changed"));
-  window.dispatchEvent(new CustomEvent("melodiq:cover-regenerated", {
-    detail: { trackIds: [entityId], ts },
-  }));
+  // Only tracks are ever referenced by trackIds — a release id isn't a
+  // trackId, so dispatching it here would falsely tell track listeners a
+  // (non-existent) track's cover changed.
+  if (entityType === "track") {
+    window.dispatchEvent(new CustomEvent("melodiq:cover-regenerated", {
+      detail: { trackIds: [entityId], ts: Date.now() },
+    }));
+  }
 }
 
 export default function CoverManager({
@@ -36,6 +43,7 @@ export default function CoverManager({
   entityId,
   currentCoverS3Key,
   currentCoverUrl,
+  inheritedFromTrack = false,
   onClose,
   onUpdated,
 }: CoverManagerProps) {
@@ -156,9 +164,9 @@ export default function CoverManager({
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#12121a] p-6 shadow-2xl z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-base font-semibold text-white/90">
-            Cover Images ({totalCount}/5)
+            {entityType === "release" ? "Release" : "Track"} Cover Images ({totalCount}/5)
           </h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,6 +174,11 @@ export default function CoverManager({
             </svg>
           </button>
         </div>
+        {inheritedFromTrack && (
+          <p className="text-xs text-white/40 mb-4">
+            This release doesn&apos;t have its own cover yet — showing its track&apos;s cover below. Add an image to give this release its own, independent cover.
+          </p>
+        )}
 
         {/* Cover Grid */}
         {loading ? (
@@ -176,7 +189,7 @@ export default function CoverManager({
             {hasExistingCover && (
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 ${!hasUploadedMain ? "border-emerald-400/60" : "border-white/15"}`}
+                  className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 ${!hasUploadedMain ? (inheritedFromTrack ? "border-amber-400/50" : "border-emerald-400/60") : "border-white/15"}`}
                 >
                   <img
                     src={currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover` : `/api/releases/${entityId}/cover`)}
@@ -186,10 +199,12 @@ export default function CoverManager({
                     className="h-full w-full object-cover"
                   />
                   {!hasUploadedMain && (
-                    <span className="absolute top-1.5 left-1.5 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Main</span>
+                    <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase text-white ${inheritedFromTrack ? "bg-amber-500/80" : "bg-emerald-500/80"}`}>
+                      {inheritedFromTrack ? "From track" : "Main"}
+                    </span>
                   )}
                 </div>
-                <span className="text-[10px] text-white/30">Original</span>
+                <span className="text-[10px] text-white/30">{inheritedFromTrack ? "Track's cover" : "Original"}</span>
               </div>
             )}
 

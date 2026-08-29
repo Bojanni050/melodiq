@@ -651,6 +651,7 @@ export default function ReleaseDetailPage() {
           entityId={releaseId}
           currentCoverS3Key={null}
           currentCoverUrl={selectedRelease?.coverUrl}
+          inheritedFromTrack={!selectedRelease?.hasOwnCover && !!selectedRelease?.coverUrl}
           onClose={() => setShowCoverManager(false)}
           onUpdated={() => { void loadReleases(); setCoverCacheBust(Date.now()); }}
         />
