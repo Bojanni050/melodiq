@@ -32,6 +32,8 @@ export interface TrackItem {
   trackDna?: string | null;
   audioDna?: string | null;
   advancedDna?: string | null;
+  /** Set by the track list, which omits the advancedDna body itself. */
+  hasAdvancedDna?: boolean | null;
   publicSource?: boolean;
   pollsOpenAt?: string | null;
   pollsCloseAt?: string | null;

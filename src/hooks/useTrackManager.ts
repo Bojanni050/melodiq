@@ -40,12 +40,16 @@ export interface Track {
   publishDate?: string | null;
   trackDna?: string | null;
   audioDna?: string | null;
+  hasAdvancedDna?: boolean | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
 
 async function jsonFetcher<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: "no-store" });
+  // "no-cache" (not "no-store") revalidates on every request but keeps the
+  // stored body, so an unchanged library comes back as a bodyless 304 that the
+  // browser transparently answers from cache. See the ETag on GET /api/tracks.
+  const res = await fetch(url, { cache: "no-cache" });
   if (!res.ok) {
     throw new Error(res.statusText || "Request failed");
   }
@@ -200,7 +204,9 @@ export function useTrackManager() {
 
   const fetchTracks = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tracks?t=${Date.now()}`, { cache: "no-store" });
+      // No cache-busting query param: the URL has to match the SWR key for the
+      // browser to have a stored response to revalidate against.
+      const res = await fetch("/api/tracks", { cache: "no-cache" });
       if (res.ok) {
         const payload = (await res.json()) as TracksResponse;
         await mutateTracksResponse(payload, { revalidate: false });

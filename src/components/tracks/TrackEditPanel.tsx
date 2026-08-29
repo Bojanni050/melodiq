@@ -181,6 +181,26 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
     return Array.from(names).sort();
   }, [knownWriterNames, user]);
 
+  // The track list omits the trackDna body (it is only ever read here), so
+  // hydrate it on open. Without this a save would round-trip the derived
+  // fallback from knownTrackDna() over the stored value.
+  const [storedTrackDna, setStoredTrackDna] = useState<string | null>(track.trackDna ?? null);
+  useEffect(() => {
+    if (track.trackDna != null) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/tracks/${track.id}`);
+        if (!res.ok || !active) return;
+        const full = await res.json();
+        if (active) setStoredTrackDna(full?.trackDna ?? null);
+      } catch (error) {
+        console.error("Failed to load stored track DNA:", error);
+      }
+    })();
+    return () => { active = false; };
+  }, [track.id, track.trackDna]);
+
   const [title, setTitle] = useState(track.title ?? "");
   const [artistName, setArtistName] = useState(track.artistName ?? user?.artistAlias ?? "");
   const [composerName, setComposerName] = useState(track.composerName ?? user?.composerAlias ?? "");
@@ -238,7 +258,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
         releaseStatus,
         publishDate: publishDate ? new Date(publishDate).toISOString() : null,
-        trackDna: knownTrackDna(track).trim() || null,
+        trackDna: knownTrackDna({ ...track, trackDna: storedTrackDna }).trim() || null,
       };
 
       const res = await fetch(`/api/tracks/${track.id}`, {

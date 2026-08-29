@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 import { processAndUploadCover } from "@/lib/generate-cover";
 
 export async function GET(
@@ -33,17 +33,8 @@ export async function GET(
   const s3Key = isThumb && track.s3KeyCoverThumb ? track.s3KeyCoverThumb : track.s3KeyCover;
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(s3Key);
-
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "private, max-age=86400, immutable",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(s3Key);
+    return coverResponse(request, cover, "private");
   } catch (error: any) {
     console.error(`[cover-cache] failed for track ${id}:`, error?.message ?? error);
     // Return a cacheable 404 so the browser stops retrying on every poll

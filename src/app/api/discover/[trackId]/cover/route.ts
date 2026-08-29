@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getPublishedTrackById } from "@/lib/songs";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 
 // Public, no auth: only ever serves a cover for a track with
 // releaseStatus === "published" — re-verified on every request.
@@ -20,17 +20,8 @@ export async function GET(
   const s3Key = isThumb && track.s3KeyCoverThumb ? track.s3KeyCoverThumb : track.s3KeyCover;
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(s3Key);
-
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "public, max-age=86400, immutable",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(s3Key);
+    return coverResponse(request, cover, "public");
   } catch (error: any) {
     console.error(`[discover/cover] failed for track ${trackId}:`, error?.message ?? error);
     return NextResponse.json(

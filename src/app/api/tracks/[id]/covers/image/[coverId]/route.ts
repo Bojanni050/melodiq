@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { coverImages } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 
 export async function GET(
   request: NextRequest,
@@ -23,16 +23,8 @@ export async function GET(
   const s3Key = isThumb && cover.s3KeyThumb ? cover.s3KeyThumb : cover.s3Key;
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(s3Key);
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "private, max-age=86400, immutable",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(s3Key);
+    return coverResponse(request, cover, "private");
   } catch (error: unknown) {
     console.error(`[cover-image] failed for ${s3Key}:`, error);
     return NextResponse.json({ error: "Cover not found" }, { status: 404 });

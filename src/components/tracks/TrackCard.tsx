@@ -234,11 +234,34 @@ const TrackCard = memo(function TrackCard({
         if (!track.advancedDna) return null;
         try { return JSON.parse(track.advancedDna); } catch { return null; }
       });
+      // The track list sends `hasAdvancedDna` instead of the analysis body, so
+      // the 🧬 badge reads the flag while the text itself is fetched only when
+      // the DNA panel is actually opened.
+      const hasAdvancedDna = Boolean(advancedDnaResult) || Boolean(track.hasAdvancedDna);
+
+      // Pull the stored analysis body the first time the panel is opened for a
+      // track the list flagged but didn't send the text for.
+      useEffect(() => {
+        if (!dnaMounted || advancedDnaResult || !track.hasAdvancedDna) return;
+        let active = true;
+        (async () => {
+          try {
+            const res = await fetch(`/api/tracks/${track.id}`);
+            if (!res.ok || !active) return;
+            const full = await res.json();
+            if (!active || !full?.advancedDna) return;
+            setAdvancedDnaResult(JSON.parse(full.advancedDna));
+          } catch (error) {
+            console.error("Failed to load stored advanced DNA:", error);
+          }
+        })();
+        return () => { active = false; };
+      }, [dnaMounted, advancedDnaResult, track.hasAdvancedDna, track.id]);
 
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
         try {
-          const url = advancedDnaResult
+          const url = hasAdvancedDna
             ? `/api/tracks/${track.id}/analyze-advanced?refresh=true`
             : `/api/tracks/${track.id}/analyze-advanced`;
           const res = await fetch(url, { method: "POST" });
@@ -696,7 +719,7 @@ const TrackCard = memo(function TrackCard({
                 {title}
               </h3>
             )}
-            {advancedDnaResult && (
+            {hasAdvancedDna && (
               <span
                 className="shrink-0 text-xs leading-none"
                 title="Advanced DNA analysis available"

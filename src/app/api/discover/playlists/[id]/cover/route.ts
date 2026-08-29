@@ -3,7 +3,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { playlists, playlistTracks, tracks } from "@/db/schema";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 
 // Public, no auth: only ever serves art for a published, non-system playlist.
 // Falls back to a random cover among the playlist's tracks when the playlist
@@ -47,18 +47,8 @@ export async function GET(
   const key = isThumb && s3KeyThumb ? s3KeyThumb : s3Key!;
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(key);
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        // Shorter than the owned-cover routes: a random fallback pick should
-        // still rotate occasionally rather than being locked in for a day.
-        "Cache-Control": "public, max-age=3600",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(key);
+    return coverResponse(request, cover, "public");
   } catch (error: any) {
     console.error(`[discover-playlist-cover] failed for playlist ${id}:`, error?.message ?? error);
     return NextResponse.json(

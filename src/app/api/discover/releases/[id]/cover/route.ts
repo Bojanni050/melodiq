@@ -3,7 +3,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import { releases, releaseTracks, tracks } from "@/db/schema";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 
 // Public, no auth: only ever serves art for a published (isPublic) release.
 // Falls back to a random cover among the release's tracks when the release
@@ -47,16 +47,8 @@ export async function GET(
   const key = isThumb && s3KeyThumb ? s3KeyThumb : s3Key!;
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(key);
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "public, max-age=3600",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(key);
+    return coverResponse(request, cover, "public");
   } catch (error: any) {
     console.error(`[discover-release-cover] failed for release ${id}:`, error?.message ?? error);
     return NextResponse.json(

@@ -104,7 +104,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function loadSettings() {
-      const res = await fetch("/api/settings");
+      // ?stats=1 opts into the disk-cache size walk; every other consumer of
+      // this endpoint skips it.
+      const res = await fetch("/api/settings?stats=1");
       if (res.ok) {
         const data = await res.json();
         const settings = {

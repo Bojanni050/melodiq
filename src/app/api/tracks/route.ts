@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
-import { eq, desc, and, inArray, ne, lt, isNull, isNotNull } from "drizzle-orm";
+import { eq, desc, and, inArray, ne, lt, isNull, isNotNull, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -71,7 +72,6 @@ export async function GET(request: NextRequest) {
     prompt: tracks.prompt,
     lyrics: tracks.lyrics,
     language: tracks.language,
-    translatedLyrics: tracks.translatedLyrics,
     translatedLanguage: tracks.translatedLanguage,
     instrumental: tracks.instrumental,
     isCollaboration: tracks.isCollaboration,
@@ -100,9 +100,11 @@ export async function GET(request: NextRequest) {
     votedAt: tracks.votedAt,
     releaseStatus: tracks.releaseStatus,
     publishDate: tracks.publishDate,
-    trackDna: tracks.trackDna,
     audioDna: tracks.audioDna,
-    advancedDna: tracks.advancedDna,
+    // translatedLyrics / trackDna / advancedDna are multi-paragraph blobs that
+    // only ever render inside on-demand panels, so the list ships a presence
+    // flag instead and the panel hydrates the body from GET /api/tracks/[id].
+    hasAdvancedDna: sql<boolean>`${tracks.advancedDna} IS NOT NULL`,
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
     composerName: tracks.composerName,
@@ -493,10 +495,23 @@ export async function GET(request: NextRequest) {
     finalTracks.map((track) => ({ id: track.id, workspaceId: track.workspaceId ?? null }))
   );
 
-  return NextResponse.json(
-    { tracks: finalTracks, workspaces: workspacePayload },
-    { headers: { "Cache-Control": "no-store" } }
-  );
+  // The library polls this endpoint every 5-30s and the payload is byte-identical
+  // most of the time, so serve a conditional response: an unchanged library costs
+  // a 304 with no body instead of re-sending (and re-parsing) the whole list.
+  // `no-cache` — not `no-store` — is what lets the browser keep the body around
+  // to revalidate against.
+  const payload = JSON.stringify({ tracks: finalTracks, workspaces: workspacePayload });
+  const etag = `W/"${createHash("sha1").update(payload).digest("base64url")}"`;
+  const cacheHeaders = { "Cache-Control": "private, no-cache", ETag: etag };
+
+  if (request.headers.get("if-none-match") === etag) {
+    return new NextResponse(null, { status: 304, headers: cacheHeaders });
+  }
+
+  return new NextResponse(payload, {
+    status: 200,
+    headers: { ...cacheHeaders, "Content-Type": "application/json" },
+  });
 }
 
 export async function PATCH(request: NextRequest) {

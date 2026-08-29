@@ -3,11 +3,11 @@ import { db } from "@/db";
 import { releases } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { getCachedCover } from "@/lib/cover-cache";
+import { getCachedCover, coverResponse } from "@/lib/cover-cache";
 import { processAndUploadCover } from "@/lib/generate-cover";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -30,16 +30,8 @@ export async function GET(
   }
 
   try {
-    const { buffer, cached, contentType } = await getCachedCover(release.s3KeyCover);
-    return new NextResponse(buffer as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "private, max-age=86400, immutable",
-        "X-Cover-Cache": cached ? "hit" : "miss",
-      },
-    });
+    const cover = await getCachedCover(release.s3KeyCover);
+    return coverResponse(request, cover, "private");
   } catch (error: any) {
     console.error(`[release-cover/GET] failed for release ${id}:`, error?.message ?? error);
     return NextResponse.json({ error: "Cover not found" }, { status: 404 });

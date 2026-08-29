@@ -22,6 +22,27 @@ export function useTrackDetailSync(
     setLocalTrack(initialTrack);
   }, [initialTrack]);
 
+  // The track list omits the translatedLyrics body but still sends
+  // translatedLanguage, so a saved translation is detectable from the list and
+  // its text is fetched once, here, when the panel opens. Public/discover
+  // tracks simply 404 on this endpoint and keep whatever they were given.
+  useEffect(() => {
+    if (!localTrack.translatedLanguage || localTrack.translatedLyrics) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/tracks/${localTrack.id}`);
+        if (!res.ok || !active) return;
+        const full = await res.json();
+        if (!active || !full?.translatedLyrics) return;
+        setLocalTrack((prev) => ({ ...prev, translatedLyrics: full.translatedLyrics }));
+      } catch {
+        // non-fatal: the translation toggle just stays hidden
+      }
+    })();
+    return () => { active = false; };
+  }, [localTrack.id, localTrack.translatedLanguage, localTrack.translatedLyrics]);
+
   // central self-healing polling loop
   useEffect(() => {
     if (localTrack.status !== "done" || (localTrack.provider !== "poyo" && localTrack.provider !== "apimart") || localTrack.instrumental) return;

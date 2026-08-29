@@ -12,40 +12,77 @@ export const dynamic = "force-dynamic";
 async function getDirectorySizeBytes(dirPath: string): Promise<number> {
   try {
     const entries = await readdir(dirPath, { withFileTypes: true });
-    let total = 0;
 
-    for (const entry of entries) {
-      const entryPath = join(dirPath, entry.name);
-      if (entry.isDirectory()) {
-        total += await getDirectorySizeBytes(entryPath);
-      } else if (entry.isFile()) {
-        const info = await stat(entryPath);
-        total += info.size;
-      }
-    }
+    // Fan the entries out instead of awaiting one stat() at a time — a warm
+    // cache holds thousands of files and the sequential version turned this
+    // into a multi-second walk.
+    const sizes = await Promise.all(
+      entries.map(async (entry) => {
+        const entryPath = join(dirPath, entry.name);
+        if (entry.isDirectory()) return getDirectorySizeBytes(entryPath);
+        if (!entry.isFile()) return 0;
+        try {
+          const info = await stat(entryPath);
+          return info.size;
+        } catch {
+          return 0;
+        }
+      })
+    );
 
-    return total;
+    return sizes.reduce((total, size) => total + size, 0);
   } catch {
     return 0;
   }
 }
 
-async function getDiskCacheSizeBytes(): Promise<number> {
-  let total = 0;
-  for (const dir of ["/data/audio-cache", "/data/cover-cache"]) {
-    try {
-      await access(dir);
-      total += await getDirectorySizeBytes(dir);
-    } catch {
-      // dir doesn't exist yet
-    }
-  }
-  return total;
+// Walking the audio/cover caches costs one stat() per cached file, so the
+// result is memoised: repeat visits to the settings screen reuse it, and
+// every other caller skips the walk entirely (see `stats` below).
+const DISK_CACHE_SIZE_TTL_MS = 60_000;
+let diskCacheSizeCache: { bytes: number; expiresAt: number } | null = null;
+let diskCacheSizeInFlight: Promise<number> | null = null;
+
+async function computeDiskCacheSizeBytes(): Promise<number> {
+  const totals = await Promise.all(
+    ["/data/audio-cache", "/data/cover-cache"].map(async (dir) => {
+      try {
+        await access(dir);
+      } catch {
+        return 0; // dir doesn't exist yet
+      }
+      return getDirectorySizeBytes(dir);
+    })
+  );
+  return totals.reduce((total, size) => total + size, 0);
 }
 
-export async function GET() {
+async function getDiskCacheSizeBytes(): Promise<number> {
+  if (diskCacheSizeCache && diskCacheSizeCache.expiresAt > Date.now()) {
+    return diskCacheSizeCache.bytes;
+  }
+  // Collapse concurrent requests onto a single walk.
+  if (!diskCacheSizeInFlight) {
+    diskCacheSizeInFlight = computeDiskCacheSizeBytes()
+      .then((bytes) => {
+        diskCacheSizeCache = { bytes, expiresAt: Date.now() + DISK_CACHE_SIZE_TTL_MS };
+        return bytes;
+      })
+      .finally(() => {
+        diskCacheSizeInFlight = null;
+      });
+  }
+  return diskCacheSizeInFlight;
+}
+
+export async function GET(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
+
+  // Only the settings screen renders the cache-size readout, and it is the
+  // one caller that asks for it. Every other caller (notably TrackCard, which
+  // reads a single feature flag from here) skips the disk walk entirely.
+  const wantsStats = new URL(request.url).searchParams.get("stats") === "1";
 
   const allSettings = await db.select().from(settings);
   const settingsMap: Record<string, string> = {};
@@ -62,7 +99,9 @@ export async function GET() {
     settingsMap.POYO_WAV_WEBHOOK_URL = process.env.POYO_WAV_WEBHOOK_URL;
   }
 
-  settingsMap.DISK_CACHE_SIZE_BYTES = String(await getDiskCacheSizeBytes());
+  if (wantsStats) {
+    settingsMap.DISK_CACHE_SIZE_BYTES = String(await getDiskCacheSizeBytes());
+  }
   settingsMap.FFMPEG_AVAILABLE = ffmpegAvailable() ? "true" : "false";
 
   return NextResponse.json(settingsMap);
