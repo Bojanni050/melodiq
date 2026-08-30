@@ -34,6 +34,7 @@ export interface TrackItem {
   advancedDna?: string | null;
   /** Set by the track list, which omits the advancedDna body itself. */
   hasAdvancedDna?: boolean | null;
+  hasTclDocument?: boolean | null;
   publicSource?: boolean;
   pollsOpenAt?: string | null;
   pollsCloseAt?: string | null;

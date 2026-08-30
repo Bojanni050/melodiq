@@ -46,6 +46,8 @@ interface TrackActionMenuProps {
   onTogglePublish?: () => void;
   togglingPublish?: boolean;
   onGenerateTclClick?: () => void;
+  onOpenTclEditorClick?: () => void;
+  onRegenerateTclClick?: () => void;
   generatingTcl?: boolean;
   /** Listeners get a stripped-down menu: only queue/playlist/artist actions. */
   isListener?: boolean;
@@ -88,6 +90,8 @@ export default function TrackActionMenu({
   onTogglePublish,
   togglingPublish,
   onGenerateTclClick,
+  onOpenTclEditorClick,
+  onRegenerateTclClick,
   generatingTcl,
   isListener,
   onGoToArtist,
@@ -290,21 +294,48 @@ export default function TrackActionMenu({
                         )}
                       </>
                     )}
-                    {onGenerateTclClick && (
+                    {(onGenerateTclClick || onOpenTclEditorClick || onRegenerateTclClick) && (
                       <>
                         <div className="my-1 h-px bg-white/10" />
                         <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Lyrics</p>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onGenerateTclClick();
-                            setMenuOpen(false);
-                          }}
-                          disabled={generatingTcl}
-                          className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {generatingTcl ? "Generating Time-Coded Lyrics..." : "Generate Time-Coded Lyrics"}
-                        </button>
+                        {onOpenTclEditorClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenTclEditorClick();
+                              setMenuOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                          >
+                            Open in Time-Coded Lyrics Editor
+                          </button>
+                        )}
+                        {onGenerateTclClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onGenerateTclClick();
+                              setMenuOpen(false);
+                            }}
+                            disabled={generatingTcl}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {generatingTcl ? "Generating Time-Coded Lyrics..." : "Generate Time-Coded Lyrics"}
+                          </button>
+                        )}
+                        {onRegenerateTclClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRegenerateTclClick();
+                              setMenuOpen(false);
+                            }}
+                            disabled={generatingTcl}
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-amber-300/90 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {generatingTcl ? "Regenerating Time-Coded Lyrics..." : "Regenerate Time-Coded Lyrics"}
+                          </button>
+                        )}
                       </>
                     )}
                     {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (

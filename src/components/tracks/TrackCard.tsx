@@ -150,6 +150,7 @@ const TrackCard = memo(function TrackCard({
   const [togglingPublish, setTogglingPublish] = useState(false);
   const [generatingTcl, setGeneratingTcl] = useState(false);
   const [tclError, setTclError] = useState<string | null>(null);
+  const [confirmRegenerateTcl, setConfirmRegenerateTcl] = useState(false);
   const { data: appSettings } = useSWR<Record<string, string>>("/api/settings", settingsFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
@@ -490,7 +491,18 @@ const TrackCard = memo(function TrackCard({
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
   const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
-  const canGenerateTcl = track.status === "done" && !!track.lyrics?.trim() && !!(track.audioUrl || track.s3KeyHd) && !hasTcl;
+  // The editor works on the alignment document, not on lyricsTimestamps —
+  // provider-supplied timings (APIMart) fill the latter without producing
+  // anything editable — so the menu keys off hasTclDocument. A track with
+  // provider timings and no document therefore still offers "Generate", which
+  // is what gives it editable timings.
+  const hasTclDocument = !!track.hasTclDocument;
+  // Alignment needs finished audio and lyrics either way; whether this reads as
+  // a first run or a re-run is just whether a document already exists.
+  const tclAlignmentPossible =
+    track.status === "done" && !!track.lyrics?.trim() && !!(track.audioUrl || track.s3KeyHd);
+  const canGenerateTcl = tclAlignmentPossible && !hasTclDocument;
+  const canRegenerateTcl = tclAlignmentPossible && hasTclDocument;
   const rawCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
   const effectiveCoverUrl = rawCoverUrl && (rawCoverUrl.startsWith("http") || rawCoverUrl.startsWith("/"))
     ? rawCoverUrl
@@ -527,6 +539,18 @@ const TrackCard = memo(function TrackCard({
           message={deleteMessage}
           onConfirm={actions.executeDelete}
           onCancel={() => actions.setConfirmDelete(false)}
+        />
+      )}
+
+      {confirmRegenerateTcl && (
+        <ConfirmDialog
+          message="Regenerate time-coded lyrics for this track? The existing timings will be replaced and any edits you made to them will be lost."
+          confirmLabel="Regenerate"
+          onConfirm={() => {
+            setConfirmRegenerateTcl(false);
+            void handleGenerateTclClick();
+          }}
+          onCancel={() => setConfirmRegenerateTcl(false)}
         />
       )}
 
@@ -772,7 +796,7 @@ const TrackCard = memo(function TrackCard({
                 {isInRelease ? "Released" : "Unreleased"}
               </span>
             )}
-            {track.status === "done" && track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps) && (
+            {track.status === "done" && hasTcl && (
               <span className="inline-flex text-[10px] px-1.5 py-0.5 rounded border border-blue-300/30 bg-blue-400/10 text-blue-200 shrink-0 font-medium cursor-help" title="timecodedlyrics">TCL</span>
             )}
             {track.instrumental && (
@@ -1036,6 +1060,10 @@ const TrackCard = memo(function TrackCard({
               onTogglePublish={track.status === "done" ? handleTogglePublish : undefined}
               togglingPublish={togglingPublish}
               onGenerateTclClick={canGenerateTcl ? handleGenerateTclClick : undefined}
+              onOpenTclEditorClick={
+                hasTclDocument ? () => router.push(`/timecoded-editor/${track.id}`) : undefined
+              }
+              onRegenerateTclClick={canRegenerateTcl ? () => setConfirmRegenerateTcl(true) : undefined}
               generatingTcl={generatingTcl}
               isListener={isListenerRole}
               onGoToArtist={track.artistId ? () => router.push(`/discover/artist/${track.artistId}`) : undefined}

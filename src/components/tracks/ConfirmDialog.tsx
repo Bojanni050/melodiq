@@ -4,10 +4,13 @@ export default function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
+  confirmLabel = "Delete",
 }: {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Label for the destructive button. Defaults to "Delete". */
+  confirmLabel?: string;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -32,7 +35,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             className="px-4 py-1.5 rounded-lg text-sm bg-red-500/80 hover:bg-red-500 text-white transition-colors"
           >
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>

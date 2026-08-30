@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { db } from "@/db";
-import { tracks, users } from "@/db/schema";
+import { tracks, users, trackAlignments } from "@/db/schema";
 import { eq, desc, and, inArray, ne, lt, isNull, isNotNull, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
@@ -105,6 +105,11 @@ export async function GET(request: NextRequest) {
     // only ever render inside on-demand panels, so the list ships a presence
     // flag instead and the panel hydrates the body from GET /api/tracks/[id].
     hasAdvancedDna: sql<boolean>`${tracks.advancedDna} IS NOT NULL`,
+    // Whether the time-coded lyrics editor has a document to open. Mirrors the
+    // editor page's own check: tracks.lyricsTimestamps is a weaker signal,
+    // since provider-supplied timings (APIMart) populate it without ever
+    // producing an editable alignment.
+    hasTclDocument: sql<boolean>`coalesce(${trackAlignments.status} = 'done' and ${trackAlignments.tcl} is not null, false)`,
     lyricsTimestamps: tracks.lyricsTimestamps,
     artistName: tracks.artistName,
     composerName: tracks.composerName,
@@ -473,6 +478,9 @@ export async function GET(request: NextRequest) {
   const finalTracks = await db
     .select(trackListSelect)
     .from(tracks)
+    // One index lookup per row (track_alignments_track_id_unique) for the
+    // hasTclDocument flag above.
+    .leftJoin(trackAlignments, eq(trackAlignments.trackId, tracks.id))
     .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
 

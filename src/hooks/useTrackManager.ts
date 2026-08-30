@@ -41,6 +41,7 @@ export interface Track {
   trackDna?: string | null;
   audioDna?: string | null;
   hasAdvancedDna?: boolean | null;
+  hasTclDocument?: boolean | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };
