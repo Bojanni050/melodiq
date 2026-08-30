@@ -39,6 +39,8 @@ export interface ArchiveEntry {
 export interface TrackOption {
   id: string;
   title: string | null;
+  createdAt?: string | null;
+  duration?: number | null;
 }
 
 export type EditingTarget =

@@ -35,7 +35,14 @@ export default function EntryEditor({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.tracks) {
-          setTracks(data.tracks.map((t: { id: string; title: string | null }) => ({ id: t.id, title: t.title })));
+          setTracks(
+            data.tracks.map((t: { id: string; title: string | null; createdAt?: string | null; duration?: number | null }) => ({
+              id: t.id,
+              title: t.title,
+              createdAt: t.createdAt ?? null,
+              duration: t.duration ?? null,
+            }))
+          );
         }
       })
       .catch(() => {});
@@ -47,6 +54,24 @@ export default function EntryEditor({
     if (!q) return tracks.slice(0, 20);
     return tracks.filter((t) => (t.title || "Untitled").toLowerCase().includes(q)).slice(0, 20);
   }, [tracks, trackQuery]);
+
+  // Titles frequently collide across generated variations of the same song,
+  // so surface a disambiguator (date + duration) whenever more than one
+  // filtered result shares the same title — otherwise duplicates are
+  // visually identical and it's easy to link the wrong one.
+  function trackSubtitle(t: TrackOption): string | null {
+    const parts: string[] = [];
+    if (t.createdAt) {
+      const d = new Date(t.createdAt);
+      if (!Number.isNaN(d.getTime())) parts.push(d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }));
+    }
+    if (typeof t.duration === "number" && t.duration > 0) {
+      const mins = Math.floor(t.duration / 60);
+      const secs = Math.round(t.duration % 60).toString().padStart(2, "0");
+      parts.push(`${mins}:${secs}`);
+    }
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }
 
   async function handleSave() {
     if (!title.trim()) {
@@ -142,22 +167,35 @@ export default function EntryEditor({
               Clear
             </button>
           )}
+          {trackId && (() => {
+            const linked = tracks?.find((t) => t.id === trackId);
+            const subtitle = linked ? trackSubtitle(linked) : null;
+            return subtitle ? <p className="mt-1 text-xs text-white/40">Linked: {subtitle}</p> : null;
+          })()}
           {showTrackDropdown && filteredTracks.length > 0 && (
             <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-white/10 bg-[#20202c] shadow-xl">
-              {filteredTracks.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setTrackId(t.id);
-                    setTrackQuery(t.title || "Untitled");
-                    setShowTrackDropdown(false);
-                  }}
-                  className="block w-full truncate px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10"
-                >
-                  {t.title || "Untitled"}
-                </button>
-              ))}
+              {filteredTracks.map((t) => {
+                const subtitle = trackSubtitle(t);
+                const isCurrent = t.id === existing?.trackId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      setTrackId(t.id);
+                      setTrackQuery(t.title || "Untitled");
+                      setShowTrackDropdown(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{t.title || "Untitled"}</span>
+                      {subtitle && <span className="block truncate text-xs text-white/40">{subtitle}</span>}
+                    </span>
+                    {isCurrent && <span className="shrink-0 text-[10px] uppercase tracking-wide text-primary-300">Current</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
