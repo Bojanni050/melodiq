@@ -270,6 +270,58 @@ CREATE TABLE IF NOT EXISTS "song_archive" (
 CREATE INDEX IF NOT EXISTS "song_archive_user_id_idx" ON "song_archive"("user_id");
 CREATE INDEX IF NOT EXISTS "song_archive_track_id_idx" ON "song_archive"("track_id");
 CREATE INDEX IF NOT EXISTS "song_archive_parent_id_idx" ON "song_archive"("parent_id");
+
+CREATE TABLE IF NOT EXISTS "cover_images" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "entity_type" varchar(20) NOT NULL,
+  "entity_id" uuid NOT NULL,
+  "s3_key" text NOT NULL,
+  "s3_key_thumb" text,
+  "position" integer NOT NULL DEFAULT 0,
+  "is_main" boolean NOT NULL DEFAULT false,
+  "is_generated" boolean NOT NULL DEFAULT false,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "cover_images_entity_idx" ON "cover_images"("entity_type", "entity_id");
+CREATE INDEX IF NOT EXISTS "cover_images_user_idx" ON "cover_images"("user_id");
+
+CREATE TABLE IF NOT EXISTS "track_alignments" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "track_id" uuid NOT NULL,
+  "user_id" uuid NOT NULL,
+  "status" varchar(20) NOT NULL DEFAULT 'pending',
+  "engine" varchar(30) NOT NULL DEFAULT 'quicklrc',
+  "confidence" real,
+  "tcl" text,
+  "error" text,
+  "completed_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "track_alignments_track_id_unique" ON "track_alignments"("track_id");
+CREATE INDEX IF NOT EXISTS "track_alignments_user_id_idx" ON "track_alignments"("user_id");
+
+CREATE TABLE IF NOT EXISTS "cloned_voices" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "apimart_task_id" varchar(255) NOT NULL,
+  "persona_id" varchar(255),
+  "status" varchar(20) NOT NULL DEFAULT 'pending',
+  "source_audio_url" text NOT NULL,
+  "error" text,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "cloned_voices_user_id_idx" ON "cloned_voices"("user_id");
+
+CREATE INDEX IF NOT EXISTS "tracks_user_id_idx" ON "tracks"("user_id");
+CREATE INDEX IF NOT EXISTS "tracks_user_id_status_idx" ON "tracks"("user_id", "status");
+CREATE INDEX IF NOT EXISTS "tracks_status_idx" ON "tracks"("status");
+CREATE INDEX IF NOT EXISTS "tracks_user_id_created_at_idx" ON "tracks"("user_id", "created_at");
 `;
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,
@@ -328,6 +380,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_alias varchar(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_url text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hero_image_url text;
 `;
 
 // Handles existing databases where playlists was created before these columns existed.
@@ -336,6 +390,18 @@ ALTER TABLE playlists ADD COLUMN IF NOT EXISTS description varchar(500);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover varchar(512);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover_thumb varchar(512);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_system boolean NOT NULL DEFAULT false;
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS published_at timestamp;
+`;
+
+// releases gained these after the table's CREATE was written; is_spotlight in
+// particular is selected by lib/releases.ts, so a database without it breaks
+// the releases page outright.
+const alterReleasesSql = `
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS writer_name varchar(255);
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS composer_name varchar(255);
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS credits text;
+ALTER TABLE releases ADD COLUMN IF NOT EXISTS is_spotlight boolean NOT NULL DEFAULT false;
 `;
 
 const tracksWorkspaceFkSql = `
@@ -452,6 +518,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
     await executeSqlStatements(targetClient, alterPlaylistsSql);
+    await executeSqlStatements(targetClient, alterReleasesSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     await executeSqlStatements(targetClient, dropSongsSql);
     await targetClient.unsafe(completedAtTriggerSql);

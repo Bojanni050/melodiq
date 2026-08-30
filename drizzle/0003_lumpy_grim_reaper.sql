@@ -1,1 +1,0 @@
-ALTER TABLE "releases" ADD COLUMN "is_spotlight" boolean DEFAULT false NOT NULL;

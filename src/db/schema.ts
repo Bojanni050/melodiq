@@ -256,7 +256,12 @@ export const workspaces = pgTable("workspaces", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
-  index("workspaces_user_id_idx").on(table.userId),
+  // Names match what ensureWorkspaceSchema() creates at runtime, so the two
+  // schema sources don't each end up with their own index on user_id. The
+  // partial unique index on (user_id) WHERE is_default is created there in raw
+  // SQL — drizzle can't express the predicate, so it stays out of this list.
+  index("workspaces_user_idx").on(table.userId),
+  index("workspaces_parent_idx").on(table.parentWorkspaceId),
 ]);
 
 export const workspacesRelations = relations(workspaces, ({ one, many }) => ({
