@@ -36,7 +36,7 @@ export async function POST(
 
   // Verify track ownership
   const trackResult = await db
-    .select({ id: tracks.id })
+    .select({ id: tracks.id, s3KeyCover: tracks.s3KeyCover })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
@@ -66,7 +66,11 @@ export async function POST(
 
     const { s3Key, s3KeyThumb } = await processAndUploadCoverImage(buffer, id, coverId, "track");
 
-    const isFirst = cnt === 0;
+    // Same rule as releases: only adopt the upload as the track's cover when it
+    // doesn't already have one. `cnt === 0` meant "no uploaded covers", which
+    // was true on the first upload even for a track whose generated cover was
+    // already set -- so adding an image replaced it.
+    const becomesTrackCover = !trackResult[0].s3KeyCover;
 
     const [inserted] = await db
       .insert(coverImages)
@@ -78,12 +82,11 @@ export async function POST(
         s3Key,
         s3KeyThumb,
         position: cnt,
-        isMain: isFirst,
+        isMain: becomesTrackCover,
       })
       .returning();
 
-    // If first cover, also set it as the track's main cover
-    if (isFirst) {
+    if (becomesTrackCover) {
       await db
         .update(tracks)
         .set({ s3KeyCover: s3Key, s3KeyCoverThumb: s3KeyThumb, coverUrl: `/api/tracks/${id}/cover`, updatedAt: new Date() })

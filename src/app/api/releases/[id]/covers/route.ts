@@ -36,7 +36,7 @@ export async function POST(
 
   // Verify release ownership
   const releaseResult = await db
-    .select({ id: releases.id })
+    .select({ id: releases.id, s3KeyCover: releases.s3KeyCover })
     .from(releases)
     .where(and(eq(releases.id, id), eq(releases.userId, userId)));
 
@@ -66,7 +66,16 @@ export async function POST(
 
     const { s3Key, s3KeyThumb } = await processAndUploadCoverImage(buffer, id, coverId, "release");
 
-    const isFirst = cnt === 0;
+    // Adopt the upload as the release's cover only when the release has none of
+    // its own -- including the single-track case, where the manager is showing
+    // a borrowed track cover and the release still needs its own.
+    //
+    // This used to key off `cnt === 0`, i.e. "no uploaded covers yet". But the
+    // existing cover lives in releases.s3KeyCover and never had a cover_images
+    // row, so that test was true on the first upload even when the release
+    // already had a cover -- and adding an image silently overwrote it.
+    // Promoting a cover is an explicit action; see [coverId]/main.
+    const becomesReleaseCover = !releaseResult[0].s3KeyCover;
 
     const [inserted] = await db
       .insert(coverImages)
@@ -78,12 +87,11 @@ export async function POST(
         s3Key,
         s3KeyThumb,
         position: cnt,
-        isMain: isFirst,
+        isMain: becomesReleaseCover,
       })
       .returning();
 
-    // If first cover, also set it as the release's main cover
-    if (isFirst) {
+    if (becomesReleaseCover) {
       await db
         .update(releases)
         .set({ s3KeyCover: s3Key, s3KeyCoverThumb: s3KeyThumb, updatedAt: new Date() })
