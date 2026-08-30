@@ -80,7 +80,7 @@ export function usePopupPlayerSync({
         const channel = popupChannelRef.current;
         if (!channel) return;
         analyser.getByteFrequencyData(data);
-        const message: PlayerPopupVizMessage = { type: "viz", payload: { data: Array.from(data) } };
+        const message: PlayerPopupVizMessage = { type: "viz", payload: { data } };
         channel.postMessage(message);
       }, 50);
     } catch (e) {
@@ -167,8 +167,12 @@ export function usePopupPlayerSync({
     broadcastPopupState,
   ]);
 
-  // Poll window closed state
+  // Poll window closed state. There is no event for "the user closed the popup",
+  // hence the poll — but it only needs to run while a popup is actually open,
+  // rather than every second for the whole session in the common case where one
+  // is never opened at all.
   useEffect(() => {
+    if (!popupOpen) return;
     const interval = setInterval(() => {
       if (popupWindowRef.current?.closed) {
         popupWindowRef.current = null;
@@ -176,7 +180,7 @@ export function usePopupPlayerSync({
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [popupOpen]);
 
   const handlePopOutPlayer = useCallback(() => {
     if (typeof window === "undefined") return;

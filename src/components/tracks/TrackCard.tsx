@@ -11,6 +11,7 @@ import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { withCdn } from "@/lib/cdn-client";
+import { playlistByTrackId, releasedTrackIds } from "@/lib/stores/trackIndexes";
 import { useSWRConfig } from "swr";
 
 // Extracted Sub-components
@@ -93,18 +94,14 @@ const TrackCard = memo(function TrackCard({
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
   const router = useRouter();
-  const trackPlaylist = useMemo(
-    () => allPlaylists.find((p) => p.trackIds.includes(track.id)) ?? null,
-    [allPlaylists, track.id]
+  // Indexed lookup rather than a scan per card — see trackIndexes.ts.
+  const trackPlaylist = usePlaylistStore(
+    (state) => playlistByTrackId(state.playlists).get(track.id) ?? null
   );
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const archiveLinkKind = useArchiveLinksStore((state) => state.links[track.id]);
-  const releases = useReleaseStore((state) => state.releases);
-  const isInRelease = useMemo(
-    () => releases.some((r) => r.tracks.some((t) => t.trackId === track.id)),
-    [releases, track.id]
-  );
+  const isInRelease = useReleaseStore((state) => releasedTrackIds(state.releases).has(track.id));
   const loadArchiveLinks = useArchiveLinksStore((state) => state.load);
   useEffect(() => {
     loadArchiveLinks();

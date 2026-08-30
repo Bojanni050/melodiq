@@ -81,6 +81,7 @@ export default function Player() {
   const currentTrackRef = useRef<Track | null>(null);
   const requestIdRef = useRef(0);
   const lastLoadedTrackIdRef = useRef<string | null>(null);
+  const lastProgressWriteRef = useRef(0);
   const trackPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -187,7 +188,17 @@ export default function Player() {
     const handleTimeUpdate = () => {
       const time = audioRef.current?.currentTime || 0;
       setCurrentTime(time);
-      usePlayerStore.getState().setProgress(time);
+
+      // `progress` is a persisted store field, and zustand runs partialize --
+      // which maps every queue entry through scrubTrack -- on each set(). At
+      // ~4 timeupdates/sec that was steady background work for a value whose
+      // only reader is resume-on-reload, so write it about once a second. A
+      // seek or an explicit reset moves `time` by more than the threshold, so
+      // it still lands immediately.
+      if (Math.abs(time - lastProgressWriteRef.current) >= 1) {
+        lastProgressWriteRef.current = time;
+        usePlayerStore.getState().setProgress(time);
+      }
     };
 
     const handleLoadedMetadata = () => {

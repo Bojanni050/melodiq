@@ -147,6 +147,9 @@ export const tracks = pgTable("tracks", {
   index("tracks_status_idx").on(table.status),
   index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
   index("tracks_archived_at_idx").on(table.archivedAt),
+  // Public Discover feed filters on release_status + status; without this it
+  // fell back to the status index and re-checked every done track.
+  index("tracks_release_status_status_idx").on(table.releaseStatus, table.status),
   uniqueIndex("tracks_user_provider_audio_id_unique").on(table.userId, table.provider, table.audioId),
 ]);
 

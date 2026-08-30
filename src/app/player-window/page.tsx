@@ -32,7 +32,7 @@ export default function PlayerWindowPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const vizDataRef = useRef<number[] | null>(null);
+  const vizDataRef = useRef<Uint8Array | null>(null);
   const vizFrameRef = useRef<number | null>(null);
 
   // Crossfade on track switch: snapshot the outgoing track's visual and let it

@@ -31,7 +31,10 @@ export interface PlayerPopupControlMessage {
 export interface PlayerPopupVizMessage {
   type: "viz";
   payload: {
-    data: number[];
+    // Sent as the analyser's own Uint8Array: structured clone handles typed
+    // arrays natively and copies far more cheaply than the 512-element plain
+    // Array this used to build 20x a second.
+    data: Uint8Array;
   };
 }
 

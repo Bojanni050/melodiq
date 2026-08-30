@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackListHeader from "@/components/tracks/TrackListHeader";
@@ -251,26 +251,35 @@ export default memo(function TrackList({
     writePersistedTrackOrder("default", manualOrderIds);
   }, [enableDragReorder, hasLoadedPersistedManualOrder, manualOrderIds, dragOrderKey]);
 
-  const displayedTracks = useMemo(() => {
-    const list = [...orderedTracks];
+  // Lowercasing every track's lyrics on each keystroke was the expensive part
+  // of searching a large library. Fold each track down to one lowercase
+  // haystack when the track list changes, so a keystroke is just a substring
+  // scan, and defer the query so typing never blocks on the filter.
+  const searchHaystackById = useMemo(() => {
+    const haystacks = new Map<string, string>();
+    for (const track of orderedTracks) {
+      haystacks.set(
+        track.id,
+        [track.title ?? "", track.prompt, track.provider, track.providerModel, track.lyrics ?? ""]
+          .join("\n")
+          .toLowerCase()
+      );
+    }
+    return haystacks;
+  }, [orderedTracks]);
 
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const displayedTracks = useMemo(() => {
+    const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
-      return list;
+      return orderedTracks;
     }
 
-    return list.filter((track) => {
-      const searchValues = [
-        track.title ?? "",
-        track.prompt,
-        track.provider,
-        track.providerModel,
-        track.lyrics ?? "",
-      ];
-
-      return searchValues.some((value) => value.toLowerCase().includes(normalizedQuery));
-    });
-  }, [orderedTracks, searchQuery]);
+    return orderedTracks.filter((track) =>
+      (searchHaystackById.get(track.id) ?? "").includes(normalizedQuery)
+    );
+  }, [orderedTracks, deferredSearchQuery, searchHaystackById]);
 
   // Keep a ref of the displayed tracks so callbacks can read them without changing their dependency references
   const displayedTracksRef = useRef(displayedTracks);

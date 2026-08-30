@@ -16,7 +16,9 @@ export async function GET(
   const { userId } = auth;
 
   const result = await db
-    .select()
+    // Projected: this route runs once per visible card, and the tracks row
+    // carries multi-KB lyrics/DNA blobs that nothing here reads.
+    .select({ s3KeyCover: tracks.s3KeyCover, s3KeyCoverThumb: tracks.s3KeyCoverThumb })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 

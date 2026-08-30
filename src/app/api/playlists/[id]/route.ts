@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
+import { positionCase } from "@/lib/reorder-positions";
 import { playlistTracks, playlists, tracks, users } from "@/db/schema";
 import { getUserPlaylistById, getUserPlaylistsWithTrackIds } from "@/lib/playlists";
 import { requireAuth } from "@/lib/require-auth";
@@ -12,21 +13,24 @@ function normalizeTrackIds(value: unknown): string[] {
 }
 
 async function normalizePlaylistOrder(playlistId: string, orderedRows: Array<{ id: string }>) {
-  // Phase 1: move current positions away from the target range to avoid unique collisions.
-  for (let index = 0; index < orderedRows.length; index += 1) {
-    await db
+  if (orderedRows.length === 0) return;
+
+  const ids = orderedRows.map((row) => row.id);
+
+  // Still two phases -- (playlist_id, position) is unique, so every row has to be parked
+  // outside the target range before the final values are assigned -- but each
+  // phase is now a single CASE statement instead of one round-trip per row.
+  const applyPositions = (offset: number) =>
+    db
       .update(playlistTracks)
-      .set({ position: index + 100000 })
-      .where(eq(playlistTracks.id, orderedRows[index].id));
-  }
+      .set({ position: positionCase(playlistTracks.id, ids, offset) })
+      .where(inArray(playlistTracks.id, ids));
+
+  // Phase 1: move current positions away from the target range to avoid unique collisions.
+  await applyPositions(100000);
 
   // Phase 2: assign final contiguous positions.
-  for (let index = 0; index < orderedRows.length; index += 1) {
-    await db
-      .update(playlistTracks)
-      .set({ position: index })
-      .where(eq(playlistTracks.id, orderedRows[index].id));
-  }
+  await applyPositions(0);
 }
 
 export async function DELETE(

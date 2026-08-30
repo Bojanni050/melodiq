@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
+import { positionCase } from "@/lib/reorder-positions";
 import { coverImages } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 
 export async function PATCH(
@@ -34,9 +35,15 @@ export async function PATCH(
   }
 
   // Update positions
-  for (let i = 0; i < orderedIds.length; i++) {
-    await db.update(coverImages).set({ position: i }).where(eq(coverImages.id, orderedIds[i]));
-  }
+  // One statement rather than a round-trip per cover. There is no unique
+  // constraint on (entity, position) here, so the new order can be applied
+  // in a single pass.
+  await db
+    .update(coverImages)
+    .set({
+      position: positionCase(coverImages.id, orderedIds),
+    })
+    .where(inArray(coverImages.id, orderedIds));
 
   return NextResponse.json({ success: true });
 }

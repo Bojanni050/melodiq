@@ -315,6 +315,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_collaboration boolean NOT NULL DEFAULT false;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS archived_at timestamp;
 CREATE INDEX IF NOT EXISTS "tracks_archived_at_idx" ON "tracks"("archived_at");
+CREATE INDEX IF NOT EXISTS "tracks_release_status_status_idx" ON "tracks"("release_status", "status");
 ALTER TABLE track_stems ADD COLUMN IF NOT EXISTS completed_at timestamp;
 CREATE UNIQUE INDEX IF NOT EXISTS "tracks_user_provider_audio_id_unique" ON "tracks"("user_id", "provider", "audio_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "playlists_user_name_unique" ON "playlists"("user_id", "name");

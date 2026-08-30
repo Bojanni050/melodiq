@@ -20,7 +20,15 @@ export async function GET(
   const { userId } = auth;
 
   const result = await db
-    .select()
+    .select({
+      title: tracks.title,
+      s3Key: tracks.s3Key,
+      s3KeyHd: tracks.s3KeyHd,
+      s3KeyOgg: tracks.s3KeyOgg,
+      s3KeyMp3: tracks.s3KeyMp3,
+      format: tracks.format,
+      formatHd: tracks.formatHd,
+    })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 

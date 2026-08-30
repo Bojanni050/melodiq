@@ -24,7 +24,16 @@ export async function GET(
   const { userId } = auth;
 
   const result = await db
-    .select()
+    // Only the fields resolveTrackAudioSource reads — the row's text blobs
+    // are dead weight on every playback and seek request.
+    .select({
+      s3Key: tracks.s3Key,
+      s3KeyHd: tracks.s3KeyHd,
+      s3KeyOgg: tracks.s3KeyOgg,
+      s3KeyMp3: tracks.s3KeyMp3,
+      format: tracks.format,
+      formatHd: tracks.formatHd,
+    })
     .from(tracks)
     .where(and(eq(tracks.id, id), eq(tracks.userId, userId)));
 
