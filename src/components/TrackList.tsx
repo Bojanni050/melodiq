@@ -102,6 +102,7 @@ export default memo(function TrackList({
     writePersistedSortOrder(order);
   }, []);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchLyrics, setSearchLyrics] = useState(false);
   const [manualOrderIds, setManualOrderIds] = useState<string[] | null>(null);
   const [hasLoadedPersistedManualOrder, setHasLoadedPersistedManualOrder] = useState(false);
   const draggedTrackIdRef = useRef<string | null>(null);
@@ -254,16 +255,25 @@ export default memo(function TrackList({
   // Lowercasing every track's lyrics on each keystroke was the expensive part
   // of searching a large library. Fold each track down to one lowercase
   // haystack when the track list changes, so a keystroke is just a substring
-  // scan, and defer the query so typing never blocks on the filter.
+  // scan, and defer the query so typing never blocks on the filter. Lyrics
+  // are kept in a separate haystack — searching them is opt-in (the "Lyrics"
+  // toggle) since a lyric snippet can match many unrelated tracks by
+  // coincidence in a large library.
   const searchHaystackById = useMemo(() => {
     const haystacks = new Map<string, string>();
     for (const track of orderedTracks) {
       haystacks.set(
         track.id,
-        [track.title ?? "", track.prompt, track.provider, track.providerModel, track.lyrics ?? ""]
-          .join("\n")
-          .toLowerCase()
+        [track.title ?? "", track.prompt, track.provider, track.providerModel].join("\n").toLowerCase()
       );
+    }
+    return haystacks;
+  }, [orderedTracks]);
+
+  const lyricsHaystackById = useMemo(() => {
+    const haystacks = new Map<string, string>();
+    for (const track of orderedTracks) {
+      haystacks.set(track.id, (track.lyrics ?? "").toLowerCase());
     }
     return haystacks;
   }, [orderedTracks]);
@@ -276,10 +286,11 @@ export default memo(function TrackList({
       return orderedTracks;
     }
 
-    return orderedTracks.filter((track) =>
-      (searchHaystackById.get(track.id) ?? "").includes(normalizedQuery)
-    );
-  }, [orderedTracks, deferredSearchQuery, searchHaystackById]);
+    return orderedTracks.filter((track) => {
+      if ((searchHaystackById.get(track.id) ?? "").includes(normalizedQuery)) return true;
+      return searchLyrics && (lyricsHaystackById.get(track.id) ?? "").includes(normalizedQuery);
+    });
+  }, [orderedTracks, deferredSearchQuery, searchHaystackById, lyricsHaystackById, searchLyrics]);
 
   // Keep a ref of the displayed tracks so callbacks can read them without changing their dependency references
   const displayedTracksRef = useRef(displayedTracks);
@@ -794,6 +805,8 @@ export default memo(function TrackList({
           setSortOrder={setSortOrder}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          searchLyrics={searchLyrics}
+          setSearchLyrics={setSearchLyrics}
           enableDragReorder={enableDragReorder}
           hideSortOptions={!!dragOrderKey}
           showJumpToCurrent={!!currentTrack && !currentTrackVisible}

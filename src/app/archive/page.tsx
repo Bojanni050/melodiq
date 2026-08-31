@@ -33,6 +33,7 @@ export default function ArchivePage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchLyrics, setSearchLyrics] = useState(false);
   const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArchiveEntry | null>(null);
   const [shuffle, setShuffle] = useState(false);
@@ -412,11 +413,13 @@ export default function ArchivePage() {
     return entries.filter(
       (e) =>
         e.title.toLowerCase().includes(q) ||
-        e.lyrics.toLowerCase().includes(q) ||
         e.prompt.toLowerCase().includes(q) ||
-        (e.translations || []).some((t) => t.title.toLowerCase().includes(q) || t.lyrics.toLowerCase().includes(q))
+        (searchLyrics && e.lyrics.toLowerCase().includes(q)) ||
+        (e.translations || []).some(
+          (t) => t.title.toLowerCase().includes(q) || (searchLyrics && t.lyrics.toLowerCase().includes(q))
+        )
     );
-  }, [entries, search]);
+  }, [entries, search, searchLyrics]);
 
   return (
     <div className="h-screen bg-[#09090d] overflow-hidden text-white">
@@ -567,13 +570,28 @@ export default function ArchivePage() {
           ) : (
           <>
           {/* Search */}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search master tracks…"
-            className="input-field text-sm"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search master tracks…"
+              className="input-field text-sm flex-1"
+            />
+            <button
+              type="button"
+              onClick={() => setSearchLyrics((v) => !v)}
+              className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                searchLyrics
+                  ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+                  : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+              }`}
+              title={searchLyrics ? "Also searching lyrics — click to search titles only" : "Also search lyrics text"}
+              aria-pressed={searchLyrics}
+            >
+              Lyrics
+            </button>
+          </div>
 
           <div>
           {loading ? (

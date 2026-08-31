@@ -12,6 +12,8 @@ const TrackListHeader = memo(function TrackListHeader({
   setSortOrder,
   searchQuery,
   setSearchQuery,
+  searchLyrics,
+  setSearchLyrics,
   enableDragReorder,
   hideSortOptions,
   showJumpToCurrent,
@@ -22,6 +24,8 @@ const TrackListHeader = memo(function TrackListHeader({
   setSortOrder: (order: SortOrder) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  searchLyrics: boolean;
+  setSearchLyrics: (value: boolean) => void;
   enableDragReorder: boolean;
   hideSortOptions?: boolean;
   showJumpToCurrent?: boolean;
@@ -98,6 +102,19 @@ const TrackListHeader = memo(function TrackListHeader({
             </button>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setSearchLyrics(!searchLyrics)}
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            searchLyrics
+              ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
+              : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+          }`}
+          title={searchLyrics ? "Also searching lyrics — click to search titles only" : "Also search lyrics text"}
+          aria-pressed={searchLyrics}
+        >
+          Lyrics
+        </button>
         {!hideSortOptions && (<>
         <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
         <select
