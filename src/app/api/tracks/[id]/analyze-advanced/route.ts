@@ -37,5 +37,5 @@ export async function POST(
     return NextResponse.json({ error: "Advanced analysis failed" }, { status: 502 });
   }
 
-  return NextResponse.json(analysis);
+  return NextResponse.json({ trackId: id, ...analysis });
 }

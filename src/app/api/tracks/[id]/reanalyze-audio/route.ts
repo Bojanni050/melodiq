@@ -37,5 +37,5 @@ export async function POST(
     return NextResponse.json({ error: "Audio re-analysis failed" }, { status: 502 });
   }
 
-  return NextResponse.json({ audioDna });
+  return NextResponse.json({ trackId: id, audioDna });
 }

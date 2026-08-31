@@ -223,11 +223,12 @@ const TrackCard = memo(function TrackCard({
         setReanalyzingAudio(true);
         try {
           const res = await fetch(`/api/tracks/${track.id}/reanalyze-audio`, { method: "POST" });
+          const body = await res.json().catch(() => null);
           if (!res.ok) {
-            const body = await res.json().catch(() => null);
             console.error(`Failed to re-analyze audio: HTTP ${res.status}`, body);
             return;
           }
+          if (!isForExpectedTrack(body?.trackId, track.id, "reanalyze-audio")) return;
           setDnaRefreshKey((key) => key + 1);
         } catch (error) {
           console.error("Failed to re-analyze audio:", error);
@@ -274,6 +275,7 @@ const TrackCard = memo(function TrackCard({
           const res = await fetch(url, { method: "POST" });
           if (!res.ok) return;
           const data = await res.json();
+          if (!isForExpectedTrack(data?.trackId, track.id, "analyze-advanced")) return;
           setAdvancedDnaResult(data);
           setDnaRefreshKey((key) => key + 1);
         } catch (error) {
@@ -293,7 +295,11 @@ const TrackCard = memo(function TrackCard({
         body: JSON.stringify({ trackId: track.id }),
       });
       const body = await res.json().catch(() => null);
-      if (!res.ok || !body?.retried) {
+      // Scoped by trackId in the request, so every result the server returns
+      // should be for this track — flag it if that ever isn't true.
+      const results = Array.isArray(body?.results) ? body.results : [];
+      const scopedCorrectly = results.length === 0 || results.every((r: { trackId?: string }) => isForExpectedTrack(r?.trackId, track.id, "retry-wav"));
+      if (!res.ok || !body?.retried || !scopedCorrectly) {
         console.error(`Failed to retry WAV: HTTP ${res.status}`, body);
         setRetryWavResult("error");
       } else {

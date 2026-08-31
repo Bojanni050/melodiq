@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isForExpectedTrack } from "@/lib/track-id";
 
 type MasterDef = { value: string; label: string };
-type MasterRecord = { id: string; variationCategory: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
+type MasterRecord = { id: string; trackId?: string; variationCategory: string; status: "pending" | "completed" | "failed"; audioUrl: string | null; createdAt: string; completedAt: string | null };
 
 // Inline master row (self-fetching)
 export default function MasterRow({ variationDef, trackId }: { variationDef: MasterDef; trackId: string }) {
@@ -12,7 +13,7 @@ export default function MasterRow({ variationDef, trackId }: { variationDef: Mas
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/tracks/${trackId}/masters`)
+    fetch(`/api/tracks/${trackId}/master`)
       .then((r) => r.ok ? r.json() : [])
       .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
       .catch(() => null);
@@ -22,7 +23,7 @@ export default function MasterRow({ variationDef, trackId }: { variationDef: Mas
   useEffect(() => {
     if (master?.status !== "pending") return;
     const id = setTimeout(() => {
-      fetch(`/api/tracks/${trackId}/masters`)
+      fetch(`/api/tracks/${trackId}/master`)
         .then((r) => r.ok ? r.json() : [])
         .then((list: MasterRecord[]) => setMaster(list.find((m) => m.variationCategory === variationDef.value) ?? null))
         .catch(() => null);
@@ -33,9 +34,11 @@ export default function MasterRow({ variationDef, trackId }: { variationDef: Mas
   async function handleMaster() {
     setMastering(true); setError(null);
     try {
-      const res = await fetch(`/api/tracks/${trackId}/masters`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variationCategory: variationDef.value }) });
+      const res = await fetch(`/api/tracks/${trackId}/master`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variationCategory: variationDef.value }) });
       if (!res.ok) { const p = await res.json().catch(() => null); setError(p?.error ?? "Failed"); return; }
-      setMaster(await res.json());
+      const created: MasterRecord = await res.json();
+      if (!isForExpectedTrack(created?.trackId, trackId, "master")) { setError("Mastering started for the wrong track — please retry."); return; }
+      setMaster(created);
     } catch { setError("Failed to start mastering"); }
     finally { setMastering(false); }
   }
