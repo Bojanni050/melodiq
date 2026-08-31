@@ -57,15 +57,38 @@ export async function getTrackLoudness(track: Track): Promise<number | null> {
   }
 }
 
+// /api/tracks/[id]/stream (and its discover equivalent) is cached by the
+// browser as `immutable, max-age=31536000` — correct only as long as the
+// URL's identity actually tracks what audio it resolves to. Converting a
+// track to OGG, replacing a section, or any other in-place audio change
+// swaps which S3 key gets served without changing the track's id, so a
+// browser that already cached the old response at the bare /stream URL
+// would keep replaying the stale audio for up to a year. Appending a token
+// derived from every field resolveTrackAudioSource() reads gives the URL a
+// real identity: it changes exactly when the resolved audio would, so the
+// browser fetches fresh content instead of serving what it played before.
+function audioVersionToken(track: Track): string {
+  const raw = [track.s3Key, track.s3KeyHd, track.s3KeyMp3, track.s3KeyOgg, track.format, track.formatHd]
+    .map((v) => v ?? "")
+    .join("|");
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
-  if (!playHighestQuality) return "";
+  const v = audioVersionToken(track);
+
+  if (!playHighestQuality) return `?v=${v}`;
 
   // Prefer FLAC, then WAV — check HD slot first, then primary slot
   for (const fmt of ["flac", "wav"] as const) {
-    if (track.formatHd === fmt && track.s3KeyHd) return "?hd=true";
-    if (track.format === fmt && track.s3Key) return "";
+    if (track.formatHd === fmt && track.s3KeyHd) return `?hd=true&v=${v}`;
+    if (track.format === fmt && track.s3Key) return `?v=${v}`;
   }
-  return "";
+  return `?v=${v}`;
 }
 
 export function getPlayingFormat(track: Track | null | undefined, playHighestQuality: boolean): string {
