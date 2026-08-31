@@ -52,7 +52,7 @@ export async function GET(
     .where(eq(trackAlignments.trackId, id))
     .limit(1);
 
-  return NextResponse.json(alignment ?? { status: "none" });
+  return NextResponse.json({ trackId: id, ...(alignment ?? { status: "none" }) });
 }
 
 export async function POST(
@@ -77,12 +77,12 @@ export async function POST(
     .limit(1);
 
   if (existing?.status === "processing") {
-    return NextResponse.json({ started: false, status: "processing" }, { status: 202 });
+    return NextResponse.json({ trackId: id, started: false, status: "processing" }, { status: 202 });
   }
 
   const begin = await beginTimeCodedLyricsGeneration(id);
   if (!begin.ok) {
-    return NextResponse.json({ error: begin.error }, { status: 400 });
+    return NextResponse.json({ trackId: id, error: begin.error }, { status: 400 });
   }
 
   // Fire-and-forget: QuickLRC alignment can take up to ~90s, well past most
@@ -92,5 +92,5 @@ export async function POST(
     console.error(`[generate-tcl] background alignment failed for track ${id}:`, err);
   });
 
-  return NextResponse.json({ started: true, status: "processing" }, { status: 202 });
+  return NextResponse.json({ trackId: id, started: true, status: "processing" }, { status: 202 });
 }

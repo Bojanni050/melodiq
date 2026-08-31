@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
-import { shortTrackId } from "@/lib/track-id";
+import { shortTrackId, isForExpectedTrack } from "@/lib/track-id";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
@@ -174,6 +174,10 @@ const TrackCard = memo(function TrackCard({
         failTclGeneration(body?.error || "Time-coded lyrics generation failed");
         return;
       }
+      if (!isForExpectedTrack(body?.trackId, track.id, "generate-tcl")) {
+        failTclGeneration("Generation started for the wrong track — please retry.");
+        return;
+      }
     } catch (error) {
       console.error("Failed to start time-coded lyrics generation:", error);
       failTclGeneration("Network error — could not reach the server.");
@@ -192,6 +196,10 @@ const TrackCard = memo(function TrackCard({
       try {
         const res = await fetch(`/api/tracks/${track.id}/generate-tcl`);
         const data = await res.json().catch(() => null);
+        if (!isForExpectedTrack(data?.trackId, track.id, "generate-tcl poll")) {
+          setTimeout(poll, 4000);
+          return;
+        }
         if (data?.status === "done") {
           setGeneratingTcl(false);
           void mutate("/api/tracks");
@@ -310,6 +318,8 @@ const TrackCard = memo(function TrackCard({
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.success) {
         console.error(`Failed to convert to OGG: HTTP ${res.status}`, body);
+        setConvertOggResult("error");
+      } else if (!isForExpectedTrack(body?.trackId, track.id, "convert-ogg")) {
         setConvertOggResult("error");
       } else {
         setConvertOggResult("success");
