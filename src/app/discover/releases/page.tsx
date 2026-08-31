@@ -155,21 +155,55 @@ function DiscoverReleasesPageInner() {
     };
   }
 
-  // Plays `track` while queueing the rest of `releaseTrackItems` (its own
-  // release) so Next/autoplay stays scoped to that one release.
-  function playReleaseTrack(releaseTrackItems: TrackItem[], track: TrackItem, audioUrlOverride?: string | null) {
+  // One ordered play context spanning every displayed release, in listed
+  // order — mirroring the "My Releases" fix: scoping the queue to a single
+  // release meant a one-track (or last-track) release's slice(1) === [], so
+  // autoplay had nothing to advance to and playback just stopped. Carrying
+  // the releaseId lets us locate the exact occurrence of a track that
+  // appears on more than one release.
+  const orderedPlayContext = useMemo(() => {
+    const entries: { releaseId: string; track: TrackItem }[] = [];
+    displayedReleases.forEach((release) => {
+      (trackItemsByRelease.get(release.id) ?? []).forEach((track) => {
+        entries.push({ releaseId: release.id, track });
+      });
+    });
+    return entries;
+  }, [displayedReleases, trackItemsByRelease]);
+
+  function playFromContextIndex(startIndex: number, audioUrlOverride?: string | null) {
+    if (startIndex < 0 || startIndex >= orderedPlayContext.length) return;
     const player = usePlayerStore.getState();
-    const playContext = releaseTrackItems.map((t) => toPlayContextTrack(t));
+    const playContext = orderedPlayContext.map((entry) => toPlayContextTrack(entry.track));
 
     player.setPlayContext(playContext);
     if (player.autoPlayNext) {
-      const index = playContext.findIndex((t) => t.id === track.id);
-      if (index >= 0) {
-        player.setQueue(playContext.slice(index + 1));
-      }
+      player.setQueue(playContext.slice(startIndex + 1));
     }
 
-    player.playTrackFromGesture(toPlayContextTrack(track, audioUrlOverride ?? null));
+    player.playTrackFromGesture(
+      toPlayContextTrack(orderedPlayContext[startIndex].track, audioUrlOverride ?? null)
+    );
+  }
+
+  function playReleaseTrack(releaseId: string | null, track: TrackItem, audioUrlOverride?: string | null) {
+    const index = orderedPlayContext.findIndex(
+      (entry) => entry.track.id === track.id && (releaseId === null || entry.releaseId === releaseId)
+    );
+
+    if (index >= 0) {
+      playFromContextIndex(index, audioUrlOverride);
+      return;
+    }
+
+    // Not in the context (e.g. filtered out). Play it on its own and clear
+    // the queue, so a queue left over from an earlier selection can't
+    // hijack autoplay and jump somewhere unrelated.
+    const player = usePlayerStore.getState();
+    const standalone = toPlayContextTrack(track, audioUrlOverride ?? null);
+    player.setPlayContext([standalone]);
+    player.setQueue([]);
+    player.playTrackFromGesture(standalone);
   }
 
   function handlePlayAll() {
@@ -179,14 +213,12 @@ function DiscoverReleasesPageInner() {
       player.setIsPlaying(!player.isPlaying);
       return;
     }
-    playReleaseTrack(allTracks, allTracks[0]);
+    playFromContextIndex(0);
   }
 
   function handlePlayFromDetailsPanel(url: string) {
     if (!selectedTrack) return;
-    const releaseId = releaseIdByTrackId.get(selectedTrack.id);
-    const releaseTrackItems = (releaseId && trackItemsByRelease.get(releaseId)) || [selectedTrack];
-    playReleaseTrack(releaseTrackItems, selectedTrack, url || null);
+    playReleaseTrack(releaseIdByTrackId.get(selectedTrack.id) ?? null, selectedTrack, url || null);
   }
 
   function handleDownloadFromDetailsPanel(url: string, hd: boolean) {
@@ -345,7 +377,7 @@ function DiscoverReleasesPageInner() {
                           {releaseTrackItems.length > 0 && (
                             <button
                               type="button"
-                              onClick={() => playReleaseTrack(releaseTrackItems, releaseTrackItems[0])}
+                              onClick={() => playReleaseTrack(release.id, releaseTrackItems[0])}
                               className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95 sm:self-end"
                               aria-label={`Play ${release.title}`}
                               title={`Play ${release.title}`}
@@ -364,7 +396,7 @@ function DiscoverReleasesPageInner() {
                               <TrackCard
                                 key={track.id}
                                 track={track}
-                                onPlay={(t) => playReleaseTrack(releaseTrackItems, t)}
+                                onPlay={(t) => playReleaseTrack(release.id, t)}
                                 onSelect={(t) =>
                                   openTrackDetails({
                                     ...t,
