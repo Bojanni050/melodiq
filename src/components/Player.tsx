@@ -417,23 +417,24 @@ export default function Player() {
 
   // Loudness normalization's gain stage lives in the shared Web Audio graph
   // (see sharedAudioGraph.ts), alongside the fullscreen visualizer's
-  // analyser tap. Wire it up here, unconditionally, so normal (non-
-  // fullscreen) playback is routed through the gain node too — not just
-  // whenever the visualizer happens to have mounted it lazily.
-  useEffect(() => {
-    const sharedAudioElement = getSharedAudioElement();
-    if (!sharedAudioElement) return;
-    getSharedAudioGraph(sharedAudioElement);
-  }, []);
-
-  // Apply per-track loudness-normalization gain. A pure gain multiplier
-  // can't touch dynamics — it just rebalances level between tracks — so
-  // this is safe to leave running continuously while the toggle is on.
+  // analyser tap. Once an <audio> element is handed to
+  // createMediaElementSource, ALL of its output is permanently rerouted
+  // through that graph — there's no way back to plain native playback. On
+  // mobile, running every track through Web Audio (resampling, the audio
+  // rendering thread) is a well-known source of crackling/clicking
+  // independent of network conditions. So only pay that cost when a
+  // feature that actually needs the graph is in use — normalization here,
+  // the fullscreen visualizer separately in AudioVisualizer.tsx — instead
+  // of wiring it up unconditionally for every playback session.
   useEffect(() => {
     if (!normalizeVolume || !currentTrack?.id) {
       setNormalizationGain(1);
       return;
     }
+
+    const sharedAudioElement = getSharedAudioElement();
+    if (!sharedAudioElement) return;
+    getSharedAudioGraph(sharedAudioElement);
 
     let cancelled = false;
     const trackId = currentTrack.id;
