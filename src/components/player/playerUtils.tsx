@@ -111,7 +111,15 @@ declare global {
 export function getSharedAudioElement() {
   if (typeof window === "undefined") return null;
   if (!window.__melodiqSharedAudioElement) {
-    window.__melodiqSharedAudioElement = new Audio();
+    const audio = new Audio();
+    // Without this, mobile browsers fall back to their own default (which
+    // varies by platform and can be as conservative as "metadata only"),
+    // buffering just enough to report duration before waiting for a play
+    // gesture to fetch more. "auto" tells the browser it's free to buffer
+    // ahead of playback proactively, closing that data gap on flaky mobile
+    // connections.
+    audio.preload = "auto";
+    window.__melodiqSharedAudioElement = audio;
   }
   return window.__melodiqSharedAudioElement;
 }
