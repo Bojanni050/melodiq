@@ -41,6 +41,7 @@ export interface TrackOption {
   title: string | null;
   createdAt?: string | null;
   duration?: number | null;
+  provider?: string | null;
 }
 
 export type EditingTarget =

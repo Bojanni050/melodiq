@@ -36,11 +36,12 @@ export default function EntryEditor({
       .then((data) => {
         if (data?.tracks) {
           setTracks(
-            data.tracks.map((t: { id: string; title: string | null; createdAt?: string | null; duration?: number | null }) => ({
+            data.tracks.map((t: { id: string; title: string | null; createdAt?: string | null; duration?: number | null; provider?: string | null }) => ({
               id: t.id,
               title: t.title,
               createdAt: t.createdAt ?? null,
               duration: t.duration ?? null,
+              provider: t.provider ?? null,
             }))
           );
         }
@@ -55,12 +56,15 @@ export default function EntryEditor({
     return tracks.filter((t) => (t.title || "Untitled").toLowerCase().includes(q)).slice(0, 20);
   }, [tracks, trackQuery]);
 
-  // Titles frequently collide across generated variations of the same song,
-  // so surface a disambiguator (date + duration) whenever more than one
-  // filtered result shares the same title — otherwise duplicates are
-  // visually identical and it's easy to link the wrong one.
+  // Titles frequently collide — both across generated variations of the same
+  // song and between a generated version and a manually uploaded one with a
+  // matching title — so surface a disambiguator (source + date + duration)
+  // whenever more than one filtered result shares the same title, since
+  // duplicates otherwise look visually identical and it's easy to link the
+  // wrong one.
   function trackSubtitle(t: TrackOption): string | null {
     const parts: string[] = [];
+    if (t.provider) parts.push(t.provider === "upload" ? "Uploaded" : `Generated (${t.provider})`);
     if (t.createdAt) {
       const d = new Date(t.createdAt);
       if (!Number.isNaN(d.getTime())) parts.push(d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }));
