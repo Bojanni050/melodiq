@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, type Workspace } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
+import { shortTrackId } from "@/lib/track-id";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
@@ -740,6 +741,12 @@ const TrackCard = memo(function TrackCard({
                 {title}
               </h3>
             )}
+            <span
+              className="shrink-0 font-mono text-[10px] leading-none text-white/25"
+              title={`Track ID: ${track.id}`}
+            >
+              #{shortTrackId(track.id)}
+            </span>
             {hasAdvancedDna && (
               <span
                 className="shrink-0 text-xs leading-none"

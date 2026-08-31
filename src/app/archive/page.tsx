@@ -18,6 +18,7 @@ import EntryTrackActionsMenu from "@/components/archive/EntryTrackActionsMenu";
 import ReleasePickerDialog from "@/components/tracks/ReleasePickerDialog";
 import { entryCoverSrc, entryToTrack, type ArchiveEntry, type EditingTarget } from "@/components/archive/types";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { shortTrackId } from "@/lib/track-id";
 
 type MasterTracksTab = "master" | "published" | "all";
 
@@ -641,8 +642,11 @@ export default function ArchivePage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
                             {entry.trackTitle && (
-                              <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60">
-                                Linked: {entry.trackTitle}
+                              <span
+                                className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60"
+                                title={entry.trackId ? `Track ID: ${entry.trackId}` : undefined}
+                              >
+                                Linked: {entry.trackTitle} <span className="font-mono text-white/35">#{shortTrackId(entry.trackId)}</span>
                               </span>
                             )}
                             {entry.trackId && releases.some((r) => r.tracks.some((t) => t.trackId === entry.trackId)) ? (

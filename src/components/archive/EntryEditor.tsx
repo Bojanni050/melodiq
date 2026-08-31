@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ArchiveEntry, EditingTarget, TrackOption } from "./types";
+import { shortTrackId } from "@/lib/track-id";
 
 export default function EntryEditor({
   target,
@@ -74,7 +75,8 @@ export default function EntryEditor({
       const secs = Math.round(t.duration % 60).toString().padStart(2, "0");
       parts.push(`${mins}:${secs}`);
     }
-    return parts.length > 0 ? parts.join(" · ") : null;
+    parts.push(`#${shortTrackId(t.id)}`);
+    return parts.join(" · ");
   }
 
   async function handleSave() {
