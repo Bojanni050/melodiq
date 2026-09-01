@@ -376,9 +376,21 @@ export const usePlayerStore = create<PlayerState>()(
           return rest;
         };
 
+        // Every progress tick (roughly once per second while playing, see
+        // Player.tsx's timeupdate handler) re-serializes this entire
+        // partialized state to localStorage. Pages that queue up a whole
+        // library in one go (e.g. clicking any track on Master Tracks
+        // enqueues the rest of the list) can put hundreds of full track
+        // objects in `queue`, so that per-second JSON.stringify became
+        // expensive enough on mobile to stall the main thread and produce
+        // audible crackling in sync with the writes. The queue only needs
+        // to survive a reload far enough to resume "what's coming up next",
+        // so cap what's persisted regardless of how large it gets in memory.
+        const PERSISTED_QUEUE_LIMIT = 50;
+
         return {
           volume: state.volume,
-          queue: state.queue.map(scrubTrack).filter(Boolean),
+          queue: state.queue.slice(0, PERSISTED_QUEUE_LIMIT).map(scrubTrack).filter(Boolean),
           currentTrack: scrubTrack(state.currentTrack),
           autoPlayNext: state.autoPlayNext,
           showTrackDetailsPanel: state.showTrackDetailsPanel,
