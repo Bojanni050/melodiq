@@ -152,9 +152,12 @@ export default function ArchivePage() {
 
   function handleTabDetailPlay(url: string) {
     if (!selectedTrack) return;
-    const track = allTracks.find((t) => t.id === selectedTrack.id);
+    const startIndex = allTracks.findIndex((t) => t.id === selectedTrack.id);
+    const track = startIndex >= 0 ? allTracks[startIndex] : undefined;
     if (!track) return;
+    const rest = allTracks.slice(startIndex + 1);
     clearQueue();
+    rest.forEach((t) => enqueueTrack(t));
     playTrackFromGesture({ ...track, s3Key: track.s3Key ?? null, audioUrl: url });
   }
 
@@ -281,9 +284,12 @@ export default function ArchivePage() {
 
   function handleDetailPlay(url: string) {
     if (!selectedTrack) return;
-    const track = playableTracks.find((t) => t.id === selectedTrack.id);
+    const startIndex = playableTracks.findIndex((t) => t.id === selectedTrack.id);
+    const track = startIndex >= 0 ? playableTracks[startIndex] : undefined;
     if (!track) return;
+    const rest = playableTracks.slice(startIndex + 1);
     clearQueue();
+    rest.forEach((t) => enqueueTrack(t));
     playTrackFromGesture({ ...track, audioUrl: url });
   }
 
