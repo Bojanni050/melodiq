@@ -85,6 +85,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       audioWeight,
       negativeTags,
       usePersonaVoice,
+      apimartVariety,
+      apimartMaxMode,
+      apimartAudioFormat,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -166,6 +169,10 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               audioWeight,
               negativeTags,
               personaId: provider === "apimart" ? personaId : undefined,
+              // APIMart Suno V6 options
+              apimartVariety: provider === "apimart" ? apimartVariety : undefined,
+              apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,
+              apimartAudioFormat: provider === "apimart" ? apimartAudioFormat : undefined,
             }),
           }).then(async (res) => {
             const data = await res.json();

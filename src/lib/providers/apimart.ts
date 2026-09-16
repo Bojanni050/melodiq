@@ -18,6 +18,11 @@ export interface ApimartGenerationParams {
   weirdnessConstraint?: number;
   audioWeight?: number;
   personaId?: string;
+  // V6-specific options
+  variety?: "off" | "normal" | "high" | "extra" | "max";
+  maxMode?: boolean;
+  audioFormat?: "mp3" | "m4a" | "wav";
+  durationS?: number;
 }
 
 export interface ApimartTrackResult {
@@ -82,6 +87,14 @@ export async function createApimartGeneration(
     if (params.personaId) body.persona_id = params.personaId;
   }
   if (params.vocalGender) body.vocal_gender = params.vocalGender;
+
+  // V6-specific options (only send when explicitly set)
+  if (params.variety && params.variety !== "off") body.variety = params.variety;
+  if (params.maxMode === true) body.max_mode = true;
+  if (params.audioFormat && params.audioFormat !== "mp3") body.audio_format = params.audioFormat;
+  if (typeof params.durationS === "number" && params.durationS >= 10 && params.durationS <= 360) {
+    body.duration_s = params.durationS;
+  }
 
   try {
     const response = await axios.post(`${APIMART_BASE_URL}/generations`, body, {

@@ -48,6 +48,10 @@ export type GenerationContext = {
   personaId?: string;
   normalizedPoYoModel: string;
   isMinimaxViaPoYo: boolean;
+  // APIMart Suno V6 options
+  apimartVariety?: "off" | "normal" | "high" | "extra" | "max";
+  apimartMaxMode?: boolean;
+  apimartAudioFormat?: "mp3" | "m4a" | "wav";
 };
 
 // ---------------------------------------------------------------------------
@@ -341,7 +345,7 @@ export async function dispatchApiframe(ctx: GenerationContext, track: any): Prom
 // ---------------------------------------------------------------------------
 
 export async function dispatchApimart(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId, apimartVariety, apimartMaxMode, apimartAudioFormat } = ctx;
 
   let verifiedPersonaId: string | undefined;
   if (personaId) {
@@ -351,7 +355,7 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
   }
 
   const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId;
-  const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v5", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined });
+  const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v6", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined, variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined, maxMode: apimartMaxMode === true ? true : undefined, audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined });
 
   const [t1, t2] = await Promise.all([
     db.update(tracks).set({ status: "generating", jobId: genResult.taskId }).where(eq(tracks.id, track.id!)).returning(),

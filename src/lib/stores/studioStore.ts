@@ -30,6 +30,10 @@ interface StudioState {
   audioWeight: number;
   negativeTags: string;
   usePersonaVoice: boolean;
+  // APIMart Suno V6 options
+  apimartVariety: "off" | "normal" | "high" | "extra" | "max";
+  apimartMaxMode: boolean;
+  apimartAudioFormat: "mp3" | "m4a" | "wav";
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
@@ -54,6 +58,9 @@ interface StudioState {
   setAudioWeight: (val: number) => void;
   setNegativeTags: (val: string) => void;
   setUsePersonaVoice: (val: boolean) => void;
+  setApimartVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
+  setApimartMaxMode: (val: boolean) => void;
+  setApimartAudioFormat: (val: "mp3" | "m4a" | "wav") => void;
   fetchSavedLyrics: () => Promise<void>;
   saveLyric: () => Promise<SavedLyric | null>;
   loadSavedLyric: (id: string) => void;
@@ -71,7 +78,7 @@ export const useStudioStore = create<StudioState>()(
       artistName: "",
       writerName: "",
       autoCreateWorkspaceFromGeneratedTitle: false,
-      selectedProviders: { apimart: "v5.5" },
+      selectedProviders: { apimart: "v6" },
       rememberProviderChoice: true,
       language: "English",
       customLanguage: "",
@@ -84,6 +91,9 @@ export const useStudioStore = create<StudioState>()(
       audioWeight: 50,
       negativeTags: "",
       usePersonaVoice: false,
+      apimartVariety: "off",
+      apimartMaxMode: false,
+      apimartAudioFormat: "mp3",
       savedLyrics: [],
       savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
@@ -121,6 +131,9 @@ export const useStudioStore = create<StudioState>()(
       setAudioWeight: (val) => set({ audioWeight: val }),
       setNegativeTags: (val) => set({ negativeTags: val }),
       setUsePersonaVoice: (val) => set({ usePersonaVoice: val }),
+      setApimartVariety: (val) => set({ apimartVariety: val }),
+      setApimartMaxMode: (val) => set({ apimartMaxMode: val }),
+      setApimartAudioFormat: (val) => set({ apimartAudioFormat: val }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -169,7 +182,7 @@ export const useStudioStore = create<StudioState>()(
           artistName: "",
           writerName: "",
           autoCreateWorkspaceFromGeneratedTitle: false,
-          selectedProviders: { apimart: "v5.5" },
+          selectedProviders: { apimart: "v6" },
           language: "English",
           customLanguage: "",
           instrumental: false,
@@ -181,6 +194,9 @@ export const useStudioStore = create<StudioState>()(
           audioWeight: 50,
           negativeTags: "",
           usePersonaVoice: false,
+          apimartVariety: "off",
+          apimartMaxMode: false,
+          apimartAudioFormat: "mp3",
         }),
     }),
     {
@@ -196,13 +212,17 @@ export const useStudioStore = create<StudioState>()(
         if (!merged.selectedProviders) {
           merged.selectedProviders = merged.provider
             ? { [merged.provider]: merged.providerModel || "v5.5" }
-            : { apimart: "v5.5" };
+            : { apimart: "v6" };
         }
         // "Remember choice" unchecked — don't restore the last-used provider,
         // fall back to the form's default instead of the persisted value.
         if (persistedState?.rememberProviderChoice === false) {
           merged.selectedProviders = currentState.selectedProviders;
         }
+        // Ensure V6 defaults are present for existing persisted states
+        if (merged.apimartVariety === undefined) merged.apimartVariety = "off";
+        if (merged.apimartMaxMode === undefined) merged.apimartMaxMode = false;
+        if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
         return merged;
       },
     }

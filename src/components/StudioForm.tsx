@@ -46,6 +46,9 @@ export default memo(function StudioForm({
     usePersonaVoice,
     savedLyrics,
     savedLyricsLoaded,
+    apimartVariety,
+    apimartMaxMode,
+    apimartAudioFormat,
     setSongIdea,
     setLyrics,
     setTitle,
@@ -62,6 +65,9 @@ export default memo(function StudioForm({
     setStyleInfluence,
     setAudioWeight,
     setNegativeTags,
+    setApimartVariety,
+    setApimartMaxMode,
+    setApimartAudioFormat,
     fetchSavedLyrics,
     saveLyric,
     loadSavedLyric,
@@ -738,6 +744,96 @@ ${t("studio.yourChorusHere")}`}
                 </div>
                 <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={audioWeight}
+                  onChange={(e) => setAudioWeight(Number(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  style={{
+                    background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
+            </div>
+
+            {/* V6 Options — only shown when a v6 model is selected */}
+            {Object.keys(selectedProviders).some((k) => k === "apimart") &&
+              ["v6", "v6-wild", "v6-mini"].includes(selectedProviders["apimart"]) && (
+              <>
+                <div className="my-3 h-px bg-white/10" />
+                <h5 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">V6 Options</h5>
+
+                {/* Style Variety */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/60 mb-2">Style Variety</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(["off", "normal", "high", "extra", "max"] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setApimartVariety(v)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                          apimartVariety === v
+                            ? "bg-violet-500/40 text-violet-200 border border-violet-400/40"
+                            : "bg-white/5 text-white/40 border border-white/10 hover:bg-white/10"
+                        }`}
+                      >
+                        {v.charAt(0).toUpperCase() + v.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/25 mt-1">Style variation level. Independent of Max mode billing.</p>
+                </div>
+
+                {/* Max Mode */}
+                <div className="mb-4">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="text-sm font-medium text-white/60">Max Mode</span>
+                      <p className="text-[10px] text-white/25 mt-0.5">Higher quality — billed at 2× the standard price</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setApimartMaxMode(!apimartMaxMode)}
+                      className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${
+                        apimartMaxMode ? "bg-violet-500" : "bg-white/15"
+                      }`}
+                      style={{ height: "22px" }}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                          apimartMaxMode ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </label>
+                </div>
+
+                {/* Audio Format */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-white/60 mb-2">Audio Format</label>
+                  <div className="flex gap-1.5">
+                    {(["mp3", "m4a", "wav"] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => setApimartAudioFormat(fmt)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-colors ${
+                          apimartAudioFormat === fmt
+                            ? "bg-violet-500/40 text-violet-200 border border-violet-400/40"
+                            : "bg-white/5 text-white/40 border border-white/10 hover:bg-white/10"
+                        }`}
+                      >
+                        {fmt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </>
         )}

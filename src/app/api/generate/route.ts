@@ -1,4 +1,4 @@
-﻿export const runtime = "nodejs";
+export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     provider, providerModel, prompt, lyrics, instrumental, title,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags,
     personaId, artistName, writerName,
+    apimartVariety, apimartMaxMode, apimartAudioFormat,
   } = body;
 
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
     resolvedTitle, resolvedArtistName, resolvedWriterName,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
     normalizedPoYoModel, isMinimaxViaPoYo,
+    apimartVariety, apimartMaxMode, apimartAudioFormat,
   };
 
   // Providers that manage their own track insertion
