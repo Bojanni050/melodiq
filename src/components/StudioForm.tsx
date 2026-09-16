@@ -744,21 +744,8 @@ ${t("studio.yourChorusHere")}`}
                 </div>
                 <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={audioWeight}
-                  onChange={(e) => setAudioWeight(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
-                  style={{
-                    background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
-                  }}
-                />
-              </div>
-              <p className="text-[10px] text-white/25 mt-1">Only takes effect when custom=true.</p>
-            </div>
+            )}
+
 
             {/* V6 Options — only shown when a v6 model is selected */}
             {Object.keys(selectedProviders).some((k) => k === "apimart") &&

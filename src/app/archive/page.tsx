@@ -157,7 +157,7 @@ export default function ArchivePage() {
     if (!track) return;
     const rest = allTracks.slice(startIndex + 1);
     clearQueue();
-    rest.forEach((t) => enqueueTrack(t));
+    rest.forEach((t) => enqueueTrack({ ...t, s3Key: t.s3Key ?? null }));
     playTrackFromGesture({ ...track, s3Key: track.s3Key ?? null, audioUrl: url });
   }
 
