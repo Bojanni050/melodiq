@@ -35,7 +35,7 @@ Write-Host ""
 
 $VPS_HOST = "melodiq.nl"
 $VPS_USER = "bojan"
-$VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq.nl"
+$VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq"
 
 # One single line: a multi-line string would carry CRLF to the Linux shell.
 $remoteCommand = "cd $VPS_PATH && git pull origin main && ./deploy.sh && sleep 10 && docker compose exec -T app npx drizzle-kit push && docker compose ps"
