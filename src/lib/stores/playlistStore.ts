@@ -111,7 +111,10 @@ function persistReorderPlaylistTracks(input: { playlistId: string; trackIds: str
     body: JSON.stringify({ action: "reorder-tracks", trackIds: input.trackIds }),
   })
     .then(async (res) => {
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error(`[store] persistReorderPlaylistTracks failed: HTTP ${res.status}`);
+        return;
+      }
       const data = await res.json().catch(() => null);
       const playlist = data?.playlist;
       if (playlist) {

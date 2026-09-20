@@ -11,9 +11,9 @@ describe("positionCase", () => {
     const query = dialect.sqlToQuery(positionCase(coverImages.id, ["a", "b", "c"]));
 
     expect(query.sql).toBe(
-      'case when "cover_images"."id" = $1 then $2 ' +
-        'when "cover_images"."id" = $3 then $4 ' +
-        'when "cover_images"."id" = $5 then $6 end'
+      'case when "cover_images"."id" = $1 then $2::integer ' +
+        'when "cover_images"."id" = $3 then $4::integer ' +
+        'when "cover_images"."id" = $5 then $6::integer end'
     );
     expect(query.params).toEqual(["a", 0, "b", 1, "c", 2]);
   });
