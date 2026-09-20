@@ -280,6 +280,7 @@ export async function PATCH(
         .set({
           isPublic: nextPublic,
           publishedAt: nextPublic ? new Date() : null,
+          ...(nextPublic ? {} : { discoverOrder: null }),
           updatedAt: new Date(),
         })
         .where(and(eq(playlists.id, id), eq(playlists.userId, auth.userId)));

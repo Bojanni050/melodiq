@@ -302,6 +302,8 @@ export const playlists = pgTable("playlists", {
   // admins via the playlist panel; playlists are always private by default.
   isPublic: boolean("is_public").default(false).notNull(),
   publishedAt: timestamp("published_at"),
+  // Admin-controlled position on the public /discover page (ascending, nulls last).
+  discoverOrder: integer("discover_order"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

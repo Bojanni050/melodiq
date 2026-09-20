@@ -86,6 +86,7 @@ export default function DiscoverPage() {
   const loadUser = useUserStore((s) => s.loadUser);
   const loadReleases = useReleaseStore((s) => s.loadReleases);
 
+  const isAdmin = user?.role === "admin";
   const isListener = user?.role === "listener";
   const showOwnerSections = isLoggedIn && !isListener;
 
@@ -139,7 +140,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     let active = true;
     async function fetchPlaylists() {
-      const res = await fetch("/api/discover/playlists");
+      const res = await fetch("/api/discover/playlists", { cache: "no-store" });
       if (!active) return;
       if (res.ok) {
         const data = await res.json();
@@ -151,6 +152,33 @@ export default function DiscoverPage() {
       active = false;
     };
   }, []);
+
+  async function patchDiscoverPlaylists(body: Record<string, unknown>) {
+    const res = await fetch("/api/discover/playlists", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  }
+
+  async function handleMovePlaylist(index: number, delta: -1 | 1) {
+    const target = index + delta;
+    if (target < 0 || target >= publishedPlaylists.length) return;
+    const previous = publishedPlaylists;
+    const next = [...previous];
+    [next[index], next[target]] = [next[target], next[index]];
+    setPublishedPlaylists(next);
+    const ok = await patchDiscoverPlaylists({ action: "reorder", ids: next.map((p) => p.id) });
+    if (!ok) setPublishedPlaylists(previous);
+  }
+
+  async function handleUnpublishPlaylist(id: string) {
+    const previous = publishedPlaylists;
+    setPublishedPlaylists(previous.filter((p) => p.id !== id));
+    const ok = await patchDiscoverPlaylists({ action: "unpublish", id });
+    if (!ok) setPublishedPlaylists(previous);
+  }
 
   useEffect(() => {
     if (!authChecked || !isLoggedIn) {
@@ -627,9 +655,9 @@ export default function DiscoverPage() {
                 <section className="space-y-3">
                   <h2 className="text-base font-semibold">{t("discover.publishedPlaylists")}</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {publishedPlaylists.map((playlist) => (
+                    {publishedPlaylists.map((playlist, index) => (
+                      <div key={playlist.id} className="relative">
                       <Link
-                        key={playlist.id}
                         href={`/discover/playlist/${playlist.id}`}
                         className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
                       >
@@ -658,6 +686,40 @@ export default function DiscoverPage() {
                           {playlist.trackCount} {playlist.trackCount === 1 ? t("releases.track") : t("releases.tracks")}
                         </p>
                       </Link>
+                      {isAdmin && (
+                        <div className="absolute right-5 top-5 flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void handleMovePlaylist(index, -1)}
+                            disabled={index === 0}
+                            title={t("discover.movePlaylistUp")}
+                            aria-label={t("discover.movePlaylistUp")}
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-black/85 disabled:opacity-30"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleMovePlaylist(index, 1)}
+                            disabled={index === publishedPlaylists.length - 1}
+                            title={t("discover.movePlaylistDown")}
+                            aria-label={t("discover.movePlaylistDown")}
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-black/85 disabled:opacity-30"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleUnpublishPlaylist(playlist.id)}
+                            title={t("discover.unpublishPlaylist")}
+                            aria-label={t("discover.unpublishPlaylist")}
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-red-600/80"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      )}
+                      </div>
                     ))}
                   </div>
                 </section>

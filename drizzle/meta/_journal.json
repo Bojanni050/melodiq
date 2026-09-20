@@ -43,6 +43,13 @@
       "when": 1788048580674,
       "tag": "0005_workspace_index_names",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788048581674,
+      "tag": "0006_discover_playlist_order",
+      "breakpoints": true
     }
   ]
 }

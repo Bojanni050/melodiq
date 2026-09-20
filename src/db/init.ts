@@ -392,6 +392,7 @@ ALTER TABLE playlists ADD COLUMN IF NOT EXISTS s3_key_cover_thumb varchar(512);
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_system boolean NOT NULL DEFAULT false;
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
 ALTER TABLE playlists ADD COLUMN IF NOT EXISTS published_at timestamp;
+ALTER TABLE playlists ADD COLUMN IF NOT EXISTS discover_order integer;
 `;
 
 // releases gained these after the table's CREATE was written; is_spotlight in
