@@ -263,11 +263,24 @@ export const usePlayerStore = create<PlayerState>()(
         // Still fires within the same transient user-activation window as
         // the click, so autoplay isn't blocked.
         const runAudioSetup = () => {
+          // The marker alone isn't proof: non-gesture loads (autoplay
+          // playNext, previous, queue advance) swap .src without touching
+          // the dataset markers, leaving a stale gestureTrackId behind.
+          // Clicking that stale track again must reload — so also verify
+          // the loaded src is actually this track's URL. (Bonus: this also
+          // reloads when the URL gained a new ?v= version token after an
+          // in-place audio change, instead of replaying stale bytes.)
+          const expectedSrc =
+            typeof window !== "undefined"
+              ? new URL(url, window.location.href).toString()
+              : url;
+          const actualSrc = audioElement.currentSrc || audioElement.src;
           const isSameTrackAlreadyLoaded =
             audioElement.dataset.gestureTrackId === track.id &&
             !!audioElement.src &&
             !audioElement.error &&
-            audioElement.readyState >= 1;
+            audioElement.readyState >= 1 &&
+            actualSrc === expectedSrc;
 
           if (!isSameTrackAlreadyLoaded) {
             audioElement.pause();

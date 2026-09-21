@@ -540,6 +540,7 @@ export default function Player() {
 
       if (alreadyPlayingThisTrack) {
         lastLoadedTrackIdRef.current = trackId;
+        audioEl.dataset.gestureTrackId = trackId;
         setResolvingUrl(false);
         if (!isSuperseded() && (usePlayerStore.getState().isPlaying || shouldResume)) {
           void tryPlay();
@@ -592,6 +593,10 @@ export default function Player() {
       }
 
       lastLoadedTrackIdRef.current = trackId;
+      // Non-gesture loads (autoplay, next/previous) are the only path that
+      // changes .src — keep the store's skip-guard truthful so a later
+      // gesture click on this track compares against a fresh marker.
+      audioEl.dataset.gestureTrackId = trackId;
 
       if (resumeTime > 0) {
         try {

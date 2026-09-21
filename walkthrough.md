@@ -1371,3 +1371,16 @@ pm run build — succesvol.
   - Validated with 
 px tsc --noEmit en 
 pm run build — succesvol.
+
+## 2026-09-21 ma (Play-knop schakelt niet over: stale gesture-marker)
+
+- Findings: Highlight versprong wel naar de geklikte track maar het geluid bleef het oude nummer spelen; pauze/play bedienden daarna ook het oude geluid. Oorzaak: non-gesture loads (autoplay playNext/next/previous) wisselen .src zonder dataset.gestureTrackId bij te werken, waardoor die marker stale achterbleef. Bij een latere klik op die stale track sloegen zowel de store-guard (isSameTrackAlreadyLoaded) als het Player-effect het laden over en deed play() gewoon het oude geluid hervatten.
+- Conclusions: Skip-guard moet naast de marker ook de geladen src met de verwachte track-URL vergelijken; Player-effect moet de marker bij elke full-load bijwerken zodat hij de werkelijkheid blijft volgen.
+- Actions:
+  - Modified src/lib/stores/playerStore.ts — isSameTrackAlreadyLoaded vergelijkt nu currentSrc/src genormaliseerd met de berekende track-URL; stale marker laadt opnieuw, terecht geladen track slaat nog steeds over (ook na ?v= token-wissel herlaadt hij nu correct).
+  - Modified src/components/Player.tsx — gestureTrackId wordt bijgewerkt na elke full-path load en in de already-playing early-return.
+  - Added src/lib/stores/__tests__/player-switch.test.ts — 3 tests (normale wissel, stale-marker regressie, skip bij terecht geladen track); regressietest faalt aantoonbaar op oude code met exact het gemelde symptoom.
+  - Validated with 
+px vitest run (64 passed), 
+px tsc --noEmit en 
+pm run build — succesvol.
