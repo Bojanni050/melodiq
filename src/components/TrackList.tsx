@@ -95,7 +95,7 @@ export default memo(function TrackList({
   // Connect to Zustand Selection Store stable actions
   const setSelectedIds = useSelectionStore((state) => state.setSelectedIds);
 
-  const hasScrolledToRestoredTrack = useRef(false);
+  // Geen auto-scroll: alleen handmatig via "Huidige track"-knop of scroll-to-track events.
   const [sortOrder, setSortOrderState] = useState<SortOrder>(() => readPersistedSortOrder() ?? "newest");
   const setSortOrder = useCallback((order: SortOrder) => {
     setSortOrderState(order);
@@ -361,59 +361,54 @@ export default memo(function TrackList({
     return true;
   }, []);
 
-  useEffect(() => {
-    if (hasScrolledToRestoredTrack.current) return;
-    if (!currentTrack) return;
-    if (!tracks.some((t) => t.id === currentTrack.id)) return;
-
-    revealTrackInPagination(currentTrack.id);
-
-    const timer = setTimeout(() => {
-      const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        hasScrolledToRestoredTrack.current = true;
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [currentTrack, tracks]);
+  const currentTrackId = currentTrack?.id ?? null;
 
   // Track whether the current track DOM element is in the viewport
   useEffect(() => {
-    if (!currentTrack) { setCurrentTrackVisible(true); return; }
+    if (!currentTrackId) { setCurrentTrackVisible(true); return; }
     // Find the scrollable container (parent page's overflow-y-auto div)
     const container = sentinelRef.current?.closest<HTMLElement>('[class*="overflow-y-auto"]') ?? null;
-    const el = document.querySelector(`[data-track-id="${currentTrack.id}"]`);
+    const el = document.querySelector(`[data-track-id="${currentTrackId}"]`);
     if (!el) { setCurrentTrackVisible(false); return; }
     const observer = new IntersectionObserver(
       ([entry]) => setCurrentTrackVisible(entry.isIntersecting),
       { root: container, rootMargin: "0px 0px -72px 0px", threshold: 0 },
     );
     observer.observe(el);
-    // Immediate check in case element is already out of view
-    setCurrentTrackVisible(el.getBoundingClientRect().top < (container?.getBoundingClientRect().bottom ?? window.innerHeight));
+    // Immediate check in case element is already out of view (ook boven de viewport)
+    const rect = el.getBoundingClientRect();
+    const rootRect = container?.getBoundingClientRect();
+    const top = rootRect?.top ?? 0;
+    const bottom = rootRect?.bottom ?? window.innerHeight;
+    setCurrentTrackVisible(rect.top >= top && rect.top < bottom);
     return () => observer.disconnect();
-  }, [currentTrack]);
+  }, [currentTrackId, paginatedTracks]);
 
   useEffect(() => {
     function scrollToEl(trackId: string) {
       const el = document.querySelector(`[data-track-id="${trackId}"]`);
-      if (!el) return;
+      if (!el) return false;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("ring-2", "ring-primary-500/40", "rounded-xl");
       window.setTimeout(() => el.classList.remove("ring-2", "ring-primary-500/40", "rounded-xl"), 1500);
+      return true;
     }
     function handleScrollToTrack(event: Event) {
       const trackId = (event as CustomEvent<{ trackId: string }>).detail?.trackId;
       if (!trackId) return;
       const wasRevealed = revealTrackInPagination(trackId);
-      if (document.querySelector(`[data-track-id="${trackId}"]`)) {
-        scrollToEl(trackId);
-      } else if (wasRevealed) {
-        // Newly-revealed rows need a render pass before they exist in the DOM.
-        window.setTimeout(() => scrollToEl(trackId), 100);
-      }
+      if (scrollToEl(trackId)) return;
+      if (!wasRevealed) return;
+      // Newly-revealed rows need render passes before they exist in the DOM.
+      let attempts = 0;
+      const retry = () => {
+        if (scrollToEl(trackId)) return;
+        if (attempts < 8) {
+          attempts += 1;
+          window.setTimeout(retry, 100);
+        }
+      };
+      window.setTimeout(retry, 100);
     }
     window.addEventListener("melodiq:scroll-to-track", handleScrollToTrack);
     return () => window.removeEventListener("melodiq:scroll-to-track", handleScrollToTrack);

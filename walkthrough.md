@@ -1351,3 +1351,23 @@
   - Modified `src/components/tracks/TrackCard.tsx` â€” reactieve lokale format en s3KeyOgg states geÃ¯mplementeerd; `handleConvertOgg` update de kaart direct en vuurt `tracks-changed` af.
   - Updated `src/components/Sidebar.tsx` â€” buildVersion naar `202608282125`.
   - Validated with `npm test` en `npm run build`.
+
+## 2026-09-21 ma (TrackList scrolt automatisch naar spelende track)
+
+- Findings: TrackList scrolde alleen eenmalig naar de gerestaureerde track bij laden (hasScrolledToRestoredTrack-flag); bij elke volgende trackwissel (klik op play, autoplay-next) gebeurde er niets, en de scroll-to-track handler deed slechts een enkele 100ms retry waardoor gepagineerde rijen soms nooit verschenen. De zichtbaarheidscheck telde een track boven de viewport ten onrechte als zichtbaar, en de observer werd nooit opnieuw aangemaakt als de lijst later laadde.
+- Conclusions: Volg currentTrack op ID (niet object-identiteit) en scroll bij elke nieuwe ID met retry-loop tot ~800ms; alleen skippen als de track niet in deze lijst zit of weggefilterd is door zoeken. Zichtbaarheids-observer opnieuw koppelen bij paginatie en correct boven/onder de viewport detecteren, zodat de Huidige-track-knop klopt.
+- Actions:
+  - Modified src/components/TrackList.tsx — eenmalige restore-flag vervangen door autoScrolledTrackIdRef + currentTrackId-effect met paginatie-reveal en retry; visibility-observer deps uitgebreid naar paginatedTracks met correcte boven/onder-check; scroll-to-track handler met retry-loop en boolean-return.
+  - Validated with 
+px tsc --noEmit en 
+pm run build — succesvol.
+
+## 2026-09-21 ma (Auto-scroll TrackList uitgezet op verzoek)
+
+- Findings: Gebruiker wil juist geen automatisch scrollen naar de spelende track.
+- Conclusions: Auto-volg effect verwijderd; scrollen gebeurt alleen nog handmatig via Huidige-track-knop of scroll-to-track events.
+- Actions:
+  - Modified src/components/TrackList.tsx — auto-scroll effect en ref verwijderd.
+  - Validated with 
+px tsc --noEmit en 
+pm run build — succesvol.
