@@ -61,6 +61,29 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(precision)} ${units[index]}`;
 }
 
+// Which routing purposes exist per LLM provider — surfaced as an "Active"
+// chip on the LLM providers tab so it's visible at a glance which provider
+// is actually in use (the routing selects themselves live in AI Routing).
+// Timecoded deliberately isn't listed: it has no provider setting of its
+// own and follows the Lyrics provider (see selectTimecodedModel).
+const LLM_ROUTING_PURPOSES: Array<{ key: string; label: string }> = [
+  { key: "PROMPT_LLM_PROVIDER", label: "Prompt" },
+  { key: "IMAGE_LLM_PROVIDER", label: "Image prompt" },
+  { key: "LYRICS_LLM_PROVIDER", label: "Lyrics" },
+  { key: "TRACKDNA_LLM_PROVIDER", label: "Track DNA" },
+  { key: "ADVANCED_LLM_PROVIDER", label: "Advanced DNA" },
+  { key: "LYRICIQ_LLM_PROVIDER", label: "LyricIQ" },
+];
+
+// Eden AI's model catalog is public (no API key needed), so it can be
+// fetched both eagerly on page load and on demand via "Retrieve Models".
+async function fetchEdenAiModels(): Promise<LLMModel[]> {
+  const res = await fetch("/api/settings/edenai-models");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.models || [];
+}
+
 export default function SettingsPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
@@ -78,6 +101,7 @@ export default function SettingsPage() {
   const [activeProvidersTab, setActiveProvidersTab] = useState<ProvidersTabId>("music");
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
   const [edenAiModels, setEdenAiModels] = useState<LLMModel[]>([]);
+  const [retrievingEdenAiModels, setRetrievingEdenAiModels] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showPromptModelDropdown, setShowPromptModelDropdown] = useState(false);
   const [showLyricsModelDropdown, setShowLyricsModelDropdown] = useState(false);
@@ -152,17 +176,20 @@ export default function SettingsPage() {
 
   // Eden AI's model catalog is public — fetch it eagerly (unlike OpenRouter's,
   // which requires an API key and a manual "Retrieve Models" click) so its
-  // dropdowns work immediately, no key needed.
+  // dropdowns work immediately, no key needed. A manual "Retrieve Models"
+  // button exists as well (getEdenAiModels) in case this initial fetch fails.
   useEffect(() => {
-    async function loadEdenAiModels() {
-      const res = await fetch("/api/settings/edenai-models");
-      if (res.ok) {
-        const data = await res.json();
-        setEdenAiModels(data.models || []);
-      }
-    }
-    loadEdenAiModels();
+    fetchEdenAiModels().then(setEdenAiModels);
   }, []);
+
+  async function getEdenAiModels() {
+    setRetrievingEdenAiModels(true);
+    try {
+      setEdenAiModels(await fetchEdenAiModels());
+    } finally {
+      setRetrievingEdenAiModels(false);
+    }
+  }
 
   // Upgrade the id-only placeholders set above into full model objects
   // (name, pricing, description) once the Eden AI catalog has loaded.
@@ -450,6 +477,9 @@ export default function SettingsPage() {
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
   const edenaiProvider = llmProviders.find((p) => p.id === "edenai")!;
+  // Routing purposes currently served by a given LLM provider (empty = not used).
+  const purposesFor = (providerId: string) =>
+    LLM_ROUTING_PURPOSES.filter((p) => (values[p.key] || "openrouter") === providerId).map((p) => p.label);
   const diskCacheSizeBytes = Number(values.DISK_CACHE_SIZE_BYTES || "0");
 
   return (
@@ -484,9 +514,22 @@ export default function SettingsPage() {
                         onFieldChange={updateField}
                         onGetModels={getOpenRouterModels}
                         testingModels={testingModels}
+                        activePurposes={purposesFor("openrouter")}
                       />
-                      <ProviderSection provider={openaiProvider} values={values} onFieldChange={updateField} />
-                      <ProviderSection provider={edenaiProvider} values={values} onFieldChange={updateField} />
+                      <ProviderSection
+                        provider={openaiProvider}
+                        values={values}
+                        onFieldChange={updateField}
+                        activePurposes={purposesFor("openai")}
+                      />
+                      <ProviderSection
+                        provider={edenaiProvider}
+                        values={values}
+                        onFieldChange={updateField}
+                        onGetModels={getEdenAiModels}
+                        testingModels={retrievingEdenAiModels}
+                        activePurposes={purposesFor("edenai")}
+                      />
                     </div>
                   )}
 
@@ -558,6 +601,8 @@ export default function SettingsPage() {
                   onToggleTclAutoJumpToEditor={toggleTclAutoJumpToEditor}
                   onGetModels={getOpenRouterModels}
                   testingModels={testingModels}
+                  onGetEdenAiModels={getEdenAiModels}
+                  testingEdenAiModels={retrievingEdenAiModels}
                 />
               )}
 

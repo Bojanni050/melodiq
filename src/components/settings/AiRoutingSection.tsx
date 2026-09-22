@@ -7,11 +7,11 @@ import type { LLMModel } from "@/lib/settings-utils";
 // The OpenRouterModelDropdown fetches its option list from OpenRouter's own
 // /models endpoint, so it only ever makes sense — and only ever writes the
 // right setting key — when that purpose's provider is actually "openrouter".
-// When OpenAI or Eden AI is selected instead, fall back to a plain text
-// field bound to that provider's own model setting (e.g. OPENAI_PROMPT_MODEL
-// / EDENAI_PROMPT_MODEL), matching the fields already in their Settings
-// sections, rather than silently showing/editing OpenRouter models for a
-// purpose that isn't routed to OpenRouter.
+// Eden AI gets the same picker backed by its own public catalog
+// (EDENAI_*_MODEL keys); OpenAI has no picker in this app and falls back to
+// a plain text field bound to its OPENAI_*_MODEL setting — rather than
+// silently showing/editing OpenRouter models for a purpose that isn't
+// routed to OpenRouter.
 function ModelField({
   label,
   provider,
@@ -96,6 +96,8 @@ export default function AiRoutingSection({
   onToggleTclAutoJumpToEditor,
   onGetModels,
   testingModels,
+  onGetEdenAiModels,
+  testingEdenAiModels,
 }: {
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
@@ -141,7 +143,21 @@ export default function AiRoutingSection({
   onToggleTclAutoJumpToEditor: () => void;
   onGetModels?: () => void;
   testingModels?: boolean;
+  onGetEdenAiModels?: () => void;
+  testingEdenAiModels?: boolean;
 }) {
+  // Which providers are actually routed to by the purposes above — the
+  // header shows a Retrieve Models button only for those (Eden AI's catalog
+  // is auto-loaded on page load; its button is the retry/manual path).
+  const ROUTING_KEYS = [
+    "PROMPT_LLM_PROVIDER",
+    "IMAGE_LLM_PROVIDER",
+    "LYRICS_LLM_PROVIDER",
+    "TRACKDNA_LLM_PROVIDER",
+    "ADVANCED_LLM_PROVIDER",
+    "LYRICIQ_LLM_PROVIDER",
+  ];
+  const routedProviders = new Set(ROUTING_KEYS.map((k) => values[k] || "openrouter"));
   return (
     <div className="space-y-4">
       <section className="section-card">
@@ -272,37 +288,69 @@ export default function AiRoutingSection({
           <div>
             <h2 className="text-sm font-semibold">Models</h2>
             <p className="text-sm text-white/30">
-              Model used per purpose. Shows the OpenRouter picker when that purpose is routed to OpenRouter above,
-              otherwise a plain model name for the selected provider (OpenAI / Eden AI).
+              Model used per purpose. Shows the model picker for the provider that purpose is routed to above
+              (OpenRouter / Eden AI), or a plain model field for OpenAI. Use Retrieve Models to (re)load the
+              picker options.
             </p>
           </div>
-          {onGetModels && (
-            <button
-              type="button"
-              onClick={onGetModels}
-              disabled={testingModels}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {testingModels ? (
-                <>
-                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                  Retrieving…
-                </>
-              ) : (
-                <>
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10" />
-                    <polyline points="1 20 1 14 7 14" />
-                    <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 5.36A9 9 0 0020.49 15" />
-                  </svg>
-                  Retrieve Models
-                </>
+          {(onGetModels && routedProviders.has("openrouter")) || (onGetEdenAiModels && routedProviders.has("edenai")) ? (
+            <div className="shrink-0 flex items-center gap-2">
+              {onGetModels && routedProviders.has("openrouter") && (
+                <button
+                  type="button"
+                  onClick={onGetModels}
+                  disabled={testingModels}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {testingModels ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Retrieving…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 5.36A9 9 0 0020.49 15" />
+                      </svg>
+                      Retrieve OpenRouter Models
+                    </>
+                  )}
+                </button>
               )}
-            </button>
-          )}
+              {onGetEdenAiModels && routedProviders.has("edenai") && (
+                <button
+                  type="button"
+                  onClick={onGetEdenAiModels}
+                  disabled={testingEdenAiModels}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {testingEdenAiModels ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Retrieving…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 5.36A9 9 0 0020.49 15" />
+                      </svg>
+                      Retrieve Eden AI Models
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
         <div className="space-y-3">
           <ModelField

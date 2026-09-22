@@ -11,12 +11,14 @@ export default function ProviderSection({
   onFieldChange,
   onGetModels,
   testingModels,
+  activePurposes,
 }: {
   provider: ProviderConfig;
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
   onGetModels?: () => void;
   testingModels?: boolean;
+  activePurposes?: string[];
 }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -44,7 +46,7 @@ export default function ProviderSection({
       : "configured";
 
   return (
-    <ProviderAccordion title={provider.name} description={provider.description} status={status}>
+    <ProviderAccordion title={provider.name} description={provider.description} status={status} activePurposes={activePurposes}>
       {provider.fields.map((field) => (
         <div key={field.key}>
           <label className="block text-sm font-medium text-white/50 mb-1">{field.label}</label>
@@ -62,7 +64,7 @@ export default function ProviderSection({
         <button onClick={handleTest} disabled={testing} className="btn-secondary text-sm px-3 py-1.5">
           {testing ? "Testing..." : "Test Connection"}
         </button>
-        {provider.id === "openrouter" && onGetModels && (
+        {onGetModels && (
           <button onClick={onGetModels} disabled={testingModels} className="btn-secondary text-sm px-3 py-1.5">
             {testingModels ? "Loading Models..." : "Retrieve Models"}
           </button>

@@ -241,6 +241,8 @@ The Settings page lets you configure each provider independently:
 - LLM Routing for separate prompt and lyrics providers
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
+- On the **LLM** tab each provider now shows an **Active** chip listing the purposes it currently handles (e.g. "Active: Prompt, Lyrics"), or "Not in use" — so you can see at a glance which provider is actually routing.
+- **Retrieve Models** buttons exist for both OpenRouter (needs your API key) and Eden AI (public catalog, no key) — on the LLM tab inside the provider card, and in AI Routing per provider that is actually in use. Use them to (re)load the model dropdowns if they show "Retrieve models to select".
 - MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
 
 ---
@@ -274,3 +276,10 @@ Naast de prullenbak (Recycle Bin) heeft de Library nu ook een **Archief**-tabbla
   - gepubliceerd is in een release (publiceer-uitschakelen of uit de release halen eerst),
   - een Master Track is in Song Archive (vertalingen mogen wel),
   - in een of meer playlists zit (verwijder eerst uit alle playlists).
+
+### Smart Archive
+
+De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt en audio DNA, zodat je duplicates kunt vergelijken en er een kunt archiveren.
+
+- Tracks die **gepubliceerd** zijn, een **Master Track** in Song Archive vormen of op een **playlist** staan worden **niet aangeboden** als archiefkandidaat — ze verschijnen simpelweg niet in de groepen.
+- Er wordt nooit automatisch gearchiveerd; je vinkt zelf aan wat weg mag.

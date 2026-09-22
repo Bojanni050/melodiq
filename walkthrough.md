@@ -1357,30 +1357,46 @@
 - Findings: TrackList scrolde alleen eenmalig naar de gerestaureerde track bij laden (hasScrolledToRestoredTrack-flag); bij elke volgende trackwissel (klik op play, autoplay-next) gebeurde er niets, en de scroll-to-track handler deed slechts een enkele 100ms retry waardoor gepagineerde rijen soms nooit verschenen. De zichtbaarheidscheck telde een track boven de viewport ten onrechte als zichtbaar, en de observer werd nooit opnieuw aangemaakt als de lijst later laadde.
 - Conclusions: Volg currentTrack op ID (niet object-identiteit) en scroll bij elke nieuwe ID met retry-loop tot ~800ms; alleen skippen als de track niet in deze lijst zit of weggefilterd is door zoeken. Zichtbaarheids-observer opnieuw koppelen bij paginatie en correct boven/onder de viewport detecteren, zodat de Huidige-track-knop klopt.
 - Actions:
-  - Modified src/components/TrackList.tsx � eenmalige restore-flag vervangen door autoScrolledTrackIdRef + currentTrackId-effect met paginatie-reveal en retry; visibility-observer deps uitgebreid naar paginatedTracks met correcte boven/onder-check; scroll-to-track handler met retry-loop en boolean-return.
+  - Modified src/components/TrackList.tsx � eenmalige restore-flag vervangen door autoScrolledTrackIdRef + currentTrackId-effect met paginatie-reveal en retry; visibility-observer deps uitgebreid naar paginatedTracks met correcte boven/onder-check; scroll-to-track handler met retry-loop en boolean-return.
   - Validated with 
 px tsc --noEmit en 
-pm run build � succesvol.
+pm run build � succesvol.
 
 ## 2026-09-21 ma (Auto-scroll TrackList uitgezet op verzoek)
 
 - Findings: Gebruiker wil juist geen automatisch scrollen naar de spelende track.
 - Conclusions: Auto-volg effect verwijderd; scrollen gebeurt alleen nog handmatig via Huidige-track-knop of scroll-to-track events.
 - Actions:
-  - Modified src/components/TrackList.tsx � auto-scroll effect en ref verwijderd.
-  - Validated with 
-px tsc --noEmit en 
-pm run build � succesvol.
+  - Modified src/components/TrackList.tsx � auto-scroll effect en ref verwijderd.
+  - Validated with `npx tsc --noEmit` en `npm run build` — succesvol.
 
 ## 2026-09-21 ma (Play-knop schakelt niet over: stale gesture-marker)
 
 - Findings: Highlight versprong wel naar de geklikte track maar het geluid bleef het oude nummer spelen; pauze/play bedienden daarna ook het oude geluid. Oorzaak: non-gesture loads (autoplay playNext/next/previous) wisselen .src zonder dataset.gestureTrackId bij te werken, waardoor die marker stale achterbleef. Bij een latere klik op die stale track sloegen zowel de store-guard (isSameTrackAlreadyLoaded) als het Player-effect het laden over en deed play() gewoon het oude geluid hervatten.
 - Conclusions: Skip-guard moet naast de marker ook de geladen src met de verwachte track-URL vergelijken; Player-effect moet de marker bij elke full-load bijwerken zodat hij de werkelijkheid blijft volgen.
 - Actions:
-  - Modified src/lib/stores/playerStore.ts � isSameTrackAlreadyLoaded vergelijkt nu currentSrc/src genormaliseerd met de berekende track-URL; stale marker laadt opnieuw, terecht geladen track slaat nog steeds over (ook na ?v= token-wissel herlaadt hij nu correct).
-  - Modified src/components/Player.tsx � gestureTrackId wordt bijgewerkt na elke full-path load en in de already-playing early-return.
-  - Added src/lib/stores/__tests__/player-switch.test.ts � 3 tests (normale wissel, stale-marker regressie, skip bij terecht geladen track); regressietest faalt aantoonbaar op oude code met exact het gemelde symptoom.
-  - Validated with 
-px vitest run (64 passed), 
-px tsc --noEmit en 
-pm run build � succesvol.
+  - Modified src/lib/stores/playerStore.ts � isSameTrackAlreadyLoaded vergelijkt nu currentSrc/src genormaliseerd met de berekende track-URL; stale marker laadt opnieuw, terecht geladen track slaat nog steeds over (ook na ?v= token-wissel herlaadt hij nu correct).
+  - Modified src/components/Player.tsx � gestureTrackId wordt bijgewerkt na elke full-path load en in de already-playing early-return.
+  - Added src/lib/stores/__tests__/player-switch.test.ts � 3 tests (normale wissel, stale-marker regressie, skip bij terecht geladen track); regressietest faalt aantoonbaar op oude code met exact het gemelde symptoom.
+  - Validated with `npx vitest run` (64 passed), `npx tsc --noEmit` en `npm run build` — succesvol.
+
+## 2026-09-22 di (Smart Archive: beschermde tracks nooit meer aanbieden)
+
+- Findings: Smart Archive bood gepubliceerde tracks, Song Archive-master tracks en tracks die op playlists staan wél nog als kandidaat aan — alleen uitgegrijsd met een slotje (checkArchiveGuards zette `blocked`). De wens: deze tracks nooit meer tonen, ook niet als niet-selecteerbare rij.
+- Conclusions: Filteren moet vóór het groeperen gebeuren, niet erna — anders kan een groep blijven bestaan die alleen nog matcht via de net verborgen track. De guards blijven als tweede net (tweede query-rondes) en als verdediging in /api/tracks/[id]/archive zelf.
+- Actions:
+  - Modified `src/lib/smart-archive.ts` — nieuwe pure `filterArchivableCandidates()` (releaseStatus `published`, master in song_archive zonder parentId, trackId in playlist = excluded); `findDuplicateCandidateGroups` haalt master- en playlist-ids in twee batch-queries op en filtert vóór `groupBySimilarity`.
+  - Modified `src/app/api/smart-archive/route.ts` — tracks die alsnog als blocked uit de guards komen worden uit de groep gefilterd (default: ontbrekende guard = blokkeren) en groepen met minder dan 2 tracks verdwijnen.
+  - Modified `src/lib/__tests__/smart-archive.test.ts` — 3 tests voor `filterArchivableCandidates` (19 tests totaal groen).
+  - Validated with `npx vitest run` (alle 9 testbestanden groen), `npx tsc --noEmit` en `npm run build` — succesvol.
+
+## 2026-09-22 di 18:14 (Settings > LLM: actieve provider zichtbaar + Retrieve Models voor Eden AI)
+
+- Findings: Op Settings > Providers > LLM was niet te zien welke provider daadwerkelijk actief was — de drie accordions toonden alleen een Configured/Connected-badge, terwijl de routing (`*_LLM_PROVIDER`) pas in AI Routing staat. Ook ontbrak er een "Retrieve Models"-knop voor Eden AI: die knop was hardgecodeerd op `provider.id === "openrouter"`. Eden AI wordt wel automatisch geladen bij page-load, maar als dat fetchen faalt (502/timeout) bleven alle dropdowns op "Retrieve models to select" staan zonder enige manier om te retryen; de enige Retrieve-knop (in AI Routing) haalde bovendien altijd alleen OpenRouter op.
+- Conclusions: Los de twee losse punten op zonder de routing-architectuur te veranderen: (1) een "Active"-chip direct op de provider-accordion, berekend uit de `*_LLM_PROVIDER`-settings, zodat het LLM-tab op zichzelf al het antwoord geeft; (2) Eden AI-knop als manual/retry-pad naast de eager load — geen aparte fetch-logica, dezelfde publieke endpoint. In AI Routing krijgt elke geroutete provider z'n eigen Retrieve-knop, zodat er nooit een OpenRouter-knop staat als alles naar Eden AI (of OpenAI) geroutet is.
+- Actions:
+  - Modified `src/components/settings/ProviderAccordion.tsx` — optionele `activePurposes?: string[]`-prop; groene "Active: …"-chip (met purposes + tooltip) of grijze "Not in use"-chip naast de statusbadge; wordt niet gerenderd als prop ontbreekt (music-providers ongewijzigd).
+  - Modified `src/components/settings/ProviderSection.tsx` — `activePurposes` doorgeven; "Retrieve Models"-knop toonen zodra `onGetModels` bestaat (id-check `openrouter` verwijderd).
+  - Modified `src/app/settings/page.tsx` — module-level `LLM_ROUTING_PURPOSES` (6 doelen; Timecoded volgt Lyrics en staat er niet los in), `purposesFor(providerId)`-helper, gedeelde `fetchEdenAiModels()`, nieuwe state `retrievingEdenAiModels` + `getEdenAiModels()` (manual retry), Eden AI ProviderSection krijgt `onGetModels`/`activePurposes`, AI Routing-sectie krijgt `onGetEdenAiModels`/`testingEdenAiModels`.
+  - Modified `src/components/settings/AiRoutingSection.tsx` — header toont nu "Retrieve OpenRouter Models" en/of "Retrieve Eden AI Models" afhankelijk van welke providers de doelen daadwerkelijk gebruiken; verouderde Models-omschrijving en componentcomment gecorrigeerd (Eden AI heeft óók een picker, geen plain text field).
+  - Validated with `npm run build` — succesvol (build number 202609221814 automatisch via next.config.mjs).
