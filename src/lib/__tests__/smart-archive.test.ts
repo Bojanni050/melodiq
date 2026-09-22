@@ -3,6 +3,7 @@ import {
   computeAudioDnaDistance,
   computePairScore,
   computeTextSimilarity,
+  filterArchivableCandidates,
   groupBySimilarity,
   type TrackForSimilarity,
 } from "../smart-archive";
@@ -136,5 +137,39 @@ describe("groupBySimilarity", () => {
     const tracks: TrackForSimilarity[] = [track({ id: "a", lyrics: "unique lyrics with nothing else to compare against" })];
     const groups = groupBySimilarity(tracks, 0.5);
     expect(groups).toHaveLength(0);
+  });
+});
+
+describe("filterArchivableCandidates", () => {
+  type Row = { id: string; releaseStatus: string | null };
+
+  const rows: Row[] = [
+    { id: "plain", releaseStatus: null },
+    { id: "concept", releaseStatus: "concept" },
+    { id: "published", releaseStatus: "published" },
+    { id: "master", releaseStatus: null },
+    { id: "on-playlist", releaseStatus: "concept" },
+  ];
+  const protection = {
+    masterTrackIds: ["master"],
+    playlistTrackIds: ["on-playlist", "published"],
+  };
+
+  it("keeps only tracks that are safe to archive", () => {
+    expect(filterArchivableCandidates(rows, protection).map((r) => r.id)).toEqual(["plain", "concept"]);
+  });
+
+  it("drops a published track even when it isn't master or on a playlist", () => {
+    const publishedOnly = filterArchivableCandidates([{ id: "p", releaseStatus: "published" }], {
+      masterTrackIds: [],
+      playlistTrackIds: [],
+    });
+    expect(publishedOnly).toHaveLength(0);
+  });
+
+  it("still filters a published track when nothing else is protected", () => {
+    const kept = filterArchivableCandidates(rows, { masterTrackIds: [], playlistTrackIds: [] });
+    // 'published' is dropped on releaseStatus alone; the rest survive.
+    expect(kept.map((r) => r.id)).toEqual(["plain", "concept", "master", "on-playlist"]);
   });
 });

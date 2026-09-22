@@ -84,34 +84,42 @@ export async function GET() {
     const stemCountById = new Map(stemCounts.map((row) => [row.trackId, row.count]));
     const masterCountById = new Map(masterCounts.map((row) => [row.trackId, row.count]));
 
-    const payload = groups.map((group) => ({
-      id: group.id,
-      score: group.score,
-      matchedOn: group.matchedOn,
-      tracks: group.trackIds.map((trackId): GuardedTrack => {
-        const track = trackById.get(trackId);
-        const guard = guardById.get(trackId);
-        return {
-          id: trackId,
-          title: track?.title ?? null,
-          promptSnippet: track?.prompt ? track.prompt.slice(0, SNIPPET_LENGTH) : null,
-          lyricsSnippet: track?.lyrics ? track.lyrics.slice(0, SNIPPET_LENGTH) : null,
-          hasCover: !!track?.s3KeyCover,
-          blocked: guard?.blocked ?? false,
-          reasons: guard?.blocked ? [{ type: guard.reason, detail: guard.message }] : [],
-          duration: track?.duration ?? null,
-          status: track?.status ?? "pending",
-          releaseStatus: track?.releaseStatus ?? null,
-          publishDate: track?.publishDate ? track.publishDate.toISOString() : null,
-          playCount: track?.playCount ?? 0,
-          lyricsTimestamps: track?.lyricsTimestamps ?? null,
-          instrumental: track?.instrumental ?? false,
-          hasHd: !!track?.s3KeyHd,
-          stemsCount: stemCountById.get(trackId) ?? 0,
-          mastersCount: masterCountById.get(trackId) ?? 0,
-        };
-      }),
-    }));
+    const payload = groups
+      .map((group) => ({
+        id: group.id,
+        score: group.score,
+        matchedOn: group.matchedOn,
+        tracks: group.trackIds
+          // Second net behind smart-archive's pre-grouping filter: if a track
+          // became published / master / playlist-bound between the two query
+          // rounds, it's dropped here instead of being offered (even locked).
+          .filter((trackId) => !(guardById.get(trackId)?.blocked ?? true))
+          .map((trackId): GuardedTrack => {
+            const track = trackById.get(trackId);
+            const guard = guardById.get(trackId);
+            return {
+              id: trackId,
+              title: track?.title ?? null,
+              promptSnippet: track?.prompt ? track.prompt.slice(0, SNIPPET_LENGTH) : null,
+              lyricsSnippet: track?.lyrics ? track.lyrics.slice(0, SNIPPET_LENGTH) : null,
+              hasCover: !!track?.s3KeyCover,
+              blocked: guard?.blocked ?? false,
+              reasons: guard?.blocked ? [{ type: guard.reason, detail: guard.message }] : [],
+              duration: track?.duration ?? null,
+              status: track?.status ?? "pending",
+              releaseStatus: track?.releaseStatus ?? null,
+              publishDate: track?.publishDate ? track.publishDate.toISOString() : null,
+              playCount: track?.playCount ?? 0,
+              lyricsTimestamps: track?.lyricsTimestamps ?? null,
+              instrumental: track?.instrumental ?? false,
+              hasHd: !!track?.s3KeyHd,
+              stemsCount: stemCountById.get(trackId) ?? 0,
+              mastersCount: masterCountById.get(trackId) ?? 0,
+            };
+          }),
+      }))
+      // A group left with a single track isn't a duplicate pair anymore.
+      .filter((group) => group.tracks.length >= 2);
 
     return NextResponse.json({ groups: payload });
   } catch (error) {

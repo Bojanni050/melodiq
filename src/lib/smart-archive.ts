@@ -1,7 +1,7 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { tracks } from "@/db/schema";
+import { tracks, songArchive, playlistTracks } from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
 
 // Tunable — no real user data to calibrate against yet, easy to adjust here.
@@ -208,6 +208,22 @@ export function groupBySimilarity(
     }));
 }
 
+// Tracks that can never be archived (published release, Song Archive master,
+// or present on any playlist — see archive-guards.ts) must not be *offered*
+// as duplicate candidates at all, not even greyed-out with a lock: showing
+// them implies they're up for archiving. Pure and unit-testable; the
+// protection sets are gathered in batched queries by the caller.
+export function filterArchivableCandidates<T extends { id: string; releaseStatus: string | null }>(
+  rows: T[],
+  protection: { masterTrackIds: Iterable<string>; playlistTrackIds: Iterable<string> }
+): T[] {
+  const masterIds = new Set(protection.masterTrackIds);
+  const playlistIds = new Set(protection.playlistTrackIds);
+  return rows.filter(
+    (row) => row.releaseStatus !== "published" && !masterIds.has(row.id) && !playlistIds.has(row.id)
+  );
+}
+
 function parseAudioDnaJson(raw: string | null): AudioDna | null {
   if (!raw) return null;
   try {
@@ -229,11 +245,36 @@ export async function findDuplicateCandidateGroups(
       lyrics: tracks.lyrics,
       prompt: tracks.prompt,
       audioDna: tracks.audioDna,
+      releaseStatus: tracks.releaseStatus,
     })
     .from(tracks)
     .where(and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt)));
 
-  const forSimilarity: TrackForSimilarity[] = rows.map((row) => ({
+  // Drop protected tracks (published / master / in-playlist) BEFORE grouping,
+  // so a group can never form around a track that isn't archivable itself —
+  // filtering afterwards would leave groups whose only shared similarity ran
+  // through a now-hidden track.
+  const rowIds = rows.map((row) => row.id);
+  const [masterRows, playlistRows] =
+    rowIds.length === 0
+      ? [[], []] as const
+      : await Promise.all([
+          db
+            .select({ trackId: songArchive.trackId })
+            .from(songArchive)
+            .where(and(inArray(songArchive.trackId, rowIds), isNull(songArchive.parentId))),
+          db
+            .select({ trackId: playlistTracks.trackId })
+            .from(playlistTracks)
+            .where(inArray(playlistTracks.trackId, rowIds)),
+        ]);
+
+  const archivableRows = filterArchivableCandidates(rows, {
+    masterTrackIds: masterRows.map((row) => row.trackId).filter((id): id is string => !!id),
+    playlistTrackIds: playlistRows.map((row) => row.trackId).filter((id): id is string => !!id),
+  });
+
+  const forSimilarity: TrackForSimilarity[] = archivableRows.map((row) => ({
     id: row.id,
     title: row.title,
     lyrics: row.lyrics,
