@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609261731**
+**Versie: 202609261839**
 
 > AI Music Generation Web App
 
@@ -297,3 +297,16 @@ In alle tracklijsten (Library, Playlists, Workspaces, Releases, Archief) en in *
 Een **Shift-klik of Ctrl-klik op de trackkaart zelf** past de selectie aan en opent géén detailvenster — alleen een gewone klik opent de track.
 
 Bij Slim Archief werkt de range-selectie per groep: je kunt dus binnen één groep een bereik aanvinken zonder de andere groepen mee te nemen. Geblokkeerde tracks (published, Master Track of in een playlist) worden nooit meegenomen, ook niet als ze in het bereik vallen.
+
+#### Select all per groep (Slim Archief)
+
+Rechtsboven in elke groep staat een **Select all**-knop:
+
+- **Select all** zet alle tracks in die groep aan — daarna verandert de knop in **Deselect all**
+- **Deselect all** haalt ze er weer allemaal uit
+- Het bolletje ervoor toont de voortgang net als in de hoofdtracklijst: leeg ringje = niets geselecteerd, half gevuld = gedeeltelijk, vol = alles
+- De knop werkt per groep: hij raakt de andere groepen niet aan
+- Geblokkeerde tracks worden overslagen, dus die worden nooit geselecteerd
+- Is een groep volledig geblokkeerd, dan verschijnt de knop helemaal niet
+
+Handig om snel een hele groep duplicaten in één keer te archiveren: **Select all** → **Archive selected (n)**.

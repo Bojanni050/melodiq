@@ -252,6 +252,27 @@ export default function SmartArchivePage() {
     }
   }
 
+  // Selects or clears every selectable track in one group. Reuses
+  // selectableTrackIdsByGroup so blocked tracks are never included. When nothing
+  // in the group is selectable the button is hidden entirely, so this early-out
+  // is a safety net rather than a reachable state.
+  function toggleSelectAllGroup(groupId: string) {
+    const selectableIds = selectableTrackIdsByGroup[groupId] ?? [];
+    if (selectableIds.length === 0) return;
+
+    setCheckedByGroup((prev) => {
+      const current = prev[groupId] ?? new Set<string>();
+      const allSelected = selectableIds.every((id) => current.has(id));
+      const next = new Set(current);
+      selectableIds.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
+      return { ...prev, [groupId]: next };
+    });
+
+    // Point the anchor at the first selectable row so a following Shift-click
+    // spans from the start of the group rather than from a stale position.
+    checkedAnchorRef.current = { ...checkedAnchorRef.current, [groupId]: selectableIds[0] };
+  }
+
   function handleArchiveGroupClick(group: SmartArchiveGroup) {
     const ids = checkedByGroup[group.id] ?? new Set<string>();
     if (ids.size === 0) return;
@@ -360,6 +381,11 @@ export default function SmartArchivePage() {
               <div className="space-y-5">
                 {groups.map((group) => {
                   const checked = checkedByGroup[group.id] ?? new Set<string>();
+                  const selectableIds = selectableTrackIdsByGroup[group.id] ?? [];
+                  const selectableCount = selectableIds.length;
+                  const selectedSelectableCount = selectableIds.filter((id) => checked.has(id)).length;
+                  const allSelected = selectableCount > 0 && selectedSelectableCount === selectableCount;
+                  const someSelected = selectedSelectableCount > 0 && !allSelected;
                   return (
                     <div key={group.id} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
                       <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b border-white/10">
@@ -368,6 +394,34 @@ export default function SmartArchivePage() {
                             {MATCH_LABELS[signal] ?? signal} {Math.round(group.score * 100)}%
                           </span>
                         ))}
+                        {selectableCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleSelectAllGroup(group.id)}
+                            className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors"
+                            title={allSelected ? "Deselect all tracks in this group" : "Select all tracks in this group"}
+                          >
+                            {/* Mirrors the main track list: a filled dot when all
+                                are selected, a dimmed one for a partial
+                                selection, an empty ring otherwise. */}
+                            <span
+                              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                                allSelected
+                                  ? "bg-blue-500"
+                                  : someSelected
+                                    ? "bg-blue-500/50"
+                                    : "border-2 border-white/20"
+                              }`}
+                            >
+                              {(allSelected || someSelected) && (
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </span>
+                            {allSelected ? "Deselect all" : "Select all"}
+                          </button>
+                        )}
                       </div>
 
                       <div className="divide-y divide-white/5">
