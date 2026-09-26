@@ -18,6 +18,9 @@ const TrackListHeader = memo(function TrackListHeader({
   hideSortOptions,
   showJumpToCurrent,
   onJumpToCurrent,
+  failedTrackCount,
+  purgingFailed,
+  onPurgeFailed,
 }: {
   displayedTracks: TrackItem[];
   sortOrder: SortOrder;
@@ -30,6 +33,10 @@ const TrackListHeader = memo(function TrackListHeader({
   hideSortOptions?: boolean;
   showJumpToCurrent?: boolean;
   onJumpToCurrent?: () => void;
+  /** Shown only when > 0, so a healthy library has no such button at all. */
+  failedTrackCount?: number;
+  purgingFailed?: boolean;
+  onPurgeFailed?: () => void;
 }) {
   const toggleSelectAll = useSelectionStore((state) => state.toggleSelectAll);
 
@@ -141,6 +148,29 @@ const TrackListHeader = memo(function TrackListHeader({
             title="Spring naar huidige track"
           >
             <span>Huidige track</span>
+          </button>
+        )}
+        {/* Failed tracks are dead weight but not a duplicate problem, so they
+            are only ever visible here — never in a Smart Archive group. */}
+        {onPurgeFailed && (failedTrackCount ?? 0) > 0 && (
+          <button
+            type="button"
+            onClick={onPurgeFailed}
+            disabled={purgingFailed}
+            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-red-300/25 bg-red-500/10 text-red-200 text-xs font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Alle mislukte tracks verwijderen — ze gaan naar de prullenbak en zijn terug te halen"
+          >
+            {purgingFailed ? (
+              <>
+                <span className="w-3 h-3 rounded-full border-2 border-red-200/30 border-t-red-200 animate-spin" />
+                Bezig…
+              </>
+            ) : (
+              <>
+                <span>{failedTrackCount} mislukt</span>
+                <span className="text-red-300/70">verwijderen</span>
+              </>
+            )}
           </button>
         )}
       </div>

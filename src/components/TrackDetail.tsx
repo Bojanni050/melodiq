@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { formatGenerationTime } from "@/lib/track-utils";
+import { formatGenerator } from "@/lib/format-generator";
 import type { TrackDetailTrack } from "@/components/track-detail/types";
 import { useTrackDetailSync } from "@/components/track-detail/useTrackDetailSync";
 import { useTrackRating } from "@/components/track-detail/useTrackRating";
@@ -111,6 +112,13 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   const generationTime = formatGenerationTime(track.createdAt, track.completedAt);
 
+  // "poyo" + "V5_5" is a Suno 5.5 track, not a "PoYo V5_5" one — PoYo is the
+  // API that fronts Suno here, and the stored pair is the internal one. The
+  // label therefore comes from a lookup (lib/format-generator) rather than from
+  // the raw columns, and falls back to whatever is stored so an unlisted
+  // provider is still named instead of silently disappearing.
+  const generatorLabel = formatGenerator(track.provider, track.providerModel);
+
   function formatDuration(seconds: number | null): string {
     if (!seconds || seconds <= 0) return "";
     const mins = Math.floor(seconds / 60);
@@ -184,6 +192,11 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             )}
             {track.language && (
               <span className="ml-1.5 text-white/60">• {track.language}</span>
+            )}
+            {generatorLabel && (
+              <span className="ml-1.5 text-white/60" title={track.providerModel || undefined}>
+                • {generatorLabel}
+              </span>
             )}
             {generationTime && (
               <span className="ml-1.5 text-white/60" title="Time from generation start to completion">

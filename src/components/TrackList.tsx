@@ -534,6 +534,45 @@ export default memo(function TrackList({
     setSelectedIds(remaining);
   }, [tracks, archiveTrackIds, onDelete, setSelectedIds]);
 
+  /**
+   * Bulk-remove every failed track in the whole library, not just the visible
+   * slice. Failed tracks never form a Smart Archive group (no audio DNA to match
+   * on, and a group needs two members), so they are only ever seen here — which
+   * is why this lives in the Library and not on that page.
+   *
+   * Soft delete: every track lands in the recycle bin and can be restored from
+   * the Archive tab. The confirmation says so, because "verwijder alles" reading
+   * as permanent would be wrong.
+   */
+  const [confirmPurgeFailed, setConfirmPurgeFailed] = useState(false);
+  const [purgingFailed, setPurgingFailed] = useState(false);
+
+  const failedTrackCount = useMemo(
+    () => tracks.filter((t) => t.status === "failed").length,
+    [tracks]
+  );
+
+  const executePurgeFailed = useCallback(async () => {
+    setConfirmPurgeFailed(false);
+    const failed = tracks.filter((t) => t.status === "failed");
+    if (failed.length === 0) return;
+    setPurgingFailed(true);
+    try {
+      // Sequential rather than parallel: these are all writes to the same user,
+      // and a burst of parallel DELETEs only makes the failure harder to read.
+      for (const track of failed) {
+        try {
+          const res = await fetch(`/api/tracks/${track.id}`, { method: "DELETE" });
+          if (res.ok) onDelete?.(track.id);
+        } catch {
+          // Leave the rest: a single unreachable track must not abort the sweep.
+        }
+      }
+    } finally {
+      setPurgingFailed(false);
+    }
+  }, [tracks, onDelete]);
+
   const handleMoveToWorkspace = useCallback((sourceTrackId: string, workspaceId: string) => {
     const activeSelection = useSelectionStore.getState().selectedIds;
     const moveIds = activeSelection.size > 0 && activeSelection.has(sourceTrackId)
@@ -876,6 +915,14 @@ export default memo(function TrackList({
           onCancel={() => setConfirmMassHide(false)}
         />
       )}
+      {confirmPurgeFailed && (
+        <ConfirmDialog
+          message={`Verwijder ${failedTrackCount} mislukte track${failedTrackCount === 1 ? "" : "s"}? Ze gaan naar de prullenbak, niet permanent weg — je herstelt ze volledig vanuit het Archief-tabblad.`}
+          confirmLabel="Verwijderen"
+          onConfirm={executePurgeFailed}
+          onCancel={() => setConfirmPurgeFailed(false)}
+        />
+      )}
       <div className="space-y-1">
         <TrackListHeader
           displayedTracks={displayedTracks}
@@ -889,6 +936,11 @@ export default memo(function TrackList({
           hideSortOptions={!!dragOrderKey}
           showJumpToCurrent={!!currentTrack && !currentTrackVisible}
           onJumpToCurrent={scrollToCurrentTrack}
+          // Only offered when there is something to purge — a dead button on
+          // every healthy library is noise.
+          failedTrackCount={failedTrackCount}
+          purgingFailed={purgingFailed}
+          onPurgeFailed={() => setConfirmPurgeFailed(true)}
         />
 
         <SelectionActionPill

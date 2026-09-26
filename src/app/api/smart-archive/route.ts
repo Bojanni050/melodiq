@@ -38,6 +38,18 @@ type GuardedTrack = {
   // "Favorieten" is already shown as the heart and "Master Tracks" already
   // surfaces as a warning, so listing them would be noise.
   playlistNames: string[];
+  // Fields the right-hand Track Details panel reads. Not shown in the row, and
+  // not fetched before the panel existed.
+  language: string | null;
+  provider: string;
+  providerModel: string;
+  prompt: string | null;
+  createdAt: string | null;
+  completedAt: string | null;
+  error: string | null;
+  artistName: string | null;
+  composerName: string | null;
+  writerName: string | null;
 };
 
 export async function GET() {
@@ -73,6 +85,17 @@ export async function GET() {
           instrumental: tracks.instrumental,
           s3KeyHd: tracks.s3KeyHd,
           rating: tracks.rating,
+          // The right-hand Track Details panel needs these; Slim Archive did not
+          // fetch them before because the row never showed them.
+          language: tracks.language,
+          provider: tracks.provider,
+          providerModel: tracks.providerModel,
+          createdAt: tracks.createdAt,
+          completedAt: tracks.completedAt,
+          error: tracks.error,
+          artistName: tracks.artistName,
+          composerName: tracks.composerName,
+          writerName: tracks.writerName,
         })
         .from(tracks)
         .where(and(inArray(tracks.id, allTrackIds), eq(tracks.userId, userId))),
@@ -151,6 +174,16 @@ export async function GET() {
               mastersCount: masterCountById.get(trackId) ?? 0,
               rating: track?.rating ?? null,
               playlistNames: playlistNamesById.get(trackId) ?? [],
+              language: track?.language ?? null,
+              provider: track?.provider ?? "",
+              providerModel: track?.providerModel ?? "",
+              prompt: track?.prompt ?? null,
+              createdAt: track?.createdAt?.toISOString() ?? null,
+              completedAt: track?.completedAt?.toISOString() ?? null,
+              error: track?.error ?? null,
+              artistName: track?.artistName ?? null,
+              composerName: track?.composerName ?? null,
+              writerName: track?.writerName ?? null,
             };
           }),
       }))

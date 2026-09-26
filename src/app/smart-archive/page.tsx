@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
+import { useSidebarStore, usePlayerStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 import TrackOptionsMenu from "@/components/tracks/TrackOptionsMenu";
+import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import ResizablePanel from "@/components/studio/ResizablePanel";
 
 type GroupTrack = {
   id: string;
@@ -34,6 +36,17 @@ type GroupTrack = {
   rating: string | null;
   // User-created playlists this track is in (system playlists excluded).
   playlistNames: string[];
+  // Read by the right-hand Track Details panel, not shown in the row.
+  language: string | null;
+  provider: string;
+  providerModel: string;
+  prompt: string | null;
+  createdAt: string | null;
+  completedAt: string | null;
+  error: string | null;
+  artistName: string | null;
+  composerName: string | null;
+  writerName: string | null;
 };
 
 type SmartArchiveGroup = {
@@ -83,6 +96,33 @@ export default function SmartArchivePage() {
   const [confirmGroup, setConfirmGroup] = useState<SmartArchiveGroup | null>(null);
   const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
   const [dnaMountedIds, setDnaMountedIds] = useState<Set<string>>(new Set());
+
+  // Right-hand Track Details panel. Slim Archive owns its own track list, so the
+  // shared useTrackDetailsPanel hook is given the flattened groups; it only ever
+  // reads `.id`, which keeps the panel following the now-playing track exactly
+  // like it does on the Library and Archive pages.
+  const [detailTrackId, setDetailTrackId] = useState<string | null>(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
+  const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
+
+  const allTracks = useMemo(() => groups.flatMap((group) => group.tracks), [groups]);
+
+  const detailTrack = useMemo(() => {
+    if (!detailTrackId) return null;
+    const groupTrack = allTracks.find((t) => t.id === detailTrackId);
+    if (!groupTrack) return null;
+    return {
+      ...groupTrack,
+      createdAt: groupTrack.createdAt ?? "",
+      prompt: groupTrack.prompt ?? "",
+      // The API only returns snippets; the panel shows the full text where it
+      // matters and the snippet is still useful in the prompt block.
+      lyrics: groupTrack.lyricsSnippet,
+      status: (groupTrack.status as TrackDetailTrack["status"]) ?? "done",
+      coverUrl: groupTrack.hasCover ? `/api/tracks/${groupTrack.id}/cover` : null,
+    } as unknown as TrackDetailTrack;
+  }, [detailTrackId, allTracks]);
 
   // Shift-click range anchor, per group. Held in a ref rather than state: it is
   // read inside the same click handler that writes it, and `fetchGroups` needs to
@@ -533,11 +573,29 @@ export default function SmartArchivePage() {
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <button
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); goToTrackInLibrary(track.id); }}
-                                    title="Open in Library"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (showDetailPanel && detailTrackId === track.id) {
+                                        setShowDetailPanel(false);
+                                        setDetailTrackId(null);
+                                      } else {
+                                        setDetailTrackId(track.id);
+                                        setShowDetailPanel(true);
+                                      }
+                                    }}
+                                    title="Toggle Track Details"
                                     className="text-sm font-medium text-white/80 truncate hover:text-white hover:underline underline-offset-2 text-left min-w-[6rem] max-w-[60vw] sm:max-w-xs"
+                                    aria-expanded={showDetailPanel && detailTrackId === track.id}
                                   >
                                     {track.title || "Untitled"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); goToTrackInLibrary(track.id); }}
+                                    title="Open in Library"
+                                    className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-white/15 text-white/50 hover:text-white hover:border-white/30 transition-colors"
+                                  >
+                                    Library
                                   </button>
                                   {isThisPlaying && (
                                     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 shrink-0 font-medium">
@@ -701,6 +759,35 @@ export default function SmartArchivePage() {
             )}
           </div>
         </main>
+
+        <ResizablePanel show={showDetailPanel} width={rightPanelWidth} setWidth={setRightPanelWidth}>
+          <div className="h-full overflow-y-auto pb-4">
+            {detailTrack ? (
+              <TrackDetail
+                mode="sidebar"
+                track={detailTrack}
+                onClose={() => {
+                  setShowDetailPanel(false);
+                  setDetailTrackId(null);
+                }}
+                // The panel's play button drives the same preview player the rows
+                // use, so clicking it in the panel also highlights the row.
+                onPlay={() => {
+                  if (detailTrack.status === "done") togglePreview(detailTrack.id);
+                }}
+                onDownload={() => {
+                  if (!detailTrack) return;
+                  window.open(`/api/tracks/${detailTrack.id}/download`, "_blank", "noopener");
+                }}
+              />
+            ) : (
+              <div className="h-full px-5 py-6 text-white/45">
+                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+                <p className="text-sm mt-3">Select a track title to show song info and lyrics.</p>
+              </div>
+            )}
+          </div>
+        </ResizablePanel>
       </div>
 
       {confirmGroup && (
