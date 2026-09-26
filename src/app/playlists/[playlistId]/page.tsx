@@ -18,7 +18,8 @@ import {
   useUserStore,
   useWorkspaceStore,
 } from "@/lib/store";
-import type { TrackItem } from "@/components/tracks/types";
+import type { ReuseScope, TrackItem } from "@/components/tracks/types";
+import { buildReusePayload } from "@/lib/reuse-prompt";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useT } from "@/hooks/useT";
 
@@ -84,7 +85,7 @@ export default function PlaylistDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditingPlaylistOrder, setIsEditingPlaylistOrder] = useState(false);
   const [togglingPlaylistPublic, setTogglingPlaylistPublic] = useState(false);
-  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: TrackItem; scope: ReuseScope } | null>(null);
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
 
   const [showConvertDialog, setShowConvertDialog] = useState(false);
@@ -326,21 +327,21 @@ export default function PlaylistDetailPage() {
     setTracks((current) => current.filter((track) => track.id !== trackId));
   }
 
-  function performReusePrompt(track: TrackItem) {
+  function performReusePrompt(track: TrackItem, scope: ReuseScope) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" }),
+      JSON.stringify(buildReusePayload(track, scope)),
     );
     router.push("/studio");
   }
 
-  function handleReusePrompt(track: TrackItem) {
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
     const { songIdea, lyrics } = useStudioStore.getState();
     if (songIdea.trim() || lyrics.trim()) {
-      setReuseConfirmTrack(track);
+      setReuseConfirmTrack({ track, scope });
       return;
     }
-    performReusePrompt(track);
+    performReusePrompt(track, scope);
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -907,9 +908,9 @@ export default function PlaylistDetailPage() {
       {reuseConfirmTrack && (
         <ReuseConfirmDialog
           onConfirm={() => {
-            const track = reuseConfirmTrack;
+            const pending = reuseConfirmTrack;
             setReuseConfirmTrack(null);
-            if (track) performReusePrompt(track);
+            if (pending) performReusePrompt(pending.track, pending.scope);
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />

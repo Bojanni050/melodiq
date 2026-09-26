@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262244**
+**Versie: 202609262250**
 
 > AI Music Generation Web App
 
@@ -335,6 +335,12 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
 - De taal wordt **lokaal** bepaald, zonder AI. Er is geen API-sleutel of internetverbinding nodig en het kost niets. Herkend worden precies de 13 talen die Lyric Studio aanbiedt; is het niet met zekerheid te zeggen, dan blijft de taal leeg en telt die track gewoon mee als "onbekend". Instrumentele tracks krijgen sowieso geen taal.
 - In de tracklijst zie je een **hartje** bij favorieten en de **namen van de playlists** waarin de track staat, zodat je niet per ongeluk iets wegarchieert wat je hebt samengesteld. "Favorieten" en "Master Tracks" worden daar niet apart bij gezet: het hartje en de waarschuwing dekken die al af.
 - Elke track heeft een **⋯ menu** rechts in de rij, met dezelfde opties als in de Library: toevoegen aan een playlist of release, verplaatsen naar een workspace, cover of titel opnieuw genereren, verbergen en archiveren. "Verbergen" en "Archiveren" werken daar op één track; archiveren vraagt net als bij de groepsactie om bevestiging.
+- **Reuse Prompt** staat nu ook in Slim Archief (was een knop die niets deed) en heeft een submenu gekregen:
+  - **Only Lyrics** — alleen de lyrics gaan mee, je promptveld wordt leeggemaakt
+  - **Only Styles** — alleen de prompt (stijlbeschrijving) gaat mee, je lyrics worden leeggemaakt
+  - **Both** — prompt én lyrics, zoals het altijd werkte
+
+  Staan er al tekstvelden gevuld in de Studio, dan vraagt het eerst of die mogen worden overschreven. Het submenu is er nu ook in Library, Playlists, Archief en Releases.
 - Klik op de **titel** van een track om rechts het **Track Details**-paneel te openen, met hetzelfde uiterlijk en dezelfde gegevens als elders in de app: cover, titel, artiest, lyrics, prompt en de metadata. De titel is nu een aan/uit-knop; **Library** ernaast springt nog steeds direct naar de track in de Library. Het paneel is versleepbaar en alleen zichtbaar op een breed scherm.
 - In dat paneel staat na de taal ook **met welke generator de track is gemaakt** (bijv. "Suno 5.5", "Lyria 3", "Mureka 9"). Interne namen worden daarvoor vertaald: `poyo` + `V5_5` heet hier "Suno 5.5", want PoYo is de API achter Suno. Staat er geen model bij, dan wordt alleen de generator genoemd; is ook die onbekend dan blijft de regel weg.
 - **Mislukte tracks** staan nooit in Slim Archief: ze hebben geen audio om op te vergelijken en vormen dus nooit een groep. Ze staan in de **Library**, waar je ze in één keer kunt opruimen met de knop **"N mislukt verwijderen"** boven de tracklijst. Die verdwijnt vanzelf als er geen mislukte tracks zijn. De tracks gaan naar de prullenbak, niet permanent weg — je herstelt ze vanuit het Archief-tabblad.

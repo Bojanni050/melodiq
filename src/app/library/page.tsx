@@ -6,7 +6,8 @@ import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
-import type { TrackItem } from "@/components/tracks/types";
+import type { ReuseScope, TrackItem } from "@/components/tracks/types";
+import { buildReusePayload } from "@/lib/reuse-prompt";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import TrashPanel from "@/components/library/TrashPanel";
 import ArchivePanel from "@/components/library/ArchivePanel";
@@ -38,7 +39,7 @@ export default function LibraryPage() {
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener";
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
-  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: TrackItem; scope: ReuseScope } | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
   const loadReleases = useReleaseStore((state) => state.loadReleases);
   const {
@@ -358,21 +359,23 @@ export default function LibraryPage() {
     [parentWorkspaceNameById, workspaces],
   );
 
-  function performReusePrompt(track: TrackItem) {
+  function performReusePrompt(track: TrackItem, scope: ReuseScope) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+      JSON.stringify(buildReusePayload(track, scope))
     );
     router.push("/studio");
   }
 
-  function handleReusePrompt(track: TrackItem) {
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
     const { songIdea, lyrics } = useStudioStore.getState();
     if (songIdea.trim() || lyrics.trim()) {
-      setReuseConfirmTrack(track);
+      // The scope has to survive the dialog: the user picked "Only Lyrics" on
+      // the menu, and the dialog must not silently widen that to both.
+      setReuseConfirmTrack({ track, scope });
       return;
     }
-    performReusePrompt(track);
+    performReusePrompt(track, scope);
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -682,9 +685,9 @@ export default function LibraryPage() {
       {reuseConfirmTrack && (
         <ReuseConfirmDialog
           onConfirm={() => {
-            const track = reuseConfirmTrack;
+            const pending = reuseConfirmTrack;
             setReuseConfirmTrack(null);
-            if (track) performReusePrompt(track);
+            if (pending) performReusePrompt(pending.track, pending.scope);
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />

@@ -8,7 +8,7 @@ import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, use
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import { shortTrackId, isForExpectedTrack } from "@/lib/track-id";
-import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
+import type { PlaylistOption, ReuseScope, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { withCdn } from "@/lib/cdn-client";
@@ -68,7 +68,7 @@ const TrackCard = memo(function TrackCard({
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
   onDeleteTracks?: (trackIds: string[]) => Promise<void> | void;
-  onReusePrompt?: (track: TrackItem) => void;
+  onReusePrompt?: (track: TrackItem, scope: ReuseScope) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (
     trackId: string,

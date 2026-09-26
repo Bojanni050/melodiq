@@ -5,7 +5,7 @@ import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackListHeader from "@/components/tracks/TrackListHeader";
 import SelectionActionPill from "@/components/tracks/SelectionActionPill";
-import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
+import type { PlaylistOption, ReuseScope, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import {
@@ -43,7 +43,7 @@ export default memo(function TrackList({
   dragOrderKey?: string;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
-  onReusePrompt?: (track: TrackItem) => void;
+  onReusePrompt?: (track: TrackItem, scope: ReuseScope) => void;
   onAddToQueue?: (track: TrackItem) => void;
   onAddToPlaylist?: (
     trackId: string,

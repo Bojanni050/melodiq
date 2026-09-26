@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlaylistStore, useReleaseStore } from "@/lib/store";
 import CoverManager from "./CoverManager";
+import { REUSE_SCOPE_LABEL, type ReuseScope } from "@/lib/reuse-prompt";
 import type { PlaylistOption, TrackItem } from "./types";
 
 interface TrackActionMenuProps {
   track: TrackItem;
   playlists?: PlaylistOption[];
-  onReusePrompt?: (track: TrackItem) => void;
+  onReusePrompt?: (track: TrackItem, scope: ReuseScope) => void;
+  /**
+   * Which fields the reuse should carry over. Omitted means the default, both.
+   * Absent as a prop (vs. present without a handler) is not a valid state: the
+   * entry is hidden unless there is something to call.
+   */
+  reuseScope?: ReuseScope;
   onRegenerateCover: () => void;
   isRegeneratingCover: boolean;
   onRegenerateTitle?: () => void;
@@ -101,6 +108,7 @@ export default function TrackActionMenu({
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [releaseSubmenuOpen, setReleaseSubmenuOpen] = useState(false);
+  const [reuseSubmenuOpen, setReuseSubmenuOpen] = useState(false);
   const [showCoverManager, setShowCoverManager] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
@@ -208,16 +216,38 @@ export default function TrackActionMenu({
             </button>
           )}
           <div className="my-1 h-px bg-white/10" />
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(false);
-              onReusePrompt?.(track);
-            }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
-          >
-            Reuse Prompt
-          </button>
+          {onReusePrompt && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReuseSubmenuOpen((prev) => !prev);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                aria-expanded={reuseSubmenuOpen}
+              >
+                <span>Reuse Prompt</span>
+                <span className={`text-white/30 transition-transform ${reuseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
+              </button>
+              {reuseSubmenuOpen && (
+                <div className="my-1 space-y-0.5 border-l border-white/10 pl-2.5 py-0.5">
+                  {(Object.keys(REUSE_SCOPE_LABEL) as ReuseScope[]).map((scope) => (
+                    <button
+                      key={scope}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onReusePrompt(track, scope);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                    >
+                      {REUSE_SCOPE_LABEL[scope]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();

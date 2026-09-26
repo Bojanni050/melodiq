@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, usePlayerStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
+import { useSidebarStore, usePlayerStore, useStudioStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
@@ -11,6 +11,8 @@ import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 import TrackOptionsMenu from "@/components/tracks/TrackOptionsMenu";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
+import type { ReuseScope, TrackItem } from "@/components/tracks/types";
+import { buildReusePayload } from "@/lib/reuse-prompt";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 
 type GroupTrack = {
@@ -352,6 +354,18 @@ export default function SmartArchivePage() {
     await archiveTrackIds(ids, getTitle);
     setConfirmGroup(null);
     await fetchGroups();
+  }
+
+  // Reuse Prompt hands the track over to the Studio. It was missing here
+  // entirely, and because the menu entry was rendered unconditionally the
+  // button existed but did nothing — hence "it doesn't work from Smart Archive".
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
+    const { songIdea, lyrics } = useStudioStore.getState();
+    if (songIdea.trim() || lyrics.trim()) {
+      if (!window.confirm("Dit vervangt de huidige inhoud van de Studio. Doorgaan?")) return;
+    }
+    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify(buildReusePayload(track, scope)));
+    router.push("/studio");
   }
 
   // Single-track hide/archive from the row's options menu. The group-level
@@ -700,6 +714,7 @@ export default function SmartArchivePage() {
                                       }}
                                       onHideClick={() => void handleHideSingle(track)}
                                       onArchiveClick={() => handleArchiveSingle(track)}
+                                      onReusePrompt={handleReusePrompt}
                                       onChanged={() => void fetchGroups()}
                                     />
                                   )}

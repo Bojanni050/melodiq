@@ -11,7 +11,8 @@ import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore, useStudioStore, useUserStore } from "@/lib/store";
 import type { Track } from "@/lib/store";
-import type { TrackItem } from "@/components/tracks/types";
+import type { ReuseScope, TrackItem } from "@/components/tracks/types";
+import { buildReusePayload } from "@/lib/reuse-prompt";
 import EntryEditor from "@/components/archive/EntryEditor";
 import TranslationRow from "@/components/archive/TranslationRow";
 import EntryTrackActionsMenu from "@/components/archive/EntryTrackActionsMenu";
@@ -49,7 +50,7 @@ export default function ArchivePage() {
   const [allTracks, setAllTracks] = useState<TrackItem[]>([]);
   const [tracksLoading, setTracksLoading] = useState(true);
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
-  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<TrackItem | null>(null);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: TrackItem; scope: ReuseScope } | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
   const loadReleases = useReleaseStore((state) => state.loadReleases);
   const releases = useReleaseStore((state) => state.releases);
@@ -133,21 +134,21 @@ export default function ArchivePage() {
     setAllTracks((current) => current.filter((track) => track.id !== trackId));
   }
 
-  function performReusePrompt(track: TrackItem) {
+  function performReusePrompt(track: TrackItem, scope: ReuseScope) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" })
+      JSON.stringify(buildReusePayload(track, scope))
     );
     router.push("/studio");
   }
 
-  function handleReusePrompt(track: TrackItem) {
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
     const { songIdea, lyrics } = useStudioStore.getState();
     if (songIdea.trim() || lyrics.trim()) {
-      setReuseConfirmTrack(track);
+      setReuseConfirmTrack({ track, scope });
       return;
     }
-    performReusePrompt(track);
+    performReusePrompt(track, scope);
   }
 
   function handleTabDetailPlay(url: string) {
@@ -872,9 +873,9 @@ export default function ArchivePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const track = reuseConfirmTrack;
+                      const pending = reuseConfirmTrack;
                       setReuseConfirmTrack(null);
-                      if (track) performReusePrompt(track);
+                      if (pending) performReusePrompt(pending.track, pending.scope);
                     }}
                     className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
                   >

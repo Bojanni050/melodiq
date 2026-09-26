@@ -54,6 +54,8 @@ export interface TrackItem {
   jobId?: string | null;
 }
 
+export type { ReuseScope } from "@/lib/reuse-prompt";
+
 export interface PlaylistOption {
   id: string;
   name: string;

@@ -12,13 +12,14 @@ import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import PlaylistPickerDialog from "./PlaylistPickerDialog";
 import ReleasePickerDialog from "./ReleasePickerDialog";
-import type { TrackItem } from "./types";
+import type { ReuseScope, TrackItem } from "./types";
 
 interface TrackOptionsMenuProps {
   track: TrackItem;
   /** Cover shown before the track has one, and used by the picker's thumbnails. */
   tracksById?: Map<string, TrackItem>;
   onAddToQueue?: (track: TrackItem) => void;
+  onReusePrompt?: (track: TrackItem, scope: ReuseScope) => void;
   onHideClick?: () => void;
   onArchiveClick?: () => void;
   /**
@@ -42,6 +43,7 @@ export default function TrackOptionsMenu({
   track,
   tracksById,
   onAddToQueue,
+  onReusePrompt,
   onHideClick,
   onArchiveClick,
   onChanged,
@@ -179,6 +181,7 @@ export default function TrackOptionsMenu({
         isRegeneratingTitle={actions.isRegeneratingTitle}
         onMoveToWorkspaceClick={() => actions.setWorkspaceMenuOpen(true)}
         onAddToQueue={onAddToQueue}
+        onReusePrompt={onReusePrompt}
         onCreatePlaylistClick={() => actions.setShowCreatePlaylistDialog(true)}
         onAddToPlaylistClick={actions.handleAddToPlaylistClick}
         onOpenPlaylistPicker={() => actions.setShowPlaylistPickerDialog(true)}

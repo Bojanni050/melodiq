@@ -10,7 +10,8 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore, useStudioStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
-import type { TrackItem } from "@/components/tracks/types";
+import type { ReuseScope, TrackItem } from "@/components/tracks/types";
+import { buildReusePayload } from "@/lib/reuse-prompt";
 import { useT } from "@/hooks/useT";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
@@ -234,13 +235,13 @@ export default function ReleasesPage() {
     player.playTrackFromGesture(standalone);
   }
 
-  function handleReusePrompt(track: TrackItem) {
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
     const { songIdea, lyrics } = useStudioStore.getState();
     if (songIdea.trim() || lyrics.trim()) {
       // If there's already content in studio, confirm before overwriting
       if (!window.confirm("This will replace your current studio content. Continue?")) return;
     }
-    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify({ songIdea: track.prompt || "", lyrics: track.lyrics || "" }));
+    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify(buildReusePayload(track, scope)));
     router.push("/studio");
   }
 
