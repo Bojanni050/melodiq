@@ -50,6 +50,13 @@
       "when": 1788048581674,
       "tag": "0006_discover_playlist_order",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790445134021,
+      "tag": "0007_hidden_tracks",
+      "breakpoints": true
     }
   ]
 }

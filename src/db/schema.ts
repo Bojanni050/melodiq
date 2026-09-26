@@ -10,7 +10,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -134,6 +134,11 @@ export const tracks = pgTable("tracks", {
   // Archiveren bewaart alleen de originele mp3 (s3Key) en verwijdert de
   // HD/WAV-versie, stems en masters. Gearchiveerde tracks zijn niet
   // afspeelbaar en niet bruikbaar in releases. Zie src/lib/archive-guards.ts.
+  // Verborgen: track is alleen zichtbaar in het Archief-tabblad. Anders dan
+  // archivedAt wordt hier NIETS verwijderd — HD/WAV, stems, masters en de mp3
+  // blijven in S3 staan, dus volledig omkeerbaar. Los van archivedAt: een track
+  // kan verborgen én gearchiveerd zijn, en herstellen is per staat afzonderlijk.
+  hiddenAt: timestamp("hidden_at"),
   archivedAt: timestamp("archived_at"),
   deletedAt: timestamp("deleted_at"),
   // Stamped by a DB trigger (see init.ts) the moment status first transitions
@@ -147,6 +152,11 @@ export const tracks = pgTable("tracks", {
   index("tracks_status_idx").on(table.status),
   index("tracks_user_id_created_at_idx").on(table.userId, table.createdAt),
   index("tracks_archived_at_idx").on(table.archivedAt),
+  // Covers the default Library query (userId + deletedAt/archivedAt/hiddenAt
+  // all null, ordered by createdAt). The hiddenAt check is only meaningful
+  // while the vast majority of rows are visible, so a partial index on the
+  // common case is far smaller than a full one.
+  index("tracks_user_id_created_at_hidden_idx").on(table.userId, table.createdAt).where(sql`${table.hiddenAt} IS NULL`),
   // Public Discover feed filters on release_status + status; without this it
   // fell back to the status index and re-checked every done track.
   index("tracks_release_status_status_idx").on(table.releaseStatus, table.status),

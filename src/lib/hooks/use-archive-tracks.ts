@@ -71,3 +71,62 @@ export function useArchiveTracks() {
 
   return { archiving, archiveResults, archiveTrackIds, clearArchiveResults };
 }
+
+export type HideResult = {
+  hiddenCount: number;
+  failed: { trackId: string; title: string; message: string }[];
+};
+
+// Bulk-hide: same sequential convention as useArchiveTracks, but against
+// /api/tracks/[id]/hide. Nothing is deleted server-side, so there are no
+// archive guards to trip — the only rejection is a track sitting in the
+// recycle bin, which cannot be hidden and could then not be permanently
+// deleted either.
+export function useHideTracks() {
+  const [hiding, setHiding] = useState(false);
+  const [hideResults, setHideResults] = useState<HideResult | null>(null);
+
+  const hideTrackIds = useCallback(
+    async (
+      trackIds: string[],
+      getTitle: (trackId: string) => string,
+      onHidden?: (trackId: string) => void
+    ): Promise<HideResult> => {
+      const empty: HideResult = { hiddenCount: 0, failed: [] };
+      if (trackIds.length === 0) {
+        setHideResults(empty);
+        return empty;
+      }
+
+      setHiding(true);
+      const failed: HideResult["failed"] = [];
+      let hiddenCount = 0;
+
+      for (const id of trackIds) {
+        try {
+          const res = await fetch(`/api/tracks/${id}/hide`, { method: "POST" });
+          if (res.ok) {
+            hiddenCount++;
+            onHidden?.(id);
+          } else {
+            const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+            failed.push({ trackId: id, title: getTitle(id), message: data.error ?? `HTTP ${res.status}` });
+          }
+        } catch (error: any) {
+          failed.push({ trackId: id, title: getTitle(id), message: error?.message ?? "Network error" });
+        }
+      }
+
+      setHiding(false);
+      const result: HideResult = { hiddenCount, failed };
+      setHideResults(result);
+      return result;
+    },
+    []
+  );
+
+  const clearHideResults = useCallback(() => setHideResults(null), []);
+
+  return { hiding, hideResults, hideTrackIds, clearHideResults };
+}
+

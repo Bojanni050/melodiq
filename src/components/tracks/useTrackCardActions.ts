@@ -95,6 +95,17 @@ export function useTrackCardActions({
     setPendingDeleteIds(null);
   }
 
+  // Single-track counterpart of the bulk hide in useHideTracks. Deliberately
+  // not multi-select aware: hiding the first id and then dropping the rest from
+  // the UI would make them vanish without ever being flagged in the database.
+  // The selection pill is the one path that handles several tracks, and it
+  // awaits every request. onDelete drops the row from the current list, which
+  // is exactly what the archive flow does too.
+  async function handleHide() {
+    const res = await fetch(`/api/tracks/${track.id}/hide`, { method: "POST" });
+    if (res.ok) onDelete?.(track.id);
+  }
+
   function handleDelete(e: React.MouseEvent) {
     e.stopPropagation();
     const activeSelection = useSelectionStore.getState().selectedIds;
@@ -375,7 +386,7 @@ export function useTrackCardActions({
     workspaceMenuOpen, setWorkspaceMenuOpen,
     showReleasePickerDialog, setShowReleasePickerDialog,
     // handlers
-    executeDelete, handleDelete,
+    executeDelete, handleDelete, handleHide,
     handleRegenerateCover,
     handleRegenerateTitle,
     handleRating,

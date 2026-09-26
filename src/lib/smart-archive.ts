@@ -248,7 +248,7 @@ export async function findDuplicateCandidateGroups(
       releaseStatus: tracks.releaseStatus,
     })
     .from(tracks)
-    .where(and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt)));
+    .where(and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt), isNull(tracks.hiddenAt)));
 
   // Drop protected tracks (published / master / in-playlist) BEFORE grouping,
   // so a group can never form around a track that isn't archivable itself —

@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS "tracks" (
   "track_dna" text,
   "polls_open_at" timestamp,
   "polls_close_at" timestamp,
+  "hidden_at" timestamp,
   "completed_at" timestamp,
   "created_at" timestamp NOT NULL DEFAULT now(),
   "updated_at" timestamp NOT NULL DEFAULT now()
@@ -328,6 +329,8 @@ CREATE INDEX IF NOT EXISTS "tracks_user_id_created_at_idx" ON "tracks"("user_id"
 // the columns above are already in createTablesSql. IF NOT EXISTS makes this safe either way.
 const alterTracksSql = `
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS hidden_at timestamp;
+CREATE INDEX IF NOT EXISTS tracks_user_id_created_at_hidden_idx ON tracks USING btree (user_id, created_at) WHERE hidden_at IS NULL;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format_hd VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS cover_url TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_cover TEXT;

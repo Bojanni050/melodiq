@@ -76,6 +76,7 @@ export async function retryStaleApimartWavConversions(
         eq(tracks.status, "done"),
         isNull(tracks.deletedAt),
         isNull(tracks.archivedAt),
+        isNull(tracks.hiddenAt),
         isNull(tracks.s3KeyHd),
         or(isNull(tracks.wavRetryAt), lt(tracks.wavRetryAt, cutoff)),
         lt(tracks.wavRetryCount, MAX_AUTO_APIMART_WAV_RETRIES),

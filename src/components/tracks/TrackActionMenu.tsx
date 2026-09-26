@@ -24,6 +24,7 @@ interface TrackActionMenuProps {
   onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
   onEditDetails?: () => void;
   onArchiveClick?: () => void;
+  onHideClick?: () => void;
   archiveDisabled?: boolean;
   archiveDisabledReason?: string;
   onLinkToArchiveClick?: () => void;
@@ -69,6 +70,7 @@ export default function TrackActionMenu({
   onRemoveFromReleaseClick,
   onEditDetails,
   onArchiveClick,
+  onHideClick,
   archiveDisabled,
   archiveDisabledReason,
   onLinkToArchiveClick,
@@ -557,7 +559,23 @@ export default function TrackActionMenu({
           )}
            </>
            )}
-           {onArchiveClick && (
+           {onHideClick && (
+            <>
+              <div className="my-1 h-px bg-white/10" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onHideClick();
+                  setMenuOpen(false);
+                }}
+                title="Verberg deze track — alle bestanden blijven bewaard en je herstelt hem volledig in het Archief-tabblad"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-sky-300/85 hover:bg-sky-500/10 hover:text-sky-200 transition-colors"
+              >
+                Verbergen
+              </button>
+            </>
+          )}
+          {onArchiveClick && (
             <>
               <div className="my-1 h-px bg-white/10" />
               <button

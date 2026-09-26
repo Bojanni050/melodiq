@@ -45,8 +45,21 @@ export default function ArchivePanel({ tracks, loading, onRestore }: ArchivePane
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white/80 truncate">{track.title || track.prompt?.substring(0, 60) || t("library.untitled")}</p>
-                <p className="text-xs text-white/35 mt-0.5">
-                  {t("library.archivedOn", { date: track.archivedAt ? new Date(track.archivedAt).toLocaleDateString() : t("library.deletedRecently") })}
+                <p className="text-xs text-white/35 mt-0.5 flex items-center gap-1.5">
+                  {track.hiddenAt && !track.archivedAt && (
+                    <>
+                      <span className="text-sky-300/80">{t("library.hiddenOn", { date: new Date(track.hiddenAt).toLocaleDateString() })}</span>
+                      <span className="text-white/25" title={t("library.hiddenKeptFiles")}>· {t("library.filesKept")}</span>
+                    </>
+                  )}
+                  {track.archivedAt && (
+                    <span>{t("library.archivedOn", { date: new Date(track.archivedAt).toLocaleDateString() })}</span>
+                  )}
+                  {track.hiddenAt && track.archivedAt && (
+                    <span className="text-amber-300/80">
+                      {t("library.hiddenAndArchivedOn", { date: new Date(track.hiddenAt).toLocaleDateString() })}
+                    </span>
+                  )}
                 </p>
               </div>
 

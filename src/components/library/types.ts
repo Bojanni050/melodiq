@@ -30,6 +30,7 @@ export interface LibraryTrack {
   writerName?: string | null;
   deletedAt?: string | null;
   archivedAt?: string | null;
+  hiddenAt?: string | null;
   uploadIndex?: number;
 }
 

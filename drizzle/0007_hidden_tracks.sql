@@ -1,0 +1,2 @@
+ALTER TABLE "tracks" ADD COLUMN "hidden_at" timestamp;--> statement-breakpoint
+CREATE INDEX "tracks_user_id_created_at_hidden_idx" ON "tracks" USING btree ("user_id","created_at") WHERE "tracks"."hidden_at" IS NULL;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { db } from "@/db";
 import { tracks, users, trackAlignments } from "@/db/schema";
-import { eq, desc, and, inArray, ne, lt, isNull, isNotNull, sql } from "drizzle-orm";
+import { eq, desc, and, or, inArray, ne, lt, isNull, isNotNull, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
@@ -115,6 +115,7 @@ export async function GET(request: NextRequest) {
     composerName: tracks.composerName,
     writerName: tracks.writerName,
     archivedAt: tracks.archivedAt,
+    hiddenAt: tracks.hiddenAt,
     deletedAt: tracks.deletedAt,
     completedAt: tracks.completedAt,
     createdAt: tracks.createdAt,
@@ -125,19 +126,38 @@ export async function GET(request: NextRequest) {
   const statusFilter = url.searchParams.get("status");
   const trashOnly = url.searchParams.get("trash") === "true";
   const archivedOnly = url.searchParams.get("archived") === "true";
+  // "hidden" toont het Archief-tabblad: verborgen én/of gearchiveerde tracks.
+  // Vanaf één knop zijn ze niet meer te herstellen als je de andere toestand
+  // niet meeneemt, dus de twee states worden bewust samen opgehaald.
+  const archiveOnly = archivedOnly || url.searchParams.get("hidden") === "true";
 
-  // archivedOnly wint: toon alleen gearchiveerde tracks (ongeacht trash/
-  // status), zodat het Archief-tabblad zelfstandig kan poll-en.
-  const baseWhere = archivedOnly
-    ? and(eq(tracks.userId, userId), isNotNull(tracks.archivedAt), isNull(tracks.deletedAt))
+  // archiveOnly wint: toon alleen tracks die uit de gewone lijst zijn gehaald
+  // (ongeacht trash/status), zodat het Archief-tabblad zelfstandig kan poll-en.
+  const baseWhere = archiveOnly
+    ? and(
+        eq(tracks.userId, userId),
+        or(isNotNull(tracks.archivedAt), isNotNull(tracks.hiddenAt)),
+        isNull(tracks.deletedAt)
+      )
     : trashOnly
     ? and(eq(tracks.userId, userId), isNotNull(tracks.deletedAt))
     : statusFilter
-    ? and(eq(tracks.userId, userId), eq(tracks.status, statusFilter), isNull(tracks.deletedAt), isNull(tracks.archivedAt))
-    : and(eq(tracks.userId, userId), isNull(tracks.deletedAt), isNull(tracks.archivedAt));
+    ? and(
+        eq(tracks.userId, userId),
+        eq(tracks.status, statusFilter),
+        isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt),
+        isNull(tracks.hiddenAt)
+      )
+    : and(
+        eq(tracks.userId, userId),
+        isNull(tracks.deletedAt),
+        isNull(tracks.archivedAt),
+        isNull(tracks.hiddenAt)
+      );
 
   // Run database timeout check before fetching tracks
-  if (!statusFilter && !trashOnly && !archivedOnly) {
+  if (!statusFilter && !trashOnly && !archiveOnly) {
     const timeoutCutoff = new Date(Date.now() - GENERATION_TIMEOUT_MS);
     await db.update(tracks)
       .set({ status: "failed", error: "Generation timed out. Please try again." })
@@ -148,13 +168,14 @@ export async function GET(request: NextRequest) {
           ne(tracks.provider, "musicgpt"),
           lt(tracks.createdAt, timeoutCutoff),
           isNull(tracks.deletedAt),
-          isNull(tracks.archivedAt)
+          isNull(tracks.archivedAt),
+          isNull(tracks.hiddenAt)
         )
       );
   }
 
   // Active-polling fallback: Check status of active (pending/generating) tracks
-  if (!statusFilter && !trashOnly && !archivedOnly) {
+  if (!statusFilter && !trashOnly && !archiveOnly) {
     const activeTracks = await db
       .select()
       .from(tracks)
@@ -163,7 +184,8 @@ export async function GET(request: NextRequest) {
           eq(tracks.userId, userId),
           inArray(tracks.status, ["pending", "generating"]),
           isNull(tracks.deletedAt),
-          isNull(tracks.archivedAt)
+          isNull(tracks.archivedAt),
+          isNull(tracks.hiddenAt)
         )
       );
 

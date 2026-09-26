@@ -27,6 +27,7 @@ export interface TrackItem {
   votedAt?: string | null;
   workspaceId?: string | null;
   archivedAt?: string | null;
+  hiddenAt?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;
   trackDna?: string | null;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
-import { useArchiveTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
+import { useArchiveTracks, useHideTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
@@ -99,6 +99,7 @@ export default function SmartArchivePage() {
   }
 
   const { archiving, archiveResults, archiveTrackIds, clearArchiveResults } = useArchiveTracks();
+  const { hiding, hideTrackIds } = useHideTracks();
 
   // Independent preview player — a separate <audio> element from the app's
   // global player, so comparing candidates doesn't interrupt whatever is
@@ -271,6 +272,17 @@ export default function SmartArchivePage() {
     // Point the anchor at the first selectable row so a following Shift-click
     // spans from the start of the group rather than from a stale position.
     checkedAnchorRef.current = { ...checkedAnchorRef.current, [groupId]: selectableIds[0] };
+  }
+
+  // Hiding needs no confirmation dialog: nothing is deleted, so there is no
+  // irreversible action to warn about. The group is refetched afterwards so the
+  // hidden tracks drop out of every group they appeared in.
+  async function handleHideGroupClick(group: SmartArchiveGroup) {
+    const ids = Array.from(checkedByGroup[group.id] ?? []);
+    if (ids.length === 0) return;
+    const getTitle = (trackId: string) => group.tracks.find((t) => t.id === trackId)?.title || "Untitled";
+    await hideTrackIds(ids, getTitle);
+    await fetchGroups();
   }
 
   function handleArchiveGroupClick(group: SmartArchiveGroup) {
@@ -571,7 +583,16 @@ export default function SmartArchivePage() {
                         })}
                       </div>
 
-                      <div className="flex items-center justify-end px-4 py-3 border-t border-white/10">
+                      <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => handleHideGroupClick(group)}
+                          disabled={hiding || checked.size === 0}
+                          className="h-8 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 text-sm font-medium text-sky-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sky-500/20 transition-colors"
+                          title="Hide the selected tracks — every audio file is kept, and you can restore them from the Archive tab"
+                        >
+                          Hide selected ({checked.size})
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleArchiveGroupClick(group)}

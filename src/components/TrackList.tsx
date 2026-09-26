@@ -7,7 +7,7 @@ import TrackListHeader from "@/components/tracks/TrackListHeader";
 import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, type SelectionMode } from "@/lib/store";
-import { useArchiveTracks } from "@/lib/hooks/use-archive-tracks";
+import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import {
   readPersistedTrackOrder,
   writePersistedTrackOrder,
@@ -460,6 +460,30 @@ export default memo(function TrackList({
   }
 
   const { archiving, archiveResults, archiveTrackIds, clearArchiveResults } = useArchiveTracks();
+  const { hiding, hideResults, hideTrackIds, clearHideResults } = useHideTracks();
+  const [confirmMassHide, setConfirmMassHide] = useState(false);
+
+  const handleMassHide = useCallback(async () => {
+    const activeSelected = useSelectionStore.getState().selectedIds;
+    if (activeSelected.size === 0) return;
+    setConfirmMassHide(true);
+  }, []);
+
+  const executeMassHide = useCallback(async () => {
+    setConfirmMassHide(false);
+    const activeSelected = useSelectionStore.getState().selectedIds;
+    if (activeSelected.size === 0) return;
+    const ids = Array.from(activeSelected);
+    const getTitle = (id: string) => tracks.find((t) => t.id === id)?.title || "Untitled";
+    const hiddenIds = new Set<string>();
+    await hideTrackIds(ids, getTitle, (id) => {
+      hiddenIds.add(id);
+      onDelete?.(id);
+    });
+    // Only drop successfully hidden tracks from the selection — failed ones stay
+    // selected so the user can retry after resolving the issue.
+    setSelectedIds(new Set(Array.from(activeSelected).filter((id) => !hiddenIds.has(id))));
+  }, [tracks, hideTrackIds, onDelete, setSelectedIds]);
 
   const handleMassArchive = useCallback(async () => {
     const activeSelected = useSelectionStore.getState().selectedIds;
@@ -793,6 +817,38 @@ export default memo(function TrackList({
           )}
         </div>
       )}
+      {hideResults && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] rounded-xl border border-white/10 bg-[#1a1a2e] shadow-2xl p-4 flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm text-white/80">
+              Hid {hideResults.hiddenCount} track{hideResults.hiddenCount === 1 ? "" : "s"}. All audio files kept — restore them from the Archive tab.
+              {hideResults.failed.length > 0 && ` ${hideResults.failed.length} failed.`}
+            </p>
+            <button
+              onClick={clearHideResults}
+              className="text-white/40 hover:text-white/70 transition-colors shrink-0"
+            >
+              ✕
+            </button>
+          </div>
+          {hideResults.failed.length > 0 && (
+            <ul className="text-xs text-white/50 space-y-1">
+              {hideResults.failed.map((f) => (
+                <li key={f.trackId}>
+                  {f.title}: {f.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {confirmMassHide && (
+        <ConfirmDialog
+          message={`Hide ${useSelectionStore.getState().selectedIds.size} track${useSelectionStore.getState().selectedIds.size > 1 ? "s" : ""}? They disappear from your lists but keep all audio files, and you can restore them from the Archive tab.`}
+          onConfirm={executeMassHide}
+          onCancel={() => setConfirmMassHide(false)}
+        />
+      )}
       <div className="space-y-1">
         <TrackListHeader
           displayedTracks={displayedTracks}
@@ -814,6 +870,8 @@ export default memo(function TrackList({
           onMassDelete={handleMassDelete}
           archiving={archiving}
           onMassArchive={handleMassArchive}
+          hiding={hiding}
+          onMassHide={handleMassHide}
         />
 
         <div ref={sentinelRef} className="h-0 w-full" />

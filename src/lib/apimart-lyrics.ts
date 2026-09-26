@@ -30,6 +30,7 @@ export async function retryStaleApimartAlignedLyrics(userId: string): Promise<vo
         eq(tracks.instrumental, false),
         isNull(tracks.deletedAt),
         isNull(tracks.archivedAt),
+        isNull(tracks.hiddenAt),
         gt(tracks.createdAt, cutoff)
       )
     );

@@ -162,10 +162,13 @@ export default function LibraryPage() {
     }
   }, []);
 
+  // The Archive tab holds both states: tracks that were archived (files pruned)
+  // and tracks that were only hidden (all files intact). They are restored
+  // through different endpoints, so the panel needs to know which is which.
   const fetchArchived = useCallback(async () => {
     setArchiveLoading(true);
     try {
-      const res = await fetch("/api/tracks?archived=true");
+      const res = await fetch("/api/tracks?hidden=true");
       if (res.ok) {
         const data = await res.json();
         setArchivedTracks((data.tracks || []).map((t: any) => ({ ...t })));
@@ -175,11 +178,23 @@ export default function LibraryPage() {
     }
   }, []);
 
+  // Only clears the state the track actually has. A track can be both hidden
+  // and archived; calling the wrong endpoint would leave it invisible in the
+  // other list, so each call is followed by a refetch of the tab to let the
+  // server decide what is left.
   const handleRestoreArchivedTrack = useCallback(async (trackId: string) => {
-    await fetch(`/api/tracks/${trackId}/archive`, { method: "DELETE" });
-    setArchivedTracks((prev) => prev.filter((t) => t.id !== trackId));
+    const track = archivedTracks.find((t) => t.id === trackId);
+    if (track?.hiddenAt) {
+      const res = await fetch(`/api/tracks/${trackId}/hide`, { method: "DELETE" });
+      if (!res.ok) return;
+    }
+    if (track?.archivedAt) {
+      const res = await fetch(`/api/tracks/${trackId}/archive`, { method: "DELETE" });
+      if (!res.ok) return;
+    }
+    await fetchArchived();
     await fetchTracks();
-  }, [fetchTracks]);
+  }, [archivedTracks, fetchArchived, fetchTracks]);
 
   const handleRestoreTrack = useCallback(async (trackId: string) => {
     await fetch(`/api/tracks/${trackId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ restore: true }) });

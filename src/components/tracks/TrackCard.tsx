@@ -1057,6 +1057,9 @@ const TrackCard = memo(function TrackCard({
               onEditDetails={() => onEditDetails?.(track)}
               onLinkToArchiveClick={() => setShowLinkToArchiveDialog(true)}
               onArchiveClick={track.status === "done" && !isListenerRole ? handleArchive : undefined}
+              // Hiding needs no archive guards and no finished status — it only
+              // flips a flag, so it stays available for pending/failed rows too.
+              onHideClick={isOwner ? actions.handleHide : undefined}
               archiveDisabled={track.releaseStatus === "published" || archiveLinkKind === "original"}
               archiveDisabledReason={
                 track.releaseStatus === "published"

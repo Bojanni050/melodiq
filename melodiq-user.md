@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609261839**
+**Versie: 202609261958**
 
 > AI Music Generation Web App
 
@@ -265,24 +265,50 @@ The Settings page lets you configure each provider independently:
 
 ## Archief
 
-Naast de prullenbak (Recycle Bin) heeft de Library nu ook een **Archief**-tabblad:
+Het **Archief**-tabblad in de Library bevat twee soorten tracks. Het verschil zit in wat er met je audiobestanden gebeurt:
+
+| | **Verbergen** | **Archiveren** |
+|---|---|---|
+| Verdwijnt uit alle lijsten | ✅ | ✅ |
+| Originele mp3 | ✅ blijft | ✅ blijft |
+| HD/WAV, stems, masters | ✅ **blijven allemaal** | ❌ worden **definitief verwijderd** |
+| Uit releases gehaald |nee | ja |
+| Niet afspeelbaar | nee | ja |
+| Opslag bespaard | nee | ja |
+| Volledig omkeerbaar | ✅ | gedeeltelijk |
+
+**Verbergen** is dus bedoeld om je Library op te ruimen zonder iets kwijt te raken. **Archiveren** is bedoeld om S3-opslag vrij te maken.
+
+### Verbergen
+
+- **Verbergen** zet de track uit alle lijsten: Library, workspaces, playlists, releases, Slim Archief en je eigen Discover-feed.
+- De track is daarna alleen nog te vinden in het **Archief-tabblad**, met de datum waarop je hem hebt verborgen en het label *"alle bestanden bewaard"*.
+- **Herstellen** in het Archief-tabblad maakt hem weer volledig zichtbaar, inclusief HD/WAV, stems en masters. Er gaat niets verloren.
+- Er zijn geen beperkingen: je mag ook published tracks, Master Tracks en tracks in een playlist verbergen. Ze blijven gewoon staan waar ze stonden — je ziet ze alleen niet meer.
+- Verbergen kan niet in de prullenbak; herstel die track eerst.
+- Beschikbaar via het actiemenu (drie puntjes) op een track, via de **selectie-pill** in elke tracklijst, en op Slim Archief via **Hide selected**.
+
+### Archiveren
 
 - **Archiveren** bewaart alleen de originele mp3 van de track en verwijdert de HD/WAV-versie, alle stems en alle masters. Dit bespaart S3-opslagruimte.
 - Gearchiveerde tracks zijn **niet afspeelbaar** (play-knop moet weg) en **niet bruikbaar** in releases of playlists.
 - De track blijft zichtbaar in het Archief-tabblad met de archiveringsdatum.
-- **Herstellen** haalt de track uit het archief terug naar de Library. Let op: WAV/stems/masters worden niet hersteld — alleen de mp3 was bewaard.
+- **Herstellen** haalt de track terug naar de Library. Let op: WAV/stems/masters worden niet hersteld — alleen de mp3 was bewaard.
 - Archiveren gaat via het actiemenu (drie puntjes) op een TrackCard — kies "Archiveren".
 - Je **kunt niet archiveren** wanneer de track:
   - gepubliceerd is in een release (publiceer-uitschakelen of uit de release halen eerst),
   - een Master Track is in Song Archive (vertalingen mogen wel),
   - in een of meer playlists zit (verwijder eerst uit alle playlists).
 
+Een track kan tegelijk verborgen én gearchiveerd zijn. Herstellen in het Archief-tabblad haalt beide statussen weg; het tabblad toont dan aan welke status een track had.
+
 ### Smart Archive
 
-De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt en audio DNA, zodat je duplicates kunt vergelijken en er een kunt archiveren.
+De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt en audio DNA, zodat je duplicates kunt vergelijzen en er een kunt verbergen of archiveren.
 
 - Tracks die **gepubliceerd** zijn, een **Master Track** in Song Archive vormen of op een **playlist** staan worden **niet aangeboden** als archiefkandidaat — ze verschijnen simpelweg niet in de groepen.
-- Er wordt nooit automatisch gearchiveerd; je vinkt zelf aan wat weg mag.
+- Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
+- **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt.
 
 ### Meerdere tracks selecteren
 
