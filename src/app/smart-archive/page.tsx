@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore } from "@/lib/store";
+import { useSidebarStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
@@ -72,6 +72,21 @@ export default function SmartArchivePage() {
   const [confirmGroup, setConfirmGroup] = useState<SmartArchiveGroup | null>(null);
   const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
   const [dnaMountedIds, setDnaMountedIds] = useState<Set<string>>(new Set());
+
+  // Shift-click range anchor, per group. Held in a ref rather than state: it is
+  // read inside the same click handler that writes it, and `fetchGroups` needs to
+  // read the current value without re-creating the callback on every change.
+  const checkedAnchorRef = useRef<Record<string, string | null>>({});
+
+  // Ids a Shift-click range may span, per group. Blocked tracks are excluded so
+  // they are never checked as a side effect of selecting a span that covers them.
+  const selectableTrackIdsByGroup = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const group of groups) {
+      map[group.id] = group.tracks.filter((t) => !t.blocked).map((t) => t.id);
+    }
+    return map;
+  }, [groups]);
 
   function toggleDna(trackId: string) {
     setDnaOpenIds((prev) => {
@@ -168,6 +183,12 @@ export default function SmartArchivePage() {
         const data = await res.json();
         const nextGroups: SmartArchiveGroup[] = data.groups || [];
         setGroups(nextGroups);
+        // Drop anchors for groups that no longer exist, otherwise a later
+        // Shift-click could resolve to an anchor from a stale group id.
+        const liveGroupIds = new Set(nextGroups.map((g) => g.id));
+        checkedAnchorRef.current = Object.fromEntries(
+          Object.entries(checkedAnchorRef.current).filter(([groupId]) => liveGroupIds.has(groupId))
+        );
         setCheckedByGroup((prev) => {
           const next: Record<string, Set<string>> = {};
           for (const group of nextGroups) {
@@ -194,13 +215,41 @@ export default function SmartArchivePage() {
     router.push("/library");
   }
 
-  function toggleTrack(groupId: string, trackId: string) {
+  function toggleTrack(groupId: string, trackId: string, mode: SelectionMode) {
     setCheckedByGroup((prev) => {
       const current = new Set(prev[groupId] ?? []);
-      if (current.has(trackId)) current.delete(trackId);
-      else current.add(trackId);
+      const anchor = checkedAnchorRef.current[groupId] ?? null;
+
+      if (mode === "range") {
+        // Ranges are computed over the selectable tracks only, so blocked
+        // tracks inside the span are skipped instead of being checked.
+        const selectableIds = selectableTrackIdsByGroup[groupId] ?? [];
+        const anchorIndex = anchor ? selectableIds.indexOf(anchor) : -1;
+        const targetIndex = selectableIds.indexOf(trackId);
+
+        if (targetIndex >= 0) {
+          if (anchorIndex < 0) {
+            current.add(trackId);
+          } else {
+            const start = Math.min(anchorIndex, targetIndex);
+            const end = Math.max(anchorIndex, targetIndex);
+            selectableIds.slice(start, end + 1).forEach((id) => current.add(id));
+          }
+        }
+      } else if (current.has(trackId)) {
+        current.delete(trackId);
+      } else {
+        current.add(trackId);
+      }
+
       return { ...prev, [groupId]: current };
     });
+
+    // An additive (Ctrl/Cmd) click must not move the anchor, so a following
+    // Shift-click still spans from the original row.
+    if (mode !== "additive") {
+      checkedAnchorRef.current = { ...checkedAnchorRef.current, [groupId]: trackId };
+    }
   }
 
   function handleArchiveGroupClick(group: SmartArchiveGroup) {
@@ -337,8 +386,16 @@ export default function SmartArchivePage() {
                                 type="checkbox"
                                 checked={checked.has(track.id)}
                                 disabled={track.blocked}
-                                onChange={() => toggleTrack(group.id, track.id)}
+                                // onClick rather than onChange: React's synthetic
+                                // change event carries no modifier keys, and this
+                                // checkbox is controlled — the state update is the
+                                // only thing that decides the new checked value.
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleTrack(group.id, track.id, selectionModeFromEvent(e));
+                                }}
                                 className="shrink-0"
+                                title={track.blocked ? "This track cannot be archived" : "Select — hold Shift to select a range, or Ctrl/Cmd to add one track"}
                               />
 
                               <button

@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202606080413**
+**Versie: 202609261731**
 
 > AI Music Generation Web App
 
@@ -283,3 +283,17 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
 
 - Tracks die **gepubliceerd** zijn, een **Master Track** in Song Archive vormen of op een **playlist** staan worden **niet aangeboden** als archiefkandidaat — ze verschijnen simpelweg niet in de groepen.
 - Er wordt nooit automatisch gearchiveerd; je vinkt zelf aan wat weg mag.
+
+### Meerdere tracks selecteren
+
+In alle tracklijsten (Library, Playlists, Workspaces, Releases, Archief) en in **Slim Archief** geldt:
+
+- **Klik** op het bolletje — selecteer één track (klik nogmaals om de selectie op te heffen)
+- **Shift + klik** — selecteer alles tussen de vorige selectie en de aangeklikte track
+- **Ctrl + klik** (of **Cmd + klik** op een Mac) — voeg één track toe of haal één track weg, zonder de rest van je selectie te raken
+- **Shift + Ctrl + klik** — selecteer een bereik vanaf je laatste losse selectie
+- De ronde knop bovenin de lijst selecteert alles in één keer (of heft alles op als alles al geselecteerd is)
+
+Een **Shift-klik of Ctrl-klik op de trackkaart zelf** past de selectie aan en opent géén detailvenster — alleen een gewone klik opent de track.
+
+Bij Slim Archief werkt de range-selectie per groep: je kunt dus binnen één groep een bereik aanvinken zonder de andere groepen mee te nemen. Geblokkeerde tracks (published, Master Track of in een playlist) worden nooit meegenomen, ook niet als ze in het bereik vallen.

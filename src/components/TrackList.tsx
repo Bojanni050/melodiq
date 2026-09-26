@@ -6,7 +6,7 @@ import TrackCard from "@/components/tracks/TrackCard";
 import TrackListHeader from "@/components/tracks/TrackListHeader";
 import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, TrackItem } from "@/components/tracks/types";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks } from "@/lib/hooks/use-archive-tracks";
 import {
   readPersistedTrackOrder,
@@ -343,11 +343,11 @@ export default memo(function TrackList({
   }, [workspaceCoversKey, workspaces]);
 
   // Stable shift-click / selection callback
-  const handleToggleSelection = useCallback((trackId: string, shiftKey: boolean) => {
+  const handleToggleSelection = useCallback((trackId: string, mode: SelectionMode) => {
     useSelectionStore.getState().toggleSelection(
       trackId,
       displayedTracksRef.current.map((t) => t.id),
-      { mode: shiftKey ? "range" : "toggle" }
+      { mode }
     );
   }, []);
 

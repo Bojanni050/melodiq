@@ -29,13 +29,14 @@ export {
 export type { SavedLyric } from "./stores/studioStore";
 export { useStudioStore } from "./stores/studioStore";
 
-export type { SavedPreset } from "./stores/uiStores";
+export type { SavedPreset, SelectionMode } from "./stores/uiStores";
 export {
   useUIStore,
   useSelectionStore,
   usePresetsStore,
   useArchiveLinksStore,
   useSidebarStore,
+  selectionModeFromEvent,
 } from "./stores/uiStores";
 
 export type { Locale } from "./stores/localeStore";

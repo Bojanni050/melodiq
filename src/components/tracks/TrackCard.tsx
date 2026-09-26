@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import useSWR from "swr";
-import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, type Workspace } from "@/lib/store";
+import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, selectionModeFromEvent, type Workspace, type SelectionMode } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
 import { shortTrackId, isForExpectedTrack } from "@/lib/track-id";
@@ -83,7 +83,7 @@ const TrackCard = memo(function TrackCard({
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
   workspaceDisplayNameById?: Map<string, string>;
   workspaceCoverById?: Map<string, string | null>;
-  onToggleSelection?: (trackId: string, shiftKey: boolean) => void;
+  onToggleSelection?: (trackId: string, mode: SelectionMode) => void;
   onEditDetails?: (track: TrackItem) => void;
   isDetailSelected?: boolean;
   isOwner?: boolean;
@@ -661,7 +661,15 @@ const TrackCard = memo(function TrackCard({
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
         data-playing={isCurrentlyPlaying ? (isPlaying ? "true" : "false") : undefined}
         onClick={(e) => {
-          if (e.shiftKey) { onToggleSelection?.(track.id, true); return; }
+          // Shift extends the selection from the anchor row, Ctrl/Cmd adds or
+          // removes just this row. A modifier-held click must never open the
+          // track detail — otherwise every Shift-click would also navigate.
+          const mode = selectionModeFromEvent(e);
+          if (mode !== "toggle") {
+            e.preventDefault();
+            onToggleSelection?.(track.id, mode);
+            return;
+          }
           onSelect(track);
         }}
         onKeyDown={(e) => {
@@ -674,10 +682,10 @@ const TrackCard = memo(function TrackCard({
       >
         {/* Selection dot */}
         <button
-          onClick={(e) => { e.stopPropagation(); onToggleSelection?.(track.id, e.shiftKey); }}
+          onClick={(e) => { e.stopPropagation(); onToggleSelection?.(track.id, selectionModeFromEvent(e)); }}
           onDoubleClick={(e) => e.stopPropagation()}
           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
-          title="Select track"
+          title="Select track — hold Shift to select a range, or Ctrl/Cmd to add one track"
         >
           {isSelected ? (
             <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">

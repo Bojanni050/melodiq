@@ -25,13 +25,35 @@ export const useUIStore = create<UIState>()(
 );
 
 // High-Performance Track Selection Store (O(1) Localized Updates)
+
+// How a click modifies the selection. `toggle` is a plain click, `range` is a
+// Shift-click that selects everything between the anchor and the clicked row,
+// and `additive` is a Ctrl/Cmd-click that adds or removes a single row without
+// moving the anchor — so a later Shift-click still spans from the original
+// anchor. That is the behaviour users expect from file managers.
+export type SelectionMode = "toggle" | "range" | "additive";
+
 interface SelectionState {
   selectedIds: Set<string>;
   selectionAnchorId: string | null;
-  toggleSelection: (trackId: string, displayedIds: string[], options?: { mode?: "toggle" | "range" }) => void;
+  toggleSelection: (trackId: string, displayedIds: string[], options?: { mode?: SelectionMode }) => void;
   toggleSelectAll: (displayedIds: string[]) => void;
   setSelectedIds: (ids: Set<string>) => void;
   clearSelection: () => void;
+}
+
+// Derives the selection mode from a mouse event's modifier keys. Centralised
+// so every track list (Library, Playlists, Workspaces, Releases, Archive, Slim
+// Archief) interprets Ctrl vs Shift identically instead of each list rolling its
+// own `e.shiftKey` check.
+export function selectionModeFromEvent(event: {
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+}): SelectionMode {
+  if (event.shiftKey) return "range";
+  if (event.ctrlKey || event.metaKey) return "additive";
+  return "toggle";
 }
 
 export const useSelectionStore = create<SelectionState>((set) => ({
@@ -63,7 +85,12 @@ export const useSelectionStore = create<SelectionState>((set) => ({
         } else {
           next.add(trackId);
         }
-        anchorId = trackId;
+        // An additive click deliberately leaves the anchor alone so that
+        // Ctrl-click a few rows, then Shift-click, still spans the original
+        // range instead of collapsing to a single row.
+        if (mode === "toggle") {
+          anchorId = trackId;
+        }
       }
 
       return { selectedIds: next, selectionAnchorId: anchorId };
