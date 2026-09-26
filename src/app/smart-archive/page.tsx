@@ -35,6 +35,9 @@ type SmartArchiveGroup = {
   id: string;
   score: number;
   matchedOn: string[];
+  // Display label for the group's shared language, null when the members
+  // disagree or none has a detected language.
+  language: string | null;
   tracks: GroupTrack[];
 };
 
@@ -43,6 +46,7 @@ const MATCH_LABELS: Record<string, string> = {
   prompt: "Prompt",
   audioDna: "Audio DNA",
   title: "Title",
+  language: "Language",
 };
 
 // setSinkId (audio output routing) isn't in the standard DOM lib types yet.
@@ -406,6 +410,14 @@ export default function SmartArchivePage() {
                             {MATCH_LABELS[signal] ?? signal} {Math.round(group.score * 100)}%
                           </span>
                         ))}
+                        {group.language && (
+                          <span
+                            className="text-xs rounded-full bg-white/5 text-white/60 px-2.5 py-1"
+                            title="All tracks in this group share this lyrics language"
+                          >
+                            {group.language}
+                          </span>
+                        )}
                         {selectableCount > 0 && (
                           <button
                             type="button"

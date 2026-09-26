@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262107**
+**Versie: 202609262148**
 
 > AI Music Generation Web App
 
@@ -327,8 +327,11 @@ Een track kan tegelijk verborgen én gearchiveerd zijn. Herstellen in het Archie
 
 ### Smart Archive
 
-De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt en audio DNA, zodat je duplicates kunt vergelijzen en er een kunt verbergen of archiveren.
+De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt, audio DNA **en taal**, zodat je duplicates kunt vergelijken en er een kunt verbergen of archiveren.
 
+- De taal van de lyrics telt mee in de vergelijking. Twee tracks in verschillende talen die alleen een stijlbeschrijving delen, worden niet meer als duplicaat voorgesteld.
+- Ligt er een taallabel bij een groep, dan hebben alle tracks in die groep dezelfde taal. Zonder label is de taal onbekend of verschillend.
+- De taal wordt bepaald zodra je een track afspeelt. Tracks die je nog nooit hebt afgespeeld tellen mee als "onbekend" en worden op de oude manier vergeleken, zodat de groepen niet leeg blijven op een koude bibliotheek.
 - Published tracks, Master Tracks en tracks in een playlist staan gewoon in de groepen, met een ⚠-regel erbij. Zie hierboven wat de waarschuwing inhoudt.
 - Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
 - **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt en welke tracks een status hebben.

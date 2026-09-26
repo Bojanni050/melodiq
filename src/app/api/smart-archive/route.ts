@@ -4,7 +4,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { tracks, trackStems, trackMasters } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
-import { findDuplicateCandidateGroups } from "@/lib/smart-archive";
+import { findDuplicateCandidateGroups, languageLabel } from "@/lib/smart-archive";
 import { collectArchiveWarnings, type ArchiveWarning } from "@/lib/archive-guards";
 
 const SNIPPET_LENGTH = 200;
@@ -90,6 +90,10 @@ export async function GET() {
         id: group.id,
         score: group.score,
         matchedOn: group.matchedOn,
+        // Display label ("Dutch"), or null when the members disagree. The
+        // per-track language is what the warning/hint text uses; this is the
+        // group-level chip.
+        language: languageLabel(group.language),
         tracks: group.trackIds
           // No filter on warnings: published / Master Track / playlist members
           // are all offered, because archiving them is the user's choice. The

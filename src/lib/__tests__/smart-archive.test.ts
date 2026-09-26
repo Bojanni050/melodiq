@@ -4,7 +4,9 @@ import {
   computeAudioDnaDistance,
   computePairScore,
   computeTextSimilarity,
+  DEFAULT_SIMILARITY_THRESHOLD,
   groupBySimilarity,
+  normalizeLanguage,
   type TrackForSimilarity,
 } from "../smart-archive";
 import type { AudioDna } from "../songs";
@@ -28,6 +30,106 @@ function audioDna(overrides: Partial<AudioDna> = {}): AudioDna {
 function track(overrides: Partial<TrackForSimilarity> = {}): TrackForSimilarity {
   return { id: "id", title: null, lyrics: null, prompt: null, audioDna: null, ...overrides };
 }
+
+describe("normalizeLanguage", () => {
+  it("maps aliases onto one canonical key", () => {
+    expect(normalizeLanguage("Dutch")).toBe("dutch");
+    expect(normalizeLanguage("dutch")).toBe("dutch");
+    expect(normalizeLanguage("Nederlands")).toBe("dutch");
+    expect(normalizeLanguage("nl")).toBe("dutch");
+  });
+
+  it("returns null for absent or explicitly unknown languages", () => {
+    expect(normalizeLanguage(null)).toBeNull();
+    expect(normalizeLanguage(undefined)).toBeNull();
+    expect(normalizeLanguage("")).toBeNull();
+    expect(normalizeLanguage("   ")).toBeNull();
+    // The detector returns "unknown" when it cannot tell.
+    expect(normalizeLanguage("unknown")).toBeNull();
+    expect(normalizeLanguage("Unknown")).toBeNull();
+  });
+
+  it("keeps an unlisted language as a stable lowercase key", () => {
+    expect(normalizeLanguage("Klingon")).toBe("klingon");
+  });
+});
+
+describe("language as a similarity signal", () => {
+  const sameLyrics = "the night is cold and I remember your face in the rain again";
+
+  it("does not penalize a pair when one side has no language", () => {
+    const withLang = track({ id: "a", lyrics: sameLyrics, language: "Dutch" });
+    const withoutLang = track({ id: "b", lyrics: sameLyrics });
+    expect(computePairScore(withLang, withoutLang).score).toBe(1);
+  });
+
+  it("reports language as a match when both agree", () => {
+    const a = track({ id: "a", lyrics: sameLyrics, language: "Dutch" });
+    const b = track({ id: "b", lyrics: sameLyrics, language: "Nederlands" });
+    const { matchedOn } = computePairScore(a, b);
+    // Aliases must resolve to the same key, so this is a match, not a mismatch.
+    expect(matchedOn).toContain("language");
+  });
+
+  it("scores a confident mismatch at zero, unknown language costs nothing", () => {
+    const a = track({ id: "a", lyrics: sameLyrics, language: "Dutch" });
+    const mismatched = computePairScore(a, track({ id: "b", lyrics: sameLyrics, language: "English" }));
+    const unknown = computePairScore(a, track({ id: "b", lyrics: sameLyrics }));
+
+    // Unknown language scores exactly 1 — the pair is untouched.
+    expect(unknown.score).toBe(1);
+    // Identical lyrics in different languages still group: the lyrics weight
+    // outweighs the language contradiction.
+    expect(mismatched.score).toBeGreaterThan(DEFAULT_SIMILARITY_THRESHOLD);
+    // ...but language is not advertised as a reason they matched.
+    expect(mismatched.matchedOn).not.toContain("language");
+  });
+
+  it("drops a cross-language pair that had nothing but a style prompt", () => {
+    // Only a shared prompt (similarity 1) plus a language mismatch. The
+    // contradiction outweighs the prompt, so a same-style song in another
+    // language is no longer offered as a duplicate.
+    const a = track({ id: "a", prompt: "dreamy synthwave", language: "Dutch" });
+    const b = track({ id: "b", prompt: "dreamy synthwave", language: "Japanese" });
+    expect(computePairScore(a, b).score).toBeLessThan(DEFAULT_SIMILARITY_THRESHOLD);
+    expect(groupBySimilarity([a, b])).toHaveLength(0);
+
+    // The same pair without language data still groups, as it did before.
+    const noLangA = track({ id: "a", prompt: "dreamy synthwave" });
+    const noLangB = track({ id: "b", prompt: "dreamy synthwave" });
+    expect(groupBySimilarity([noLangA, noLangB])).toHaveLength(1);
+  });
+});
+
+describe("group language label", () => {
+  it("labels a group whose members share one language", () => {
+    const tracks: TrackForSimilarity[] = [
+      track({ id: "a", lyrics: "same words here to make them match up well", language: "Dutch" }),
+      track({ id: "b", lyrics: "same words here to make them match up well", language: "Dutch" }),
+    ];
+    const groups = groupBySimilarity(tracks);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].language).toBe("dutch");
+  });
+
+  it("leaves the label off when a member disagrees", () => {
+    const tracks: TrackForSimilarity[] = [
+      track({ id: "a", lyrics: "same words here to make them match up well", language: "Dutch" }),
+      track({ id: "b", lyrics: "same words here to make them match up well", language: "English" }),
+    ];
+    const groups = groupBySimilarity(tracks);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].language).toBeNull();
+  });
+
+  it("leaves the label off when no member has a language", () => {
+    const tracks: TrackForSimilarity[] = [
+      track({ id: "a", lyrics: "same words here to make them match up well" }),
+      track({ id: "b", lyrics: "same words here to make them match up well" }),
+    ];
+    expect(groupBySimilarity(tracks)[0].language).toBeNull();
+  });
+});
 
 describe("computeTextSimilarity", () => {
   it("scores identical text as 1", () => {
