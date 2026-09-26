@@ -95,6 +95,7 @@ const en = {
     noTracksYet: "This release has no tracks yet.",
     loadingTracksList: "Loading tracks…",
     play: "Play {title}",
+    pause: "Pause {title}",
     cancelEditRelease: "Cancel edit release",
     titleLabel: "Title",
     artistAliasLabel: "Artist alias",

@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262017**
+**Versie: 202609262107**
 
 > AI Music Generation Web App
 
@@ -260,6 +260,17 @@ The Settings page lets you configure each provider independently:
 
 - On desktop Studio Create page, **Generate Track** stays anchored at the bottom of the Studio column while the form content above it scrolls
 - Als de Studio-kolom lang is, kun je door de velden scrollen terwijl de generate-sectie onderaan zichtbaar blijft, net boven de player
+
+---
+
+## Releases
+
+Op de pagina **Mijn Releases** staat elke release als een kaart met de grote cover links.
+
+- De **playknop** zit in het midden van de cover en verschijnt alleen als je er met de muis overheen gaat.
+- Terwijl de release speelt blijft de knop zichtbaar en verandert hij in een **pauze**-teken. Klikken zet de weergave op pauze.
+- Klik je op de cover zelf, dan open je de release (zoals op de titel).
+- De knop start de release vanaf de eerste track en vult de wachtrij met de rest, zodat het doorloopt.
 
 ---
 

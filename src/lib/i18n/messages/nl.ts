@@ -98,6 +98,7 @@ const nl: typeof en = {
     noTracksYet: "Deze release heeft nog geen tracks.",
     loadingTracksList: "Tracks laden…",
     play: "{title} afspelen",
+    pause: "{title} pauzeren",
     cancelEditRelease: "Release bewerken annuleren",
     titleLabel: "Titel",
     artistAliasLabel: "Artiestenalias",

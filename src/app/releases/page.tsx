@@ -57,6 +57,10 @@ export default function ReleasesPage() {
 
   const createRelease = useReleaseStore((state) => state.createRelease);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
+  // The cover play button mirrors TrackCard's thumbnail: it shows a pause glyph
+  // while this release's first track is loaded and actually playing.
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const setIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const rightPanelWidth = usePlayerStore((s) => s.rightPanelWidth);
   const setRightPanelWidth = usePlayerStore((s) => s.setRightPanelWidth);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
@@ -544,21 +548,64 @@ export default function ReleasesPage() {
                       >
                         {/* Hero — cover art left, meta to the right */}
                         <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
-                          <button
-                            type="button"
-                            onClick={() => openRelease(release.id)}
-                            className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-36 sm:w-36"
-                          >
-                            {release.coverUrl ? (
-                              <img src={release.coverUrl} alt={release.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
-                                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                              </div>
+                          <div className="group/cover relative h-28 w-28 shrink-0 sm:h-36 sm:w-36">
+                            <button
+                              type="button"
+                              onClick={() => openRelease(release.id)}
+                              className="h-full w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40"
+                            >
+                              {release.coverUrl ? (
+                                <img src={release.coverUrl} alt={release.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
+                                  <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </button>
+
+                            {/* Play button centred on the cover, mirroring
+                                TrackPlayButton: white glyph, revealed on hover
+                                only, and pinned open with a pause glyph while
+                                this release is playing. */}
+                            {releaseTrackItems.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // Same track already loaded? Toggle playback,
+                                  // the way clicking a playing thumbnail does.
+                                  if (currentTrack?.id === releaseTrackItems[0].id) {
+                                    setIsPlaying(!isPlaying);
+                                    return;
+                                  }
+                                  playReleaseTrack(release.id, releaseTrackItems[0]);
+                                }}
+                                className="absolute inset-0 flex items-center justify-center rounded-2xl transition-colors group-hover/cover:bg-black/45"
+                                aria-label={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
+                                title={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
+                              >
+                                <span
+                                  className={`flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
+                                    currentTrack?.id === releaseTrackItems[0].id && isPlaying
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover/cover:opacity-100"
+                                  }`}
+                                >
+                                  {currentTrack?.id === releaseTrackItems[0].id && isPlaying ? (
+                                    <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-4 w-4 translate-x-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                  )}
+                                </span>
+                              </button>
                             )}
-                          </button>
+                          </div>
 
                           <div className="min-w-0 flex-1 space-y-1.5">
                             <button
@@ -617,20 +664,6 @@ export default function ReleasesPage() {
                               </button>
                             </div>
                           </div>
-
-                          {releaseTrackItems.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => playReleaseTrack(release.id, releaseTrackItems[0])}
-                              className="flex h-11 w-11 shrink-0 items-center justify-center self-start rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95 sm:self-end"
-                              aria-label={t("releases.play", { title: release.title })}
-                              title={t("releases.play", { title: release.title })}
-                            >
-                              <svg className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </button>
-                          )}
                         </div>
 
                         {/* Tracks */}
