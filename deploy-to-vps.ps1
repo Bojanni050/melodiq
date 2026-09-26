@@ -38,7 +38,10 @@ $VPS_USER = "bojan"
 $VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq"
 
 # One single line: a multi-line string would carry CRLF to the Linux shell.
-$remoteCommand = "cd $VPS_PATH && git pull origin main && ./deploy.sh && sleep 10 && docker compose exec -T app npx drizzle-kit push && docker compose ps"
+# Mirrors .github/workflows/deploy to vps - melodiq.yml: pull, rebuild, restart.
+# The container CMD runs `drizzle-kit push --force` before starting the server,
+# so the schema is migrated on every deploy — no separate migration step here.
+$remoteCommand = "cd $VPS_PATH && git pull origin main && docker compose up -d --build && docker image prune -f && sleep 5 && docker compose ps"
 
 ssh "$VPS_USER@$VPS_HOST" $remoteCommand
 

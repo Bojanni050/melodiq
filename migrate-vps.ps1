@@ -7,7 +7,7 @@ Write-Host ""
 # VPS details
 $VPS_HOST = "melodiq.nl"
 $VPS_USER = "bojan"  # Update if different
-$VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq.nl"
+$VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq"
 
 $SSH_COMMANDS = @"
 cd $VPS_PATH && \

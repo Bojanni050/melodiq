@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
-import { useArchiveTracks, useHideTracks, type ArchiveBlockReason } from "@/lib/hooks/use-archive-tracks";
+import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
+import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
@@ -15,8 +16,9 @@ type GroupTrack = {
   promptSnippet: string | null;
   lyricsSnippet: string | null;
   hasCover: boolean;
-  blocked: boolean;
-  reasons: ArchiveBlockReason[];
+  // Soft, not a lock: published / master / playlist members stay selectable,
+  // the archive confirmation just spells out what would change.
+  warnings: ArchiveWarning[];
   duration: number | null;
   status: string;
   releaseStatus: string | null;
@@ -78,12 +80,12 @@ export default function SmartArchivePage() {
   // read the current value without re-creating the callback on every change.
   const checkedAnchorRef = useRef<Record<string, string | null>>({});
 
-  // Ids a Shift-click range may span, per group. Blocked tracks are excluded so
-  // they are never checked as a side effect of selecting a span that covers them.
+  // Ids a Shift-click range may span, per group. Every track is selectable now
+  // that archiving is a soft choice, so this is the full group membership.
   const selectableTrackIdsByGroup = useMemo(() => {
     const map: Record<string, string[]> = {};
     for (const group of groups) {
-      map[group.id] = group.tracks.filter((t) => !t.blocked).map((t) => t.id);
+      map[group.id] = group.tracks.map((t) => t.id);
     }
     return map;
   }, [groups]);
@@ -194,9 +196,9 @@ export default function SmartArchivePage() {
           const next: Record<string, Set<string>> = {};
           for (const group of nextGroups) {
             // Nothing is preselected — the user must explicitly check each
-            // track before archiving it. Blocked tracks are never selectable.
+            // track before archiving it.
             next[group.id] = prev[group.id]
-              ? new Set(Array.from(prev[group.id]).filter((id) => group.tracks.some((t) => t.id === id && !t.blocked)))
+              ? new Set(Array.from(prev[group.id]).filter((id) => group.tracks.some((t) => t.id === id)))
               : new Set<string>();
           }
           return next;
@@ -222,8 +224,8 @@ export default function SmartArchivePage() {
       const anchor = checkedAnchorRef.current[groupId] ?? null;
 
       if (mode === "range") {
-        // Ranges are computed over the selectable tracks only, so blocked
-        // tracks inside the span are skipped instead of being checked.
+        // Ranges span the group's full membership; every track is selectable
+        // now that archiving warns instead of blocking.
         const selectableIds = selectableTrackIdsByGroup[groupId] ?? [];
         const anchorIndex = anchor ? selectableIds.indexOf(anchor) : -1;
         const targetIndex = selectableIds.indexOf(trackId);
@@ -253,10 +255,8 @@ export default function SmartArchivePage() {
     }
   }
 
-  // Selects or clears every selectable track in one group. Reuses
-  // selectableTrackIdsByGroup so blocked tracks are never included. When nothing
-  // in the group is selectable the button is hidden entirely, so this early-out
-  // is a safety net rather than a reachable state.
+  // Selects or clears every track in one group. Early-out only when the group is
+  // empty, which cannot happen for a rendered group, so this is a safety net.
   function toggleSelectAllGroup(groupId: string) {
     const selectableIds = selectableTrackIdsByGroup[groupId] ?? [];
     if (selectableIds.length === 0) return;
@@ -375,7 +375,7 @@ export default function SmartArchivePage() {
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-start justify-between gap-3">
                 <p className="text-sm text-white/80">
                   Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
-                  {archiveResults.blocked.length > 0 && ` ${archiveResults.blocked.length} blocked.`}
+                  {archiveResults.failed.length > 0 ? ` ${archiveResults.failed.length} failed.` : ""}
                 </p>
                 <button onClick={clearArchiveResults} className="text-white/40 hover:text-white/70 transition-colors shrink-0">
                   ✕
@@ -446,12 +446,11 @@ export default function SmartArchivePage() {
                           return (
                             <div key={track.id}>
                             <div
-                              className={`flex items-center gap-3 px-4 py-3 ${track.blocked ? "opacity-50" : ""}`}
+                              className={`flex items-center gap-3 px-4 py-3 ${track.warnings.length > 0 ? "bg-amber-500/[0.04]" : ""}`}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked.has(track.id)}
-                                disabled={track.blocked}
                                 // onClick rather than onChange: React's synthetic
                                 // change event carries no modifier keys, and this
                                 // checkbox is controlled — the state update is the
@@ -461,7 +460,9 @@ export default function SmartArchivePage() {
                                   toggleTrack(group.id, track.id, selectionModeFromEvent(e));
                                 }}
                                 className="shrink-0"
-                                title={track.blocked ? "This track cannot be archived" : "Select — hold Shift to select a range, or Ctrl/Cmd to add one track"}
+                                title={track.warnings.length > 0
+                                  ? `Let op bij archiveren: ${track.warnings.map((w) => w.detail).join(" ")}`
+                                  : "Select — hold Shift to select a range, or Ctrl/Cmd to add one track"}
                               />
 
                               <button
@@ -561,9 +562,10 @@ export default function SmartArchivePage() {
                                 {track.promptSnippet && (
                                   <p className="text-xs text-white/30 mt-0.5 truncate">{track.promptSnippet}</p>
                                 )}
-                                {track.blocked && (
-                                  <p className="text-xs text-amber-400/80 mt-1 flex items-center gap-1">
-                                    🔒 {track.reasons.map((r) => r.detail).join(" · ")}
+                                {track.warnings.length > 0 && (
+                                  <p className="text-xs text-amber-300/80 mt-1 flex items-start gap-1">
+                                    <span aria-hidden>⚠</span>
+                                    <span>{track.warnings.map((w) => w.detail).join(" · ")}</span>
                                   </p>
                                 )}
                               </div>
@@ -642,13 +644,24 @@ export default function SmartArchivePage() {
                           </svg>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-white/80 truncate">{track.title || "Untitled"}</p>
+                      <p className="text-sm text-white/80 truncate">{track.title || "Untitled"}</p>
                     </div>
-                    {deletions.length > 0 ? (
+                    {deletions.length > 0 && (
                       <ul className="text-xs text-red-300/80 mt-2 list-disc list-inside space-y-0.5">
                         {deletions.map((d) => <li key={d}>{d}</li>)}
                       </ul>
-                    ) : (
+                    )}
+                    {track.warnings.length > 0 && (
+                      <ul className="text-xs text-amber-300/90 mt-2 space-y-1">
+                        {track.warnings.map((w) => (
+                          <li key={w.type} className="flex items-start gap-1">
+                            <span aria-hidden>⚠</span>
+                            <span>{w.detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {deletions.length === 0 && track.warnings.length === 0 && (
                       <p className="text-xs text-white/40 mt-2">Nothing extra to delete — just archiving.</p>
                     )}
                     <p className="text-xs text-emerald-300/70 mt-1">Kept: original MP3, Track DNA, lyrics &amp; prompt.</p>

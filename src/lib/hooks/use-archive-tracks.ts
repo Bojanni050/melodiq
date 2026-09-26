@@ -33,21 +33,13 @@ export function useArchiveTracks() {
       }
 
       setArchiving(true);
-      const blocked: ArchiveResult["blocked"] = [];
       const failed: ArchiveResult["failed"] = [];
       let archivedCount = 0;
 
       for (const id of trackIds) {
         try {
           const res = await fetch(`/api/tracks/${id}/archive`, { method: "POST" });
-          if (res.status === 409) {
-            const data = await res.json().catch(() => ({ error: "Track cannot be archived", reason: null }));
-            blocked.push({
-              trackId: id,
-              title: getTitle(id),
-              reasons: [{ type: data.reason ?? "blocked", detail: data.error ?? "Track cannot be archived" }],
-            });
-          } else if (res.ok) {
+          if (res.ok) {
             archivedCount++;
             onArchived?.(id);
           } else {
@@ -60,7 +52,10 @@ export function useArchiveTracks() {
       }
 
       setArchiving(false);
-      const result: ArchiveResult = { archivedCount, blocked, failed };
+      // `blocked` stays empty by design: published / master / playlist members are
+      // no longer refused, so there is nothing left to block on. The field is kept
+      // so the result shape (and the result toast) stays stable.
+      const result: ArchiveResult = { archivedCount, blocked: [], failed };
       setArchiveResults(result);
       return result;
     },

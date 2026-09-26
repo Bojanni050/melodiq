@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import * as smartArchiveModule from "../smart-archive";
 import {
   computeAudioDnaDistance,
   computePairScore,
   computeTextSimilarity,
-  filterArchivableCandidates,
   groupBySimilarity,
   type TrackForSimilarity,
 } from "../smart-archive";
@@ -140,36 +140,26 @@ describe("groupBySimilarity", () => {
   });
 });
 
-describe("filterArchivableCandidates", () => {
-  type Row = { id: string; releaseStatus: string | null };
-
-  const rows: Row[] = [
-    { id: "plain", releaseStatus: null },
-    { id: "concept", releaseStatus: "concept" },
-    { id: "published", releaseStatus: "published" },
-    { id: "master", releaseStatus: null },
-    { id: "on-playlist", releaseStatus: "concept" },
-  ];
-  const protection = {
-    masterTrackIds: ["master"],
-    playlistTrackIds: ["on-playlist", "published"],
-  };
-
-  it("keeps only tracks that are safe to archive", () => {
-    expect(filterArchivableCandidates(rows, protection).map((r) => r.id)).toEqual(["plain", "concept"]);
+describe("filterArchivableCandidates (removed)", () => {
+  // Archiving is no longer a blocked operation: published / Master Track /
+  // playlist members are offered like any other candidate, and the UI warns
+  // per track at confirmation time. The old pre-grouping filter that stripped
+  // them is gone; src/lib/archive-guards.ts now collects soft warnings instead
+  // of refusing. These three tests guarded that deleted filter's behaviour, so
+  // they are replaced rather than silently dropped.
+  it("is no longer exported", () => {
+    expect(typeof (smartArchiveModule as Record<string, unknown>).filterArchivableCandidates).toBe("undefined");
   });
 
-  it("drops a published track even when it isn't master or on a playlist", () => {
-    const publishedOnly = filterArchivableCandidates([{ id: "p", releaseStatus: "published" }], {
-      masterTrackIds: [],
-      playlistTrackIds: [],
-    });
-    expect(publishedOnly).toHaveLength(0);
-  });
-
-  it("still filters a published track when nothing else is protected", () => {
-    const kept = filterArchivableCandidates(rows, { masterTrackIds: [], playlistTrackIds: [] });
-    // 'published' is dropped on releaseStatus alone; the rest survive.
-    expect(kept.map((r) => r.id)).toEqual(["plain", "concept", "master", "on-playlist"]);
+  it("keeps every candidate in the grouping input, including published ones", () => {
+    // Nothing in groupBySimilarity is aware of release status any more: the
+    // warnings are layered on afterwards by the API route.
+    const tracks: TrackForSimilarity[] = [
+      track({ id: "a", lyrics: "the same words over and over again here" }),
+      track({ id: "b", lyrics: "the same words over and over again here" }),
+    ];
+    const groups = groupBySimilarity(tracks, 0.5);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].trackIds.sort()).toEqual(["a", "b"]);
   });
 });

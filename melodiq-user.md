@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609261958**
+**Versie: 202609262017**
 
 > AI Music Generation Web App
 
@@ -295,10 +295,22 @@ Het **Archief**-tabblad in de Library bevat twee soorten tracks. Het verschil zi
 - De track blijft zichtbaar in het Archief-tabblad met de archiveringsdatum.
 - **Herstellen** haalt de track terug naar de Library. Let op: WAV/stems/masters worden niet hersteld — alleen de mp3 was bewaard.
 - Archiveren gaat via het actiemenu (drie puntjes) op een TrackCard — kies "Archiveren".
-- Je **kunt niet archiveren** wanneer de track:
-  - gepubliceerd is in een release (publiceer-uitschakelen of uit de release halen eerst),
-  - een Master Track is in Song Archive (vertalingen mogen wel),
-  - in een of meer playlists zit (verwijder eerst uit alle playlists).
+
+**Waarschuwing bij published, Master Track of playlist**
+
+Je **kunt** deze tracks gewoon archiveren — het is een bewuste keuze, geen blokkade. Maar vooraf krijg je te zien wat er speelt:
+
+- **Published** — de track staat in een release. Bij archiveren wordt hij daaruit gehaald en niet meer afspeelbaar voor luisteraars.
+- **Master Track** — de track is de bron voor de lyrics en prompt van een item in je Song Archive.
+- **In een playlist** — de track staat in één of meer playlists.
+
+Waar je dit ziet:
+
+- **Slim Archief** — de track krijgt een gele ⚠-regel met de reden, en de bevestiging toont hem opnieuw. Zulke tracks worden niet meer uit de groepen gefilterd.
+- **Track-actiemenu** — de bevestiging toont de waarschuwing onder de opsomming van wat er verdwijnt.
+- **Selectie-pill** — bij meerdere tracks worden de betreffende tracks apart vermeld ("Let op bij 2 van deze tracks").
+
+De server weigert zulke tracks niet meer; de waarschuwing is puur informatie zodat je geïnformeerd kunt kiezen.
 
 Een track kan tegelijk verborgen én gearchiveerd zijn. Herstellen in het Archief-tabblad haalt beide statussen weg; het tabblad toont dan aan welke status een track had.
 
@@ -306,9 +318,9 @@ Een track kan tegelijk verborgen én gearchiveerd zijn. Herstellen in het Archie
 
 De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, prompt en audio DNA, zodat je duplicates kunt vergelijzen en er een kunt verbergen of archiveren.
 
-- Tracks die **gepubliceerd** zijn, een **Master Track** in Song Archive vormen of op een **playlist** staan worden **niet aangeboden** als archiefkandidaat — ze verschijnen simpelweg niet in de groepen.
+- Published tracks, Master Tracks en tracks in een playlist staan gewoon in de groepen, met een ⚠-regel erbij. Zie hierboven wat de waarschuwing inhoudt.
 - Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
-- **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt.
+- **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt en welke tracks een status hebben.
 
 ### Meerdere tracks selecteren
 

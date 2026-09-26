@@ -24,7 +24,7 @@ LIMIT 10;
 
 $SSH_COMMAND = "docker compose exec -T db psql -U melodiq -d melodiq -c `"$SQL_QUERY`""
 
-ssh "$VPS_USER@$VPS_HOST" "cd /var/www/vhosts/melodiq.nl/melodiq.nl && $SSH_COMMAND"
+ssh "$VPS_USER@$VPS_HOST" "cd /var/www/vhosts/melodiq.nl/melodiq && $SSH_COMMAND"
 
 Write-Host ""
 Write-Host "✅ Query complete!" -ForegroundColor Green

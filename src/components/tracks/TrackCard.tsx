@@ -385,21 +385,35 @@ const TrackCard = memo(function TrackCard({
   async function handleArchive() {
     if (track.status !== "done") return;
     const trackTitle = track.title || track.prompt?.substring(0, 60) || "Deze track";
+
+    // Soft warnings, fetched before confirming: the server no longer refuses
+    // these tracks, so the only place the user learns "this one is published /
+    // a Master Track / on a playlist" is right here. Fetched up front because
+    // window.confirm is synchronous and cannot await mid-dialog.
+    let warningLines: string[] = [];
+    try {
+      const warnRes = await fetch(`/api/tracks/${track.id}/archive`, { method: "GET" });
+      if (warnRes.ok) {
+        const body = await warnRes.json().catch(() => null);
+        if (Array.isArray(body?.warnings)) {
+          warningLines = body.warnings.map((w: { detail: string }) => `- ${w.detail}`);
+        }
+      }
+    } catch {
+      // A failed warning lookup must not block archiving; the archive itself
+      // still returns its own warnings in the POST response.
+    }
+
     const confirmArchive = window.confirm(
       `Weet je zeker dat je "${trackTitle}" wilt archiveren?\n\n` +
       `- Alleen de originele mp3 wordt bewaard (s3Key)\n` +
       `- De HD/WAV-versie, alle stems en alle masters worden permanently verwijderd van S3\n` +
-      `- Track DNA en lyrics worden behouden`
+      `- Track DNA en lyrics worden behouden` +
+      (warningLines.length > 0 ? `\n\nLet op bij deze track:\n${warningLines.join("\n")}` : "")
     );
     if (!confirmArchive) return;
     try {
       const res = await fetch(`/api/tracks/${track.id}/archive`, { method: "POST" });
-      if (res.status === 409) {
-        const body = await res.json().catch(() => null);
-        const message = body?.error || "Track kan niet gearchiveerd worden.";
-        alert(message);
-        return;
-      }
       if (!res.ok) {
         console.error(`Failed to archive track: HTTP ${res.status}`);
         return;
@@ -1060,14 +1074,6 @@ const TrackCard = memo(function TrackCard({
               // Hiding needs no archive guards and no finished status — it only
               // flips a flag, so it stays available for pending/failed rows too.
               onHideClick={isOwner ? actions.handleHide : undefined}
-              archiveDisabled={track.releaseStatus === "published" || archiveLinkKind === "original"}
-              archiveDisabledReason={
-                track.releaseStatus === "published"
-                  ? "Track is gepubliceerd in een release en kan niet gearchiveerd worden."
-                  : archiveLinkKind === "original"
-                    ? "Dit is een Master Track in Song Archive en kan niet gearchiveerd worden."
-                    : undefined
-              }
               onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
                             advancedDnaRunning={advancedDnaRunning}
                             onAnalyzeAudioClick={handleReanalyzeAudio}

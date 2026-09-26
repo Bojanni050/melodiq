@@ -489,14 +489,47 @@ export default memo(function TrackList({
     const activeSelected = useSelectionStore.getState().selectedIds;
     if (activeSelected.size === 0) return;
     const ids = Array.from(activeSelected);
+
+    // Soft warnings, fetched up front because the confirmation is synchronous.
+    // Per track (no batch endpoint exists) but in parallel, so the latency is
+    // one round trip rather than N. A failed lookup silently drops that track's
+    // warning — archiving is no longer refused on status, so this only affects
+    // how well the user is informed, never whether it happens.
+    const warnedTracks = (await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const res = await fetch(`/api/tracks/${id}/archive`, { method: "GET" });
+          if (!res.ok) return null;
+          const body = await res.json().catch(() => null);
+          if (!Array.isArray(body?.warnings) || body.warnings.length === 0) return null;
+          return { id, title: tracks.find((t) => t.id === id)?.title || "Untitled", warnings: body.warnings as { detail: string }[] };
+        } catch {
+          return null;
+        }
+      })
+    )).filter((w): w is NonNullable<typeof w> => w !== null);
+
+    const warningText =
+      warnedTracks.length > 0
+        ? `\n\nLet op bij ${warnedTracks.length} van deze tracks:\n` +
+          warnedTracks.map((w) => `- ${w.title}: ${w.warnings.map((x) => x.detail).join(" ")}`).join("\n")
+        : "";
+
+    if (!window.confirm(
+      `Weet je zeker dat je ${ids.length} track${ids.length === 1 ? "" : "s"} wilt archiveren?\n\n` +
+      `- Alleen de originele mp3 wordt bewaard\n` +
+      `- HD/WAV, alle stems en alle masters worden permanent verwijderd van S3` +
+      warningText
+    )) return;
+
     const getTitle = (id: string) => tracks.find((t) => t.id === id)?.title || "Untitled";
     const archivedIds = new Set<string>();
     await archiveTrackIds(ids, getTitle, (id) => {
       archivedIds.add(id);
       onDelete?.(id);
     });
-    // Only drop successfully archived tracks from the selection — blocked/failed
-    // ones stay selected so the user can retry after resolving the issue.
+    // Only drop successfully archived tracks from the selection — failed ones
+    // stay selected so the user can retry after resolving the issue.
     const remaining = new Set(Array.from(activeSelected).filter((id) => !archivedIds.has(id)));
     setSelectedIds(remaining);
   }, [tracks, archiveTrackIds, onDelete, setSelectedIds]);
@@ -791,7 +824,6 @@ export default memo(function TrackList({
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm text-white/80">
               Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
-              {archiveResults.blocked.length > 0 && ` ${archiveResults.blocked.length} blocked.`}
               {archiveResults.failed.length > 0 && ` ${archiveResults.failed.length} failed.`}
             </p>
             <button
@@ -801,13 +833,8 @@ export default memo(function TrackList({
               ✕
             </button>
           </div>
-          {(archiveResults.blocked.length > 0 || archiveResults.failed.length > 0) && (
+          {archiveResults.failed.length > 0 && (
             <ul className="text-xs text-white/50 space-y-1">
-              {archiveResults.blocked.map((b) => (
-                <li key={b.trackId}>
-                  {b.title}: {b.reasons.map((r) => r.detail).join(", ") || "blocked"}
-                </li>
-              ))}
               {archiveResults.failed.map((f) => (
                 <li key={f.trackId}>
                   {f.title}: {f.message}

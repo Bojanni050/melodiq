@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { tracks, trackStems, trackMasters } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
 import { findDuplicateCandidateGroups } from "@/lib/smart-archive";
-import { checkArchiveGuards } from "@/lib/archive-guards";
+import { collectArchiveWarnings, type ArchiveWarning } from "@/lib/archive-guards";
 
 const SNIPPET_LENGTH = 200;
 
@@ -15,8 +15,9 @@ type GuardedTrack = {
   promptSnippet: string | null;
   lyricsSnippet: string | null;
   hasCover: boolean;
-  blocked: boolean;
-  reasons: { type: string; detail: string }[];
+  // Soft, not a lock: these tracks stay offerable, the confirmation just
+  // explains what archiving them would change.
+  warnings: ArchiveWarning[];
   duration: number | null;
   status: string;
   releaseStatus: string | null;
@@ -45,9 +46,9 @@ export async function GET() {
       return NextResponse.json({ groups: [] });
     }
 
-    const [guardEntries, trackRows, stemCounts, masterCounts] = await Promise.all([
+    const [warningEntries, trackRows, stemCounts, masterCounts] = await Promise.all([
       Promise.all(
-        allTrackIds.map(async (trackId) => [trackId, await checkArchiveGuards(trackId, userId)] as const)
+        allTrackIds.map(async (trackId) => [trackId, await collectArchiveWarnings(trackId, userId)] as const)
       ),
       db
         .select({
@@ -79,7 +80,7 @@ export async function GET() {
         .groupBy(trackMasters.trackId),
     ]);
 
-    const guardById = new Map(guardEntries);
+    const warningById = new Map(warningEntries);
     const trackById = new Map(trackRows.map((row) => [row.id, row]));
     const stemCountById = new Map(stemCounts.map((row) => [row.trackId, row.count]));
     const masterCountById = new Map(masterCounts.map((row) => [row.trackId, row.count]));
@@ -90,21 +91,19 @@ export async function GET() {
         score: group.score,
         matchedOn: group.matchedOn,
         tracks: group.trackIds
-          // Second net behind smart-archive's pre-grouping filter: if a track
-          // became published / master / playlist-bound between the two query
-          // rounds, it's dropped here instead of being offered (even locked).
-          .filter((trackId) => !(guardById.get(trackId)?.blocked ?? true))
+          // No filter on warnings: published / Master Track / playlist members
+          // are all offered, because archiving them is the user's choice. The
+          // confirmation dialog surfaces the reasons instead.
           .map((trackId): GuardedTrack => {
             const track = trackById.get(trackId);
-            const guard = guardById.get(trackId);
+            const warn = warningById.get(trackId);
             return {
               id: trackId,
               title: track?.title ?? null,
               promptSnippet: track?.prompt ? track.prompt.slice(0, SNIPPET_LENGTH) : null,
               lyricsSnippet: track?.lyrics ? track.lyrics.slice(0, SNIPPET_LENGTH) : null,
               hasCover: !!track?.s3KeyCover,
-              blocked: guard?.blocked ?? false,
-              reasons: guard?.blocked ? [{ type: guard.reason, detail: guard.message }] : [],
+              warnings: warn?.warnings ?? [],
               duration: track?.duration ?? null,
               status: track?.status ?? "pending",
               releaseStatus: track?.releaseStatus ?? null,

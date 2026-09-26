@@ -5,12 +5,37 @@ import { eq, and } from "drizzle-orm";
 import { deleteFromS3 } from "@/lib/s3";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
-import { checkArchiveGuards } from "@/lib/archive-guards";
+import { collectArchiveWarnings } from "@/lib/archive-guards";
+
+// GET — read-only: welke soft warnings gelden voor deze track? De client vraagt
+// dit vóór het bevestigingsvenster, want window.confirm kan niet midden in het
+// dialog awaiten. Bewust read-only: geen S3, geen database-mutatie.
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  await ensureWorkspaceSchema();
+  const auth = await requireAuth();
+  if (auth instanceof NextResponse) return auth;
+
+  const { notFound, warnings } = await collectArchiveWarnings(id, auth.userId);
+  if (notFound) {
+    return NextResponse.json({ error: "Track not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ warnings });
+}
 
 // POST — archiveer een track: bewaar alleen de originele mp3 (s3Key), wis de
 // HD/WAV-versie, alle stems en alle masters, en verwijder de track uit alle
 // nog niet-gepubliceerde releases. Gearchiveerde tracks zijn niet afspeelbaar
 // en niet herbruikbaar in releases tot ze expliciet worden hersteld (DELETE).
+//
+// Published / Master Track / playlist-status is géén blokkade meer: het is een
+// soft warning die de client vooraf toont zodat de gebruiker geïnformeerd kan
+// kiezen. Zie src/lib/archive-guards.ts. Wie de waarschuwing wil overzeilen
+// kan dat — de status zit in de response zodat de UI iets te tonen heeft.
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -31,13 +56,9 @@ export async function POST(
   }
 
   try {
-    const guard = await checkArchiveGuards(id, userId);
-    if (guard.blocked) {
-      return NextResponse.json(
-        { error: guard.message, reason: guard.reason },
-        { status: 409 }
-      );
-    }
+    // Soft, not blocking: archived anyway, but the reasons travel back so the
+    // UI can explain what just changed (release membership, Song Archive).
+    const { warnings } = await collectArchiveWarnings(id, userId);
 
     // 1. Stems — S3-bestanden wissen, daarna de rijen verwijderen.
     const stems = await db
@@ -92,7 +113,7 @@ export async function POST(
       })
       .where(eq(tracks.id, id));
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, warnings });
   } catch (error: any) {
     console.error(`[archive] failed to archive track ${id}:`, error?.message ?? error);
     return NextResponse.json({ error: "Failed to archive track" }, { status: 500 });
