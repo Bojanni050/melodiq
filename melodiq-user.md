@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262148**
+**Versie: 202609262217**
 
 > AI Music Generation Web App
 
@@ -331,7 +331,9 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
 
 - De taal van de lyrics telt mee in de vergelijking. Twee tracks in verschillende talen die alleen een stijlbeschrijving delen, worden niet meer als duplicaat voorgesteld.
 - Ligt er een taallabel bij een groep, dan hebben alle tracks in die groep dezelfde taal. Zonder label is de taal onbekend of verschillend.
-- De taal wordt bepaald zodra je een track afspeelt. Tracks die je nog nooit hebt afgespeeld tellen mee als "onbekend" en worden op de oude manier vergeleken, zodat de groepen niet leeg blijven op een koude bibliotheek.
+- De taal wordt bepaald **zodra de track klaarstaat** — bij het uploaden en bij elke provider-webhook, dus niet meer pas als je hem afspeelt. Daardoor telt de taal vanaf het begin mee, ook op een bibliotheek die je nog niet hebt afgespeeld. Voor bestaande tracks wordt de taal alsnog ingevuld zodra je ze afspeelt.
+- De taal wordt **lokaal** bepaald, zonder AI. Er is geen API-sleutel of internetverbinding nodig en het kost niets. Herkend worden precies de 13 talen die Lyric Studio aanbiedt; is het niet met zekerheid te zeggen, dan blijft de taal leeg en telt die track gewoon mee als "onbekend". Instrumentele tracks krijgen sowieso geen taal.
+- In de tracklijst zie je een **hartje** bij favorieten en de **namen van de playlists** waarin de track staat, zodat je niet per ongeluk iets wegarchieert wat je hebt samengesteld. "Favorieten" en "Master Tracks" worden daar niet apart bij gezet: het hartje en de waarschuwing dekken die al af.
 - Published tracks, Master Tracks en tracks in een playlist staan gewoon in de groepen, met een ⚠-regel erbij. Zie hierboven wat de waarschuwing inhoudt.
 - Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
 - **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt en welke tracks een status hebben.

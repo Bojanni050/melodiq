@@ -112,6 +112,12 @@ export function useTrackBackgroundServices(
   }, [audioRef, currentTrackRef]);
 
   const scheduleLanguageDetectionIfNeeded = useCallback(() => {
+    // Backfill only. Detection itself happens when a track is saved (see
+    // detectAndSaveLanguageIfMissing, called from upload and every provider
+    // webhook), so new tracks already have a language before they are ever
+    // played. This remains for rows written before that existed — a library
+    // that is merely opened and played will still fill in its gaps. The call is
+    // cheap and local, and the server guards the write with `language IS NULL`.
     const track = currentTrackRef.current;
     if (!track || track.status !== "done") return;
     if (track.publicSource) return;

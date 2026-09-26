@@ -23,7 +23,7 @@ import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
 import { generateAndSaveCoverArt } from "@/lib/generate-cover";
 import { detectAndSaveLanguageIfMissing } from "@/lib/language-detect";
-import { detectLanguageFromLyrics } from "@/lib/providers/llm";
+import { detectLyricsLanguage } from "@/lib/detect-lyrics-language";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureDefaultWorkspaceForUser, ensureWorkspaceSchema } from "@/lib/workspaces";
@@ -932,7 +932,7 @@ export async function PATCH(
       const track = result[0];
       if (!track.language && !track.instrumental && track.lyrics?.trim()) {
         try {
-          const detected = await detectLanguageFromLyrics(track.lyrics);
+          const detected = detectLyricsLanguage(track.lyrics);
           if (detected) {
             updates.language = detected;
           }

@@ -29,6 +29,10 @@ type GroupTrack = {
   hasHd: boolean;
   stemsCount: number;
   mastersCount: number;
+  // "up" is the heart (Favoriet).
+  rating: string | null;
+  // User-created playlists this track is in (system playlists excluded).
+  playlistNames: string[];
 };
 
 type SmartArchiveGroup = {
@@ -547,6 +551,29 @@ export default function SmartArchivePage() {
                                   )}
                                   {track.instrumental && (
                                     <span className="text-[10px] px-1.5 py-0.5 rounded border border-violet-300/30 bg-violet-400/10 text-violet-200 shrink-0" title="No vocals">Instrumental</span>
+                                  )}
+                                  {/* Heart, not a button: rating is owned by the library
+                                      row (TrackRating), and a second toggle here would
+                                      have to re-fetch the group to stay in sync. */}
+                                  {track.rating === "up" && (
+                                    <svg
+                                      className="w-3.5 h-3.5 text-pink-400 shrink-0"
+                                      fill="currentColor"
+                                      stroke="currentColor"
+                                      strokeWidth={2}
+                                      viewBox="0 0 24 24"
+                                      aria-label="Favoriet"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                    </svg>
+                                  )}
+                                  {track.playlistNames.length > 0 && (
+                                    <span
+                                      className="text-[10px] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-white/60 shrink-0 truncate max-w-[16rem]"
+                                      title={`In playlist${track.playlistNames.length === 1 ? "" : "s"}: ${track.playlistNames.join(", ")}`}
+                                    >
+                                      {track.playlistNames.join(", ")}
+                                    </span>
                                   )}
                                   <span className="text-[10px] text-white/40 shrink-0">{formatDuration(track.duration)}</span>
                                   {track.status === "done" && (

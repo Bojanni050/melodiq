@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { tracks, trackStems, trackMasters } from "@/db/schema";
+import { tracks, trackStems, trackMasters, playlists, playlistTracks } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
 import { findDuplicateCandidateGroups, languageLabel } from "@/lib/smart-archive";
 import { collectArchiveWarnings, type ArchiveWarning } from "@/lib/archive-guards";
@@ -31,6 +31,13 @@ type GuardedTrack = {
   hasHd: boolean;
   stemsCount: number;
   mastersCount: number;
+  // "up" is the heart (Favoriet). Shown in the listing so a favourite duplicate
+  // is obvious before you archive it.
+  rating: string | null;
+  // User-created playlists this track is in. System playlists are excluded —
+  // "Favorieten" is already shown as the heart and "Master Tracks" already
+  // surfaces as a warning, so listing them would be noise.
+  playlistNames: string[];
 };
 
 export async function GET() {
@@ -46,7 +53,7 @@ export async function GET() {
       return NextResponse.json({ groups: [] });
     }
 
-    const [warningEntries, trackRows, stemCounts, masterCounts] = await Promise.all([
+    const [warningEntries, trackRows, stemCounts, masterCounts, playlistRows] = await Promise.all([
       Promise.all(
         allTrackIds.map(async (trackId) => [trackId, await collectArchiveWarnings(trackId, userId)] as const)
       ),
@@ -65,6 +72,7 @@ export async function GET() {
           lyricsTimestamps: tracks.lyricsTimestamps,
           instrumental: tracks.instrumental,
           s3KeyHd: tracks.s3KeyHd,
+          rating: tracks.rating,
         })
         .from(tracks)
         .where(and(inArray(tracks.id, allTrackIds), eq(tracks.userId, userId))),
@@ -78,12 +86,35 @@ export async function GET() {
         .from(trackMasters)
         .where(inArray(trackMasters.trackId, allTrackIds))
         .groupBy(trackMasters.trackId),
+      // Joined through playlists so the userId guard applies: filtering on
+      // trackIds alone would leak the name of another user's playlist if a
+      // track id ever collided, and it keeps the "is this mine" decision in one
+      // place rather than trusting the caller.
+      db
+        .select({ trackId: playlistTracks.trackId, name: playlists.name })
+        .from(playlistTracks)
+        .innerJoin(playlists, eq(playlists.id, playlistTracks.playlistId))
+        .where(
+          and(
+            inArray(playlistTracks.trackId, allTrackIds),
+            eq(playlists.userId, userId),
+            eq(playlists.isSystem, false)
+          )
+        ),
     ]);
 
     const warningById = new Map(warningEntries);
     const trackById = new Map(trackRows.map((row) => [row.id, row]));
     const stemCountById = new Map(stemCounts.map((row) => [row.trackId, row.count]));
     const masterCountById = new Map(masterCounts.map((row) => [row.trackId, row.count]));
+
+    // Group by track so a track in three playlists keeps all three names.
+    const playlistNamesById = new Map<string, string[]>();
+    for (const row of playlistRows) {
+      const names = playlistNamesById.get(row.trackId) ?? [];
+      names.push(row.name);
+      playlistNamesById.set(row.trackId, names);
+    }
 
     const payload = groups
       .map((group) => ({
@@ -118,6 +149,8 @@ export async function GET() {
               hasHd: !!track?.s3KeyHd,
               stemsCount: stemCountById.get(trackId) ?? 0,
               mastersCount: masterCountById.get(trackId) ?? 0,
+              rating: track?.rating ?? null,
+              playlistNames: playlistNamesById.get(trackId) ?? [],
             };
           }),
       }))
