@@ -9,6 +9,7 @@ import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
+import TrackOptionsMenu from "@/components/tracks/TrackOptionsMenu";
 
 type GroupTrack = {
   id: string;
@@ -313,6 +314,23 @@ export default function SmartArchivePage() {
     await fetchGroups();
   }
 
+  // Single-track hide/archive from the row's options menu. The group-level
+  // buttons act on the selection; these act on one track and use the same hooks,
+  // so the result reporting and the refetch stay identical.
+  async function handleHideSingle(track: GroupTrack) {
+    await hideTrackIds([track.id], () => track.title || "Untitled");
+    await fetchGroups();
+  }
+
+  function handleArchiveSingle(track: GroupTrack) {
+    const group = groups.find((g) => g.tracks.some((t) => t.id === track.id));
+    if (!group) return;
+    // Reuse the existing confirmation flow by pre-selecting just this track,
+    // so the user sees the same warnings and deletion summary as a bulk archive.
+    setCheckedByGroup((prev) => ({ ...prev, [group.id]: new Set([track.id]) }));
+    setConfirmGroup(group);
+  }
+
   const selectedOutputLabel = outputDevices.find((d) => d.deviceId === selectedOutputId)?.label;
   const confirmTracks = confirmGroup
     ? confirmGroup.tracks.filter((t) => (checkedByGroup[confirmGroup.id] ?? new Set()).has(t.id))
@@ -593,6 +611,39 @@ export default function SmartArchivePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                       </svg>
                                     </button>
+                                  )}
+                                  {isPlayable && (
+                                    <TrackOptionsMenu
+                                      // The menu's own TrackItem shape needs a few
+                                      // fields Slim Archive does not track, so they
+                                      // are filled with neutral values here. Only
+                                      // what's shown on this row is ever read.
+                                      track={{
+                                        id: track.id,
+                                        title: track.title,
+                                        provider: "",
+                                        providerModel: "",
+                                        prompt: track.promptSnippet ?? "",
+                                        lyrics: track.lyricsSnippet,
+                                        status: "done",
+                                        audioUrl: null,
+                                        audioUrlHd: null,
+                                        format: null,
+                                        formatHd: null,
+                                        duration: track.duration,
+                                        createdAt: "",
+                                        error: null,
+                                        s3KeyHd: null,
+                                        rating: track.rating,
+                                        coverUrl: track.hasCover ? `/api/tracks/${track.id}/cover` : null,
+                                        instrumental: track.instrumental,
+                                        lyricsTimestamps: track.lyricsTimestamps,
+                                        releaseStatus: track.releaseStatus,
+                                      }}
+                                      onHideClick={() => void handleHideSingle(track)}
+                                      onArchiveClick={() => handleArchiveSingle(track)}
+                                      onChanged={() => void fetchGroups()}
+                                    />
                                   )}
                                 </div>
                                 {track.lyricsSnippet && (

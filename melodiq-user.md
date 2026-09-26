@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262217**
+**Versie: 202609262222**
 
 > AI Music Generation Web App
 
@@ -334,6 +334,7 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
 - De taal wordt bepaald **zodra de track klaarstaat** — bij het uploaden en bij elke provider-webhook, dus niet meer pas als je hem afspeelt. Daardoor telt de taal vanaf het begin mee, ook op een bibliotheek die je nog niet hebt afgespeeld. Voor bestaande tracks wordt de taal alsnog ingevuld zodra je ze afspeelt.
 - De taal wordt **lokaal** bepaald, zonder AI. Er is geen API-sleutel of internetverbinding nodig en het kost niets. Herkend worden precies de 13 talen die Lyric Studio aanbiedt; is het niet met zekerheid te zeggen, dan blijft de taal leeg en telt die track gewoon mee als "onbekend". Instrumentele tracks krijgen sowieso geen taal.
 - In de tracklijst zie je een **hartje** bij favorieten en de **namen van de playlists** waarin de track staat, zodat je niet per ongeluk iets wegarchieert wat je hebt samengesteld. "Favorieten" en "Master Tracks" worden daar niet apart bij gezet: het hartje en de waarschuwing dekken die al af.
+- Elke track heeft een **⋯ menu** rechts in de rij, met dezelfde opties als in de Library: toevoegen aan een playlist of release, verplaatsen naar een workspace, cover of titel opnieuw genereren, verbergen en archiveren. "Verbergen" en "Archiveren" werken daar op één track; archiveren vraagt net als bij de groepsactie om bevestiging.
 - Published tracks, Master Tracks en tracks in een playlist staan gewoon in de groepen, met een ⚠-regel erbij. Zie hierboven wat de waarschuwing inhoudt.
 - Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
 - **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt en welke tracks een status hebben.
