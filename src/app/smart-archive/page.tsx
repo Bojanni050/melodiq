@@ -714,6 +714,7 @@ export default function SmartArchivePage() {
                                       }}
                                       onHideClick={() => void handleHideSingle(track)}
                                       onArchiveClick={() => handleArchiveSingle(track)}
+                                      onGoToTrackClick={() => goToTrackInLibrary(track.id)}
                                       onReusePrompt={handleReusePrompt}
                                       onChanged={() => void fetchGroups()}
                                     />

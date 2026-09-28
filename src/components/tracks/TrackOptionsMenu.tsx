@@ -22,6 +22,7 @@ interface TrackOptionsMenuProps {
   onReusePrompt?: (track: TrackItem, scope: ReuseScope) => void;
   onHideClick?: () => void;
   onArchiveClick?: () => void;
+  onGoToTrackClick?: () => void;
   /**
    * Fired after a menu action changed something the parent displays. Slim
    * Archive owns its own copy of the track list and would otherwise keep showing
@@ -46,6 +47,7 @@ export default function TrackOptionsMenu({
   onReusePrompt,
   onHideClick,
   onArchiveClick,
+  onGoToTrackClick,
   onChanged,
 }: TrackOptionsMenuProps) {
   const actions = useTrackCardActions({ track, tracksById });
@@ -190,6 +192,7 @@ export default function TrackOptionsMenu({
         onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
         onHideClick={onHideClick}
         onArchiveClick={onArchiveClick}
+        onGoToTrackClick={onGoToTrackClick}
       />
     </>
   );

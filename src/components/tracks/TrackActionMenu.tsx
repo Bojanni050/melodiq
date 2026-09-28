@@ -30,6 +30,7 @@ interface TrackActionMenuProps {
   onOpenReleasePicker?: () => void;
   onRemoveFromReleaseClick?: (releaseId: string, releaseTitle: string) => void;
   onEditDetails?: () => void;
+  onGoToTrackClick?: () => void;
   onArchiveClick?: () => void;
   onHideClick?: () => void;
   archiveDisabled?: boolean;
@@ -76,6 +77,7 @@ export default function TrackActionMenu({
   onOpenReleasePicker,
   onRemoveFromReleaseClick,
   onEditDetails,
+  onGoToTrackClick,
   onArchiveClick,
   onHideClick,
   archiveDisabled,
@@ -186,6 +188,18 @@ export default function TrackActionMenu({
             </>
           ) : (
           <>
+          {onGoToTrackClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onGoToTrackClick();
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            >
+              Ga naar track
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
