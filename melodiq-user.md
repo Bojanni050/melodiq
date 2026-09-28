@@ -265,12 +265,16 @@ The Settings page lets you configure each provider independently:
 
 ## Releases
 
-Op de pagina **Mijn Releases** staat elke release als een kaart met de grote cover links.
+Er zijn twee releases-overzichten: **Mijn Releases** (alles wat je zelf beheert) en **Releases** (alle gepubliceerde releases van alle artiesten, voor luisteraars).
+
+### De playknop (staat op beide pagina's hetzelfd)
 
 - De **playknop** zit in het midden van de cover en verschijnt alleen als je er met de muis overheen gaat.
 - Terwijl de release speelt blijft de knop zichtbaar en verandert hij in een **pauze**-teken. Klikken zet de weergave op pauze.
 - Klik je op de cover zelf, dan open je de release (zoals op de titel).
 - De knop start de release vanaf de eerste track en vult de wachtrij met de rest, zodat het doorloopt.
+
+Boven de lijst op de publieke pagina staat nog een **Play all**-knop: die speelt alle releases achter elkaar af.
 
 ---
 
