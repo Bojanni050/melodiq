@@ -78,12 +78,16 @@ export default function StudioPage() {
       const raw = sessionStorage.getItem("lyrics-studio-payload");
       if (raw) {
         sessionStorage.removeItem("lyrics-studio-payload");
-        const payload = JSON.parse(raw) as { lyrics: string; style: string; title: string };
+        const payload = JSON.parse(raw) as { lyrics: string; style: string; title: string; lyricsOnly?: boolean };
         const studio = useStudioStore.getState();
-        studio.reset();
-        studio.setLyrics(payload.lyrics);
-        studio.setSongIdea(payload.style);
-        studio.setTitle(payload.title);
+        if (payload.lyricsOnly) {
+          if (typeof payload.lyrics === "string") studio.setLyrics(payload.lyrics);
+        } else {
+          studio.reset();
+          studio.setLyrics(payload.lyrics);
+          studio.setSongIdea(payload.style);
+          studio.setTitle(payload.title);
+        }
       }
 
       const reuseRaw = sessionStorage.getItem("melodiq-reuse-prompt-payload");

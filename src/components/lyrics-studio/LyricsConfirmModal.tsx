@@ -26,6 +26,7 @@ export default function LyricsConfirmModal({
             <p className="text-sm text-amber-100">
               {confirmAction === "replaceBlocks" && t("melody.lyricsReplaceBlocksConfirm")}
               {confirmAction === "replaceStudio" && t("melody.lyricsReplaceStudioConfirm")}
+              {confirmAction === "replaceStudioLyrics" && t("melody.lyricsReplaceStudioLyricsConfirm")}
               {confirmAction === "clearAll" && t("melody.lyricsClearAllConfirm")}
             </p>
             <div className="mt-3 flex items-center gap-2">

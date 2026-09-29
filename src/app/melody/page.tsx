@@ -153,27 +153,37 @@ export default function MusicBuilderPage() {
     setStyleConfirmAction(null);
   }
 
+  function sendPayloadToStudio(
+    data: { lyrics: string; style: string; title: string; lyricsOnly?: boolean },
+    confirmAction: ConfirmAction
+  ) {
+    const studio = useStudioStore.getState();
+    const hasExisting = Boolean(studio.songIdea.trim() || studio.lyrics.trim() || studio.title.trim());
+    if (hasExisting) {
+      sessionStorage.setItem("lyrics-studio-payload-pending", JSON.stringify(data));
+      setStudioConfirmAction(confirmAction);
+      return;
+    }
+    sessionStorage.setItem("lyrics-studio-payload", JSON.stringify(data));
+    router.push("/studio");
+  }
+
   function useInStudio() {
     const prompt = buildMusicPrompt(payload, instrumental, lyricsCtx);
     const nextLyrics = instrumental ? "" : combinedLyrics.trim();
     const nextTitle = title.trim();
     if (!prompt.trim()) return;
-    const studio = useStudioStore.getState();
-    const hasExisting = Boolean(studio.songIdea.trim() || studio.lyrics.trim() || studio.title.trim());
-    if (hasExisting) {
-      sessionStorage.setItem(
-        "lyrics-studio-payload-pending",
-        JSON.stringify({ lyrics: nextLyrics, style: prompt, title: nextTitle })
-      );
-      setStudioConfirmAction("replaceStudio");
-      return;
-    }
-    sessionStorage.setItem("lyrics-studio-payload", JSON.stringify({ lyrics: nextLyrics, style: prompt, title: nextTitle }));
-    router.push("/studio");
+    sendPayloadToStudio({ lyrics: nextLyrics, style: prompt, title: nextTitle }, "replaceStudio");
+  }
+
+  function useLyricsOnlyInStudio() {
+    const nextLyrics = combinedLyrics.trim();
+    if (!nextLyrics) return;
+    sendPayloadToStudio({ lyrics: nextLyrics, style: "", title: "", lyricsOnly: true }, "replaceStudioLyrics");
   }
 
   function handleStudioConfirmAction() {
-    if (studioConfirmAction === "replaceStudio") {
+    if (studioConfirmAction === "replaceStudio" || studioConfirmAction === "replaceStudioLyrics") {
       const raw = sessionStorage.getItem("lyrics-studio-payload-pending");
       sessionStorage.removeItem("lyrics-studio-payload-pending");
       if (raw) {
@@ -363,6 +373,14 @@ export default function MusicBuilderPage() {
                   className="inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-3 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {t("melody.useInStudio")}
+                </button>
+                <button
+                  type="button"
+                  onClick={useLyricsOnlyInStudio}
+                  disabled={instrumental || !combinedLyrics.trim()}
+                  className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {t("melody.useLyricsOnlyInStudio")}
                 </button>
               </aside>
             </div>

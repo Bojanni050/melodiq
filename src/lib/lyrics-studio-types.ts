@@ -31,4 +31,4 @@ export type LyricsStudioNotice = {
   message: string;
 };
 
-export type ConfirmAction = "replaceBlocks" | "replaceStudio" | "clearAll" | null;
+export type ConfirmAction = "replaceBlocks" | "replaceStudio" | "replaceStudioLyrics" | "clearAll" | null;

@@ -371,3 +371,9 @@
 - Findings: Genre-descriptions waren ook in de gegenereerde Music Prompt terechtgekomen via `expandGenreWithDescription`; Bo wil alleen de genrenaam in de prompt, descriptions alleen zichtbaar in de dropdown.
 - Conclusions: Prompt-building terug naar kale genrenamen; descriptions blijven alleen display + zoekbaar in `SearchableDropdown`.
 - Actions: `src/lib/style-utils.ts` — `expandGenreWithDescription` calls verwijderd uit buildStyleSummary/buildMusicPrompt; `src/lib/style-studio-constants.ts` — ongebruikte helpers `getGenreDescription`/`expandGenreWithDescription` verwijderd, GENRE_DESCRIPTIONS behouden voor dropdown; gevalideerd met `npm run build` (geslaagd), validated.
+
+## 2026-09-29 di (Melody: Lyrics only to Studio knop)
+
+- Findings: Op de Melody pagina bestond alleen "Use in Studio" (lyrics + music prompt + titel in één keer naar Studio). Er was geen manier om alleen de lyrics over te zetten met behoud van de bestaande Studio prompt.
+- Conclusions: Tweede knop toevoegen die via dezelfde sessionStorage-payload + confirm-flow werkt, maar met een `lyricsOnly` flag zodat Studio alleen `setLyrics` doet (geen reset, prompt en titel blijven staan).
+- Actions: `src/app/melody/page.tsx` — `sendPayloadToStudio` helper geëxtraheerd, `useLyricsOnlyInStudio` toegevoegd, tweede (secondary) knop onder Use in Studio (disabled bij instrumental/geen lyrics); `src/app/studio/page.tsx` — payload met `lyricsOnly` past alleen lyrics toe; `src/lib/lyrics-studio-types.ts` + `LyricsConfirmModal.tsx` — nieuwe `replaceStudioLyrics` confirm-actie; i18n EN/NL keys (`useLyricsOnlyInStudio`, `lyricsReplaceStudioLyricsConfirm`); `melodiq-user.md` Melody-sectie toegevoegd; gevalideerd met `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.

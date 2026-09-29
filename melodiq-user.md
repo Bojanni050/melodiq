@@ -106,6 +106,11 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Style Suggestion (AI Fill)** now returns a more elaborate style direction with concrete guidance for genre/feel, instrumentation, production/mix, and vocal direction
 - Confirmaties, foutmeldingen en snapshot-opslag gebruiken in-app dialogs/notificaties in plaats van browser popups
 
+### Melody (Music Builder)
+
+- **Use in Studio** — sends lyrics + generated music prompt + title to the main Studio
+- **Lyrics only to Studio** — copies only the lyrics; the Studio music prompt and title stay untouched
+
 ### Vocal Gender
 
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)
