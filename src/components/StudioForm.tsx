@@ -514,8 +514,8 @@ ${t("studio.yourChorusHere")}`}
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             <button
               type="button"
               onClick={() => router.push("/melody")}
