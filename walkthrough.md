@@ -1520,3 +1520,9 @@ pm run build � succesvol.
 - Findings: Poll-maximum van 3 versies bleek te krap; Bo wil max 5 tracks per poll.
 - Conclusions: Alle validatie en UI lopen al via de centrale `MAX_POLL_OPTIONS`-constante, dus alleen die hoeft omhoog — geen migratie of API-wijziging nodig.
 - Actions: `src/lib/release-poll-constants.ts` — `MAX_POLL_OPTIONS` 3 → 5. `src/db/schema.ts` — comment bijgewerkt. `melodiq-user.md` — "max 3" → "max 5". Gevalideerd met `npm run build` (geslaagd).
+
+## 2026-09-29 di (Multi-select Add to Release: slechts 1 track kwam aan)
+
+- Findings: Bij meerdere geselecteerde tracks in de Library riep `handleAddToReleaseClick` per track `addTrackToRelease` aan, dus N parallelle PATCH `add-track` requests. Elke request doet apart `max(position)+1` en insert — ze lazen dezelfde max, kregen dezelfde positie en botsten op de unique index `(release_id, position)`, waardoor er maar 1 overbleef.
+- Conclusions: Eén bulk-actie `add-tracks` met één `max()`-lookup en sequentiële inserts voor de hele batch, zelfde patroon als `reorder-tracks`. Bestaande single `add-track` blijft voor de single-track flows (archief, losse track).
+- Actions: `src/app/api/releases/[id]/route.ts` — nieuwe `add-tracks`-actie (trackIds-array, volgorde behouden, eigendom check, dupes overslaan tenzij allowDuplicate, cover-gen als de release leeg was). `src/lib/stores/releaseStore.ts` — `addTracksToRelease` (optimistisch + één PATCH + hydrate). `src/components/tracks/useTrackCardActions.ts` — multi-select tak gebruikt nu `addTracksToRelease`. Gevalideerd met `npx tsc --noEmit` (0 errors), `npm run test` (105 geslaagd) en `npm run build` (geslaagd).

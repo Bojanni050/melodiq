@@ -27,6 +27,7 @@ export function useTrackCardActions({
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
   const removeTrackFromPlaylist = usePlaylistStore((state) => state.removeTrackFromPlaylist);
   const addTrackToRelease = useReleaseStore((state) => state.addTrackToRelease);
+  const addTracksToRelease = useReleaseStore((state) => state.addTracksToRelease);
   const removeTrackFromRelease = useReleaseStore((state) => state.removeTrackFromRelease);
   const clearSelection = useSelectionStore((state) => state.clearSelection);
   const { createWorkspace, moveTrackToWorkspace } = useWorkspaceStore(
@@ -312,9 +313,9 @@ export function useTrackCardActions({
     const isMultiSelect = activeSelection.size > 1 && activeSelection.has(track.id);
 
     if (isMultiSelect) {
-      for (const id of Array.from(activeSelection)) {
-        addTrackToRelease(releaseId, id);
-      }
+      // Single PATCH for the whole batch — per-track add-track calls race on
+      // the server's max(position) lookup and collide on the unique index.
+      addTracksToRelease(releaseId, Array.from(activeSelection));
       clearSelection();
       return;
     }

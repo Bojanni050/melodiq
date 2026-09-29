@@ -42,6 +42,12 @@ interface ReleaseState {
     trackId: string,
     options?: { side?: string; allowDuplicate?: boolean }
   ) => void;
+  /** Bulk variant: one PATCH for the whole batch (see add-tracks server action). */
+  addTracksToRelease: (
+    releaseId: string,
+    trackIds: string[],
+    options?: { side?: string; allowDuplicate?: boolean }
+  ) => void;
   removeTrackFromRelease: (releaseId: string, trackId: string) => void;
   reorderReleaseTracks: (releaseId: string, trackIds: string[]) => void;
   setTrackSide: (releaseId: string, trackId: string, side: string | null) => void;
@@ -96,6 +102,37 @@ function persistAddTrackToRelease(input: {
       }
     })
     .catch((error) => console.error("[store] persistAddTrackToRelease failed", error));
+}
+
+function persistAddTracksToRelease(input: {
+  releaseId: string;
+  trackIds: string[];
+  side?: string;
+  allowDuplicate?: boolean;
+}) {
+  if (typeof window === "undefined") return;
+
+  void fetch(`/api/releases/${input.releaseId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "add-tracks",
+      trackIds: input.trackIds,
+      side: input.side,
+      allowDuplicate: input.allowDuplicate === true,
+    }),
+  })
+    .then(async (res) => {
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      const release = data?.release;
+      if (release) {
+        useReleaseStore.getState().hydrateReleasesFromServer(
+          useReleaseStore.getState().releases.map((r) => (r.id === release.id ? release : r))
+        );
+      }
+    })
+    .catch((error) => console.error("[store] persistAddTracksToRelease failed", error));
 }
 
 function persistRemoveTrackFromRelease(input: { releaseId: string; trackId: string }) {
@@ -188,6 +225,34 @@ export const useReleaseStore = create<ReleaseState>()(
         }));
 
         persistAddTrackToRelease({ releaseId, trackId, side: options?.side, allowDuplicate: options?.allowDuplicate });
+      },
+      addTracksToRelease: (releaseId, trackIds, options) => {
+        const unique = [...new Set(trackIds)];
+        if (unique.length === 0) return;
+        set((state) => ({
+          releases: state.releases.map((release) => {
+            if (release.id !== releaseId) return release;
+            const onRelease = new Set(release.tracks.map((t) => t.trackId));
+            const fresh = options?.allowDuplicate
+              ? unique
+              : unique.filter((trackId) => !onRelease.has(trackId));
+            if (fresh.length === 0) return release;
+            const base = release.tracks.length;
+            return {
+              ...release,
+              tracks: [
+                ...release.tracks,
+                ...fresh.map((trackId, index) => ({
+                  trackId,
+                  position: base + index,
+                  side: options?.side ?? null,
+                })),
+              ],
+            };
+          }),
+        }));
+
+        persistAddTracksToRelease({ releaseId, trackIds: unique, side: options?.side, allowDuplicate: options?.allowDuplicate });
       },
       removeTrackFromRelease: (releaseId, trackId) => {
         set((state) => ({

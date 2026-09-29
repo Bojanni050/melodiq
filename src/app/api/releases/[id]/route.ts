@@ -151,6 +151,85 @@ export async function PATCH(
       return respondWithRelease(auth.userId, id);
     }
 
+    if (action === "add-tracks") {
+      const trackIds = normalizeTrackIds(body?.trackIds);
+      const side = typeof body?.side === "string" && body.side.trim() ? body.side.trim().slice(0, 10) : null;
+      const allowDuplicate = body?.allowDuplicate === true;
+
+      if (trackIds.length === 0) {
+        return NextResponse.json({ error: "trackIds is required" }, { status: 400 });
+      }
+
+      const ownedTracks = await db
+        .select({
+          id: tracks.id,
+          title: tracks.title,
+          prompt: tracks.prompt,
+          instrumental: tracks.instrumental,
+          lyrics: tracks.lyrics,
+        })
+        .from(tracks)
+        .where(and(inArray(tracks.id, trackIds), eq(tracks.userId, auth.userId)));
+
+      if (ownedTracks.length === 0) {
+        return NextResponse.json({ error: "Tracks not found" }, { status: 404 });
+      }
+
+      // Preserve the requested order, drop unknown ids.
+      const byId = new Map(ownedTracks.map((t) => [t.id, t]));
+      const ordered = trackIds.filter((trackId) => byId.has(trackId));
+
+      let candidates = ordered;
+      if (!allowDuplicate) {
+        const existingRows = await db
+          .select({ trackId: releaseTracks.trackId })
+          .from(releaseTracks)
+          .where(eq(releaseTracks.releaseId, id));
+        const onRelease = new Set(existingRows.map((row) => row.trackId));
+        candidates = ordered.filter((trackId) => !onRelease.has(trackId));
+      }
+
+      if (candidates.length === 0) {
+        return respondWithRelease(auth.userId, id);
+      }
+
+      // One max() lookup for the whole batch — per-track add-track calls race
+      // on this and collide on the (release_id, position) unique index, so
+      // only one of them survived. See addTracksToRelease in releaseStore.
+      const maxPos = await db
+        .select({ value: sql<number>`coalesce(max(${releaseTracks.position}), -1)` })
+        .from(releaseTracks)
+        .where(eq(releaseTracks.releaseId, id));
+
+      const base = Number(maxPos[0]?.value ?? -1) + 1;
+
+      await db.insert(releaseTracks).values(
+        candidates.map((trackId, index) => ({
+          releaseId: id,
+          trackId,
+          position: base + index,
+          side,
+        }))
+      );
+
+      if (base === 0) {
+        const first = byId.get(candidates[0]);
+        if (first?.prompt) {
+          generateAndSaveReleaseCoverArt(
+            { id, userId: auth.userId },
+            {
+              title: first.title,
+              prompt: first.prompt,
+              instrumental: first.instrumental,
+              lyrics: first.lyrics,
+            }
+          ).catch((err) => console.error("[releases/add-tracks] cover generation failed:", err));
+        }
+      }
+
+      return respondWithRelease(auth.userId, id);
+    }
+
     if (action === "remove-track") {
       const trackId = typeof body?.trackId === "string" ? body.trackId : "";
       if (!trackId) {
