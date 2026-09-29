@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, usePlayerStore, useStudioStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
+import { useSidebarStore, usePlayerStore, useStudioStore, useWorkspaceStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import TrackDnaPanel from "@/components/tracks/TrackDnaPanel";
 import TrackOptionsMenu from "@/components/tracks/TrackOptionsMenu";
+import MoveToWorkspaceDialog from "@/components/tracks/MoveToWorkspaceDialog";
+import MergeWorkspaceDialog from "@/components/tracks/MergeWorkspaceDialog";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import type { ReuseScope, TrackItem } from "@/components/tracks/types";
 import { buildReusePayload } from "@/lib/reuse-prompt";
@@ -49,6 +51,11 @@ type GroupTrack = {
   artistName: string | null;
   composerName: string | null;
   writerName: string | null;
+  // Smart Ordening: where the track currently lives. Shown as a chip so the
+  // user sees what a bulk move would change. Null for Default Workspace rows
+  // the server could not name (or tracks without an assignment yet).
+  workspaceId: string | null;
+  workspaceName: string | null;
 };
 
 type SmartArchiveGroup = {
@@ -96,6 +103,9 @@ export default function SmartArchivePage() {
   const [loading, setLoading] = useState(true);
   const [checkedByGroup, setCheckedByGroup] = useState<Record<string, Set<string>>>({});
   const [confirmGroup, setConfirmGroup] = useState<SmartArchiveGroup | null>(null);
+  const [moveGroup, setMoveGroup] = useState<SmartArchiveGroup | null>(null);
+  const [showMergeWorkspaceDialog, setShowMergeWorkspaceDialog] = useState(false);
+  const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [dnaOpenIds, setDnaOpenIds] = useState<Set<string>>(new Set());
   const [dnaMountedIds, setDnaMountedIds] = useState<Set<string>>(new Set());
 
@@ -153,6 +163,57 @@ export default function SmartArchivePage() {
 
   const { archiving, archiveResults, archiveTrackIds, clearArchiveResults } = useArchiveTracks();
   const { hiding, hideTrackIds } = useHideTracks();
+
+  // Smart Ordening: bulk move of the checked selection to a workspace. The
+  // store persists per track via PATCH /api/tracks/[id], so no new endpoint
+  // is needed; groups stay visible afterwards (a workspace move does not
+  // change similarity).
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const moveTracksToWorkspace = useWorkspaceStore((s) => s.moveTracksToWorkspace);
+  const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
+  const hydrateWorkspacesFromServer = useWorkspaceStore((s) => s.hydrateWorkspacesFromServer);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/workspaces")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.workspaces)) hydrateWorkspacesFromServer(data.workspaces);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [hydrateWorkspacesFromServer]);
+
+  // Same derivation as TrackOptionsMenu, so the bulk dialog lists the same tree.
+  const orderedWorkspaceOptions = useMemo(() => {
+    const roots = workspaces.filter((w) => !w.parentWorkspaceId);
+    const childrenByParent = new Map<string, typeof workspaces>();
+    workspaces
+      .filter((w) => w.parentWorkspaceId)
+      .forEach((child) => {
+        const list = childrenByParent.get(child.parentWorkspaceId!) ?? [];
+        list.push(child);
+        childrenByParent.set(child.parentWorkspaceId!, list);
+      });
+    return roots.flatMap((root) => [
+      { workspace: root, depth: 0 },
+      ...(childrenByParent.get(root.id) ?? []).map((child) => ({
+        workspace: child,
+        depth: 1,
+      })),
+    ]);
+  }, [workspaces]);
+
+  const workspaceDisplayNameById = useMemo(
+    () => new Map(workspaces.map((w) => [w.id, w.name])),
+    [workspaces]
+  );
+  const workspaceCoverById = useMemo(
+    () => new Map<string, string | null>(workspaces.map((w) => [w.id, null])),
+    [workspaces]
+  );
 
   // Independent preview player — a separate <audio> element from the app's
   // global player, so comparing candidates doesn't interrupt whatever is
@@ -342,6 +403,60 @@ export default function SmartArchivePage() {
     setConfirmGroup(group);
   }
 
+  // Smart Ordening: opens the workspace picker for the checked selection.
+  // Nothing moves until the user picks a workspace (or creates one) in the
+  // dialog. Groups stay visible afterwards by design.
+  function handleMoveGroupClick(group: SmartArchiveGroup) {
+    const ids = checkedByGroup[group.id] ?? new Set<string>();
+    if (ids.size === 0) return;
+    setPendingWorkspaceMerge(null);
+    setShowMergeWorkspaceDialog(false);
+    setMoveGroup(group);
+  }
+
+  function moveGroupSelectedIds(group: SmartArchiveGroup): string[] {
+    return Array.from(checkedByGroup[group.id] ?? []);
+  }
+
+  function handleMoveGroupToWorkspace(workspaceId: string) {
+    if (!moveGroup) return;
+    const ids = moveGroupSelectedIds(moveGroup);
+    if (ids.length === 0) {
+      setMoveGroup(null);
+      return;
+    }
+    moveTracksToWorkspace(workspaceId, ids);
+    setMoveGroup(null);
+    // Refetch so the new workspace chips show up; groups themselves do not
+    // change because a workspace move does not affect similarity.
+    void fetchGroups();
+  }
+
+  function handleCreateWorkspaceForGroup(name: string) {
+    if (!moveGroup) return;
+    const workspaceId = createWorkspace(name);
+    if (!workspaceId) return;
+    const ids = moveGroupSelectedIds(moveGroup);
+    if (ids.length > 0) moveTracksToWorkspace(workspaceId, ids);
+    setMoveGroup(null);
+    void fetchGroups();
+  }
+
+  function handleMergeWorkspaceTriggerForGroup(existingWorkspace: { id: string; name: string }) {
+    setPendingWorkspaceMerge({ id: existingWorkspace.id, name: existingWorkspace.name });
+    setShowMergeWorkspaceDialog(true);
+  }
+
+  function confirmWorkspaceMergeForGroup() {
+    if (!moveGroup || !pendingWorkspaceMerge) return;
+    const ids = moveGroupSelectedIds(moveGroup);
+    if (ids.length > 0) moveTracksToWorkspace(pendingWorkspaceMerge.id, ids);
+    setPendingWorkspaceMerge(null);
+    setShowMergeWorkspaceDialog(false);
+    setMoveGroup(null);
+    void fetchGroups();
+  }
+
   async function executeArchiveConfirmedGroup() {
     if (!confirmGroup) return;
     const group = confirmGroup;
@@ -389,6 +504,35 @@ export default function SmartArchivePage() {
   const confirmTracks = confirmGroup
     ? confirmGroup.tracks.filter((t) => (checkedByGroup[confirmGroup.id] ?? new Set()).has(t.id))
     : [];
+  const moveTracks = moveGroup
+    ? moveGroup.tracks.filter((t) => (checkedByGroup[moveGroup.id] ?? new Set()).has(t.id))
+    : [];
+  // The bulk dialog only reads title/prompt for its create-field suggestion,
+  // so a lightweight stand-in built from the first selected track is enough.
+  const moveDialogTrack: TrackItem | null = moveTracks.length
+    ? {
+        id: moveTracks[0].id,
+        title: moveTracks[0].title,
+        provider: moveTracks[0].provider,
+        providerModel: moveTracks[0].providerModel,
+        prompt: moveTracks[0].prompt ?? moveTracks[0].promptSnippet ?? "",
+        lyrics: moveTracks[0].lyricsSnippet,
+        status: "done",
+        audioUrl: null,
+        audioUrlHd: null,
+        format: null,
+        formatHd: null,
+        duration: moveTracks[0].duration,
+        createdAt: moveTracks[0].createdAt ?? "",
+        error: null,
+        s3KeyHd: null,
+        rating: moveTracks[0].rating,
+        coverUrl: moveTracks[0].hasCover ? `/api/tracks/${moveTracks[0].id}/cover` : null,
+        instrumental: moveTracks[0].instrumental,
+        lyricsTimestamps: moveTracks[0].lyricsTimestamps,
+        releaseStatus: moveTracks[0].releaseStatus,
+      }
+    : null;
 
   return (
     <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
@@ -404,8 +548,8 @@ export default function SmartArchivePage() {
               <div>
                 <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Smart Archive</h1>
                 <p className="text-sm text-white/50 mt-1 max-w-2xl">
-                  Tracks grouped by similar lyrics, prompt, and audio DNA — play them to compare, then choose which
-                  tracks to archive. Nothing is archived automatically.
+                  Tracks grouped by similar lyrics, prompt, and audio DNA — play them to compare, then archive
+                  them or move them to a workspace (Smart Ordening). Nothing happens automatically.
                 </p>
               </div>
 
@@ -665,6 +809,14 @@ export default function SmartArchivePage() {
                                       {track.playlistNames.join(", ")}
                                     </span>
                                   )}
+                                  {track.workspaceName && (
+                                    <span
+                                      className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/25 bg-emerald-400/10 text-emerald-200 shrink-0 truncate max-w-[12rem]"
+                                      title={`In workspace: ${track.workspaceName}`}
+                                    >
+                                      {track.workspaceName}
+                                    </span>
+                                  )}
                                   <span className="text-[10px] text-white/40 shrink-0">{formatDuration(track.duration)}</span>
                                   {track.status === "done" && (
                                     <button
@@ -752,6 +904,15 @@ export default function SmartArchivePage() {
                       <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/10">
                         <button
                           type="button"
+                          onClick={() => handleMoveGroupClick(group)}
+                          disabled={checked.size === 0}
+                          className="h-8 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 text-sm font-medium text-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-500/20 transition-colors"
+                          title="Move the selected tracks to a workspace — Smart Ordening. Groups stay visible afterwards"
+                        >
+                          Move to workspace ({checked.size})
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleHideGroupClick(group)}
                           disabled={hiding || checked.size === 0}
                           className="h-8 rounded-full border border-sky-400/30 bg-sky-500/10 px-3 text-sm font-medium text-sky-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-sky-500/20 transition-colors"
@@ -808,8 +969,7 @@ export default function SmartArchivePage() {
 
       {confirmGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmGroup(null)} />
-          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmGroup(null)} />          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
             <div>
               <h3 className="text-lg font-semibold text-white/90">
                 Archive {confirmTracks.length} track{confirmTracks.length === 1 ? "" : "s"}?
@@ -884,6 +1044,31 @@ export default function SmartArchivePage() {
           </div>
         </div>
       )}
+
+      {moveGroup && moveDialogTrack && (
+        <MoveToWorkspaceDialog
+          isOpen
+          onClose={() => setMoveGroup(null)}
+          track={moveDialogTrack}
+          orderedWorkspaceOptions={orderedWorkspaceOptions}
+          workspaceCoverById={workspaceCoverById}
+          workspaceDisplayNameById={workspaceDisplayNameById}
+          workspaces={workspaces}
+          onMoveToWorkspace={handleMoveGroupToWorkspace}
+          onCreateWorkspace={handleCreateWorkspaceForGroup}
+          onMergeWorkspaceTrigger={handleMergeWorkspaceTriggerForGroup}
+        />
+      )}
+
+      <MergeWorkspaceDialog
+        isOpen={showMergeWorkspaceDialog}
+        onClose={() => {
+          setShowMergeWorkspaceDialog(false);
+          setPendingWorkspaceMerge(null);
+        }}
+        workspaceName={pendingWorkspaceMerge?.name || ""}
+        onConfirm={confirmWorkspaceMergeForGroup}
+      />
     </div>
   );
 }

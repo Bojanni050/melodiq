@@ -351,6 +351,7 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
 - Published tracks, Master Tracks en tracks in een playlist staan gewoon in de groepen, met een ⚠-regel erbij. Zie hierboven wat de waarschuwing inhoudt.
 - Er wordt nooit automatisch iets gedaan; je vinkt zelf aan wat weg mag.
 - **Hide selected** verbergt de aangevinkte tracks (alle bestanden blijven bewaard). **Archive selected** verwijdert de HD/WAV, stems en masters — met een bevestigingsvenster dat opsomt wat er verdwijnt en welke tracks een status hebben.
+- **Smart Ordening:** **Move to workspace (n)** verplaatst de aangevinkte tracks naar een workspace. Dezelfde popup als elders: kies een bestaande workspace of maak onderin een nieuwe aan. Groepen blijven daarna gewoon staan, zodat je daarna alsnog kunt archiveren. Per track zie je een groene chip in welke workspace hij staat.
 
 ### Meerdere tracks selecteren
 

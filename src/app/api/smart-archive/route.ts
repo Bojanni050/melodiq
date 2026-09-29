@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { tracks, trackStems, trackMasters, playlists, playlistTracks } from "@/db/schema";
+import { tracks, trackStems, trackMasters, playlists, playlistTracks, workspaces } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
 import { findDuplicateCandidateGroups, languageLabel } from "@/lib/smart-archive";
 import { collectArchiveWarnings, type ArchiveWarning } from "@/lib/archive-guards";
@@ -50,6 +50,10 @@ type GuardedTrack = {
   artistName: string | null;
   composerName: string | null;
   writerName: string | null;
+  // Smart Ordening: where the track currently lives, so the row can show it
+  // and the bulk move can skip tracks already in the target workspace.
+  workspaceId: string | null;
+  workspaceName: string | null;
 };
 
 export async function GET() {
@@ -65,7 +69,7 @@ export async function GET() {
       return NextResponse.json({ groups: [] });
     }
 
-    const [warningEntries, trackRows, stemCounts, masterCounts, playlistRows] = await Promise.all([
+    const [warningEntries, trackRows, stemCounts, masterCounts, playlistRows, workspaceRows] = await Promise.all([
       Promise.all(
         allTrackIds.map(async (trackId) => [trackId, await collectArchiveWarnings(trackId, userId)] as const)
       ),
@@ -96,6 +100,7 @@ export async function GET() {
           artistName: tracks.artistName,
           composerName: tracks.composerName,
           writerName: tracks.writerName,
+          workspaceId: tracks.workspaceId,
         })
         .from(tracks)
         .where(and(inArray(tracks.id, allTrackIds), eq(tracks.userId, userId))),
@@ -124,6 +129,10 @@ export async function GET() {
             eq(playlists.isSystem, false)
           )
         ),
+      db
+        .select({ id: workspaces.id, name: workspaces.name })
+        .from(workspaces)
+        .where(eq(workspaces.userId, userId)),
     ]);
 
     const warningById = new Map(warningEntries);
@@ -138,6 +147,7 @@ export async function GET() {
       names.push(row.name);
       playlistNamesById.set(row.trackId, names);
     }
+    const workspaceNameById = new Map(workspaceRows.map((row) => [row.id, row.name]));
 
     const payload = groups
       .map((group) => ({
@@ -184,6 +194,10 @@ export async function GET() {
               artistName: track?.artistName ?? null,
               composerName: track?.composerName ?? null,
               writerName: track?.writerName ?? null,
+              workspaceId: track?.workspaceId ?? null,
+              workspaceName: track?.workspaceId
+                ? (workspaceNameById.get(track.workspaceId) ?? null)
+                : null,
             };
           }),
       }))

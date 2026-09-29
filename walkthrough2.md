@@ -353,3 +353,9 @@
 - Findings: Op de Smart Archive pagina stond wel een kleine inline Library-knop per track, maar het trackoptiemenu (`...`) had geen navigatie-optie om de track in de Library op te zoeken.
 - Conclusions: Hergebruik de bestaande `goToTrackInLibrary` flow (sessionStorage `melodiq-jump-to-track` + router naar `/library`) als menu-item, zodat de track in de Library wordt opgezocht en gehighlight.
 - Actions: `src/components/tracks/TrackActionMenu.tsx` uitgebreid met optionele `onGoToTrackClick` prop en `Ga naar track` menu-item bovenaan; `src/components/tracks/TrackOptionsMenu.tsx` prop doorgegeven aan `TrackActionMenu`; `src/app/smart-archive/page.tsx` gekoppeld met `onGoToTrackClick={() => goToTrackInLibrary(track.id)}`; gevalideerd met `npm run build` (geslaagd), validated.
+
+## 2026-09-29 di (Smart Ordening: bulk naar workspace vanuit Smart Archive)
+
+- Findings: Smart Archive groepeerde al nummers die op elkaar lijken, maar ordenen kon alleen per track via het `...` menu. Er was geen groepsactie om een selectie in één keer naar een (bestaande of nieuwe) workspace te verplaatsen.
+- Conclusions: Hergebruik de bestaande `MoveToWorkspaceDialog` + `MergeWorkspaceDialog` en de store-functie `moveTracksToWorkspace` voor bulk, per selectie, zonder groepen te laten verdwijnen. Alleen `workspaceId/workspaceName` aan de API-payload toevoegen voor een chip in de rij.
+- Actions: `src/app/smart-archive/page.tsx` uitgebreid met `Move to workspace (n)` groepsknop, `moveGroup` state, workspace-hydratie via `GET /api/workspaces`, bulk handlers (`handleMoveGroupToWorkspace`, `handleCreateWorkspaceForGroup`, `confirmWorkspaceMergeForGroup`) en workspace-chip per track; `src/app/api/smart-archive/route.ts` uitgebreid met `workspaceId/workspaceName` per track; `melodiq-user.md` Smart Archive-sectie bijgewerkt; gevalideerd met `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.
