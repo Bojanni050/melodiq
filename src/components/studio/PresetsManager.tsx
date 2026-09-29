@@ -123,7 +123,7 @@ export default function PresetsManager({
 
       {/* My Presets List */}
       {showSavedPresetsList && presets.length > 0 && (
-        <div className="mt-4 border-t border-white/10 pt-4 space-y-2.5">
+        <div className="mt-4 border-t border-white/10 pt-4 space-y-2.5 w-full basis-full min-w-0">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-white/60">{t("studio.mySavedPresets")}</p>
             <button
@@ -178,7 +178,7 @@ export default function PresetsManager({
                     </div>
                   </div>
                   {preset.notes && (
-                    <div className="text-[10px] text-white/50 border-l border-primary-500/20 pl-2 py-0.5 bg-primary-500/[0.02] rounded-r">
+                    <div className="text-[10px] text-white/50 border-l border-primary-500/20 pl-2 py-0.5 bg-primary-500/[0.02] rounded-r break-words whitespace-pre-wrap min-w-0">
                       <span className="font-semibold text-white/70">{t("studio.notesLabel")}</span>
                       {preset.notes}
                     </div>
