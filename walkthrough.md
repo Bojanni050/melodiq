@@ -1514,3 +1514,9 @@ pm run build � succesvol.
 - Findings: De vote-route las `x-forwarded-for`/`x-real-ip` + user-agent uit en sloeg een SHA256-hash daarvan op als `voterHash` — privacy-gevoelig en onnodig naast de voterId-cookie.
 - Conclusions: Alleen de random `poll_voter`-cookie telt als identiteit; rate-limit is nu per voterId (alleen servergeheugen, reset bij herstart) in plaats van per IP. `voterHash` wordt altijd als null geschreven (kolom blijft nullable bestaan, dus geen migratie nodig). `hashVoter` + `crypto.createHash` verwijderd uit `lib/release-poll.ts`.
 - Actions: `src/app/api/discover/releases/[id]/poll/vote/route.ts` — IP-headers en `hashVoter` eruit, cookie eerst lezen, rate-limit op voterId. `src/lib/release-poll.ts` — `hashVoter` verwijderd. Gevalideerd met `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd).
+
+## 2026-09-29 di (Poll-maximum 3 → 5 versies)
+
+- Findings: Poll-maximum van 3 versies bleek te krap; Bo wil max 5 tracks per poll.
+- Conclusions: Alle validatie en UI lopen al via de centrale `MAX_POLL_OPTIONS`-constante, dus alleen die hoeft omhoog — geen migratie of API-wijziging nodig.
+- Actions: `src/lib/release-poll-constants.ts` — `MAX_POLL_OPTIONS` 3 → 5. `src/db/schema.ts` — comment bijgewerkt. `melodiq-user.md` — "max 3" → "max 5". Gevalideerd met `npm run build` (geslaagd).

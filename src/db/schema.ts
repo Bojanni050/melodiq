@@ -416,7 +416,7 @@ export const releaseTracksRelations = relations(releaseTracks, ({ one }) => ({
 }));
 
 // ─── Release polls ───────────────────────────────────────────────────────────
-// One optional poll per release: owner picks up to 3 tracks (variations of one
+// One optional poll per release: owner picks up to 5 tracks (variations of one
 // song) as options, anyone can vote once (cookie voterId, changeable). Votes
 // close automatically at closesAt.
 export const releasePolls = pgTable("release_polls", {
