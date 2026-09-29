@@ -1,4 +1,4 @@
-import type { StyleDraftPayload } from "@/lib/style-studio-constants";
+import { expandGenreWithDescription, type StyleDraftPayload } from "@/lib/style-studio-constants";
 
 function joinWithAnd(items: string[]): string {
   if (items.length === 0) return "";
@@ -15,9 +15,10 @@ function listToNaturalPhrase(items: string[]): string {
 export function buildStyleSummary(payload: StyleDraftPayload): string {
   const parts: string[] = [];
 
+  const primary = payload.primaryGenre.trim() ? expandGenreWithDescription(payload.primaryGenre) : "Contemporary";
   const genreSegment = payload.secondaryGenre.trim()
-    ? `${payload.primaryGenre.trim() || "Contemporary"} with ${payload.secondaryGenre.trim().toLowerCase()} influences`
-    : `${payload.primaryGenre.trim() || "Contemporary"}`;
+    ? `${primary} with ${expandGenreWithDescription(payload.secondaryGenre).toLowerCase()} influences`
+    : primary;
   parts.push(genreSegment);
 
   if (payload.moods.length > 0) {
@@ -108,8 +109,10 @@ export function buildMusicPrompt(
   const parts: string[] = [];
 
   const genreSegment = payload.secondaryGenre.trim()
-    ? `${payload.primaryGenre.trim() || "Contemporary"} with ${payload.secondaryGenre.trim().toLowerCase()} influences`
-    : payload.primaryGenre.trim() || "Contemporary";
+    ? `${payload.primaryGenre.trim() ? expandGenreWithDescription(payload.primaryGenre) : "Contemporary"} with ${expandGenreWithDescription(payload.secondaryGenre).toLowerCase()} influences`
+    : payload.primaryGenre.trim()
+      ? expandGenreWithDescription(payload.primaryGenre)
+      : "Contemporary";
   let opener = genreSegment;
   if (payload.moods.length > 0) opener += `, ${listToNaturalPhrase(payload.moods)}`;
   if (payload.bpm) opener += `, ${payload.bpm} BPM`;

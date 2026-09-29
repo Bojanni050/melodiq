@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   ERA_OPTIONS,
+  GENRE_DESCRIPTIONS,
   GROOVE_OPTIONS,
   HARMONY_CHARACTER_OPTIONS,
   INSTRUMENTATION_OPTIONS,
@@ -33,20 +34,25 @@ function SearchableDropdown({
   options,
   onChange,
   placeholder,
+  descriptions,
 }: {
   label: string;
   value: string;
   options: readonly string[];
   onChange: (value: string) => void;
   placeholder?: string;
+  descriptions?: Record<string, string>;
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const filtered = useMemo(
-    () => (query ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase())) : options),
-    [options, query]
-  );
+  const filtered = useMemo(() => {
+    if (!query) return options;
+    const q = query.toLowerCase();
+    return options.filter(
+      (o) => o.toLowerCase().includes(q) || (descriptions?.[o]?.toLowerCase().includes(q) ?? false)
+    );
+  }, [options, query, descriptions]);
   const effectivePlaceholder = placeholder ?? t("melody.selectPlaceholder");
 
   return (
@@ -84,11 +90,14 @@ function SearchableDropdown({
                     setOpen(false);
                     setQuery("");
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-sm rounded transition-colors ${
+                  className={`w-full px-3 py-1.5 text-left rounded transition-colors ${
                     value === option ? "bg-primary-500/15 text-white" : "text-white/80 hover:bg-white/5"
                   }`}
                 >
-                  {option}
+                  <span className="block text-sm">{option}</span>
+                  {descriptions?.[option] && (
+                    <span className="block text-xs text-white/40 truncate">{descriptions[option]}</span>
+                  )}
                 </button>
               ))
             )}
@@ -131,6 +140,86 @@ function ChipGroup({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function CustomAddInput({
+  label,
+  selected,
+  knownOptions,
+  onAdd,
+  onRemove,
+  placeholder,
+}: {
+  label: string;
+  selected: string[];
+  knownOptions: readonly string[];
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState("");
+  const knownLower = useMemo(() => new Set(knownOptions.map((o) => o.toLowerCase())), [knownOptions]);
+  const customs = useMemo(() => selected.filter((v) => !knownLower.has(v.toLowerCase())), [selected, knownLower]);
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    if (selected.some((v) => v.toLowerCase() === trimmed.toLowerCase())) {
+      setDraft("");
+      return;
+    }
+    onAdd(trimmed);
+    setDraft("");
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-white/45 mb-2">{label}</label>
+      {customs.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {customs.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary-400/40 bg-primary-500/15 px-3 py-1 text-xs font-medium text-white"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => onRemove(tag)}
+                className="text-white/60 hover:text-white"
+                aria-label={`Remove ${tag}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+            }
+          }}
+          placeholder={placeholder}
+          className="flex-1 input-field text-sm"
+        />
+        <button
+          type="button"
+          onClick={commit}
+          disabled={!draft.trim()}
+          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          +
+        </button>
       </div>
     </div>
   );
@@ -232,8 +321,8 @@ export default function StyleControlPanel({
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
         <h3 className="text-sm font-semibold text-white/85">{t("melody.musicalFoundationHeading")}</h3>
 
-        <SearchableDropdown label={t("melody.primaryGenreLabel")} value={primaryGenre} options={PRIMARY_GENRES} onChange={setPrimaryGenre} placeholder={t("melody.chooseGenrePlaceholder")} />
-        <SearchableDropdown label={t("melody.secondaryGenreLabel")} value={secondaryGenre} options={PRIMARY_GENRES} onChange={setSecondaryGenre} placeholder={t("melody.optionalPlaceholder")} />
+        <SearchableDropdown label={t("melody.primaryGenreLabel")} value={primaryGenre} options={PRIMARY_GENRES} descriptions={GENRE_DESCRIPTIONS} onChange={setPrimaryGenre} placeholder={t("melody.chooseGenrePlaceholder")} />
+        <SearchableDropdown label={t("melody.secondaryGenreLabel")} value={secondaryGenre} options={PRIMARY_GENRES} descriptions={GENRE_DESCRIPTIONS} onChange={setSecondaryGenre} placeholder={t("melody.optionalPlaceholder")} />
         <ChipGroup label={t("melody.moodLabel")} options={MOOD_OPTIONS} selected={moods} onToggle={(v) => toggleIn(moods, setMoods, v)} />
 
         <div className="grid grid-cols-2 gap-3">
@@ -281,6 +370,14 @@ export default function StyleControlPanel({
       <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
         <h3 className="text-sm font-semibold text-white/85">{t("melody.instrumentationHeading")}</h3>
         <ChipGroup label={t("melody.instrumentsLabel")} options={INSTRUMENTATION_OPTIONS} selected={instrumentation} onToggle={(v) => toggleIn(instrumentation, setInstrumentation, v)} />
+        <CustomAddInput
+          label={t("melody.customInstrumentLabel")}
+          selected={instrumentation}
+          knownOptions={INSTRUMENTATION_OPTIONS}
+          onAdd={(v) => setInstrumentation([...instrumentation, v])}
+          onRemove={(v) => setInstrumentation(instrumentation.filter((x) => x !== v))}
+          placeholder={t("melody.customInstrumentPlaceholder")}
+        />
         <div className="space-y-3">
           {INSTRUMENT_TEXTURE_AXES.map((axis) => (
             <AxisSlider
@@ -299,6 +396,14 @@ export default function StyleControlPanel({
         <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
           <h3 className="text-sm font-semibold text-white/85">{t("melody.vocalsHeading")}</h3>
           <ChipGroup label={t("melody.vocalDeliveryLabel")} options={VOCAL_DIRECTION_OPTIONS} selected={vocalDirection} onToggle={(v) => toggleIn(vocalDirection, setVocalDirection, v)} />
+          <CustomAddInput
+            label={t("melody.customVocalLabel")}
+            selected={vocalDirection}
+            knownOptions={VOCAL_DIRECTION_OPTIONS}
+            onAdd={(v) => setVocalDirection([...vocalDirection, v])}
+            onRemove={(v) => setVocalDirection(vocalDirection.filter((x) => x !== v))}
+            placeholder={t("melody.customVocalPlaceholder")}
+          />
           <div>
             <label className="block text-xs font-medium text-white/45 mb-2">{t("melody.avoidVocalLabel")}</label>
             <TagInput value={vocalNegatives} onChange={setVocalNegatives} suggestions={VOCAL_NEGATIVE_OPTIONS} placeholder={t("melody.noBeltingPlaceholder")} />
