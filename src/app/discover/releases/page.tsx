@@ -286,7 +286,7 @@ function DiscoverReleasesPageInner() {
 
             <section className="space-y-1">
               {/* Filter / sort toolbar */}
-              <div className="flex items-center justify-end gap-2 px-1 pb-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 px-1 pb-2">
                 <div className="relative">
                   <select
                     value={typeFilter}

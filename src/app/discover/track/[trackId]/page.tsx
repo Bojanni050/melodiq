@@ -233,7 +233,7 @@ export default function TrackDnaPage() {
       <div className={isLoggedIn ? "h-[calc(100vh-var(--player-height))] flex" : "min-h-screen flex"}>
         {isLoggedIn && <Sidebar credits={null} />}
         <main
-          className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 pb-16"
+          className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 pb-16 @container"
           style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
         >
           <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
@@ -256,11 +256,11 @@ export default function TrackDnaPage() {
             <div className="mt-6 max-w-3xl space-y-6">
               {/* Hero header — cover art left, artist/writer info beside it */}
               <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-900/60 via-primary-900/30 to-[#0d0e15]">
-                <div className="flex flex-col items-start gap-6 p-6 sm:flex-row sm:items-end sm:p-8">
+                <div className="flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">
                   <button
                     type="button"
                     onClick={handlePlayClick}
-                    className="group relative h-36 w-36 shrink-0 overflow-hidden rounded-xl shadow-2xl shadow-black/50 sm:h-48 sm:w-48"
+                    className="group relative h-36 w-36 shrink-0 overflow-hidden rounded-xl shadow-2xl shadow-black/50 @sm:h-48 @sm:w-48"
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {coverSrc() ? (
@@ -294,7 +294,7 @@ export default function TrackDnaPage() {
 
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Single</p>
-                    <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-white sm:text-5xl">
+                    <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-white @sm:text-5xl">
                       {track.title}
                     </h1>
                     <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white/70">
@@ -348,7 +348,7 @@ export default function TrackDnaPage() {
                 <div className="flex items-center gap-3 border-b border-white/8 px-3 pb-2 text-xs uppercase tracking-wide text-white/35">
                   <span className="w-5 text-center">#</span>
                   <span className="flex-1">Title</span>
-                  <span className="hidden sm:block w-24 text-right">Plays</span>
+                  <span className="hidden @sm:block w-24 text-right">Plays</span>
                   <span className="w-12 text-right">
                     <svg className="ml-auto h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="9" strokeWidth={1.5} />
@@ -385,7 +385,7 @@ export default function TrackDnaPage() {
                     </p>
                     <p className="truncate text-xs text-white/45">{credits.join(", ") || "Unknown Artist"}</p>
                   </div>
-                  <span className="hidden sm:block w-24 shrink-0 text-right text-sm text-white/45">
+                  <span className="hidden @sm:block w-24 shrink-0 text-right text-sm text-white/45">
                     {track.totalPlays.toLocaleString()}
                   </span>
                   <span className="w-12 shrink-0 text-right text-sm text-white/45">
@@ -396,11 +396,11 @@ export default function TrackDnaPage() {
 
               {/* Track DNA — auto-computed analysis, not part of the shared Track Details sidebar */}
               {audioDna && (hasAudioFacts || (audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0) || audioDna.lyricsScore != null) && (
-                <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 @sm:p-6">
                   <h2 className="text-sm font-semibold text-white/80">Track DNA</h2>
 
                   {hasAudioFacts && (
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 @sm:grid-cols-4">
                       {audioDna.tempo != null && <Fact label="Tempo" value={`${audioDna.tempo} BPM`} />}
                       {audioDna.key != null && <Fact label="Key" value={audioDna.key} />}
                       {audioDna.energy != null && <Fact label="Energy" value={`${audioDna.energy}%`} />}

@@ -3,6 +3,13 @@
 import type { ReactNode } from "react";
 import OpenRouterModelDropdown from "@/components/settings/OpenRouterModelDropdown";
 import type { LLMModel } from "@/lib/settings-utils";
+import type { TclEditorBehavior } from "@/lib/tcl/editor-behavior";
+
+const TCL_EDITOR_BEHAVIOR_OPTIONS: Array<{ value: TclEditorBehavior; label: string }> = [
+  { value: "always", label: "Always open" },
+  { value: "ask", label: "Always ask" },
+  { value: "never", label: "Never" },
+];
 
 // The OpenRouterModelDropdown fetches its option list from OpenRouter's own
 // /models endpoint, so it only ever makes sense — and only ever writes the
@@ -92,8 +99,8 @@ export default function AiRoutingSection({
   onToggleTimecodedDropdown,
   isAdmin,
   onReadMore,
-  tclAutoJumpToEditor,
-  onToggleTclAutoJumpToEditor,
+  tclEditorBehavior,
+  onTclEditorBehaviorChange,
   onGetModels,
   testingModels,
   onGetEdenAiModels,
@@ -139,8 +146,8 @@ export default function AiRoutingSection({
   onToggleTimecodedDropdown?: () => void;
   isAdmin?: boolean;
   onReadMore: (model: LLMModel) => void;
-  tclAutoJumpToEditor: boolean;
-  onToggleTclAutoJumpToEditor: () => void;
+  tclEditorBehavior: TclEditorBehavior;
+  onTclEditorBehaviorChange: (value: TclEditorBehavior) => void;
   onGetModels?: () => void;
   testingModels?: boolean;
   onGetEdenAiModels?: () => void;
@@ -254,31 +261,38 @@ export default function AiRoutingSection({
               Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.
             </p>
           </div>
-          <div className="flex items-center justify-between gap-3 pt-1">
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <label className="block text-sm font-medium text-white/50">Auto-open Lyrics Editor after generating TCL</label>
+              <label className="block text-sm font-medium text-white/50">After generating Time-Coded Lyrics</label>
               <p className="text-xs text-white/25 mt-1 max-w-md">
                 &ldquo;Generate Time-Coded Lyrics&rdquo; from a track&apos;s menu always generates in place first
-                (a progress indicator shows on the track while it runs). On: once it&apos;s done, you&apos;re
-                taken straight into the Timecoded Lyrics Editor, ready to play. Off: it just shows up on the
-                track card when it&apos;s done.
+                (a progress indicator shows on the track while it runs). Always open: you&apos;re taken
+                straight into the Timecoded Lyrics Editor when it&apos;s done. Always ask: a popup asks
+                whether you want to open the editor. Never: it just shows up on the track card.
               </p>
             </div>
-            <button
-              type="button"
-              aria-label="Toggle auto-open Lyrics Editor after generating TCL"
-              onClick={onToggleTclAutoJumpToEditor}
-              className={`relative w-12 h-6 rounded-full shrink-0 transition-colors ${
-                tclAutoJumpToEditor ? "bg-emerald-500/20" : "bg-white/10"
-              }`}
+            <div
+              role="radiogroup"
+              aria-label="After generating Time-Coded Lyrics"
+              className="flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
             >
-              <span className="sr-only">Toggle auto-open Lyrics Editor after generating TCL</span>
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  tclAutoJumpToEditor ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
+              {TCL_EDITOR_BEHAVIOR_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={tclEditorBehavior === opt.value}
+                  onClick={() => onTclEditorBehaviorChange(opt.value)}
+                  className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${
+                    tclEditorBehavior === opt.value
+                      ? "bg-white text-black"
+                      : "text-white/55 hover:text-white"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>

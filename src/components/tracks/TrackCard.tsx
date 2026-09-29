@@ -13,6 +13,7 @@ import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { withCdn } from "@/lib/cdn-client";
 import { playlistByTrackId, releasedTrackIds } from "@/lib/stores/trackIndexes";
+import { normalizeTclEditorBehavior } from "@/lib/tcl/editor-behavior";
 import { useSWRConfig } from "swr";
 
 // Extracted Sub-components
@@ -152,11 +153,12 @@ const TrackCard = memo(function TrackCard({
   const [generatingTcl, setGeneratingTcl] = useState(false);
   const [tclError, setTclError] = useState<string | null>(null);
   const [confirmRegenerateTcl, setConfirmRegenerateTcl] = useState(false);
+  const [showTclDoneDialog, setShowTclDoneDialog] = useState(false);
   const { data: appSettings } = useSWR<Record<string, string>>("/api/settings", settingsFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   });
-  const tclAutoJumpToEditor = appSettings?.TCL_AUTO_JUMP_EDITOR !== "false";
+  const tclEditorBehavior = normalizeTclEditorBehavior(appSettings?.TCL_AUTO_JUMP_EDITOR);
 
   function failTclGeneration(message: string) {
     setGeneratingTcl(false);
@@ -204,7 +206,8 @@ const TrackCard = memo(function TrackCard({
           setGeneratingTcl(false);
           void mutate("/api/tracks");
           window.dispatchEvent(new CustomEvent("tracks-changed"));
-          if (tclAutoJumpToEditor) router.push(`/timecoded-editor/${track.id}`);
+          if (tclEditorBehavior === "always") router.push(`/timecoded-editor/${track.id}`);
+          else if (tclEditorBehavior === "ask") setShowTclDoneDialog(true);
           return;
         }
         if (data?.status === "failed") {
@@ -583,6 +586,44 @@ const TrackCard = memo(function TrackCard({
           }}
           onCancel={() => setConfirmRegenerateTcl(false)}
         />
+      )}
+
+      {showTclDoneDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowTclDoneDialog(false)}>
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Time-coded lyrics ready"
+            className="relative w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#0f1119] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-white">Time-coded lyrics are ready</h3>
+            <p className="mt-2 text-sm text-white/60">
+              &ldquo;{track.title || "Untitled"}&rdquo; now has time-coded lyrics. Open it in the Timecoded
+              Lyrics Editor?
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTclDoneDialog(false)}
+                className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+              >
+                Stay here
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTclDoneDialog(false);
+                  router.push(`/timecoded-editor/${track.id}`);
+                }}
+                className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+              >
+                Open in editor
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <CreatePlaylistDialog

@@ -18,6 +18,7 @@ import S3Section from "@/components/settings/S3Section";
 import TclEngineSection from "@/components/settings/TclEngineSection";
 import WebhooksSection from "@/components/settings/WebhooksSection";
 import { PROVIDERS, WEBHOOK_DEFAULTS } from "@/lib/settings-constants";
+import { normalizeTclEditorBehavior, type TclEditorBehavior } from "@/lib/tcl/editor-behavior";
 import { usePlayerStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { applyWebhookDefaults, buildWebhookUrl, createModelPlaceholder, LLMModel } from "@/lib/settings-utils";
 
@@ -312,13 +313,12 @@ export default function SettingsPage() {
     });
   }
 
-  async function toggleTclAutoJumpToEditor() {
-    const next = values.TCL_AUTO_JUMP_EDITOR === "false" ? "true" : "false";
-    setValues((prev) => ({ ...prev, TCL_AUTO_JUMP_EDITOR: next }));
+  async function setTclEditorBehavior(behavior: TclEditorBehavior) {
+    setValues((prev) => ({ ...prev, TCL_AUTO_JUMP_EDITOR: behavior }));
     await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "TCL_AUTO_JUMP_EDITOR", value: next }),
+      body: JSON.stringify({ key: "TCL_AUTO_JUMP_EDITOR", value: behavior }),
     });
   }
 
@@ -597,8 +597,8 @@ export default function SettingsPage() {
                   onToggleTimecodedDropdown={() => { setShowTimecodedModelDropdown((v) => !v); setShowPromptModelDropdown(false); setShowLyricsModelDropdown(false); setShowImageModelDropdown(false); setShowTrackDnaModelDropdown(false); setShowAdvancedDnaModelDropdown(false); setShowLyricIqModelDropdown(false); }}
                   isAdmin={user?.role === "admin"}
                   onReadMore={setModelDetail}
-                  tclAutoJumpToEditor={values.TCL_AUTO_JUMP_EDITOR !== "false"}
-                  onToggleTclAutoJumpToEditor={toggleTclAutoJumpToEditor}
+                  tclEditorBehavior={normalizeTclEditorBehavior(values.TCL_AUTO_JUMP_EDITOR)}
+                  onTclEditorBehaviorChange={setTclEditorBehavior}
                   onGetModels={getOpenRouterModels}
                   testingModels={testingModels}
                   onGetEdenAiModels={getEdenAiModels}
