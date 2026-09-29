@@ -7,6 +7,7 @@ import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import CoverManager from "@/components/tracks/CoverManager";
+import ReleasePollManager from "@/components/releases/ReleasePollManager";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
@@ -463,6 +464,13 @@ export default function ReleaseDetailPage() {
                 <p className="text-xs text-white/35">
                   {t("releases.abTip")}
                 </p>
+              )}
+
+              {selectedRelease && (
+                <ReleasePollManager
+                  releaseId={selectedRelease.id}
+                  tracks={releaseTracks.map((track) => ({ id: track.id, title: track.title }))}
+                />
               )}
 
               {loading ? (

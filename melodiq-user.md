@@ -281,6 +281,13 @@ Er zijn twee releases-overzichten: **Mijn Releases** (alles wat je zelf beheert)
 
 Boven de lijst op de publieke pagina staat nog een **Play all**-knop: die speelt alle releases achter elkaar af.
 
+### Stemming (poll per release)
+
+- Op de release-detailpagina (Mijn Releases) kun je onder **Stemming** een poll starten: vink **max 3 tracks** aan (de versies van 1 song waaruit fans kiezen).
+- Stel optioneel een **einddatum/tijd** in wanneer het stemmen sluit; laat leeg voor geen einddatum. Met **Sluiten/Heropenen** zet je de poll handmatig open of dicht, met **Verwijderen** haal je hem weg.
+- Op de publieke release-pagina zien bezoekers de poll-card **"Welke versie is jouw favoriet?"** met per versie een Stem-knop, %-balken en het totaal aantal stemmen.
+- **Iedereen mag stemmen, ook zonder account** — 1 stem per persoon via een cookie, **wijzigen mag** (opnieuw klikken verplaatst je stem). Er wordt geen IP-adres of andere herleidbare data opgeslagen, alleen een willekeurige stem-cookie. Na sluiten is alleen de uitslag zichtbaar.
+
 ---
 
 ## Archief

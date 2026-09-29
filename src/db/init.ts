@@ -182,6 +182,42 @@ CREATE INDEX IF NOT EXISTS "release_tracks_release_idx" ON "release_tracks"("rel
 CREATE INDEX IF NOT EXISTS "release_tracks_track_idx" ON "release_tracks"("track_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "release_tracks_release_position_unique" ON "release_tracks"("release_id", "position");
 
+CREATE TABLE IF NOT EXISTS "release_polls" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "release_id" uuid NOT NULL UNIQUE REFERENCES "releases"("id") ON DELETE CASCADE,
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "is_open" boolean NOT NULL DEFAULT true,
+  "closes_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "release_poll_options" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "poll_id" uuid NOT NULL REFERENCES "release_polls"("id") ON DELETE CASCADE,
+  "track_id" uuid NOT NULL REFERENCES "tracks"("id") ON DELETE CASCADE,
+  "position" integer NOT NULL DEFAULT 0,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "release_poll_votes" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "poll_id" uuid NOT NULL REFERENCES "release_polls"("id") ON DELETE CASCADE,
+  "option_id" uuid NOT NULL REFERENCES "release_poll_options"("id") ON DELETE CASCADE,
+  "voter_id" varchar(64) NOT NULL,
+  "voter_hash" varchar(64),
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "release_polls_release_id_idx" ON "release_polls"("release_id");
+CREATE INDEX IF NOT EXISTS "release_polls_user_id_idx" ON "release_polls"("user_id");
+CREATE INDEX IF NOT EXISTS "release_poll_options_poll_id_idx" ON "release_poll_options"("poll_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "release_poll_options_poll_track_unique" ON "release_poll_options"("poll_id", "track_id");
+CREATE INDEX IF NOT EXISTS "release_poll_votes_poll_id_idx" ON "release_poll_votes"("poll_id");
+CREATE INDEX IF NOT EXISTS "release_poll_votes_option_id_idx" ON "release_poll_votes"("option_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "release_poll_votes_poll_voter_unique" ON "release_poll_votes"("poll_id", "voter_id");
+
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid REFERENCES "users"("id"),

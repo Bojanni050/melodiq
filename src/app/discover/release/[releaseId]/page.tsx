@@ -17,6 +17,7 @@ import { formatTotalDuration } from "@/lib/track-utils";
 import { useSmartBack } from "@/lib/smart-back";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import { publicReleaseTracksToTrackItems, type PublicReleaseSummary } from "@/lib/public-release";
+import ReleasePollVote from "@/components/releases/ReleasePollVote";
 
 interface PublicReleaseData extends PublicReleaseSummary {
   description: string | null;
@@ -286,6 +287,14 @@ export default function PublicReleasePage() {
 
             {/* Track List Section */}
             <section className="space-y-4">
+              {release && releaseId && (
+                <ReleasePollVote
+                  releaseId={releaseId}
+                  trackTitles={Object.fromEntries(
+                    releaseTracks.map((t) => [t.id, t.title || "Untitled"])
+                  )}
+                />
+              )}
               {loading ? (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
                   Loading release tracks...

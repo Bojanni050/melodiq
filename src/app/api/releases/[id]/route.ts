@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { positionCase } from "@/lib/reorder-positions";
-import { releaseTracks, releases, tracks } from "@/db/schema";
+import { releasePollOptions, releasePolls, releaseTracks, releases, tracks } from "@/db/schema";
 import { generateAndSaveReleaseCoverArt } from "@/lib/generate-cover";
 import { getUserReleaseById, getUserReleasesWithTracks } from "@/lib/releases";
 import { requireAuth } from "@/lib/require-auth";
@@ -160,6 +160,23 @@ export async function PATCH(
       await db
         .delete(releaseTracks)
         .where(and(eq(releaseTracks.releaseId, id), eq(releaseTracks.trackId, trackId)));
+
+      // A removed track can't stay a poll option — its votes cascade away.
+      const pollRows = await db
+        .select({ id: releasePolls.id })
+        .from(releasePolls)
+        .where(eq(releasePolls.releaseId, id))
+        .limit(1);
+      if (pollRows[0]) {
+        await db
+          .delete(releasePollOptions)
+          .where(
+            and(
+              eq(releasePollOptions.pollId, pollRows[0].id),
+              eq(releasePollOptions.trackId, trackId)
+            )
+          );
+      }
 
       const remaining = await db
         .select({ id: releaseTracks.id })

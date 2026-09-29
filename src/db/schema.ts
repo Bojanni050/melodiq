@@ -415,6 +415,84 @@ export const releaseTracksRelations = relations(releaseTracks, ({ one }) => ({
   }),
 }));
 
+// ─── Release polls ───────────────────────────────────────────────────────────
+// One optional poll per release: owner picks up to 3 tracks (variations of one
+// song) as options, anyone can vote once (cookie voterId, changeable). Votes
+// close automatically at closesAt.
+export const releasePolls = pgTable("release_polls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  releaseId: uuid("release_id").notNull().unique(),
+  userId: uuid("user_id").notNull(),
+  isOpen: boolean("is_open").default(true).notNull(),
+  closesAt: timestamp("closes_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("release_polls_release_id_idx").on(table.releaseId),
+  index("release_polls_user_id_idx").on(table.userId),
+]);
+
+export const releasePollOptions = pgTable("release_poll_options", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pollId: uuid("poll_id").notNull(),
+  trackId: uuid("track_id").notNull(),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("release_poll_options_poll_id_idx").on(table.pollId),
+  uniqueIndex("release_poll_options_poll_track_unique").on(table.pollId, table.trackId),
+]);
+
+export const releasePollVotes = pgTable("release_poll_votes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  pollId: uuid("poll_id").notNull(),
+  optionId: uuid("option_id").notNull(),
+  voterId: varchar("voter_id", { length: 64 }).notNull(),
+  voterHash: varchar("voter_hash", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("release_poll_votes_poll_id_idx").on(table.pollId),
+  index("release_poll_votes_option_id_idx").on(table.optionId),
+  uniqueIndex("release_poll_votes_poll_voter_unique").on(table.pollId, table.voterId),
+]);
+
+export const releasePollsRelations = relations(releasePolls, ({ one, many }) => ({
+  release: one(releases, {
+    fields: [releasePolls.releaseId],
+    references: [releases.id],
+  }),
+  user: one(users, {
+    fields: [releasePolls.userId],
+    references: [users.id],
+  }),
+  options: many(releasePollOptions),
+  votes: many(releasePollVotes),
+}));
+
+export const releasePollOptionsRelations = relations(releasePollOptions, ({ one, many }) => ({
+  poll: one(releasePolls, {
+    fields: [releasePollOptions.pollId],
+    references: [releasePolls.id],
+  }),
+  track: one(tracks, {
+    fields: [releasePollOptions.trackId],
+    references: [tracks.id],
+  }),
+  votes: many(releasePollVotes),
+}));
+
+export const releasePollVotesRelations = relations(releasePollVotes, ({ one }) => ({
+  poll: one(releasePolls, {
+    fields: [releasePollVotes.pollId],
+    references: [releasePolls.id],
+  }),
+  option: one(releasePollOptions, {
+    fields: [releasePollVotes.optionId],
+    references: [releasePollOptions.id],
+  }),
+}));
+
 export const apiLogs = pgTable("api_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id"),
