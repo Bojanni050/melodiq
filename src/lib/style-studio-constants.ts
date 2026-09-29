@@ -214,25 +214,6 @@ export const GENRE_DESCRIPTIONS: Record<string, string> = {
   "Post Apocalyptic Blues": "post-apocalyptic blues, gritty harmonica, haunting tone",
 };
 
-export function getGenreDescription(genre: string): string | undefined {
-  if (!genre) return undefined;
-  const direct = GENRE_DESCRIPTIONS[genre];
-  if (direct) return direct;
-  // Tolerate common spelling variants (Hip Hop / Hip-Hop, Singer Songwriter)
-  const normalized = genre.toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
-  for (const [key, desc] of Object.entries(GENRE_DESCRIPTIONS)) {
-    if (key.toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim() === normalized) return desc;
-  }
-  return undefined;
-}
-
-export function expandGenreWithDescription(genre: string): string {
-  const trimmed = genre.trim();
-  if (!trimmed) return trimmed;
-  const desc = getGenreDescription(trimmed);
-  return desc ? `${trimmed} (${desc})` : trimmed;
-}
-
 export const MOOD_OPTIONS = [
   "Warm",
   "Dark",
