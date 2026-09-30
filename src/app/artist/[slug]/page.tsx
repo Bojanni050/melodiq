@@ -8,9 +8,12 @@ import ArtistPublicPage, {
   type PublicArtistTrack,
 } from "@/components/artist/ArtistPublicPage";
 
-export default function DiscoverArtistPage() {
-  const params = useParams<{ userId: string }>();
-  const userId = params?.userId;
+// Public page for one artist alias: /artist/[slug]. All fetching is
+// client-side (same as /discover/artist/[userId]) so the shared component can
+// own the player store wiring.
+export default function ArtistSlugPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug;
 
   const [artist, setArtist] = useState<PublicArtist | null>(null);
   const [tracks, setTracks] = useState<PublicArtistTrack[]>([]);
@@ -18,10 +21,10 @@ export default function DiscoverArtistPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!slug) return;
     let active = true;
     async function fetchArtist() {
-      const res = await fetch(`/api/discover/artist/${userId}`);
+      const res = await fetch(`/api/artist/${slug}`);
       if (!active) return;
       if (res.status === 404) {
         setNotFound(true);
@@ -39,7 +42,7 @@ export default function DiscoverArtistPage() {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [slug]);
 
   return <ArtistPublicPage artist={artist} tracks={tracks} loading={loading} notFound={notFound} />;
 }

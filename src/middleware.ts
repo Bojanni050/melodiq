@@ -16,6 +16,10 @@ export async function middleware(request: NextRequest) {
   // through via isApi above.
   const isPublicDiscover = pathname === "/discover" || pathname.startsWith("/discover/");
   const isPublicExplore = pathname === "/explore" || pathname.startsWith("/explore/");
+  // Public per-alias artist pages (/artist/[slug]) with their own API routes.
+  // The trailing slash is what keeps the management page /artist-pages behind
+  // the login redirect — "/artist-pages" does not match "/artist/".
+  const isPublicArtist = pathname.startsWith("/artist/");
 
   if (isAuthPage) {
     if (token && await verifyTokenEdge(token)) {
@@ -24,7 +28,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));

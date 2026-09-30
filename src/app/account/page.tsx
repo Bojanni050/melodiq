@@ -6,8 +6,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, useUserStore, useLocaleStore, LOCALES, type Locale } from "@/lib/store";
 import { useT } from "@/hooks/useT";
-
-const MAX_ARTIST_ALIASES = 5;
+import { MAX_ARTIST_ALIASES } from "@/lib/artist-aliases";
 
 interface User {
   id: string;

@@ -218,6 +218,22 @@ CREATE INDEX IF NOT EXISTS "release_poll_votes_poll_id_idx" ON "release_poll_vot
 CREATE INDEX IF NOT EXISTS "release_poll_votes_option_id_idx" ON "release_poll_votes"("option_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "release_poll_votes_poll_voter_unique" ON "release_poll_votes"("poll_id", "voter_id");
 
+CREATE TABLE IF NOT EXISTS "artist_pages" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "alias" varchar(255) NOT NULL,
+  "slug" varchar(255) NOT NULL,
+  "bio" text,
+  "image_s3_key" text,
+  "hero_s3_key" text,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "artist_pages_user_id_idx" ON "artist_pages"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_user_alias_unique" ON "artist_pages"("user_id", "alias");
+CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_slug_unique" ON "artist_pages"("slug");
+
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid REFERENCES "users"("id"),

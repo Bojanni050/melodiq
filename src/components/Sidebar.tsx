@@ -134,6 +134,7 @@ export default function Sidebar({ credits }: SidebarProps) {
       label: t("nav.account"),
       items: [
         { href: "/account", label: t("nav.accountLink"), icon: "account" },
+        { href: "/artist-pages", label: t("nav.artistPages"), icon: "artist-pages" },
         { href: "/settings", label: t("nav.settings"), icon: "settings" },
       ],
     },
@@ -218,6 +219,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        );
+      case "artist-pages":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3l2.6 5.6 6.4.8-4.7 4.3 1.2 6.3L12 17l-5.5 3 1.2-6.3L3 9.4l6.4-.8L12 3z" />
           </svg>
         );
       case "logs":

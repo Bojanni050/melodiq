@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+
 import { db } from "@/db";
-import { tracks, users } from "@/db/schema";
+import { artistPages, tracks, users } from "@/db/schema";
 import { getCdnUrl } from "@/lib/cdn-server";
 import { prefixCdn } from "@/lib/cdn";
+import { ensureWorkspaceSchema } from "@/lib/workspaces";
+import { publishedArtistTracksFilter } from "@/lib/artist-pages";
 
 interface AudioDnaShape {
   atmosphereTags?: string[] | null;
@@ -19,21 +22,37 @@ function parseAtmosphereTags(raw: string | null): string[] {
   }
 }
 
-// Public, no auth: an artist's published tracks + aggregate stats + bio.
-// Mirrors getPublishedTracksFeed's privacy boundary (published + done +
-// not deleted only) — never exposes lyrics/prompt/unpublished work.
+// Public, no auth: the artist page at /artist/[slug] — page copy, the tracks
+// credited to that artist name, and aggregate stats.
+//
+// The track set is derived, not stored: it is every published track of the
+// owner whose artist_name equals the page's alias. Same privacy boundary as
+// /api/discover/artist/[userId] (published + done, not deleted/archived/hidden)
+// and the same cover-URL rewrite, since owner-gated /api/tracks/{id}/cover
+// would 404 for every visitor except the owner.
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { userId } = await params;
+  const { slug } = await params;
 
-  const [owner] = await db
-    .select({ id: users.id, name: users.name, artistAlias: users.artistAlias, bio: users.bio, profileImageUrl: users.profileImageUrl, createdAt: users.createdAt })
-    .from(users)
-    .where(eq(users.id, userId))
+  await ensureWorkspaceSchema();
+
+  const [page] = await db
+    .select({
+      id: artistPages.id,
+      alias: artistPages.alias,
+      slug: artistPages.slug,
+      bio: artistPages.bio,
+      imageS3Key: artistPages.imageS3Key,
+      heroS3Key: artistPages.heroS3Key,
+      userId: artistPages.userId,
+    })
+    .from(artistPages)
+    .where(eq(artistPages.slug, slug))
     .limit(1);
-  if (!owner) {
+
+  if (!page) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -51,29 +70,20 @@ export async function GET(
       audioDna: tracks.audioDna,
     })
     .from(tracks)
-    .where(
-      and(
-        eq(tracks.userId, userId),
-        eq(tracks.releaseStatus, "published"),
-        eq(tracks.status, "done"),
-        isNull(tracks.deletedAt),
-        isNull(tracks.archivedAt),
-        isNull(tracks.hiddenAt)
-      )
-    )
+    .where(publishedArtistTracksFilter(page.userId, page.alias))
     .orderBy(desc(tracks.publishDate));
 
-  // Every track here is already published (query filter above), so any
-  // owner-gated /api/tracks/{id}/cover coverUrl is always rewritten to the
-  // public /api/discover/{id}/cover proxy — otherwise it 404s for every
-  // viewer except the track's own owner. Mirrors getPublishedTracksFeed.
+  const [owner] = await db
+    .select({ bio: users.bio, createdAt: users.createdAt })
+    .from(users)
+    .where(eq(users.id, page.userId))
+    .limit(1);
+
   const cdnUrl = await getCdnUrl();
   const rewriteCoverUrl = (url: string | null) =>
     url?.startsWith("/api/tracks/")
       ? prefixCdn(cdnUrl, url.replace("/api/tracks/", "/api/discover/"))
       : url || null;
-
-  // Hero fallback for a track whose cover only exists in S3 (no stored coverUrl).
   const withDiscoverProxy = (trackId: string) => prefixCdn(cdnUrl, `/api/discover/${trackId}/cover`);
 
   const trackList = rows.map((row) => {
@@ -103,24 +113,27 @@ export async function GET(
   const totalPlays = rows.reduce((sum, row) => sum + (row.playCount ?? 0) + (row.othersPlayCount ?? 0), 0);
   const sinceYear = rows.length
     ? Math.min(...rows.map((r) => (r.publishDate ?? r.createdAt).getFullYear()))
-    : owner.createdAt.getFullYear();
+    : owner?.createdAt?.getFullYear() ?? new Date().getFullYear();
+
   const heroTrack = rows.find((r) => r.coverUrl || r.s3KeyCover) ?? null;
+  const imageUrl = (variant: "profile" | "hero") =>
+    prefixCdn(cdnUrl, `/api/artist/${page.slug}/image?variant=${variant}`);
 
   return NextResponse.json({
     artist: {
-      id: owner.id,
-      name: owner.artistAlias || owner.name || "Unknown Artist",
-      bio: owner.bio,
+      id: page.userId,
+      name: page.alias,
+      // Page copy wins; the account bio is the fallback so a page created with
+      // one click still reads as finished.
+      bio: page.bio ?? owner?.bio ?? null,
       genres,
       stats: {
         tracks: trackList.length,
         totalPlays,
         sinceYear,
       },
-      // Served by /api/account/[...key], which only resolves the users/ image
-      // keys the upload endpoint writes — anything else 404s there.
-      imageUrl: owner.profileImageUrl ? prefixCdn(cdnUrl, owner.profileImageUrl) : null,
-      heroUrl: heroTrack ? rewriteCoverUrl(heroTrack.coverUrl) || withDiscoverProxy(heroTrack.id) : null,
+      imageUrl: page.imageS3Key ? imageUrl("profile") : null,
+      heroUrl: page.heroS3Key ? imageUrl("hero") : heroTrack ? rewriteCoverUrl(heroTrack.coverUrl) || withDiscoverProxy(heroTrack.id) : null,
     },
     tracks: trackList,
   });

@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609262250**
+**Versie: 202609302330**
 
 > AI Music Generation Web App
 
@@ -287,6 +287,44 @@ Boven de lijst op de publieke pagina staat nog een **Play all**-knop: die speelt
 - Stel optioneel een **einddatum/tijd** in wanneer het stemmen sluit; laat leeg voor geen einddatum. Met **Sluiten/Heropenen** zet je de poll handmatig open of dicht, met **Verwijderen** haal je hem weg.
 - Op de publieke release-pagina zien bezoekers de poll-card **"Welke versie is jouw favoriet?"** met per versie een Stem-knop, %-balken en het totaal aantal stemmen.
 - **Iedereen mag stemmen, ook zonder account** — 1 stem per persoon via een cookie, **wijzigen mag** (opnieuw klikken verplaatst je stem). Er wordt geen IP-adres of andere herleidbare data opgeslagen, alleen een willekeurige stem-cookie. Na sluiten is alleen de uitslag zichtbaar.
+
+---
+
+## Artiestenpagina's
+
+Onder **Account** in het menu staat **Artiestenpagina's**. Daar maak je een eigen publieke pagina per artiestennaam, zodat je onder meerdere namen kunt publiceren zonder dat alles op één pagina op één account terechtkomt.
+
+**Een pagina maken**
+
+1. Zet eerst de artiestennaam op je **Account-pagina** (veld *Artist aliases*) — een pagina bestaat altijd voor een naam die je al gebruikt om tracks mee te creditten.
+2. Open **Artiestenpagina's**. De namen zonder pagina staan helemaal onderaan als knoppen: **Maak pagina aan · [naam]**.
+3. De pagina krijgt automatisch een webadres (`/artist/jay-blake`). Staat dat adres al in gebruik door een andere artiest? Dan krijgt de pagina een nummer erachter (`/artist/jay-blake-2`).
+
+**Welke tracks erop staan — daar hoef je niets voor te doen**
+
+Een pagina toont alle tracks die:
+
+- **gepubliceerd** zijn (release-status *published*), en
+- als artiestennaam exact de naam van deze pagina hebben.
+
+Dat is de artiestennaam die je bij het toevoegen van de track koest (of die al in de track stond). Verandert die naam later, dan verhuist de track dus automatisch naar de pagina van die andere naam. Concepten, verborgen en gearchiveerde tracks blijven onzichtbaar, ook op de publieke pagina.
+
+**Wat je per pagina kunt instellen**
+
+| Veld | Wat het doet |
+|---|---|
+| **Webadres** | Het publieke adres. Alleen kleine letters, cijfers en enkele streepjes. Een adres dat al in gebruik is, wordt geweigerd. |
+| **Bio** | Tekst voor deze pagina. Laat je het leeg, dan wordt je **account-bio** getoond. |
+| **Portret** | Ronde foto naast je naam. |
+| **Hero-afbeelding** | Grote afbeelding achter je naam. Zonder eigen afbeelding wordt de cover van de eerste gepubliceerde track gebruikt. |
+
+De artiestennaam zelf is niet aanpasbaar op een bestaande pagina: daar worden je tracks op gefilterd, dus een andere naam zou de pagina leeg maken. Wil je een andere naam? Maak dan gewoon een nieuwe pagina voor die naam.
+
+**Verwijderen** haalt alleen de pagina weg. Je tracks behouden hun artiestennaam en blijven op je andere pagina's staan. Dit kan niet ongedaan gemaakt worden.
+
+De publieke pagina's zijn **zonder account** te bekijken, net als Discover, dus je kunt ze gewoon delen.
+
+> Nog bestaande pagina: `/discover/artist/[userId]` toont al je tracks bij elkaar op één accountpagina. Die blijft gewoon werken; de nieuwe pagina's staan ernaast.
 
 ---
 

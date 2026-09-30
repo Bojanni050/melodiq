@@ -253,7 +253,7 @@ export default function TrackDnaPage() {
               </Link>
             </div>
           ) : (
-            <div className="mt-6 max-w-3xl space-y-6">
+            <div className="mt-6 max-w-400 mx-auto space-y-6">
               {/* Hero header — cover art left, artist/writer info beside it */}
               <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-900/60 via-primary-900/30 to-[#0d0e15]">
                 <div className="flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">

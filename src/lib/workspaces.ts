@@ -70,6 +70,28 @@ export async function ensureWorkspaceSchema(): Promise<void> {
       await db.execute(sql`CREATE INDEX IF NOT EXISTS workspaces_user_idx ON workspaces(user_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS workspaces_parent_idx ON workspaces(parent_workspace_id)`);
       await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS workspaces_single_default_per_user_idx ON workspaces(user_id) WHERE is_default = true`);
+
+      // Artist pages (per-alias public showcase at /artist/[slug]). Kept in the
+      // CREATE TABLE IF NOT EXISTS form rather than a drizzle migration because
+      // this block is what runs on every startup for existing databases; the
+      // drizzle migration in 0009_artist_pages.sql mirrors it for fresh installs.
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS artist_pages (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          alias varchar(255) NOT NULL,
+          slug varchar(255) NOT NULL,
+          bio text,
+          image_s3_key text,
+          hero_s3_key text,
+          created_at timestamp NOT NULL DEFAULT now(),
+          updated_at timestamp NOT NULL DEFAULT now()
+        )
+      `);
+
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS artist_pages_user_id_idx ON artist_pages(user_id)`);
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS artist_pages_user_alias_unique ON artist_pages(user_id, alias)`);
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS artist_pages_slug_unique ON artist_pages(slug)`);
     } catch {
       // If schema updates are blocked by DB permissions, we keep read-path fallbacks active.
     }

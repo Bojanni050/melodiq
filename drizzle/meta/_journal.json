@@ -64,6 +64,13 @@
       "when": 1790703741811,
       "tag": "0008_release_polls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790802013380,
+      "tag": "0009_artist_pages",
+      "breakpoints": true
     }
   ]
 }

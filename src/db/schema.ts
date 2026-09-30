@@ -19,7 +19,8 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 255 }),
   artistAlias: varchar("artist_alias", { length: 255 }),
   // Additional artist aliases beyond the primary one above, stored as a JSON
-  // array of strings (fixed at 5 slots for now — see account settings UI).
+  // array of strings (fixed at MAX_ARTIST_ALIASES slots for now — see
+  // lib/artist-aliases.ts, which is also what the account settings UI reads).
   // artistAlias always mirrors the first entry so existing "unknown artist"
   // fallback logic across the app keeps working unchanged.
   artistAliases: text("artist_aliases"),
@@ -42,6 +43,45 @@ export const usersRelations = relations(users, ({ many }) => ({
   releases: many(releases),
   apiLogs: many(apiLogs),
   clonedVoices: many(clonedVoices),
+  artistPages: many(artistPages),
+}));
+
+// A public artist page is the per-alias showcase: one account can act under
+// several artist names (users.artistAliases), and each of those names gets its
+// own page at /artist/[slug] with its own bio and artwork. The page never owns
+// tracks — it collects them by matching tracks.artist_name against `alias`, so
+// which tracks appear stays driven by the track's own artist name instead of a
+// second, hand-maintained list that could drift.
+export const artistPages = pgTable("artist_pages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  // The artist name this page presents. Mirrors one entry of
+  // users.artistAliases at creation time; deliberately not a foreign key to
+  // that JSON array, so renaming an alias can't silently break or rewrite a
+  // published URL — the page keeps the name it was created with.
+  alias: varchar("alias", { length: 255 }).notNull(),
+  // Public URL segment, unique across all pages. Slugified from the alias and
+  // made unique with a numeric suffix on collision (see slugifyArtistPageSlug).
+  slug: varchar("slug", { length: 255 }).notNull(),
+  // Page-specific copy and artwork. Both nullable on purpose: the public page
+  // falls back to the owner's account bio / profile image when empty, so a
+  // page created with zero extra input still looks complete.
+  bio: text("bio"),
+  imageS3Key: text("image_s3_key"),
+  heroS3Key: text("hero_s3_key"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("artist_pages_user_id_idx").on(table.userId),
+  uniqueIndex("artist_pages_user_alias_unique").on(table.userId, table.alias),
+  uniqueIndex("artist_pages_slug_unique").on(table.slug),
+]);
+
+export const artistPagesRelations = relations(artistPages, ({ one }) => ({
+  user: one(users, {
+    fields: [artistPages.userId],
+    references: [users.id],
+  }),
 }));
 
 export const clonedVoices = pgTable("cloned_voices", {
