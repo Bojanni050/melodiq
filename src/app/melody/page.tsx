@@ -154,7 +154,7 @@ export default function MusicBuilderPage() {
   }
 
   function sendPayloadToStudio(
-    data: { lyrics: string; style: string; title: string; lyricsOnly?: boolean },
+    data: { lyrics: string; style: string; title: string; lyricsOnly?: boolean; styleOnly?: boolean },
     confirmAction: ConfirmAction
   ) {
     const studio = useStudioStore.getState();
@@ -173,6 +173,12 @@ export default function MusicBuilderPage() {
     const nextLyrics = instrumental ? "" : combinedLyrics.trim();
     const nextTitle = title.trim();
     if (!prompt.trim()) return;
+    // Geen lyrics in Melody (bv. via Generate Style vanuit Studio gekomen):
+    // stuur alleen style, zodat Studio-lyrics behouden blijven.
+    if (!instrumental && !nextLyrics) {
+      sendPayloadToStudio({ lyrics: "", style: prompt, title: "", styleOnly: true }, "replaceStudioStyle");
+      return;
+    }
     sendPayloadToStudio({ lyrics: nextLyrics, style: prompt, title: nextTitle }, "replaceStudio");
   }
 
@@ -183,7 +189,7 @@ export default function MusicBuilderPage() {
   }
 
   function handleStudioConfirmAction() {
-    if (studioConfirmAction === "replaceStudio" || studioConfirmAction === "replaceStudioLyrics") {
+    if (studioConfirmAction === "replaceStudio" || studioConfirmAction === "replaceStudioLyrics" || studioConfirmAction === "replaceStudioStyle") {
       const raw = sessionStorage.getItem("lyrics-studio-payload-pending");
       sessionStorage.removeItem("lyrics-studio-payload-pending");
       if (raw) {

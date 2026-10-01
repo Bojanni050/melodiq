@@ -108,7 +108,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 
 ### Melody (Music Builder)
 
-- **Use in Studio** — sends lyrics + generated music prompt + title to the main Studio
+- **Use in Studio** — sends lyrics + generated music prompt + title to the main Studio. If Melody has no lyrics (e.g. you came via Generate Style from Studio without lyrics in Lyrics Studio), only the style is sent — your Studio lyrics stay untouched
 - **Lyrics only to Studio** — copies only the lyrics; the Studio music prompt and title stay untouched
 
 ### Vocal Gender

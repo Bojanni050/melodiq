@@ -785,15 +785,16 @@ ${t("studio.yourChorusHere")}`}
                     </div>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={apimartMaxMode}
                       onClick={() => setApimartMaxMode(!apimartMaxMode)}
-                      className={`relative w-10 h-5.5 rounded-full transition-colors flex-shrink-0 ${
+                      className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
                         apimartMaxMode ? "bg-violet-500" : "bg-white/15"
                       }`}
-                      style={{ height: "22px" }}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          apimartMaxMode ? "translate-x-5" : "translate-x-0.5"
+                        className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                          apimartMaxMode ? "translate-x-[18px]" : "translate-x-0"
                         }`}
                       />
                     </button>

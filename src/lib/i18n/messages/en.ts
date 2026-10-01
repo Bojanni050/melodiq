@@ -369,6 +369,7 @@ const en = {
     lyricsReplaceBlocksConfirm: "Replace current blocks with the selected preset?",
     lyricsReplaceStudioConfirm: "Studio already has data. Do you want to replace it with these lyrics and style?",
     lyricsReplaceStudioLyricsConfirm: "Studio already has data. Do you want to replace its lyrics with these lyrics? The music prompt stays untouched.",
+    lyricsReplaceStudioStyleConfirm: "No lyrics in Melody — only the style will be sent to Studio. Your Studio lyrics stay untouched. Continue?",
     lyricsClearAllConfirm: "Are you sure you want to clear all Lyric Studio data?",
     close: "Close",
     saveStyleHeading: "Save Style",

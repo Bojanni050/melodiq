@@ -78,10 +78,13 @@ export default function StudioPage() {
       const raw = sessionStorage.getItem("lyrics-studio-payload");
       if (raw) {
         sessionStorage.removeItem("lyrics-studio-payload");
-        const payload = JSON.parse(raw) as { lyrics: string; style: string; title: string; lyricsOnly?: boolean };
+        const payload = JSON.parse(raw) as { lyrics: string; style: string; title: string; lyricsOnly?: boolean; styleOnly?: boolean };
         const studio = useStudioStore.getState();
         if (payload.lyricsOnly) {
           if (typeof payload.lyrics === "string") studio.setLyrics(payload.lyrics);
+        } else if (payload.styleOnly) {
+          // Alleen style overnemen (Melody had geen lyrics) — Studio-lyrics en titel behouden.
+          if (typeof payload.style === "string" && payload.style.trim()) studio.setSongIdea(payload.style);
         } else {
           studio.reset();
           studio.setLyrics(payload.lyrics);

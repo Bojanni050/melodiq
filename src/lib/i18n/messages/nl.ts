@@ -372,6 +372,7 @@ const nl: typeof en = {
     lyricsReplaceBlocksConfirm: "Huidige blocks vervangen door de gekozen preset?",
     lyricsReplaceStudioConfirm: "Studio bevat al data. Wil je die vervangen met deze lyrics en style?",
     lyricsReplaceStudioLyricsConfirm: "Studio bevat al data. Wil je de lyrics vervangen door deze lyrics? De music prompt blijft behouden.",
+    lyricsReplaceStudioStyleConfirm: "Geen lyrics in Melody — alleen de style wordt naar Studio gestuurd. Je Studio-lyrics blijven behouden. Doorgaan?",
     lyricsClearAllConfirm: "Weet je zeker dat je alle Lyric Studio data wilt wissen?",
     close: "Sluiten",
     saveStyleHeading: "Style opslaan",

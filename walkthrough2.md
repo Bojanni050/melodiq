@@ -377,3 +377,21 @@
 - Findings: Op de Melody pagina bestond alleen "Use in Studio" (lyrics + music prompt + titel in één keer naar Studio). Er was geen manier om alleen de lyrics over te zetten met behoud van de bestaande Studio prompt.
 - Conclusions: Tweede knop toevoegen die via dezelfde sessionStorage-payload + confirm-flow werkt, maar met een `lyricsOnly` flag zodat Studio alleen `setLyrics` doet (geen reset, prompt en titel blijven staan).
 - Actions: `src/app/melody/page.tsx` — `sendPayloadToStudio` helper geëxtraheerd, `useLyricsOnlyInStudio` toegevoegd, tweede (secondary) knop onder Use in Studio (disabled bij instrumental/geen lyrics); `src/app/studio/page.tsx` — payload met `lyricsOnly` past alleen lyrics toe; `src/lib/lyrics-studio-types.ts` + `LyricsConfirmModal.tsx` — nieuwe `replaceStudioLyrics` confirm-actie; i18n EN/NL keys (`useLyricsOnlyInStudio`, `lyricsReplaceStudioLyricsConfirm`); `melodiq-user.md` Melody-sectie toegevoegd; gevalideerd met `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.
+
+## 2026-10-01 do (Melody Use in Studio wist Studio-lyrics bij lege Melody-lyrics)
+
+- Findings: Route Studio → Generate Style → Melody → Use in Studio wiste Studio-lyrics. Melody leest lyrics uit de Lyrics Studio-draft (`useLyricsDraft`), niet uit de Studio-store; wie via Generate Style komt zonder lyrics in Lyrics Studio heeft dus `combinedLyrics = ""`. `useInStudio` stuurde `{ lyrics: "", style: prompt }` en Studio deed `reset()` + `setLyrics("")` — bestaande Studio-lyrics weg.
+- Conclusions: Als Melody geen lyrics heeft (en niet instrumentaal is), alleen style sturen via nieuwe `styleOnly`-vlag zodat Studio-lyrics en titel behouden blijven. Instrumentaal uitgezonderd: daar is leeg correct omdat er geen vocals zijn.
+- Actions:
+  - `src/lib/lyrics-studio-types.ts` — `ConfirmAction` uitgebreid met `replaceStudioStyle`
+  - `src/app/melody/page.tsx` — `sendPayloadToStudio` accepteert `styleOnly`; `useInStudio` stuurt bij lege lyrics `{ styleOnly: true }` met `replaceStudioStyle`-confirm; confirm-handler accepteert nieuwe actie
+  - `src/app/studio/page.tsx` — payload-branch `styleOnly`: alleen `setSongIdea`, geen `reset()`, lyrics/titel onaangeroerd
+  - `src/components/lyrics-studio/LyricsConfirmModal.tsx` + i18n EN/NL (`lyricsReplaceStudioStyleConfirm`) — eigen confirm-tekst voor style-only
+  - `melodiq-user.md` — Melody-sectie aangevuld met style-only gedrag
+  - Validated with `npm run build` (geslaagd); validated.
+
+## 2026-10-01 do (Max Mode-schuifje APIMart V6 uitgelijnd)
+
+- Findings: Het Max Mode-toggleschuifje (Studio, APIMart V6-sectie) stond niet goed uitgelijnd: knob had `top-0.5` (2px) op een 22px-track met 16px-knob (onder 4px speling i.p.v. 3px) en geen `left`, plus asymmetrische aan/uit-offset (`translate-x-0.5` vs `translate-x-5` = 2px vs 4px rechter speling) en een overbodige `h-5.5`-klasse naast inline `height: 22px`.
+- Conclusions: Track exact centreren: 3px rondom op 40×22-track met 16px-knob, symmetrische slide (0 vs 18px), en `role="switch"` + `aria-checked` zoals de andere toggles.
+- Actions: `src/components/StudioForm.tsx` — Max Mode-knop omgezet naar `w-10 h-[22px]`, knob `absolute top-[3px] left-[3px] w-4 h-4` met `translate-x-0` / `translate-x-[18px]`; gevalideerd met `npm run build` (geslaagd), validated.
