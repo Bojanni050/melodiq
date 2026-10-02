@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Roboto_Slab, Outfit, DM_Mono } from "next/font/google";
 
 import { formatDuration } from "@/lib/track-utils";
@@ -55,6 +56,15 @@ function formatPlays(n: number): string {
  */
 export default function ArtistPublicPage({ artist, tracks, loading, notFound }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const router = useRouter();
+
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/discover");
+    }
+  }
 
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
@@ -161,9 +171,33 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
             borderBottom: "1px solid #1a1917",
           }}
         >
-          <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.14em", color: "#6b6860", textTransform: "uppercase" }}>
-            Official
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label="Back"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                background: "rgba(0, 0, 0, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.14em", color: "#6b6860", textTransform: "uppercase" }}>
+              Official
+            </span>
+          </div>
           <div style={{ display: "flex", gap: "2rem" }}>
             {NAV_LINKS.map((link) => (
               <a

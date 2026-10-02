@@ -1582,3 +1582,9 @@ pm run build � succesvol.
 - Findings: Vervolg op hierboven — Bo wil inspiratietracks kunnen parkeren maar per generatie kiezen of ze meegaan, zonder ze telkens te verwijderen en opnieuw toe te voegen.
 - Conclusions: `inspirationEnabled`-vlag in de studio-store (persisted, default aan zodat bestaand gedrag behouden blijft). Uit = veld wordt niet meegestuurd en de v6-blokkade geldt niet → normale generatie, lijst blijft staan (gedimd). Een nieuwe track toevoegen (menu of drag) schakelt automatisch weer in, want dat is dan duidelijk de bedoeling.
 - Actions: `src/lib/stores/studioStore.ts` — `inspirationEnabled` + setter, merge-guard, auto-enable bij toevoegen; `src/components/StudioForm.tsx` — switch naast de teller, dim + hint bij uit, v6-waarschuwing alleen bij aan; `src/hooks/useStudioActions.ts` — v6-blokkade en ids alleen bij aan + niet-leeg; i18n `inspirationToggleLabel`/`inspirationDisabledHint` in `nl.ts` + `en.ts`; `melodiq-user.md` Inspiration-sectie uitgebreid. Gevalideerd met `npx tsc --noEmit` (0 errors), `npm run test` (137 geslaagd) en `npm run build` (geslaagd); validated.
+
+## 2026-10-02 vr (Back-knop artist page)
+
+- Findings: Artist page (/artist/[slug] en /discover/artist/[userId]) had geen manier om terug te gaan.
+- Conclusions: Witte terug-pijl linksboven in de nav, passend bij de donkere hero. router.back() met fallback naar /discover als er geen history is. In gedeelde ArtistPublicPage gezet zodat beide routes het krijgen.
+- Actions: `src/components/artist/ArtistPublicPage.tsx` — useRouter + handleBack + ronde witte pijl-knop linksboven naast "Official". Gevalideerd met `npm run build` (geslaagd); validated.
