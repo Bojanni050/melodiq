@@ -21,8 +21,10 @@ import {
   dispatchHeartMula,
   dispatchApiframe,
   dispatchApimart,
+  dispatchApimartInspo,
   type GenerationContext,
 } from "@/lib/services/generationService";
+import { isApimartV6Model } from "@/lib/inspiration";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags,
     personaId, artistName, writerName,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
+    inspirationTrackIds,
   } = body;
 
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
@@ -88,6 +91,15 @@ export async function POST(request: NextRequest) {
   if (provider === "apimart" && personaId && !lyrics?.trim()) {
     return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
+  const normalizedInspirationTrackIds = Array.isArray(inspirationTrackIds)
+    ? [...new Set(inspirationTrackIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4)
+    : [];
+  if (inspirationTrackIds !== undefined && normalizedInspirationTrackIds.length === 0) {
+    return NextResponse.json({ error: "Select 1–4 inspiration tracks" }, { status: 400 });
+  }
+  if (normalizedInspirationTrackIds.length > 0 && (provider !== "apimart" || !isApimartV6Model(providerModel))) {
+    return NextResponse.json({ error: "Inspiration requires APIMart v6" }, { status: 400 });
+  }
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
@@ -113,6 +125,7 @@ export async function POST(request: NextRequest) {
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
     normalizedPoYoModel, isMinimaxViaPoYo,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
+    inspirationTrackIds: normalizedInspirationTrackIds,
   };
 
   // Providers that manage their own track insertion
@@ -134,7 +147,10 @@ export async function POST(request: NextRequest) {
     if (provider === "mureka") return await dispatchMureka(ctx, track);
     if (provider === "heartmula") return await dispatchHeartMula(ctx, track);
     if (provider === "apiframe") return await dispatchApiframe(ctx, track);
-    if (provider === "apimart") return await dispatchApimart(ctx, track);
+    if (provider === "apimart") {
+      if (normalizedInspirationTrackIds.length > 0) return await dispatchApimartInspo(ctx, track);
+      return await dispatchApimart(ctx, track);
+    }
 
     return NextResponse.json({ error: "Unknown provider" }, { status: 400 });
   } catch (error: any) {

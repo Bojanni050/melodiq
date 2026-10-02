@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
+import { MAX_INSPIRATION_TRACKS, type InspirationTrack } from "@/lib/inspiration";
 
 export interface SavedLyric {
   id: string;
@@ -34,6 +35,9 @@ interface StudioState {
   apimartVariety: "off" | "normal" | "high" | "extra" | "max";
   apimartMaxMode: boolean;
   apimartAudioFormat: "mp3" | "m4a" | "wav";
+  // Inspiration references for APIMart v6 inspo generation (display only —
+  // lyrics/style are never copied from these tracks)
+  inspiration: InspirationTrack[];
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
@@ -61,6 +65,9 @@ interface StudioState {
   setApimartVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
   setApimartMaxMode: (val: boolean) => void;
   setApimartAudioFormat: (val: "mp3" | "m4a" | "wav") => void;
+  addInspirationTrack: (track: InspirationTrack) => boolean;
+  removeInspirationTrack: (id: string) => void;
+  clearInspiration: () => void;
   fetchSavedLyrics: () => Promise<void>;
   saveLyric: () => Promise<SavedLyric | null>;
   loadSavedLyric: (id: string) => void;
@@ -94,6 +101,7 @@ export const useStudioStore = create<StudioState>()(
       apimartVariety: "off",
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
+      inspiration: [],
       savedLyrics: [],
       savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
@@ -134,6 +142,16 @@ export const useStudioStore = create<StudioState>()(
       setApimartVariety: (val) => set({ apimartVariety: val }),
       setApimartMaxMode: (val) => set({ apimartMaxMode: val }),
       setApimartAudioFormat: (val) => set({ apimartAudioFormat: val }),
+      addInspirationTrack: (track) => {
+        const current = get().inspiration;
+        if (current.some((t) => t.id === track.id)) return true;
+        if (current.length >= MAX_INSPIRATION_TRACKS) return false;
+        set({ inspiration: [...current, track] });
+        return true;
+      },
+      removeInspirationTrack: (id) =>
+        set((state) => ({ inspiration: state.inspiration.filter((t) => t.id !== id) })),
+      clearInspiration: () => set({ inspiration: [] }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -197,6 +215,7 @@ export const useStudioStore = create<StudioState>()(
           apimartVariety: "off",
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",
+          inspiration: [],
         }),
     }),
     {
@@ -223,6 +242,7 @@ export const useStudioStore = create<StudioState>()(
         if (merged.apimartVariety === undefined) merged.apimartVariety = "off";
         if (merged.apimartMaxMode === undefined) merged.apimartMaxMode = false;
         if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
+        if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
         return merged;
       },
     }

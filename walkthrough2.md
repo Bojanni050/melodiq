@@ -430,3 +430,27 @@
   - `src/components/studio/WorkspacePanel.tsx` + `RecentTracksPanel.tsx` — prop doorgestuurd
   - Pagina's: `onArtistUpdate` naast elke `onTitleUpdate` (archive, library, playlists, workspaces, releases, releases/[releaseId], studio via `handleTrackUpdate`)
   - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Track DNA-toggle kreeg zichtbaar label)
+
+- Findings: De Track DNA-toggle op de trackkaart was alleen een pijltje zonder zichtbare tekst.
+- Conclusions: "DNA"-label naast het pijltje, zelfde subtiele stijl als de andere badges.
+- Actions: `src/components/tracks/TrackCard.tsx` — DNA-tekst + gap/padding op de toggle-knop; gevalideerd met `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Use As Inspiration — APIMart v6 inspo-generatie)
+
+- Findings: Verzoek: trackoptie "Use As Inspiration" die naar de Music-pagina leidt met een Inspiration-kaart (cover + titel, geen lyrics/style overnemen), generatie via APIMart `POST /v1/music/generations/inspo` (1–4 publieke audio-URL's, async task + poll), alleen APIMart v6.
+- Conclusions: Hergebruik de bestaande APIMart-machinerie: zelfde dual-track fan-out met `jobId` `<task>`/`<task>:1` en `provider="apimart"`, zodat de bestaande completion-polling in `GET /api/tracks` de inspo-tracks gratis oppikt. S3 is private, dus presigned URL's (7d, zelfde patroon als voice cloning). Menu-item met default-gedrag direct in `TrackActionMenu` (precedent: Go To Release), geen prop-threading nodig — ook Smart Archive krijgt het via `TrackOptionsMenu`.
+- Actions:
+  - Created `src/lib/inspiration.ts` — `InspirationTrack`, `MAX_INSPIRATION_TRACKS` (4), `APIMART_V6_MODELS` + `isApimartV6Model`, storage-key, `parseInspirationPayload`
+  - `src/lib/providers/apimart.ts` — `createApimartInspo` (geen custom/instrumental/persona_id/duration velden per docs)
+  - `src/lib/services/generationService.ts` — `inspirationTrackIds` in ctx + `dispatchApimartInspo` (eigen tracks, status done + s3Key check, presigned audio_urls, tags/prompt/title + V6-opts uit Studio)
+  - `src/app/api/generate/route.ts` — parse/valideer `inspirationTrackIds` (1–4, APIMart v6 vereist), route naar inspo-dispatch
+  - `src/lib/stores/studioStore.ts` — `inspiration` + add (dedupe, max 4)/remove/clear, `reset()` wist mee, merge-guard voor oude states
+  - `src/components/tracks/TrackActionMenu.tsx` — "Use As Inspiration" (alleen done tracks) → sessionStorage + `/studio`
+  - `src/app/studio/page.tsx` — consumeert payload bij mount
+  - `src/components/StudioForm.tsx` — Inspiration-kaart boven Lyrics (cover + titel + ×, teller n/4, dropzone voor track-drag, V6-hint als andere provider gekozen is)
+  - `src/hooks/useStudioActions.ts` — blokkeert genereren met inspiratie zonder APIMart v6, stuurt `inspirationTrackIds` mee voor apimart
+  - i18n EN/NL (7 studio-keys), `melodiq-user.md` aangevuld
+  - Tests: 2 menu-tests (zichtbaar bij done, verborgen bij generating, payload-vorm) + 4 helper-tests
+  - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (139 geslaagd) en `npm run build` (geslaagd), validated.

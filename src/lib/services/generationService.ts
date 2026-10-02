@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { tracks, clonedVoices } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
 import { generateTempolor } from "@/lib/providers/tempolor";
@@ -10,8 +10,8 @@ import { generateMinimax } from "@/lib/providers/minimax";
 import { generateMureka } from "@/lib/providers/mureka";
 import { generateHeartMula } from "@/lib/providers/heartmula";
 import { generateApiframe } from "@/lib/providers/apiframe";
-import { createApimartGeneration } from "@/lib/providers/apimart";
-import { uploadToS3 } from "@/lib/s3";
+import { createApimartGeneration, createApimartInspo } from "@/lib/providers/apimart";
+import { uploadToS3, getPresignedUrl } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 import { type AudioFormat, contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
@@ -52,6 +52,8 @@ export type GenerationContext = {
   apimartVariety?: "off" | "normal" | "high" | "extra" | "max";
   apimartMaxMode?: boolean;
   apimartAudioFormat?: "mp3" | "m4a" | "wav";
+  // APIMart v6 inspo: ids of own finished tracks used as audio references
+  inspirationTrackIds?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -366,5 +368,65 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
   spawnCoverArtBatchAsync(allTracks.map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "apimart");
 
   await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
+  return NextResponse.json({ tracks: allTracks });
+}
+
+// ---------------------------------------------------------------------------
+// APIMart inspo — async, dual track from 1–4 audio references (v6 only)
+// ---------------------------------------------------------------------------
+
+const INSPO_AUDIO_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+export async function dispatchApimartInspo(ctx: GenerationContext, track: any): Promise<NextResponse> {
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, apimartVariety, apimartMaxMode, apimartAudioFormat, inspirationTrackIds } = ctx;
+
+  const ids = [...new Set((inspirationTrackIds ?? []).filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4);
+  if (ids.length === 0) throw new Error("Select 1–4 inspiration tracks");
+
+  const rows = await db
+    .select({ id: tracks.id, title: tracks.title, s3Key: tracks.s3Key, s3KeyHd: tracks.s3KeyHd, status: tracks.status })
+    .from(tracks)
+    .where(and(eq(tracks.userId, userId), inArray(tracks.id, ids)));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  const audioUrls: string[] = [];
+  for (const id of ids) {
+    const row = byId.get(id);
+    const key = row?.s3Key ?? row?.s3KeyHd ?? null;
+    if (!row || row.status !== "done" || !key) {
+      throw new Error(`Inspiration track "${row?.title?.trim() || "untitled"}" has no audio yet`);
+    }
+    // S3 is private — APIMart needs a public URL, same pattern as voice cloning.
+    audioUrls.push(await getPresignedUrl(key, INSPO_AUDIO_URL_TTL_SECONDS));
+  }
+
+  const studioLyrics = !instrumental && lyrics?.trim() ? lyrics.trim() : undefined;
+  const genResult = await createApimartInspo({
+    audioUrls,
+    version: providerModel || "v6",
+    tags: prompt,
+    prompt: studioLyrics,
+    title: resolvedTitle || undefined,
+    negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined,
+    styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined,
+    weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined,
+    audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined,
+    vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined,
+    variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined,
+    maxMode: apimartMaxMode === true ? true : undefined,
+    audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined,
+  });
+
+  // Same dual-track fan-out + jobId convention as dispatchApimart, so the
+  // existing APIMart completion polling in GET /api/tracks picks these up.
+  const [t1, t2] = await Promise.all([
+    db.update(tracks).set({ status: "generating", jobId: genResult.taskId }).where(eq(tracks.id, track.id!)).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+  ]);
+
+  const allTracks = [t1[0], t2[0]];
+  spawnCoverArtBatchAsync(allTracks.map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "apimart");
+
+  await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: ids.length }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
   return NextResponse.json({ tracks: allTracks });
 }

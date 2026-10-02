@@ -112,6 +112,11 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Use in Studio** — sends lyrics + generated music prompt + title to the main Studio. If Melody has no lyrics (e.g. you came via Generate Style from Studio without lyrics in Lyrics Studio), only the style is sent — your Studio lyrics stay untouched
 - **Lyrics only to Studio** — copies only the lyrics; the Studio music prompt and title stay untouched
 
+### Inspiration (APIMart v6)
+
+- Via de trackopties (**⋯ → Use As Inspiration**) zet je een track als inspiratie voor een nieuwe song; in Studio verschijnt boven de lyrics een **Inspiration**-kaart met cover en titel (lyrics en stijl worden níet overgenomen).
+- Er kunnen maximaal **4** inspiratietracks klaarstaan (ook via slepen naar de kaart); genereren met inspiratie werkt alleen met **APIMart v6**.
+
 ### Vocal Gender
 
 - **Vocal Gender** — choose Female or Male vocals (only shown in vocal mode)

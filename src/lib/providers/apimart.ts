@@ -118,6 +118,68 @@ export async function createApimartGeneration(
   }
 }
 
+export interface ApimartInspoParams {
+  audioUrls: string[];
+  version: string;
+  tags?: string;
+  prompt?: string;
+  title?: string;
+  negativeTags?: string;
+  styleWeight?: number;
+  weirdness?: number;
+  audioWeight?: number;
+  vocalGender?: "Male" | "Female";
+  variety?: "off" | "normal" | "high" | "extra" | "max";
+  maxMode?: boolean;
+  audioFormat?: "mp3" | "m4a" | "wav";
+}
+
+export async function createApimartInspo(
+  params: ApimartInspoParams
+): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  const body: Record<string, any> = {
+    model: "suno",
+    audio_urls: params.audioUrls,
+    version: params.version,
+  };
+
+  // NOTE: the inspo endpoint does not accept custom/instrumental/persona_id/duration.
+  if (params.tags) body.tags = params.tags;
+  if (params.prompt) body.prompt = params.prompt;
+  if (params.title) body.title = params.title;
+  if (params.negativeTags) body.negative_tags = params.negativeTags;
+  if (typeof params.styleWeight === "number") body.style_weight = params.styleWeight;
+  if (typeof params.weirdness === "number") body.weirdness = params.weirdness;
+  if (typeof params.audioWeight === "number") body.audio_weight = params.audioWeight;
+  if (params.vocalGender) body.vocal_gender = params.vocalGender;
+  if (params.variety && params.variety !== "off") body.variety = params.variety;
+  if (params.maxMode === true) body.max_mode = true;
+  if (params.audioFormat && params.audioFormat !== "mp3") body.audio_format = params.audioFormat;
+
+  try {
+    const response = await axios.post(`${APIMART_BASE_URL}/generations/inspo`, body, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    });
+
+    const taskId = response.data?.data?.[0]?.task_id;
+    if (!taskId) {
+      throw new Error(`APIMart returned no task_id for inspo. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] inspo generation submitted — taskId=${taskId}`);
+    return { taskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
 export async function createApimartVoice(audioUrl: string): Promise<{ taskId: string }> {
   const apiKey = await getApimartApiKey();
 

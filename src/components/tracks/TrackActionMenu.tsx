@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePlaylistStore, useReleaseStore } from "@/lib/store";
 import CoverManager from "./CoverManager";
 import { REUSE_SCOPE_LABEL, type ReuseScope } from "@/lib/reuse-prompt";
+import { INSPIRATION_STORAGE_KEY, type InspirationPayload } from "@/lib/inspiration";
 import type { PlaylistOption, TrackItem } from "./types";
 
 interface TrackActionMenuProps {
@@ -490,6 +491,26 @@ export default function TrackActionMenu({
             Add to queue
           </button>
           <div className="my-1 h-px bg-white/10" />
+          {track?.status === "done" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                try {
+                  const payload: InspirationPayload = {
+                    tracks: [{ id: track.id, title: track.title ?? null, coverUrl: track.coverUrl ?? null }],
+                  };
+                  sessionStorage.setItem(INSPIRATION_STORAGE_KEY, JSON.stringify(payload));
+                } catch {
+                  // storage unavailable — Studio will simply show no new inspiration
+                }
+                router.push("/studio");
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            >
+              Use As Inspiration
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();

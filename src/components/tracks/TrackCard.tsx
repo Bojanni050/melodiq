@@ -911,10 +911,11 @@ const TrackCard = memo(function TrackCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
-                className="inline-flex items-center justify-center w-5 h-5 rounded text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
+                className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
                 title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                 aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
               >
+                DNA
                 <svg
                   className={`w-3 h-3 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
                   fill="none"

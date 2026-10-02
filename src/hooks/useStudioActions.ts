@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { mutate } from "swr";
 import { useStudioStore, useWorkspaceStore, DEFAULT_WORKSPACE_ID } from "@/lib/store";
+import { isApimartV6Model } from "@/lib/inspiration";
 import type { Track, TracksResponse } from "./useTrackManager";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
@@ -88,6 +89,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       apimartVariety,
       apimartMaxMode,
       apimartAudioFormat,
+      inspiration,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -95,6 +97,14 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     if (providerEntries.length === 0) {
       setNotice({ type: "error", message: "Selecteer minimaal één provider." });
       return;
+    }
+
+    if (inspiration.length > 0) {
+      const apimartModel = selectedProviders["apimart"];
+      if (!apimartModel || !isApimartV6Model(apimartModel)) {
+        setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 — selecteer die provider of verwijder de inspiratietracks." });
+        return;
+      }
     }
 
     if (selectedProviders.musicgpt && lyrics.length > MUSICGPT_LYRICS_MAX_CHARS) {
@@ -173,6 +183,8 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
               apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,
               apimartAudioFormat: provider === "apimart" ? apimartAudioFormat : undefined,
+              // Inspo references (APIMart v6 only — server validates)
+              inspirationTrackIds: provider === "apimart" ? inspiration.map((item) => item.id) : undefined,
             }),
           }).then(async (res) => {
             const data = await res.json();

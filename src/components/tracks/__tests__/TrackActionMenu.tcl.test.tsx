@@ -86,4 +86,30 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
     const button = screen.getByText("Regenerating Time-Coded Lyrics...");
     expect(button.closest("button")?.disabled).toBe(true);
   });
+
+  it("offers Use As Inspiration for finished tracks and hands it to Studio", async () => {
+    const user = userEvent.setup();
+    sessionStorage.clear();
+    renderMenu({
+      track: { id: "track-1", title: "Test Song", coverUrl: "/cover.jpg", status: "done" } as never,
+    });
+    await openMenu(user);
+
+    await user.click(screen.getByText("Use As Inspiration"));
+    const raw = sessionStorage.getItem("melodiq-inspiration-payload");
+    expect(raw).toBeTruthy();
+    expect(JSON.parse(raw as string)).toEqual({
+      tracks: [{ id: "track-1", title: "Test Song", coverUrl: "/cover.jpg" }],
+    });
+  });
+
+  it("hides Use As Inspiration while the track is still generating", async () => {
+    const user = userEvent.setup();
+    renderMenu({
+      track: { id: "track-2", title: "Unfinished", coverUrl: null, status: "generating" } as never,
+    });
+    await openMenu(user);
+
+    expect(screen.queryByText("Use As Inspiration")).toBeNull();
+  });
 });

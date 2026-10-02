@@ -11,6 +11,7 @@ import PresetsManager from "@/components/studio/PresetsManager";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore } from "@/lib/store";
 import { useUserStore } from "@/lib/stores/userStore";
+import { isApimartV6Model, MAX_INSPIRATION_TRACKS } from "@/lib/inspiration";
 import { useT } from "@/hooks/useT";
 
 export default memo(function StudioForm({
@@ -44,6 +45,9 @@ export default memo(function StudioForm({
     audioWeight,
     negativeTags,
     usePersonaVoice,
+    inspiration,
+    addInspirationTrack,
+    removeInspirationTrack,
     savedLyrics,
     savedLyricsLoaded,
     apimartVariety,
@@ -98,6 +102,8 @@ export default memo(function StudioForm({
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [showProTips, setShowProTips] = useState(false);
   const [copiedField, setCopiedField] = useState<"lyrics" | "style" | null>(null);
+  const [inspoDragActive, setInspoDragActive] = useState(false);
+  const [inspoError, setInspoError] = useState<string | null>(null);
   const [lyricsExpanded, setLyricsExpanded] = useState(false);
   const [lyricsSaved, setLyricsSaved] = useState(false);
 
@@ -124,6 +130,38 @@ export default memo(function StudioForm({
   }, [providersCollapsed]);
 
   const activeProviderKey = Object.keys(selectedProviders)[0];
+  const apimartModel = selectedProviders["apimart"];
+  const inspoV6Ready = !!apimartModel && isApimartV6Model(apimartModel);
+
+  async function handleInspoDrop(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setInspoDragActive(false);
+    const trackId = event.dataTransfer.getData("text/plain")?.trim();
+    if (!trackId) return;
+    if (inspiration.some((item) => item.id === trackId)) return;
+    if (inspiration.length >= MAX_INSPIRATION_TRACKS) {
+      setInspoError(t("studio.inspirationFull"));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tracks/${trackId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data || data.status !== "done" || !(data.s3Key || data.s3KeyHd)) {
+        setInspoError(t("studio.inspirationNoAudio"));
+        return;
+      }
+      const added = addInspirationTrack({
+        id: data.id,
+        title: typeof data.title === "string" ? data.title : null,
+        coverUrl: typeof data.coverUrl === "string" ? data.coverUrl : null,
+      });
+      setInspoError(added ? null : t("studio.inspirationFull"));
+    } catch {
+      setInspoError(t("studio.inspirationLoadFailed"));
+    }
+  }
   const isHeartMulaSelected = activeProviderKey === "heartmula";
   const promptCharCount = songIdea.length;
   const styleMaxChars = 1000;
@@ -291,6 +329,74 @@ export default memo(function StudioForm({
         setProviderModel={setProviderModel}
         setRememberProviderChoice={setRememberProviderChoice}
       />
+
+      {/* Inspiration Section (APIMart v6 inspo references — display only) */}
+      <section className="section-card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white/80">{t("studio.inspirationHeading")}</h3>
+          <span className="text-[10px] font-mono text-white/30 select-none">
+            {inspiration.length}/{MAX_INSPIRATION_TRACKS}
+          </span>
+        </div>
+
+        {inspiration.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {inspiration.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2">
+                {item.coverUrl ? (
+                  <img
+                    src={item.coverUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/8 text-white/30">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    </svg>
+                  </div>
+                )}
+                <span className="min-w-0 flex-1 truncate text-sm text-white/85">
+                  {item.title?.trim() || t("library.untitled")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeInspirationTrack(item.id)}
+                  className="shrink-0 rounded p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                  title={t("studio.inspirationRemove")}
+                  aria-label={t("studio.inspirationRemove")}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div
+          onDrop={handleInspoDrop}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setInspoDragActive(true);
+          }}
+          onDragLeave={() => setInspoDragActive(false)}
+          className={`rounded-xl border-2 border-dashed px-4 py-3 text-center transition-colors ${
+            inspoDragActive ? "border-primary-400/80 bg-primary-500/10" : "border-white/15 bg-white/[0.02]"
+          }`}
+        >
+          <p className="text-xs text-white/45">{t("studio.inspirationDropHint", { count: inspiration.length })}</p>
+        </div>
+
+        {inspoError && <p className="mt-2 text-xs text-red-400">{inspoError}</p>}
+        {inspiration.length > 0 && !inspoV6Ready && (
+          <p className="mt-2 text-xs text-amber-300/80">{t("studio.inspirationV6Only")}</p>
+        )}
+      </section>
 
       {/* Lyrics Section */}
 

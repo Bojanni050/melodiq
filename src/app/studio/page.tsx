@@ -10,6 +10,7 @@ import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import NoticeBar from "@/components/studio/NoticeBar";
 import StudioTabBar from "@/components/studio/StudioTabBar";
+import { INSPIRATION_STORAGE_KEY, parseInspirationPayload } from "@/lib/inspiration";
 import WorkspacePanel from "@/components/studio/WorkspacePanel";
 import RecentTracksPanel from "@/components/studio/RecentTracksPanel";
 import { useTrackManager, type Track } from "@/hooks/useTrackManager";
@@ -100,6 +101,13 @@ export default function StudioPage() {
         const studio = useStudioStore.getState();
         studio.setSongIdea(payload.songIdea);
         studio.setLyrics(payload.lyrics);
+      }
+
+      const inspoRaw = sessionStorage.getItem(INSPIRATION_STORAGE_KEY);
+      if (inspoRaw) {
+        sessionStorage.removeItem(INSPIRATION_STORAGE_KEY);
+        const studio = useStudioStore.getState();
+        parseInspirationPayload(inspoRaw).forEach((t) => studio.addInspirationTrack(t));
       }
     } catch {
       // ignore
