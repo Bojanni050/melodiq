@@ -246,6 +246,8 @@ const nl: typeof en = {
     buildStyleInMelody: "Bouw je stijl in Melody",
     generateStyle: "Genereer Stijl",
     inspirationHeading: "Inspiratie",
+    inspirationToggleLabel: "Inspiratie gebruiken",
+    inspirationDisabledHint: "Uitgeschakeld — er wordt normaal gegenereerd, je tracks blijven bewaard.",
     inspirationDropHint: "Sleep tracks hierheen voor inspiratie ({count}/4)",
     inspirationRemove: "Verwijder inspiratie",
     inspirationV6Only: "Werkt alleen met APIMart v6 — selecteer die hierboven om met deze referenties te genereren.",

@@ -36,8 +36,10 @@ interface StudioState {
   apimartMaxMode: boolean;
   apimartAudioFormat: "mp3" | "m4a" | "wav";
   // Inspiration references for APIMart v6 inspo generation (display only —
-  // lyrics/style are never copied from these tracks)
+  // lyrics/style are never copied from these tracks). inspirationEnabled lets
+  // the user park tracks here but generate normally.
   inspiration: InspirationTrack[];
+  inspirationEnabled: boolean;
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
@@ -68,6 +70,7 @@ interface StudioState {
   addInspirationTrack: (track: InspirationTrack) => boolean;
   removeInspirationTrack: (id: string) => void;
   clearInspiration: () => void;
+  setInspirationEnabled: (enabled: boolean) => void;
   fetchSavedLyrics: () => Promise<void>;
   saveLyric: () => Promise<SavedLyric | null>;
   loadSavedLyric: (id: string) => void;
@@ -102,6 +105,7 @@ export const useStudioStore = create<StudioState>()(
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
       inspiration: [],
+      inspirationEnabled: true,
       savedLyrics: [],
       savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
@@ -146,12 +150,14 @@ export const useStudioStore = create<StudioState>()(
         const current = get().inspiration;
         if (current.some((t) => t.id === track.id)) return true;
         if (current.length >= MAX_INSPIRATION_TRACKS) return false;
-        set({ inspiration: [...current, track] });
+        // Dropping a new reference means the user wants inspo again.
+        set({ inspiration: [...current, track], inspirationEnabled: true });
         return true;
       },
       removeInspirationTrack: (id) =>
         set((state) => ({ inspiration: state.inspiration.filter((t) => t.id !== id) })),
       clearInspiration: () => set({ inspiration: [] }),
+      setInspirationEnabled: (enabled) => set({ inspirationEnabled: enabled }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -216,6 +222,7 @@ export const useStudioStore = create<StudioState>()(
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",
           inspiration: [],
+      inspirationEnabled: true,
         }),
     }),
     {
@@ -243,6 +250,7 @@ export const useStudioStore = create<StudioState>()(
         if (merged.apimartMaxMode === undefined) merged.apimartMaxMode = false;
         if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
         if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
+        if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
         return merged;
       },
     }

@@ -48,6 +48,8 @@ export default memo(function StudioForm({
     inspiration,
     addInspirationTrack,
     removeInspirationTrack,
+    inspirationEnabled,
+    setInspirationEnabled,
     savedLyrics,
     savedLyricsLoaded,
     apimartVariety,
@@ -334,13 +336,36 @@ export default memo(function StudioForm({
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-white/80">{t("studio.inspirationHeading")}</h3>
-          <span className="text-[10px] font-mono text-white/30 select-none">
-            {inspiration.length}/{MAX_INSPIRATION_TRACKS}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-white/30 select-none">
+              {inspiration.length}/{MAX_INSPIRATION_TRACKS}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={inspirationEnabled}
+              onClick={() => setInspirationEnabled(!inspirationEnabled)}
+              className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
+                inspirationEnabled ? "bg-violet-500" : "bg-white/15"
+              }`}
+              title={t("studio.inspirationToggleLabel")}
+              aria-label={t("studio.inspirationToggleLabel")}
+            >
+              <span
+                className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                  inspirationEnabled ? "translate-x-[18px]" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
+        {!inspirationEnabled && (
+          <p className="mb-3 text-xs text-white/40 italic">{t("studio.inspirationDisabledHint")}</p>
+        )}
+
         {inspiration.length > 0 && (
-          <div className="space-y-2 mb-3">
+          <div className={`space-y-2 mb-3 ${!inspirationEnabled ? "opacity-40" : ""}`}>
             {inspiration.map((item) => (
               <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2">
                 {item.coverUrl ? (
@@ -393,7 +418,7 @@ export default memo(function StudioForm({
         </div>
 
         {inspoError && <p className="mt-2 text-xs text-red-400">{inspoError}</p>}
-        {inspiration.length > 0 && !inspoV6Ready && (
+        {inspirationEnabled && inspiration.length > 0 && !inspoV6Ready && (
           <p className="mt-2 text-xs text-amber-300/80">{t("studio.inspirationV6Only")}</p>
         )}
       </section>

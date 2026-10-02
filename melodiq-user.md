@@ -116,6 +116,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 
 - Via de trackopties (**⋯ → Use As Inspiration**) zet je een track als inspiratie voor een nieuwe song; in Studio verschijnt boven de lyrics een **Inspiration**-kaart met cover en titel (lyrics en stijl worden níet overgenomen).
 - Er kunnen maximaal **4** inspiratietracks klaarstaan (ook via slepen naar de kaart); genereren met inspiratie werkt alleen met **APIMart v6**.
+- Met het **schakelaartje** naast de teller zet je inspiratie aan of uit zonder de tracks te verwijderen: uit = normale generatie, de tracks blijven geparkeerd staan. Een nieuwe track toevoegen schakelt inspiratie automatisch weer in.
 
 ### Vocal Gender
 

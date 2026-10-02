@@ -243,6 +243,8 @@ const en = {
     buildStyleInMelody: "Build your style in Melody",
     generateStyle: "Generate Style",
     inspirationHeading: "Inspiration",
+    inspirationToggleLabel: "Use inspiration",
+    inspirationDisabledHint: "Disabled — generating normally, your tracks are kept.",
     inspirationDropHint: "Drag tracks here for inspiration ({count}/4)",
     inspirationRemove: "Remove inspiration",
     inspirationV6Only: "Only works with APIMart v6 — select it above to generate with these references.",

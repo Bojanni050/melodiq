@@ -90,6 +90,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       apimartMaxMode,
       apimartAudioFormat,
       inspiration,
+      inspirationEnabled,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -99,7 +100,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       return;
     }
 
-    if (inspiration.length > 0) {
+    if (inspirationEnabled && inspiration.length > 0) {
       const apimartModel = selectedProviders["apimart"];
       if (!apimartModel || !isApimartV6Model(apimartModel)) {
         setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 — selecteer die provider of verwijder de inspiratietracks." });
@@ -183,8 +184,13 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
               apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,
               apimartAudioFormat: provider === "apimart" ? apimartAudioFormat : undefined,
-              // Inspo references (APIMart v6 only — server validates)
-              inspirationTrackIds: provider === "apimart" ? inspiration.map((item) => item.id) : undefined,
+              // Inspo references (APIMart v6 only — server validates).
+              // Disabled or empty = no inspiration = normal generation, so
+              // omit the field entirely; sending [] trips the server guard.
+              inspirationTrackIds:
+                provider === "apimart" && inspirationEnabled && inspiration.length > 0
+                  ? inspiration.map((item) => item.id)
+                  : undefined,
             }),
           }).then(async (res) => {
             const data = await res.json();

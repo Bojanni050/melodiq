@@ -91,12 +91,11 @@ export async function POST(request: NextRequest) {
   if (provider === "apimart" && personaId && !lyrics?.trim()) {
     return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
+  // Empty or missing = no inspiration = normal generation. Only a
+  // non-empty list takes the inspo path (and then requires APIMart v6).
   const normalizedInspirationTrackIds = Array.isArray(inspirationTrackIds)
     ? [...new Set(inspirationTrackIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4)
     : [];
-  if (inspirationTrackIds !== undefined && normalizedInspirationTrackIds.length === 0) {
-    return NextResponse.json({ error: "Select 1–4 inspiration tracks" }, { status: 400 });
-  }
   if (normalizedInspirationTrackIds.length > 0 && (provider !== "apimart" || !isApimartV6Model(providerModel))) {
     return NextResponse.json({ error: "Inspiration requires APIMart v6" }, { status: 400 });
   }
