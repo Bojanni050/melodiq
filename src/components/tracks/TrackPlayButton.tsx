@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { TrackItem } from "./types";
 import { formatDuration } from "@/lib/track-utils";
 
@@ -24,6 +25,12 @@ export default function TrackPlayButton({
 }: TrackPlayButtonProps) {
   const isGeneratingOrPending = track.status === "generating" || track.status === "pending";
   const isArchived = Boolean(track.archivedAt);
+  const coverSrc = effectiveThumbUrl ?? effectiveCoverUrl;
+  // A stale coverUrl (e.g. optimistic ?t=... set before generation finished,
+  // or an S3 object that went missing) 404s. Hide the broken <img> and fall
+  // back to the placeholder instead of spamming the cover endpoint.
+  const [coverFailed, setCoverFailed] = useState(false);
+  useEffect(() => { setCoverFailed(false); }, [coverSrc]);
 
   return (
     <button
@@ -54,13 +61,14 @@ export default function TrackPlayButton({
         <div className="w-full h-full bg-white/5 flex items-center justify-center">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400/30 border-t-primary-300" />
         </div>
-      ) : effectiveCoverUrl ? (
+      ) : effectiveCoverUrl && !coverFailed ? (
         <>
           <img
-            src={effectiveThumbUrl ?? effectiveCoverUrl}
+            src={coverSrc ?? effectiveCoverUrl}
             alt=""
             loading="lazy"
             decoding="async"
+            onError={() => setCoverFailed(true)}
             className="absolute inset-0 w-full h-full object-cover"
           />
           {isCurrentlyPlaying ? (

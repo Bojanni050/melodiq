@@ -82,27 +82,52 @@ export function useTrackBackgroundServices(
             return;
           }
 
-          const refreshedTrack = (await response.json().catch(() => null)) as Partial<Track> | null;
-          const cacheBust = Date.now();
-          const nextCoverUrl = `/api/tracks/${track.id}/cover?t=${cacheBust}`;
+          // PATCH returns 202 immediately (fire-and-forget) — the cover does
+          // not exist yet. Poll until s3KeyCover lands before exposing a
+          // coverUrl, otherwise every consumer renders a broken
+          // /api/tracks/{id}/cover?t=... that 404s.
+          const { requestedAt } = await response.json().catch(() => ({ requestedAt: Date.now() }));
+          const started = Date.now();
+          const poll = async (): Promise<void> => {
+            if (Date.now() - started > 120_000) {
+              coverAutoRequestedTrackIdsRef.current.delete(track.id);
+              return;
+            }
+            try {
+              const r = await fetch(`/api/tracks/${track.id}`);
+              if (r.ok) {
+                const data = await r.json();
+                const updatedAt = data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+                if (data.s3KeyCover && updatedAt >= (requestedAt ?? 0)) {
+                  const cacheBust = Date.now();
+                  const nextCoverUrl = `/api/tracks/${track.id}/cover?t=${cacheBust}`;
 
-          usePlayerStore.setState((state) => {
-            if (state.currentTrack?.id !== track.id) return {};
+                  usePlayerStore.setState((state) => {
+                    if (state.currentTrack?.id !== track.id) return {};
+                    return {
+                      currentTrack: {
+                        ...state.currentTrack,
+                        s3KeyCover: data.s3KeyCover,
+                        s3KeyCoverThumb: data.s3KeyCoverThumb ?? state.currentTrack.s3KeyCoverThumb,
+                        coverUrl: nextCoverUrl,
+                      },
+                    };
+                  });
 
-            return {
-              currentTrack: {
-                ...state.currentTrack,
-                ...(refreshedTrack ? refreshedTrack : {}),
-                coverUrl: nextCoverUrl,
-              },
-            };
-          });
-
-          window.dispatchEvent(
-            new CustomEvent("melodiq:cover-regenerated", {
-              detail: { trackIds: [track.id], ts: cacheBust },
-            })
-          );
+                  window.dispatchEvent(
+                    new CustomEvent("melodiq:cover-regenerated", {
+                      detail: { trackIds: [track.id], ts: cacheBust },
+                    })
+                  );
+                  return;
+                }
+              }
+            } catch {
+              // transient — keep polling
+            }
+            setTimeout(poll, 3000);
+          };
+          setTimeout(poll, 3000);
         } catch (error) {
           console.error("Failed to auto-generate cover art:", error);
           coverAutoRequestedTrackIdsRef.current.delete(track.id);
