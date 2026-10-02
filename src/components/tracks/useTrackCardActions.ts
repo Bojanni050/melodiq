@@ -63,6 +63,8 @@ export function useTrackCardActions({
   const [pendingWorkspaceMerge, setPendingWorkspaceMerge] = useState<{ id: string; name: string } | null>(null);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
   const [showReleasePickerDialog, setShowReleasePickerDialog] = useState(false);
+  const [uploadingWav, setUploadingWav] = useState(false);
+  const [uploadWavResult, setUploadWavResult] = useState<"success" | "error" | null>(null);
 
   useEffect(() => {
     function handleCoverRegenerated(event: Event) {
@@ -368,6 +370,39 @@ export function useTrackCardActions({
     setWorkspaceMenuOpen(false);
   }
 
+  /**
+   * Voegt handmatig een WAV/FLAC-versie toe aan een track zonder HD-bestand.
+   * POST het bestand naar /api/tracks/[id]/upload-hd en triggert daarna een
+   * re-fetch, zodat de HD-downloadknop direct verschijnt.
+   */
+  async function handleUploadWavFile(file: File) {
+    if (uploadingWav) return;
+    setUploadingWav(true);
+    setUploadWavResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/tracks/${track.id}/upload-hd`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        console.error(`Failed to upload WAV version: HTTP ${res.status}`, await res.json().catch(() => null));
+        setUploadWavResult("error");
+      } else {
+        setUploadWavResult("success");
+        window.dispatchEvent(new CustomEvent("tracks-changed"));
+        window.dispatchEvent(new CustomEvent("melodiq:track-updated", { detail: { trackId: track.id } }));
+      }
+    } catch (error) {
+      console.error("Failed to upload WAV version:", error);
+      setUploadWavResult("error");
+    } finally {
+      setUploadingWav(false);
+      setTimeout(() => setUploadWavResult(null), 4000);
+    }
+  }
+
   return {
     // state
     downloading, deleting, confirmDelete, setConfirmDelete,
@@ -386,10 +421,12 @@ export function useTrackCardActions({
     pendingWorkspaceMerge, setPendingWorkspaceMerge,
     workspaceMenuOpen, setWorkspaceMenuOpen,
     showReleasePickerDialog, setShowReleasePickerDialog,
+    uploadingWav, uploadWavResult,
     // handlers
     executeDelete, handleDelete, handleHide,
     handleRegenerateCover,
     handleRegenerateTitle,
+    handleUploadWavFile,
     handleRating,
     handleVote,
     handleDownload,

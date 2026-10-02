@@ -1129,6 +1129,13 @@ const TrackCard = memo(function TrackCard({
               }
               retryingWav={retryingWav}
               retryWavResult={retryWavResult}
+              onUploadWavFile={
+                track.status === "done" && !track.s3KeyHd
+                  ? actions.handleUploadWavFile
+                  : undefined
+              }
+              uploadingWav={actions.uploadingWav}
+              uploadWavResult={actions.uploadWavResult}
               onConvertOggClick={
                 track.status === "done" && !effectiveS3KeyOgg && effectiveFormat !== "ogg"
                   ? handleConvertOgg

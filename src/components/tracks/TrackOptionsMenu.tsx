@@ -190,6 +190,13 @@ export default function TrackOptionsMenu({
         onRemoveFromPlaylistClick={actions.handleRemoveFromPlaylistClick}
         onOpenReleasePicker={() => actions.setShowReleasePickerDialog(true)}
         onRemoveFromReleaseClick={actions.handleRemoveFromReleaseClick}
+        onUploadWavFile={
+          track.status === "done" && !track.s3KeyHd
+            ? actions.handleUploadWavFile
+            : undefined
+        }
+        uploadingWav={actions.uploadingWav}
+        uploadWavResult={actions.uploadWavResult}
         onHideClick={onHideClick}
         onArchiveClick={onArchiveClick}
         onGoToTrackClick={onGoToTrackClick}

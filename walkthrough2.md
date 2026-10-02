@@ -467,3 +467,15 @@
   - `src/components/studio/WorkspacePanel.tsx` + `RecentTracksPanel.tsx` — prop doorgestuurd
   - Tests bijgewerkt (menu asserteert store-inhoud; lib-test geslonken tot wat nog bestaat)
   - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (137 geslaagd) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (WAV versie toevoegen in trackopties als track geen HD heeft)
+
+- Findings: Een track zonder HD-bestand (geen s3KeyHd) had in de Library alleen "Convert to WAV" — en dan nog alleen voor poyo/apimart-tracks, want die route vraagt de conversie opnieuw aan bij de provider. Voor alle andere tracks (uploads, overige providers) bestond er geen enkele manier om alsnog een lossless versie aan de track te koppelen.
+- Conclusions: Naast de provider-retry een handmatige upload-optie: "WAV versie toevoegen" verschijnt alleen als de track geen s3KeyHd heeft (zowel in TrackActionMenu afgedwongen als bij het doorgeven in TrackCard/TrackOptionsMenu). Alleen WAV/FLAC worden geaccepteerd — MP3/OGG als "HD" opslaan is schijnkwaliteit. Na een geslaagde upload gaat een tracks-changed-event af, zodat de Library direct refetcht en de HD-downloadknop verschijnt.
+- Actions:
+  - Created `src/app/api/tracks/[id]/upload-hd/route.ts` — POST multipart (veld `file`), auth + ownership-check, alleen wav/flac, limiet 200MB; slaat op als `tracks/{id}/audio_hd.{ext}` en zet s3KeyHd/formatHd/audioUrlHd.
+  - `src/components/tracks/useTrackCardActions.ts` — `uploadingWav`/`uploadWavResult`-state plus `handleUploadWavFile` (FormData-POST, tracks-changed + track-updated events, 4s resultaatfeedback).
+  - `src/components/tracks/TrackActionMenu.tsx` — nieuwe props `onUploadWavFile`/`uploadingWav`/`uploadWavResult` en menu-entry "WAV versie toevoegen" met verborgen file-input (accept .wav/.flac), alleen gerenderd als `!track.s3KeyHd`.
+  - `src/components/tracks/TrackCard.tsx` (Library) en `src/components/tracks/TrackOptionsMenu.tsx` (Slim Archief) — geven `handleUploadWavFile` door zodra `status === "done" && !s3KeyHd`.
+  - Modified `melodiq-user.md` — optie beschreven, versie bijgewerkt naar `202610022334`.
+  - Validated with `npm run build` (geslaagd, exitcode 0); ✅ gevalideerd

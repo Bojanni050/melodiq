@@ -43,6 +43,10 @@ interface TrackActionMenuProps {
   onRetryWavClick?: () => void;
   retryingWav?: boolean;
   retryWavResult?: "success" | "error" | null;
+  /** Handmatig een WAV/FLAC-bestand toevoegen als HD-versie (alleen zonder s3KeyHd) */
+  onUploadWavFile?: (file: File) => void;
+  uploadingWav?: boolean;
+  uploadWavResult?: "success" | "error" | null;
   onConvertOggClick?: () => void;
   convertingOgg?: boolean;
   convertOggResult?: "success" | "error" | null;
@@ -90,6 +94,9 @@ export default function TrackActionMenu({
   onRetryWavClick,
   retryingWav,
   retryWavResult,
+  onUploadWavFile,
+  uploadingWav,
+  uploadWavResult,
   onConvertOggClick,
   convertingOgg,
   convertOggResult,
@@ -113,6 +120,7 @@ export default function TrackActionMenu({
   const [reuseSubmenuOpen, setReuseSubmenuOpen] = useState(false);
   const [showCoverManager, setShowCoverManager] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const wavFileInputRef = useRef<HTMLInputElement | null>(null);
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   // System playlists (e.g. Master Tracks) are auto-managed — tracks can't be
   // manually removed from them, so they never show up in this list.
@@ -447,6 +455,40 @@ export default function TrackActionMenu({
                     ? "Mislukt — probeer opnieuw"
                     : "Convert to WAV"}
             </button>
+          )}
+          {onUploadWavFile && !track.s3KeyHd && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  wavFileInputRef.current?.click();
+                }}
+                disabled={uploadingWav}
+                className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                  uploadWavResult === "error" ? "text-red-300" : uploadWavResult === "success" ? "text-emerald-300" : "text-white/80"
+                } disabled:opacity-50`}
+              >
+                {uploadingWav
+                  ? "WAV uploaden..."
+                  : uploadWavResult === "success"
+                    ? "WAV versie toegevoegd ✓"
+                    : uploadWavResult === "error"
+                      ? "Mislukt — probeer opnieuw"
+                      : "WAV versie toevoegen"}
+              </button>
+              <input
+                ref={wavFileInputRef}
+                type="file"
+                accept=".wav,.flac,audio/wav,audio/flac"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) onUploadWavFile(file);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </>
           )}
           {onConvertOggClick && (
             <button

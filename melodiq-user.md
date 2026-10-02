@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202609302330**
+**Versie: 202610022334**
 
 > AI Music Generation Web App
 
@@ -178,6 +178,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Speel je een track zonder cover art langer dan 30 seconden af, dan start MelodIQ automatisch covergeneratie voor die track
 - Nieuwe tracks zonder plays tonen een gele glow-dot naast de titel; zodra de track afspeelt verdwijnt deze indicator automatisch
 - Track acties bevatten nu **Regenerate Cover Art** om direct nieuwe cover art voor een song te laten maken
+- Heeft een track nog geen HD/WAV-versie, dan staat in de trackopties **WAV versie toevoegen**: kies een WAV- of FLAC-bestand en die wordt als HD-versie aan de track gekoppeld
 - In Library Songs view, selecting a track now opens a right-side detail panel on desktop (resizable) and an overlay panel on mobile
 - **Playlists view** — dedicated tab in Library with clickable playlist folders/cards
 - Playlist folders now default to a random cover chosen from songs inside that playlist
