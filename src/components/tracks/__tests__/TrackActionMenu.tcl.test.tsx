@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import TrackActionMenu from "@/components/tracks/TrackActionMenu";
+import { useStudioStore } from "@/lib/store";
 
 // The component calls useRouter(); jsdom has no mounted Next app router.
 vi.mock("next/navigation", () => ({
@@ -87,20 +88,18 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
     expect(button.closest("button")?.disabled).toBe(true);
   });
 
-  it("offers Use As Inspiration for finished tracks and hands it to Studio", async () => {
+  it("offers Use As Inspiration for finished tracks and adds it to Studio", async () => {
     const user = userEvent.setup();
-    sessionStorage.clear();
+    useStudioStore.getState().clearInspiration();
     renderMenu({
       track: { id: "track-1", title: "Test Song", coverUrl: "/cover.jpg", status: "done" } as never,
     });
     await openMenu(user);
 
     await user.click(screen.getByText("Use As Inspiration"));
-    const raw = sessionStorage.getItem("melodiq-inspiration-payload");
-    expect(raw).toBeTruthy();
-    expect(JSON.parse(raw as string)).toEqual({
-      tracks: [{ id: "track-1", title: "Test Song", coverUrl: "/cover.jpg" }],
-    });
+    expect(useStudioStore.getState().inspiration).toEqual([
+      { id: "track-1", title: "Test Song", coverUrl: "/cover.jpg" },
+    ]);
   });
 
   it("hides Use As Inspiration while the track is still generating", async () => {

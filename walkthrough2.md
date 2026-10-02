@@ -454,3 +454,16 @@
   - i18n EN/NL (7 studio-keys), `melodiq-user.md` aangevuld
   - Tests: 2 menu-tests (zichtbaar bij done, verborgen bij generating, payload-vorm) + 4 helper-tests
   - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (139 geslaagd) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Inspiration-fixes: menu werkte niet op Studio, slepen onmogelijk)
+
+- Findings: (1) "Use As Inspiration" schreef een sessionStorage-payload + `router.push("/studio")`, maar wie al op Studio stond kreeg geen remount — de payload werd nooit opgegeten en de box bleef leeg. (2) Slepen naar de box kon nergens: rijen zijn alleen `draggable` bij `enableDragReorder`, en beide Studio-lijsten hebben reorder bewust uit staan.
+- Conclusions: (1) Menu schrijft direct naar de store (persist + subscribed, dus overal direct zichtbaar) — sessionStorage-handoff verwijderd als doodlopend pad. (2) Nieuwe `enableInspoDrag`-prop: rijen versleepbaar zonder reorder; `handleTrackDrop` weigert nu expliciet als reorder uit staat, zodat inspo-drags de volgorde nooit kunnen verstoren. Alleen Studio-lijsten krijgen de prop (dropzone staat daar; andere pagina's kunnen de box toch niet bereiken).
+- Actions:
+  - `src/components/tracks/TrackActionMenu.tsx` — directe `addInspirationTrack` + push
+  - `src/app/studio/page.tsx` — payload-consumer weg; `enableInspoDrag` op beide panels
+  - `src/lib/inspiration.ts` — storage-key + parser verwijderd
+  - `src/components/TrackList.tsx` — `enableInspoDrag`-prop, `draggable` uitgebreid, drop-guard
+  - `src/components/studio/WorkspacePanel.tsx` + `RecentTracksPanel.tsx` — prop doorgestuurd
+  - Tests bijgewerkt (menu asserteert store-inhoud; lib-test geslonken tot wat nog bestaat)
+  - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (137 geslaagd) en `npm run build` (geslaagd), validated.

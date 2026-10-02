@@ -53,6 +53,7 @@ interface WorkspacePanelProps {
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;
   onTitleUpdate: (trackId: string, newTitle: string) => void;
   onArtistUpdate?: (trackId: string, artistName: string | null) => void;
+  enableInspoDrag?: boolean;
   onEditDetails?: (track: Track) => void;
   playlists: { id: string; name: string }[];
 }
@@ -91,6 +92,7 @@ export default function WorkspacePanel({
   onMoveToWorkspace,
   onTitleUpdate,
   onArtistUpdate,
+  enableInspoDrag,
   onEditDetails,
   playlists,
 }: WorkspacePanelProps) {
@@ -424,6 +426,7 @@ export default function WorkspacePanel({
             playlists={playlists}
             onTitleUpdate={onTitleUpdate}
             onArtistUpdate={onArtistUpdate}
+            enableInspoDrag={enableInspoDrag}
             onEditDetails={onEditDetails}
           />
         ) : (

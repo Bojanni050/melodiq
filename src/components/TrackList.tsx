@@ -22,6 +22,7 @@ export default memo(function TrackList({
   isGenerating,
   autoQueueAfterPlay,
   enableDragReorder = false,
+  enableInspoDrag = false,
   onSelect,
   onDelete,
   onReusePrompt,
@@ -41,6 +42,8 @@ export default memo(function TrackList({
   isGenerating?: boolean;
   autoQueueAfterPlay?: boolean;
   enableDragReorder?: boolean;
+  /** Rows are draggable (e.g. to drop onto the Studio inspiration box) without enabling reorder. */
+  enableInspoDrag?: boolean;
   dragOrderKey?: string;
   onSelect: (track: TrackItem) => void;
   onDelete?: (trackId: string) => void;
@@ -826,6 +829,12 @@ export default memo(function TrackList({
   function handleTrackDrop(event: React.DragEvent<HTMLDivElement>, trackId: string) {
     event.preventDefault();
     clearDropIndicator(event.currentTarget.parentElement);
+    // Inspo-only drag sources must never reorder the list.
+    if (!canDragReorder) {
+      draggedTrackIdRef.current = null;
+      dragHoverRef.current = null;
+      return;
+    }
     const sourceId = draggedTrackIdRef.current ?? event.dataTransfer.getData("text/plain");
     const dropPosition = dragHoverRef.current?.targetId === trackId
       ? dragHoverRef.current.position
@@ -993,7 +1002,7 @@ export default memo(function TrackList({
                 <div
                   key={track.id}
                   data-track-id={track.id}
-                  draggable={canDragReorder}
+                  draggable={canDragReorder || enableInspoDrag}
                   onDragStart={(event) => handleTrackDragStart(event, track.id)}
                   onDragOver={(event) => handleTrackDragOver(event, track.id)}
                   onDragEnter={(event) => handleTrackDragEnter(event, track.id)}

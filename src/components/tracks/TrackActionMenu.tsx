@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePlaylistStore, useReleaseStore } from "@/lib/store";
+import { usePlaylistStore, useReleaseStore, useStudioStore } from "@/lib/store";
 import CoverManager from "./CoverManager";
 import { REUSE_SCOPE_LABEL, type ReuseScope } from "@/lib/reuse-prompt";
-import { INSPIRATION_STORAGE_KEY, type InspirationPayload } from "@/lib/inspiration";
 import type { PlaylistOption, TrackItem } from "./types";
 
 interface TrackActionMenuProps {
@@ -496,14 +495,13 @@ export default function TrackActionMenu({
               onClick={(e) => {
                 e.stopPropagation();
                 setMenuOpen(false);
-                try {
-                  const payload: InspirationPayload = {
-                    tracks: [{ id: track.id, title: track.title ?? null, coverUrl: track.coverUrl ?? null }],
-                  };
-                  sessionStorage.setItem(INSPIRATION_STORAGE_KEY, JSON.stringify(payload));
-                } catch {
-                  // storage unavailable — Studio will simply show no new inspiration
-                }
+                // Direct store write (not sessionStorage): this also works when
+                // already on /studio, where no remount would consume a payload.
+                useStudioStore.getState().addInspirationTrack({
+                  id: track.id,
+                  title: track.title ?? null,
+                  coverUrl: track.coverUrl ?? null,
+                });
                 router.push("/studio");
               }}
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
