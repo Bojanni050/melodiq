@@ -50,6 +50,7 @@ export default function ReleasesPage() {
   const [editComposerName, setEditComposerName] = useState("");
   const [editCredits, setEditCredits] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [pendingArtistApply, setPendingArtistApply] = useState<{ releaseId: string; artist: string; count: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [tracksById, setTracksById] = useState<Map<string, TrackItem>>(new Map());
   const [sortBy, setSortBy] = useState<SortBy>("recent");
@@ -293,11 +294,42 @@ export default function ReleasesPage() {
     const releaseId = editingReleaseId;
     const title = editTitle.trim();
     if (!title) return;
+    const release = releases.find((r) => r.id === releaseId);
+    const nextArtist = editArtistAlias.trim();
+    const prevArtist = (release?.artistName ?? "").trim();
+    const trackCount = release?.tracks.length ?? 0;
+    if (release && nextArtist !== prevArtist && trackCount > 0) {
+      setPendingArtistApply({ releaseId, artist: nextArtist, count: trackCount });
+      return;
+    }
+    await persistEditRelease(releaseId, false);
+  }
+
+  async function persistEditRelease(releaseId: string, applyArtistToTracks: boolean) {
+    const title = editTitle.trim();
+    if (!title) return;
     setSavingEdit(true);
     try {
       renameRelease(releaseId, title);
-      updateReleaseDetails(releaseId, { artistName: editArtistAlias, writerName: editWriterName, composerName: editComposerName, credits: editCredits });
+      updateReleaseDetails(
+        releaseId,
+        { artistName: editArtistAlias, writerName: editWriterName, composerName: editComposerName, credits: editCredits },
+        applyArtistToTracks ? { applyArtistToTracks: true } : undefined
+      );
+      if (applyArtistToTracks) {
+        const nextArtist = editArtistAlias.trim() || null;
+        setTracksById((prev) => {
+          const next = new Map(prev);
+          const release = releases.find((r) => r.id === releaseId);
+          release?.tracks.forEach((rt) => {
+            const track = next.get(rt.trackId);
+            if (track) next.set(rt.trackId, { ...track, artistName: nextArtist });
+          });
+          return next;
+        });
+      }
       setEditingReleaseId(null);
+      setPendingArtistApply(null);
     } finally {
       setSavingEdit(false);
     }
@@ -696,6 +728,14 @@ export default function ReleasesPage() {
                                     return next;
                                   });
                                 }}
+                                onArtistUpdate={(trackId, artistName) => {
+                                  setTracksById((prev) => {
+                                    const next = new Map(prev);
+                                    const t = next.get(trackId);
+                                    if (t) next.set(trackId, { ...t, artistName });
+                                    return next;
+                                  });
+                                }}
                                 onEditDetails={(t) =>
                                   setEditingTrack({
                                     ...t,
@@ -891,6 +931,43 @@ export default function ReleasesPage() {
           </div>
         );
       })()}
+
+      {pendingArtistApply && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center p-4">
+          <button type="button" aria-label={t("common.cancel")} onClick={() => { if (!savingEdit) setPendingArtistApply(null); }} className="absolute inset-0 bg-black/65" />
+          <div className="relative w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#0f1119] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+            <h3 className="text-lg font-semibold text-white">{t("releases.applyArtistTitle")}</h3>
+            <p className="mt-2 text-sm text-white/60">
+              {t("releases.applyArtistBody", {
+                artist: pendingArtistApply.artist || t("releases.unknownArtist"),
+                count: pendingArtistApply.count,
+                trackWord: pendingArtistApply.count === 1 ? t("releases.track") : t("releases.tracks"),
+              })}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setPendingArtistApply(null)} disabled={savingEdit} className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14 disabled:opacity-50">
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistEditRelease(pendingArtistApply.releaseId, false)}
+                disabled={savingEdit}
+                className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14 disabled:opacity-50"
+              >
+                {t("releases.applyArtistReleaseOnly")}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistEditRelease(pendingArtistApply.releaseId, true)}
+                disabled={savingEdit}
+                className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t("releases.applyArtistReleaseAndTracks")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pendingDelete && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4">

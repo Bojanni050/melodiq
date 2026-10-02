@@ -23,11 +23,13 @@ import type { ConfirmAction, LyricsStudioNotice, LyricStudioSnapshot } from "@/l
 import {
   autoGrowTextarea,
   BLOCK_LABELS,
+  clampBlockLineCount,
   combineLyrics,
   countGeneratableBlocks,
   createBlock,
   createPresetBlocks,
   parseStructureText,
+  resolveBlockLineCount,
   type BlockType,
   type LyricBlock,
 } from "@/lib/lyrics-utils";
@@ -81,7 +83,7 @@ export default function LyricsStudioPage() {
       window.sessionStorage.removeItem("lyrics-studio-track-edit");
       const payload = JSON.parse(raw) as {
         trackId: string;
-        blocks: Array<{ id?: string; type: BlockType; label: string; content: string; uniqueChorusOverride?: boolean }>;
+        blocks: Array<{ id?: string; type: BlockType; label: string; content: string; uniqueChorusOverride?: boolean; lineCount?: unknown }>;
         title?: string;
         style?: string;
       };
@@ -96,6 +98,7 @@ export default function LyricsStudioPage() {
             content: b.content,
             generating: false,
             uniqueChorusOverride: b.type === "chorus" && typeof b.uniqueChorusOverride === "boolean" ? b.uniqueChorusOverride : false,
+            lineCount: clampBlockLineCount(b.lineCount, b.type),
           }));
         setBlocks(restored);
       }
@@ -318,6 +321,7 @@ export default function LyricsStudioPage() {
         chorusMode: options?.chorusMode, isFirstChorus: options?.isFirstChorus, temperature, topP,
         llmModel: llmModel.trim() || undefined,
         literalnessLevel,
+        lineCount: resolveBlockLineCount(block),
       }),
     });
     const data = await response.json();

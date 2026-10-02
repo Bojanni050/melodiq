@@ -367,6 +367,20 @@ export async function PATCH(
         .set(updates)
         .where(and(eq(releases.id, id), eq(releases.userId, auth.userId)));
 
+      if (artistName !== undefined && body?.applyArtistToTracks === true) {
+        const linked = await db
+          .select({ trackId: releaseTracks.trackId })
+          .from(releaseTracks)
+          .where(eq(releaseTracks.releaseId, id));
+        const trackIds = [...new Set(linked.map((row) => row.trackId))];
+        if (trackIds.length > 0) {
+          await db
+            .update(tracks)
+            .set({ artistName })
+            .where(and(eq(tracks.userId, auth.userId), inArray(tracks.id, trackIds)));
+        }
+      }
+
       return respondWithRelease(auth.userId, id);
     }
 

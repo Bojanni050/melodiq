@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { TrackItem } from "./types";
 import { useSelectionStore } from "@/lib/store";
 
-export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: string, newTitle: string) => void) {
+export function useTrackInlineEdit(
+  track: TrackItem,
+  onTitleUpdate?: (trackId: string, newTitle: string) => void,
+  onArtistUpdate?: (trackId: string, artistName: string | null) => void
+) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(track.title ? track.title.replace(/\s*\(2\)\s*$/, "") : "");
   const [isEditingArtist, setIsEditingArtist] = useState(false);
@@ -85,6 +89,7 @@ export function useTrackInlineEdit(track: TrackItem, onTitleUpdate?: (trackId: s
     setIsEditingArtist(false);
     const next = trimmed || null;
     if (next === (track.artistName ?? null)) return;
+    onArtistUpdate?.(track.id, next);
     fetch(`/api/tracks/${track.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

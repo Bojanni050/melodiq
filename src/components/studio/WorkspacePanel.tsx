@@ -52,6 +52,7 @@ interface WorkspacePanelProps {
   onAddToPlaylist: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;
   onTitleUpdate: (trackId: string, newTitle: string) => void;
+  onArtistUpdate?: (trackId: string, artistName: string | null) => void;
   onEditDetails?: (track: Track) => void;
   playlists: { id: string; name: string }[];
 }
@@ -89,6 +90,7 @@ export default function WorkspacePanel({
   onAddToPlaylist,
   onMoveToWorkspace,
   onTitleUpdate,
+  onArtistUpdate,
   onEditDetails,
   playlists,
 }: WorkspacePanelProps) {
@@ -421,6 +423,7 @@ export default function WorkspacePanel({
             onMoveToWorkspace={onMoveToWorkspace}
             playlists={playlists}
             onTitleUpdate={onTitleUpdate}
+            onArtistUpdate={onArtistUpdate}
             onEditDetails={onEditDetails}
           />
         ) : (

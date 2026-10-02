@@ -562,6 +562,9 @@ export default function ArchivePage() {
                   onTitleUpdate={(trackId, newTitle) =>
                     setAllTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                   }
+                  onArtistUpdate={(trackId, artistName) =>
+                    setAllTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, artistName } : t)))
+                  }
                   onEditDetails={(track) =>
                     setEditingTrack({
                       ...track,

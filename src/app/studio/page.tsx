@@ -174,6 +174,7 @@ export default function StudioPage() {
                       onAddToPlaylist={handleAddToPlaylist}
                       onMoveToWorkspace={handleMoveTrackToWorkspace}
                       onTitleUpdate={handleTitleUpdate}
+                      onArtistUpdate={(trackId, artistName) => handleTrackUpdate({ id: trackId, artistName })}
                       onEditDetails={setEditingTrack}
                       playlists={memoizedPlaylists}
                     />
@@ -190,6 +191,7 @@ export default function StudioPage() {
                       onAddToPlaylist={handleAddToPlaylist}
                       onMoveToWorkspace={handleMoveTrackToWorkspace}
                       onTitleUpdate={handleTitleUpdate}
+                      onArtistUpdate={(trackId, artistName) => handleTrackUpdate({ id: trackId, artistName })}
                       onEditDetails={setEditingTrack}
                       playlists={memoizedPlaylists}
                     />

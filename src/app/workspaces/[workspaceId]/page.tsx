@@ -366,6 +366,9 @@ export default function WorkspaceDetailPage() {
                   onTitleUpdate={(trackId, newTitle) =>
                     setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                   }
+                  onArtistUpdate={(trackId, artistName) =>
+                    setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, artistName } : t)))
+                  }
                 />
               ) : (
                 <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">

@@ -5,6 +5,7 @@ import { BLOCK_TYPES } from "@/lib/lyrics-studio-constants";
 import { buildLyricsStudioDraftPayload, parseSavedLyricsSnapshots, sanitizeLyricBlocksForLoad } from "@/lib/lyrics-studio-draft";
 import type { LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
 import { BLOCK_LABELS, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
+import { clampBlockLineCount } from "@/lib/lyrics-utils";
 import { useStudioStore } from "@/lib/store";
 
 const STORAGE_KEY = "melodiq-lyrics-studio";
@@ -122,6 +123,7 @@ export function useLyricsDraft(): LyricsDraftState {
             content: typeof b.content === "string" ? b.content : "",
             generating: false,
             uniqueChorusOverride: b.type === "chorus" && typeof b.uniqueChorusOverride === "boolean" ? b.uniqueChorusOverride : false,
+            lineCount: clampBlockLineCount((b as { lineCount?: unknown }).lineCount, b.type),
           }));
         setBlocks(restored);
       }

@@ -56,7 +56,8 @@ interface ReleaseState {
   renameRelease: (releaseId: string, title: string) => void;
   updateReleaseDetails: (
     releaseId: string,
-    details: { kind?: string | null; artistName?: string | null; writerName?: string | null; composerName?: string | null; credits?: string | null; description?: string | null; releaseDate?: string | null }
+    details: { kind?: string | null; artistName?: string | null; writerName?: string | null; composerName?: string | null; credits?: string | null; description?: string | null; releaseDate?: string | null },
+    options?: { applyArtistToTracks?: boolean }
   ) => void;
   updateReleaseType: (releaseId: string, type: string) => void;
   updateReleaseCover: (releaseId: string, coverUrl: string) => void;
@@ -328,7 +329,7 @@ export const useReleaseStore = create<ReleaseState>()(
           body: JSON.stringify({ action: "rename", title: trimmed }),
         }).catch((error) => console.error("[store] renameRelease failed", error));
       },
-      updateReleaseDetails: (releaseId, details) => {
+      updateReleaseDetails: (releaseId, details, options) => {
         set((state) => ({
           releases: state.releases.map((release) =>
             release.id === releaseId ? { ...release, ...details } : release
@@ -338,7 +339,11 @@ export const useReleaseStore = create<ReleaseState>()(
         void fetch(`/api/releases/${releaseId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update-details", ...details }),
+          body: JSON.stringify({
+            action: "update-details",
+            ...details,
+            ...(options?.applyArtistToTracks === true ? { applyArtistToTracks: true } : {}),
+          }),
         }).catch((error) => console.error("[store] updateReleaseDetails failed", error));
       },
       updateReleaseType: (releaseId, type) => {

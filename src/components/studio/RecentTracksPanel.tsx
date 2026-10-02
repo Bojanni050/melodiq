@@ -14,6 +14,7 @@ interface RecentTracksPanelProps {
   onAddToPlaylist: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;
   onTitleUpdate: (trackId: string, newTitle: string) => void;
+  onArtistUpdate?: (trackId: string, artistName: string | null) => void;
   onEditDetails?: (track: Track) => void;
   playlists: { id: string; name: string }[];
 }
@@ -28,6 +29,7 @@ export default function RecentTracksPanel({
   onAddToPlaylist,
   onMoveToWorkspace,
   onTitleUpdate,
+  onArtistUpdate,
   onEditDetails,
   playlists,
 }: RecentTracksPanelProps) {
@@ -53,6 +55,7 @@ export default function RecentTracksPanel({
           onMoveToWorkspace={onMoveToWorkspace}
           playlists={playlists}
           onTitleUpdate={onTitleUpdate}
+          onArtistUpdate={onArtistUpdate}
           onEditDetails={onEditDetails}
         />
       </div>

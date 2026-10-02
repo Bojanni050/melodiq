@@ -395,3 +395,38 @@
 - Findings: Het Max Mode-toggleschuifje (Studio, APIMart V6-sectie) stond niet goed uitgelijnd: knob had `top-0.5` (2px) op een 22px-track met 16px-knob (onder 4px speling i.p.v. 3px) en geen `left`, plus asymmetrische aan/uit-offset (`translate-x-0.5` vs `translate-x-5` = 2px vs 4px rechter speling) en een overbodige `h-5.5`-klasse naast inline `height: 22px`.
 - Conclusions: Track exact centreren: 3px rondom op 40×22-track met 16px-knob, symmetrische slide (0 vs 18px), en `role="switch"` + `aria-checked` zoals de andere toggles.
 - Actions: `src/components/StudioForm.tsx` — Max Mode-knop omgezet naar `w-10 h-[22px]`, knob `absolute top-[3px] left-[3px] w-4 h-4` met `translate-x-0` / `translate-x-[18px]`; gevalideerd met `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Lyrics: instelbaar regelaantal per sectie)
+
+- Findings: Lyric-generatie had geen enkele regelaantal-sturing; elk blok kreeg wat het LLM ervan maakte. Verzoek: per sectie instelbaar aantal lines, met defaults verse 4, chorus 4, bridge 6, pre-chorus 3, alle andere 4.
+- Conclusions: Regelaantal als veld op het blok zelf (`lineCount`, 1–16) met een −/+ stepper per blokkaart, defaults per type uit `DEFAULT_BLOCK_LINE_COUNTS`. Oude drafts/snapshots zonder veld vallen via clamp-fallback terug op de type-default, dus bestaande data blijft werken.
+- Actions:
+  - `src/lib/lyrics-utils.ts` — `lineCount` op `LyricBlock`, `DEFAULT_BLOCK_LINE_COUNTS` (verse 4, chorus 4, bridge 6, pre-chorus 3, rest 4), `clampBlockLineCount`/`resolveBlockLineCount`, `createBlock` vult default in
+  - `src/app/api/lyric-studio/generate-block/route.ts` — accepteert/valideert `lineCount` (1–16), exacte-regels-instructie in system- + user-prompt, meegelogd
+  - `src/app/lyrics-studio/page.tsx` — stuurt `resolveBlockLineCount(block)` mee; track-edit-restore bewaart/clamped `lineCount`
+  - `src/lib/lyrics-studio-draft.ts` + `src/lib/hooks/useLyricsDraft.ts` — sanitize/restore behouden `lineCount` met fallback
+  - `src/components/lyrics-studio/LyricBlockEditor.tsx` — −/+ stepper per blok (verborgen bij marker-blokken), disabled-tijdens-genereren
+  - i18n EN/NL (`lineCountLabel`, `decrease/increaseLinesTooltip`), `melodiq-user.md` aangevuld
+  - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (133 geslaagd) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Release-artiest optioneel toepassen op alle release-tracks)
+
+- Findings: Release-artiest wijzigen raakte alleen de release; verbonden tracks hielden hun eigen artiest. Verzoek: bij wijzigen/instellen vragen of de artiest op alle verbonden tracks moet worden toegepast.
+- Conclusions: Bij opslaan met gewijzigde artiest en ≥1 track een confirm-dialog (Alleen release / Release + tracks / Cancel); server past via `applyArtistToTracks`-vlag alle `releaseTracks`-tracks van die release aan (user-scoped).
+- Actions:
+  - `src/app/api/releases/[id]/route.ts` — `update-details` accepteert `applyArtistToTracks: true` en zet `tracks.artistName` voor alle tracks van de release
+  - `src/lib/stores/releaseStore.ts` — `updateReleaseDetails` accepteert `options?: { applyArtistToTracks }` en stuurt de vlag mee
+  - `src/app/releases/page.tsx` — `handleSaveEditRelease` toont bij gewijzigde artiest + tracks de confirm (`pendingArtistApply`); `persistEditRelease` spaart met/zonder vlag en werkt lokale `tracksById` optimistisch bij
+  - i18n EN/NL (`applyArtistTitle/Body/ReleaseOnly/ReleaseAndTracks`)
+  - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.
+
+## 2026-10-02 vr (Inline artist-edit direct zichtbaar in tracklist)
+
+- Findings: Dubbelklik-artiest-edit op de trackkaart (`useTrackInlineEdit.saveArtist`) PATCHte wel naar de server, maar meldde het nooit aan de parent — de tracklist toonde de oude artiest tot een refresh. Titel-edit had wel al `onTitleUpdate`; artist miste het equivalent.
+- Conclusions: Zelfde patroon als titel: optimistische `onArtistUpdate`-callback door de hele keten (`useTrackInlineEdit` → `TrackCard` → `TrackList` → pagina's/panels).
+- Actions:
+  - `src/components/tracks/useTrackInlineEdit.ts` — 3e optionele param `onArtistUpdate`, aangeroepen in `saveArtist` vóór de PATCH
+  - `src/components/tracks/TrackCard.tsx` + `src/components/TrackList.tsx` — `onArtistUpdate`-prop doorgegeven
+  - `src/components/studio/WorkspacePanel.tsx` + `RecentTracksPanel.tsx` — prop doorgestuurd
+  - Pagina's: `onArtistUpdate` naast elke `onTitleUpdate` (archive, library, playlists, workspaces, releases, releases/[releaseId], studio via `handleTrackUpdate`)
+  - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd), validated.

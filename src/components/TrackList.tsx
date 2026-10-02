@@ -30,6 +30,7 @@ export default memo(function TrackList({
   onMoveToWorkspace,
   playlists,
   onTitleUpdate,
+  onArtistUpdate,
   onManualOrderChange,
   onTrackMoved,
   onEditDetails,
@@ -53,6 +54,7 @@ export default memo(function TrackList({
   onMoveToWorkspace?: (trackId: string, workspaceId: string) => void;
   playlists?: PlaylistOption[];
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
+  onArtistUpdate?: (trackId: string, artistName: string | null) => void;
   onManualOrderChange?: (orderedTrackIds: string[]) => void;
   onTrackMoved?: (trackId: string, toIndex: number) => void;
   onEditDetails?: (track: TrackItem) => void;
@@ -1013,6 +1015,7 @@ export default memo(function TrackList({
                     playlists={playlists}
                     tracksById={tracksById}
                     onTitleUpdate={onTitleUpdate}
+                    onArtistUpdate={onArtistUpdate}
                     workspaceById={workspaceById}
                     orderedWorkspaceOptions={orderedWorkspaceOptions}
                     workspaceDisplayNameById={workspaceDisplayNameById}

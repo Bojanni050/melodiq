@@ -103,6 +103,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 - **Copy all lyrics** copies the finished block sequence
 - In the collapsible **Volledige lyrics** sidebar, a dedicated **Copy** button now copies the full combined lyrics directly
 - **Use in Studio →** sends all filled blocks to the main Studio lyrics field
+- **Lines per section** — each block has a −/+ stepper for the number of lyric lines it generates (verse 4, chorus 4, bridge 6, pre-chorus 3, all others 4 by default)
 - **Style Suggestion (AI Fill)** now returns a more elaborate style direction with concrete guidance for genre/feel, instrumentation, production/mix, and vocal direction
 - Confirmaties, foutmeldingen en snapshot-opslag gebruiken in-app dialogs/notificaties in plaats van browser popups
 
@@ -152,6 +153,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - De handmatig gesleepte trackvolgorde wordt nu onthouden; een verplaatste track blijft op die nieuwe positie staan tot je de volgorde zelf opnieuw wijzigt.
 - De tracklijsten ondersteunen nu **Infinite Scroll / Lazy Loading**: standaard worden de eerste 30 tracks getoond, en zodra je naar beneden scrolt worden er automatisch 30 extra geladen. Dit verlaagt de rendertijd naar minder dan 3ms.
 - Het dubbelklikken op de titel van een nummer om deze direct te bewerken flitst nu direct open en start zonder vertraging op, doordat kliks op de titeltekst de zware detailzijbalk niet meer triggeren.
+- Dubbelklik op de **artiestennaam** onder een track om die direct te bewerken; de lijst toont de nieuwe naam meteen.
 - **Library page** — browse all your tracks from the separate Library page in the sidebar.
 
 ### Library Views
@@ -287,6 +289,10 @@ Boven de lijst op de publieke pagina staat nog een **Play all**-knop: die speelt
 - Stel optioneel een **einddatum/tijd** in wanneer het stemmen sluit; laat leeg voor geen einddatum. Met **Sluiten/Heropenen** zet je de poll handmatig open of dicht, met **Verwijderen** haal je hem weg.
 - Op de publieke release-pagina zien bezoekers de poll-card **"Welke versie is jouw favoriet?"** met per versie een Stem-knop, %-balken en het totaal aantal stemmen.
 - **Iedereen mag stemmen, ook zonder account** — 1 stem per persoon via een cookie, **wijzigen mag** (opnieuw klikken verplaatst je stem). Er wordt geen IP-adres of andere herleidbare data opgeslagen, alleen een willekeurige stem-cookie. Na sluiten is alleen de uitslag zichtbaar.
+
+### Artiest van een release wijzigen
+
+- Verander je de artiest bij het bewerken van een release, dan vraagt de app of die artiest ook op alle tracks van die release moet worden gezet (**Release + tracks**) of alleen op de release zelf (**Alleen release**).
 
 ---
 

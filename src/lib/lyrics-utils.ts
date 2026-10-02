@@ -16,6 +16,36 @@ export interface LyricBlock {
   content: string;
   generating: boolean;
   uniqueChorusOverride: boolean;
+  lineCount: number;
+}
+
+export const MIN_BLOCK_LINE_COUNT = 1;
+export const MAX_BLOCK_LINE_COUNT = 16;
+
+export const DEFAULT_BLOCK_LINE_COUNTS: Record<BlockType, number> = {
+  intro: 4,
+  verse: 4,
+  "pre-chorus": 3,
+  chorus: 4,
+  "post-chorus": 4,
+  bridge: 6,
+  intrumental: 4,
+  "instrumetal-drop": 4,
+  outro: 4,
+};
+
+export function getDefaultBlockLineCount(type: BlockType): number {
+  return DEFAULT_BLOCK_LINE_COUNTS[type] ?? 4;
+}
+
+export function clampBlockLineCount(value: unknown, fallbackType?: BlockType): number {
+  const fallback = fallbackType ? getDefaultBlockLineCount(fallbackType) : 4;
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(MAX_BLOCK_LINE_COUNT, Math.max(MIN_BLOCK_LINE_COUNT, Math.round(value)));
+}
+
+export function resolveBlockLineCount(block: Pick<LyricBlock, "type" | "lineCount">): number {
+  return clampBlockLineCount((block as { lineCount?: unknown }).lineCount, block.type);
 }
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -78,6 +108,7 @@ export function createBlock(type: BlockType, label?: string): LyricBlock {
     content: "",
     generating: false,
     uniqueChorusOverride: false,
+    lineCount: getDefaultBlockLineCount(type),
   };
 }
 

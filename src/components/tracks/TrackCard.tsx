@@ -55,6 +55,7 @@ const TrackCard = memo(function TrackCard({
   playlists,
   tracksById,
   onTitleUpdate,
+  onArtistUpdate,
   workspaceById: workspaceByIdProp,
   orderedWorkspaceOptions: orderedWorkspaceOptionsProp,
   workspaceDisplayNameById: workspaceDisplayNameByIdProp,
@@ -80,6 +81,7 @@ const TrackCard = memo(function TrackCard({
   playlists?: PlaylistOption[];
   tracksById?: Map<string, TrackItem>;
   onTitleUpdate?: (trackId: string, newTitle: string) => void;
+  onArtistUpdate?: (trackId: string, artistName: string | null) => void;
   workspaceById?: Map<string, Workspace>;
   orderedWorkspaceOptions?: { workspace: Workspace; depth: number }[];
   workspaceDisplayNameById?: Map<string, string>;
@@ -455,7 +457,7 @@ const TrackCard = memo(function TrackCard({
     return () => window.removeEventListener("melodiq:track-played", handleTrackPlayed);
   }, [track.id]);
 
-  const edit = useTrackInlineEdit(track, onTitleUpdate);
+  const edit = useTrackInlineEdit(track, onTitleUpdate, onArtistUpdate);
   const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
   // Workspace derived data (computed once in TrackList and passed as props)

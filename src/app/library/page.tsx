@@ -593,6 +593,9 @@ export default function LibraryPage() {
                     onTitleUpdate={(trackId, newTitle) =>
                       setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, title: newTitle } : t)))
                     }
+                    onArtistUpdate={(trackId, artistName) =>
+                      setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, artistName } : t)))
+                    }
                     onEditDetails={(track) =>
                       setEditingTrack({
                         ...track,

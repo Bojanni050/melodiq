@@ -1,7 +1,14 @@
 "use client";
 
 import { useT } from "@/hooks/useT";
-import { isEmptyLyricBlockType, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
+import {
+  MAX_BLOCK_LINE_COUNT,
+  MIN_BLOCK_LINE_COUNT,
+  isEmptyLyricBlockType,
+  resolveBlockLineCount,
+  type BlockType,
+  type LyricBlock,
+} from "@/lib/lyrics-utils";
 
 export default function LyricBlockEditor({
   blocks,
@@ -192,6 +199,34 @@ export default function LyricBlockEditor({
                     />
                     {t("lyricsStudio.uniqueChorusOverride")}
                   </label>
+                )}
+
+                {!isEmptyLyricBlock && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-xs text-white/45">{t("lyricsStudio.lineCountLabel", { count: resolveBlockLineCount(block) })}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onUpdateBlock(block.id, { lineCount: resolveBlockLineCount(block) - 1 })}
+                        disabled={block.generating || resolveBlockLineCount(block) <= MIN_BLOCK_LINE_COUNT}
+                        className="h-7 w-7 rounded-lg border border-white/10 text-white/60 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        title={t("lyricsStudio.decreaseLinesTooltip")}
+                        aria-label={t("lyricsStudio.decreaseLinesTooltip")}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateBlock(block.id, { lineCount: resolveBlockLineCount(block) + 1 })}
+                        disabled={block.generating || resolveBlockLineCount(block) >= MAX_BLOCK_LINE_COUNT}
+                        className="h-7 w-7 rounded-lg border border-white/10 text-white/60 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        title={t("lyricsStudio.increaseLinesTooltip")}
+                        aria-label={t("lyricsStudio.increaseLinesTooltip")}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 <textarea

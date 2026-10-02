@@ -39,6 +39,7 @@ interface GenerateBlockBody {
   topP?: unknown;
   llmModel?: unknown;
   literalnessLevel?: unknown;
+  lineCount?: unknown;
 }
 
 type ChorusMode = "repeat" | "variation";
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel, literalnessLevel } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel, literalnessLevel, lineCount } = body;
   const vocalistTag = body.vocalistTag;
   const performerDirections = body.performerDirections;
 
@@ -163,6 +164,9 @@ export async function POST(request: NextRequest) {
   }
   if (literalnessLevel !== undefined && (typeof literalnessLevel !== "number" || literalnessLevel < 1 || literalnessLevel > 10)) {
     return NextResponse.json({ error: "literalnessLevel must be between 1 and 10" }, { status: 400 });
+  }
+  if (lineCount !== undefined && (typeof lineCount !== "number" || !Number.isFinite(lineCount) || lineCount < 1 || lineCount > 16)) {
+    return NextResponse.json({ error: "lineCount must be between 1 and 16" }, { status: 400 });
   }
 
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
@@ -217,6 +221,9 @@ ${dirNote}`;
         ? "Be direct and literal: say plainly what's happening and what's felt, the way someone would actually say it out loud. Avoid metaphor, symbolism, and vague imagery — state the concrete situation and emotion in clear, unambiguous language."
         : "Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled.";
 
+  const lineCountValue = typeof lineCount === "number" ? Math.min(16, Math.max(1, Math.round(lineCount))) : 4;
+  const lineCountInstruction = `The section must contain exactly ${lineCountValue} lyric lines — no more, no fewer. Count only sung lyric lines; performer tags like [male] and blank lines don't count.`;
+
   let chorusInstruction = "";
   if (blockType === "chorus") {
     if (chorusMode === "repeat") {
@@ -248,8 +255,10 @@ Avoid AI songwriting clichés: stock breakup/nostalgia props like "your coat sti
 ${buildAvoidWordsInstruction()}
 Chorus lines should be punchy and memorable — build around one crucial, hook-worthy line rather than several competing ideas
 Bridge should contrast emotionally with the verses
+${lineCountInstruction}
 ${performerTagInstruction ? `${performerTagInstruction}\n` : ""}Return only the raw lyric text, nothing else`;
   const userPrompt = `Write the ${blockLabel} (${blockType}) for a song.
+Length: exactly ${lineCountValue} lyric lines.
 Topic: ${topic}
 Mood/Vibe: ${mood}
 Language: ${language}
@@ -279,7 +288,7 @@ Now write only the lyrics for: ${blockLabel}`;
       type: "llm",
       provider: llmProvider,
       endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel, literalnessLevel: literalnessLevelValue }),
+      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel, literalnessLevel: literalnessLevelValue, lineCount: lineCountValue }),
       response: JSON.stringify({ result: result.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,

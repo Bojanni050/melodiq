@@ -1,5 +1,6 @@
 import type { LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
 import type { BlockType, LyricBlock } from "@/lib/lyrics-utils";
+import { clampBlockLineCount } from "@/lib/lyrics-utils";
 
 export type LyricsStudioDraftPayload = {
   topic: string;
@@ -64,6 +65,7 @@ export function sanitizeLyricBlocksForLoad(
         block.type === "chorus" && typeof block.uniqueChorusOverride === "boolean"
           ? block.uniqueChorusOverride
           : false,
+      lineCount: clampBlockLineCount((block as { lineCount?: unknown }).lineCount, block.type),
     }));
 }
 
