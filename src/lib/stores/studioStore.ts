@@ -40,6 +40,8 @@ interface StudioState {
   // the user park tracks here but generate normally.
   inspiration: InspirationTrack[];
   inspirationEnabled: boolean;
+  /** 0–100 (%). Mapped to APIMart inspo `audio_weight` 0.00–1.00. Default 20. */
+  inspoAudioWeight: number;
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
   setSongIdea: (idea: string) => void;
@@ -71,6 +73,7 @@ interface StudioState {
   removeInspirationTrack: (id: string) => void;
   clearInspiration: () => void;
   setInspirationEnabled: (enabled: boolean) => void;
+  setInspoAudioWeight: (val: number) => void;
   fetchSavedLyrics: () => Promise<void>;
   saveLyric: () => Promise<SavedLyric | null>;
   loadSavedLyric: (id: string) => void;
@@ -106,6 +109,7 @@ export const useStudioStore = create<StudioState>()(
       apimartAudioFormat: "mp3",
       inspiration: [],
       inspirationEnabled: true,
+      inspoAudioWeight: 20,
       savedLyrics: [],
       savedLyricsLoaded: false,
       setSongIdea: (idea) => set({ songIdea: idea }),
@@ -158,6 +162,8 @@ export const useStudioStore = create<StudioState>()(
         set((state) => ({ inspiration: state.inspiration.filter((t) => t.id !== id) })),
       clearInspiration: () => set({ inspiration: [] }),
       setInspirationEnabled: (enabled) => set({ inspirationEnabled: enabled }),
+      setInspoAudioWeight: (val) =>
+        set({ inspoAudioWeight: Math.min(100, Math.max(0, Math.round(val))) }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -223,6 +229,7 @@ export const useStudioStore = create<StudioState>()(
           apimartAudioFormat: "mp3",
           inspiration: [],
       inspirationEnabled: true,
+          inspoAudioWeight: 20,
         }),
     }),
     {
@@ -251,6 +258,7 @@ export const useStudioStore = create<StudioState>()(
         if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
         if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
         if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
+        if (typeof merged.inspoAudioWeight !== "number" || Number.isNaN(merged.inspoAudioWeight)) merged.inspoAudioWeight = 20;
         return merged;
       },
     }

@@ -54,6 +54,8 @@ export type GenerationContext = {
   apimartAudioFormat?: "mp3" | "m4a" | "wav";
   // APIMart v6 inspo: ids of own finished tracks used as audio references
   inspirationTrackIds?: string[];
+  /** 0–100 (%). Mapped to inspo `audio_weight` 0.00–1.00. Default 20. */
+  inspoAudioWeight?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -378,7 +380,7 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
 const INSPO_AUDIO_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export async function dispatchApimartInspo(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, apimartVariety, apimartMaxMode, apimartAudioFormat, inspirationTrackIds } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, inspoAudioWeight, negativeTags, apimartVariety, apimartMaxMode, apimartAudioFormat, inspirationTrackIds } = ctx;
 
   const ids = [...new Set((inspirationTrackIds ?? []).filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4);
   if (ids.length === 0) throw new Error("Select 1–4 inspiration tracks");
@@ -401,6 +403,12 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
   }
 
   const studioLyrics = !instrumental && lyrics?.trim() ? lyrics.trim() : undefined;
+  // Dedicated inspo influence slider (0–100% → 0.00–1.00, default 20).
+  // Deliberately NOT falling back to the generic voice-clone audioWeight.
+  const inspoWeight01 =
+    typeof inspoAudioWeight === "number" && Number.isFinite(inspoAudioWeight)
+      ? Math.min(100, Math.max(0, Math.round(inspoAudioWeight))) / 100
+      : 0.2;
   const genResult = await createApimartInspo({
     audioUrls,
     version: providerModel || "v6",
@@ -410,7 +418,7 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
     negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined,
     styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined,
     weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined,
-    audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined,
+    audioWeight: inspoWeight01,
     vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined,
     variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined,
     maxMode: apimartMaxMode === true ? true : undefined,
@@ -427,6 +435,6 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
   const allTracks = [t1[0], t2[0]];
   spawnCoverArtBatchAsync(allTracks.map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "apimart");
 
-  await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: ids.length }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
+  await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: ids.length, audioWeight: inspoWeight01 }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
   return NextResponse.json({ tracks: allTracks });
 }

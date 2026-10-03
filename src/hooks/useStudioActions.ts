@@ -91,6 +91,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       apimartAudioFormat,
       inspiration,
       inspirationEnabled,
+      inspoAudioWeight,
     } = useStudioStore.getState();
 
     const providerEntries = Object.entries(selectedProviders);
@@ -190,6 +191,10 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               inspirationTrackIds:
                 provider === "apimart" && inspirationEnabled && inspiration.length > 0
                   ? inspiration.map((item) => item.id)
+                  : undefined,
+              inspirationAudioWeight:
+                provider === "apimart" && inspirationEnabled && inspiration.length > 0
+                  ? inspoAudioWeight
                   : undefined,
             }),
           }).then(async (res) => {

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags,
     personaId, artistName, writerName,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
-    inspirationTrackIds,
+    inspirationTrackIds, inspirationAudioWeight,
   } = body;
 
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
@@ -99,6 +99,10 @@ export async function POST(request: NextRequest) {
   if (normalizedInspirationTrackIds.length > 0 && (provider !== "apimart" || !isApimartV6Model(providerModel))) {
     return NextResponse.json({ error: "Inspiration requires APIMart v6" }, { status: 400 });
   }
+  const normalizedInspirationAudioWeight =
+    typeof inspirationAudioWeight === "number" && Number.isFinite(inspirationAudioWeight)
+      ? Math.min(100, Math.max(0, Math.round(inspirationAudioWeight)))
+      : 20;
   if (title !== undefined && title !== null && (typeof title !== "string" || title.length > 255)) {
     return NextResponse.json({ error: "title must be 255 characters or fewer" }, { status: 400 });
   }
@@ -125,6 +129,7 @@ export async function POST(request: NextRequest) {
     normalizedPoYoModel, isMinimaxViaPoYo,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
     inspirationTrackIds: normalizedInspirationTrackIds,
+    inspoAudioWeight: normalizedInspirationAudioWeight,
   };
 
   // Providers that manage their own track insertion

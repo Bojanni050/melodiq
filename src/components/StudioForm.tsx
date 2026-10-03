@@ -50,6 +50,8 @@ export default memo(function StudioForm({
     removeInspirationTrack,
     inspirationEnabled,
     setInspirationEnabled,
+    inspoAudioWeight,
+    setInspoAudioWeight,
     savedLyrics,
     savedLyricsLoaded,
     apimartVariety,
@@ -420,6 +422,32 @@ export default memo(function StudioForm({
         {inspoError && <p className="mt-2 text-xs text-red-400">{inspoError}</p>}
         {inspirationEnabled && inspiration.length > 0 && !inspoV6Ready && (
           <p className="mt-2 text-xs text-amber-300/80">{t("studio.inspirationV6Only")}</p>
+        )}
+
+        {inspirationEnabled && inspiration.length > 0 && (
+          <div className="mt-3 border-t border-white/10 pt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-white/60">{t("studio.inspirationAudioWeightLabel")}</label>
+              <span className="text-sm text-white/40 font-mono">
+                {inspoAudioWeight}% · {(inspoAudioWeight / 100).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={inspoAudioWeight}
+                onChange={(e) => setInspoAudioWeight(Number(e.target.value))}
+                className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                style={{
+                  background: `linear-gradient(to right, #8b5cf6 ${inspoAudioWeight}%, rgba(255,255,255,0.1) ${inspoAudioWeight}%)`,
+                }}
+                aria-label={t("studio.inspirationAudioWeightLabel")}
+              />
+            </div>
+            <p className="text-[10px] text-white/25 mt-1">{t("studio.inspirationAudioWeightHint")}</p>
+          </div>
         )}
       </section>
 

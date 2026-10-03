@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePlaylistStore, useReleaseStore, useSidebarStore, useWorkspaceStore, useStudioStore } from "@/lib/store";
 import { usePlayerStore } from "@/lib/store";
 import Sidebar from "@/components/Sidebar";
@@ -17,6 +17,29 @@ import { useStudioActions } from "@/hooks/useStudioActions";
 import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 import { useT } from "@/hooks/useT";
+
+const STUDIO_FORM_WIDTH_KEY = "melodiq-studio-form-width";
+const STUDIO_FORM_WIDTH_DEFAULT = 500;
+const STUDIO_FORM_WIDTH_MIN = 360;
+const STUDIO_FORM_WIDTH_MAX = 820;
+
+function clampFormWidth(value: number) {
+  if (!Number.isFinite(value)) return STUDIO_FORM_WIDTH_DEFAULT;
+  return Math.min(STUDIO_FORM_WIDTH_MAX, Math.max(STUDIO_FORM_WIDTH_MIN, Math.round(value)));
+}
+
+/** True on xl screens and up — the only breakpoint where the studio columns sit side by side. */
+function useXlBreakpoint() {
+  const [isXl, setIsXl] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1280px)");
+    setIsXl(query.matches);
+    const handler = (event: MediaQueryListEvent) => setIsXl(event.matches);
+    query.addEventListener("change", handler);
+    return () => query.removeEventListener("change", handler);
+  }, []);
+  return isXl;
+}
 
 export default function StudioPage() {
   const t = useT();
@@ -114,6 +137,50 @@ export default function StudioPage() {
 
   const rightPanelWidthFromStore = usePlayerStore((state) => state.rightPanelWidth);
 
+  const isXl = useXlBreakpoint();
+  const [formWidth, setFormWidth] = useState(() => {
+    try {
+      return clampFormWidth(Number(window.localStorage.getItem(STUDIO_FORM_WIDTH_KEY)));
+    } catch {
+      return STUDIO_FORM_WIDTH_DEFAULT;
+    }
+  });
+  const formColRef = useRef<HTMLDivElement>(null);
+
+  function startFormResize(e: React.MouseEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = formWidth;
+
+    const onMouseMove = (event: MouseEvent) => {
+      const next = clampFormWidth(startWidth + (event.clientX - startX));
+      // Write directly to the DOM — zero React re-renders while dragging
+      if (formColRef.current) {
+        formColRef.current.style.width = `${next}px`;
+      }
+    };
+
+    const onMouseUp = (event: MouseEvent) => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      // Single state + persist update when drag ends
+      const next = clampFormWidth(startWidth + (event.clientX - startX));
+      setFormWidth(next);
+      try {
+        window.localStorage.setItem(STUDIO_FORM_WIDTH_KEY, String(next));
+      } catch {
+        // ignore
+      }
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }
+
   return (
     <div className="h-screen bg-[#0a0a0f] overflow-hidden">
       <Sidebar credits={creditValue} />
@@ -124,8 +191,12 @@ export default function StudioPage() {
 
           <main className="p-4">
             <div className="flex flex-col xl:flex-row gap-6 xl:gap-8">
-              {/* Studio form */}
-              <div className="w-full xl:w-[500px] xl:min-w-[360px] xl:shrink xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]">
+              {/* Studio form (resizable on xl) */}
+              <div
+                ref={formColRef}
+                style={isXl ? { width: formWidth } : undefined}
+                className="relative w-full xl:w-auto xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]"
+              >
                 <StudioForm
                   credits={credits}
                   isGenerating={generating}
@@ -133,6 +204,16 @@ export default function StudioPage() {
                   onOptimize={handleOptimize}
                   onGenerateTitle={handleGenerateTitle}
                 />
+                {isXl && (
+                  <div
+                    className="absolute top-0 -right-4 bottom-0 w-2 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
+                    onMouseDown={startFormResize}
+                    title={t("studio.resizeFormColumn")}
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={t("studio.resizeFormColumn")}
+                  />
+                )}
               </div>
 
               {/* Track list column */}
