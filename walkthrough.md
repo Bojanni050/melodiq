@@ -1588,3 +1588,15 @@ pm run build � succesvol.
 - Findings: Artist page (/artist/[slug] en /discover/artist/[userId]) had geen manier om terug te gaan.
 - Conclusions: Witte terug-pijl linksboven in de nav, passend bij de donkere hero. router.back() met fallback naar /discover als er geen history is. In gedeelde ArtistPublicPage gezet zodat beide routes het krijgen.
 - Actions: `src/components/artist/ArtistPublicPage.tsx` — useRouter + handleBack + ronde witte pijl-knop linksboven naast "Official". Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-03 za (Artiest op My releases + overal klikbaar)
+
+- Findings: Op de My releases-pagina (/releases list-weergave, de "grote cover"-hero) stond geen artiest onder de titel; release-detail (/releases/[releaseId]) toonde evenmin een artiest. Artiestnamen waren bovendien lang niet overal klikbaar (TrackCard linkte altijd naar de eigen /discover/artist-pagina, ook voor tracks van anderen of zonder pagina).
+- Conclusions: Herbruikbare `ArtistLink`-component (link naar /artist/[slug] als er een artiestenpagina bestaat, anders fallback of platte tekst) met `useArtistSlugMap`-hook (één publieke fetch naar nieuwe GET /api/artists met alias+slug). Artiest onder de titel op list-hero (release.artistName, fallback eerste track), grid-card en detail-header; TrackCard, Discover-releases, Discover-release-detail en Explore gebruiken dezelfde link met fallback naar /discover/artist/[id].
+- Actions: nieuw `src/app/api/artists/route.ts`, `src/hooks/useArtistSlugMap.ts`, `src/components/artist/ArtistLink.tsx`; aangepast `src/app/releases/page.tsx`, `src/app/releases/[releaseId]/page.tsx`, `src/components/tracks/TrackCard.tsx`, `src/app/discover/releases/page.tsx`, `src/app/discover/release/[releaseId]/page.tsx`, `src/app/explore/page.tsx`. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-03 za ("Go to artist" negeerde artiestenpagina)
+
+- Findings: Vervolg op klikbare artiesten — het ⋮-menu-item "Go to artist" in TrackCard navigeerde altijd naar /discover/artist/[ownerId], ook als de artiest een eigen /artist/[slug]-pagina heeft. Voor aliassen van hetzelfde account (bv. Zora Zirkonia onder Bojans account) land je dan op de verkeerde pagina, want artistId is altijd de owner-user-id.
+- Conclusions: Zelfde slug-resolutie (useArtistSlugMap) hergebruiken voor het menu-item: slug bekend → /artist/[slug], anders fallback naar /discover/artist/[artistId] zoals voorheen.
+- Actions: `src/components/tracks/TrackCard.tsx` — artistPageSlug via resolveArtistSlug(track.artistName || artistAlias), onGoToArtist prefereert slug. Gevalideerd met `npm run build` (geslaagd); validated.

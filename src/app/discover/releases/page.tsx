@@ -5,6 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackDetail from "@/components/TrackDetail";
+import ArtistLink from "@/components/artist/ArtistLink";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
@@ -413,7 +414,7 @@ function DiscoverReleasesPageInner() {
                               {release.title}
                             </Link>
                             <p className="text-sm text-white/60">
-                              <span className="text-white/85 font-semibold">{release.artistName}</span>
+                              <ArtistLink name={release.artistName} className="text-white/85 font-semibold hover:underline hover:text-white" />
                               <span className="mx-1.5 text-white/25">·</span>
                               <span className="capitalize">{release.type}</span>
                               {year && (

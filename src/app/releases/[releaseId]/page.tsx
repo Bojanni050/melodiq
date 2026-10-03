@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
+import ArtistLink from "@/components/artist/ArtistLink";
 import CoverManager from "@/components/tracks/CoverManager";
 import ReleasePollManager from "@/components/releases/ReleasePollManager";
 import ResizablePanel from "@/components/studio/ResizablePanel";
@@ -357,6 +358,20 @@ export default function ReleaseDetailPage() {
                       {selectedRelease?.type}
                     </span>
                   </div>
+                  {(() => {
+                    const artistLabel =
+                      selectedRelease?.artistName?.trim() ||
+                      releaseTracks[0]?.artistName?.trim() ||
+                      "";
+                    return artistLabel ? (
+                      <div className="truncate">
+                        <ArtistLink
+                          name={artistLabel}
+                          className="text-sm font-semibold text-white/85 hover:underline hover:text-white"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
                   <p className="text-sm text-white/55">
                     {t("releases.tracksInRelease", {
                       count: releaseTracks.length,

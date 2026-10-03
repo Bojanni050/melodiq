@@ -7,6 +7,7 @@ import TrackCard from "@/components/tracks/TrackCard";
 import TrackDetail from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
+import ArtistLink from "@/components/artist/ArtistLink";
 import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore, useStudioStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
@@ -553,6 +554,11 @@ export default function ReleasesPage() {
                               )}
                               <span className="truncate">{release.title}</span>
                             </h3>
+                            {(release.artistName?.trim()) && (
+                              <div className="truncate text-sm text-white/85" onClick={(e) => e.stopPropagation()}>
+                                <ArtistLink name={release.artistName} className="font-medium hover:underline" />
+                              </div>
+                            )}
                             <p className="text-sm text-white/75">{release.tracks.length} {t("releases.tracks")}{release.kind ? ` · ${release.kind}` : ""}</p>
                           </div>
                         </div>
@@ -655,6 +661,20 @@ export default function ReleasesPage() {
                               )}
                               <span className="truncate">{release.title}</span>
                             </button>
+                            {(() => {
+                              const artistLabel =
+                                release.artistName?.trim() ||
+                                releaseTrackItems[0]?.artistName?.trim() ||
+                                "";
+                              return artistLabel ? (
+                                <div className="truncate">
+                                  <ArtistLink
+                                    name={artistLabel}
+                                    className="text-sm font-semibold text-white/85 hover:underline hover:text-white"
+                                  />
+                                </div>
+                              ) : null;
+                            })()}
                             <p className="text-sm text-white/60">
                               <span className="capitalize">{release.type}</span>
                               {release.kind && (

@@ -2,6 +2,8 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
+import ArtistLink from "@/components/artist/ArtistLink";
+import { resolveArtistSlug, useArtistSlugMap } from "@/hooks/useArtistSlugMap";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, selectionModeFromEvent, type Workspace, type SelectionMode } from "@/lib/store";
@@ -98,6 +100,8 @@ const TrackCard = memo(function TrackCard({
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
   const router = useRouter();
+  const artistSlugMap = useArtistSlugMap();
+  const artistPageSlug = resolveArtistSlug(artistSlugMap, track.artistName || artistAlias);
   // Indexed lookup rather than a scan per card — see trackIndexes.ts.
   const trackPlaylist = usePlaylistStore(
     (state) => playlistByTrackId(state.playlists).get(track.id) ?? null
@@ -953,17 +957,21 @@ const TrackCard = memo(function TrackCard({
               </button>
             </div>
           ) : (
-            <p
+            <div
               className="text-xs text-white/50 hover:text-primary-300 mt-0.5 truncate cursor-pointer select-none transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (user?.id) router.push(`/discover/artist/${user.id}`);
-              }}
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
               title={track.artistName ? "Click to view artist page · double-click to edit" : "Click to view artist page · double-click to add artist name"}
             >
-              {track.artistName || artistAlias || <span className="italic opacity-50">no artist — double-click to add</span>}
-            </p>
+              {track.artistName || artistAlias ? (
+                <ArtistLink
+                  name={track.artistName || artistAlias}
+                  fallbackHref={track.artistId ? `/discover/artist/${track.artistId}` : user?.id ? `/discover/artist/${user.id}` : null}
+                  className="hover:text-primary-300 transition-colors"
+                />
+              ) : (
+                <span className="italic opacity-50">no artist — double-click to add</span>
+              )}
+            </div>
           )}
 
           {/* Mobile Download Buttons Row */}
@@ -1157,7 +1165,13 @@ const TrackCard = memo(function TrackCard({
               onRegenerateTclClick={canRegenerateTcl ? () => setConfirmRegenerateTcl(true) : undefined}
               generatingTcl={generatingTcl}
               isListener={isListenerRole}
-              onGoToArtist={track.artistId ? () => router.push(`/discover/artist/${track.artistId}`) : undefined}
+              onGoToArtist={
+                artistPageSlug
+                  ? () => router.push(`/artist/${artistPageSlug}`)
+                  : track.artistId
+                    ? () => router.push(`/discover/artist/${track.artistId}`)
+                    : undefined
+              }
             />
           )}
           {isOwner && (

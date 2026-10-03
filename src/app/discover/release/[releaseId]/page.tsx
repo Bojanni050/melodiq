@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
+import ArtistLink from "@/components/artist/ArtistLink";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import {
   usePlayerStore,
@@ -258,7 +259,7 @@ export default function PublicReleasePage() {
                     {release?.title}
                   </h1>
                   <p className="text-sm text-white/60">
-                    <span className="text-white/85 font-semibold">{release?.artistName}</span>
+                    <ArtistLink name={release?.artistName} className="text-white/85 font-semibold hover:underline hover:text-white" />
                     {releaseTracks.length > 0 && (
                       <>
                         {" "}

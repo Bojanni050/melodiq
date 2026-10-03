@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import ArtistLink from "@/components/artist/ArtistLink";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
@@ -174,14 +175,16 @@ export default function ExplorePage() {
                       {track.title}
                     </Link>
                     {track.artistId ? (
-                      <Link
-                        href={`/discover/artist/${track.artistId}`}
+                      <ArtistLink
+                        name={track.artistName || "Unknown Artist"}
+                        fallbackHref={`/discover/artist/${track.artistId}`}
                         className="block truncate text-sm text-white/45 hover:text-primary-300 transition-colors"
-                      >
-                        {track.artistName || "Unknown Artist"}
-                      </Link>
+                      />
                     ) : (
-                      <p className="truncate text-sm text-white/45">{track.artistName || "Unknown Artist"}</p>
+                      <ArtistLink
+                        name={track.artistName || "Unknown Artist"}
+                        className="block truncate text-sm text-white/45 hover:text-primary-300 transition-colors"
+                      />
                     )}
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-white/35">
