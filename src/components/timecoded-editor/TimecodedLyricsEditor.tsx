@@ -27,6 +27,7 @@ import {
 } from "@/lib/timecoded-editor/SearchService";
 
 import AIToolbar, { type AIEditAction } from "./AIToolbar";
+import TceBackButton from "./TceBackButton";
 import DiffViewer from "./DiffViewer";
 import EditorTable from "./EditorTable";
 import ExportPanel from "./ExportPanel";
@@ -445,6 +446,7 @@ export default function TimecodedLyricsEditor({
         {/* ── Top bar ─────────────────────── */}
         <div className="tce-topbar">
           <div className="tce-topbar__left">
+            <TceBackButton />
             <h1 className="tce-title">
               <span className="tce-title__icon">🎵</span>
               Timecoded Lyrics Editor

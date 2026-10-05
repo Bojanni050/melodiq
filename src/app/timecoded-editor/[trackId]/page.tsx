@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import TimecodedLyricsEditor from "@/components/timecoded-editor/TimecodedLyricsEditor";
 import GenerateTclButton from "@/components/timecoded-editor/GenerateTclButton";
+import TceBackButton from "@/components/timecoded-editor/TceBackButton";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/db";
 import { tracks, users, trackAlignments } from "@/db/schema";
@@ -76,6 +77,9 @@ export default async function TimecodedEditorTrackPage({ params }: Props) {
     return (
       <div className="tce-root">
         <div className="tce-generate-shell">
+          <div className="tce-generate-shell__top">
+            <TceBackButton />
+          </div>
           <h1 className="tce-title">
             <span className="tce-title__icon">🎵</span>
             Timecoded Lyrics Editor

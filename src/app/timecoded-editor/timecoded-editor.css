@@ -80,6 +80,25 @@
   font-family: ui-monospace, monospace;
 }
 
+.tce-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--tce-border-strong, rgba(255, 255, 255, 0.25));
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.9);
+  transition: background 150ms;
+}
+
+.tce-back-btn:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
 /* ── Icon buttons ─────────────────────────────────────────────── */
 .tce-icon-btn {
   display: flex;
@@ -1172,6 +1191,12 @@ mark.tce-match-active {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.03);
+}
+
+.tce-generate-shell__top {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.25rem;
 }
 
 .tce-generate-shell p {
