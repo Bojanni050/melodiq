@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStudioStore } from "@/lib/store";
-import { buildReusePayload, type ReuseScope } from "@/lib/reuse-prompt";
+import { buildReusePayload, type ReuseScope, type ReuseTrack } from "@/lib/reuse-prompt";
 
 export const REUSE_PROMPT_STORAGE_KEY = "melodiq-reuse-prompt-payload";
 
@@ -23,11 +23,11 @@ export const REUSE_PROMPT_STORAGE_KEY = "melodiq-reuse-prompt-payload";
  */
 export function useReusePrompt() {
   const router = useRouter();
-  const [pendingReuse, setPendingReuse] = useState<{ track: { prompt?: string | null; lyrics?: string | null }; scope: ReuseScope } | null>(null);
+  const [pendingReuse, setPendingReuse] = useState<{ track: ReuseTrack; scope: ReuseScope } | null>(null);
 
   /** Writes the payload and navigates. Safe to call directly once confirmed. */
   const performReuse = useCallback(
-    (track: { prompt?: string | null; lyrics?: string | null }, scope: ReuseScope) => {
+    (track: ReuseTrack, scope: ReuseScope) => {
       sessionStorage.setItem(REUSE_PROMPT_STORAGE_KEY, JSON.stringify(buildReusePayload(track, scope)));
       router.push("/studio");
     },
@@ -41,7 +41,7 @@ export function useReusePrompt() {
    */
   const handleReusePrompt = useCallback(
     (
-      track: { prompt?: string | null; lyrics?: string | null },
+      track: ReuseTrack,
       scope: ReuseScope = "both",
       options?: { confirm?: (message: string) => boolean }
     ) => {

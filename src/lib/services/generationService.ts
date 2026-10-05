@@ -19,6 +19,7 @@ import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
 import {
   insertPendingTrack,
+  normalizeVocalGender,
   reserveTrackS3Keys,
   markTrackGenerating,
   markTrackDone,
@@ -75,9 +76,9 @@ function copyrightError(error: any) {
 // ---------------------------------------------------------------------------
 
 export async function dispatchMinimaxViaPoYo(ctx: GenerationContext): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
 
-  const track = await insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName });
+  const track = await insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) });
   const reserved = await reserveTrackS3Keys(track.id!);
 
   try {
@@ -106,8 +107,8 @@ export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse
   const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence } = ctx;
 
   const [track1, track2] = await Promise.all([
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName }),
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName }),
+    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
   ]);
 
   const [reserved1, reserved2] = await Promise.all([
@@ -236,7 +237,7 @@ export async function dispatchMinimax(ctx: GenerationContext, track: any): Promi
 // ---------------------------------------------------------------------------
 
 export async function dispatchTempolor(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
 
   const genResult = await generateTempolor({ prompt, lyrics, instrumental, model: providerModel });
   const jobIds: string[] = genResult.jobIds;
@@ -245,7 +246,7 @@ export async function dispatchTempolor(ctx: GenerationContext, track: any): Prom
 
   const extraInserted = await Promise.all(
     jobIds.slice(1).map((jobId) =>
-      db.insert(tracks).values({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId }).returning().then((r) => r[0])
+      db.insert(tracks).values({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId }).returning().then((r) => r[0])
     )
   );
 
@@ -267,7 +268,7 @@ export async function dispatchMusicGpt(ctx: GenerationContext, track: any): Prom
   const genResult = await generateMusicGpt({ prompt, lyrics, instrumental, gender: vocalGender && vocalGender !== "auto" ? vocalGender : "", webhookUrl });
 
   const updated = await db.update(tracks).set({ status: "generating", jobId: genResult.taskId, conversionId: genResult.conversionId1 }).where(eq(tracks.id, track.id!)).returning();
-  const track2 = await db.insert(tracks).values({ userId, provider: "musicgpt", providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: genResult.taskId, conversionId: genResult.conversionId2 }).returning();
+  const track2 = await db.insert(tracks).values({ userId, provider: "musicgpt", providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: genResult.taskId, conversionId: genResult.conversionId2 }).returning();
 
   const allTracks = [updated[0], track2[0]];
   spawnCoverArtBatchAsync(allTracks.map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "musicgpt");
@@ -281,14 +282,14 @@ export async function dispatchMusicGpt(ctx: GenerationContext, track: any): Prom
 // ---------------------------------------------------------------------------
 
 export async function dispatchMureka(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
 
   const murekaWebhookUrl = await getWebhookUrl("mureka");
   const genResult = await generateMureka({ lyrics: instrumental ? undefined : lyrics, prompt: prompt || undefined, numberOfSongs: 2, outputFormat: "mp3", webhookUrl: murekaWebhookUrl || undefined, instrumental: instrumental || false });
 
   const [t1, t2] = await Promise.all([
     db.update(tracks).set({ status: "generating", jobId: genResult.requestId }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "mureka", providerModel: "mureka-v9", prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: `${genResult.requestId}:1` }).returning(),
+    db.insert(tracks).values({ userId, provider: "mureka", providerModel: "mureka-v9", prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: `${genResult.requestId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];
@@ -320,7 +321,7 @@ export async function dispatchHeartMula(ctx: GenerationContext, track: any): Pro
 // ---------------------------------------------------------------------------
 
 export async function dispatchApiframe(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
 
   const genResult = await generateApiframe({ prompt, lyrics: instrumental ? undefined : (lyrics || undefined), instrumental, model: providerModel, title: resolvedTitle || undefined });
   const modelCode = providerModel?.toLowerCase() || "";
@@ -330,7 +331,7 @@ export async function dispatchApiframe(ctx: GenerationContext, track: any): Prom
   if (isMultiSong) {
     const [t1, t2] = await Promise.all([
       db.update(tracks).set({ status: "generating", jobId: genResult.jobId }).where(eq(tracks.id, track.id!)).returning(),
-      db.insert(tracks).values({ userId, provider: "apiframe", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: `${genResult.jobId}:1` }).returning(),
+      db.insert(tracks).values({ userId, provider: "apiframe", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: `${genResult.jobId}:1` }).returning(),
     ]);
     allTracks = [t1[0], t2[0]];
   } else {
@@ -363,7 +364,7 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
 
   const [t1, t2] = await Promise.all([
     db.update(tracks).set({ status: "generating", jobId: genResult.taskId }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];
@@ -429,7 +430,7 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
   // existing APIMart completion polling in GET /api/tracks picks these up.
   const [t1, t2] = await Promise.all([
     db.update(tracks).set({ status: "generating", jobId: genResult.taskId }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];

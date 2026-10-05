@@ -119,6 +119,9 @@ export const tracks = pgTable("tracks", {
   translatedLyrics: text("translated_lyrics"),
   translatedLanguage: varchar("translated_language", { length: 50 }),
   instrumental: boolean("instrumental").default(false).notNull(),
+  // Vocal gender chosen at generation ("female" | "male"; null = auto/unknown,
+  // e.g. pre-migration tracks). Restored into the Studio by Reuse Prompt.
+  vocalGender: varchar("vocal_gender", { length: 10 }),
   isCollaboration: boolean("is_collaboration").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),

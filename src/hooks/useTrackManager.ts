@@ -35,6 +35,7 @@ export interface Track {
   composerName?: string | null;
   writerName?: string | null;
   instrumental?: boolean | null;
+  vocalGender?: string | null;
   language?: string | null;
   releaseStatus?: string | null;
   publishDate?: string | null;

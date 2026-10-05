@@ -19,8 +19,8 @@ import { useTrackPlayer } from "@/hooks/useTrackPlayer";
 import { useT } from "@/hooks/useT";
 
 const STUDIO_FORM_WIDTH_KEY = "melodiq-studio-form-width";
-const STUDIO_FORM_WIDTH_DEFAULT = 500;
-const STUDIO_FORM_WIDTH_MIN = 360;
+const STUDIO_FORM_WIDTH_DEFAULT = 560; // 35rem
+const STUDIO_FORM_WIDTH_MIN = 560; // 35rem
 const STUDIO_FORM_WIDTH_MAX = 820;
 
 function clampFormWidth(value: number) {
@@ -119,10 +119,12 @@ export default function StudioPage() {
       const reuseRaw = sessionStorage.getItem("melodiq-reuse-prompt-payload");
       if (reuseRaw) {
         sessionStorage.removeItem("melodiq-reuse-prompt-payload");
-        const payload = JSON.parse(reuseRaw) as { songIdea: string; lyrics: string };
+        const payload = JSON.parse(reuseRaw) as { songIdea: string; lyrics: string; title?: string; vocalGender?: "female" | "male" };
         const studio = useStudioStore.getState();
         studio.setSongIdea(payload.songIdea);
         studio.setLyrics(payload.lyrics);
+        if (typeof payload.title === "string" && payload.title.trim()) studio.setTitle(payload.title.trim());
+        if (payload.vocalGender === "female" || payload.vocalGender === "male") studio.setVocalGender(payload.vocalGender);
       }
     } catch {
       // ignore
@@ -182,7 +184,7 @@ export default function StudioPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="h-screen bg-canvas overflow-hidden">
       <Sidebar credits={creditValue} />
 
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-hidden flex flex-col lg:flex-row" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -190,12 +192,12 @@ export default function StudioPage() {
           <NoticeBar notice={notice} onClose={() => setNotice(null)} />
 
           <main className="p-4">
-            <div className="flex flex-col xl:flex-row gap-6 xl:gap-8">
+            <div className="flex flex-col xl:flex-row gap-6 xl:gap-4">
               {/* Studio form (resizable on xl) */}
               <div
                 ref={formColRef}
                 style={isXl ? { width: formWidth } : undefined}
-                className="relative w-full xl:w-auto xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]"
+                className="relative w-full xl:w-auto xl:min-w-[35rem] xl:shrink-0 xl:self-start xl:sticky xl:top-4 xl:h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px)-32px)]"
               >
                 <StudioForm
                   credits={credits}
@@ -206,7 +208,7 @@ export default function StudioPage() {
                 />
                 {isXl && (
                   <div
-                    className="absolute top-0 -right-4 bottom-0 w-2 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
+                    className="absolute top-0 -right-3 bottom-0 w-2 cursor-col-resize bg-transparent hover:bg-white/10 transition-colors"
                     onMouseDown={startFormResize}
                     title={t("studio.resizeFormColumn")}
                     role="separator"
@@ -296,8 +298,8 @@ export default function StudioPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">{t("common.trackDetails")}</h3>
                 <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
               </div>
             )}

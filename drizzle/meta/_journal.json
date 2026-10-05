@@ -71,6 +71,13 @@
       "when": 1790802013380,
       "tag": "0009_artist_pages",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791034223538,
+      "tag": "0010_graceful_harpoon",
+      "breakpoints": true
     }
   ]
 }

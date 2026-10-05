@@ -36,6 +36,24 @@ describe("buildReusePayload", () => {
     });
     expect(buildReusePayload({}, "both")).toEqual({ songIdea: "", lyrics: "" });
   });
+
+  it("carries title and vocal gender in every scope when the track has them", () => {
+    const rich = { ...track, title: "Midnight Drive", vocalGender: "female" };
+    for (const scope of ["lyrics", "style", "both"] as ReuseScope[]) {
+      const payload = buildReusePayload(rich, scope);
+      expect(payload.title).toBe("Midnight Drive");
+      expect(payload.vocalGender).toBe("female");
+    }
+  });
+
+  it("omits title and vocal gender when unknown, so Studio keeps its values", () => {
+    // Pre-migration tracks stored no vocal gender; an absent key must leave
+    // the Studio's current selection alone rather than resetting it.
+    expect(buildReusePayload(track, "both")).not.toHaveProperty("title");
+    expect(buildReusePayload(track, "both")).not.toHaveProperty("vocalGender");
+    expect(buildReusePayload({ ...track, title: "  ", vocalGender: "auto" }, "both")).not.toHaveProperty("title");
+    expect(buildReusePayload({ ...track, title: "  ", vocalGender: "auto" }, "both")).not.toHaveProperty("vocalGender");
+  });
 });
 
 describe("REUSE_SCOPE_LABEL", () => {

@@ -285,6 +285,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
+    const title = typeof track.title === "string" ? track.title.trim() : "";
+    if (title) studio.setTitle(title);
+    if (track.vocalGender === "female" || track.vocalGender === "male") studio.setVocalGender(track.vocalGender);
   }, []);
 
   return {

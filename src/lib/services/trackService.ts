@@ -24,7 +24,13 @@ export type TrackInsertParams = {
   formatHd?: "mp3" | "wav" | "flac" | "ogg";
   audioUrl?: string;
   audioUrlHd?: string;
+  vocalGender?: string | null;
 };
+
+/** Generation-time vocal choice. "auto" (model picks) stores as null = unknown. */
+export function normalizeVocalGender(value: unknown): "female" | "male" | null {
+  return value === "female" || value === "male" ? value : null;
+}
 
 /** Insert a new track row with status "pending". */
 export async function insertPendingTrack(params: Omit<TrackInsertParams, "status">) {
@@ -40,6 +46,7 @@ export async function insertPendingTrack(params: Omit<TrackInsertParams, "status
       title: params.title,
       artistName: params.artistName,
       writerName: params.writerName,
+      vocalGender: params.vocalGender ?? null,
       jobId: params.jobId,
       conversionId: params.conversionId,
       status: "pending" as const,

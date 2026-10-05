@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
     language: tracks.language,
     translatedLanguage: tracks.translatedLanguage,
     instrumental: tracks.instrumental,
+    vocalGender: tracks.vocalGender,
     isCollaboration: tracks.isCollaboration,
     status: tracks.status,
     audioUrl: tracks.audioUrl,

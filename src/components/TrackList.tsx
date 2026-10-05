@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackListHeader from "@/components/tracks/TrackListHeader";
@@ -68,6 +69,7 @@ export default memo(function TrackList({
   const [currentTrackVisible, setCurrentTrackVisible] = useState(true);
   const moveTrackToWorkspace = useWorkspaceStore((state) => state.moveTrackToWorkspace);
   const workspaces = useWorkspaceStore((state) => state.workspaces);
+  const router = useRouter();
 
   const workspaceById = useMemo(
     () => new Map(workspaces.map((w) => [w.id, w])),
@@ -96,6 +98,30 @@ export default memo(function TrackList({
     });
     return map;
   }, [workspaces, workspaceById]);
+
+  // Optimistic workspace chip: the store's trackIds membership updates
+  // instantly on move, while the page-owned track objects only learn their
+  // new workspaceId on the next refetch. Overlaying here makes the chip on
+  // the row appear immediately, without touching TrackCard's rule that a
+  // workspace is only ever matched via track.workspaceId. Server truth still
+  // wins on refetch (track.workspaceId short-circuits the overlay).
+  const optimisticWorkspaceOverlayById = useMemo(() => {
+    const membership = new Map<string, string>();
+    for (const workspace of workspaces) {
+      if (workspace.isDefault) continue;
+      for (const id of workspace.trackIds) {
+        if (!membership.has(id)) membership.set(id, workspace.id);
+      }
+    }
+    const overlay = new Map<string, TrackItem>();
+    for (const track of tracks) {
+      if (!track.workspaceId) {
+        const workspaceId = membership.get(track.id);
+        if (workspaceId) overlay.set(track.id, { ...track, workspaceId });
+      }
+    }
+    return overlay;
+  }, [tracks, workspaces]);
 
   // Connect to Zustand Selection Store stable actions
   const setSelectedIds = useSelectionStore((state) => state.setSelectedIds);
@@ -394,8 +420,8 @@ export default memo(function TrackList({
       const el = document.querySelector(`[data-track-id="${trackId}"]`);
       if (!el) return false;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("ring-2", "ring-primary-500/40", "rounded-xl");
-      window.setTimeout(() => el.classList.remove("ring-2", "ring-primary-500/40", "rounded-xl"), 1500);
+      el.classList.add("ring-2", "ring-accent/40", "");
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-accent/40", ""), 1500);
       return true;
     }
     function handleScrollToTrack(event: Event) {
@@ -588,13 +614,18 @@ export default memo(function TrackList({
       moveTrackToWorkspace(workspaceId, trackId);
     });
 
-    // Call once for navigation / server-side workspace selection
+    // Call once for page-level handling (e.g. Studio selects the workspace)
     onMoveToWorkspace?.(sourceTrackId, workspaceId);
 
     if (moveIds.length > 1) {
       setSelectedIds(new Set());
     }
-  }, [moveTrackToWorkspace, onMoveToWorkspace, setSelectedIds]);
+
+    // Show the change and where the track went: select the workspace and
+    // navigate to it, so the moved track is visible there right away.
+    useWorkspaceStore.getState().setSelectedWorkspaceId(workspaceId);
+    router.push(`/workspaces/${workspaceId}`);
+  }, [moveTrackToWorkspace, onMoveToWorkspace, setSelectedIds, router]);
 
   const handlePlay = useCallback((track: TrackItem) => {
     if (autoQueueAfterPlay) {
@@ -870,21 +901,21 @@ export default memo(function TrackList({
         />
       )}
       {archiveResults && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] rounded-xl border border-white/10 bg-[#1a1a2e] shadow-2xl p-4 flex flex-col gap-2">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)]  border border-line bg-surface shadow-2xl p-4 flex flex-col gap-2">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-ink-muted">
               Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
               {archiveResults.failed.length > 0 && ` ${archiveResults.failed.length} failed.`}
             </p>
             <button
               onClick={clearArchiveResults}
-              className="text-white/40 hover:text-white/70 transition-colors shrink-0"
+              className="text-ink-dim hover:text-ink-muted transition-colors shrink-0"
             >
               ✕
             </button>
           </div>
           {archiveResults.failed.length > 0 && (
-            <ul className="text-xs text-white/50 space-y-1">
+            <ul className="text-xs text-ink-dim space-y-1">
               {archiveResults.failed.map((f) => (
                 <li key={f.trackId}>
                   {f.title}: {f.message}
@@ -895,21 +926,21 @@ export default memo(function TrackList({
         </div>
       )}
       {hideResults && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] rounded-xl border border-white/10 bg-[#1a1a2e] shadow-2xl p-4 flex flex-col gap-2">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)]  border border-line bg-surface shadow-2xl p-4 flex flex-col gap-2">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-ink-muted">
               Hid {hideResults.hiddenCount} track{hideResults.hiddenCount === 1 ? "" : "s"}. All audio files kept — restore them from the Archive tab.
               {hideResults.failed.length > 0 && ` ${hideResults.failed.length} failed.`}
             </p>
             <button
               onClick={clearHideResults}
-              className="text-white/40 hover:text-white/70 transition-colors shrink-0"
+              className="text-ink-dim hover:text-ink-muted transition-colors shrink-0"
             >
               ✕
             </button>
           </div>
           {hideResults.failed.length > 0 && (
-            <ul className="text-xs text-white/50 space-y-1">
+            <ul className="text-xs text-ink-dim space-y-1">
               {hideResults.failed.map((f) => (
                 <li key={f.trackId}>
                   {f.title}: {f.message}
@@ -972,7 +1003,7 @@ export default memo(function TrackList({
             <button
               type="button"
               onClick={scrollToTop}
-              className="pointer-events-auto flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary-500 text-white text-sm font-semibold shadow-xl hover:bg-primary-600 transition-all hover:scale-105 active:scale-95 border border-primary-400/40"
+              className="pointer-events-auto flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-accent text-ink text-sm font-semibold shadow-xl hover:bg-accent-strong transition-all hover:scale-105 active:scale-95 border border-accent/40"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -988,10 +1019,10 @@ export default memo(function TrackList({
 
         {paginatedTracks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <svg className="w-12 h-12 text-white/10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-ink-dim mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
-            <p className="text-white/30 text-sm">
+            <p className="text-ink-dim text-sm">
               {tracks.length > 0 && searchQuery.trim().length > 0 ? "No tracks match your search" : "No tracks yet"}
             </p>
           </div>
@@ -1009,10 +1040,10 @@ export default memo(function TrackList({
                   onDragLeave={handleTrackDragLeave}
                   onDrop={(event) => handleTrackDrop(event, track.id)}
                   onDragEnd={handleTrackDragEnd}
-                  className={canDragReorder ? "rounded-xl border border-transparent transition-colors" : undefined}
+                  className={canDragReorder ? " border border-transparent transition-colors" : undefined}
                 >
                   <TrackCard
-                    track={track}
+                    track={optimisticWorkspaceOverlayById.get(track.id) ?? track}
                     onPlay={handlePlay}
                     onSelect={onSelect}
                     onDelete={onDelete}
@@ -1040,7 +1071,7 @@ export default memo(function TrackList({
             {/* Sentinel for infinite scroll */}
             {visibleCount < displayedTracks.length && (
               <div ref={loadMoreSentinelRef} className="h-8 w-full flex items-center justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-line/20 border-t-white/60" />
               </div>
             )}
           </>
@@ -1052,7 +1083,7 @@ export default memo(function TrackList({
           <button
             type="button"
             onClick={scrollToTop}
-            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#11121a]/90 text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-muted shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-line hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
             title="Scroll to top"
             aria-label="Scroll to top"
           >

@@ -1,0 +1,1 @@
+ALTER TABLE "tracks" ADD COLUMN "vocal_gender" varchar(10);

@@ -8,7 +8,7 @@ import { validateProviderApiKeys } from "@/lib/settings";
 import { users } from "@/db/schema";
 import { checkRateLimit } from "@/lib/services/rateLimitService";
 import { resolveTrackTitle } from "@/lib/services/titleService";
-import { insertPendingTrack, markTrackFailed } from "@/lib/services/trackService";
+import { insertPendingTrack, markTrackFailed, normalizeVocalGender } from "@/lib/services/trackService";
 import { logApi } from "@/lib/logger";
 import {
   dispatchMinimaxViaPoYo,
@@ -141,6 +141,7 @@ export async function POST(request: NextRequest) {
     userId, provider, providerModel, prompt, lyrics: lyrics || null,
     instrumental: instrumental || false, title: resolvedTitle,
     artistName: resolvedArtistName, writerName: resolvedWriterName,
+    vocalGender: normalizeVocalGender(vocalGender),
   });
 
   try {

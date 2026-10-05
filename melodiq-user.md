@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202610031518**
+**Versie: 202610031541**
 
 > AI Music Generation Web App
 
@@ -208,6 +208,7 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - Workspace folder cards in Studio are now fully clickable across the full card surface
 - The selected workspace section on the Workspaces page now uses the same playable **TrackList** component as other pages
 - Moving a track to a workspace from **Recent Tracks** now immediately opens/focuses that target workspace in Studio
+- **Move To Workspace** laat de verandering nu direct zien én brengt je erheen: de workspace-chip verschijnt meteen op de track en je gaat automatisch naar die workspace, zodat de track daar staat
 - If multiple tracks are selected in a track list, **Move To Workspace** applies to all selected tracks (tracks already in that workspace are skipped silently)
 - Moving a track to a workspace that already contains it is now silently skipped (no duplicate assignment)
 - Track listings now show which workspace each track belongs to
@@ -409,6 +410,7 @@ De pagina **Slim Archief** (sidebar) groepeert tracks met vergelijkbare lyrics, 
   - **Both** — prompt én lyrics, zoals het altijd werkte
 
   Staan er al tekstvelden gevuld in de Studio, dan vraagt het eerst of die mogen worden overschreven. Het submenu is er nu ook in Library, Playlists, Archief en Releases.
+- **Reuse Prompt neemt nu ook de titel en vocal gender mee**: de Studio-titel wordt gevuld met de tracktitel en de Vocal Gender-selectie (Vrouw/Man) wordt overgenomen. De gender wordt alleen gezet als de track hem kent — bij generatie opgeslagen; oudere tracks hebben hem niet, dan blijft je huidige keuze staan.
 - Klik op de **titel** van een track om rechts het **Track Details**-paneel te openen, met hetzelfde uiterlijk en dezelfde gegevens als elders in de app: cover, titel, artiest, lyrics, prompt en de metadata. De titel is nu een aan/uit-knop; **Library** ernaast springt nog steeds direct naar de track in de Library. Het paneel is versleepbaar en alleen zichtbaar op een breed scherm.
 - In dat paneel staat na de taal ook **met welke generator de track is gemaakt** (bijv. "Suno 5.5", "Lyria 3", "Mureka 9"). Interne namen worden daarvoor vertaald: `poyo` + `V5_5` heet hier "Suno 5.5", want PoYo is de API achter Suno. Staat er geen model bij, dan wordt alleen de generator genoemd; is ook die onbekend dan blijft de regel weg.
 - **Mislukte tracks** staan nooit in Slim Archief: ze hebben geen audio om op te vergelijken en vormen dus nooit een groep. Ze staan in de **Library**, waar je ze in één keer kunt opruimen met de knop **"N mislukt verwijderen"** boven de tracklijst. Die verdwijnt vanzelf als er geen mislukte tracks zijn. De tracks gaan naar de prullenbak, niet permanent weg — je herstelt ze vanuit het Archief-tabblad.
