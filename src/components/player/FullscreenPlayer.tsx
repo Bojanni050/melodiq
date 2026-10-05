@@ -387,7 +387,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={toggleBgZoom}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
               title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,7 +397,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={() => setVisualizerEnabled(!visualizerEnabled)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
               title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,7 +406,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={() => setLyricsVisible((v) => !v)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
               title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,21 +434,21 @@ export default function FullscreenPlayer({
             >
               <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                 {outgoingVisual.coverUrl ? (
-                  <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                  <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                 ) : (
-                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 border border-white/10" />
+                  <div className="w-full h-full bg-surface-2 border border-line" />
                 )}
               </div>
               <div className="text-center mt-4">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">{outgoingVisual.title}</h3>
-                {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-white/50">{outgoingVisual.artist}</p>}
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-ink leading-snug">{outgoingVisual.title}</h3>
+                {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-ink-muted">{outgoingVisual.artist}</p>}
                 {outgoingVisual.publishDate && (
-                  <p className="mt-1 text-xs text-white/40">
+                  <p className="mt-1 text-xs text-ink-dim">
                     {new Date(outgoingVisual.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </p>
                 )}
-                {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">writer: {outgoingVisual.writerName}</p>}
-                {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">composer: {outgoingVisual.composerName}</p>}
+                {outgoingVisual.writerName && <p className="mt-1 text-xs text-ink-dim">writer: {outgoingVisual.writerName}</p>}
+                {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-ink-dim">composer: {outgoingVisual.composerName}</p>}
               </div>
             </div>
           )}
@@ -461,30 +461,30 @@ export default function FullscreenPlayer({
                   <img
                     src={coverUrl}
                     alt="Album art"
-                    className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]"
+                    className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]"
                   />
                 ) : (
-                  <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                    <svg className="w-16 h-16 lg:w-24 lg:h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line">
+                    <svg className="w-16 h-16 lg:w-24 lg:h-24 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
                 )}
               </div>
               <div className="text-center mt-4">
-                <h3 className={`font-semibold text-white/90 leading-snug transition-all duration-500 ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
+                <h3 className={`font-semibold text-ink leading-snug transition-all duration-500 ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
                   {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                 </h3>
-                {artistLabel && <p className={`mt-1 text-white/50 transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>{artistLabel}</p>}
+                {artistLabel && <p className={`mt-1 text-ink-muted transition-all duration-500 ${showLyrics && lyricsVisible ? "text-sm" : "text-sm sm:text-base"}`}>{artistLabel}</p>}
                 {currentTrack?.publishDate && (
-                  <p className="mt-1 text-xs text-white/40">
+                  <p className="mt-1 text-xs text-ink-dim">
                     {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </p>
                 )}
-                {writerLabel && <p className="mt-1 text-xs text-white/40">writer: {writerLabel}</p>}
-                {composerLabel && <p className="mt-0.5 text-xs text-white/40">composer: {composerLabel}</p>}
+                {writerLabel && <p className="mt-1 text-xs text-ink-dim">writer: {writerLabel}</p>}
+                {composerLabel && <p className="mt-0.5 text-xs text-ink-dim">composer: {composerLabel}</p>}
                 {currentTrack?.duration ? (
-                  <p className="mt-1 text-xs text-white/35">{formatDuration(currentTrack.duration)}</p>
+                  <p className="mt-1 text-xs text-ink-dim">{formatDuration(currentTrack.duration)}</p>
                 ) : null}
               </div>
             </div>
@@ -499,29 +499,29 @@ export default function FullscreenPlayer({
                   <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
                     <div className="w-56 h-56 sm:w-64 sm:h-64 lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] relative transition-all duration-500">
                       {coverUrl ? (
-                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                       ) : (
-                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                          <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line">
+                          <svg className="w-12 h-12 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                         </div>
                       )}
                     </div>
                     <div className="text-center max-w-sm mt-4">
-                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-white/90 leading-snug">
+                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-ink leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {artistLabel && <p className="mt-1 text-base lg:text-lg text-white/50">{artistLabel}</p>}
+                      {artistLabel && <p className="mt-1 text-base lg:text-lg text-ink-muted">{artistLabel}</p>}
                       {currentTrack?.publishDate && (
-                        <p className="mt-1 text-xs lg:text-sm text-white/40">
+                        <p className="mt-1 text-xs lg:text-sm text-ink-dim">
                           {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                         </p>
                       )}
-                      {writerLabel && <p className="mt-1 text-xs lg:text-sm text-white/40">writer: {writerLabel}</p>}
-                      {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-white/40">composer: {composerLabel}</p>}
+                      {writerLabel && <p className="mt-1 text-xs lg:text-sm text-ink-dim">writer: {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs lg:text-sm text-ink-dim">composer: {composerLabel}</p>}
                       {currentTrack?.duration ? (
-                        <p className="mt-1 text-xs lg:text-sm text-white/35">{formatDuration(currentTrack.duration)}</p>
+                        <p className="mt-1 text-xs lg:text-sm text-ink-dim">{formatDuration(currentTrack.duration)}</p>
                       ) : null}
                     </div>
                   </div>
@@ -540,10 +540,10 @@ export default function FullscreenPlayer({
                           onClick={() => handleLineClick(line.startTime)}
                           className={`cursor-pointer transition-all duration-500 origin-center py-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-tight ${
                             isActive
-                              ? "text-[#ec4899] font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(236,72,153,0.5)] opacity-100"
+                              ? "text-accent font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(212,80,10,0.5)] opacity-100"
                               : isPlayed
-                              ? "text-white/30 font-bold hover:text-white/70"
-                              : "text-white/15 font-bold hover:text-white/50"
+                              ? "text-ink-muted font-bold hover:text-ink"
+                              : "text-ink-dim font-bold hover:text-ink-muted"
                           }`}
                         >
                           {line.text}
@@ -561,7 +561,7 @@ export default function FullscreenPlayer({
                       {columns.map((column, colIndex) => (
                         <div key={colIndex} className="space-y-3 text-center w-52 sm:w-64 lg:w-72">
                           {column.map((line, lineIndex) => (
-                            <p key={lineIndex} className="text-white/80 text-base md:text-lg font-medium leading-relaxed">
+                            <p key={lineIndex} className="text-ink-muted text-base md:text-lg font-medium leading-relaxed">
                               {line}
                             </p>
                           ))}
@@ -573,29 +573,29 @@ export default function FullscreenPlayer({
                   <div className="shrink-0 flex flex-col items-center gap-3 py-6 self-start lg:self-center">
                     <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[26rem] lg:h-[26rem] xl:w-[30rem] xl:h-[30rem] relative">
                       {coverUrl ? (
-                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                        <img src={coverUrl} alt="Album art" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                       ) : (
-                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10">
-                          <svg className="w-20 h-20 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line">
+                          <svg className="w-20 h-20 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                         </div>
                       )}
                     </div>
                     <div className="text-center mt-4">
-                      <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-ink leading-snug">
                         {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
                       </h3>
-                      {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                      {artistLabel && <p className="mt-1 text-sm lg:text-base text-ink-muted">{artistLabel}</p>}
                       {currentTrack?.publishDate && (
-                        <p className="mt-1 text-xs text-white/40">
+                        <p className="mt-1 text-xs text-ink-dim">
                           {new Date(currentTrack.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                         </p>
                       )}
-                      {writerLabel && <p className="mt-1 text-xs text-white/40">writer: {writerLabel}</p>}
-                      {composerLabel && <p className="mt-0.5 text-xs text-white/40">composer: {composerLabel}</p>}
+                      {writerLabel && <p className="mt-1 text-xs text-ink-dim">writer: {writerLabel}</p>}
+                      {composerLabel && <p className="mt-0.5 text-xs text-ink-dim">composer: {composerLabel}</p>}
                       {currentTrack?.duration ? (
-                        <p className="mt-1 text-xs text-white/35">{formatDuration(currentTrack.duration)}</p>
+                        <p className="mt-1 text-xs text-ink-dim">{formatDuration(currentTrack.duration)}</p>
                       ) : null}
                     </div>
                   </div>
@@ -608,23 +608,23 @@ export default function FullscreenPlayer({
       {visualizerEnabled && (
         <div className={`absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 pb-3 pointer-events-none z-10 transition-opacity duration-700 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
           <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 pointer-events-auto">
-            <button onClick={() => cycleMode(-1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+            <button onClick={() => cycleMode(-1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentModeLabel}</span>
-            <button onClick={() => cycleMode(1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+            <button onClick={() => cycleMode(1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
             <span className="w-px h-4 bg-white/15" />
-            <button onClick={() => cycleGradient(-1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+            <button onClick={() => cycleGradient(-1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentGradientLabel}</span>
-            <button onClick={() => cycleGradient(1)} className="text-white/50 hover:text-white transition-colors p-0.5">
+            <button onClick={() => cycleGradient(1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
             <span className="w-px h-4 bg-white/15" />
-            <button onClick={() => setVisualizerEnabled(false)} className="text-white/35 hover:text-white/70 transition-colors p-0.5">
+            <button onClick={() => setVisualizerEnabled(false)} className="text-ink-dim hover:text-white/70 transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>

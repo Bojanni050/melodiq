@@ -169,7 +169,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   }
 
   function Icon({ name, active }: { name: string; active: boolean }) {
-    const cls = active ? "text-white" : "text-white/70";
+    const cls = active ? "text-accent" : "text-ink-muted";
     switch (name) {
       case "studio":
         return (
@@ -293,7 +293,7 @@ export default function Sidebar({ credits }: SidebarProps) {
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-[#0d0d12] border-r border-white/5 transition-all duration-300 z-30 overflow-hidden ${sidebarWidth}`}
+        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-canvas border-r border-line transition-all duration-300 z-30 overflow-hidden ${sidebarWidth}`}
         style={isQHD && !collapsed ? { fontSize: "1.1em" } : undefined}
       >
         {sidebarCoverUrl && (
@@ -306,28 +306,28 @@ export default function Sidebar({ credits }: SidebarProps) {
           className="absolute inset-0 pointer-events-none"
           style={{
             background: isQHD
-              ? "linear-gradient(to right, transparent 40%, #0d0d12 100%)"
+              ? "linear-gradient(to right, transparent 40%, #080807 100%)"
               : collapsed
-                ? "linear-gradient(to right, transparent 50%, #0d0d12 100%)"
-                : "linear-gradient(to right, transparent 30%, #0d0d12 100%)",
+                ? "linear-gradient(to right, transparent 50%, #080807 100%)"
+                : "linear-gradient(to right, transparent 30%, #080807 100%)",
           }}
         />
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-line">
           <Link href="/discover" className="flex items-center gap-2.5">
-            <svg className="w-10 h-10 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-10 h-10 text-accent" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             {!collapsed && (
               <div className="flex flex-col leading-tight">
-                <span className="text-2xl font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
+                <span className="text-2xl font-display font-black text-ink">
                   MelodIQ
                 </span>
-                <span className="text-xs text-white/45 tracking-wide">
+                <span className="text-xs text-ink-dim tracking-wide">
                   Create. Refine. Produce.
                 </span>
                 {buildVersion && (
-                  <span className="text-[11px] text-white/35">
+                  <span className="text-[11px] text-ink-dim">
                     build number {buildVersion}
                   </span>
                 )}
@@ -341,10 +341,10 @@ export default function Sidebar({ credits }: SidebarProps) {
           {!collapsed && (
             <Link
               href="/discover"
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
                 pathname === "/discover"
-                  ? "bg-white/10 text-white font-medium"
-                  : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                  ? "bg-accent/10 text-accent font-medium"
+                  : "text-ink-muted font-medium hover:text-ink hover:bg-white/[0.03]"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,17 +353,17 @@ export default function Sidebar({ credits }: SidebarProps) {
               <span>Dashboard</span>
             </Link>
           )}
-          {!collapsed && <div className="border-t border-white/5" />}
+          {!collapsed && <div className="border-t border-line" />}
           {!collapsed && user?.name && (
-            <p className="px-3 py-2 text-sm text-white/70">
+            <p className="px-3 py-2 text-sm text-ink-muted">
               Hi {user.name.split(" ")[0]}
             </p>
           )}
-          {!collapsed && <div className="border-t border-white/5" />}
+          {!collapsed && <div className="border-t border-line" />}
           {navGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
-                <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                <p className="px-3 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
                   {group.label}
                 </p>
               )}
@@ -379,43 +379,43 @@ export default function Sidebar({ credits }: SidebarProps) {
                       key={item.href + item.label}
                       href={targetHref}
                       onClick={isPlaceholder ? (e) => e.preventDefault() : undefined}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
+                      className={`flex items-center gap-3 px-3 py-2 text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                         active
-                          ? "bg-white/10 text-white font-medium"
+                          ? "bg-accent/10 text-accent font-medium"
                           : isPlaceholder
-                            ? "text-white/35 cursor-not-allowed"
-                            : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                            ? "text-ink-dim cursor-not-allowed"
+                            : "text-ink-muted font-medium hover:text-ink hover:bg-white/[0.03]"
                       }`}
                       title={isPlaceholder ? "Coming soon" : undefined}
                     >
                       <Icon name={item.icon} active={active} />
                       {!collapsed && (
                         <span className="flex items-center gap-2">
-                          {active && <span className="text-primary-500 mr-1 font-bold">&gt; </span>}
+                          {active && <span className="text-accent mr-1 font-bold">&gt; </span>}
                           {item.label}
-                          {isPlaceholder && <span className="text-[9px] text-white/20 uppercase tracking-wider">soon</span>}
+                          {isPlaceholder && <span className="text-[9px] text-ink-dim uppercase tracking-wider">soon</span>}
                         </span>
                       )}
                     </Link>
                   );
                 })}
               </div>
-              {!collapsed && <div className="mt-4 border-t border-white/5" />}
+              {!collapsed && <div className="mt-4 border-t border-line" />}
             </div>
           ))}
         </nav>
 
         {/* Bottom section */}
-        <div className="px-3 pb-24 space-y-3 border-t border-white/5 pt-3">
+        <div className="px-3 pb-24 space-y-3 border-t border-line pt-3">
           {credits !== null && (
-            <div className="px-3 py-2 bg-white/5 rounded-lg">
-              <p className="text-sm text-white/40">Credits</p>
-              <p className="text-sm font-medium text-white">{credits.toLocaleString()}</p>
+            <div className="px-3 py-2 bg-white/[0.03]">
+              <p className="text-sm text-ink-dim">Credits</p>
+              <p className="text-sm font-medium text-ink">{credits.toLocaleString()}</p>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -429,7 +429,7 @@ export default function Sidebar({ credits }: SidebarProps) {
       {collapsed && (
         <button
           onClick={() => setCollapsed(false)}
-          className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-canvas border border-line-strong text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
           aria-label="Sidebar openen"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -442,7 +442,7 @@ export default function Sidebar({ credits }: SidebarProps) {
       {!collapsed && (
         <button
           onClick={() => setCollapsed(true)}
-          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-[#0d0d12] border border-white/10 rounded-r-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          className="hidden lg:flex fixed top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-canvas border border-line-strong text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
           style={{ left: isQHD ? "300px" : "240px" }}
           aria-label="Sidebar sluiten"
         >
@@ -453,21 +453,21 @@ export default function Sidebar({ credits }: SidebarProps) {
       )}
 
       {/* Mobile top header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 h-13.25">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-canvas/95 backdrop-blur-sm border-b border-line h-13.25">
         <div className="flex items-center justify-between px-4 h-full">
           <Link href="/discover" className="flex items-center gap-2">
-            <svg className="w-8 h-8 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-8 h-8 text-accent" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-bold bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-transparent">
+              <span className="text-lg font-display font-black text-ink">
                 MelodIQ
               </span>
-              <span className="text-[11px] text-white/45 tracking-wide">
+              <span className="text-[11px] text-ink-dim tracking-wide">
                 Create. Refine. Produce.
               </span>
               {buildVersion && (
-                <span className="text-[10px] text-white/35">
+                <span className="text-[10px] text-ink-dim">
                   build number {buildVersion}
                 </span>
               )}
@@ -476,7 +476,7 @@ export default function Sidebar({ credits }: SidebarProps) {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="p-2 text-white/70 hover:text-white rounded-lg transition-colors"
+            className="p-2 text-ink-muted hover:text-ink transition-colors"
             aria-label="Open navigation menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,16 +490,16 @@ export default function Sidebar({ credits }: SidebarProps) {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden flex">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative ml-auto h-full w-70 bg-[#0d0d12] border-l border-white/5 flex flex-col z-10 shadow-2xl">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
-              <span className="text-base font-semibold text-white">Menu</span>
+          <div className="relative ml-auto h-full w-70 bg-canvas border-l border-line flex flex-col z-10">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-line">
+              <span className="text-base font-display font-semibold text-ink">Menu</span>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 text-white/50 hover:text-white rounded-lg transition-colors"
+                className="p-1.5 text-ink-dim hover:text-ink transition-colors"
                 aria-label="Close navigation menu"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -511,10 +511,10 @@ export default function Sidebar({ credits }: SidebarProps) {
               <Link
                 href="/discover"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                   pathname === "/discover"
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                    ? "bg-accent/10 text-accent font-medium"
+                    : "text-ink-muted font-medium hover:text-ink hover:bg-white/[0.03]"
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -522,16 +522,16 @@ export default function Sidebar({ credits }: SidebarProps) {
                 </svg>
                 <span>Dashboard</span>
               </Link>
-              <div className="border-t border-white/5" />
+              <div className="border-t border-line" />
               {user?.name && (
-                <p className="px-3 py-2 text-sm text-white/70">
+                <p className="px-3 py-2 text-sm text-ink-muted">
                   Hi {user.name.split(" ")[0]}
                 </p>
               )}
-              <div className="border-t border-white/5" />
+              <div className="border-t border-line" />
               {navGroups.map((group) => (
                 <div key={group.label}>
-                  <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  <p className="px-3 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-dim">
                     {group.label}
                   </p>
                   <div className="space-y-1">
@@ -546,33 +546,33 @@ export default function Sidebar({ credits }: SidebarProps) {
                           key={item.href + item.label}
                           href={targetHref}
                           onClick={isPlaceholder ? (e) => e.preventDefault() : () => setMobileMenuOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
+                          className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${item.indent ? "ml-3" : ""} ${
                             active
-                              ? "bg-white/10 text-white font-medium"
+                              ? "bg-accent/10 text-accent font-medium"
                               : isPlaceholder
-                                ? "text-white/35 cursor-not-allowed"
-                                : "text-white/70 font-medium hover:text-white hover:bg-white/5"
+                                ? "text-ink-dim cursor-not-allowed"
+                                : "text-ink-muted font-medium hover:text-ink hover:bg-white/[0.03]"
                           }`}
                           title={isPlaceholder ? "Coming soon" : undefined}
                         >
                           <Icon name={item.icon} active={active} />
                           <span className="flex items-center gap-2">
                             {item.label}
-                            {isPlaceholder && <span className="text-[9px] text-white/20 uppercase tracking-wider">soon</span>}
+                            {isPlaceholder && <span className="text-[9px] text-ink-dim uppercase tracking-wider">soon</span>}
                           </span>
                         </Link>
                       );
                     })}
                   </div>
-                  <div className="mt-4 border-t border-white/5" />
+                  <div className="mt-4 border-t border-line" />
                 </div>
               ))}
             </nav>
-            <div className="px-3 pb-6 pt-3 border-t border-white/5 space-y-3">
+            <div className="px-3 pb-6 pt-3 border-t border-line space-y-3">
               {credits !== null && (
-                <div className="px-3 py-2 bg-white/5 rounded-lg">
-                  <p className="text-[11px] text-white/40">Credits</p>
-                  <p className="text-sm font-medium text-white">{credits.toLocaleString()}</p>
+                <div className="px-3 py-2 bg-white/[0.03]">
+                  <p className="text-[11px] text-ink-dim">Credits</p>
+                  <p className="text-sm font-medium text-ink">{credits.toLocaleString()}</p>
                 </div>
               )}
               <button
@@ -580,9 +580,9 @@ export default function Sidebar({ credits }: SidebarProps) {
                   setMobileMenuOpen(false);
                   void handleLogout();
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
               >
-                <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 <span>Logout</span>

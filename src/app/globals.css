@@ -17,16 +17,34 @@ html {
   --player-height: 80px;
   --studio-top-offset: 64px;
   --studio-bottom-gap: 16px;
+
+  /* ---------------------------------------------------------------------
+   * Editorial ("artist page") tokens — the single source of truth for the
+   * reskin. The public artist page, the public surfaces and the app shell
+   * all read these; nothing hard-codes a colour, font or border value.
+   * They are mapped to Tailwind utilities in the @theme inline block below
+   * (bg-canvas, text-ink, border-line, bg-accent, font-display, ...).
+   * ------------------------------------------------------------------- */
+  --mq-canvas: #080807;
+  --mq-surface: #111110;
+  --mq-surface-2: #181816;
+  --mq-ink: #e8e4db;
+  --mq-ink-muted: #a09d95;
+  --mq-ink-dim: #6b6860;
+  --mq-line: #1a1917;
+  --mq-line-strong: #252420;
+  --mq-accent: #d4500a;
+  --mq-accent-strong: #b8430a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading), var(--font-body), sans-serif;
+  font-family: var(--font-roboto-slab), var(--font-outfit), serif;
 }
 
 @theme {
@@ -66,6 +84,28 @@ h1, h2, h3, h4, h5, h6 {
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+}
+
+/* Map the editorial tokens to Tailwind utilities. `inline` because every
+ * value references another CSS variable, so `bg-canvas` / `text-ink` /
+ * `border-line` / `bg-accent` / `font-display` resolve straight to the
+ * --mq-* values in :root. Internal tool pages keep their existing pink
+ * `primary` palette; these are additive. */
+@theme inline {
+  --color-canvas: var(--mq-canvas);
+  --color-surface: var(--mq-surface);
+  --color-surface-2: var(--mq-surface-2);
+  --color-ink: var(--mq-ink);
+  --color-ink-muted: var(--mq-ink-muted);
+  --color-ink-dim: var(--mq-ink-dim);
+  --color-line: var(--mq-line);
+  --color-line-strong: var(--mq-line-strong);
+  --color-accent: var(--mq-accent);
+  --color-accent-strong: var(--mq-accent-strong);
+
+  --font-display: var(--font-roboto-slab);
+  --font-body: var(--font-outfit);
+  --font-mono: var(--font-dm-mono);
 }
 
 @layer utilities {
@@ -274,6 +314,82 @@ h1, h2, h3, h4, h5, h6 {
 
   .right-details-panel {
     width: var(--right-panel-width, 380px);
+  }
+}
+
+/* Editorial primitives — the shared building blocks for the artist-page
+ * look. Colours, fonts and borders come from the --mq-* tokens, so the
+ * artist page, the public surfaces and the shell stay identical. */
+@layer components {
+  .mq-label {
+    font-family: var(--font-dm-mono), monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mq-ink-dim);
+  }
+
+  .mq-card {
+    background: var(--mq-surface);
+    border: 1px solid var(--mq-line);
+    border-radius: 0;
+  }
+
+  .mq-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-dm-mono), monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 0;
+    padding: 14px 28px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .mq-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .mq-btn-primary {
+    background: var(--mq-accent);
+    color: var(--mq-ink);
+  }
+  .mq-btn-primary:hover:not(:disabled) {
+    background: var(--mq-accent-strong);
+  }
+  .mq-btn-ghost {
+    background: transparent;
+    border-color: var(--mq-line-strong);
+    color: var(--mq-ink);
+  }
+  .mq-btn-ghost:hover:not(:disabled) {
+    border-color: var(--mq-ink-dim);
+  }
+
+  .mq-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--mq-line);
+    border-radius: 0;
+    padding: 0.625rem 0.75rem;
+    color: var(--mq-ink);
+    font-family: var(--font-outfit), sans-serif;
+    transition: border-color 150ms ease;
+  }
+  .mq-input::placeholder {
+    color: var(--mq-ink-dim);
+  }
+  .mq-input:focus {
+    outline: none;
+    border-color: var(--mq-accent);
+  }
+
+  .mq-divider {
+    border-top: 1px solid var(--mq-line);
   }
 }
 

@@ -275,7 +275,7 @@ export default function PlayerWindowPage() {
 
       <div className="relative h-full flex flex-col">
         {!connected && (
-          <div className="px-6 py-3 text-sm text-white/40">
+          <div className="px-6 py-3 text-sm text-ink-dim">
             Waiting for the MelodIQ tab to connect…
           </div>
         )}
@@ -290,7 +290,7 @@ export default function PlayerWindowPage() {
               <div className="flex items-center gap-2 mb-3">
                 <button
                   onClick={toggleBgZoom}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
                   title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +300,7 @@ export default function PlayerWindowPage() {
                 </button>
                 <button
                   onClick={() => setLyricsVisible((v) => !v)}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
                   title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ export default function PlayerWindowPage() {
                 </button>
                 <button
                   onClick={toggleVisualizer}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-white/40 hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
                   title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@ export default function PlayerWindowPage() {
               <h2 className="text-lg font-semibold">{cleanTitle || track.prompt.substring(0, 50)}</h2>
               {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
               {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
-              <p className="text-xs text-white/40 capitalize">{formatProviderLabel(track.provider)}</p>
+              <p className="text-xs text-ink-dim capitalize">{formatProviderLabel(track.provider)}</p>
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
@@ -333,21 +333,21 @@ export default function PlayerWindowPage() {
                 >
                   <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                     {outgoingVisual.coverUrl ? (
-                      <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                      <img src={outgoingVisual.coverUrl} alt="" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                     ) : (
-                      <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 border border-white/10" />
+                      <div className="w-full h-full bg-surface-2 border border-line" />
                     )}
                   </div>
                   <div className="text-center mt-4">
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white/90 leading-snug">{outgoingVisual.title}</h3>
-                    {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-white/50">{outgoingVisual.artist}</p>}
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold text-ink leading-snug">{outgoingVisual.title}</h3>
+                    {outgoingVisual.artist && <p className="mt-1 text-sm sm:text-base text-ink-muted">{outgoingVisual.artist}</p>}
                     {outgoingVisual.publishDate && (
-                      <p className="mt-1 text-xs text-white/40">
+                      <p className="mt-1 text-xs text-ink-dim">
                         {new Date(outgoingVisual.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </p>
                     )}
-                    {outgoingVisual.writerName && <p className="mt-1 text-xs text-white/40">Written by {outgoingVisual.writerName}</p>}
-                    {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-white/40">Composed by {outgoingVisual.composerName}</p>}
+                    {outgoingVisual.writerName && <p className="mt-1 text-xs text-ink-dim">Written by {outgoingVisual.writerName}</p>}
+                    {outgoingVisual.composerName && <p className="mt-0.5 text-xs text-ink-dim">Composed by {outgoingVisual.composerName}</p>}
                   </div>
                 </div>
               )}
@@ -355,23 +355,23 @@ export default function PlayerWindowPage() {
                 <div className="shrink-0 flex flex-col items-center justify-center gap-4">
                   <div className="w-72 h-72 sm:w-96 sm:h-96 md:w-[26rem] md:h-[26rem] lg:w-[30rem] lg:h-[30rem] relative">
                     {coverUrl ? (
-                      <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                      <img src={coverUrl} alt="Album art" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                     ) : (
-                      <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
+                      <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line" />
                     )}
                   </div>
                   <div className="text-center mt-4">
-                    <h3 className={`font-semibold text-white/90 leading-snug ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
+                    <h3 className={`font-semibold text-ink leading-snug ${showLyrics && lyricsVisible ? "text-base sm:text-lg lg:text-xl" : "text-xl sm:text-2xl md:text-3xl"}`}>
                       {cleanTitle || track.prompt.substring(0, 50)}
                     </h3>
-                    {artistLabel && <p className="mt-1 text-sm sm:text-base text-white/50">{artistLabel}</p>}
+                    {artistLabel && <p className="mt-1 text-sm sm:text-base text-ink-muted">{artistLabel}</p>}
                     {track.publishDate && (
-                      <p className="mt-1 text-xs text-white/40">
+                      <p className="mt-1 text-xs text-ink-dim">
                         {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                       </p>
                     )}
-                    {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
-                    {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                    {writerLabel && <p className="mt-1 text-xs text-ink-dim">Written by {writerLabel}</p>}
+                    {composerLabel && <p className="mt-0.5 text-xs text-ink-dim">Composed by {composerLabel}</p>}
                   </div>
                 </div>
               )}
@@ -384,23 +384,23 @@ export default function PlayerWindowPage() {
                       <div className="shrink-0 flex flex-col items-center justify-center gap-4 min-h-0">
                         <div className="w-56 h-56 sm:w-64 sm:h-64 lg:w-96 lg:h-96 xl:w-[26rem] xl:h-[26rem] relative">
                           {coverUrl ? (
-                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                           ) : (
-                            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
+                            <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line" />
                           )}
                         </div>
                         <div className="text-center max-w-sm">
-                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-ink leading-snug">
                             {cleanTitle || track.prompt.substring(0, 50)}
                           </h3>
-                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-ink-muted">{artistLabel}</p>}
                           {track.publishDate && (
-                            <p className="mt-1 text-xs text-white/40">
+                            <p className="mt-1 text-xs text-ink-dim">
                               {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                             </p>
                           )}
-                          {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
-                          {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                          {writerLabel && <p className="mt-1 text-xs text-ink-dim">Written by {writerLabel}</p>}
+                          {composerLabel && <p className="mt-0.5 text-xs text-ink-dim">Composed by {composerLabel}</p>}
                         </div>
                       </div>
                       <div
@@ -417,10 +417,10 @@ export default function PlayerWindowPage() {
                               onClick={() => handleLineClick(line.startTime)}
                               className={`cursor-pointer transition-all duration-500 origin-center py-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-tight ${
                                 isActive
-                                  ? "text-[#ec4899] font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(236,72,153,0.5)] opacity-100"
+                                  ? "text-accent font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(212,80,10,0.5)] opacity-100"
                                   : isPlayed
-                                  ? "text-white/30 font-bold hover:text-white/70"
-                                  : "text-white/15 font-bold hover:text-white/50"
+                                  ? "text-ink-muted font-bold hover:text-ink"
+                                  : "text-ink-dim font-bold hover:text-ink-muted"
                               }`}
                             >
                               {line.text}
@@ -437,7 +437,7 @@ export default function PlayerWindowPage() {
                           {columns.map((column, colIndex) => (
                             <div key={colIndex} className="space-y-3 text-center w-52 sm:w-64 lg:w-72">
                               {column.map((line, lineIndex) => (
-                                <p key={lineIndex} className="text-white/80 text-base md:text-lg font-medium leading-relaxed">
+                                <p key={lineIndex} className="text-ink-muted text-base md:text-lg font-medium leading-relaxed">
                                   {line}
                                 </p>
                               ))}
@@ -448,23 +448,23 @@ export default function PlayerWindowPage() {
                       <div className="shrink-0 flex flex-col items-center gap-3 py-6 self-start lg:self-center">
                         <div className="w-72 h-72 sm:w-96 sm:h-96 lg:w-[26rem] lg:h-[26rem] xl:w-[30rem] xl:h-[30rem] relative">
                           {coverUrl ? (
-                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
+                            <img src={coverUrl} alt="Album art" className="w-full h-full object-cover shadow-2xl shadow-black/50 [-webkit-box-reflect:below_2px_linear-gradient(to_bottom,transparent,transparent_60%,rgba(0,0,0,0.4))]" />
                           ) : (
-                            <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary-600/20 to-primary-800/20 flex items-center justify-center border border-white/10" />
+                            <div className="w-full h-full bg-surface-2 flex items-center justify-center border border-line" />
                           )}
                         </div>
                         <div className="text-center mt-4">
-                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white/90 leading-snug">
+                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-ink leading-snug">
                             {cleanTitle || track.prompt.substring(0, 50)}
                           </h3>
-                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-white/50">{artistLabel}</p>}
+                          {artistLabel && <p className="mt-1 text-sm lg:text-base text-ink-muted">{artistLabel}</p>}
                           {track.publishDate && (
-                            <p className="mt-1 text-xs text-white/40">
+                            <p className="mt-1 text-xs text-ink-dim">
                               {new Date(track.publishDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                             </p>
                           )}
-                          {writerLabel && <p className="mt-1 text-xs text-white/40">Written by {writerLabel}</p>}
-                          {composerLabel && <p className="mt-0.5 text-xs text-white/40">Composed by {composerLabel}</p>}
+                          {writerLabel && <p className="mt-1 text-xs text-ink-dim">Written by {writerLabel}</p>}
+                          {composerLabel && <p className="mt-0.5 text-xs text-ink-dim">Composed by {composerLabel}</p>}
                         </div>
                       </div>
                     </div>
@@ -481,7 +481,7 @@ export default function PlayerWindowPage() {
             )}
 
             <div className="absolute bottom-6 right-6 z-30 pointer-events-none">
-              <span className="font-mono text-sm tracking-widest text-white/50 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-xl">
+              <span className="font-mono text-sm tracking-widest text-ink-muted bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-line shadow-xl">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
             </div>

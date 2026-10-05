@@ -762,7 +762,7 @@ export default function Player() {
         <FullscreenPlayer audioSource={audioSource} audioSourceState={audioSourceState} />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-[#161621] border-t border-white/5 z-[60]">
+      <div className="fixed bottom-0 left-0 right-0 h-20 bg-canvas border-t border-line z-[60]">
         {playerCoverUrl ? (
           <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
             <img
@@ -776,7 +776,7 @@ export default function Player() {
                 target.src = "/fallback-cover.svg";
               }}
             />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),linear-gradient(135deg,rgba(22,22,33,0.65)_0%,rgba(22,22,33,0.92)_70%,rgba(22,22,33,0.98)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_45%),linear-gradient(135deg,rgba(8,8,7,0.65)_0%,rgba(8,8,7,0.92)_70%,rgba(8,8,7,0.98)_100%)]" />
           </div>
         ) : null}
 
@@ -786,7 +786,7 @@ export default function Player() {
             <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[200px] lg:w-[260px]">
               <button
                 onClick={() => setIsFullscreen(true)}
-                className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-white/5"
+                className="shrink-0 w-10 h-10 overflow-hidden bg-white/5"
                 title="Go fullscreen"
               >
                 {currentTrack.coverUrl ? (
@@ -804,7 +804,7 @@ export default function Player() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
@@ -814,7 +814,7 @@ export default function Player() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setIsFullscreen(true)}
-                    className="block min-w-0 flex-1 text-sm font-medium text-white/90 text-left hover:underline overflow-hidden"
+                    className="block min-w-0 flex-1 text-sm font-medium text-ink text-left hover:underline overflow-hidden"
                     title={cleanTitle || currentTrack.prompt}
                     style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 4%, black 85%, transparent 100%)" }}
                   >
@@ -828,7 +828,7 @@ export default function Player() {
                     <button
                       type="button"
                       onClick={handleJumpToNowPlaying}
-                      className="shrink-0 p-1 rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors"
+                      className="shrink-0 p-1 rounded-full text-ink-dim hover:text-ink hover:bg-white/[0.05] transition-colors"
                       title="Jump to now playing in track list"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -839,7 +839,7 @@ export default function Player() {
                     </button>
                   )}
                 </div>
-                <p className="text-sm text-white/40 truncate">
+                <p className="text-sm text-ink-dim truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{writerLabel ? `writer: ${writerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
                   {currentTrack.duration ? ` • ${Math.floor(currentTrack.duration / 60)}:${String(Math.floor(currentTrack.duration % 60)).padStart(2, "0")}` : ""}
                 </p>
@@ -847,12 +847,12 @@ export default function Player() {
             </div>
           ) : (
             <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-none sm:w-[240px]">
-              <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-white/5 flex items-center justify-center">
+                <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
               </div>
-              <span className="text-sm text-white/30">No track selected</span>
+              <span className="text-sm text-ink-dim">No track selected</span>
             </div>
           )}
 
@@ -860,7 +860,7 @@ export default function Player() {
           <div className="flex items-center justify-center gap-2 sm:flex-1">
             <button
               onClick={() => setShuffleEnabled(!shuffleEnabled)}
-              className={`hidden sm:block p-2 rounded-full transition-colors ${shuffleEnabled ? "text-white" : "text-white/30 hover:text-white/60"}`}
+              className={`hidden sm:block p-2 rounded-full transition-colors ${shuffleEnabled ? "text-accent" : "text-ink-dim hover:text-ink"}`}
               title={shuffleEnabled ? "Shuffle on" : "Shuffle off"}
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -870,7 +870,7 @@ export default function Player() {
             <button
               onClick={handlePrevious}
               disabled={!currentTrack}
-              className="p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
+              className="p-2 rounded-full text-ink-dim hover:text-ink disabled:opacity-20 transition-colors"
               title="Previous"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -881,7 +881,7 @@ export default function Player() {
             <button
               onClick={togglePlay}
               disabled={!currentTrack}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 transition-all active:scale-95"
+              className="p-3 rounded-full bg-accent text-ink hover:bg-accent-strong disabled:opacity-30 transition-all active:scale-95"
               title={isPlaying ? "Pause" : "Play"}
             >
               {resolvingUrl ? (
@@ -901,7 +901,7 @@ export default function Player() {
             <button
               onClick={handleNext}
               disabled={queue.length === 0}
-              className="p-2 rounded-full text-white/50 hover:text-white/80 disabled:opacity-20 transition-colors"
+              className="p-2 rounded-full text-ink-dim hover:text-ink disabled:opacity-20 transition-colors"
               title="Next"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -911,7 +911,7 @@ export default function Player() {
 
             {/* Progress bar */}
             <div className="hidden sm:flex items-center gap-2 ml-2 min-w-0 max-w-48 lg:max-w-72 flex-1">
-              <span className="text-xs text-white/40 w-8 text-right tabular-nums">
+              <span className="text-xs text-ink-dim w-8 text-right tabular-nums">
                 {duration > 0 ? `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, "0")}` : "0:00"}
               </span>
               <input
@@ -922,15 +922,15 @@ export default function Player() {
                 onChange={handleSeek}
                 disabled={!currentTrack}
                 aria-label="Seek position"
-                className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-primary-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
+                className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-accent [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg"
               />
-              <span className="text-xs text-white/40 w-8 tabular-nums">
+              <span className="text-xs text-ink-dim w-8 tabular-nums">
                 {duration > 0 ? `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, "0")}` : "0:00"}
               </span>
               {currentTrack && (
                 <>
                   <AudioSourceBadge source={audioSource} state={audioSourceState} />
-                  <span className="inline-flex items-center rounded-full border border-white/12 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-white/40">
+                  <span className="inline-flex items-center rounded-full border border-line bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-ink-dim">
                     {getPlayingFormat(currentTrack, playHighestQuality)}
                   </span>
                 </>
@@ -942,7 +942,7 @@ export default function Player() {
           <div className="hidden sm:flex items-center justify-end gap-1 flex-shrink-0 sm:w-[200px] lg:w-[240px]">
             {/* Queue info */}
             {queue.length > 0 && (
-              <div className="hidden md:flex items-center gap-1 text-xs text-white/40 px-2 py-1 rounded-full bg-white/5" title={`${queue.length} tracks in queue`}>
+              <div className="hidden md:flex items-center gap-1 text-xs text-ink-dim px-2 py-1 rounded-full bg-white/5" title={`${queue.length} tracks in queue`}>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h10" />
                 </svg>
@@ -954,7 +954,7 @@ export default function Player() {
             <button
               type="button"
               onClick={() => setAutoPlayNext(!autoPlayNext)}
-              className={`p-2 rounded-full transition-colors ${autoPlayNext ? "text-primary-400 hover:text-primary-300" : "text-white/30 hover:text-white/60"}`}
+              className={`p-2 rounded-full transition-colors ${autoPlayNext ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
               title={autoPlayNext ? "Autoplay on" : "Autoplay off"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -967,7 +967,7 @@ export default function Player() {
             <button
               type="button"
               onClick={() => setShowTrackDetailsPanel(!showTrackDetailsPanel)}
-              className={`p-2 rounded-full transition-colors ${showTrackDetailsPanel ? "text-primary-400 hover:text-primary-300" : "text-white/30 hover:text-white/60"}`}
+              className={`p-2 rounded-full transition-colors ${showTrackDetailsPanel ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
               title={showTrackDetailsPanel ? "Hide song details" : "Show song details"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -980,7 +980,7 @@ export default function Player() {
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
               disabled={!currentTrack}
-              className="p-2 rounded-full text-white/40 hover:text-white/80 disabled:opacity-20 transition-colors"
+              className="p-2 rounded-full text-ink-dim hover:text-ink disabled:opacity-20 transition-colors"
               title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -993,7 +993,7 @@ export default function Player() {
                 type="button"
                 onClick={handlePopOutPlayer}
                 disabled={!currentTrack}
-                className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-white bg-white/10" : "text-white/40 hover:text-white/80"}`}
+                className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-accent bg-white/10" : "text-ink-dim hover:text-ink"}`}
                 title={popupOpen ? "Close pop-out player window" : "Open player in a second window (drag to another monitor)"}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1008,7 +1008,7 @@ export default function Player() {
                 <button
                   type="button"
                   onClick={() => setActionsMenuOpen((o) => !o)}
-                  className={`p-2 rounded-full transition-colors ${actionsMenuOpen ? "text-primary-400 bg-white/10" : "text-white/30 hover:text-white/70 hover:bg-white/5"}`}
+                  className={`p-2 rounded-full transition-colors ${actionsMenuOpen ? "text-accent bg-white/10" : "text-ink-dim hover:text-ink hover:bg-white/[0.05]"}`}
                   title={t("discover.trackOptions") || "Track actions"}
                   aria-label={t("discover.trackOptions") || "Track actions"}
                 >
@@ -1018,7 +1018,7 @@ export default function Player() {
                 </button>
 
                 {actionsMenuOpen && (
-                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 rounded-xl border border-white/10 bg-[#12121a] shadow-2xl p-1.5 space-y-1">
+                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 border border-line bg-surface p-1.5 space-y-1">
                     {/* Go to track in library */}
                     <button
                       type="button"
@@ -1026,9 +1026,9 @@ export default function Player() {
                         handleJumpToNowPlaying();
                         setActionsMenuOpen(false);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 flex items-center gap-2.5 transition-colors"
+                      className="w-full text-left px-2.5 py-1.5 text-sm font-medium text-ink hover:bg-white/[0.06] flex items-center gap-2.5 transition-colors"
                     >
-                      <svg className="w-4 h-4 text-white/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-ink-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="7" strokeWidth={2} />
                         <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
                         <path strokeLinecap="round" strokeWidth={2} d="M12 2v3M12 19v3M2 12h3M19 12h3" />
@@ -1036,11 +1036,11 @@ export default function Player() {
                       <span>{t("discover.goToTrack") || "Go to track"}</span>
                     </button>
 
-                    <div className="my-1 border-t border-white/10" />
+                    <div className="my-1 border-t border-line" />
 
-                    <p className="px-2.5 pb-1 pt-0.5 text-[11px] uppercase tracking-wide text-white/35">Add to playlist</p>
+                    <p className="px-2.5 pb-1 pt-0.5 font-mono text-[11px] uppercase tracking-wide text-ink-dim">Add to playlist</p>
                     {playlists.length === 0 ? (
-                      <p className="px-2.5 py-1.5 text-xs text-white/40 italic">No playlists yet</p>
+                      <p className="px-2.5 py-1.5 text-xs text-ink-dim italic">No playlists yet</p>
                     ) : (
                       playlists.map((playlist) => {
                         const alreadyIn = playlist.trackIds.includes(currentTrack.id);
@@ -1052,11 +1052,11 @@ export default function Player() {
                               addTrackToPlaylist(playlist.id, currentTrack.id, { allowDuplicate: false });
                               setActionsMenuOpen(false);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                            className="w-full text-left px-2.5 py-1.5 text-sm text-ink-muted hover:bg-white/[0.04] flex items-center justify-between gap-2"
                           >
                             <span>{playlist.name}</span>
                             {alreadyIn && (
-                              <svg className="w-3.5 h-3.5 text-primary-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-3.5 h-3.5 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
@@ -1071,7 +1071,7 @@ export default function Player() {
 
             {/* Volume */}
             <div className="hidden lg:flex items-center gap-2 ml-1">
-              <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 12a1 1 0 100-2 1 1 0 000 2z" />
               </svg>
               <input
@@ -1082,7 +1082,7 @@ export default function Player() {
                 value={volume}
                 onChange={handleVolume}
                 aria-label="Volume"
-                className="w-20 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-primary-500"
+                className="w-20 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-accent"
               />
             </div>
           </div>
@@ -1139,24 +1139,24 @@ function PwaInstallHint() {
 
   return (
     <div className="fixed bottom-[var(--player-height,72px)] left-0 right-0 z-40 flex justify-center px-4 pb-2 sm:hidden pointer-events-none">
-      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#1a1b25]/95 px-3 py-2 shadow-lg backdrop-blur-md pointer-events-auto">
-        <svg className="h-4 w-4 shrink-0 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex items-center gap-2 border border-line bg-surface/95 px-3 py-2 backdrop-blur-md pointer-events-auto">
+        <svg className="h-4 w-4 shrink-0 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
-        <p className="text-[11px] text-white/70">
+        <p className="text-[11px] text-ink-muted">
           Installeer MelodIQ voor ononderbroken afspelen op je telefoon
         </p>
         <button
           type="button"
           onClick={handleInstall}
-          className="shrink-0 rounded-lg bg-primary-500/80 px-2 py-1 text-[10px] font-semibold text-white hover:bg-primary-400 transition-colors"
+          className="shrink-0 bg-accent px-2 py-1 text-[10px] font-semibold text-ink hover:bg-accent-strong transition-colors"
         >
           Installeer
         </button>
         <button
           type="button"
           onClick={handleDismiss}
-          className="shrink-0 p-0.5 text-white/30 hover:text-white/60 transition-colors"
+          className="shrink-0 p-0.5 text-ink-dim hover:text-ink transition-colors"
         >
           <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -11,19 +11,12 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        primary: {
-          DEFAULT: "#ff530c",
-          50: "#fff5f0",
-          100: "#ffe8dc",
-          200: "#ffd1b8",
-          300: "#ffb894",
-          400: "#ff8550",
-          500: "#ff530c",
-          600: "#e64a0b",
-          700: "#cc4109",
-          800: "#b33808",
-          900: "#992f07",
-        },
+        // NOTE: the palettes (the pink `primary` scale and the editorial
+        // `--mq-*` tokens) live in src/app/globals.css (@theme / @theme
+        // inline) — that CSS is the single source of truth. This JS config is
+        // intentionally not loaded by Tailwind 4 (no `@config` directive).
+        // The old orange `primary` scale that used to live here contradicted
+        // globals.css and has been removed so there is only one source.
       },
       keyframes: {
         shimmer: {
