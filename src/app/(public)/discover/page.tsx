@@ -370,7 +370,7 @@ export default function DiscoverPage() {
             handlePlayMyTrack(track);
           }
         }}
-        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:border-white/20 cursor-pointer"
+        className="flex flex-col gap-1.5 text-left cursor-pointer"
       >
         <div className="group relative aspect-square w-full">
           <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -401,14 +401,14 @@ export default function DiscoverPage() {
                 )}
               </div>
             </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
+              <p className="truncate text-sm font-semibold text-white drop-shadow">{track.title || track.prompt.substring(0, 40)}</p>
+              <p className="truncate text-xs text-white/70">{track.artistName || t("releases.unknownArtist")}</p>
+            </div>
           </div>
           {/* Sibling of the overflow-hidden cover box, not a child of it — its
               dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{track.title || track.prompt.substring(0, 40)}</p>
-          <p className="truncate text-sm text-white/45">{track.artistName || t("releases.unknownArtist")}</p>
         </div>
         <div className="flex items-center justify-between text-[11px] text-white/35">
           <span>{formatDuration(track.duration)}</span>
@@ -493,7 +493,7 @@ export default function DiscoverPage() {
     return (
       <Link
         href={`/discover/track/${track.id}`}
-        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
+        className="flex flex-col gap-1.5"
       >
         <div className="group relative aspect-square w-full">
           <button
@@ -533,14 +533,14 @@ export default function DiscoverPage() {
                 )}
               </div>
             </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
+              <p className="truncate text-sm font-semibold text-white drop-shadow">{track.title}</p>
+              <p className="truncate text-xs text-white/70">{track.artistName || t("releases.unknownArtist")}</p>
+            </div>
           </button>
           {/* Sibling of the overflow-hidden play button, not a child of it — its
               dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{track.title}</p>
-          <p className="truncate text-sm text-white/45">{track.artistName || t("releases.unknownArtist")}</p>
         </div>
         <div className="flex items-center justify-between text-[11px] text-white/35">
           <span>{formatDuration(track.duration)}</span>
@@ -590,7 +590,7 @@ export default function DiscoverPage() {
               ) : topPlayedTracks.length > 0 ? (
                 <>
                   <p className="text-xs text-white/40">{t("discover.topMostPlayed", { count: topPlayedTracks.length })}</p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                     {topPlayedTracks.map((track) => (
                       <MyTrackCard key={track.id} track={track} />
                     ))}
@@ -615,7 +615,7 @@ export default function DiscoverPage() {
               <p className="text-xs text-white/40">
                 {t("discover.yourLatestTracks", { count: recentTracks.length, tracksWord: recentTracks.length === 1 ? t("releases.track") : t("releases.tracks") })}
               </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                 {recentTracks.map((track) => (
                   <MyTrackCard key={track.id} track={track} />
                 ))}
@@ -630,7 +630,7 @@ export default function DiscoverPage() {
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">{t("discover.currentTrends")}</h2>
                 {trending.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                     {trending.map((track) => (
                       <TrackCard key={track.id} track={track} />
                     ))}
@@ -643,40 +643,42 @@ export default function DiscoverPage() {
               {publishedPlaylists.length > 0 && (
                 <section className="space-y-3">
                   <h2 className="text-base font-semibold">{t("discover.publishedPlaylists")}</h2>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                     {publishedPlaylists.map((playlist, index) => (
                       <div key={playlist.id} className="relative">
                       <Link
                         href={`/discover/playlist/${playlist.id}`}
-                        className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
+                        className="flex flex-col gap-1.5"
                       >
-                        {playlist.coverUrl ? (
-                          <img
-                            src={playlist.coverUrl}
-                            alt={playlist.name}
-                            loading="lazy"
-                            decoding="async"
-                            className="aspect-square w-full rounded-xl object-cover"
-                          />
-                        ) : (
-                          <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40">
-                            <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
-                            </svg>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-white">{playlist.name}</p>
-                          {playlist.description && (
-                            <p className="truncate text-xs text-white/45">{playlist.description}</p>
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
+                          {playlist.coverUrl ? (
+                            <img
+                              src={playlist.coverUrl}
+                              alt={playlist.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40">
+                              <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
+                              </svg>
+                            </div>
                           )}
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
+                            <p className="truncate text-sm font-semibold text-white drop-shadow">{playlist.name}</p>
+                            {playlist.description && (
+                              <p className="truncate text-xs text-white/70">{playlist.description}</p>
+                            )}
+                          </div>
                         </div>
                         <p className="text-[11px] text-white/35">
                           {playlist.trackCount} {playlist.trackCount === 1 ? t("releases.track") : t("releases.tracks")}
                         </p>
                       </Link>
                       {isAdmin && (
-                        <div className="absolute right-5 top-5 flex gap-1">
+                        <div className="absolute right-2 top-2 flex gap-1">
                           <button
                             type="button"
                             onClick={() => void handleMovePlaylist(index, -1)}
@@ -717,7 +719,7 @@ export default function DiscoverPage() {
               <section className="space-y-3">
                 <h2 className="text-base font-semibold">{t("discover.publishedTracks")}</h2>
                 {published.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                     {published.map((track) => (
                       <TrackCard key={track.id} track={track} />
                     ))}
