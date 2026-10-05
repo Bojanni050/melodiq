@@ -491,62 +491,55 @@ export default function DiscoverPage() {
     const cover = coverSrc(track);
     const isPlaying = currentTrack?.id === track.id && globalIsPlaying;
     return (
-      <Link
-        href={`/discover/track/${track.id}`}
-        className="flex flex-col gap-1.5"
-      >
-        <div className="group relative aspect-square w-full">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handlePlay(track);
-            }}
-            className="absolute inset-0 overflow-hidden "
-            aria-label={isPlaying ? t("discover.pause", { title: track.title }) : t("discover.play", { title: track.title })}
-          >
-            {cover ? (
-              <img src={cover} alt={track.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-surface-2">
-                <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/90 transition-opacity ${
-                  isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                }`}
-              >
-                {isPlaying ? (
-                  <svg className="h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                    <rect x="6" y="4" width="4" height="16" rx="1" />
-                    <rect x="14" y="4" width="4" height="16" rx="1" />
-                  </svg>
-                ) : (
-                  <svg className="ml-0.5 h-4 w-4 text-black" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </div>
+      <div className="group relative aspect-square w-full">
+        <Link
+          href={`/discover/track/${track.id}`}
+          className="absolute inset-0 block overflow-hidden"
+          aria-label={track.title}
+        >
+          {cover ? (
+            <img src={cover} alt={track.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-surface-2">
+              <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
-              <p className="truncate text-sm font-semibold text-ink drop-shadow">{track.title}</p>
-              <p className="truncate text-xs text-ink-muted">{track.artistName || t("releases.unknownArtist")}</p>
-            </div>
-          </button>
-          {/* Sibling of the overflow-hidden play button, not a child of it — its
-              dropdown panel would otherwise get clipped by +overflow-hidden. */}
-          <DiscoverTrackOptionsMenu trackId={track.id} />
-        </div>
-        <div className="flex items-center justify-between text-[11px] text-ink-dim">
-          <span>{formatDuration(track.duration)}</span>
-          <span>{t("discover.plays", { count: track.totalPlays.toLocaleString() })}</span>
-        </div>
-      </Link>
+          )}
+          <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/40" />
+          {/* Title / artist / meta overlay, bottom-left */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
+            <p className="truncate text-sm font-semibold text-ink drop-shadow">{track.title}</p>
+            <p className="truncate text-xs text-ink-muted">{track.artistName || t("releases.unknownArtist")}</p>
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-dim">
+              {formatDuration(track.duration)} · {t("discover.plays", { count: track.totalPlays.toLocaleString() })}
+            </p>
+          </div>
+        </Link>
+
+        {/* Play button, bottom-right on hover */}
+        <button
+          type="button"
+          onClick={() => handlePlay(track)}
+          aria-label={isPlaying ? t("discover.pause", { title: track.title }) : t("discover.play", { title: track.title })}
+          className={`absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition-opacity ${
+            isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          {isPlaying ? (
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
+
+        <DiscoverTrackOptionsMenu trackId={track.id} />
+      </div>
     );
   }
 
