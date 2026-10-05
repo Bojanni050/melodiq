@@ -9,8 +9,9 @@ export async function middleware(request: NextRequest) {
   const isPublicApi = pathname.startsWith("/api/webhooks/");
   const isPwaAsset = pathname === "/manifest.webmanifest" || pathname.startsWith("/icons/");
   const isApi = pathname.startsWith("/api/");
+  // Public routes live in the src/app/(public) route group (URLs unchanged).
   // Song DNA (Discover) and the public Explore page stay browsable while
-  // logged out — see src/app/discover/page.tsx, src/app/explore/page.tsx and
+  // logged out — see src/app/(public)/discover/page.tsx, src/app/(public)/explore/page.tsx and
   // getPublishedTrackById in src/lib/songs.ts. Their own API routes under
   // /api/discover/* are already public (no auth) server-side and pass
   // through via isApi above.
