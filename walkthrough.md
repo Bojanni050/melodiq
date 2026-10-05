@@ -1547,9 +1547,15 @@ pm run build � succesvol.
 
 ## 2026-09-30 wo (Account: artiestenaliassen 5 → 10)
 
-- Findings: De accountpagina limiteerde de artiestenaliassen tot 5 velden, en had daarvoor een eigen lokale `const MAX_ARTIST_ALIASES = 5` naast de canonieke constante in `src/lib/artist-aliases.ts`. Die duplicatie betekende dat de UI-limiet en de server-validatie (`validateArtistAliases` in de update-route) stil konden uit elkaar lopen.
-- Conclusions: Eén bron van waarheid: de pagina importeert de constante uit de lib, en de limiet staat op 10. De server blijft de echte grens (via dezelfde constante), dus een handmatig request met meer dan 10 aliassen wordt nog steeds geweigerd. De grid (`sm:grid-cols-2`) vult zich nu simpelweg met een tweede rij.
+- Findings: De accountpagina limiteerde de artiestenaliassen tot 5 velden, en had daarvoor een eigen lokale `const MAX_ARTIST_ALIASES = 5` naast de canonieke constante in `src/lib/artist-aliases.ts`. Die duplicatie betekent dat de UI-limiet en de server-validatie (`validateArtistAliases` in de update-route) stil konden uit elkaar lopen.
+- Conclusions: Eén bron van waarheid: de pagina importeert de constante uit de lib, en de limiet staat nu op 15 (was 10, verhoogd op 2026-10-06 op verzoek van Bo — "nog 5 artiestenaliassen nodig" — en daarna bij de 5→10-migratie). De server blijft de echte grens (via dezelfde constante), dus een handmatig request met meer aliassen wordt nog steeds geweigerd. De grid (`sm:grid-cols-2`) vult zich nu simpelweg met extra rijen.
 - Actions: `src/lib/artist-aliases.ts` — `MAX_ARTIST_ALIASES` 5 → 10. `src/app/account/page.tsx` — lokale constante verwijderd, import toegevoegd. Gevalideerd met `npx tsc --noEmit` (0 errors), `npm run test` (105 geslaagd) en `npm run build` (geslaagd).
+
+## 2026-10-06 di (MAX_ARTIST_ALIASES 10 → 15)
+
+- Findings: Terugloop — Bo had de 10 sloten gevuld en vroeg "nog 5 artiestenaliassen".
+- Conclusions: Alleen de constante verhogen volstaat: de opslag is een JSON-array op de user-row (geen migratie of drift), en UI (accountpagina-grid met `Array(MAX_ARTIST_ALIASES)` slots), parse/serialize/validatie en de server-grens lezen dezelfde constante. Composer/writer blijven bewust op 5.
+- Actions: `src/lib/artist-aliases.ts` — `MAX_ARTIST_ALIASES` 10 → 15. Gevalideerd met `npm run build` (geslaagd); validated.
 
 ## 2026-09-30 wo 23:30 (Artiestenpagina's: een publieke pagina per artiestennaam)
 
