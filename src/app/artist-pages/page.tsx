@@ -14,6 +14,7 @@ interface ArtistPageRow {
   alias: string;
   slug: string;
   bio: string | null;
+  bioNl: string | null;
   imageS3Key: string | null;
   heroS3Key: string | null;
 }
@@ -21,6 +22,7 @@ interface ArtistPageRow {
 /** Per-page form state, kept apart from the server rows so typing stays local. */
 interface Draft {
   bio: string;
+  bioNl: string;
   slug: string;
 }
 
@@ -74,7 +76,7 @@ export default function ArtistPagesPage() {
       setPages(rows);
       setAvailableAliases(data.availableAliases ?? []);
       setDrafts(
-        Object.fromEntries(rows.map((row) => [row.id, { bio: row.bio ?? "", slug: row.slug }]))
+        Object.fromEntries(rows.map((row) => [row.id, { bio: row.bio ?? "", bioNl: row.bioNl ?? "", slug: row.slug }]))
       );
     }
     setLoading(false);
@@ -121,7 +123,7 @@ export default function ArtistPagesPage() {
     const res = await fetch(`/api/artist-pages/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio: draft.bio, slug: draft.slug }),
+      body: JSON.stringify({ bio: draft.bio, bioNl: draft.bioNl, slug: draft.slug }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -203,7 +205,7 @@ export default function ArtistPagesPage() {
               ) : (
                 <div className="space-y-4">
                   {pages.map((page) => {
-                    const draft = drafts[page.id] ?? { bio: page.bio ?? "", slug: page.slug };
+                    const draft = drafts[page.id] ?? { bio: page.bio ?? "", bioNl: page.bioNl ?? "", slug: page.slug };
                     const isSaving = savingId === page.id;
                     return (
                       <article
@@ -312,6 +314,20 @@ export default function ArtistPagesPage() {
                           <textarea
                             value={draft.bio}
                             onChange={(e) => setDraft(page.id, { bio: e.target.value })}
+                            placeholder={t("artistPages.bioPlaceholder", { name: page.alias })}
+                            maxLength={ARTIST_PAGE_BIO_MAX_LENGTH}
+                            rows={5}
+                            className="input-field text-sm w-full resize-y"
+                          />
+                        </Field>
+
+                        <Field
+                          label={t("artistPages.bioNl")}
+                          hint={draft.bioNl.trim() ? undefined : t("artistPages.bioNlFallbackHint")}
+                        >
+                          <textarea
+                            value={draft.bioNl}
+                            onChange={(e) => setDraft(page.id, { bioNl: e.target.value })}
                             placeholder={t("artistPages.bioPlaceholder", { name: page.alias })}
                             maxLength={ARTIST_PAGE_BIO_MAX_LENGTH}
                             rows={5}

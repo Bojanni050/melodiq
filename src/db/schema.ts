@@ -67,6 +67,9 @@ export const artistPages = pgTable("artist_pages", {
   // falls back to the owner's account bio / profile image when empty, so a
   // page created with zero extra input still looks complete.
   bio: text("bio"),
+  // Dutch version of the page bio. The public page picks by visitor language
+  // and falls back to the other language when one is empty.
+  bioNl: text("bio_nl"),
   imageS3Key: text("image_s3_key"),
   heroS3Key: text("hero_s3_key"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -154,6 +157,11 @@ export const tracks = pgTable("tracks", {
   writerName: varchar("writer_name", { length: 255 }),
   sunoStyleInfluence: integer("suno_style_influence"),
   sunoWeirdness: integer("suno_weirdness"),
+  // APIMart Suno v6 options recorded on an uploaded track whose source is Suno
+  // v6 (see the upload panel). Not used for generation.
+  sunoVariety: varchar("suno_variety", { length: 10 }),
+  sunoMaxMode: boolean("suno_max_mode").default(false).notNull(),
+  sunoAudioFormat: varchar("suno_audio_format", { length: 10 }),
   s3KeyLicense: text("s3_key_license"),
   rating: varchar("rating", { length: 10 }),
   playCount: integer("play_count").default(0).notNull(),

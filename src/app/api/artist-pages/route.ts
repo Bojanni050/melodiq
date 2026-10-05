@@ -25,6 +25,7 @@ export async function GET() {
         alias: artistPages.alias,
         slug: artistPages.slug,
         bio: artistPages.bio,
+        bioNl: artistPages.bioNl,
         imageS3Key: artistPages.imageS3Key,
         heroS3Key: artistPages.heroS3Key,
         createdAt: artistPages.createdAt,

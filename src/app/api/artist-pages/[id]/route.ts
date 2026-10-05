@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Artist page not found" }, { status: 404 });
   }
 
-  let body: { bio?: unknown; slug?: unknown };
+  let body: { bio?: unknown; bioNl?: unknown; slug?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -55,6 +55,12 @@ export async function PATCH(request: Request, { params }: Params) {
     const bio = normalizeArtistPageBio(body.bio);
     if (!bio.ok) return NextResponse.json({ error: bio.error }, { status: 400 });
     updates.bio = bio.bio;
+  }
+
+  if (body.bioNl !== undefined) {
+    const bioNl = normalizeArtistPageBio(body.bioNl);
+    if (!bioNl.ok) return NextResponse.json({ error: bioNl.error }, { status: 400 });
+    updates.bioNl = bioNl.bio;
   }
 
   if (body.slug !== undefined) {

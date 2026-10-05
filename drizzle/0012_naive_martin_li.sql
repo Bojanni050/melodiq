@@ -1,0 +1,1 @@
+ALTER TABLE "artist_pages" ADD COLUMN "bio_nl" text;

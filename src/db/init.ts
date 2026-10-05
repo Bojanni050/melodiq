@@ -224,6 +224,7 @@ CREATE TABLE IF NOT EXISTS "artist_pages" (
   "alias" varchar(255) NOT NULL,
   "slug" varchar(255) NOT NULL,
   "bio" text,
+  "bio_nl" text,
   "image_s3_key" text,
   "hero_s3_key" text,
   "created_at" timestamp NOT NULL DEFAULT now(),
@@ -233,6 +234,7 @@ CREATE TABLE IF NOT EXISTS "artist_pages" (
 CREATE INDEX IF NOT EXISTS "artist_pages_user_id_idx" ON "artist_pages"("user_id");
 CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_user_alias_unique" ON "artist_pages"("user_id", "alias");
 CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_slug_unique" ON "artist_pages"("slug");
+ALTER TABLE artist_pages ADD COLUMN IF NOT EXISTS bio_nl text;
 
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -408,6 +410,10 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS wav_retry_count integer NOT NULL DEF
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS artist_name VARCHAR(255);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_style_influence integer;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_weirdness integer;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_variety VARCHAR(10);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_max_mode boolean NOT NULL DEFAULT false;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS suno_audio_format VARCHAR(10);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS vocal_gender VARCHAR(10);
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatDuration } from "@/lib/track-utils";
-import { usePlayerStore } from "@/lib/store";
+import { useLocaleStore, usePlayerStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
 
 export interface PublicArtistTrack {
@@ -20,6 +20,8 @@ export interface PublicArtist {
   id: string;
   name: string;
   bio: string | null;
+  /** Dutch bio; falls back to `bio` when empty (and vice versa). */
+  bioNl?: string | null;
   genres: string[];
   stats: { tracks: number; totalPlays: number; sinceYear: number };
   /** Round artist portrait. Null when neither the page nor the account has one. */
@@ -70,8 +72,14 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
+  const locale = useLocaleStore((s) => s.locale);
 
-  const bioParagraphs = (artist?.bio ?? "")
+  // Prefer the visitor's language, fall back to the other one.
+  const localizedBio = locale === "nl"
+    ? (artist?.bioNl?.trim() || artist?.bio || "")
+    : (artist?.bio?.trim() || artist?.bioNl || "");
+
+  const bioParagraphs = localizedBio
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);

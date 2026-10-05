@@ -696,6 +696,8 @@ const en = {
     bio: "Bio",
     bioPlaceholder: "Tell listeners who {name} is and what they make...",
     bioFallbackHint: "Empty — your account bio is shown instead.",
+    bioNl: "Bio (Dutch)",
+    bioNlFallbackHint: "Empty — the English bio is shown instead.",
     slug: "Web address",
     slugHint: "The page lives on /artist/{slug}",
     save: "Save",

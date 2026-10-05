@@ -44,6 +44,7 @@ export async function GET(
       alias: artistPages.alias,
       slug: artistPages.slug,
       bio: artistPages.bio,
+      bioNl: artistPages.bioNl,
       imageS3Key: artistPages.imageS3Key,
       heroS3Key: artistPages.heroS3Key,
       userId: artistPages.userId,
@@ -126,6 +127,7 @@ export async function GET(
       // Page copy wins; the account bio is the fallback so a page created with
       // one click still reads as finished.
       bio: page.bio ?? owner?.bio ?? null,
+      bioNl: page.bioNl ?? null,
       genres,
       stats: {
         tracks: trackList.length,

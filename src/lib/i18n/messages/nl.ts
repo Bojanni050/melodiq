@@ -699,6 +699,8 @@ const nl: typeof en = {
     bio: "Bio",
     bioPlaceholder: "Vertel luisteraars wie {name} is en wat hij of zij maakt...",
     bioFallbackHint: "Leeg — je account-bio wordt getoond.",
+    bioNl: "Bio (NL)",
+    bioNlFallbackHint: "Leeg — de Engelse bio wordt getoond.",
     slug: "Webadres",
     slugHint: "De pagina staat op /artist/{slug}",
     save: "Opslaan",
