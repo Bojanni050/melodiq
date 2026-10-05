@@ -380,6 +380,20 @@ export default function Player() {
     audioRef.current.addEventListener("waiting", handleStalled);
     audioRef.current.addEventListener("error", handleAudioError);
 
+    // Playback diagnostics: when the element pauses, stalls or errors we log
+    // who did it (stack trace). Pausing during music should never happen
+    // silently — e.g. the reported "playback stops on Releases → Account".
+    // eslint-disable-next-line no-console
+    const debugAudioEvent = (event: Event) => {
+      if (!usePlayerStore.getState().isPlaying && event.type !== "error") return;
+      console.warn(`[audio-debug] ${event.type}`, new Error().stack);
+    };
+    audioRef.current.addEventListener("pause", debugAudioEvent);
+    audioRef.current.addEventListener("stalled", debugAudioEvent);
+    audioRef.current.addEventListener("error", debugAudioEvent);
+    audioRef.current.addEventListener("waiting", debugAudioEvent);
+    audioRef.current.addEventListener("emptied", debugAudioEvent);
+
     setCurrentTime(audioRef.current.currentTime || 0);
     setDuration(audioRef.current.duration || 0);
 
@@ -403,6 +417,11 @@ export default function Player() {
         audioRef.current.removeEventListener("stalled", handleStalled);
         audioRef.current.removeEventListener("waiting", handleStalled);
         audioRef.current.removeEventListener("error", handleAudioError);
+        audioRef.current.removeEventListener("pause", debugAudioEvent);
+        audioRef.current.removeEventListener("stalled", debugAudioEvent);
+        audioRef.current.removeEventListener("error", debugAudioEvent);
+        audioRef.current.removeEventListener("waiting", debugAudioEvent);
+        audioRef.current.removeEventListener("emptied", debugAudioEvent);
       }
       if (unexpectedPauseTimer) clearTimeout(unexpectedPauseTimer);
       if (trackPauseTimerRef.current) clearTimeout(trackPauseTimerRef.current);
