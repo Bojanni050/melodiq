@@ -1705,3 +1705,9 @@ pm run build � succesvol.
 - Findings: Cover-play-knoppen stonden op sommige plekken gecentreerd (Explore, de track-hero, de release-kaarten) terwijl de Discover-kaarten al rechtsonder stonden.
 - Conclusions: Overal gelijkgetrokken: de donkere hover-laag blijft de hele cover, maar het play/pause-cirkeltje staat nu `absolute bottom-3 right-3`. Geldt voor de publieke covers (explore, de track-hero, de discover/releases-kaarten) en de privé release-kaarten. De kleine bibliotheek-thumbnail (`TrackPlayButton`) is bewust gelaten: daar zit de duur al onderin, dus een play rechtsonder zou overlappen.
 - Actions: `src/app/(public)/explore/page.tsx`, `src/app/(public)/discover/track/[trackId]/page.tsx`, `src/app/(public)/discover/releases/page.tsx`, `src/app/releases/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); niet visueel gecontroleerd (lokale DB zonder gepubliceerde tracks); validated.
+
+## 2026-10-05 zo (Groene play-knop op de trackpagina verwijderd)
+
+- Findings: Naast de cover-play stond er op de trackpagina nog een grote groene play-knop in de actierij.
+- Conclusions: Die is verwijderd; de cover-play (rechtsonder) en de trackrij blijven de speelacties. De "n plays"-tekst blijft staan.
+- Actions: `src/app/(public)/discover/track/[trackId]/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

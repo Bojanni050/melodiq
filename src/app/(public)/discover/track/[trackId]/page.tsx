@@ -334,23 +334,6 @@ export default function TrackDnaPage() {
 
               {/* Action row */}
               <div className="flex items-center gap-4 px-1">
-                <button
-                  type="button"
-                  onClick={handlePlayClick}
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-green-500 text-black shadow-lg shadow-green-500/20 transition-transform hover:scale-105"
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? (
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <rect x="6" y="4" width="4" height="16" rx="1" />
-                      <rect x="14" y="4" width="4" height="16" rx="1" />
-                    </svg>
-                  ) : (
-                    <svg className="ml-0.5 h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </button>
                 <p className="text-sm text-ink-dim">
                   {track.totalPlays.toLocaleString()} {track.totalPlays === 1 ? "play" : "plays"}
                 </p>
