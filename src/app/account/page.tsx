@@ -70,7 +70,9 @@ export default function AccountPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingSecurity, setSavingSecurity] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+  const [profileMessageError, setProfileMessageError] = useState(false);
   const [securityMessage, setSecurityMessage] = useState("");
+  const [securityMessageError, setSecurityMessageError] = useState(false);
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingHero, setUploadingHero] = useState(false);
 
@@ -118,6 +120,7 @@ export default function AccountPage() {
   async function saveProfile() {
     setSavingProfile(true);
     setProfileMessage("");
+    setProfileMessageError(false);
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -128,6 +131,7 @@ export default function AccountPage() {
       setUser(data.user);
       setProfileMessage(t("account.profileUpdated"));
     } else {
+      setProfileMessageError(true);
       setProfileMessage(data.error || t("account.profileUpdateFailed"));
     }
     setSavingProfile(false);
@@ -155,12 +159,15 @@ export default function AccountPage() {
   async function savePassword() {
     setSavingSecurity(true);
     setSecurityMessage("");
+    setSecurityMessageError(false);
     if (newPassword !== confirmPassword) {
+      setSecurityMessageError(true);
       setSecurityMessage(t("account.passwordsDontMatch"));
       setSavingSecurity(false);
       return;
     }
     if (newPassword.length < 8) {
+      setSecurityMessageError(true);
       setSecurityMessage(t("account.passwordTooShort"));
       setSavingSecurity(false);
       return;
@@ -177,6 +184,7 @@ export default function AccountPage() {
       setNewPassword("");
       setConfirmPassword("");
     } else {
+      setSecurityMessageError(true);
       setSecurityMessage(data.error || t("account.passwordUpdateFailed"));
     }
     setSavingSecurity(false);
@@ -192,6 +200,7 @@ export default function AccountPage() {
       });
       URL.revokeObjectURL(url);
       if (dimensions.width < 1920 || dimensions.height < 1080) {
+        setProfileMessageError(true);
         setProfileMessage(t("account.heroImageTooSmall", { width: dimensions.width, height: dimensions.height }));
         return;
       }
@@ -199,6 +208,7 @@ export default function AccountPage() {
     const upload = type === "profile" ? setUploadingProfile : setUploadingHero;
     upload(true);
     setProfileMessage("");
+    setProfileMessageError(false);
     try {
       const fd = new FormData();
       fd.append("type", type);
@@ -209,9 +219,11 @@ export default function AccountPage() {
         setUser((prev) => prev ? { ...prev, [type === "profile" ? "profileImageUrl" : "heroImageUrl"]: data.url } : prev);
         setProfileMessage(t("account.imageUploaded"));
       } else {
+        setProfileMessageError(true);
         setProfileMessage(data.error || t("account.uploadFailed"));
       }
     } catch {
+      setProfileMessageError(true);
       setProfileMessage(t("account.uploadFailed"));
     } finally {
       upload(false);
@@ -452,7 +464,7 @@ export default function AccountPage() {
                   {savingProfile ? t("account.saving") : t("account.saveProfile")}
                 </button>
                 {profileMessage && (
-                  <p className={`text-sm ${profileMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`text-sm ${profileMessageError ? "text-red-400" : "text-green-400"}`}>
                     {profileMessage}
                   </p>
                 )}
@@ -507,7 +519,7 @@ export default function AccountPage() {
                   {savingSecurity ? t("account.saving") : t("account.changePassword")}
                 </button>
                 {securityMessage && (
-                  <p className={`text-sm ${securityMessage.includes("successfully") ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`text-sm ${securityMessageError ? "text-red-400" : "text-green-400"}`}>
                     {securityMessage}
                   </p>
                 )}
