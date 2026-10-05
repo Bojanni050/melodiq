@@ -237,7 +237,7 @@ export default function TrackDnaPage() {
         <Sidebar credits={null} />
         <main
           className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 pb-16 @container"
-          style={{ paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+          style={{ paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
         >
           <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

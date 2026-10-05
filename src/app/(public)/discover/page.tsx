@@ -542,7 +542,7 @@ export default function DiscoverPage() {
       <Sidebar credits={null} />
       <div
         className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
-        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
       >
       <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
 

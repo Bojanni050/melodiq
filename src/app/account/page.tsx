@@ -214,7 +214,7 @@ export default function AccountPage() {
     return (
       <div className="h-screen bg-canvas overflow-hidden">
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
           <div className="flex items-center justify-center h-full">
             <p className="text-ink-dim">{t("account.loading")}</p>
           </div>
@@ -226,7 +226,7 @@ export default function AccountPage() {
   return (
     <div className="h-screen bg-canvas overflow-hidden">
       <Sidebar credits={null} />
-      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
         <main className="px-4 pt-[68px] pb-10 sm:px-6 lg:pt-10 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-ink">{t("account.title")}</h1>
 

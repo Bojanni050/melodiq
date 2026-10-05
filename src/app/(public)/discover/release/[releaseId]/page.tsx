@@ -189,7 +189,7 @@ export default function PublicReleasePage() {
         <div
           className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex items-center justify-center px-6"
           style={{
-            marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+            marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)",
           }}
         >
           <div className=" border border-line bg-white/5 p-8 text-center max-w-md">
@@ -224,7 +224,7 @@ export default function PublicReleasePage() {
       <div
         className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
         style={{
-          marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+          marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)",
         }}
       >
         <main

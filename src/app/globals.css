@@ -16,6 +16,7 @@ html {
   --foreground: var(--mq-ink);
   --sidebar-width: 240px;
   --sidebar-collapsed: 60px;
+  --sidebar-width-qhd: 300px;
   --player-height: 80px;
   --studio-top-offset: 64px;
   --studio-bottom-gap: 16px;

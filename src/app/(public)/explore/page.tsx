@@ -90,7 +90,7 @@ export default function ExplorePage() {
 
       <main
         className="px-4 pb-8 pt-18.25 sm:px-8 lg:pt-12"
-        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
       >
         <div className="mb-8">
           <h1 className="text-3xl font-bold sm:text-4xl">Published Tracks</h1>

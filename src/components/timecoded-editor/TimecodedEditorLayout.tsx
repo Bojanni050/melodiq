@@ -14,7 +14,7 @@ export default function TimecodedEditorLayout({ children }: { children: React.Re
       <Sidebar credits={null} />
       <main
         className="flex-1 overflow-y-auto overflow-x-hidden"
-        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
       >
         {children}
       </main>

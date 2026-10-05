@@ -294,13 +294,13 @@ export default function Sidebar({ credits }: SidebarProps) {
     }
   }
 
-  const sidebarWidth = isQHD ? (collapsed ? "w-15" : "w-75") : (collapsed ? "w-15" : "w-60");
+  const sidebarWidth = collapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)";
 
   return (
     <>
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-canvas border-r border-line transition-all duration-300 z-30 overflow-hidden ${sidebarWidth}`}
-        style={isQHD && !collapsed ? { fontSize: "1.1em" } : undefined}
+        className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-canvas border-r border-line transition-all duration-300 z-30 overflow-hidden"
+        style={{ width: sidebarWidth, ...(isQHD && !collapsed ? { fontSize: "1.1em" } : {}) }}
       >
         {sidebarCoverUrl && (
           <div
@@ -461,7 +461,7 @@ export default function Sidebar({ credits }: SidebarProps) {
         <button
           onClick={() => setCollapsed(true)}
           className="hidden lg:flex fixed top-1/2 -translate-y-1/2 z-30 w-6 h-12 items-center justify-center bg-canvas border border-line-strong text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
-          style={{ left: isQHD ? "300px" : "240px" }}
+          style={{ left: isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
           aria-label="Sidebar sluiten"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

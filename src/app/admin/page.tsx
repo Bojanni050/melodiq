@@ -164,7 +164,7 @@ export default function AdminPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center text-sm text-ink-dim">Checking access...</main>
       </div>
@@ -173,7 +173,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="max-w-sm  border border-line bg-white/5 p-8 text-center">
@@ -185,7 +185,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+    <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
       <Sidebar credits={null} />
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
         <div className="mx-auto max-w-4xl space-y-6 pb-16">

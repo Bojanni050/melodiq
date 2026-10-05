@@ -285,7 +285,7 @@ export default function WorkspaceDetailPage() {
     return (
       <div className="h-screen bg-canvas overflow-hidden text-ink">
         <Sidebar credits={null} />
-        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+        <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
           <div className=" border border-line bg-white/5 p-8 text-center">
             <p className="text-sm text-ink-muted">Workspace not found.</p>
             <button
@@ -305,7 +305,7 @@ export default function WorkspaceDetailPage() {
     <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
-      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-[73px] lg:pt-5">
           <div className="max-w-[1600px] mx-auto space-y-6">
             <section className="relative overflow-hidden px-1 py-2 sm:px-2">

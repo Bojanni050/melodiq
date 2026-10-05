@@ -203,7 +203,7 @@ export default function MusicBuilderPage() {
   return (
     <div
       className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-canvas text-ink overflow-hidden"
-      style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}
+      style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}
     >
       <Sidebar credits={credits} />
 
