@@ -41,7 +41,7 @@ $VPS_PATH = "/var/www/vhosts/melodiq.nl/melodiq"
 # Mirrors .github/workflows/deploy to vps - melodiq.yml: pull, rebuild, restart.
 # The container CMD runs `drizzle-kit push --force` before starting the server,
 # so the schema is migrated on every deploy — no separate migration step here.
-$remoteCommand = "cd $VPS_PATH && git pull origin main && docker compose up -d --build && docker image prune -f && sleep 5 && docker compose ps"
+$remoteCommand = "cd $VPS_PATH && (cp .env /tmp/melodiq.env.bak 2>/dev/null; true) && git pull origin main && (test -f .env || cp /tmp/melodiq.env.bak .env 2>/dev/null; true) && docker compose up -d --build && docker image prune -f && sleep 5 && docker compose ps"
 
 ssh "$VPS_USER@$VPS_HOST" $remoteCommand
 

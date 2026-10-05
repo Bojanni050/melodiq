@@ -28,8 +28,14 @@ jobs:
 
             cd /var/www/vhosts/melodiq.nl/melodiq
 
+            # .env is no longer tracked in git; keep the server's copy across the
+            # hard reset (older commits tracked it, so the reset would delete it).
+            [ -f .env ] && cp .env /tmp/melodiq.env.bak || true
+
             git fetch origin
             git reset --hard origin/main
+
+            [ -f .env ] || { [ -f /tmp/melodiq.env.bak ] && cp /tmp/melodiq.env.bak .env; } || true
 
             docker compose pull || true
             docker compose up -d --build

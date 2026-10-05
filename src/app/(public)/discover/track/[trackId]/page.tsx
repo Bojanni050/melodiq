@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
@@ -56,6 +57,7 @@ export default function TrackDnaPage() {
   const trackId = params?.trackId;
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [track, setTrack] = useState<PublicTrack | null>(null);
   const [audioDna, setAudioDna] = useState<AudioDna | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -83,6 +85,8 @@ export default function TrackDnaPage() {
         if (active) setIsLoggedIn(res.ok);
       } catch {
         if (active) setIsLoggedIn(false);
+      } finally {
+        if (active) setAuthChecked(true);
       }
     }
     checkAuth();
@@ -229,7 +233,8 @@ export default function TrackDnaPage() {
     : [];
 
   return (
-    <div className="h-screen bg-[#09090d] text-white overflow-hidden">
+    <div className={`bg-[#09090d] text-white ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+      {authChecked && !isLoggedIn && <PublicNav />}
       <div className={isLoggedIn ? "h-[calc(100vh-var(--player-height))] flex" : "min-h-screen flex"}>
         {isLoggedIn && <Sidebar credits={null} />}
         <main
@@ -253,7 +258,7 @@ export default function TrackDnaPage() {
               </Link>
             </div>
           ) : (
-            <div className="mt-6 max-w-400 mx-auto space-y-6">
+            <div className="mt-6 space-y-6">
               {/* Hero header — cover art left, artist/writer info beside it */}
               <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-900/60 via-primary-900/30 to-[#0d0e15]">
                 <div className="flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import PublicNav from "@/components/PublicNav";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
@@ -53,6 +55,7 @@ export default function PublicPlaylistPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener" || user?.role == null;
+  const { checked: authChecked, isLoggedIn } = useAuthStatus();
   const backTarget = useSmartBack({ href: "/discover", label: "Back to Discover" });
 
   useEffect(() => {
@@ -225,12 +228,13 @@ export default function PublicPlaylistPage() {
 
   if (notFound || (!loading && !playlist)) {
     return (
-      <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
-        <Sidebar credits={null} />
+      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+        {isLoggedIn && <Sidebar credits={null} />}
+      {authChecked && !isLoggedIn && <PublicNav />}
         <div
-          className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex items-center justify-center px-6"
+          className={`${isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" : "flex-1 min-h-0"} flex items-center justify-center px-6`}
           style={{
-            marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+            marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
           }}
         >
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center max-w-md">
@@ -252,7 +256,7 @@ export default function PublicPlaylistPage() {
   }
 
   return (
-    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div
@@ -260,20 +264,21 @@ export default function PublicPlaylistPage() {
           style={{ backgroundImage: `url(${coverUrl})` }}
         />
       )}
-      <Sidebar credits={null} />
+      {isLoggedIn && <Sidebar credits={null} />}
+      {authChecked && !isLoggedIn && <PublicNav />}
 
       <div
-        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
+        className={`${isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" : "flex-1 min-h-0"} flex`}
         style={{
-          marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+          marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
         }}
       >
         <main
-          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
-            isListener ? "lg:pt-20" : "lg:pt-5"
+          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 ${isLoggedIn ? "pt-18.25" : "pt-5"} ${
+            isLoggedIn && isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >
-          <div className="max-w-400 mx-auto space-y-6">
+          <div className="space-y-6">
             {/* Header matching Library & Playlist styling */}
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

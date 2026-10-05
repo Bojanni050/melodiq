@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
 import ArtistLink from "@/components/artist/ArtistLink";
 import { usePlayerStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
@@ -82,26 +83,9 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <header className="border-b border-white/5 bg-[#0d0d12]/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-8">
-          <Link href="/explore" className="flex items-center gap-2">
-            <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-            </svg>
-            <span className="bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-lg font-bold text-transparent">
-              MelodIQ
-            </span>
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-          >
-            Sign in
-          </Link>
-        </div>
-      </header>
+      <PublicNav />
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+      <main className="px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold sm:text-4xl">Published Tracks</h1>
           <p className="mt-2 text-white/50">
@@ -110,9 +94,9 @@ export default function ExplorePage() {
         </div>
 
         {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-3 animate-pulse">
+              <div key={i} className="animate-pulse">
                 <div className="aspect-square w-full rounded-xl bg-white/10" />
                 <div className="mt-3 h-4 w-3/4 rounded bg-white/10" />
                 <div className="mt-2 h-3 w-1/2 rounded bg-white/10" />
@@ -124,19 +108,20 @@ export default function ExplorePage() {
             <p className="text-white/40">No published tracks yet.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
             {published.map((track) => {
               const cover = coverSrc(track);
               const isPlaying = currentTrack?.id === track.id && globalIsPlaying;
               return (
                 <div
                   key={track.id}
-                  className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors hover:border-white/20"
+                  className="flex flex-col gap-1.5"
                 >
+                  <div className="group relative aspect-square w-full">
                   <button
                     type="button"
                     onClick={() => handlePlay(track)}
-                    className="group relative aspect-square w-full overflow-hidden rounded-xl"
+                    className="absolute inset-0 overflow-hidden rounded-xl"
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {cover ? (
@@ -167,25 +152,19 @@ export default function ExplorePage() {
                       </div>
                     </div>
                   </button>
-                  <div className="min-w-0">
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
                     <Link
                       href={`/discover/track/${track.id}`}
-                      className="block truncate text-sm font-medium text-white hover:text-primary-300 transition-colors"
+                      className="pointer-events-auto block truncate text-sm font-semibold text-white drop-shadow hover:text-primary-300 transition-colors"
                     >
                       {track.title}
                     </Link>
-                    {track.artistId ? (
-                      <ArtistLink
-                        name={track.artistName || "Unknown Artist"}
-                        fallbackHref={`/discover/artist/${track.artistId}`}
-                        className="block truncate text-sm text-white/45 hover:text-primary-300 transition-colors"
-                      />
-                    ) : (
-                      <ArtistLink
-                        name={track.artistName || "Unknown Artist"}
-                        className="block truncate text-sm text-white/45 hover:text-primary-300 transition-colors"
-                      />
-                    )}
+                    <ArtistLink
+                      name={track.artistName || "Unknown Artist"}
+                      {...(track.artistId ? { fallbackHref: `/discover/artist/${track.artistId}` } : {})}
+                      className="pointer-events-auto block truncate text-xs text-white/70 hover:text-primary-300 transition-colors"
+                    />
+                  </div>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-white/35">
                     <span>{formatDuration(track.duration)}</span>

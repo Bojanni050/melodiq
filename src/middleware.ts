@@ -7,13 +7,16 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isPublicApi = pathname.startsWith("/api/webhooks/");
-  const isPwaAsset = pathname === "/manifest.webmanifest" || pathname.startsWith("/icons/");
+  const isPwaAsset = pathname === "/manifest.webmanifest" || pathname === "/robots.txt" || pathname.startsWith("/icons/");
   const isApi = pathname.startsWith("/api/");
+  // Public routes live in the src/app/(public) route group (URLs unchanged).
   // Song DNA (Discover) and the public Explore page stay browsable while
-  // logged out — see src/app/discover/page.tsx, src/app/explore/page.tsx and
+  // logged out — see src/app/(public)/discover/page.tsx, src/app/(public)/explore/page.tsx and
   // getPublishedTrackById in src/lib/songs.ts. Their own API routes under
   // /api/discover/* are already public (no auth) server-side and pass
   // through via isApi above.
+  // "/" only redirects to /discover (src/app/page.tsx), so it must be public too.
+  const isPublicRoot = pathname === "/";
   const isPublicDiscover = pathname === "/discover" || pathname.startsWith("/discover/");
   const isPublicExplore = pathname === "/explore" || pathname.startsWith("/explore/");
   // Public per-alias artist pages (/artist/[slug]) with their own API routes.
@@ -28,7 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicRoot || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
