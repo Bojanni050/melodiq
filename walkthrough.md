@@ -1717,3 +1717,9 @@ pm run build � succesvol.
 - Findings: Na het terugzetten van de linker Sidebar op de publieke pagina's overlapte die de content (~15px). Oorzaak: `html { font-size: 17px }`, dus Tailwind `w-60` is 15rem = **255px**, terwijl de content-offset overal hardcoded **240px** was (en `w-15`/`w-75` idem 63,75px / 318,75px).
 - Conclusions: Sidebarbreedte en content-offset gebruiken nu dezelfde CSS-variabelen (`--sidebar-width` 240px, `--sidebar-collapsed` 60px, nieuw `--sidebar-width-qhd` 300px). De Sidebar krijgt de breedte via `style` (geen `w-60`-klasse meer) en alle pagina-offsets verwijzen naar dezelfde var, zodat ze per definitie niet meer kunnen afwijken. De collapse-knop gebruikt de var ook.
 - Actions: `src/app/globals.css` (`--sidebar-width-qhd`), `src/components/Sidebar.tsx`, plus 25 pagina's en `TimecodedEditorLayout` waarin `sidebarCollapsed ? 60 : isQHD ? 300 : 240` (en de melody-variant met `: 0`) naar de var is omgezet. Visueel gecontroleerd op `/discover/track/[id]`: sidebar 240px, content start op 240px. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Plays-teller boven de tracklijst verwijderd)
+
+- Findings: Op de trackpagina stond nog een losse "n plays"-regel boven de tracklijst, overgebleven na het verwijderen van de groene play-knop.
+- Conclusions: De actierij (die alleen nog de plays-teller bevatte) is verwijderd; de speelacties zitten op de cover (rechtsonder) en in de trackrij.
+- Actions: `src/app/(public)/discover/track/[trackId]/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

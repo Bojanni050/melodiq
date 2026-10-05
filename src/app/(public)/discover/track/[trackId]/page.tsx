@@ -332,13 +332,6 @@ export default function TrackDnaPage() {
                 </div>
               </section>
 
-              {/* Action row */}
-              <div className="flex items-center gap-4 px-1">
-                <p className="text-sm text-ink-dim">
-                  {track.totalPlays.toLocaleString()} {track.totalPlays === 1 ? "play" : "plays"}
-                </p>
-              </div>
-
               {/* Track card row — single-track "list" styled like a streaming release page */}
               <section>
                 <div className="flex items-center gap-3 border-b border-line px-3 pb-2 text-xs uppercase tracking-wide text-ink-dim">
