@@ -1759,3 +1759,9 @@ pm run build � succesvol.
 - Findings: Componist en schrijver hadden elk één alias-veld, terwijl artiest al een lijst had (`artistAliases`).
 - Conclusions: Net als `artistAliases` zijn er nu JSON-arrays `composer_aliases` en `writer_aliases` met 5 slots elk (primaire + 4 extra). De scalaire `composer_alias`/`writer_alias` blijven de eerste slot spiegelen, zodat bestaande fallbacks onveranderd blijven. De accountpagina toont 5 velden per kolom; de update-API valideert/serialiseert de arrays, en de archive-pagina neemt alle aliassen mee in de suggestielijsten.
 - Actions: `src/db/schema.ts`, `src/db/init.ts`, `drizzle/0013_dusty_toad.sql` (+ journal/snapshot), `src/lib/artist-aliases.ts` (generieke `parseAliasList`/`serializeAliasList`/`validateAliasList` + maxima), `src/app/api/auth/update/route.ts` + `src/app/api/auth/me/route.ts`, `src/app/account/page.tsx`, `src/lib/stores/userStore.ts`, `src/app/archive/page.tsx`. Gevalideerd met `npm run db:check-drift` (geen drift), `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Upload: lyrics- en promptveld omgewisseld)
+
+- Findings: In het uploadformulier stond het globale promptveld links en lyrics rechts; Bo wil ze omgewisseld.
+- Conclusions: De globale velden staan nu lyrics-links, prompt-rechts. De conditionele weergave bij instrumental blijft (dan alleen prompt).
+- Actions: `src/components/library/UploadPanel.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

@@ -378,18 +378,6 @@ export default function UploadPanel({
             </div>
 
             <div className={`grid gap-3 transition-all duration-200 ${uploadInstrumental ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
-              <div className="space-y-1">
-                <label htmlFor="upload-panel-prompt" className="text-sm text-ink-muted">Optional prompt (global)</label>
-                <textarea
-                  id="upload-panel-prompt"
-                  value={uploadPromptDraft}
-                  onChange={(event) => setUploadPromptDraft(event.target.value)}
-                  rows={3}
-                  disabled={uploading}
-                  placeholder="Style / mood / context"
-                  className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
-                />
-              </div>
               {!uploadInstrumental && (
                 <div className="space-y-1">
                   <label htmlFor="upload-panel-lyrics" className="text-sm text-ink-muted">Optional lyrics (global)</label>
@@ -404,6 +392,18 @@ export default function UploadPanel({
                   />
                 </div>
               )}
+              <div className="space-y-1">
+                <label htmlFor="upload-panel-prompt" className="text-sm text-ink-muted">Optional prompt (global)</label>
+                <textarea
+                  id="upload-panel-prompt"
+                  value={uploadPromptDraft}
+                  onChange={(event) => setUploadPromptDraft(event.target.value)}
+                  rows={3}
+                  disabled={uploading}
+                  placeholder="Style / mood / context"
+                  className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-2">
