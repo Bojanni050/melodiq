@@ -1723,3 +1723,9 @@ pm run build � succesvol.
 - Findings: Op de trackpagina stond nog een losse "n plays"-regel boven de tracklijst, overgebleven na het verwijderen van de groene play-knop.
 - Conclusions: De actierij (die alleen nog de plays-teller bevatte) is verwijderd; de speelacties zitten op de cover (rechtsonder) en in de trackrij.
 - Actions: `src/app/(public)/discover/track/[trackId]/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Library/Playlists verborgen voor uitgelogde bezoekers)
+
+- Findings: De linker Sidebar toonde Library en Playlists ook voor uitgelogde bezoekers; die linkten door naar /login.
+- Conclusions: Library en Playlists verschijnen alleen nog bij een ingelogde gebruiker (`user`); uitgelogd blijft Browse beperkt tot Discover, Explore en Releases, met daaronder de Sign in-knop. Geldt voor zowel desktop als de mobiele drawer (één `navGroups`-bron).
+- Actions: `src/components/Sidebar.tsx`. Visueel gecontroleerd: /discover uitgelogd toont alleen Discover/Explore/Releases + Sign in. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

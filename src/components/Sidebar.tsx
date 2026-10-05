@@ -88,8 +88,12 @@ export default function Sidebar({ credits }: SidebarProps) {
               { href: "/discover", label: t("nav.discover"), icon: "discover" },
               { href: "/explore", label: "Explore", icon: "discover" },
               { href: "/discover/releases", label: t("nav.releasesBrowse"), icon: "releases" },
-              { href: "/library", label: t("nav.library"), icon: "library" },
-              { href: "/playlists", label: t("nav.playlists"), icon: "playlists" },
+              ...(user
+                ? [
+                    { href: "/library", label: t("nav.library"), icon: "library" },
+                    { href: "/playlists", label: t("nav.playlists"), icon: "playlists" },
+                  ]
+                : []),
             ],
           },
         ]
