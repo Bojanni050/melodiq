@@ -604,10 +604,10 @@ export default function ReleasesPage() {
                               )}
                             </button>
 
-                            {/* Play button centred on the cover, mirroring
-                                TrackPlayButton: white glyph, revealed on hover
-                                only, and pinned open with a pause glyph while
-                                this release is playing. */}
+                            {/* Play button pinned to the bottom-right of the
+                                cover: white glyph, revealed on hover only,
+                                and held open with a pause glyph while this
+                                release is playing. */}
                             {releaseTrackItems.length > 0 && (
                               <button
                                 type="button"
@@ -620,12 +620,12 @@ export default function ReleasesPage() {
                                   }
                                   playReleaseTrack(release.id, releaseTrackItems[0]);
                                 }}
-                                className="absolute inset-0 flex items-center justify-center  transition-colors group-hover/cover:bg-black/45"
+                                className="absolute inset-0 transition-colors group-hover/cover:bg-black/45"
                                 aria-label={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
                                 title={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
                               >
                                 <span
-                                  className={`flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
+                                  className={`absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
                                     currentTrack?.id === releaseTrackItems[0].id && isPlaying
                                       ? "opacity-100"
                                       : "opacity-0 group-hover/cover:opacity-100"

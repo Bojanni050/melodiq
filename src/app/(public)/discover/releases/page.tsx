@@ -381,12 +381,12 @@ function DiscoverReleasesPageInner() {
                                     }
                                     playReleaseTrack(release.id, releaseTrackItems[0]);
                                   }}
-                                  className="absolute inset-0 flex items-center justify-center  transition-colors group-hover/cover:bg-black/45"
+                                  className="absolute inset-0 transition-colors group-hover/cover:bg-black/45"
                                   aria-label={label}
                                   title={label}
                                 >
                                   <span
-                                    className={`flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
+                                    className={`absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
                                       isThisReleasePlaying
                                         ? "opacity-100"
                                         : "opacity-0 group-hover/cover:opacity-100"

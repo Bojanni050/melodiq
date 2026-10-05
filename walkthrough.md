@@ -1699,3 +1699,9 @@ pm run build � succesvol.
 - Findings: De hero-kaart op de publieke trackpagina gebruikte een blauw/roze gradient (`from-sky-900/60 via-accent-strong/30`).
 - Conclusions: Dezelfde opzet als de linker Sidebar: een geblurde, verzadigde cover (`blur-[60px] opacity-20 saturate-200 scale-110`) over `bg-canvas`, met een fade naar `var(--mq-canvas)` zodat de tekst leesbaar blijft; zonder cover valt het terug op een effen canvas.
 - Actions: `src/app/(public)/discover/track/[trackId]/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Play-knop consequent rechtsonder op de cover)
+
+- Findings: Cover-play-knoppen stonden op sommige plekken gecentreerd (Explore, de track-hero, de release-kaarten) terwijl de Discover-kaarten al rechtsonder stonden.
+- Conclusions: Overal gelijkgetrokken: de donkere hover-laag blijft de hele cover, maar het play/pause-cirkeltje staat nu `absolute bottom-3 right-3`. Geldt voor de publieke covers (explore, de track-hero, de discover/releases-kaarten) en de privé release-kaarten. De kleine bibliotheek-thumbnail (`TrackPlayButton`) is bewust gelaten: daar zit de duur al onderin, dus een play rechtsonder zou overlappen.
+- Actions: `src/app/(public)/explore/page.tsx`, `src/app/(public)/discover/track/[trackId]/page.tsx`, `src/app/(public)/discover/releases/page.tsx`, `src/app/releases/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); niet visueel gecontroleerd (lokale DB zonder gepubliceerde tracks); validated.

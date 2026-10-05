@@ -285,9 +285,9 @@ export default function TrackDnaPage() {
                         </svg>
                       </div>
                     )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/40">
+                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/40">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-full bg-white/90 transition-opacity ${
+                        className={`absolute bottom-3 right-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 transition-opacity ${
                           isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                         }`}
                       >
