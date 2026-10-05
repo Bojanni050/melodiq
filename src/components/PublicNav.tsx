@@ -17,7 +17,7 @@ export default function PublicNav() {
   ];
 
   return (
-    <header className="border-b border-white/5 bg-[#0d0d12]/80 backdrop-blur-sm">
+    <header className="relative z-20 border-b border-white/5 bg-[#0d0d12]/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
         <div className="flex min-w-0 items-center gap-4 sm:gap-8">
           <Link href="/discover" className="flex shrink-0 items-center gap-2">
