@@ -33,8 +33,11 @@ html {
   --mq-ink-dim: #6b6860;
   --mq-line: #1a1917;
   --mq-line-strong: #252420;
-  --mq-accent: #d4500a;
-  --mq-accent-strong: #b8430a;
+  /* MelodIQ's own rose, not the artist page's terracotta: we borrow the
+   * artist page's editorial *system* (canvas, type, sharp edges) but keep
+   * the brand accent. */
+  --mq-accent: #ec4899;
+  --mq-accent-strong: #db2777;
 }
 
 body {

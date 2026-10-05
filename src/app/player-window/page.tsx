@@ -417,7 +417,7 @@ export default function PlayerWindowPage() {
                               onClick={() => handleLineClick(line.startTime)}
                               className={`cursor-pointer transition-all duration-500 origin-center py-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-tight ${
                                 isActive
-                                  ? "text-accent font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(212,80,10,0.5)] opacity-100"
+                                  ? "text-accent font-extrabold scale-[1.02] filter drop-shadow-[0_0_15px_rgba(236,72,153,0.5)] opacity-100"
                                   : isPlayed
                                   ? "text-ink-muted font-bold hover:text-ink"
                                   : "text-ink-dim font-bold hover:text-ink-muted"

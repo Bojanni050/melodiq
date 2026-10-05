@@ -1651,3 +1651,9 @@ pm run build � succesvol.
   - `src/components/Player.tsx`, `src/components/player/FullscreenPlayer.tsx`, `src/app/player-window/page.tsx` — accent → terracotta (`text-accent`/`bg-accent`, `accent-accent` voor de sliders), playerbalk → `bg-canvas` + `border-line`, menu-panelen en albumhoezen scherp, placeholder-cover `bg-surface-2`, actieve lyric terracotta.
   - Opgemerkt maar gelaten: `src/components/Header.tsx` en `src/components/CollapsibleSidebar.tsx` worden nergens geïmporteerd (dode componenten).
   - Gevalideerd met `npx tsc --noEmit` (0 errors), `npm run build` (geslaagd) en `npm run test` (139 geslaagd, 15 bestanden); de nieuwe utilities (`bg-canvas`, `bg-accent`, `text-ink`, `accent-accent`, opacity-varianten) zijn in de output-CSS gecontroleerd; validated.
+
+## 2026-10-05 zo (Accent blijft MelodIQ-roze, niet het terracotta van de artiestenpagina)
+
+- Findings: De artiestenpagina gebruikt terracotta `#d4500a`, maar Bo wil de editorial look overnemen met het eigen MelodIQ-roze als accent.
+- Conclusions: Dit is precies waar de tokenlaag voor bedoeld is: alleen `--mq-accent` aanpassen (`#d4500a` → `#ec4899`, hover `#b8430a` → `#db2777`), waarna schil en player automatisch volgen. De artiestenpagina zelf gebruikte nog hardcoded terracotta en is op `var(--mq-accent)` gezet, zodat ook die niet meer kan afwijken; de fullscreen/pop-out lyric-glow is teruggezet naar roze `rgba(236,72,153,0.5)`.
+- Actions: `src/app/globals.css` — `--mq-accent`/`--mq-accent-strong`; `src/components/artist/ArtistPublicPage.tsx` — 6× `#d4500a` → `var(--mq-accent)`; `src/components/player/FullscreenPlayer.tsx` + `src/app/player-window/page.tsx` — lyric drop-shadow roze. Verder `.next` geleegd, omdat een stale `.next/dev/types/validator.ts` na de route-merge nog naar het oude `src/app/artist/[slug]`-pad verwees en de build liet falen. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

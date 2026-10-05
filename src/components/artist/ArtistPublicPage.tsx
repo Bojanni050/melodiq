@@ -229,8 +229,8 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
               />
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <span style={{ width: 28, height: 1, background: "#d4500a", display: "inline-block" }} />
-              <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.1em", color: "#d4500a", textTransform: "uppercase" }}>
+              <span style={{ width: 28, height: 1, background: "var(--mq-accent)", display: "inline-block" }} />
+              <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.1em", color: "var(--mq-accent)", textTransform: "uppercase" }}>
                 {memberOf}
               </span>
             </div>
@@ -259,7 +259,7 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                   fontSize: 11,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  background: "#d4500a",
+                  background: "var(--mq-accent)",
                   color: "#e8e4db",
                   padding: "14px 28px",
                   textDecoration: "none",
@@ -426,9 +426,9 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                       background: isHovered ? "#111110" : "transparent",
                     }}
                   >
-                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 12, color: isPlaying ? "#d4500a" : "#6b6860" }}>
+                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 12, color: isPlaying ? "var(--mq-accent)" : "#6b6860" }}>
                       {isPlaying ? (
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="#d4500a">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--mq-accent)">
                           <rect x="2" y="1" width="3" height="10" />
                           <rect x="7" y="1" width="3" height="10" />
                         </svg>
@@ -445,7 +445,7 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                         fontFamily: "var(--font-artist-outfit), sans-serif",
                         fontWeight: isPlaying ? 600 : 400,
                         fontSize: 15,
-                        color: isPlaying ? "#d4500a" : "#e8e4db",
+                        color: isPlaying ? "var(--mq-accent)" : "#e8e4db",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
