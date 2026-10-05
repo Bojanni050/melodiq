@@ -9,6 +9,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import { useSidebarStore, usePlaylistStore, useReleaseStore, useUserStore, usePlayerStore } from "@/lib/store";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import { useT } from "@/hooks/useT";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
 
 const PLAYLIST_COVERS_STORAGE_KEY = "melodiq.playlist-covers";
 
@@ -61,6 +62,10 @@ export default function PlaylistsPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const user = useUserStore((s) => s.user);
   const isListener = user?.role === "listener" || user?.role == null;
+  const { checked: authChecked, isLoggedIn } = useAuthStatus();
+  // Logged-out visitors see only the curated (published) playlists, not an
+  // empty "my playlists" section with a create button they cannot use.
+  const isPublicViewer = user?.role === "listener" || (authChecked && !isLoggedIn);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
   const { playlists, loadPlaylists, createPlaylist } = usePlaylistStore();
@@ -241,6 +246,8 @@ export default function PlaylistsPage() {
             </section>
 
             <section className="space-y-5">
+              {!isPublicViewer && (
+                <>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-muted">
                   {t("playlists.countLabel", { count: playlists.length })}
@@ -323,6 +330,8 @@ export default function PlaylistsPage() {
                     );
                   })}
                 </div>
+              )}
+                </>
               )}
 
               {publishedPlaylists.length > 0 && (

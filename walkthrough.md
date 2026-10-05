@@ -1729,3 +1729,9 @@ pm run build � succesvol.
 - Findings: De linker Sidebar toonde Library en Playlists ook voor uitgelogde bezoekers; die linkten door naar /login.
 - Conclusions: Library en Playlists verschijnen alleen nog bij een ingelogde gebruiker (`user`); uitgelogd blijft Browse beperkt tot Discover, Explore en Releases, met daaronder de Sign in-knop. Geldt voor zowel desktop als de mobiele drawer (één `navGroups`-bron).
 - Actions: `src/components/Sidebar.tsx`. Visueel gecontroleerd: /discover uitgelogd toont alleen Discover/Explore/Releases + Sign in. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Library/Playlists tonen gepubliceerde inhoud voor uitgelogde bezoekers)
+
+- Findings: Library en Playlists waren login-only (redirect naar /login), terwijl de infrastructuur voor een publieke weergave al bestond: Library had een listener-pad via `/api/discover` en Playlists haalde al `/api/discover/playlists` op.
+- Conclusions: `/library` en `/playlists` zijn nu publiek (alleen de exacte paden; de detailpagina's blijven achter login). Uitgelogde bezoekers volgen het listener-pad: Library toont de gepubliceerde tracks (upload, Recycle Bin en Archive verborgen), Playlists toont de "Curated by MelodiQ"-sectie met de eigen-playlists/create-sectie verborgen. Auth wordt via `useAuthStatus` bepaald zodat ingelogde gebruikers niet kort de publieke weergave zien. De Sidebar toont Library en Playlists weer voor uitgelogden (de eerdere verberging is teruggedraaid).
+- Actions: `src/middleware.ts` (`isPublicLibrary`/`isPublicPlaylists`), `src/components/Sidebar.tsx`, `src/app/library/page.tsx` (`isPublicViewer`, tab-/upload-gating), `src/app/playlists/page.tsx` (`isPublicViewer`, owner-sectie gegate). Visueel gecontroleerd: uitgelogd laden `/library` en `/playlists` zonder redirect (HTTP 200) en zonder owner-UI. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

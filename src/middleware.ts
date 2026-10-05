@@ -19,6 +19,11 @@ export async function middleware(request: NextRequest) {
   const isPublicRoot = pathname === "/";
   const isPublicDiscover = pathname === "/discover" || pathname.startsWith("/discover/");
   const isPublicExplore = pathname === "/explore" || pathname.startsWith("/explore/");
+  // Public catalogue views: logged-out visitors browse published tracks in
+  // /library and published playlists in /playlists. Exact paths only — the
+  // detail pages (/playlists/[id]) stay behind the login redirect.
+  const isPublicLibrary = pathname === "/library";
+  const isPublicPlaylists = pathname === "/playlists";
   // Public per-alias artist pages (/artist/[slug]) with their own API routes.
   // The trailing slash is what keeps the management page /artist-pages behind
   // the login redirect — "/artist-pages" does not match "/artist/".
@@ -31,7 +36,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset || isPublicRoot || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicRoot || isPublicDiscover || isPublicExplore || isPublicArtist || isPublicLibrary || isPublicPlaylists) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));

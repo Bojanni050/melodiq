@@ -28,6 +28,7 @@ import {
 import { formatTotalDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
 import { useT } from "@/hooks/useT";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -38,6 +39,9 @@ export default function LibraryPage() {
   const user = useUserStore((s) => s.user);
   const loadUser = useUserStore((s) => s.loadUser);
   const isListener = user?.role === "listener";
+  const { checked: authChecked, isLoggedIn } = useAuthStatus();
+  // Logged-out visitors get the same read-only catalogue as listener accounts.
+  const isPublicViewer = isListener || (authChecked && !isLoggedIn);
   useEffect(() => { if (!user) void loadUser(); }, [user, loadUser]);
   const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: TrackItem; scope: ReuseScope } | null>(null);
   const { playlists, addTrackToPlaylist, loadPlaylists } = usePlaylistStore();
@@ -91,7 +95,7 @@ export default function LibraryPage() {
 
   const fetchTracks = useCallback(async (activeCheck?: () => boolean) => {
     if (activeCheck && !activeCheck()) return;
-    if (isListener) {
+    if (isPublicViewer) {
       // Listeners browse published tracks from the community, not their own library
       const res = await fetch("/api/discover");
       if (activeCheck && !activeCheck()) return;
@@ -148,7 +152,7 @@ export default function LibraryPage() {
       }
     }
     setLoading(false);
-  }, [isListener]);
+  }, [isPublicViewer]);
 
   const fetchTrash = useCallback(async () => {
     setTrashLoading(true);
@@ -499,7 +503,7 @@ export default function LibraryPage() {
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? "var(--sidebar-collapsed)" : isQHD ? "var(--sidebar-width-qhd)" : "var(--sidebar-width)" }}>
-        <main className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${isListener ? "lg:pt-20" : "lg:pt-5"}`}>
+        <main className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${isPublicViewer ? "lg:pt-20" : "lg:pt-5"}`}>
           <div className="max-w-400 mx-auto space-y-6">
 
             {/* Header */}
@@ -530,7 +534,8 @@ export default function LibraryPage() {
                       {t("library.tracksTab")}
                     </button>
 
-                    {/* Recycle Bin */}
+                    {!isPublicViewer && (
+                      <>
                     {/* Recycle Bin */}
                     <button
                       type="button"
@@ -554,9 +559,11 @@ export default function LibraryPage() {
                       </svg>
                       {t("library.archiveTab")}
                     </button>
+                      </>
+                    )}
                   </div>
                 </div>
-                {!isListener && (
+                {!isPublicViewer && (
                   <div>
                     <button
                       type="button"
