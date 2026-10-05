@@ -2,15 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Roboto_Slab, Outfit, DM_Mono } from "next/font/google";
 
 import { formatDuration } from "@/lib/track-utils";
 import { usePlayerStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
-
-const robotoSlab = Roboto_Slab({ subsets: ["latin"], weight: ["300", "400", "700", "900"], variable: "--font-artist-slab" });
-const outfit = Outfit({ subsets: ["latin"], weight: ["300", "400", "500", "600"], variable: "--font-artist-outfit" });
-const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-artist-mono" });
 
 export interface PublicArtistTrack {
   id: string;
@@ -53,6 +48,11 @@ function formatPlays(n: number): string {
  * account, every published track) and /artist/[slug] (one page per artist alias,
  * only the tracks credited to that name). Both routes fetch a PublicArtist and
  * hand it in here, so the two pages can never drift apart visually.
+ *
+ * Styling is on the shared editorial token layer (bg-canvas / text-ink /
+ * border-line / bg-accent / font-display / font-body / font-mono) — see the
+ * @theme block in globals.css. The only inline art-direction left is the hero
+ * overlay gradient and the fluid clamp() type sizes.
  */
 export default function ArtistPublicPage({ artist, tracks, loading, notFound }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -107,19 +107,14 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   }
 
   if (loading) {
-    return (
-      <div className={`${robotoSlab.variable} ${outfit.variable} ${dmMono.variable}`} style={{ background: "#080807", minHeight: "100vh" }} />
-    );
+    return <div className="min-h-screen bg-canvas" />;
   }
 
   if (notFound || !artist) {
     return (
-      <div
-        className={`${robotoSlab.variable} ${outfit.variable} ${dmMono.variable}`}
-        style={{ background: "#080807", color: "#e8e4db", minHeight: "100vh", fontFamily: "var(--font-artist-outfit), sans-serif" }}
-      >
+      <div className="min-h-screen bg-canvas font-body text-ink">
         <div className="flex h-screen items-center justify-center">
-          <p style={{ color: "#6b6860" }}>Artist not found.</p>
+          <p className="text-ink-dim">Artist not found.</p>
         </div>
       </div>
     );
@@ -129,81 +124,48 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   const memberOf = artist.stats.sinceYear ? `Solo Artist · Est. ${artist.stats.sinceYear}` : "Solo Artist";
 
   return (
-    <div
-      className={`${robotoSlab.variable} ${outfit.variable} ${dmMono.variable}`}
-      style={{ background: "#080807", color: "#e8e4db", fontFamily: "var(--font-artist-outfit), sans-serif", WebkitFontSmoothing: "antialiased" }}
-    >
+    <div className="bg-canvas font-body text-ink antialiased">
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <section className="relative flex min-h-screen flex-col">
         {hero && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={hero}
             alt=""
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center top",
-              filter: "brightness(0.28) contrast(1.1)",
-            }}
+            className="absolute inset-0 h-full w-full object-cover object-top brightness-[0.28] contrast-[1.1]"
           />
         )}
         <div
+          className="absolute inset-0"
           style={{
-            position: "absolute",
-            inset: 0,
             background:
-              "linear-gradient(to bottom, transparent 40%, #080807 100%), linear-gradient(to right, #080807 0%, transparent 40%)",
+              "linear-gradient(to bottom, transparent 40%, var(--mq-canvas) 100%), linear-gradient(to right, var(--mq-canvas) 0%, transparent 40%)",
           }}
         />
 
-        <nav
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "1.75rem 3rem",
-            borderBottom: "1px solid #1a1917",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <nav className="relative z-[1] flex items-center justify-between border-b border-line px-6 py-7 sm:px-12">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={handleBack}
               aria-label="Back"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                border: "1px solid rgba(255, 255, 255, 0.25)",
-                background: "rgba(0, 0, 0, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                padding: 0,
-              }}
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-ink/25 bg-black/40 p-0 text-ink transition-colors hover:bg-black/60"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5" />
                 <path d="M12 19l-7-7 7-7" />
               </svg>
             </button>
-            <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.14em", color: "#6b6860", textTransform: "uppercase" }}>
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-dim">
               Official
             </span>
           </div>
-          <div style={{ display: "flex", gap: "2rem" }}>
+          <div className="flex gap-8">
             {NAV_LINKS.map((link) => (
               <a
                 key={link}
                 href={link === "Bio" ? "#bio" : "#tracks"}
-                style={{ fontFamily: "var(--font-artist-outfit), sans-serif", fontWeight: 500, fontSize: 13, color: "#6b6860", textDecoration: "none" }}
+                className="font-body text-[13px] font-medium text-ink-dim no-underline transition-colors hover:text-ink"
               >
                 {link}
               </a>
@@ -211,75 +173,35 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
           </div>
         </nav>
 
-        <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", alignItems: "flex-end", padding: "0 3rem 5rem" }}>
-          <div style={{ maxWidth: 620 }}>
+        <div className="relative z-[1] flex flex-1 items-end px-6 pb-20 sm:px-12">
+          <div className="max-w-[620px]">
             {artist.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={artist.imageUrl}
                 alt={artist.name}
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  marginBottom: 28,
-                  border: "1px solid #2a2825",
-                }}
+                className="mb-7 h-24 w-24 rounded-full border border-line-strong object-cover"
               />
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-              <span style={{ width: 28, height: 1, background: "var(--mq-accent)", display: "inline-block" }} />
-              <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, letterSpacing: "0.1em", color: "var(--mq-accent)", textTransform: "uppercase" }}>
+            <div className="mb-6 flex items-center gap-3">
+              <span className="inline-block h-px w-7 bg-accent" />
+              <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-accent">
                 {memberOf}
               </span>
             </div>
-            <h1
-              style={{
-                fontFamily: "var(--font-artist-slab), serif",
-                fontWeight: 900,
-                fontSize: "clamp(48px, 10vw, 128px)",
-                lineHeight: 0.88,
-                margin: 0,
-                color: "#e8e4db",
-              }}
-            >
+            <h1 className="font-display text-[clamp(48px,10vw,128px)] font-black leading-[0.88] text-ink">
               {artist.name}
             </h1>
             {bioParagraphs[0] && (
-              <p style={{ fontFamily: "var(--font-artist-outfit), sans-serif", fontWeight: 300, fontSize: 18, color: "#a09d95", maxWidth: 420, marginTop: 24 }}>
+              <p className="mt-6 max-w-[420px] font-body text-lg font-light text-ink-muted">
                 {bioParagraphs[0]}
               </p>
             )}
-            <div style={{ display: "flex", gap: 16, marginTop: 40 }}>
-              <a
-                href="#tracks"
-                style={{
-                  fontFamily: "var(--font-artist-mono), monospace",
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  background: "var(--mq-accent)",
-                  color: "#e8e4db",
-                  padding: "14px 28px",
-                  textDecoration: "none",
-                }}
-              >
+            <div className="mt-10 flex gap-4">
+              <a href="#tracks" className="mq-btn mq-btn-primary no-underline">
                 Stream Now
               </a>
-              <a
-                href="#bio"
-                style={{
-                  fontFamily: "var(--font-artist-mono), monospace",
-                  fontSize: 11,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  border: "1px solid #252420",
-                  color: "#e8e4db",
-                  padding: "14px 28px",
-                  textDecoration: "none",
-                }}
-              >
+              <a href="#bio" className="mq-btn mq-btn-ghost no-underline">
                 About
               </a>
             </div>
@@ -291,34 +213,21 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
       {bioParagraphs.length > 0 && (
         <section
           id="bio"
-          style={{
-            padding: "5rem 1.5rem",
-            borderTop: "1px solid #1a1917",
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "3rem",
-            maxWidth: 1100,
-            margin: "0 auto",
-          }}
+          className="mx-auto grid max-w-[1100px] grid-cols-1 gap-12 border-t border-line px-6 py-20 md:grid-cols-[1fr_1.6fr] md:px-12 md:py-28"
         >
-          <style>{`
-            @media (min-width: 900px) {
-              #bio { grid-template-columns: 1fr 1.6fr !important; padding: 7rem 3rem !important; }
-            }
-          `}</style>
           <div>
-            <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 10, letterSpacing: "0.14em", color: "#6b6860", textTransform: "uppercase" }}>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-dim">
               Biography
             </span>
-            <div style={{ marginTop: 20, borderTop: "1px solid #1a1917", paddingTop: 20, display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <div className="mt-5 grid grid-cols-3 gap-0 border-t border-line pt-5">
               {[
                 [String(artist.stats.tracks), "Tracks"],
                 [formatPlays(artist.stats.totalPlays), "Plays"],
                 [artist.stats.sinceYear ? String(artist.stats.sinceYear) : "—", "Since"],
               ].map(([value, label]) => (
                 <div key={label}>
-                  <div style={{ fontFamily: "var(--font-artist-slab), serif", fontWeight: 700, fontSize: 28, color: "#e8e4db" }}>{value}</div>
-                  <div style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 9, letterSpacing: "0.1em", color: "#6b6860", textTransform: "uppercase", marginTop: 4 }}>
+                  <div className="font-display text-[28px] font-bold text-ink">{value}</div>
+                  <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-ink-dim">
                     {label}
                   </div>
                 </div>
@@ -327,37 +236,26 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
           </div>
 
           <div>
-            {bioParagraphs.map((paragraph, index) => (
-              <p
-                key={index}
-                style={{
-                  fontFamily: "var(--font-artist-outfit), sans-serif",
-                  fontWeight: 300,
-                  fontSize: 16,
-                  lineHeight: 1.7,
-                  color: index === bioParagraphs.length - 1 && bioParagraphs.length > 1 ? "#6b6860" : "#a09d95",
-                  fontStyle: index === bioParagraphs.length - 1 && bioParagraphs.length > 1 ? "italic" : "normal",
-                  marginBottom: 20,
-                }}
-              >
-                {paragraph}
-              </p>
-            ))}
+            {bioParagraphs.map((paragraph, index) => {
+              const isLast = index === bioParagraphs.length - 1 && bioParagraphs.length > 1;
+              return (
+                <p
+                  key={index}
+                  className={`mb-5 font-body text-base font-light leading-[1.7] ${
+                    isLast ? "italic text-ink-dim" : "text-ink-muted"
+                  }`}
+                >
+                  {paragraph}
+                </p>
+              );
+            })}
 
             {artist.genres.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }}>
+              <div className="mt-6 flex flex-wrap gap-2.5">
                 {artist.genres.map((genre) => (
                   <span
                     key={genre}
-                    style={{
-                      border: "1px solid #1a1917",
-                      padding: "6px 14px",
-                      fontFamily: "var(--font-artist-mono), monospace",
-                      fontSize: 10,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#a09d95",
-                    }}
+                    className="border border-line px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-ink-muted"
                   >
                     {genre}
                   </span>
@@ -369,40 +267,27 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
       )}
 
       {/* Tracks */}
-      <section id="tracks" style={{ padding: "3rem 1.5rem 6rem", borderTop: "1px solid #1a1917" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 32 }}>
-            <h2 style={{ fontFamily: "var(--font-artist-slab), serif", fontWeight: 900, fontSize: "clamp(32px, 5vw, 64px)", margin: 0 }}>
+      <section id="tracks" className="border-t border-line px-6 pb-24 pt-12">
+        <div className="mx-auto max-w-[1100px]">
+          <div className="mb-8 flex items-baseline justify-between">
+            <h2 className="font-display text-[clamp(32px,5vw,64px)] font-black text-ink">
               Tracks
             </h2>
-            <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, color: "#6b6860" }}>
+            <span className="font-mono text-[11px] text-ink-dim">
               {tracks.length} {tracks.length === 1 ? "Song" : "Songs"}
             </span>
           </div>
 
           {tracks.length === 0 ? (
-            <p style={{ color: "#6b6860", fontFamily: "var(--font-artist-outfit), sans-serif" }}>No published tracks yet.</p>
+            <p className="font-body text-ink-dim">No published tracks yet.</p>
           ) : (
             <>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "40px 1fr 80px 80px 60px",
-                  gap: 12,
-                  padding: "0 12px 12px",
-                  borderBottom: "1px solid #1a1917",
-                  fontFamily: "var(--font-artist-mono), monospace",
-                  fontSize: 10,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "#6b6860",
-                }}
-              >
+              <div className="grid grid-cols-[40px_1fr_80px_80px_60px] gap-3 border-b border-line px-3 pb-3 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-dim">
                 <span>#</span>
                 <span>Title</span>
-                <span style={{ textAlign: "right" }}>Plays</span>
-                <span style={{ textAlign: "right" }}>Year</span>
-                <span style={{ textAlign: "right" }}>Time</span>
+                <span className="text-right">Plays</span>
+                <span className="text-right">Year</span>
+                <span className="text-right">Time</span>
               </div>
 
               {tracks.map((track, index) => {
@@ -416,24 +301,18 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                     onMouseEnter={() => setHoveredId(track.id)}
                     onMouseLeave={() => setHoveredId((id) => (id === track.id ? null : id))}
                     onClick={() => handleTrackClick(track)}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "40px 1fr 80px 80px 60px",
-                      gap: 12,
-                      alignItems: "center",
-                      padding: "14px 12px",
-                      cursor: "pointer",
-                      background: isHovered ? "#111110" : "transparent",
-                    }}
+                    className={`grid cursor-pointer grid-cols-[40px_1fr_80px_80px_60px] items-center gap-3 px-3 py-3.5 ${
+                      isHovered ? "bg-surface" : ""
+                    }`}
                   >
-                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 12, color: isPlaying ? "var(--mq-accent)" : "#6b6860" }}>
+                    <span className={`font-mono text-xs ${isPlaying ? "text-accent" : "text-ink-dim"}`}>
                       {isPlaying ? (
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="var(--mq-accent)">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
                           <rect x="2" y="1" width="3" height="10" />
                           <rect x="7" y="1" width="3" height="10" />
                         </svg>
                       ) : isHovered ? (
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="#e8e4db">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="text-ink">
                           <polygon points="2,1 11,6 2,11" />
                         </svg>
                       ) : (
@@ -441,25 +320,19 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                       )}
                     </span>
                     <span
-                      style={{
-                        fontFamily: "var(--font-artist-outfit), sans-serif",
-                        fontWeight: isPlaying ? 600 : 400,
-                        fontSize: 15,
-                        color: isPlaying ? "var(--mq-accent)" : "#e8e4db",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
+                      className={`truncate font-body text-[15px] ${
+                        isPlaying ? "font-semibold text-accent" : "text-ink"
+                      }`}
                     >
                       {track.title}
                     </span>
-                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, color: "#6b6860", textAlign: "right" }}>
+                    <span className="text-right font-mono text-[11px] text-ink-dim">
                       {formatPlays(track.plays)}
                     </span>
-                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, color: "#6b6860", textAlign: "right" }}>
+                    <span className="text-right font-mono text-[11px] text-ink-dim">
                       {track.year}
                     </span>
-                    <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, color: "#6b6860", textAlign: "right" }}>
+                    <span className="text-right font-mono text-[11px] text-ink-dim">
                       {formatDuration(track.duration)}
                     </span>
                   </div>
@@ -471,19 +344,11 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
       </section>
 
       {/* Footer */}
-      <footer
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "2rem 3rem",
-          borderTop: "1px solid #1a1917",
-        }}
-      >
-        <span style={{ fontFamily: "var(--font-artist-slab), serif", fontWeight: 900, fontSize: 18, color: "#252420" }}>
+      <footer className="flex items-center justify-between border-t border-line px-6 py-8 sm:px-12">
+        <span className="font-display text-lg font-black text-line-strong">
           {artist.name}
         </span>
-        <span style={{ fontFamily: "var(--font-artist-mono), monospace", fontSize: 11, color: "#6b6860" }}>
+        <span className="font-mono text-[11px] text-ink-dim">
           © {new Date().getFullYear()} · All Rights Reserved
         </span>
       </footer>
