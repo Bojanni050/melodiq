@@ -1693,3 +1693,9 @@ pm run build � succesvol.
 - Findings: `ArtistLink` viel bij een ontbrekende aliaspagina terug op `/discover/artist/[userId]` (via `fallbackHref`), waardoor artiestennamen zonder eigen artiestenpagina alsnog klikbaar waren.
 - Conclusions: De fallback is verwijderd: `ArtistLink` linkt alleen nog naar `/artist/[slug]` als die pagina bestaat, en rendert anders platte tekst. De `fallbackHref`-prop is uit de component en alle aanroepen gehaald (explore, `TrackCard`), en de "Go to artist"-menuoptie in `TrackCard` verschijnt alleen nog bij een bestaande pagina. De artist-wrapper op de trackkaart toont geen `cursor-pointer`/"click to view artist page" meer als er geen pagina is.
 - Actions: `src/components/artist/ArtistLink.tsx`, `src/app/(public)/explore/page.tsx`, `src/components/tracks/TrackCard.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-05 zo (Trackhero: geblurde cover i.p.v. gradient)
+
+- Findings: De hero-kaart op de publieke trackpagina gebruikte een blauw/roze gradient (`from-sky-900/60 via-accent-strong/30`).
+- Conclusions: Dezelfde opzet als de linker Sidebar: een geblurde, verzadigde cover (`blur-[60px] opacity-20 saturate-200 scale-110`) over `bg-canvas`, met een fade naar `var(--mq-canvas)` zodat de tekst leesbaar blijft; zonder cover valt het terug op een effen canvas.
+- Actions: `src/app/(public)/discover/track/[trackId]/page.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

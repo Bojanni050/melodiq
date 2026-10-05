@@ -258,8 +258,18 @@ export default function TrackDnaPage() {
           ) : (
             <div className="mt-6 space-y-6">
               {/* Hero header — cover art left, artist/writer info beside it */}
-              <section className="relative overflow-hidden  border border-line bg-gradient-to-br from-sky-900/60 via-accent-strong/30 to-[#0d0e15]">
-                <div className="flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">
+              <section className="relative overflow-hidden border border-line bg-canvas">
+                {coverSrc() && (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center blur-[60px] opacity-20 saturate-200 pointer-events-none scale-110"
+                    style={{ backgroundImage: `url(${coverSrc()})` }}
+                  />
+                )}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "linear-gradient(to right, transparent 30%, var(--mq-canvas) 100%)" }}
+                />
+                <div className="relative flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">
                   <button
                     type="button"
                     onClick={handlePlayClick}
