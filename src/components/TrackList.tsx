@@ -38,6 +38,7 @@ export default memo(function TrackList({
   onEditDetails,
   selectedTrackId,
   dragOrderKey,
+  relaxed = false,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
@@ -63,6 +64,8 @@ export default memo(function TrackList({
   onTrackMoved?: (trackId: string, toIndex: number) => void;
   onEditDetails?: (track: TrackItem) => void;
   selectedTrackId?: string | null;
+  /** Relax mode: pass through to TrackCard's minimal row. */
+  relaxed?: boolean;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -1063,6 +1066,7 @@ export default memo(function TrackList({
                     onToggleSelection={handleToggleSelection}
                     onEditDetails={onEditDetails}
                     isDetailSelected={selectedTrackId === track.id}
+                    relaxed={relaxed}
                   />
                 </div>
               );

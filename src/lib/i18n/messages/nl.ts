@@ -51,6 +51,7 @@ const nl: typeof en = {
     archiveTab: "Archief",
     tracksSuffix: "tracks",
     uploadFiles: "Bestanden uploaden",
+    relaxMode: "Relax",
     loadingTracks: "Tracks laden...",
     confirmDeleteForever: 'Track "{title}" permanent verwijderen? Dit kan niet ongedaan worden gemaakt.',
     thisTrack: "deze track",

@@ -48,6 +48,7 @@ const en = {
     archiveTab: "Archive",
     tracksSuffix: "tracks",
     uploadFiles: "Upload Files",
+    relaxMode: "Relax",
     loadingTracks: "Loading tracks...",
     confirmDeleteForever: 'Permanently delete "{title}"? This cannot be undone.',
     thisTrack: "this track",

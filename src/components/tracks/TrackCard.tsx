@@ -8,7 +8,7 @@ import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, selectionModeFromEvent, type Workspace, type SelectionMode } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import { formatTrackDateTime, formatGenerationTime } from "@/lib/track-utils";
+import { formatTrackDateTime, formatGenerationTime, formatDuration } from "@/lib/track-utils";
 import { shortTrackId, isForExpectedTrack } from "@/lib/track-id";
 import type { PlaylistOption, ReuseScope, TrackItem } from "@/components/tracks/types";
 import { STEM_TYPES } from "@/lib/stem-types";
@@ -66,6 +66,7 @@ const TrackCard = memo(function TrackCard({
   onEditDetails,
   isDetailSelected = false,
   isOwner = true,
+  relaxed = false,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -92,6 +93,8 @@ const TrackCard = memo(function TrackCard({
   onEditDetails?: (track: TrackItem) => void;
   isDetailSelected?: boolean;
   isOwner?: boolean;
+  /** Relax mode: render only cover, title, artist, heart, playtime and DNA. */
+  relaxed?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const user = useUserStore((state) => state.user);
@@ -571,6 +574,87 @@ const TrackCard = memo(function TrackCard({
   const deleteMessage = deleteCount === 1
     ? "Delete this song? This cannot be undone."
     : `Delete ${deleteCount} selected songs? This cannot be undone.`;
+
+  if (relaxed) {
+    return (
+      <>
+        <div className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/5">
+          <TrackPlayButton
+            track={track}
+            isCurrentlyPlaying={isCurrentlyPlaying}
+            isPlaying={isPlaying}
+            effectiveCoverUrl={effectiveCoverUrl}
+            effectiveThumbUrl={effectiveThumbUrl}
+            isAnalyzing={advancedDnaRunning}
+            onPlayClick={() => {
+              const now = Date.now();
+              if (now - playClickCooldownRef.current < 350) return;
+              playClickCooldownRef.current = now;
+              if (isCurrentlyPlaying) setIsPlaying(!isPlaying);
+              else onPlay(track);
+            }}
+          />
+          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onSelect(track)}>
+            <h3 className={`truncate text-sm font-medium ${isCurrentlyPlaying ? "text-accent" : "text-ink"}`}>
+              {title}
+            </h3>
+            <p className="truncate text-xs text-ink-dim">
+              {track.artistName || artistAlias ? (
+                <ArtistLink name={track.artistName || artistAlias} className="hover:text-accent transition-colors" />
+              ) : (
+                <span className="italic opacity-50">no artist</span>
+              )}
+            </p>
+          </div>
+          <span className="shrink-0 font-mono text-[11px] text-ink-dim tabular-nums">
+            {formatDuration(track.duration)}
+          </span>
+          {track.status === "done" && (
+            <TrackRating
+              rating={actions.currentRating}
+              ratingLoading={actions.ratingLoading}
+              onRate={actions.handleRating}
+            />
+          )}
+          {track.status === "done" && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
+              className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-ink-dim transition-colors hover:bg-accent/10 hover:text-accent"
+              title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+              aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+            >
+              DNA
+              <svg className={`h-3 w-3 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+            dnaOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            {dnaMounted && (
+              <TrackDnaPanel
+                trackId={track.id}
+                refreshKey={dnaRefreshKey}
+                advancedDnaResult={advancedDnaResult}
+                advancedDnaRunning={advancedDnaRunning}
+                onRunAdvancedDna={isListenerRole ? undefined : handleAdvancedDna}
+                trackStatus={track.status}
+                onReanalyzeAudio={isListenerRole ? undefined : handleReanalyzeAudio}
+                reanalyzingAudio={reanalyzingAudio}
+              />
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -1299,7 +1383,8 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.instrumental === nextProps.track.instrumental &&
     prevProps.track.isCollaboration === nextProps.track.isCollaboration &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
-    prevProps.workspaceById?.size === nextProps.workspaceById?.size
+    prevProps.workspaceById?.size === nextProps.workspaceById?.size &&
+    prevProps.relaxed === nextProps.relaxed
   );
 });
 

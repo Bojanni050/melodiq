@@ -84,6 +84,18 @@ export default function LibraryPage() {
     return Array.from(names).sort();
   }, [tracks]);
   const [view, setView] = useState<LibraryView>("songs");
+  // Relax mode: minimal track rows (cover, title, artist, heart, playtime, DNA).
+  const [relaxed, setRelaxed] = useState(false);
+  useEffect(() => {
+    try { setRelaxed(window.localStorage.getItem("melodiq-library-relaxed") === "1"); } catch { /* ignore */ }
+  }, []);
+  function toggleRelaxed() {
+    setRelaxed((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem("melodiq-library-relaxed", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }
   const [trashedTracks, setTrashedTracks] = useState<LibraryTrack[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
   const [archivedTracks, setArchivedTracks] = useState<LibraryTrack[]>([]);
@@ -563,8 +575,17 @@ export default function LibraryPage() {
                     )}
                   </div>
                 </div>
-                {!isPublicViewer && (
-                  <div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleRelaxed}
+                    aria-pressed={relaxed}
+                    title="Relax mode: only cover, title, artist, heart, playtime and DNA"
+                    className={`h-10 rounded-full border px-4 text-sm font-medium transition-colors ${relaxed ? "border-accent bg-accent/15 text-accent" : "border-line bg-white/5 text-ink/75 hover:bg-white/10 hover:text-ink"}`}
+                  >
+                    {t("library.relaxMode")}
+                  </button>
+                  {!isPublicViewer && (
                     <button
                       type="button"
                       onClick={() => setIsUploadPanelOpen(true)}
@@ -572,8 +593,8 @@ export default function LibraryPage() {
                     >
                       {t("library.uploadFiles")}
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </section>
 
@@ -586,6 +607,7 @@ export default function LibraryPage() {
                   <TrackList
                     tracks={tracks}
                     autoQueueAfterPlay
+                    relaxed={relaxed}
                     onReusePrompt={handleReusePrompt}
                     onSelect={(track) => {
                       openTrackDetails({
