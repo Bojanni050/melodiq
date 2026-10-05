@@ -712,7 +712,7 @@ const TrackCard = memo(function TrackCard({
         tabIndex={0}
         className={`group flex items-center gap-3 px-3 py-2.5  transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 ${
           isCurrentlyPlaying
-            ? "bg-accent/20 border border-accent/25 border-l-4 border-l-accent shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
+            ? "bg-white/[0.03] border border-line border-l-2 border-l-accent"
             : isDetailSelected
               ? "bg-white/[0.11] border border-line-strong"
               : track.status === "generating" || track.status === "pending"
