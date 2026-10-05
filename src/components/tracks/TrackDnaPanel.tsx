@@ -58,7 +58,7 @@ function TrackDnaCard({
 // Workspaces pages). Always renders in an authenticated app context — the
 // owner can view their own track regardless of publish status, per
 // getTrackDnaAccess in src/lib/songs.ts — so unlike the public Discover
-// Track DNA page this skips the logged-out/InlineAuthForm branch entirely.
+// Track DNA page this skips the logged-out branch entirely.
 // Read-only: tempo/key/energy/loudness are computed once from the audio right
 // after generation, atmosphere tags and lyrics score come from an LLM — no
 // voting involved.

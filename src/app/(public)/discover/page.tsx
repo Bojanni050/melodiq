@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import InlineAuthForm from "@/components/discover/InlineAuthForm";
 import DiscoverTrackOptionsMenu from "@/components/discover/DiscoverTrackOptionsMenu";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
 import ResizablePanel from "@/components/studio/ResizablePanel";
@@ -559,13 +558,21 @@ export default function DiscoverPage() {
       >
       <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
         {authChecked && !isLoggedIn && (
-          <header className="mb-8 flex items-center gap-2">
-            <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-            </svg>
-            <span className="bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-lg font-bold text-transparent">
-              MelodIQ
-            </span>
+          <header className="mb-8 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              </svg>
+              <span className="bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-lg font-bold text-transparent">
+                MelodIQ
+              </span>
+            </div>
+            <Link
+              href="/login"
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              Sign in
+            </Link>
           </header>
         )}
 
@@ -575,8 +582,6 @@ export default function DiscoverPage() {
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Discover</h1>
             <p className="mt-1 text-sm text-white/55">{t("discover.subtitle")}</p>
           </div>
-
-          {authChecked && !isLoggedIn && <InlineAuthForm onAuthenticated={() => setIsLoggedIn(true)} />}
 
           {showOwnerSections && (
             <section className="space-y-3">
