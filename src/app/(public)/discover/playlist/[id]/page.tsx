@@ -278,7 +278,7 @@ export default function PublicPlaylistPage() {
             isLoggedIn && isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >
-          <div className="max-w-400 mx-auto space-y-6">
+          <div className="space-y-6">
             {/* Header matching Library & Playlist styling */}
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

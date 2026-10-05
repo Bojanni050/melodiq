@@ -235,7 +235,7 @@ export default function PublicReleasePage() {
             isLoggedIn && isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >
-          <div className="max-w-400 mx-auto space-y-6">
+          <div className="space-y-6">
             {/* Hero header — cover art left, artist/writer info beside it */}
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
