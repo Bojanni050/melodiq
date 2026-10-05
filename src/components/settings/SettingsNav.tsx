@@ -90,7 +90,7 @@ export function SettingsSidebar({
     <nav className="flex lg:flex-col gap-4 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:w-56 shrink-0">
       {groups.map((group) => (
         <div key={group.label} className="shrink-0 lg:shrink lg:space-y-1">
-          <p className="hidden lg:block px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-white/30">
+          <p className="hidden lg:block px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-dim">
             {group.label}
           </p>
           <div className="flex lg:flex-col gap-1">
@@ -99,8 +99,8 @@ export function SettingsSidebar({
                 key={section.id}
                 type="button"
                 onClick={() => onChange(section.id)}
-                className={`shrink-0 flex items-center gap-2.5 text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  active === section.id ? "bg-white/10 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                className={`shrink-0 flex items-center gap-2.5 text-left px-3 py-2  text-sm font-medium transition-colors whitespace-nowrap ${
+                  active === section.id ? "bg-white/10 text-ink" : "text-ink-dim hover:bg-white/5 hover:text-ink-muted"
                 }`}
               >
                 <NavIcon id={section.id} />
@@ -129,7 +129,7 @@ export function ProvidersTabBar({
   onChange: (id: ProvidersTabId) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 border-b border-white/10 mb-4">
+    <div className="flex items-center gap-1 border-b border-line mb-4">
       {PROVIDER_TABS.map((tab) => (
         <button
           key={tab.id}
@@ -137,8 +137,8 @@ export function ProvidersTabBar({
           onClick={() => onChange(tab.id)}
           className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
             active === tab.id
-              ? "border-primary-500 text-white"
-              : "border-transparent text-white/40 hover:text-white/70"
+              ? "border-accent text-ink"
+              : "border-transparent text-ink-dim hover:text-ink-muted"
           }`}
         >
           {tab.label}

@@ -227,7 +227,7 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-ink">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>

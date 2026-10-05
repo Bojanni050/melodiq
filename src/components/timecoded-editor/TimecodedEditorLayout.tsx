@@ -10,7 +10,7 @@ export default function TimecodedEditorLayout({ children }: { children: React.Re
   const isDesktop = useSidebarStore((s) => s.isDesktop);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+    <div className="flex min-h-screen bg-canvas text-ink">
       <Sidebar credits={null} />
       <main
         className="flex-1 overflow-y-auto overflow-x-hidden"

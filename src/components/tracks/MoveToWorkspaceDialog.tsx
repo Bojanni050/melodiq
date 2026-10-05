@@ -96,15 +96,15 @@ export default function MoveToWorkspaceDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-[520px] rounded-[28px] border border-white/10 bg-[#181822] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+        className="relative w-full max-w-[520px] rounded-[28px] border border-line bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pb-3 pt-5">
-          <h3 className="text-xl leading-none font-medium text-white/90">Move to Workspace</h3>
+          <h3 className="text-xl leading-none font-medium text-ink">Move to Workspace</h3>
           <button
             type="button"
             onClick={onClose}
-            className="h-11 w-11 rounded-full bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="h-11 w-11 rounded-full bg-white/5 text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
             aria-label="Close move to workspace menu"
           >
             <svg className="mx-auto h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +122,7 @@ export default function MoveToWorkspaceDialog({
                   e.stopPropagation();
                   onMoveToWorkspace(workspace.id);
                 }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 transition-colors hover:bg-white/10"
+                className="flex w-full items-center gap-3  px-3 py-2.5 text-left text-ink/85 transition-colors hover:bg-white/10"
               >
                 {depth === 1 ? (
                   <span className="ml-2 shrink-0" title="Song">
@@ -131,7 +131,7 @@ export default function MoveToWorkspaceDialog({
                     </svg>
                   </span>
                 ) : null}
-                <div className={`h-11 w-11 shrink-0 overflow-hidden rounded-md ${workspaceSwatches[index % workspaceSwatches.length]}`}>
+                <div className={`h-11 w-11 shrink-0 overflow-hidden  ${workspaceSwatches[index % workspaceSwatches.length]}`}>
                   {workspaceCoverById.get(workspace.id) ? (
                     <img
                       src={workspaceCoverById.get(workspace.id) || ""}
@@ -143,11 +143,11 @@ export default function MoveToWorkspaceDialog({
                   ) : null}
                 </div>
                 <span
-                  className={`min-w-0 flex-1 truncate leading-tight font-medium ${depth === 1 ? "text-[13px] text-white/75" : "text-base"}`}
+                  className={`min-w-0 flex-1 truncate leading-tight font-medium ${depth === 1 ? "text-[13px] text-ink/75" : "text-base"}`}
                 >
                   {workspaceDisplayNameById.get(workspace.id) ?? workspace.name}
                 </span>
-                <span className="shrink-0 text-xs text-white/60">
+                <span className="shrink-0 text-xs text-ink-muted">
                   {workspace.trackIds.length} {depth === 1 ? "versions" : "clips"}
                 </span>
               </button>
@@ -155,7 +155,7 @@ export default function MoveToWorkspaceDialog({
           </div>
         </div>
 
-        <div className="border-t border-white/10 px-5 pb-4 pt-3">
+        <div className="border-t border-line px-5 pb-4 pt-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <input
@@ -166,17 +166,17 @@ export default function MoveToWorkspaceDialog({
                 onChange={(e) => setNewWorkspaceName(e.target.value)}
                 onKeyDown={handleWorkspaceKeyDown}
                 placeholder="Workspace name"
-                className="h-12 w-full rounded-lg border border-white/70 bg-transparent px-3 pr-16 text-sm font-medium text-white placeholder:text-white/45 focus:outline-none focus:border-white"
+                className="h-12 w-full  border border-line/70 bg-transparent px-3 pr-16 text-sm font-medium text-ink placeholder:text-ink-dim focus:outline-none focus:border-line"
                 maxLength={100}
                 aria-label="Workspace name"
               />
-              <span className="pointer-events-none absolute bottom-2 right-2 text-xs text-white/45">{newWorkspaceName.length}/100</span>
+              <span className="pointer-events-none absolute bottom-2 right-2 text-xs text-ink-dim">{newWorkspaceName.length}/100</span>
             </div>
             <button
               type="button"
               onClick={handleCreateWorkspace}
               disabled={!newWorkspaceName.trim()}
-              className="h-12 rounded-lg bg-white/8 px-5 text-sm font-medium text-white/90 transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-12  bg-white/8 px-5 text-sm font-medium text-ink transition-colors hover:bg-white/14 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Create Workspace
             </button>

@@ -15,7 +15,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center">
-        <p className="text-white/50 mb-4">{t("auth.registrationDisabled")}</p>
+        <p className="text-ink-dim mb-4">{t("auth.registrationDisabled")}</p>
         <button
           onClick={() => router.push("/login")}
           className="btn-primary py-2.5 px-6 text-sm font-medium"

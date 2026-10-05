@@ -283,15 +283,15 @@ export default function WorkspaceDetailPage() {
 
   if (!selectedWorkspace) {
     return (
-      <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+      <div className="h-screen bg-canvas overflow-hidden text-ink">
         <Sidebar credits={null} />
         <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/70">Workspace not found.</p>
+          <div className=" border border-line bg-white/5 p-8 text-center">
+            <p className="text-sm text-ink-muted">Workspace not found.</p>
             <button
               type="button"
               onClick={() => router.push("/workspaces")}
-              className="mt-4 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/12 hover:text-white"
+              className="mt-4 rounded-full border border-line bg-white/8 px-4 py-2 text-sm text-ink-muted transition-colors hover:bg-white/12 hover:text-ink"
             >
               Back to folders
             </button>
@@ -302,7 +302,7 @@ export default function WorkspaceDetailPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -323,17 +323,17 @@ export default function WorkspaceDetailPage() {
 
               <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+                  <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">
                     {selectedWorkspace.parentWorkspaceId ? "Subfolder" : "Workspace"}
                   </p>
                   <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight truncate">{selectedWorkspace.name}</h1>
-                  <p className="text-sm text-white/60 mt-1">
+                  <p className="text-sm text-ink-muted mt-1">
                     {selectedWorkspaceTracks.length} {selectedWorkspaceTracks.length === 1 ? "track" : "tracks"} in this folder.
                   </p>
                 </div>
 
                 {selectedWorkspace.id === DEFAULT_WORKSPACE_ID ? (
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/45">Default workspace</span>
+                  <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim">Default workspace</span>
                 ) : null}
               </div>
             </section>
@@ -342,7 +342,7 @@ export default function WorkspaceDetailPage() {
               <button
                 type="button"
                 onClick={backToFolderView}
-                className="inline-flex items-center gap-1.5 text-sm text-white/55 transition-colors hover:text-white"
+                className="inline-flex items-center gap-1.5 text-sm text-ink/55 transition-colors hover:text-ink"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -354,7 +354,7 @@ export default function WorkspaceDetailPage() {
             <section className="space-y-4">
               <h2 className="text-base font-semibold">Tracks</h2>
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">Loading tracks...</div>
               ) : selectedWorkspaceTracks.length > 0 ? (
                 <TrackList
                   tracks={selectedWorkspaceTracks}
@@ -371,7 +371,7 @@ export default function WorkspaceDetailPage() {
                   }
                 />
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-sm text-ink/55">
                   This {selectedWorkspace.parentWorkspaceId ? "subfolder" : "workspace"} has no tracks yet. Use track actions and choose Move To Workspace.
                 </div>
               )}
@@ -382,7 +382,7 @@ export default function WorkspaceDetailPage() {
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-base font-semibold">Subfolders</h2>
                   {showCreateFolder ? (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                    <div className="flex items-center gap-2 rounded-full border border-line bg-white/5 p-1.5">
                       <input
                         value={newFolderName}
                         onChange={(event) => setNewFolderName(event.target.value)}
@@ -394,13 +394,13 @@ export default function WorkspaceDetailPage() {
                           }
                         }}
                         placeholder="Subfolder name"
-                        className="h-9 w-44 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
+                        className="h-9 w-44 rounded-full bg-transparent px-3 text-sm text-ink placeholder:text-ink-dim outline-none"
                         autoFocus
                       />
                       <button
                         type="button"
                         onClick={handleCreateFolder}
-                        className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                        className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
                       >
                         Add
                       </button>
@@ -410,7 +410,7 @@ export default function WorkspaceDetailPage() {
                           setShowCreateFolder(false);
                           setNewFolderName("");
                         }}
-                        className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white"
+                        className="h-9 rounded-full px-4 text-sm text-ink-muted transition-colors hover:text-ink"
                       >
                         Cancel
                       </button>
@@ -419,7 +419,7 @@ export default function WorkspaceDetailPage() {
                     <button
                       type="button"
                       onClick={() => setShowCreateFolder(true)}
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                      className="rounded-full border border-line bg-white/5 px-3 py-1 text-sm text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
                     >
                       + Add Subfolder
                     </button>
@@ -427,7 +427,7 @@ export default function WorkspaceDetailPage() {
                 </div>
 
                 {selectedWorkspaceChildren.length > 0 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className=" border border-line bg-white/[0.03] p-3">
                     <div className="space-y-1.5">
                       {selectedWorkspaceChildren.map((childWorkspace) => {
                         const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
@@ -435,33 +435,33 @@ export default function WorkspaceDetailPage() {
                         return (
                           <div
                             key={childWorkspace.id}
-                            className="group flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#0f1017] px-3 py-2 text-left transition-colors hover:bg-white/4"
+                            className="group flex w-full items-center gap-3  border border-line bg-surface px-3 py-2 text-left transition-colors hover:bg-white/4"
                           >
                             <button
                               type="button"
                               onClick={() => openWorkspace(childWorkspace.id)}
                               className="flex min-w-0 flex-1 items-center gap-3 text-left"
                             >
-                              <div className={`relative h-9 w-9 shrink-0 overflow-hidden rounded-lg ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
+                              <div className={`relative h-9 w-9 shrink-0 overflow-hidden  ${getWorkspaceSwatchClass(childWorkspace.id)}`}>
                                 {childCover ? (
                                   <img src={childCover} alt={childWorkspace.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center">
-                                    <svg className="h-4 w-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="h-4 w-4 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                   </div>
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
+                                <p className="truncate text-sm font-medium text-ink">{childWorkspace.name}</p>
                               </div>
-                              <span className="text-xs text-white/45">{childTracks.length} tracks</span>
+                              <span className="text-xs text-ink-dim">{childTracks.length} tracks</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setPendingDeleteWorkspace(childWorkspace)}
-                              className="shrink-0 text-sm text-white/30 transition-colors hover:text-red-400"
+                              className="shrink-0 text-sm text-ink-dim transition-colors hover:text-red-400"
                             >
                               Delete
                             </button>
@@ -471,7 +471,7 @@ export default function WorkspaceDetailPage() {
                               className="shrink-0"
                               aria-label={`Open ${childWorkspace.name}`}
                             >
-                              <svg className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="h-4 w-4 text-ink-dim group-hover:text-ink-dim transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </button>
@@ -481,7 +481,7 @@ export default function WorkspaceDetailPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-5 text-sm text-white/55">
+                  <div className=" border border-dashed border-line bg-white/[0.03] p-5 text-sm text-ink/55">
                     No subfolders yet.
                   </div>
                 )}
@@ -501,8 +501,8 @@ export default function WorkspaceDetailPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track to show track info and lyrics.</p>
               </div>
             )}

@@ -611,7 +611,7 @@ export default function LyricsStudioPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+    <div className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-canvas text-ink overflow-hidden" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={credits} />
 
       <main className="flex-1 flex flex-col overflow-hidden pt-[65px] lg:pt-0">
@@ -622,16 +622,16 @@ export default function LyricsStudioPage() {
             <div className="mb-6 flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{t("studio.lyrics")}</h1>
-                <p className="text-white/60">{t("lyricsStudio.subtitle")}</p>
+                <p className="text-ink-muted">{t("lyricsStudio.subtitle")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={handleSaveLyrics} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
+                <button type="button" onClick={handleSaveLyrics} className="inline-flex items-center gap-2  border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink">
                   {t("studio.saveLyrics")}
                 </button>
-                <button type="button" onClick={() => setShowLoadSnapshots(true)} disabled={savedSnapshots.length === 0} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                <button type="button" onClick={() => setShowLoadSnapshots(true)} disabled={savedSnapshots.length === 0} className="inline-flex items-center gap-2  border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed">
                   {t("lyricsStudio.loadLyrics")}
                 </button>
-                <button type="button" onClick={() => clearAllDraft()} className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20">
+                <button type="button" onClick={() => clearAllDraft()} className="inline-flex items-center gap-2  border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-500/20">
                   {t("lyricsStudio.clearAllButton")}
                 </button>
               </div>
@@ -701,7 +701,7 @@ export default function LyricsStudioPage() {
                 onDeleteCustomPreset={handleDeleteCustomPreset}
               />
 
-              <section className="min-h-[620px] rounded-2xl border border-white/10 bg-[#101018]/80 p-4 lg:p-5">
+              <section className="min-h-[620px]  border border-line bg-surface/80 p-4 lg:p-5">
                 {showTranslationView ? (
                   <TranslationReview
                     blocks={blocks}
@@ -761,9 +761,9 @@ export default function LyricsStudioPage() {
               </section>
 
               <aside className="hidden lg:block">
-                <div className="min-h-[620px] rounded-2xl border border-white/10 bg-[#181820]/80 p-4">
+                <div className="min-h-[620px]  border border-line bg-surface/80 p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-white/70">{t("studio.lyrics")}</h3>
+                    <h3 className="text-sm font-semibold text-ink-muted">{t("studio.lyrics")}</h3>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -773,7 +773,7 @@ export default function LyricsStudioPage() {
                           translatingLyrics ||
                           (translationLanguage === "other" && !customTranslationLanguage.trim())
                         }
-                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                        className=" border border-line bg-white/5 px-2.5 py-1.5 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                         title={t("lyricsStudio.translateTooltip")}
                       >
                         {translatingLyrics ? t("lyricsStudio.translatingButton") : t("lyricsStudio.translateButton")}
@@ -782,13 +782,13 @@ export default function LyricsStudioPage() {
                         type="button"
                         onClick={copyAllLyrics}
                         disabled={!combinedLyrics}
-                        className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                        className=" border border-line bg-white/5 px-2.5 py-1.5 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                       >
                         {copied ? t("lyricsStudio.copiedButton") : t("lyricsStudio.copyButton")}
                       </button>
                     </div>
                   </div>
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-white/90">{combinedLyrics || t("lyricsStudio.noLyricsPlaceholder")}</pre>
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-5 text-ink">{combinedLyrics || t("lyricsStudio.noLyricsPlaceholder")}</pre>
                 </div>
               </aside>
             </div>

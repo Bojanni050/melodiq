@@ -551,7 +551,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className={`bg-[#0a0a0f] text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+    <div className={`bg-canvas text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {authChecked && !isLoggedIn && <PublicNav />}
       {isLoggedIn && <Sidebar credits={null} />}
       <div

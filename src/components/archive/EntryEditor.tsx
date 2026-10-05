@@ -115,16 +115,16 @@ export default function EntryEditor({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#181822] p-6 shadow-2xl space-y-4"
+        className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto  border border-line bg-surface p-6 shadow-2xl space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-white/90">
+        <h2 className="text-lg font-semibold text-ink">
           {existing ? (isTranslation ? "Edit translation" : "Edit master track entry") : isTranslation ? "New translation" : "New master track entry"}
         </h2>
 
         <div className={isTranslation ? "grid grid-cols-3 gap-3" : ""}>
           <div className={isTranslation ? "col-span-2" : ""}>
-            <label className="block text-sm font-medium text-white/50 mb-1">Title</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Title</label>
             <input
               type="text"
               value={title}
@@ -135,7 +135,7 @@ export default function EntryEditor({
           </div>
           {isTranslation && (
             <div>
-              <label className="block text-sm font-medium text-white/50 mb-1">Language</label>
+              <label className="block text-sm font-medium text-ink-dim mb-1">Language</label>
               <input
                 type="text"
                 value={language}
@@ -148,7 +148,7 @@ export default function EntryEditor({
         </div>
 
         <div className="relative">
-          <label className="block text-sm font-medium text-white/50 mb-1">Linked track (optional)</label>
+          <label className="block text-sm font-medium text-ink-dim mb-1">Linked track (optional)</label>
           <input
             type="text"
             value={trackQuery}
@@ -168,7 +168,7 @@ export default function EntryEditor({
                 setTrackId(null);
                 setTrackQuery("");
               }}
-              className="absolute right-2 top-8 text-xs text-white/40 hover:text-white/70"
+              className="absolute right-2 top-8 text-xs text-ink-dim hover:text-ink-muted"
             >
               Clear
             </button>
@@ -176,10 +176,10 @@ export default function EntryEditor({
           {trackId && (() => {
             const linked = tracks?.find((t) => t.id === trackId);
             const subtitle = linked ? trackSubtitle(linked) : null;
-            return subtitle ? <p className="mt-1 text-xs text-white/40">Linked: {subtitle}</p> : null;
+            return subtitle ? <p className="mt-1 text-xs text-ink-dim">Linked: {subtitle}</p> : null;
           })()}
           {showTrackDropdown && filteredTracks.length > 0 && (
-            <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-white/10 bg-[#20202c] shadow-xl">
+            <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto  border border-line bg-surface shadow-xl">
               {filteredTracks.map((t) => {
                 const subtitle = trackSubtitle(t);
                 const isCurrent = t.id === existing?.trackId;
@@ -192,13 +192,13 @@ export default function EntryEditor({
                       setTrackQuery(t.title || "Untitled");
                       setShowTrackDropdown(false);
                     }}
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-ink-muted hover:bg-white/10"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{t.title || "Untitled"}</span>
-                      {subtitle && <span className="block truncate text-xs text-white/40">{subtitle}</span>}
+                      {subtitle && <span className="block truncate text-xs text-ink-dim">{subtitle}</span>}
                     </span>
-                    {isCurrent && <span className="shrink-0 text-[10px] uppercase tracking-wide text-primary-300">Current</span>}
+                    {isCurrent && <span className="shrink-0 text-[10px] uppercase tracking-wide text-accent">Current</span>}
                   </button>
                 );
               })}
@@ -207,7 +207,7 @@ export default function EntryEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/50 mb-1">
+          <label className="block text-sm font-medium text-ink-dim mb-1">
             {isTranslation ? "Translated lyrics" : "Definitive lyrics"}
           </label>
           <textarea
@@ -220,7 +220,7 @@ export default function EntryEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/50 mb-1">
+          <label className="block text-sm font-medium text-ink-dim mb-1">
             {isTranslation ? "Prompt / style (leave empty to reuse the original)" : "Definitive prompt / style"}
           </label>
           <textarea
@@ -233,7 +233,7 @@ export default function EntryEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/50 mb-1">Notes (optional)</label>
+          <label className="block text-sm font-medium text-ink-dim mb-1">Notes (optional)</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -249,7 +249,7 @@ export default function EntryEditor({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+            className=" px-4 py-1.5 text-sm text-ink-muted hover:text-ink/85 hover:bg-white/5 transition-colors"
           >
             Cancel
           </button>

@@ -23,18 +23,18 @@ export default function VisualizerSection() {
     usePlayerStore();
 
   return (
-    <div className="bg-white/5 rounded-xl p-6 space-y-5">
+    <div className="bg-white/5  p-6 space-y-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">Audio Visualizer</h2>
-          <p className="text-sm text-white/40 mt-0.5">
+          <h2 className="text-sm font-semibold text-ink">Audio Visualizer</h2>
+          <p className="text-sm text-ink-dim mt-0.5">
             Frequency spectrum shown in the fullscreen player.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setVisualizerEnabled(!visualizerEnabled)}
-          className={`shrink-0 w-10 h-6 rounded-full transition-colors relative ${visualizerEnabled ? "bg-primary-500" : "bg-white/20"}`}
+          className={`shrink-0 w-10 h-6 rounded-full transition-colors relative ${visualizerEnabled ? "bg-accent" : "bg-white/20"}`}
         >
           <span
             className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${visualizerEnabled ? "translate-x-4" : "translate-x-0"}`}
@@ -45,38 +45,38 @@ export default function VisualizerSection() {
       {visualizerEnabled && (
         <>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-white/50 uppercase tracking-wider">Type</p>
+            <p className="text-sm font-medium text-ink-dim uppercase tracking-wider">Type</p>
             <div className="grid grid-cols-2 gap-2">
               {MODES.map((m) => (
                 <button
                   key={m.value}
                   type="button"
                   onClick={() => setVisualizerMode(m.value)}
-                  className={`text-left px-3 py-2.5 rounded-lg border transition-colors ${
+                  className={`text-left px-3 py-2.5  border transition-colors ${
                     visualizerMode === m.value
-                      ? "border-primary-500 bg-primary-500/10 text-white"
-                      : "border-white/10 bg-white/5 text-white/60 hover:border-white/25 hover:text-white"
+                      ? "border-accent bg-accent/10 text-ink"
+                      : "border-line bg-white/5 text-ink-muted hover:border-line/25 hover:text-ink"
                   }`}
                 >
                   <span className="block text-sm font-medium">{m.label}</span>
-                  <span className="block text-[10px] text-white/35 mt-0.5">{m.description}</span>
+                  <span className="block text-[10px] text-ink-dim mt-0.5">{m.description}</span>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-white/50 uppercase tracking-wider">Color</p>
+            <p className="text-sm font-medium text-ink-dim uppercase tracking-wider">Color</p>
             <div className="flex flex-wrap gap-2">
               {GRADIENTS.map((g) => (
                 <button
                   key={g.value}
                   type="button"
                   onClick={() => setVisualizerGradient(g.value)}
-                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                  className={`px-3 py-1.5  text-sm border transition-colors ${
                     visualizerGradient === g.value
-                      ? "border-primary-500 bg-primary-500/10 text-white"
-                      : "border-white/10 bg-white/5 text-white/60 hover:border-white/25 hover:text-white"
+                      ? "border-accent bg-accent/10 text-ink"
+                      : "border-line bg-white/5 text-ink-muted hover:border-line/25 hover:text-ink"
                   }`}
                 >
                   {g.label}

@@ -6,10 +6,10 @@ export default function PushNotificationsSection() {
   const { state, loading, error, subscribe, unsubscribe } = usePushNotifications();
 
   return (
-    <div className="bg-white/5 rounded-xl p-6 space-y-4">
+    <div className="bg-white/5  p-6 space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-white">Push notificaties</h2>
-        <p className="text-sm text-white/50 mt-1">
+        <h2 className="text-lg font-semibold text-ink">Push notificaties</h2>
+        <p className="text-sm text-ink-dim mt-1">
           Ontvang een melding wanneer een track klaar is met genereren.
         </p>
       </div>
@@ -44,7 +44,7 @@ export default function PushNotificationsSection() {
               }`}
             />
           </div>
-          <span className="text-sm text-white/70">
+          <span className="text-sm text-ink-muted">
             {state === "granted" ? "Ingeschakeld" : "Uitgeschakeld"}
           </span>
         </div>

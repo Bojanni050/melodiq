@@ -39,8 +39,8 @@ export default function RecentTracksPanel({
   return (
     <section className="section-card flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white/60">{t("studio.recentTracks")}</h2>
-        <span className="text-xs text-white/30">{tracks.length} tracks</span>
+        <h2 className="text-sm font-semibold text-ink-muted">{t("studio.recentTracks")}</h2>
+        <span className="text-xs text-ink-dim">{tracks.length} tracks</span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">

@@ -21,7 +21,7 @@ export default function StyleConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+        className="w-full max-w-lg  border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -37,14 +37,14 @@ export default function StyleConfirmModal({
               <button
                 type="button"
                 onClick={onConfirm}
-                className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
+                className=" border border-amber-400/20 bg-amber-500/10 px-3 py-1.5 text-sm text-amber-200 transition-colors hover:bg-amber-500/20"
               >
                 {t("common.confirm")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-lg px-3 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+                className=" px-3 py-1.5 text-sm text-ink-muted hover:text-ink/85 hover:bg-white/5 transition-colors"
               >
                 {t("common.cancel")}
               </button>

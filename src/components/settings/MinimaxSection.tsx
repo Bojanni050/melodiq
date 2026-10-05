@@ -49,17 +49,17 @@ export default function MinimaxSection({
 
   return (
     <ProviderAccordion title="MiniMax Music 2.6" description="Synchronous music generation with lyrics support" status={status}>
-      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+      <div className="flex items-center justify-between px-3 py-2  bg-white/5 border border-line">
         <div>
-          <p className="text-sm text-white/80">Use PoYo</p>
-          <p className="text-xs text-white/30">Route Minimax generation through PoYo API</p>
+          <p className="text-sm text-ink-muted">Use PoYo</p>
+          <p className="text-xs text-ink-dim">Route Minimax generation through PoYo API</p>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={usesPoyo}
           onClick={toggleUsePoyo}
-          className={`relative w-12 h-6 rounded-full transition-colors ${usesPoyo ? "bg-primary-500/40" : "bg-white/10"}`}
+          className={`relative w-12 h-6 rounded-full transition-colors ${usesPoyo ? "bg-accent/40" : "bg-white/10"}`}
         >
           <span className="sr-only">Use PoYo for Minimax</span>
           <span
@@ -70,7 +70,7 @@ export default function MinimaxSection({
 
       {!usesPoyo && (
         <div>
-          <label className="block text-sm font-medium text-white/50 mb-1">API Key</label>
+          <label className="block text-sm font-medium text-ink-dim mb-1">API Key</label>
           <input
             type="password"
             value={values.MINIMAX_API_KEY || ""}
@@ -82,7 +82,7 @@ export default function MinimaxSection({
       )}
 
       {usesPoyo && (
-        <p className="text-sm text-white/30">
+        <p className="text-sm text-ink-dim">
           Using PoYo API key for Minimax generation. Ensure PoYo is configured above.
         </p>
       )}

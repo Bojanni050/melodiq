@@ -42,15 +42,15 @@ export default function StemRow({ stemDef, trackId }: { stemDef: StemDef; trackI
 
   const isExtracting = stem?.status === "pending" || extracting;
   return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-      <span className="text-sm text-white/70">{stemDef.label}</span>
+    <div className="flex items-center justify-between  border border-line bg-white/5 px-3 py-2">
+      <span className="text-sm text-ink-muted">{stemDef.label}</span>
       {error && <span className="text-[11px] text-red-300">{error}</span>}
       {stem?.status === "completed" && stem.audioUrl ? (
-        <a href={stem.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
+        <a href={stem.audioUrl} download className="rounded px-2 py-1 text-[11px] text-accent hover:bg-accent/10 transition-colors">Download</a>
       ) : isExtracting ? (
-        <span className="text-[11px] text-white/40">Extracting…</span>
+        <span className="text-[11px] text-ink-dim">Extracting…</span>
       ) : (
-        <button type="button" onClick={handleExtract} disabled={extracting} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
+        <button type="button" onClick={handleExtract} disabled={extracting} className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors disabled:opacity-40">
           {stem?.status === "failed" ? "Retry" : "Extract"}
         </button>
       )}

@@ -146,20 +146,20 @@ export default function AdminUsersPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
-        <main className="flex-1 flex items-center justify-center text-sm text-white/50">Checking access...</main>
+        <main className="flex-1 flex items-center justify-center text-sm text-ink-dim">Checking access...</main>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center px-4">
-          <div className="max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/60">This page is restricted to admins.</p>
+          <div className="max-w-sm  border border-line bg-white/5 p-8 text-center">
+            <p className="text-sm text-ink-muted">This page is restricted to admins.</p>
           </div>
         </main>
       </div>
@@ -167,25 +167,25 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+    <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={null} />
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
         <div className="mx-auto max-w-4xl space-y-6 pb-16">
           <div>
-            <Link href="/admin" className="text-xs text-white/40 hover:text-white/70">← Admin</Link>
-            <p className="mt-2 text-xs uppercase tracking-[0.28em] text-white/35">Admin</p>
+            <Link href="/admin" className="text-xs text-ink-dim hover:text-ink-muted">← Admin</Link>
+            <p className="mt-2 text-xs uppercase tracking-[0.28em] text-ink-dim">Admin</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Users</h1>
           </div>
 
           {loading ? (
-            <p className="text-sm text-white/50">Loading...</p>
+            <p className="text-sm text-ink-dim">Loading...</p>
           ) : loadError ? (
             <p className="text-sm text-red-400">{loadError}</p>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <div className="overflow-x-auto  border border-line">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/10 bg-white/5 text-xs uppercase tracking-wider text-white/40">
+                  <tr className="border-b border-line bg-white/5 text-xs uppercase tracking-wider text-ink-dim">
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Role</th>
@@ -195,22 +195,22 @@ export default function AdminUsersPage() {
                 </thead>
                 <tbody>
                   {userList.map((u) => (
-                    <tr key={u.id} className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.03]">
+                    <tr key={u.id} className="border-b border-line last:border-b-0 hover:bg-white/[0.03]">
                       <td className="px-4 py-3">
                         {u.email}
-                        {u.id === selfId && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/50">You</span>}
+                        {u.id === selfId && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-ink-dim">You</span>}
                       </td>
-                      <td className="px-4 py-3 text-white/70">{u.name || "—"}</td>
+                      <td className="px-4 py-3 text-ink-muted">{u.name || "—"}</td>
                       <td className="px-4 py-3">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs capitalize text-white/70">{u.role}</span>
+                        <span className="rounded-full border border-line bg-white/5 px-2 py-0.5 text-xs capitalize text-ink-muted">{u.role}</span>
                       </td>
-                      <td className="px-4 py-3 text-white/40">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-ink-dim">{new Date(u.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => openEdit(u)}
-                            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                            className=" border border-line bg-white/5 px-3 py-1 text-xs font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink"
                           >
                             Edit
                           </button>
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
                             type="button"
                             onClick={() => { setDeletingUser(u); setDeleteError(null); }}
                             disabled={u.id === selfId}
-                            className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300 transition hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                            className=" border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300 transition hover:bg-red-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             Delete
                           </button>
@@ -236,55 +236,55 @@ export default function AdminUsersPage() {
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setEditingUser(null)}>
           <div
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#12121a] p-6"
+            className="w-full max-w-md  border border-line bg-surface p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">Edit {editingUser.email}</h2>
             <form onSubmit={saveEdit} className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Email</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Email</label>
                 <input
                   type="email"
                   required
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">New password (leave blank to keep current)</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">New password (leave blank to keep current)</label>
                 <input
                   type="password"
                   minLength={8}
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   placeholder="At least 8 characters"
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink placeholder-white/30 focus:outline-none focus:border-accent"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Name</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Name</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Role</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Role</label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
                   disabled={editingUser.id === selfId}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500 disabled:opacity-50"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent disabled:opacity-50"
                 >
                   {ROLES.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
                 </select>
                 {editingUser.id === selfId && (
-                  <p className="mt-1 text-xs text-white/30">You can't change your own role.</p>
+                  <p className="mt-1 text-xs text-ink-dim">You can't change your own role.</p>
                 )}
               </div>
 
@@ -294,14 +294,14 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10"
+                  className=" border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" bg-accent px-4 py-2 text-sm font-medium text-ink transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingEdit ? "Saving…" : "Save changes"}
                 </button>
@@ -314,11 +314,11 @@ export default function AdminUsersPage() {
       {deletingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => !deleting && setDeletingUser(null)}>
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#12121a] p-6"
+            className="w-full max-w-sm  border border-line bg-surface p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">Delete {deletingUser.email}?</h2>
-            <p className="mt-2 text-sm text-white/50">
+            <p className="mt-2 text-sm text-ink-dim">
               This permanently deletes the account and can't be undone. Any tracks, playlists, or releases they
               own will remain in the database but become orphaned (no owner).
             </p>
@@ -328,7 +328,7 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={() => setDeletingUser(null)}
                 disabled={deleting}
-                className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 disabled:opacity-50"
+                className=" border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -336,7 +336,7 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className=" bg-red-500 px-4 py-2 text-sm font-medium text-ink transition hover:bg-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deleting ? "Deleting…" : "Delete user"}
               </button>

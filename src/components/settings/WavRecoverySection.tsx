@@ -45,7 +45,7 @@ export default function WavRecoverySection() {
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">WAV/FLAC-conversie</h2>
-      <p className="text-sm text-white/40 mb-3">
+      <p className="text-sm text-ink-dim mb-3">
         Een nieuwe WAV/HD-conversie vraag je per track aan via "Convert to WAV" in het trackmenu.
         Openstaande conversies worden ook automatisch gecontroleerd zodra je de Library opent, maar
         gebruik deze knop om dat direct te forceren voor tracks waarvoor al een WAV is aangevraagd
@@ -61,7 +61,7 @@ export default function WavRecoverySection() {
         <div className="mt-3 space-y-2">
           <p className={`text-sm ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
           {result.success && result.total !== undefined && (
-            <p className="text-sm text-white/30">
+            <p className="text-sm text-ink-dim">
               {result.retried} van de {result.total} in aanmerking komende tracks opnieuw aangevraagd
             </p>
           )}
@@ -73,9 +73,9 @@ export default function WavRecoverySection() {
                 return (
                   <div key={r.trackId} className="flex items-start gap-2 text-xs bg-white/5 rounded px-2 py-1.5">
                     <span className={`shrink-0 font-medium ${color}`}>{label}</span>
-                    <span className="text-white/40 truncate">Track: {r.trackId.substring(0, 8)}...</span>
+                    <span className="text-ink-dim truncate">Track: {r.trackId.substring(0, 8)}...</span>
                     {r.wavJobId && (
-                      <span className="text-white/20 ml-auto shrink-0 font-mono text-[10px]" title={r.wavJobId}>
+                      <span className="text-ink-dim ml-auto shrink-0 font-mono text-[10px]" title={r.wavJobId}>
                         Job: {r.wavJobId.substring(0, 12)}...
                       </span>
                     )}

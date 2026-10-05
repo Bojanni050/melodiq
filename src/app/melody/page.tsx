@@ -202,7 +202,7 @@ export default function MusicBuilderPage() {
 
   return (
     <div
-      className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-[#0d0d12] text-white overflow-hidden"
+      className="flex h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] bg-canvas text-ink overflow-hidden"
       style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 0 }}
     >
       <Sidebar credits={credits} />
@@ -215,13 +215,13 @@ export default function MusicBuilderPage() {
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{t("melody.heading")}</h1>
-                <p className="text-white/60">{t("melody.subtitle")}</p>
+                <p className="text-ink-muted">{t("melody.subtitle")}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleSaveClick}
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+                  className="inline-flex items-center gap-2  border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink"
                 >
                   {t("common.save")}
                 </button>
@@ -229,7 +229,7 @@ export default function MusicBuilderPage() {
                   type="button"
                   onClick={handleLoadClick}
                   disabled={savedSnapshots.length === 0}
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2  border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {t("studio.load")}
                 </button>
@@ -237,41 +237,41 @@ export default function MusicBuilderPage() {
             </div>
 
             {/* YOUR SONG — read-only context from Lyrics */}
-            <div className="mb-6 rounded-2xl border border-white/10 bg-[#101018]/80 p-4">
+            <div className="mb-6  border border-line bg-surface/80 p-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40">{t("melody.yourSongHeading")}</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-dim">{t("melody.yourSongHeading")}</h2>
                 <button
                   type="button"
                   onClick={() => router.push("/lyrics-studio")}
-                  className="text-xs text-primary-400 underline underline-offset-2 hover:text-primary-300"
+                  className="text-xs text-accent underline underline-offset-2 hover:text-accent"
                 >
                   {t("melody.editSource")}
                 </button>
               </div>
               {hasLyricsContext || instrumental ? (
-                <div className="flex flex-wrap gap-2 text-xs text-white/60">
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+                <div className="flex flex-wrap gap-2 text-xs text-ink-muted">
+                  <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">
                     {instrumental ? t("melody.instrumentalPill") : t("melody.songWithLyricsPill")}
                   </span>
-                  {effectiveLanguage && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{effectiveLanguage}</span>}
-                  {topic.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.topicPill", { topic })}</span>}
-                  {mood.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.moodPill", { mood })}</span>}
-                  {style.trim() && <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.stylePill", { style })}</span>}
+                  {effectiveLanguage && <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{effectiveLanguage}</span>}
+                  {topic.trim() && <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{t("melody.topicPill", { topic })}</span>}
+                  {mood.trim() && <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{t("melody.moodPill", { mood })}</span>}
+                  {style.trim() && <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{t("melody.stylePill", { style })}</span>}
                   {!instrumental && vocalistTag !== "auto" && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{t("melody.vocalPill", { vocalistTag })}</span>
+                    <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{t("melody.vocalPill", { vocalistTag })}</span>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-white/45">
+                <p className="text-sm text-ink-dim">
                   {t("melody.noLyricsContextPrefix")}
-                  <button type="button" onClick={() => router.push("/lyrics-studio")} className="text-primary-400 underline underline-offset-2 hover:text-primary-300">
+                  <button type="button" onClick={() => router.push("/lyrics-studio")} className="text-accent underline underline-offset-2 hover:text-accent">
                     {t("studio.lyrics")}
                   </button>
                   {t("melody.noLyricsContextSuffix")}
                 </p>
               )}
 
-              <div className="mt-3 flex items-center gap-2 border-t border-white/10 pt-3">
+              <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
                 <button
                   type="button"
                   role="switch"
@@ -282,7 +282,7 @@ export default function MusicBuilderPage() {
                   <span className="sr-only">{t("studio.instrumentalToggleSr")}</span>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${instrumental ? "translate-x-5" : ""}`} />
                 </button>
-                <span className="text-sm text-white/60">{t("melody.instrumentalToggleLabel")}</span>
+                <span className="text-sm text-ink-muted">{t("melody.instrumentalToggleLabel")}</span>
               </div>
             </div>
 
@@ -356,14 +356,14 @@ export default function MusicBuilderPage() {
 
               <aside className="flex flex-col gap-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
                 {arrangementLabels.length > 0 && (
-                  <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-2">
-                    <h3 className="text-sm font-semibold text-white/85">{t("melody.arrangementHeading")}</h3>
-                    <p className="text-xs text-white/40">{t("melody.arrangementHint")}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/70">
+                  <section className=" border border-line bg-surface/80 p-4 space-y-2">
+                    <h3 className="text-sm font-semibold text-ink/85">{t("melody.arrangementHeading")}</h3>
+                    <p className="text-xs text-ink-dim">{t("melody.arrangementHint")}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
                       {arrangementLabels.map((label, i) => (
                         <span key={`${label}-${i}`} className="flex items-center gap-1.5">
-                          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">{label}</span>
-                          {i < arrangementLabels.length - 1 && <span className="text-white/20">→</span>}
+                          <span className="rounded-full border border-line bg-white/5 px-2.5 py-1">{label}</span>
+                          {i < arrangementLabels.length - 1 && <span className="text-ink-dim">→</span>}
                         </span>
                       ))}
                     </div>
@@ -376,7 +376,7 @@ export default function MusicBuilderPage() {
                   type="button"
                   onClick={useInStudio}
                   disabled={isStylePayloadEmpty(payload)}
-                  className="inline-flex w-full items-center justify-center rounded-lg bg-primary-gradient px-3 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex w-full items-center justify-center  bg-primary-gradient px-3 py-2.5 text-sm font-semibold text-ink transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {t("melody.useInStudio")}
                 </button>
@@ -384,7 +384,7 @@ export default function MusicBuilderPage() {
                   type="button"
                   onClick={useLyricsOnlyInStudio}
                   disabled={instrumental || !combinedLyrics.trim()}
-                  className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex w-full items-center justify-center  border border-line bg-white/5 px-3 py-2.5 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {t("melody.useLyricsOnlyInStudio")}
                 </button>

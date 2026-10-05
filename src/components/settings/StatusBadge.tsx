@@ -1,7 +1,7 @@
 export type ProviderStatus = "not-configured" | "configured" | "connected" | "invalid";
 
 const STYLES: Record<ProviderStatus, { label: string; dot: string; text: string; bg: string }> = {
-  "not-configured": { label: "Not configured", dot: "bg-white/30", text: "text-white/40", bg: "bg-white/5" },
+  "not-configured": { label: "Not configured", dot: "bg-white/30", text: "text-ink-dim", bg: "bg-white/5" },
   configured: { label: "Configured", dot: "bg-blue-400", text: "text-blue-300", bg: "bg-blue-500/10" },
   connected: { label: "Connected", dot: "bg-green-400", text: "text-green-300", bg: "bg-green-500/10" },
   invalid: { label: "Invalid API Key", dot: "bg-red-400", text: "text-red-300", bg: "bg-red-500/10" },

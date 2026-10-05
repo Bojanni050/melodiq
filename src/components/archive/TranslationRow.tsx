@@ -13,24 +13,24 @@ export default function TranslationRow({
 }) {
   return (
     <div
-      className="flex items-start justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 cursor-pointer hover:bg-white/[0.05] transition-colors"
+      className="flex items-start justify-between gap-3  border border-line bg-white/[0.02] px-3 py-2 cursor-pointer hover:bg-white/[0.05] transition-colors"
       onClick={onEdit}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           {translation.language && (
-            <span className="shrink-0 rounded-full border border-primary-400/30 bg-primary-500/10 px-2 py-0.5 text-[10px] text-primary-300">
+            <span className="shrink-0 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
               {translation.language}
             </span>
           )}
-          <h4 className="text-sm font-medium text-white/85 truncate">{translation.title}</h4>
+          <h4 className="text-sm font-medium text-ink/85 truncate">{translation.title}</h4>
           {translation.trackTitle && (
-            <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/50">
+            <span className="shrink-0 rounded-full border border-line bg-white/[0.06] px-2 py-0.5 text-[10px] text-ink-dim">
               Linked: {translation.trackTitle}
             </span>
           )}
         </div>
-        {translation.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-1 whitespace-pre-line">{translation.lyrics}</p>}
+        {translation.lyrics && <p className="text-xs text-ink-dim mt-1 line-clamp-1 whitespace-pre-line">{translation.lyrics}</p>}
       </div>
       <button
         type="button"
@@ -38,7 +38,7 @@ export default function TranslationRow({
           e.stopPropagation();
           onDelete();
         }}
-        className="shrink-0 p-1 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+        className="shrink-0 p-1  text-ink-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
         aria-label="Delete translation"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

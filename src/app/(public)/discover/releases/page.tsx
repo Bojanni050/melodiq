@@ -240,7 +240,7 @@ function DiscoverReleasesPageInner() {
   }
 
   return (
-    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {isLoggedIn && <Sidebar credits={null} />}
       {authChecked && !isLoggedIn && <PublicNav />}
 
@@ -300,7 +300,7 @@ function DiscoverReleasesPageInner() {
                     aria-label="Filter by release type"
                   >
                     {TYPE_FILTERS.map((f) => (
-                      <option key={f.value} value={f.value} className="bg-[#161621]">
+                      <option key={f.value} value={f.value} className="bg-surface">
                         {f.label}
                       </option>
                     ))}
@@ -316,8 +316,8 @@ function DiscoverReleasesPageInner() {
                     className="appearance-none rounded-full border border-line bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-ink-muted outline-none transition-colors hover:bg-white/10"
                     aria-label="Sort releases"
                   >
-                    <option value="date" className="bg-[#161621]">Release date</option>
-                    <option value="title" className="bg-[#161621]">Title</option>
+                    <option value="date" className="bg-surface">Release date</option>
+                    <option value="title" className="bg-surface">Title</option>
                   </select>
                   <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

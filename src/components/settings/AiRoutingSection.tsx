@@ -39,7 +39,7 @@ function ModelField({
   if (provider === "openai") {
     return (
       <div>
-        <label className="block text-sm font-medium text-white/50 mb-1">{label} (OpenAI)</label>
+        <label className="block text-sm font-medium text-ink-dim mb-1">{label} (OpenAI)</label>
         <input
           type="text"
           value={values[openAiKey] || ""}
@@ -170,11 +170,11 @@ export default function AiRoutingSection({
       <section className="section-card">
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Routing</h2>
-          <p className="text-sm text-white/30">Choose which provider handles prompt generation and lyric generation.</p>
+          <p className="text-sm text-ink-dim">Choose which provider handles prompt generation and lyric generation.</p>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">Prompt provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Prompt provider</label>
             <select
               value={values.PROMPT_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("PROMPT_LLM_PROVIDER", e.target.value)}
@@ -184,10 +184,10 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">Used by Generate Style / prompt optimization.</p>
+            <p className="text-xs text-ink-dim mt-1">Used by Generate Style / prompt optimization.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">Image prompt provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Image prompt provider</label>
             <select
               value={values.IMAGE_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("IMAGE_LLM_PROVIDER", e.target.value)}
@@ -197,10 +197,10 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">Used to write the visual scene description for auto-generated cover art.</p>
+            <p className="text-xs text-ink-dim mt-1">Used to write the visual scene description for auto-generated cover art.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">Lyrics provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Lyrics provider</label>
             <select
               value={values.LYRICS_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("LYRICS_LLM_PROVIDER", e.target.value)}
@@ -210,10 +210,10 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">Used by Generate Lyrics and Lyric Studio block generation.</p>
+            <p className="text-xs text-ink-dim mt-1">Used by Generate Lyrics and Lyric Studio block generation.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">Track DNA provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Track DNA provider</label>
             <select
               value={values.TRACKDNA_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("TRACKDNA_LLM_PROVIDER", e.target.value)}
@@ -223,14 +223,14 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               Used by the automatic Track DNA analysis (atmosphere tags and lyrics quality score) that runs once
               per finished track. Kept separate from Lyrics since it needs reliable JSON output rather than
               creative writing.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">Advanced DNA provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">Advanced DNA provider</label>
             <select
               value={values.ADVANCED_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("ADVANCED_LLM_PROVIDER", e.target.value)}
@@ -240,14 +240,14 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               Used by Advanced Track DNA, which listens to the actual audio (alongside the lyrics and style
               prompt) to produce a lyrics analysis, a composition/mix critique, and tips — needs an
               audio-input-capable model.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-white/50 mb-1">LyricIQ provider</label>
+            <label className="block text-sm font-medium text-ink-dim mb-1">LyricIQ provider</label>
             <select
               value={values.LYRICIQ_LLM_PROVIDER || "openrouter"}
               onChange={(e) => onFieldChange("LYRICIQ_LLM_PROVIDER", e.target.value)}
@@ -257,14 +257,14 @@ export default function AiRoutingSection({
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
             </select>
-            <p className="text-xs text-white/25 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.
             </p>
           </div>
           <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <label className="block text-sm font-medium text-white/50">After generating Time-Coded Lyrics</label>
-              <p className="text-xs text-white/25 mt-1 max-w-md">
+              <label className="block text-sm font-medium text-ink-dim">After generating Time-Coded Lyrics</label>
+              <p className="text-xs text-ink-dim mt-1 max-w-md">
                 &ldquo;Generate Time-Coded Lyrics&rdquo; from a track&apos;s menu always generates in place first
                 (a progress indicator shows on the track while it runs). Always open: you&apos;re taken
                 straight into the Timecoded Lyrics Editor when it&apos;s done. Always ask: a popup asks
@@ -274,7 +274,7 @@ export default function AiRoutingSection({
             <div
               role="radiogroup"
               aria-label="After generating Time-Coded Lyrics"
-              className="flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
+              className="flex shrink-0 rounded-full border border-line bg-white/5 p-1"
             >
               {TCL_EDITOR_BEHAVIOR_OPTIONS.map((opt) => (
                 <button
@@ -285,8 +285,8 @@ export default function AiRoutingSection({
                   onClick={() => onTclEditorBehaviorChange(opt.value)}
                   className={`h-8 rounded-full px-3 text-xs font-medium transition-colors ${
                     tclEditorBehavior === opt.value
-                      ? "bg-white text-black"
-                      : "text-white/55 hover:text-white"
+                      ? "bg-accent text-ink"
+                      : "text-ink/55 hover:text-ink"
                   }`}
                 >
                   {opt.label}
@@ -301,7 +301,7 @@ export default function AiRoutingSection({
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold">Models</h2>
-            <p className="text-sm text-white/30">
+            <p className="text-sm text-ink-dim">
               Model used per purpose. Shows the model picker for the provider that purpose is routed to above
               (OpenRouter / Eden AI), or a plain model field for OpenAI. Use Retrieve Models to (re)load the
               picker options.
@@ -314,7 +314,7 @@ export default function AiRoutingSection({
                   type="button"
                   onClick={onGetModels}
                   disabled={testingModels}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5  border border-line bg-white/5 px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {testingModels ? (
                     <>
@@ -341,7 +341,7 @@ export default function AiRoutingSection({
                   type="button"
                   onClick={onGetEdenAiModels}
                   disabled={testingEdenAiModels}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5  border border-line bg-white/5 px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {testingEdenAiModels ? (
                     <>
@@ -545,7 +545,7 @@ export default function AiRoutingSection({
                 />
               }
             />
-            <p className="text-xs text-white/25 mt-1">Only models that can process audio input are listed, for future composition analysis from the actual track.</p>
+            <p className="text-xs text-ink-dim mt-1">Only models that can process audio input are listed, for future composition analysis from the actual track.</p>
           </div>
           <ModelField
             label="LyricIQ Model"
@@ -619,7 +619,7 @@ export default function AiRoutingSection({
                   />
                 }
               />
-              <p className="text-xs text-white/25 mt-1">Follows the Lyrics provider above (no separate Timecoded provider) — that's what the AI editor actually uses.</p>
+              <p className="text-xs text-ink-dim mt-1">Follows the Lyrics provider above (no separate Timecoded provider) — that's what the AI editor actually uses.</p>
             </div>
           )}
         </div>

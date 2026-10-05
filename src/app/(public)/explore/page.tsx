@@ -82,7 +82,7 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-ink">
+    <div className="min-h-screen bg-canvas text-ink">
       <PublicNav />
 
       <main className="px-4 py-8 sm:px-8 sm:py-12">

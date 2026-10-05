@@ -63,7 +63,7 @@ export default function EntryTrackActionsMenu({
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/10 transition-colors"
+        className="p-1.5  text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors"
         title="Track actions"
         aria-label="Track actions"
       >
@@ -74,7 +74,7 @@ export default function EntryTrackActionsMenu({
 
       {open && (
         <div
-          className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5"
+          className="absolute right-0 top-8 z-20 min-w-48  border border-line bg-surface shadow-xl p-1.5"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -83,7 +83,7 @@ export default function EntryTrackActionsMenu({
               setOpen(false);
               onEdit();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
           >
             Edit entry
           </button>
@@ -96,7 +96,7 @@ export default function EntryTrackActionsMenu({
                   setOpen(false);
                   onPlay();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
               >
                 Play
               </button>
@@ -106,7 +106,7 @@ export default function EntryTrackActionsMenu({
                   setOpen(false);
                   onDetails();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
               >
                 Track Details
               </button>
@@ -117,7 +117,7 @@ export default function EntryTrackActionsMenu({
                     setOpen(false);
                     onEditTrackDetails();
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                 >
                   Edit Track Details
                 </button>
@@ -127,7 +127,7 @@ export default function EntryTrackActionsMenu({
                   href={downloadUrl}
                   download
                   onClick={() => setOpen(false)}
-                  className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                  className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                 >
                   Download
                 </a>
@@ -139,14 +139,14 @@ export default function EntryTrackActionsMenu({
                   onAnalyze();
                 }}
                 disabled={analyzing}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {analyzing ? "Running advanced analysis…" : "Advanced Track DNA"}
               </button>
               <Link
                 href="/library"
                 onClick={() => setOpen(false)}
-                className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                className="block w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
               >
                 Open in Library
               </Link>
@@ -158,7 +158,7 @@ export default function EntryTrackActionsMenu({
                     onTogglePublish();
                   }}
                   disabled={togglingPublish}
-                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {togglingPublish
                     ? isPublished
@@ -178,16 +178,16 @@ export default function EntryTrackActionsMenu({
                       setOpen(false);
                       onOpenReleasePicker();
                     }}
-                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
                   >
                     <span>Add to release</span>
-                    <span className="text-white/30">›</span>
+                    <span className="text-ink-dim">›</span>
                   </button>
 
                   {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
                     <>
                       <div className="my-1 h-px bg-white/10" />
-                      <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from release</p>
+                      <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Remove from release</p>
                       {releasesContainingTrack.map((release) => (
                         <button
                           key={`remove-release-${release.id}`}

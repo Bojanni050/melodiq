@@ -115,7 +115,7 @@ export default function ResizablePanel({
         ref={panelRef}
         style={{ width: open ? width : 0 }}
         aria-hidden={!open}
-        className="hidden lg:flex lg:flex-col shrink-0 overflow-hidden border-l border-white/5 bg-[#0d0d12] transition-[width] duration-300 ease-out motion-reduce:transition-none"
+        className="hidden lg:flex lg:flex-col shrink-0 overflow-hidden border-l border-line bg-canvas transition-[width] duration-300 ease-out motion-reduce:transition-none"
       >
         <div
           ref={contentRef}

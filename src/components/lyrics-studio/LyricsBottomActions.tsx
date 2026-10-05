@@ -25,7 +25,7 @@ export default function LyricsBottomActions({
   const t = useT();
   return (
     <>
-      <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+      <div className="mt-5 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:justify-end">
         <div className="flex flex-1 flex-col gap-2 sm:max-w-[280px]">
           <select
             value={translationLanguage}
@@ -53,7 +53,7 @@ export default function LyricsBottomActions({
           type="button"
           onClick={onGoToMelody}
           disabled={!combinedLyrics.trim()}
-          className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+          className=" border border-line bg-white/5 px-4 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
         >
           {t("lyricsStudio.goToMelody")}
         </button>
@@ -61,7 +61,7 @@ export default function LyricsBottomActions({
           type="button"
           onClick={onGoToMusic}
           disabled={!combinedLyrics.trim()}
-          className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-35"
+          className=" bg-accent px-4 py-2 text-sm font-semibold text-ink transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-35"
         >
           {t("lyricsStudio.goToMusic")} &rarr;
         </button>

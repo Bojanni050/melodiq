@@ -41,7 +41,7 @@ export default function MusicGptRecoverySection() {
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">MusicGPT — Track Recovery</h2>
-      <p className="text-sm text-white/40 mb-3">
+      <p className="text-sm text-ink-dim mb-3">
         Haal tracks op die vastzitten op &ldquo;generating&rdquo; door de MusicGPT API
         rechtstreeks te pollen op status. Veilig om meerdere keren aan te roepen.
       </p>
@@ -54,7 +54,7 @@ export default function MusicGptRecoverySection() {
         <div className="mt-3 space-y-2">
           <p className={`text-sm ${result.success ? "text-green-400" : "text-red-400"}`}>{result.message}</p>
           {result.success && result.total !== undefined && (
-            <p className="text-sm text-white/30">
+            <p className="text-sm text-ink-dim">
               {result.recovered} recovered · {result.still_processing} still processing · {result.total} total
             </p>
           )}
@@ -66,9 +66,9 @@ export default function MusicGptRecoverySection() {
                 return (
                   <div key={r.trackId} className="flex items-start gap-2 text-xs bg-white/5 rounded px-2 py-1.5">
                     <span className={`shrink-0 font-medium ${color}`}>{label}</span>
-                    <span className="text-white/30 font-mono truncate">{r.conversionId}</span>
+                    <span className="text-ink-dim font-mono truncate">{r.conversionId}</span>
                     {r.detail && (
-                      <span className="text-white/20 ml-auto shrink-0 truncate max-w-[140px]" title={r.detail}>
+                      <span className="text-ink-dim ml-auto shrink-0 truncate max-w-[140px]" title={r.detail}>
                         {r.detail}
                       </span>
                     )}

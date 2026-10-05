@@ -14,8 +14,8 @@ export default function TrackVote({ voted, voteLoading, onVote }: TrackVoteProps
         onVote();
       }}
       disabled={voteLoading}
-      className={`hidden md:inline-flex p-1 rounded-lg transition-all duration-200 ${
-        voted ? "text-amber-400" : "text-white/20 hover:text-amber-300"
+      className={`hidden md:inline-flex p-1  transition-all duration-200 ${
+        voted ? "text-amber-400" : "text-ink-dim hover:text-amber-300"
       }`}
       style={{
         boxShadow: voted

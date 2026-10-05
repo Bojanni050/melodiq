@@ -42,8 +42,8 @@ export default function TrackPlayButton({
       onDoubleClick={(e) => {
         e.stopPropagation();
       }}
-      className={`relative w-[90px] h-[90px] rounded-lg shrink-0 overflow-hidden transition-colors group/play ${
-        isCurrentlyPlaying ? "ring-2 ring-primary-500/40" : ""
+      className={`relative w-[90px] h-[90px]  shrink-0 overflow-hidden transition-colors group/play ${
+        isCurrentlyPlaying ? "ring-2 ring-accent/40" : ""
       }`}
       data-now-playing={isCurrentlyPlaying ? "true" : undefined}
       aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
@@ -53,13 +53,13 @@ export default function TrackPlayButton({
           className="w-full h-full flex items-center justify-center bg-white/5"
           title="Gearchiveerd — alleen mp3 bewaard"
         >
-          <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6" />
           </svg>
         </div>
       ) : isGeneratingOrPending ? (
         <div className="w-full h-full bg-white/5 flex items-center justify-center">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400/30 border-t-primary-300" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
         </div>
       ) : effectiveCoverUrl && !coverFailed ? (
         <>
@@ -74,19 +74,19 @@ export default function TrackPlayButton({
           {isCurrentlyPlaying ? (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {isPlaying ? (
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-ink" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4 ml-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 ml-0.5 text-ink" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               )}
             </div>
           ) : (
             <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
-              <svg className="w-4 h-4 ml-0.5 text-white opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 ml-0.5 text-ink opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
@@ -95,7 +95,7 @@ export default function TrackPlayButton({
       ) : track.status === "done" ? (
         <div
           className={`w-full h-full flex items-center justify-center relative ${
-            isCurrentlyPlaying ? "bg-primary-600" : "bg-primary-600/80 hover:bg-primary-600"
+            isCurrentlyPlaying ? "bg-accent-strong" : "bg-accent-strong/80 hover:bg-accent-strong"
           }`}
         >
           {isCurrentlyPlaying ? (
@@ -129,14 +129,14 @@ export default function TrackPlayButton({
         >
           <span className="text-base leading-none animate-pulse">🧬</span>
           <span className="flex items-end gap-0.5 h-3">
-            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar" />
-            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-150" />
-            <span className="w-0.5 bg-primary-400 rounded-full animate-wave-bar animation-delay-300" />
+            <span className="w-0.5 bg-accent rounded-full animate-wave-bar" />
+            <span className="w-0.5 bg-accent rounded-full animate-wave-bar animation-delay-150" />
+            <span className="w-0.5 bg-accent rounded-full animate-wave-bar animation-delay-300" />
           </span>
         </div>
       )}
       {track.status === "done" && track.duration && (
-        <span className="absolute bottom-0.5 right-0.5 left-0.5 text-[11px] font-medium tabular-nums text-white/90 leading-none pointer-events-none text-center bg-black/40 rounded-sm px-0.5 py-px backdrop-blur-sm">
+        <span className="absolute bottom-0.5 right-0.5 left-0.5 text-[11px] font-medium tabular-nums text-ink leading-none pointer-events-none text-center bg-black/40 rounded-sm px-0.5 py-px backdrop-blur-sm">
           {formatDuration(track.duration)}
         </span>
       )}

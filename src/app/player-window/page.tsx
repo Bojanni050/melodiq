@@ -247,7 +247,7 @@ export default function PlayerWindowPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-0 bg-black text-white overflow-hidden">
+    <div className="fixed inset-0 z-0 bg-black text-ink overflow-hidden">
       <style>{`
         @keyframes fsZoom {
           0%, 100% { transform: scale(1.15); }
@@ -281,7 +281,7 @@ export default function PlayerWindowPage() {
         )}
 
         {!track ? (
-          <div className="flex-1 flex items-center justify-center text-white/30 text-sm">
+          <div className="flex-1 flex items-center justify-center text-ink-dim text-sm">
             Nothing playing yet
           </div>
         ) : (
@@ -290,7 +290,7 @@ export default function PlayerWindowPage() {
               <div className="flex items-center gap-2 mb-3">
                 <button
                   onClick={toggleBgZoom}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
                   title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +300,7 @@ export default function PlayerWindowPage() {
                 </button>
                 <button
                   onClick={() => setLyricsVisible((v) => !v)}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
                   title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ export default function PlayerWindowPage() {
                 </button>
                 <button
                   onClick={toggleVisualizer}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
                   title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,8 +318,8 @@ export default function PlayerWindowPage() {
                 </button>
               </div>
               <h2 className="text-lg font-semibold">{cleanTitle || track.prompt.substring(0, 50)}</h2>
-              {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
-              {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
+              {artistLabel && <p className="text-sm text-ink-muted">{artistLabel}</p>}
+              {creditsLabel && <p className="text-xs text-ink-dim">{creditsLabel}</p>}
               <p className="text-xs text-ink-dim capitalize">{formatProviderLabel(track.provider)}</p>
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />

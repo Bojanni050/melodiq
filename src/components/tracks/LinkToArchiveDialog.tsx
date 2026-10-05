@@ -148,12 +148,12 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#181822] p-5 shadow-2xl space-y-4"
+        className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto  border border-line bg-surface p-5 shadow-2xl space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
-          <h3 className="text-lg font-semibold text-white/90">Link to Master Tracks</h3>
-          <p className="text-xs text-white/40 mt-0.5 truncate">
+          <h3 className="text-lg font-semibold text-ink">Link to Master Tracks</h3>
+          <p className="text-xs text-ink-dim mt-0.5 truncate">
             {track.title || track.prompt.substring(0, 60)}
           </p>
         </div>
@@ -171,9 +171,9 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
 
             <div className="space-y-1.5 max-h-72 overflow-y-auto">
               {entries === null ? (
-                <p className="text-sm text-white/40 py-4 text-center">Loading…</p>
+                <p className="text-sm text-ink-dim py-4 text-center">Loading…</p>
               ) : filtered.length === 0 ? (
-                <p className="text-sm text-white/40 italic py-4 text-center">No matching entries.</p>
+                <p className="text-sm text-ink-dim italic py-4 text-center">No matching entries.</p>
               ) : (
                 filtered.map((entry) => {
                   const trackTitle = (track.title || "").trim().toLowerCase();
@@ -186,18 +186,18 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
                     type="button"
                     onClick={() => handleAttach(entry)}
                     disabled={attaching !== null}
-                    className="w-full text-left rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 hover:bg-white/[0.06] transition-colors disabled:opacity-50"
+                    className="w-full text-left  border border-line bg-white/[0.02] px-3 py-2 hover:bg-white/[0.06] transition-colors disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       {entry.language && (
-                        <span className="shrink-0 rounded-full border border-primary-400/30 bg-primary-500/10 px-2 py-0.5 text-[10px] text-primary-300">
+                        <span className="shrink-0 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
                           {entry.language}
                         </span>
                       )}
-                      <span className="text-sm text-white/85 truncate">{entry.title}</span>
+                      <span className="text-sm text-ink/85 truncate">{entry.title}</span>
                     </div>
                     {entry.parentTitle && (
-                      <p className="text-[11px] text-white/35 mt-0.5">Translation of &ldquo;{entry.parentTitle}&rdquo;</p>
+                      <p className="text-[11px] text-ink-dim mt-0.5">Translation of &ldquo;{entry.parentTitle}&rdquo;</p>
                     )}
                     {isDuplicateTitle && entry.trackId !== track.id && (
                       <p className="text-[11px] text-amber-300/70 mt-0.5">
@@ -221,7 +221,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
             <button
               type="button"
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-1.5 text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-dim hover:text-ink-muted transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -232,7 +232,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
         ) : (
           <>
             <div>
-              <label className="block text-sm font-medium text-white/50 mb-1">Title</label>
+              <label className="block text-sm font-medium text-ink-dim mb-1">Title</label>
               <input
                 type="text"
                 value={newTitle}
@@ -241,7 +241,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
                 className="input-field text-sm"
                 autoFocus
               />
-              <p className="text-xs text-white/30 mt-1.5">
+              <p className="text-xs text-ink-dim mt-1.5">
                 Lyrics and prompt will be pre-filled from this track — you can refine them afterwards in Master Tracks.
               </p>
             </div>
@@ -249,7 +249,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="rounded-lg px-3 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+                className=" px-3 py-1.5 text-sm text-ink-muted hover:text-ink/85 hover:bg-white/5 transition-colors"
               >
                 ← Back to search
               </button>
@@ -271,7 +271,7 @@ export default function LinkToArchiveDialog({ isOpen, track, onClose }: LinkToAr
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+            className=" px-4 py-1.5 text-sm text-ink-muted hover:text-ink/85 hover:bg-white/5 transition-colors"
           >
             Close
           </button>

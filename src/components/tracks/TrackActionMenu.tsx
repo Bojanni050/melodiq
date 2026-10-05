@@ -148,7 +148,7 @@ export default function TrackActionMenu({
           e.stopPropagation();
           setMenuOpen((open) => !open);
         }}
-        className="p-1.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors"
+        className="p-1.5 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors"
         title="Track actions"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,7 +157,7 @@ export default function TrackActionMenu({
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 top-8 z-20 min-w-48 rounded-lg border border-white/10 bg-[#12121a] shadow-xl p-1.5">
+        <div className="absolute right-0 top-8 z-20 min-w-48  border border-line bg-surface shadow-xl p-1.5">
           {isListener ? (
             <>
               {onGoToArtist && (
@@ -167,7 +167,7 @@ export default function TrackActionMenu({
                     setMenuOpen(false);
                     onGoToArtist();
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                 >
                   Go to Artist
                 </button>
@@ -178,7 +178,7 @@ export default function TrackActionMenu({
                   onAddToQueue?.(track);
                   setMenuOpen(false);
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
               >
                 Add to queue
               </button>
@@ -188,10 +188,10 @@ export default function TrackActionMenu({
                   setMenuOpen(false);
                   onOpenPlaylistPicker();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
               >
                 <span>Add to playlist</span>
-                <span className="text-white/30">›</span>
+                <span className="text-ink-dim">›</span>
               </button>
             </>
           ) : (
@@ -203,7 +203,7 @@ export default function TrackActionMenu({
                 setMenuOpen(false);
                 onGoToTrackClick();
               }}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
             >
               Ga naar track
             </button>
@@ -214,7 +214,7 @@ export default function TrackActionMenu({
               setMenuOpen(false);
               onEditDetails?.();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
           >
             Edit Track Details
           </button>
@@ -226,7 +226,7 @@ export default function TrackActionMenu({
                 onTogglePublish();
               }}
               disabled={togglingPublish}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {togglingPublish
                 ? isPublished
@@ -245,14 +245,14 @@ export default function TrackActionMenu({
                   e.stopPropagation();
                   setReuseSubmenuOpen((prev) => !prev);
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
                 aria-expanded={reuseSubmenuOpen}
               >
                 <span>Reuse Prompt</span>
-                <span className={`text-white/30 transition-transform ${reuseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
+                <span className={`text-ink-dim transition-transform ${reuseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
               </button>
               {reuseSubmenuOpen && (
-                <div className="my-1 space-y-0.5 border-l border-white/10 pl-2.5 py-0.5">
+                <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
                   {(Object.keys(REUSE_SCOPE_LABEL) as ReuseScope[]).map((scope) => (
                     <button
                       key={scope}
@@ -261,7 +261,7 @@ export default function TrackActionMenu({
                         setMenuOpen(false);
                         onReusePrompt(track, scope);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                     >
                       {REUSE_SCOPE_LABEL[scope]}
                     </button>
@@ -277,7 +277,7 @@ export default function TrackActionMenu({
               setMenuOpen(false);
             }}
             disabled={isRegeneratingCover}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
           </button>
@@ -287,7 +287,7 @@ export default function TrackActionMenu({
               setMenuOpen(false);
               setShowCoverManager(true);
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
           >
             Manage Covers
           </button>
@@ -299,7 +299,7 @@ export default function TrackActionMenu({
                 setMenuOpen(false);
               }}
               disabled={isRegeneratingTitle}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRegeneratingTitle ? "Regenerating title..." : "Regenerate Title"}
             </button>
@@ -311,7 +311,7 @@ export default function TrackActionMenu({
                           setMenuOpen(false);
                           onLinkToArchiveClick();
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                       >
                         Link to Master Tracks
                       </button>
@@ -319,7 +319,7 @@ export default function TrackActionMenu({
                     {(onAdvancedDnaClick || onAnalyzeAudioClick) && (
                       <>
                         <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Track DNA</p>
+                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Track DNA</p>
                         {onAnalyzeAudioClick && (
                           <button
                             onClick={(e) => {
@@ -328,7 +328,7 @@ export default function TrackActionMenu({
                               setMenuOpen(false);
                             }}
                             disabled={analyzingAudio}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {analyzingAudio ? "Analyzing audio..." : "Analyze Audio (Tempo/Key)"}
                           </button>
@@ -341,7 +341,7 @@ export default function TrackActionMenu({
                               setMenuOpen(false);
                             }}
                             disabled={advancedDnaRunning}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {advancedDnaRunning ? "Running advanced analysis..." : "Advanced Track DNA"}
                           </button>
@@ -351,7 +351,7 @@ export default function TrackActionMenu({
                     {(onGenerateTclClick || onOpenTclEditorClick || onRegenerateTclClick) && (
                       <>
                         <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Lyrics</p>
+                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Lyrics</p>
                         {onOpenTclEditorClick && (
                           <button
                             onClick={(e) => {
@@ -359,7 +359,7 @@ export default function TrackActionMenu({
                               onOpenTclEditorClick();
                               setMenuOpen(false);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                           >
                             Open in Time-Coded Lyrics Editor
                           </button>
@@ -372,7 +372,7 @@ export default function TrackActionMenu({
                               setMenuOpen(false);
                             }}
                             disabled={generatingTcl}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {generatingTcl ? "Generating Time-Coded Lyrics..." : "Generate Time-Coded Lyrics"}
                           </button>
@@ -395,7 +395,7 @@ export default function TrackActionMenu({
                     {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (
                       <>
                         <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Production</p>
+                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Production</p>
                         {onStemsClick && (
                           <button
                             onClick={(e) => {
@@ -403,7 +403,7 @@ export default function TrackActionMenu({
                               onStemsClick();
                               setMenuOpen(false);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                           >
                             Stems
                           </button>
@@ -415,7 +415,7 @@ export default function TrackActionMenu({
                               onMasteringClick();
                               setMenuOpen(false);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                           >
                             Mastering
                           </button>
@@ -427,7 +427,7 @@ export default function TrackActionMenu({
                               onEditSectionClick();
                               setMenuOpen(false);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                           >
                             Edit
                           </button>
@@ -444,7 +444,7 @@ export default function TrackActionMenu({
               }}
               disabled={retryingWav}
               className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                retryWavResult === "error" ? "text-red-300" : retryWavResult === "success" ? "text-emerald-300" : "text-white/80"
+                retryWavResult === "error" ? "text-red-300" : retryWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
               } disabled:opacity-50`}
             >
               {retryingWav
@@ -465,7 +465,7 @@ export default function TrackActionMenu({
                 }}
                 disabled={uploadingWav}
                 className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                  uploadWavResult === "error" ? "text-red-300" : uploadWavResult === "success" ? "text-emerald-300" : "text-white/80"
+                  uploadWavResult === "error" ? "text-red-300" : uploadWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
                 } disabled:opacity-50`}
               >
                 {uploadingWav
@@ -498,7 +498,7 @@ export default function TrackActionMenu({
               }}
               disabled={convertingOgg}
               className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-white/80"
+                convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-ink-muted"
               } disabled:opacity-50`}
             >
               {convertingOgg
@@ -516,10 +516,10 @@ export default function TrackActionMenu({
               onMoveToWorkspaceClick();
               setMenuOpen(false);
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
           >
             <span>Move To Workspace</span>
-            <span className="text-white/30">›</span>
+            <span className="text-ink-dim">›</span>
           </button>
           <button
             onClick={(e) => {
@@ -527,7 +527,7 @@ export default function TrackActionMenu({
               onAddToQueue?.(track);
               setMenuOpen(false);
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
           >
             Add to queue
           </button>
@@ -546,7 +546,7 @@ export default function TrackActionMenu({
                 });
                 router.push("/studio");
               }}
-              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
             >
               Use As Inspiration
             </button>
@@ -557,16 +557,16 @@ export default function TrackActionMenu({
               setMenuOpen(false);
               onOpenPlaylistPicker();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
           >
             <span>Add to playlist</span>
-            <span className="text-white/30">›</span>
+            <span className="text-ink-dim">›</span>
           </button>
 
           {playlistsContainingTrack.length > 0 && (
             <>
               <div className="my-1 h-px bg-white/10" />
-              <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from playlist</p>
+              <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Remove from playlist</p>
               {playlistsContainingTrack.map((playlist) => (
                 <button
                   key={`remove-${playlist.id}`}
@@ -592,10 +592,10 @@ export default function TrackActionMenu({
                   setMenuOpen(false);
                   onOpenReleasePicker();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
               >
                 <span>Add to release</span>
-                <span className="text-white/30">›</span>
+                <span className="text-ink-dim">›</span>
               </button>
 
               {releasesContainingTrack.length === 1 && (
@@ -605,7 +605,7 @@ export default function TrackActionMenu({
                     setMenuOpen(false);
                     router.push(`/releases/${releasesContainingTrack[0].id}`);
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5"
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
                 >
                   Go To Release
                 </button>
@@ -617,13 +617,13 @@ export default function TrackActionMenu({
                       e.stopPropagation();
                       setReleaseSubmenuOpen((prev) => !prev);
                     }}
-                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-white/80 hover:bg-white/5 flex items-center justify-between gap-2"
+                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
                   >
                     <span>Go To Release</span>
-                    <span className={`text-white/30 transition-transform ${releaseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
+                    <span className={`text-ink-dim transition-transform ${releaseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
                   </button>
                   {releaseSubmenuOpen && (
-                    <div className="my-1 space-y-0.5 border-l border-white/10 pl-2.5 py-0.5">
+                    <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
                       {releasesContainingTrack.map((release) => (
                         <button
                           key={`goto-release-${release.id}`}
@@ -632,7 +632,7 @@ export default function TrackActionMenu({
                             setMenuOpen(false);
                             router.push(`/releases/${release.id}`);
                           }}
-                          className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-white/70 hover:bg-white/10 hover:text-white"
+                          className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink"
                         >
                           {release.title}
                         </button>
@@ -644,7 +644,7 @@ export default function TrackActionMenu({
               {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
                 <>
                   <div className="my-1 h-px bg-white/10" />
-                  <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-white/35">Remove from release</p>
+                  <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Remove from release</p>
                   {releasesContainingTrack.map((release) => (
                     <button
                       key={`remove-release-${release.id}`}

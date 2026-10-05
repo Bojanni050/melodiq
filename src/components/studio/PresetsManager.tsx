@@ -55,7 +55,7 @@ export default function PresetsManager({
             type="button"
             onClick={() => setShowSavedPresetsList(!showSavedPresetsList)}
             className={`btn-ghost text-sm flex items-center gap-1.5 ${
-              showSavedPresetsList ? "text-primary-300 font-semibold" : "text-white/60 hover:text-white"
+              showSavedPresetsList ? "text-accent font-semibold" : "text-ink-muted hover:text-ink"
             }`}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,27 +68,27 @@ export default function PresetsManager({
 
       {/* Save Preset Form */}
       {showSavePresetForm && (
-        <div className="mt-4 p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
-          <p className="text-sm font-semibold text-primary-300">{t("studio.savePresetPromptHeading")}</p>
+        <div className="mt-4 p-4  border border-line bg-white/[0.02] space-y-3">
+          <p className="text-sm font-semibold text-accent">{t("studio.savePresetPromptHeading")}</p>
           <div className="space-y-2">
             <div>
-              <label className="block text-[10px] text-white/50 mb-1">{t("studio.presetNameLabel")}</label>
+              <label className="block text-[10px] text-ink-dim mb-1">{t("studio.presetNameLabel")}</label>
               <input
                 type="text"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
                 placeholder={t("studio.presetNamePlaceholder")}
-                className="input-field text-sm py-1.5 focus:border-primary-500/50 outline-none"
+                className="input-field text-sm py-1.5 focus:border-accent/50 outline-none"
                 maxLength={100}
               />
             </div>
             <div>
-              <label className="block text-[10px] text-white/50 mb-1">{t("studio.presetNotesLabel")}</label>
+              <label className="block text-[10px] text-ink-dim mb-1">{t("studio.presetNotesLabel")}</label>
               <textarea
                 value={presetNotes}
                 onChange={(e) => setPresetNotes(e.target.value)}
                 placeholder={t("studio.presetNotesPlaceholder")}
-                className="input-field text-sm py-1.5 min-h-[60px] resize-y focus:border-primary-500/50 outline-none"
+                className="input-field text-sm py-1.5 min-h-[60px] resize-y focus:border-accent/50 outline-none"
                 maxLength={500}
               />
             </div>
@@ -97,7 +97,7 @@ export default function PresetsManager({
             <button
               type="button"
               onClick={() => setShowSavePresetForm(false)}
-              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-white/60 transition-colors"
+              className="px-3 py-1.5  bg-white/5 hover:bg-white/10 text-sm text-ink-muted transition-colors"
             >
               {t("common.cancel")}
             </button>
@@ -113,7 +113,7 @@ export default function PresetsManager({
                   setPresetNotes("");
                 }
               }}
-              className="px-3 py-1.5 rounded-lg bg-primary-500/80 hover:bg-primary-500 text-sm text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5  bg-accent/80 hover:bg-accent text-sm text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("common.save")}
             </button>
@@ -123,13 +123,13 @@ export default function PresetsManager({
 
       {/* My Presets List */}
       {showSavedPresetsList && presets.length > 0 && (
-        <div className="mt-4 border-t border-white/10 pt-4 space-y-2.5 w-full basis-full min-w-0">
+        <div className="mt-4 border-t border-line pt-4 space-y-2.5 w-full basis-full min-w-0">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white/60">{t("studio.mySavedPresets")}</p>
+            <p className="text-sm font-semibold text-ink-muted">{t("studio.mySavedPresets")}</p>
             <button
               type="button"
               onClick={() => setShowSavedPresetsList(false)}
-              className="text-[10px] text-white/40 hover:text-white/60"
+              className="text-[10px] text-ink-dim hover:text-ink-muted"
             >
               {t("studio.closeList")}
             </button>
@@ -140,12 +140,12 @@ export default function PresetsManager({
               return (
                 <div
                   key={preset.id}
-                  className="flex flex-col gap-1.5 p-3 rounded-lg border border-white/6 bg-white/[0.01] hover:bg-white/[0.03] transition-colors"
+                  className="flex flex-col gap-1.5 p-3  border border-line/6 bg-white/[0.01] hover:bg-white/[0.03] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-white/95 truncate">{preset.name}</p>
-                      <p className="text-[10px] text-white/30 truncate mt-0.5" title={preset.prompt}>
+                      <p className="text-sm font-semibold text-ink/95 truncate">{preset.name}</p>
+                      <p className="text-[10px] text-ink-dim truncate mt-0.5" title={preset.prompt}>
                         {t("studio.promptLabel", { prompt: preset.prompt })}
                       </p>
                     </div>
@@ -160,7 +160,7 @@ export default function PresetsManager({
                         className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
                           isLoaded
                             ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                            : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white"
+                            : "bg-white/5 hover:bg-white/10 text-ink-muted hover:text-ink"
                         }`}
                       >
                         {isLoaded ? t("studio.loaded") : t("studio.load")}
@@ -168,7 +168,7 @@ export default function PresetsManager({
                       <button
                         type="button"
                         onClick={() => void deletePreset(preset.id)}
-                        className="p-1 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors"
+                        className="p-1 rounded hover:bg-red-500/10 text-ink-dim hover:text-red-400 transition-colors"
                         title={t("studio.deletePresetTitle")}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,8 +178,8 @@ export default function PresetsManager({
                     </div>
                   </div>
                   {preset.notes && (
-                    <div className="text-[10px] text-white/50 border-l border-primary-500/20 pl-2 py-0.5 bg-primary-500/[0.02] rounded-r break-words whitespace-pre-wrap min-w-0">
-                      <span className="font-semibold text-white/70">{t("studio.notesLabel")}</span>
+                    <div className="text-[10px] text-ink-dim border-l border-accent/20 pl-2 py-0.5 bg-accent/[0.02] rounded-r break-words whitespace-pre-wrap min-w-0">
+                      <span className="font-semibold text-ink-muted">{t("studio.notesLabel")}</span>
                       {preset.notes}
                     </div>
                   )}

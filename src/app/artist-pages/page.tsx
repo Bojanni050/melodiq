@@ -169,7 +169,7 @@ export default function ArtistPagesPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-ink">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div

@@ -519,8 +519,8 @@ const TrackCard = memo(function TrackCard({
   const baseStatus = statusConfig[track.status];
   const status = isCurrentlyPlaying
     ? isPlaying
-      ? { color: "bg-primary-500/20 text-primary-200 border border-primary-500/30", label: "Now playing" }
-      : { color: "bg-white/5 text-white/60 border border-white/10", label: "Paused" }
+      ? { color: "bg-accent/20 text-accent border border-accent/30", label: "Now playing" }
+      : { color: "bg-white/5 text-ink-muted border border-line", label: "Paused" }
     : baseStatus;
   const statusAnimationClass = track.status === "generating" ? "animate-[pulse_2.2s_ease-in-out_infinite]" : "";
   const createdAt = formatTrackDateTime(new Date(track.createdAt));
@@ -601,11 +601,11 @@ const TrackCard = memo(function TrackCard({
             role="dialog"
             aria-modal="true"
             aria-label="Time-coded lyrics ready"
-            className="relative w-full max-w-[420px] rounded-3xl border border-white/12 bg-[#0f1119] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+            className="relative w-full max-w-[420px]  border border-line bg-surface p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white">Time-coded lyrics are ready</h3>
-            <p className="mt-2 text-sm text-white/60">
+            <h3 className="text-lg font-semibold text-ink">Time-coded lyrics are ready</h3>
+            <p className="mt-2 text-sm text-ink-muted">
               &ldquo;{track.title || "Untitled"}&rdquo; now has time-coded lyrics. Open it in the Timecoded
               Lyrics Editor?
             </p>
@@ -613,7 +613,7 @@ const TrackCard = memo(function TrackCard({
               <button
                 type="button"
                 onClick={() => setShowTclDoneDialog(false)}
-                className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+                className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/14"
               >
                 Stay here
               </button>
@@ -623,7 +623,7 @@ const TrackCard = memo(function TrackCard({
                   setShowTclDoneDialog(false);
                   router.push(`/timecoded-editor/${track.id}`);
                 }}
-                className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                className="h-10 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
               >
                 Open in editor
               </button>
@@ -710,13 +710,13 @@ const TrackCard = memo(function TrackCard({
       <div
         role="button"
         tabIndex={0}
-        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 focus-visible:outline-offset-1 ${
+        className={`group flex items-center gap-3 px-3 py-2.5  transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 ${
           isCurrentlyPlaying
-            ? "bg-primary-500/20 border border-primary-500/25 border-l-4 border-l-primary-400 shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
+            ? "bg-accent/20 border border-accent/25 border-l-4 border-l-accent shadow-[0_0_0_1px_rgba(99,102,241,0.2)] pl-2"
             : isDetailSelected
-              ? "bg-white/[0.11] border border-white/15"
+              ? "bg-white/[0.11] border border-line-strong"
               : track.status === "generating" || track.status === "pending"
-                ? "bg-primary-600/5 border border-primary-600/20"
+                ? "bg-accent-strong/5 border border-accent-strong/20"
                 : "hover:bg-white/5"
         } ${isCurrentlyPlaying ? `now-playing ${isPlaying ? "is-playing" : "is-paused"}` : ""}`}
         data-now-playing={isCurrentlyPlaying ? "true" : undefined}
@@ -750,16 +750,16 @@ const TrackCard = memo(function TrackCard({
         >
           {isSelected ? (
             <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
           ) : isCurrentlyPlaying ? (
-            <div className="w-4 h-4 rounded-full bg-primary-500/25 border border-primary-500/35 flex items-center justify-center animate-[pulse_1.8s_ease-in-out_infinite]">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary-200" />
+            <div className="w-4 h-4 rounded-full bg-accent/25 border border-accent/35 flex items-center justify-center animate-[pulse_1.8s_ease-in-out_infinite]">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent" />
             </div>
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-white/20 group-hover:border-white/40 transition-colors" />
+            <div className="w-4 h-4 rounded-full border-2 border-line/20 group-hover:border-line/40 transition-colors" />
           )}
         </button>
 
@@ -804,7 +804,7 @@ const TrackCard = memo(function TrackCard({
                   onBlur={edit.discardTitle}
                   aria-label="Edit track title"
                   placeholder="Track title"
-                  className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm font-medium bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500"
+                  className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm font-medium bg-white/10 border border-accent/40 rounded px-2 py-0.5 focus:outline-none focus:border-accent"
                   maxLength={200}
                   draggable={false}
                   onDragStart={(e) => e.stopPropagation()}
@@ -818,7 +818,7 @@ const TrackCard = memo(function TrackCard({
               </div>
             ) : (
               <h3
-                className={`text-sm font-medium truncate cursor-text flex-1 min-w-[6rem] ${isCurrentlyPlaying ? "text-primary-200" : ""}`}
+                className={`text-sm font-medium truncate cursor-text flex-1 min-w-[6rem] ${isCurrentlyPlaying ? "text-accent" : ""}`}
                 onClick={(e) => e.stopPropagation()}
                 onDoubleClick={edit.handleTitleDoubleClick}
                 title="Double-click to edit"
@@ -827,7 +827,7 @@ const TrackCard = memo(function TrackCard({
               </h3>
             )}
             <span
-              className="shrink-0 font-mono text-[10px] leading-none text-white/25"
+              className="shrink-0 font-mono text-[10px] leading-none text-ink-dim"
               title={`Track ID: ${track.id}`}
             >
               #{shortTrackId(track.id)}
@@ -882,7 +882,7 @@ const TrackCard = memo(function TrackCard({
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
                   isInRelease
                     ? "border border-green-300/30 bg-green-400/10 text-green-200"
-                    : "border border-white/15 bg-white/[0.05] text-white/40"
+                    : "border border-line-strong bg-white/[0.05] text-ink-dim"
                 }`}
               >
                 {isInRelease ? "Released" : "Unreleased"}
@@ -902,7 +902,7 @@ const TrackCard = memo(function TrackCard({
             )}
             {assignedWorkspaceName && (
               <span
-                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/65 truncate max-w-[140px] shrink-0"
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-line bg-white/5 text-ink/65 truncate max-w-[140px] shrink-0"
                 title={`Workspace: ${assignedWorkspaceName}`}
               >
                 <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -915,7 +915,7 @@ const TrackCard = memo(function TrackCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
-                className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
+                className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-ink-dim hover:text-accent hover:bg-accent/10 shrink-0 transition-colors"
                 title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                 aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
               >
@@ -944,7 +944,7 @@ const TrackCard = memo(function TrackCard({
                 onBlur={edit.discardArtist}
                 aria-label="Edit artist name"
                 placeholder="Artist name"
-                className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm bg-white/10 border border-primary-500/40 rounded px-2 py-0.5 focus:outline-none focus:border-primary-500 text-white/80"
+                className="field-sizing-content w-auto min-w-[10ch] max-w-[55vw] sm:max-w-[40ch] text-sm bg-white/10 border border-accent/40 rounded px-2 py-0.5 focus:outline-none focus:border-accent text-ink-muted"
                 maxLength={255}
                 draggable={false}
                 onDragStart={(e) => e.stopPropagation()}
@@ -958,7 +958,7 @@ const TrackCard = memo(function TrackCard({
             </div>
           ) : (
             <div
-              className="text-xs text-white/50 hover:text-primary-300 mt-0.5 truncate cursor-pointer select-none transition-colors"
+              className="text-xs text-ink-dim hover:text-accent mt-0.5 truncate cursor-pointer select-none transition-colors"
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
               title={track.artistName ? "Click to view artist page · double-click to edit" : "Click to view artist page · double-click to add artist name"}
             >
@@ -966,7 +966,7 @@ const TrackCard = memo(function TrackCard({
                 <ArtistLink
                   name={track.artistName || artistAlias}
                   fallbackHref={track.artistId ? `/discover/artist/${track.artistId}` : user?.id ? `/discover/artist/${user.id}` : null}
-                  className="hover:text-primary-300 transition-colors"
+                  className="hover:text-accent transition-colors"
                 />
               ) : (
                 <span className="italic opacity-50">no artist — double-click to add</span>
@@ -981,7 +981,7 @@ const TrackCard = memo(function TrackCard({
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
                   disabled={actions.downloading}
-                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-ink-dim hover:text-ink-muted active:bg-white/10 transition-all shrink-0"
                   title={`Download ${mp3Label}`}
                 >
                   📥 {mp3Label}
@@ -994,7 +994,7 @@ const TrackCard = memo(function TrackCard({
                     actions.handleDownload(`/api/tracks/${track.id}/download?format=ogg`, false, "ogg");
                   }}
                   disabled={actions.downloading}
-                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-white/50 hover:text-white/80 active:bg-white/10 transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-medium rounded bg-white/5 text-ink-dim hover:text-ink-muted active:bg-white/10 transition-all shrink-0"
                   title="Download OGG"
                 >
                   📥 OGG
@@ -1015,13 +1015,13 @@ const TrackCard = memo(function TrackCard({
 
           {track.status !== "generating" && track.status !== "pending" && (
             <>
-              <p className="hidden sm:block text-xs text-white/30 truncate mt-0.5">{styleDesc}</p>
+              <p className="hidden sm:block text-xs text-ink-dim truncate mt-0.5">{styleDesc}</p>
               {generationCompletedOn && generationTime && (
-                <p className="hidden sm:block text-[10px] text-white/30 mt-0.5" title="Time from generation start to completion">
+                <p className="hidden sm:block text-[10px] text-ink-dim mt-0.5" title="Time from generation start to completion">
                   Generation completed on {generationCompletedOn} in {generationTime}
                 </p>
               )}
-              <p className="hidden sm:block text-[10px] text-white/40 mt-0.5 uppercase tracking-[0.12em]">
+              <p className="hidden sm:block text-[10px] text-ink-dim mt-0.5 uppercase tracking-[0.12em]">
                 {bpm != null && <>{bpm} BPM · </>}
                 {playCount} {playCount === 1 ? "play" : "plays"} by you
                 {othersPlayCount > 0 && (
@@ -1031,10 +1031,10 @@ const TrackCard = memo(function TrackCard({
             </>
           )}
           {trackPlaylist && (
-            <p className="text-[10px] text-white/30 mt-0.5 truncate">
+            <p className="text-[10px] text-ink-dim mt-0.5 truncate">
               <span className="opacity-60">in</span>{" "}
               <button
-                className="hover:text-white/70 transition-colors underline-offset-2 hover:underline"
+                className="hover:text-ink-muted transition-colors underline-offset-2 hover:underline"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedPlaylistId(trackPlaylist.id);
@@ -1056,8 +1056,8 @@ const TrackCard = memo(function TrackCard({
         {/* Time + actions */}
         <div className="flex items-center gap-1 shrink-0">
           <div className="mr-1 text-right leading-tight">
-            <p className="hidden sm:block text-[11px] text-white/30 whitespace-nowrap">{createdAt.date}</p>
-            <p className="hidden sm:block text-[10px] text-white/20 whitespace-nowrap">{createdAt.time}</p>
+            <p className="hidden sm:block text-[11px] text-ink-dim whitespace-nowrap">{createdAt.date}</p>
+            <p className="hidden sm:block text-[10px] text-ink-dim whitespace-nowrap">{createdAt.time}</p>
           </div>
           {track.status === "done" && (
             <TrackRating
@@ -1072,7 +1072,7 @@ const TrackCard = memo(function TrackCard({
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
                   disabled={actions.downloading}
-                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors"
                   title={`Download ${mp3Label}`}
                 >
                   {mp3Label}
@@ -1085,7 +1085,7 @@ const TrackCard = memo(function TrackCard({
                     actions.handleDownload(`/api/tracks/${track.id}/download?format=ogg`, false, "ogg");
                   }}
                   disabled={actions.downloading}
-                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors"
                   title="Download OGG"
                 >
                   OGG
@@ -1095,7 +1095,7 @@ const TrackCard = memo(function TrackCard({
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrlHd!, true); }}
                   disabled={actions.downloading}
-                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+                  className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] rounded bg-white/5 text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors"
                   title={`Download ${hdLabel}`}
                 >
                   {hdLabel}
@@ -1178,7 +1178,7 @@ const TrackCard = memo(function TrackCard({
             <button
               onClick={actions.handleDelete}
               disabled={actions.deleting}
-              className="p-1.5 rounded hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+              className="p-1.5 rounded hover:bg-red-500/10 text-ink-dim hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
               title={actions.deleting ? "Deleting..." : "Delete track"}
             >
               {actions.deleting ? (
@@ -1225,10 +1225,10 @@ const TrackCard = memo(function TrackCard({
       >
         <div className="overflow-hidden">
           {stemsMounted && (
-            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3 space-y-1.5">
+            <div className="mt-1  border border-line bg-canvas p-3 space-y-1.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Stems</p>
-                <button type="button" onClick={() => setStemsOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Stems</p>
+                <button type="button" onClick={() => setStemsOpen(false)} className="text-xs text-ink-dim hover:text-ink-muted">Close</button>
               </div>
               {STEM_TYPES.map((stemDef) => {
                 // Stem data lives in the right-sidebar store; here we render a standalone extraction UI.
@@ -1249,10 +1249,10 @@ const TrackCard = memo(function TrackCard({
       >
         <div className="overflow-hidden">
           {masteringMounted && (
-            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3 space-y-1.5">
+            <div className="mt-1  border border-line bg-canvas p-3 space-y-1.5">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Mastering</p>
-                <button type="button" onClick={() => setMasteringOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Mastering</p>
+                <button type="button" onClick={() => setMasteringOpen(false)} className="text-xs text-ink-dim hover:text-ink-muted">Close</button>
               </div>
               {MASTER_VARIATIONS.map((variationDef) => (
                 <MasterRow key={variationDef.value} variationDef={variationDef} trackId={track.id} />
@@ -1270,10 +1270,10 @@ const TrackCard = memo(function TrackCard({
       >
         <div className="overflow-hidden">
           {editSectionMounted && (
-            <div className="mt-1 rounded-xl border border-white/10 bg-[#0d0e15] p-3">
+            <div className="mt-1  border border-line bg-canvas p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Edit</p>
-                <button type="button" onClick={() => setEditSectionOpen(false)} className="text-xs text-white/30 hover:text-white/60">Close</button>
+                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Edit</p>
+                <button type="button" onClick={() => setEditSectionOpen(false)} className="text-xs text-ink-dim hover:text-ink-muted">Close</button>
               </div>
               <SectionReplaceEditor track={track} onSubmitted={() => { void mutate("/api/tracks"); }} />
             </div>

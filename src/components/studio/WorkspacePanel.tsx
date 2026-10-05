@@ -8,10 +8,10 @@ import type { Track } from "@/hooks/useTrackManager";
 import type { Workspace } from "@/lib/store";
 import { useT } from "@/hooks/useT";
 
-const SEGMENTED_ICON_BUTTON_BASE = "rounded-md p-1.5 transition";
-const SEGMENTED_SIZE_BUTTON_BASE = "rounded-md px-2 py-1 text-[11px] transition";
-const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
-const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
+const SEGMENTED_ICON_BUTTON_BASE = " p-1.5 transition";
+const SEGMENTED_SIZE_BUTTON_BASE = " px-2 py-1 text-[11px] transition";
+const SEGMENTED_BUTTON_ACTIVE = "bg-accent text-ink";
+const SEGMENTED_BUTTON_INACTIVE = "text-ink/65 hover:bg-white/10 hover:text-ink";
 const WORKSPACE_GRID_CLASS_BY_SIZE: Record<4 | 8 | 12 | 16, string> = {
   4: "grid-cols-[repeat(4,minmax(0,1fr))]",
   8: "grid-cols-[repeat(8,minmax(0,1fr))]",
@@ -105,8 +105,8 @@ export default function WorkspacePanel({
       {/* Header */}
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-white/80">{t("studio.workspaceFolders")}</h2>
-          <p className="text-sm text-white/40">
+          <h2 className="text-sm font-semibold text-ink-muted">{t("studio.workspaceFolders")}</h2>
+          <p className="text-sm text-ink-dim">
             {isWorkspaceFolderOpen
               ? t("studio.folderOpenedHint")
               : workspaceViewMode === "grid"
@@ -117,7 +117,7 @@ export default function WorkspacePanel({
         <div className="flex items-center gap-2 shrink-0">
           {/* View mode toggle */}
           {!isWorkspaceFolderOpen && (
-            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+            <div className="flex items-center gap-1  border border-line bg-white/5 p-1">
               <button
                 type="button"
                 onClick={() => setWorkspaceViewMode("list")}
@@ -151,7 +151,7 @@ export default function WorkspacePanel({
 
           {/* Grid size picker */}
           {!isWorkspaceFolderOpen && workspaceViewMode === "grid" && (
-            <div className="hidden sm:flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+            <div className="hidden sm:flex items-center gap-1  border border-line bg-white/5 p-1">
               {([4, 8, 12, 16] as const).map((size) => (
                 <button
                   key={size}
@@ -181,7 +181,7 @@ export default function WorkspacePanel({
                 }
                 setSelectedWorkspaceId(null);
               }}
-              className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10 hover:text-white"
+              className=" border border-line bg-white/5 px-3 py-1.5 text-xs text-ink/75 hover:bg-white/10 hover:text-ink"
               title={t("studio.backToWorkspaceOverview")}
             >
               {selectedWorkspace?.parentWorkspaceId ? t("studio.backToParent") : t("studio.backToFolders")}
@@ -213,20 +213,20 @@ export default function WorkspacePanel({
                   onChange={(event) => setNewFolderName(event.target.value)}
                   onKeyDown={handleCreateFolderKeyDown}
                   placeholder={t("studio.subfolderNamePlaceholder")}
-                  className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
+                  className="h-8  border border-line-strong bg-white/5 px-2.5 text-sm text-ink placeholder:text-ink-dim"
                   aria-label={t("studio.subfolderNamePlaceholder")}
                 />
                 <button
                   type="button"
                   onClick={handleCreateFolder}
-                  className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
+                  className="h-8  bg-accent/80 px-3 text-sm text-ink hover:bg-accent"
                 >
                   {t("releases.add")}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowCreateFolder(false); setNewFolderName(""); }}
-                  className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
+                  className="h-8  bg-white/5 px-3 text-sm text-ink-muted hover:text-ink-muted"
                 >
                   {t("common.cancel")}
                 </button>
@@ -235,7 +235,7 @@ export default function WorkspacePanel({
               <button
                 type="button"
                 onClick={() => setShowCreateFolder(true)}
-                className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
+                className=" bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
               >
                 {t("studio.addSubfolder")}
               </button>
@@ -261,12 +261,12 @@ export default function WorkspacePanel({
                     key={workspace.id}
                     type="button"
                     onClick={() => setSelectedWorkspaceId(workspace.id)}
-                    className={`group cursor-pointer rounded-3xl border border-white/10 text-left transition-transform hover:-translate-y-0.5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40" : ""}`}
+                    className={`group cursor-pointer  border border-line text-left transition-transform hover:-translate-y-0.5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-accent/40" : ""}`}
                   >
-                    <div className="relative aspect-square overflow-hidden rounded-3xl" style={{ backgroundImage: gradient }}>
+                    <div className="relative aspect-square overflow-hidden " style={{ backgroundImage: gradient }}>
                       <div className="pointer-events-none absolute inset-0 bg-black/10" />
                       {coverUrls.length > 0 ? (
-                        <div className={`pointer-events-none absolute inset-3 overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-inner ${hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"}`}>
+                        <div className={`pointer-events-none absolute inset-3 overflow-hidden  border border-line bg-black/20 shadow-inner ${hasSingleCover ? "flex items-center justify-center" : "grid grid-cols-2 grid-rows-2 gap-1.5"}`}>
                           {coverUrls.map((cover, index) => (
                             <img
                               key={`${workspace.id}-${index}`}
@@ -275,23 +275,23 @@ export default function WorkspacePanel({
                               loading="lazy"
                               decoding="async"
                               draggable={false}
-                              className={`${hasSingleCover ? "h-full w-full max-w-[80%] rounded-xl" : "h-full w-full"} object-cover`}
+                              className={`${hasSingleCover ? "h-full w-full max-w-[80%] " : "h-full w-full"} object-cover`}
                             />
                           ))}
                         </div>
                       ) : (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                          <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
-                            <svg className="h-12 w-12 text-white/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className=" border border-line-strong bg-white/10 p-5 backdrop-blur-sm">
+                            <svg className="h-12 w-12 text-ink/85" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                             </svg>
                           </div>
                         </div>
                       )}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                        <div className="rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-sm">
-                          <p className="text-sm font-semibold text-white truncate">{workspace.name}</p>
-                          <p className="text-xs text-white/65">
+                        <div className=" border border-line bg-black/30 p-3 backdrop-blur-sm">
+                          <p className="text-sm font-semibold text-ink truncate">{workspace.name}</p>
+                          <p className="text-xs text-ink/65">
                             {workspaceTracks.length} tracks{childCount > 0 ? t("studio.subfoldersSuffix", { count: childCount }) : ""}
                           </p>
                         </div>
@@ -313,24 +313,24 @@ export default function WorkspacePanel({
                     key={workspace.id}
                     type="button"
                     onClick={() => setSelectedWorkspaceId(workspace.id)}
-                    className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-left transition hover:bg-white/5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-primary-500/40 bg-white/5" : ""}`}
+                    className={`group w-full flex items-center gap-3 px-4 py-3  border border-line text-left transition hover:bg-white/5 ${selectedWorkspaceId === workspace.id ? "ring-2 ring-accent/40 bg-white/5" : ""}`}
                   >
                     <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border border-white/10"
+                      className="w-10 h-10  flex items-center justify-center shrink-0 border border-line"
                       style={{ backgroundImage: gradient }}
                     >
-                      <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{workspace.name}</p>
+                      <p className="text-sm font-medium text-ink truncate">{workspace.name}</p>
                     </div>
-                    <span className="text-xs text-white/40 shrink-0">
+                    <span className="text-xs text-ink-dim shrink-0">
                       {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
                       {childCount > 0 ? t("studio.subfoldersSuffix", { count: childCount }) : ""}
                     </span>
-                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-ink-dim group-hover:text-ink-dim transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -344,7 +344,7 @@ export default function WorkspacePanel({
       {/* Breadcrumb and track count */}
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] text-white/35 mb-1 truncate">
+          <div className="text-[11px] text-ink-dim mb-1 truncate">
             <button
               type="button"
               onClick={() => {
@@ -354,24 +354,24 @@ export default function WorkspacePanel({
                 }
                 setSelectedWorkspaceId(null);
               }}
-              className="text-white/60 hover:text-white/80 transition-colors"
+              className="text-ink-muted hover:text-ink-muted transition-colors"
               title={t("studio.backToWorkspaceOverview")}
             >
               {selectedWorkspace?.parentWorkspaceId ? selectedWorkspaceParent?.name ?? t("nav.workspaces") : t("nav.workspaces")}
             </button>
-            <span className="mx-1 text-white/20">&gt;</span>
-            <span className="text-white/70">{selectedWorkspace?.name ?? t("discover.overview")}</span>
+            <span className="mx-1 text-ink-dim">&gt;</span>
+            <span className="text-ink-muted">{selectedWorkspace?.name ?? t("discover.overview")}</span>
           </div>
         </div>
-        <span className="text-xs text-white/30 shrink-0">
+        <span className="text-xs text-ink-dim shrink-0">
           {selectedWorkspace ? `${selectedWorkspaceTracks.length} tracks` : "0 tracks"}
         </span>
       </div>
 
       {/* Subfolders */}
       {selectedWorkspace && !selectedWorkspace.parentWorkspaceId && selectedWorkspaceChildren.length > 0 && (
-        <div className="mb-3 rounded-xl border border-white/10 bg-white/3 p-3">
-          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-white/35">{t("studio.subfoldersHeading")}</p>
+        <div className="mb-3  border border-line bg-white/3 p-3">
+          <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-ink-dim">{t("studio.subfoldersHeading")}</p>
           <div className="space-y-1.5">
             {selectedWorkspaceChildren.map((childWorkspace) => {
               const childTracks = tracks.filter((track) => childWorkspace.trackIds.includes(track.id));
@@ -382,9 +382,9 @@ export default function WorkspacePanel({
                   key={childWorkspace.id}
                   type="button"
                   onClick={() => setSelectedWorkspaceId(childWorkspace.id)}
-                  className="group flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
+                  className="group flex w-full items-center gap-3  border border-line bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
                 >
-                  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-amber-300/20 bg-[#11131f]">
+                  <div className="relative h-9 w-9 shrink-0 overflow-hidden  border border-amber-300/20 bg-surface">
                     {childCover ? (
                       <img src={childCover} alt={childWorkspace.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : (
@@ -396,12 +396,12 @@ export default function WorkspacePanel({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">{childWorkspace.name}</p>
+                    <p className="truncate text-sm font-medium text-ink">{childWorkspace.name}</p>
                   </div>
-                  <span className="text-[11px] text-white/45">
+                  <span className="text-[11px] text-ink-dim">
                     {childTracks.length} {childTracks.length === 1 ? "track" : "tracks"}
                   </span>
-                  <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 shrink-0 text-ink-dim group-hover:text-ink-dim transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -430,8 +430,8 @@ export default function WorkspacePanel({
             onEditDetails={onEditDetails}
           />
         ) : (
-          <div className="h-full flex items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/2 p-4 text-center">
-            <p className="text-sm text-white/45">
+          <div className="h-full flex items-center justify-center  border border-dashed border-line bg-white/2 p-4 text-center">
+            <p className="text-sm text-ink-dim">
               {t("studio.selectOrCreateWorkspaceHint")}
             </p>
           </div>

@@ -66,7 +66,7 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
   if (!perfSnapshot) {
     return (
       <div className="fixed inset-0 z-9999 bg-black/80 backdrop-blur-sm flex items-center justify-center">
-        <div className="text-white text-lg">Loading performance data...</div>
+        <div className="text-ink text-lg">Loading performance data...</div>
       </div>
     );
   }
@@ -75,21 +75,21 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
     <div className="fixed inset-0 z-9999 bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-white">Performance Monitor</h1>
+          <h1 className="text-2xl font-bold text-ink">Performance Monitor</h1>
           <div className="flex gap-2">
             <button
               onClick={toggleLogging}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2  text-sm font-medium transition-colors ${
                 perfLogging
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                  : "bg-white/10 text-white/60 hover:bg-white/15"
+                  : "bg-white/10 text-ink-muted hover:bg-white/15"
               }`}
             >
               {perfLogging ? "Logging ✓" : "Logging ✗"}
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors"
+              className="px-4 py-2  text-sm font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors"
             >
               Sluiten (Esc)
             </button>
@@ -99,57 +99,57 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
         {/* Main Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {/* Uptime */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Sessie uptime</p>
-            <p className="mt-1 text-3xl font-bold text-white">
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Sessie uptime</p>
+            <p className="mt-1 text-3xl font-bold text-ink">
               {(perfSnapshot.uptimeMs / 1000 / 60).toFixed(1)} min
             </p>
-            <p className="text-xs text-white/40 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               Gestart: {new Date(perfSnapshot.sessionStartedAt).toLocaleTimeString()}
             </p>
           </div>
 
           {/* Network Total */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Netwerk verbruik</p>
-            <p className="mt-1 text-3xl font-bold text-white">
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Netwerk verbruik</p>
+            <p className="mt-1 text-3xl font-bold text-ink">
               {perfSnapshot.networkBytesFormatted}
             </p>
             {perfSnapshot.networkUncounted > 0 && (
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-ink-dim mt-1">
                 +{perfSnapshot.networkUncounted} onbekende cross-origin requests
               </p>
             )}
           </div>
 
           {/* Storage */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Browser opslag</p>
-            <p className="mt-1 text-3xl font-bold text-white">
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Browser opslag</p>
+            <p className="mt-1 text-3xl font-bold text-ink">
               {perfSnapshot.storageUsageFormatted || "Onbekend"}
             </p>
             {perfSnapshot.storageQuotaBytes && (
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-ink-dim mt-1">
                 van {formatBytes(perfSnapshot.storageQuotaBytes)}
               </p>
             )}
           </div>
 
           {/* Long Tasks */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Main-thread belasting</p>
-            <p className="mt-1 text-3xl font-bold text-white">
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Main-thread belasting</p>
+            <p className="mt-1 text-3xl font-bold text-ink">
               {perfSnapshot.longTaskCount}
             </p>
-            <p className="text-xs text-white/40 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               Totaal: {Math.round(perfSnapshot.longTaskTotalMs)}ms | 
               Max: {Math.round(perfSnapshot.longTaskMaxMs)}ms
             </p>
           </div>
 
           {/* Visibility */}
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4 md:col-span-2">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Zichtbaarheid</p>
+          <div className=" border border-line bg-white/5 p-4 md:col-span-2">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Zichtbaarheid</p>
             <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500/40 to-blue-500/40"
@@ -158,7 +158,7 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
                 }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-white/60 mt-1">
+            <div className="flex justify-between text-xs text-ink-muted mt-1">
               <span>Zichtbaar: {(perfSnapshot.visibleMs / 1000 / 60).toFixed(1)} min</span>
               <span>Verborgen: {(perfSnapshot.hiddenMs / 1000 / 60).toFixed(1)} min</span>
             </div>
@@ -166,8 +166,8 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
         </div>
 
         {/* Network Breakdown */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-3">Netwerk verbruik per categorie</h3>
+        <div className=" border border-line bg-white/5 p-5 mb-6">
+          <h3 className="text-lg font-semibold text-ink mb-3">Netwerk verbruik per categorie</h3>
           <div className="space-y-2">
             {Object.entries(perfSnapshot.networkBytesByCategory).map(([category, bytes]) => (
               <div key={category} className="flex items-center justify-between">
@@ -178,9 +178,9 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
                                     category === "api" ? "#10b981" :
                                     "#6b7280"
                   }}></span>
-                  <span className="capitalize text-white/80">{category}</span>
+                  <span className="capitalize text-ink-muted">{category}</span>
                 </div>
-                <span className="text-white font-medium">{formatBytes(bytes)}</span>
+                <span className="text-ink font-medium">{formatBytes(bytes)}</span>
               </div>
             ))}
           </div>
@@ -188,28 +188,28 @@ export default function PerformanceOverlay({ onClose }: PerformanceOverlayProps)
 
         {/* Detailed Network Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-medium text-white/60 mb-2">Audio bestanden</p>
-            <p className="text-2xl font-bold text-white">{formatBytes(perfSnapshot.networkBytesByCategory.audio)}</p>
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-sm font-medium text-ink-muted mb-2">Audio bestanden</p>
+            <p className="text-2xl font-bold text-ink">{formatBytes(perfSnapshot.networkBytesByCategory.audio)}</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-medium text-white/60 mb-2">Afbeeldingen</p>
-            <p className="text-2xl font-bold text-white">{formatBytes(perfSnapshot.networkBytesByCategory.image)}</p>
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-sm font-medium text-ink-muted mb-2">Afbeeldingen</p>
+            <p className="text-2xl font-bold text-ink">{formatBytes(perfSnapshot.networkBytesByCategory.image)}</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-medium text-white/60 mb-2">API calls</p>
-            <p className="text-2xl font-bold text-white">{formatBytes(perfSnapshot.networkBytesByCategory.api)}</p>
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-sm font-medium text-ink-muted mb-2">API calls</p>
+            <p className="text-2xl font-bold text-ink">{formatBytes(perfSnapshot.networkBytesByCategory.api)}</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-medium text-white/60 mb-2">Overig</p>
-            <p className="text-2xl font-bold text-white">{formatBytes(perfSnapshot.networkBytesByCategory.other)}</p>
+          <div className=" border border-line bg-white/5 p-4">
+            <p className="text-sm font-medium text-ink-muted mb-2">Overig</p>
+            <p className="text-2xl font-bold text-ink">{formatBytes(perfSnapshot.networkBytesByCategory.other)}</p>
           </div>
         </div>
 
         {/* Tips */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <h3 className="text-lg font-semibold text-white mb-2">Tips</h3>
-          <ul className="text-sm text-white/70 space-y-1">
+        <div className=" border border-line bg-white/5 p-4">
+          <h3 className="text-lg font-semibold text-ink mb-2">Tips</h3>
+          <ul className="text-sm text-ink-muted space-y-1">
             <li>• Gebruik <kbd className="px-2 py-1 bg-white/10 rounded text-xs">Ctrl+P</kbd> om deze overlay te toggelen</li>
             <li>• Klik op <kbd className="px-2 py-1 bg-white/10 rounded text-xs">Logging ✓/✗</kbd> om console logs te activeren</li>
             <li>• Druk op <kbd className="px-2 py-1 bg-white/10 rounded text-xs">Esc</kbd> om te sluiten</li>

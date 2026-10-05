@@ -15,11 +15,11 @@ export default function TclEngineSection({
   return (
     <section className="section-card">
       <h2 className="text-sm font-semibold mb-1">Time Coded Lyrics Engine</h2>
-      <p className="text-sm text-white/40 mb-3">
+      <p className="text-sm text-ink-dim mb-3">
         Which forced-alignment service generates time-coded lyrics. Configure the matching provider&apos;s API key on the Music tab.
       </p>
       <div>
-        <label className="text-sm text-white/50 mb-1 block">Active engine</label>
+        <label className="text-sm text-ink-dim mb-1 block">Active engine</label>
         <select
           value={value || "elevenlabs"}
           onChange={(e) => onChange(e.target.value)}

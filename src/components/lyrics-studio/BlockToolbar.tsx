@@ -26,13 +26,13 @@ export default function BlockToolbar({
   return (
     <section className="section-card">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/80">{t("lyricsStudio.addBlockHeading")}</h3>
+        <h3 className="text-sm font-semibold text-ink-muted">{t("lyricsStudio.addBlockHeading")}</h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onCopyAll}
             disabled={!combinedLyrics}
-            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className=" border border-line bg-white/5 px-2.5 py-1 text-sm text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
             title={t("lyricsStudio.combineTooltip")}
           >
             {copied ? t("lyricsStudio.copiedButton") : t("lyricsStudio.combineButton")}
@@ -40,7 +40,7 @@ export default function BlockToolbar({
           <button
             type="button"
             onClick={onClearAll}
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
+            className=" border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-sm text-red-200 transition hover:bg-red-500/20"
             title={t("lyricsStudio.clearTooltip")}
           >
             {t("lyricsStudio.clearButton")}
@@ -53,7 +53,7 @@ export default function BlockToolbar({
             key={type}
             type="button"
             onClick={() => onAddBlock(type)}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-white/70 transition hover:border-primary-500/50 hover:bg-primary-500/10 hover:text-white"
+            className=" border border-line bg-white/5 px-3 py-2 text-left text-sm text-ink-muted transition hover:border-accent/50 hover:bg-accent/10 hover:text-ink"
           >
             <span
               className="mr-2 inline-block h-2.5 w-2.5 rounded-full"

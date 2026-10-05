@@ -488,7 +488,7 @@ export default function LibraryPage() {
   const coverUrl = currentTrack?.coverUrl || (currentTrack?.s3KeyCover ? `/api/tracks/${currentTrack.id}/cover` : null);
 
   return (
-    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="relative h-screen bg-canvas overflow-hidden text-ink">
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div
@@ -509,23 +509,23 @@ export default function LibraryPage() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
                       {t("library.title")}
-                      <span className="mx-2 text-white/25 font-light">/</span>
-                      <span className="text-white/60">
+                      <span className="mx-2 text-ink-dim font-light">/</span>
+                      <span className="text-ink-muted">
                         {view === "trash" ? t("library.recycleBin") : view === "archive" ? t("library.archive") : t("library.tracksView")}
                       </span>
                     </h1>
                     {tracks.length > 0 && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                      <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim shrink-0">
                         {tracks.length} {t("library.tracksSuffix")}{totalDuration ? ` (${totalDuration})` : ""}
                       </span>
                     )}
                   </div>
-                  <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-line bg-white/5 p-1">
                     {/* All Tracks */}
                     <button
                       type="button"
                       onClick={() => { setView("songs"); }}
-                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${view === "songs" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${view === "songs" ? "bg-accent text-ink" : "text-ink-muted hover:text-ink"}`}
                     >
                       {t("library.tracksTab")}
                     </button>
@@ -535,7 +535,7 @@ export default function LibraryPage() {
                     <button
                       type="button"
                       onClick={() => { setView("trash"); void fetchTrash(); }}
-                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "trash" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "trash" ? "bg-white/15 text-ink" : "text-ink-dim hover:text-ink-muted"}`}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -547,7 +547,7 @@ export default function LibraryPage() {
                     <button
                       type="button"
                       onClick={() => { setView("archive"); void fetchArchived(); }}
-                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "archive" ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}
+                      className={`h-8 rounded-full px-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${view === "archive" ? "bg-white/15 text-ink" : "text-ink-dim hover:text-ink-muted"}`}
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6" />
@@ -561,7 +561,7 @@ export default function LibraryPage() {
                     <button
                       type="button"
                       onClick={() => setIsUploadPanelOpen(true)}
-                      className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                      className="h-10 rounded-full border border-line bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
                     >
                       {t("library.uploadFiles")}
                     </button>
@@ -574,7 +574,7 @@ export default function LibraryPage() {
             {view === "songs" && (
               <section className="space-y-4">
                 {loading ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("library.loadingTracks")}</div>
+                  <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">{t("library.loadingTracks")}</div>
                 ) : (
                   <TrackList
                     tracks={tracks}
@@ -644,8 +644,8 @@ export default function LibraryPage() {
                 onTrackUpdated={handleTrackUpdated}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">{t("common.trackDetails")}</h3>
                 <p className="text-sm mt-3">{t("common.selectTrackHint")}</p>
               </div>
             )}
@@ -697,20 +697,20 @@ export default function LibraryPage() {
       )}
 
       {uploadToast && (
-        <div className="fixed bottom-24 right-6 z-60 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-[#12131d]/95 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-24 right-6 z-60 flex items-center gap-3  border border-emerald-500/30 bg-surface/95 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div className="min-w-0 pr-2">
-            <p className="text-sm font-semibold text-white">{uploadToast.title}</p>
-            <p className="truncate text-xs text-white/70">{uploadToast.message}</p>
+            <p className="text-sm font-semibold text-ink">{uploadToast.title}</p>
+            <p className="truncate text-xs text-ink-muted">{uploadToast.message}</p>
           </div>
           <button
             type="button"
             onClick={() => setUploadToast(null)}
-            className="ml-1 rounded-full p-1 text-white/40 hover:bg-white/10 hover:text-white"
+            className="ml-1 rounded-full p-1 text-ink-dim hover:bg-white/10 hover:text-ink"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

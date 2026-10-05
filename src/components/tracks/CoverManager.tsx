@@ -175,34 +175,34 @@ export default function CoverManager({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#12121a] p-6 shadow-2xl z-10">
+      <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto  border border-line bg-surface p-6 shadow-2xl z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-semibold text-white/90">
+          <h3 className="text-base font-semibold text-ink">
             {entityType === "release" ? "Release" : "Track"} Cover Images ({totalCount}/5)
           </h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors">
+          <button onClick={onClose} className="p-1.5  hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         {inheritedFromTrack && (
-          <p className="text-xs text-white/40 mb-4">
+          <p className="text-xs text-ink-dim mb-4">
             This release doesn&apos;t have its own cover yet — showing its track&apos;s cover below. Add an image to give this release its own, independent cover.
           </p>
         )}
 
         {/* Cover Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-white/40 text-sm">Loading covers...</div>
+          <div className="flex items-center justify-center py-16 text-ink-dim text-sm">Loading covers...</div>
         ) : (
           <div className="grid grid-cols-3 gap-4 mb-5">
             {/* Current/existing cover */}
             {hasExistingCover && (
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 ${!hasUploadedMain ? (inheritedFromTrack ? "border-amber-400/50" : "border-emerald-400/60") : "border-white/15"}`}
+                  className={`relative aspect-square w-full overflow-hidden  border-2 ${!hasUploadedMain ? (inheritedFromTrack ? "border-amber-400/50" : "border-emerald-400/60") : "border-line-strong"}`}
                 >
                   <img
                     src={bustUrl(currentCoverUrl || (entityType === "track" ? `/api/tracks/${entityId}/cover` : `/api/releases/${entityId}/cover`))}
@@ -212,12 +212,12 @@ export default function CoverManager({
                     className="h-full w-full object-cover"
                   />
                   {!hasUploadedMain && (
-                    <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase text-white ${inheritedFromTrack ? "bg-amber-500/80" : "bg-emerald-500/80"}`}>
+                    <span className={`absolute top-1.5 left-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase text-ink ${inheritedFromTrack ? "bg-amber-500/80" : "bg-emerald-500/80"}`}>
                       {inheritedFromTrack ? "From track" : "Main"}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-white/30">{inheritedFromTrack ? "Track's cover" : "Original"}</span>
+                <span className="text-[10px] text-ink-dim">{inheritedFromTrack ? "Track's cover" : "Original"}</span>
               </div>
             )}
 
@@ -226,14 +226,14 @@ export default function CoverManager({
               const displayIndex = (hasExistingCover ? 1 : 0) + index;
               return (
                 <div key={cover.id} className="flex flex-col items-center gap-2">
-                  <div className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 transition-colors ${cover.isMain ? "border-emerald-400/60" : "border-white/10 hover:border-white/30"}`}>
+                  <div className={`relative aspect-square w-full overflow-hidden  border-2 transition-colors ${cover.isMain ? "border-emerald-400/60" : "border-line hover:border-line/30"}`}>
                     <img src={getThumbUrl(cover)} alt={`Cover ${displayIndex + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
-                    {cover.isMain && <span className="absolute top-1.5 left-1.5 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Main</span>}
-                    {cover.isGenerated && <span className="absolute bottom-1.5 left-1.5 rounded bg-primary-500/80 px-1.5 py-0.5 text-[9px] font-medium text-white">AI</span>}
-                    <span className="absolute top-1.5 right-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] text-white/70">{displayIndex + 1}</span>
+                    {cover.isMain && <span className="absolute top-1.5 left-1.5 rounded bg-emerald-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase text-ink">Main</span>}
+                    {cover.isGenerated && <span className="absolute bottom-1.5 left-1.5 rounded bg-accent/80 px-1.5 py-0.5 text-[9px] font-medium text-ink">AI</span>}
+                    <span className="absolute top-1.5 right-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[9px] text-ink-muted">{displayIndex + 1}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => doReorder(index, index - 1)} disabled={index === 0 || working} className="p-1 rounded text-white/25 hover:text-white/60 hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move left">
+                    <button onClick={() => doReorder(index, index - 1)} disabled={index === 0 || working} className="p-1 rounded text-ink-dim hover:text-ink-muted hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move left">
                       <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     {!cover.isMain && (
@@ -246,7 +246,7 @@ export default function CoverManager({
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
                     )}
-                    <button onClick={() => doReorder(index, index + 1)} disabled={index === covers.length - 1 || working} className="p-1 rounded text-white/25 hover:text-white/60 hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move right">
+                    <button onClick={() => doReorder(index, index + 1)} disabled={index === covers.length - 1 || working} className="p-1 rounded text-ink-dim hover:text-ink-muted hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors" title="Move right">
                       <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                   </div>
@@ -256,10 +256,10 @@ export default function CoverManager({
 
             {Array.from({ length: Math.max(0, 3 - totalCount) }).map((_, i) => (
               <div key={`empty-${i}`} className="flex flex-col items-center gap-2">
-                <div className="aspect-square w-full rounded-xl border-2 border-dashed border-white/10 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
+                <div className="aspect-square w-full  border-2 border-dashed border-line flex items-center justify-center">
+                  <svg className="w-8 h-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
                 </div>
-                <span className="text-[10px] text-white/20">Empty</span>
+                <span className="text-[10px] text-ink-dim">Empty</span>
               </div>
             ))}
           </div>
@@ -270,26 +270,26 @@ export default function CoverManager({
           {canAddMore ? (
             <>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2 rounded-xl border border-dashed border-white/20 px-4 py-2.5 text-sm text-white/60 hover:border-white/40 hover:text-white/80 hover:bg-white/5 transition-colors disabled:opacity-50">
-                {uploading ? (<><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Uploading...</>) : (<><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Add image</>)}
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2  border border-dashed border-line/20 px-4 py-2.5 text-sm text-ink-muted hover:border-line/40 hover:text-ink-muted hover:bg-white/5 transition-colors disabled:opacity-50">
+                {uploading ? (<><div className="w-4 h-4 rounded-full border-2 border-line/30 border-t-white animate-spin" /> Uploading...</>) : (<><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Add image</>)}
               </button>
             </>
           ) : <div />}
-          <button onClick={onClose} className="rounded-xl bg-white/8 px-5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/14">Done</button>
+          <button onClick={onClose} className=" bg-white/8 px-5 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:bg-white/14">Done</button>
         </div>
 
         {/* Confirmation popup */}
         {confirmAction && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-black/70">
-            <div className="mx-4 w-full max-w-xs rounded-xl border border-white/10 bg-[#1a1b25] p-4 shadow-2xl">
-              <p className="text-sm text-white/80 text-center mb-4">
+          <div className="absolute inset-0 z-20 flex items-center justify-center  bg-black/70">
+            <div className="mx-4 w-full max-w-xs  border border-line bg-surface p-4 shadow-2xl">
+              <p className="text-sm text-ink-muted text-center mb-4">
                 {confirmAction.type === "main"
                   ? confirmAction.coverId ? "Set this image as the main cover?" : "Restore original cover as main?"
                   : "Delete this cover image?"}
               </p>
               <div className="flex gap-2">
-                <button onClick={() => setConfirmAction(null)} disabled={working} className="flex-1 rounded-lg bg-white/8 py-2 text-sm font-medium text-white/70 hover:bg-white/14 transition-colors">No</button>
-                <button onClick={handleConfirmYes} disabled={working} className={`flex-1 rounded-lg py-2 text-sm font-medium text-white transition-colors ${confirmAction.type === "main" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"} disabled:opacity-50`}>
+                <button onClick={() => setConfirmAction(null)} disabled={working} className="flex-1  bg-white/8 py-2 text-sm font-medium text-ink-muted hover:bg-white/14 transition-colors">No</button>
+                <button onClick={handleConfirmYes} disabled={working} className={`flex-1  py-2 text-sm font-medium text-ink transition-colors ${confirmAction.type === "main" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"} disabled:opacity-50`}>
                   {working ? "..." : "Yes"}
                 </button>
               </div>

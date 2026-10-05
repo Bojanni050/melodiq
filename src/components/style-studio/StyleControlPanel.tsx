@@ -57,29 +57,29 @@ function SearchableDropdown({
 
   return (
     <div className="relative">
-      <label className="block text-xs font-medium text-white/45 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-ink-dim mb-1.5">{label}</label>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full input-field text-left text-sm flex items-center justify-between"
       >
-        <span className={value ? "text-white" : "text-white/35"}>{value || effectivePlaceholder}</span>
+        <span className={value ? "text-ink" : "text-ink-dim"}>{value || effectivePlaceholder}</span>
         <svg className={`w-4 h-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && (
-        <div className="absolute z-20 mt-1 w-full rounded-lg border border-white/10 bg-[#1a1a24] shadow-2xl">
+        <div className="absolute z-20 mt-1 w-full  border border-line bg-surface shadow-2xl">
           <input
             type="text"
             placeholder={t("melody.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-white/5 border-b border-white/10 rounded-t-lg text-sm placeholder-white/30 focus:outline-none focus:border-primary-500"
+            className="w-full px-3 py-2 bg-white/5 border-b border-line rounded-t-lg text-sm placeholder-white/30 focus:outline-none focus:border-accent"
           />
           <div className="max-h-56 overflow-y-auto p-1">
             {filtered.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-white/40">{t("melody.noResults")}</p>
+              <p className="px-3 py-2 text-xs text-ink-dim">{t("melody.noResults")}</p>
             ) : (
               filtered.map((option) => (
                 <button
@@ -91,12 +91,12 @@ function SearchableDropdown({
                     setQuery("");
                   }}
                   className={`w-full px-3 py-1.5 text-left rounded transition-colors ${
-                    value === option ? "bg-primary-500/15 text-white" : "text-white/80 hover:bg-white/5"
+                    value === option ? "bg-accent/15 text-ink" : "text-ink-muted hover:bg-white/5"
                   }`}
                 >
                   <span className="block text-sm">{option}</span>
                   {descriptions?.[option] && (
-                    <span className="block text-xs text-white/40 truncate">{descriptions[option]}</span>
+                    <span className="block text-xs text-ink-dim truncate">{descriptions[option]}</span>
                   )}
                 </button>
               ))
@@ -121,7 +121,7 @@ function ChipGroup({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-white/45 mb-2">{label}</label>
+      <label className="block text-xs font-medium text-ink-dim mb-2">{label}</label>
       <div className="flex flex-wrap gap-1.5">
         {options.map((option) => {
           const isSelected = selected.includes(option);
@@ -132,8 +132,8 @@ function ChipGroup({
               onClick={() => onToggle(option)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                 isSelected
-                  ? "bg-primary-500/20 border-primary-400/50 text-white"
-                  : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-accent/20 border-accent/50 text-ink"
+                  : "bg-white/5 border-line text-ink-muted hover:bg-white/10 hover:text-ink"
               }`}
             >
               {option}
@@ -177,19 +177,19 @@ function CustomAddInput({
 
   return (
     <div>
-      <label className="block text-xs font-medium text-white/45 mb-2">{label}</label>
+      <label className="block text-xs font-medium text-ink-dim mb-2">{label}</label>
       {customs.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {customs.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary-400/40 bg-primary-500/15 px-3 py-1 text-xs font-medium text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-xs font-medium text-ink"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => onRemove(tag)}
-                className="text-white/60 hover:text-white"
+                className="text-ink-muted hover:text-ink"
                 aria-label={`Remove ${tag}`}
               >
                 ×
@@ -216,7 +216,7 @@ function CustomAddInput({
           type="button"
           onClick={commit}
           disabled={!draft.trim()}
-          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+          className="shrink-0  border border-line bg-white/5 px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed"
         >
           +
         </button>
@@ -318,8 +318,8 @@ export default function StyleControlPanel({
   return (
     <div className="space-y-5">
       {/* Musical Foundation */}
-      <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">{t("melody.musicalFoundationHeading")}</h3>
+      <section className=" border border-line bg-surface/80 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-ink/85">{t("melody.musicalFoundationHeading")}</h3>
 
         <SearchableDropdown label={t("melody.primaryGenreLabel")} value={primaryGenre} options={PRIMARY_GENRES} descriptions={GENRE_DESCRIPTIONS} onChange={setPrimaryGenre} placeholder={t("melody.chooseGenrePlaceholder")} />
         <SearchableDropdown label={t("melody.secondaryGenreLabel")} value={secondaryGenre} options={PRIMARY_GENRES} descriptions={GENRE_DESCRIPTIONS} onChange={setSecondaryGenre} placeholder={t("melody.optionalPlaceholder")} />
@@ -327,7 +327,7 @@ export default function StyleControlPanel({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-white/45 mb-1.5">{t("melody.bpmLabel")}</label>
+            <label className="block text-xs font-medium text-ink-dim mb-1.5">{t("melody.bpmLabel")}</label>
             <input
               type="number"
               min={BPM_MIN}
@@ -348,10 +348,10 @@ export default function StyleControlPanel({
               key={option.value}
               type="button"
               onClick={() => setTempo(tempo === option.value ? "" : option.value)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              className={`px-3 py-2  text-sm font-medium border transition-colors ${
                 tempo === option.value
-                  ? "bg-primary-500/20 border-primary-400/50 text-white"
-                  : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                  ? "bg-accent/20 border-accent/50 text-ink"
+                  : "bg-white/5 border-line text-ink-muted hover:bg-white/10 hover:text-ink"
               }`}
             >
               {option.label}
@@ -367,8 +367,8 @@ export default function StyleControlPanel({
       </section>
 
       {/* Instrumentation */}
-      <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">{t("melody.instrumentationHeading")}</h3>
+      <section className=" border border-line bg-surface/80 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-ink/85">{t("melody.instrumentationHeading")}</h3>
         <ChipGroup label={t("melody.instrumentsLabel")} options={INSTRUMENTATION_OPTIONS} selected={instrumentation} onToggle={(v) => toggleIn(instrumentation, setInstrumentation, v)} />
         <CustomAddInput
           label={t("melody.customInstrumentLabel")}
@@ -393,8 +393,8 @@ export default function StyleControlPanel({
 
       {/* Vocals — hidden for instrumental tracks */}
       {!instrumental && (
-        <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-          <h3 className="text-sm font-semibold text-white/85">{t("melody.vocalsHeading")}</h3>
+        <section className=" border border-line bg-surface/80 p-4 space-y-4">
+          <h3 className="text-sm font-semibold text-ink/85">{t("melody.vocalsHeading")}</h3>
           <ChipGroup label={t("melody.vocalDeliveryLabel")} options={VOCAL_DIRECTION_OPTIONS} selected={vocalDirection} onToggle={(v) => toggleIn(vocalDirection, setVocalDirection, v)} />
           <CustomAddInput
             label={t("melody.customVocalLabel")}
@@ -405,15 +405,15 @@ export default function StyleControlPanel({
             placeholder={t("melody.customVocalPlaceholder")}
           />
           <div>
-            <label className="block text-xs font-medium text-white/45 mb-2">{t("melody.avoidVocalLabel")}</label>
+            <label className="block text-xs font-medium text-ink-dim mb-2">{t("melody.avoidVocalLabel")}</label>
             <TagInput value={vocalNegatives} onChange={setVocalNegatives} suggestions={VOCAL_NEGATIVE_OPTIONS} placeholder={t("melody.noBeltingPlaceholder")} />
           </div>
         </section>
       )}
 
       {/* Production */}
-      <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-white/85">{t("melody.productionHeading")}</h3>
+      <section className=" border border-line bg-surface/80 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-ink/85">{t("melody.productionHeading")}</h3>
         <div className="flex flex-wrap gap-1.5">
           {ERA_OPTIONS.map((option) => {
             const isSelected = era === option;
@@ -424,8 +424,8 @@ export default function StyleControlPanel({
                 onClick={() => setEra(era === option ? "" : option)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                   isSelected
-                    ? "bg-primary-500/20 border-primary-400/50 text-white"
-                    : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                    ? "bg-accent/20 border-accent/50 text-ink"
+                    : "bg-white/5 border-line text-ink-muted hover:bg-white/10 hover:text-ink"
                 }`}
               >
                 {option}
@@ -448,9 +448,9 @@ export default function StyleControlPanel({
       </section>
 
       {/* Avoid */}
-      <section className="rounded-2xl border border-white/10 bg-[#101018]/80 p-4 space-y-2">
-        <h3 className="text-sm font-semibold text-white/85">{t("melody.avoidHeading")}</h3>
-        <p className="text-xs text-white/40">{t("melody.avoidHintText")}</p>
+      <section className=" border border-line bg-surface/80 p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-ink/85">{t("melody.avoidHeading")}</h3>
+        <p className="text-xs text-ink-dim">{t("melody.avoidHintText")}</p>
         <TagInput value={avoidTags} onChange={setAvoidTags} suggestions={AVOID_SUGGESTIONS} placeholder={t("melody.avoidTagsPlaceholder")} />
       </section>
     </div>

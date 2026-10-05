@@ -22,10 +22,10 @@ export default function Header() {
   }
 
   return (
-    <header className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-40">
+    <header className="border-b border-line bg-black/50 backdrop-blur-sm sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary-400 to-[#ec4899] bg-clip-text text-transparent">
+          <Link href="/" className="text-xl font-bold font-display font-black text-ink">
             MelodIQ
           </Link>
 
@@ -34,10 +34,10 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-2  text-sm font-medium transition-colors ${
                   pathname === item.href
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                    ? "bg-white/10 text-ink"
+                    : "text-ink-muted hover:text-ink hover:bg-white/5"
                 }`}
               >
                 {item.label}
@@ -48,13 +48,13 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleLogout}
-              className="text-sm text-white/60 hover:text-white transition-colors"
+              className="text-sm text-ink-muted hover:text-ink transition-colors"
             >
               Logout
             </button>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-white/5"
+              className="md:hidden p-2  hover:bg-white/5"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {menuOpen ? (
@@ -68,16 +68,16 @@ export default function Header() {
         </div>
 
         {menuOpen && (
-          <nav className="md:hidden py-3 border-t border-white/10">
+          <nav className="md:hidden py-3 border-t border-line">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`block px-3 py-2  text-sm font-medium transition-colors ${
                   pathname === item.href
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                    ? "bg-white/10 text-ink"
+                    : "text-ink-muted hover:text-ink hover:bg-white/5"
                 }`}
               >
                 {item.label}

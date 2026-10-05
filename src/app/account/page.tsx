@@ -36,9 +36,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium uppercase tracking-wider text-white/35 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium uppercase tracking-wider text-ink-dim mb-1.5">{label}</label>
       {children}
-      {hint && <p className="text-xs text-white/25 mt-1.5">{hint}</p>}
+      {hint && <p className="text-xs text-ink-dim mt-1.5">{hint}</p>}
     </div>
   );
 }
@@ -212,11 +212,11 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-[#0a0a0f] overflow-hidden">
+      <div className="h-screen bg-canvas overflow-hidden">
         <Sidebar credits={null} />
         <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
           <div className="flex items-center justify-center h-full">
-            <p className="text-white/50">{t("account.loading")}</p>
+            <p className="text-ink-dim">{t("account.loading")}</p>
           </div>
         </div>
       </div>
@@ -224,21 +224,21 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="h-screen bg-canvas overflow-hidden">
       <Sidebar credits={null} />
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="px-4 pt-[68px] pb-10 sm:px-6 lg:pt-10 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">{t("account.title")}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-ink">{t("account.title")}</h1>
 
           {/* Tabs */}
-          <nav className="mt-8 flex items-center gap-8 border-b border-white/10">
+          <nav className="mt-8 flex items-center gap-8 border-b border-line">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={`relative pb-3 text-base font-medium transition-colors ${
-                  activeTab === tab.id ? "text-white" : "text-white/40 hover:text-white/70"
+                  activeTab === tab.id ? "text-ink" : "text-ink-dim hover:text-ink-muted"
                 }`}
               >
                 {tab.label}
@@ -252,8 +252,8 @@ export default function AccountPage() {
           {activeTab === "profile" && (
             <div className="mt-8 space-y-6">
               <section>
-                <h2 className="text-lg font-semibold text-white mb-4">{t("settings.language")}</h2>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8">
+                <h2 className="text-lg font-semibold text-ink mb-4">{t("settings.language")}</h2>
+                <div className=" border border-line bg-white/[0.04] p-6 sm:p-8">
                   <Field label={t("settings.language")} hint={t("settings.languageHint")}>
                     <div className="flex gap-2">
                       {LOCALES.map((opt) => (
@@ -264,8 +264,8 @@ export default function AccountPage() {
                           onClick={() => handleLanguageChange(opt.value)}
                           className={`h-10 rounded-full px-4 text-sm font-medium transition-colors disabled:opacity-50 ${
                             (user?.language || "en") === opt.value
-                              ? "bg-primary-500/80 text-white"
-                              : "bg-white/5 text-white/60 hover:bg-white/10"
+                              ? "bg-accent/80 text-ink"
+                              : "bg-white/5 text-ink-muted hover:bg-white/10"
                           }`}
                         >
                           {opt.label}
@@ -277,8 +277,8 @@ export default function AccountPage() {
               </section>
 
               <section>
-                <h2 className="text-lg font-semibold text-white mb-4">{t("account.identity")}</h2>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
+                <h2 className="text-lg font-semibold text-ink mb-4">{t("account.identity")}</h2>
+                <div className=" border border-line bg-white/[0.04] p-6 sm:p-8 space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
                     <Field label={t("account.nameLabel")}>
                       <input
@@ -294,7 +294,7 @@ export default function AccountPage() {
                         type="text"
                         value={user?.email || ""}
                         disabled
-                        className="input-field text-sm bg-white/5 text-white/30 cursor-not-allowed"
+                        className="input-field text-sm bg-white/5 text-ink-dim cursor-not-allowed"
                       />
                     </Field>
                   </div>
@@ -341,7 +341,7 @@ export default function AccountPage() {
                       />
                     </Field>
                     <Field label={t("account.memberSince")}>
-                      <p className="text-sm text-white/70 py-2">{memberSince}</p>
+                      <p className="text-sm text-ink-muted py-2">{memberSince}</p>
                     </Field>
                   </div>
                 </div>
@@ -356,12 +356,12 @@ export default function AccountPage() {
                             <img src={user.profileImageUrl} alt="" loading="lazy" decoding="async" className="w-14 h-14 rounded-full object-cover" />
                           ) : (
                             <div className="w-14 h-14 rounded-full bg-white/[0.06] flex items-center justify-center">
-                              <svg className="w-6 h-6 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-6 h-6 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
                             </div>
                           )}
-                          <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
+                          <label className="cursor-pointer  border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors">
                             {uploadingProfile ? t("account.uploading") : t("account.upload")}
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("profile", f); }} />
                           </label>
@@ -372,15 +372,15 @@ export default function AccountPage() {
                       <Field label={t("account.heroImage")} hint={t("account.heroImageHint")}>
                         <div className="flex items-center gap-3">
                           {user?.heroImageUrl ? (
-                            <img src={user.heroImageUrl} alt="" loading="lazy" decoding="async" className="w-28 h-14 rounded-lg object-cover" />
+                            <img src={user.heroImageUrl} alt="" loading="lazy" decoding="async" className="w-28 h-14  object-cover" />
                           ) : (
-                            <div className="w-28 h-14 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                              <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-28 h-14  bg-white/[0.06] flex items-center justify-center">
+                              <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
                           )}
-                          <label className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors">
+                          <label className="cursor-pointer  border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors">
                             {uploadingHero ? t("account.uploading") : t("account.upload")}
                             <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage("hero", f); }} />
                           </label>
@@ -392,18 +392,18 @@ export default function AccountPage() {
 
               <section>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white">{t("account.artistBio")}</h2>
+                  <h2 className="text-lg font-semibold text-ink">{t("account.artistBio")}</h2>
                   {user?.id && (
                     <Link
                       href={`/discover/artist/${user.id}`}
                       target="_blank"
-                      className="text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+                      className="text-xs font-medium text-ink-dim hover:text-ink-muted transition-colors"
                     >
                       {t("account.viewPublicPage")}
                     </Link>
                   )}
                 </div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8">
+                <div className=" border border-line bg-white/[0.04] p-6 sm:p-8">
                   <Field label={t("account.bioLabel")} hint={t("account.bioHint")}>
                     <textarea
                       value={bio}
@@ -421,7 +421,7 @@ export default function AccountPage() {
                 <button
                   onClick={saveProfile}
                   disabled={savingProfile}
-                  className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className=" bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {savingProfile ? t("account.saving") : t("account.saveProfile")}
                 </button>
@@ -437,8 +437,8 @@ export default function AccountPage() {
           {activeTab === "security" && (
             <div className="mt-8 space-y-6">
               <section>
-                <h2 className="text-lg font-semibold text-white mb-4">{t("account.changePassword")}</h2>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-6 sm:p-8 space-y-6">
+                <h2 className="text-lg font-semibold text-ink mb-4">{t("account.changePassword")}</h2>
+                <div className=" border border-line bg-white/[0.04] p-6 sm:p-8 space-y-6">
                   <div className="grid sm:grid-cols-2 gap-6">
                     <Field label={t("account.currentPassword")}>
                       <input
@@ -476,7 +476,7 @@ export default function AccountPage() {
                 <button
                   onClick={savePassword}
                   disabled={savingSecurity || !currentPassword || !newPassword || !confirmPassword}
-                  className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingSecurity ? t("account.saving") : t("account.changePassword")}
                 </button>

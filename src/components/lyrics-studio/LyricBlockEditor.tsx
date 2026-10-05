@@ -69,7 +69,7 @@ export default function LyricBlockEditor({
   return (
     <>
       <div className="flex justify-end mb-2">
-        <label className="flex items-center gap-2 text-xs text-white/50 select-none">
+        <label className="flex items-center gap-2 text-xs text-ink-dim select-none">
           <input
             type="radio"
             name="lyric-cols"
@@ -78,7 +78,7 @@ export default function LyricBlockEditor({
           />
           {t("lyricsStudio.oneColumn")}
         </label>
-        <label className="flex items-center gap-2 ml-4 text-xs text-white/50 select-none">
+        <label className="flex items-center gap-2 ml-4 text-xs text-ink-dim select-none">
           <input
             type="radio"
             name="lyric-cols"
@@ -90,8 +90,8 @@ export default function LyricBlockEditor({
       </div>
 
       {blocks.length === 0 ? (
-        <div className="flex min-h-[460px] items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
-          <p className="text-sm text-white/40">{t("lyricsStudio.emptyBlocksHint")}</p>
+        <div className="flex min-h-[460px] items-center justify-center  border border-dashed border-line bg-white/[0.02] text-center">
+          <p className="text-sm text-ink-dim">{t("lyricsStudio.emptyBlocksHint")}</p>
         </div>
       ) : (
         <div className={`grid gap-4 ${lyricCols === 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
@@ -118,10 +118,10 @@ export default function LyricBlockEditor({
                 onDragOver={(event) => onBlockMouseDragOver(event, block.id)}
                 onDrop={(event) => onBlockMouseDrop(event, block.id)}
                 onDragEnd={onBlockMouseDragEnd}
-                className={`relative rounded-xl border border-white/10 bg-[#15151f] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
+                className={`relative  border border-line bg-surface p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex flex-col transition ${isDragged ? "opacity-55 scale-[0.985]" : ""}`}
                 style={{ borderLeft: `4px solid ${blockColors[block.type]}` }}
               >
-                {showDropBefore && <div className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary-400" />}
+                {showDropBefore && <div className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-accent" />}
                 <div className="mb-3 flex flex-wrap items-center gap-2 select-none">
                   <button
                     type="button"
@@ -129,16 +129,16 @@ export default function LyricBlockEditor({
                     onMouseDown={() => onDragHandleMouseDown(block.id)}
                     onPointerDown={(event) => onStartBlockDrag(event, block.id)}
                     aria-label={t("lyricsStudio.dragBlockAriaLabel", { label: block.label || blockLabels[block.type] })}
-                    className="h-11 w-11 shrink-0 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white cursor-grab active:cursor-grabbing touch-none"
+                    className="h-11 w-11 shrink-0  border border-line text-ink-dim transition hover:bg-white/10 hover:text-ink cursor-grab active:cursor-grabbing touch-none"
                     title={t("lyricsStudio.dragToReorder")}
                   >
                     <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 6h.01M10 12h.01M10 18h.01M14 6h.01M14 12h.01M14 18h.01" />
                     </svg>
                   </button>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/25">{t("lyricsStudio.dragToReorder")}</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-ink-dim">{t("lyricsStudio.dragToReorder")}</div>
                   <span
-                    className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white"
+                    className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
                     style={{ backgroundColor: blockColors[block.type] }}
                   >
                     {blockLabels[block.type]}
@@ -147,7 +147,7 @@ export default function LyricBlockEditor({
                     type="text"
                     value={block.label}
                     onChange={(event) => onUpdateBlock(block.id, { label: event.target.value })}
-                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition focus:border-primary-500/60"
+                    className="min-w-0 flex-1  border border-line bg-white/5 px-3 py-2 text-sm text-ink outline-none transition focus:border-accent/60"
                     aria-label={t("lyricsStudio.blockLabelAriaLabel", { label: blockLabels[block.type] })}
                   />
                   <div className="flex items-center gap-1">
@@ -155,7 +155,7 @@ export default function LyricBlockEditor({
                       type="button"
                       onClick={() => onMoveBlock(block.id, -1)}
                       disabled={index === 0}
-                      className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                      className="h-9 w-9  border border-line text-ink-dim transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                       title={t("lyricsStudio.moveUp")}
                     >
                       ↑
@@ -164,7 +164,7 @@ export default function LyricBlockEditor({
                       type="button"
                       onClick={() => onMoveBlock(block.id, 1)}
                       disabled={index === blocks.length - 1}
-                      className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                      className="h-9 w-9  border border-line text-ink-dim transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                       title={t("lyricsStudio.moveDown")}
                     >
                       ↓
@@ -172,7 +172,7 @@ export default function LyricBlockEditor({
                     <button
                       type="button"
                       onClick={() => onDuplicateBlock(block.id)}
-                      className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:bg-white/10 hover:text-white"
+                      className="h-9 w-9  border border-line text-ink-dim transition hover:bg-white/10 hover:text-ink"
                       title={t("lyricsStudio.duplicateBlockTooltip")}
                     >
                       <svg className="mx-auto h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@ export default function LyricBlockEditor({
                     <button
                       type="button"
                       onClick={() => onDeleteBlock(block.id)}
-                      className="h-9 w-9 rounded-lg border border-white/10 text-white/45 transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-200"
+                      className="h-9 w-9  border border-line text-ink-dim transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-200"
                       title={t("lyricsStudio.deleteBlockTooltip")}
                     >
                       ×
@@ -191,7 +191,7 @@ export default function LyricBlockEditor({
                 </div>
 
                 {block.type === "chorus" && (
-                  <label className="mb-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75">
+                  <label className="mb-2 flex items-center gap-2  border border-line bg-white/5 px-3 py-2 text-sm text-ink/75">
                     <input
                       type="checkbox"
                       checked={block.uniqueChorusOverride}
@@ -203,13 +203,13 @@ export default function LyricBlockEditor({
 
                 {!isEmptyLyricBlock && (
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="text-xs text-white/45">{t("lyricsStudio.lineCountLabel", { count: resolveBlockLineCount(block) })}</span>
+                    <span className="text-xs text-ink-dim">{t("lyricsStudio.lineCountLabel", { count: resolveBlockLineCount(block) })}</span>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => onUpdateBlock(block.id, { lineCount: resolveBlockLineCount(block) - 1 })}
                         disabled={block.generating || resolveBlockLineCount(block) <= MIN_BLOCK_LINE_COUNT}
-                        className="h-7 w-7 rounded-lg border border-white/10 text-white/60 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        className="h-7 w-7  border border-line text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                         title={t("lyricsStudio.decreaseLinesTooltip")}
                         aria-label={t("lyricsStudio.decreaseLinesTooltip")}
                       >
@@ -219,7 +219,7 @@ export default function LyricBlockEditor({
                         type="button"
                         onClick={() => onUpdateBlock(block.id, { lineCount: resolveBlockLineCount(block) + 1 })}
                         disabled={block.generating || resolveBlockLineCount(block) >= MAX_BLOCK_LINE_COUNT}
-                        className="h-7 w-7 rounded-lg border border-white/10 text-white/60 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                        className="h-7 w-7  border border-line text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                         title={t("lyricsStudio.increaseLinesTooltip")}
                         aria-label={t("lyricsStudio.increaseLinesTooltip")}
                       >
@@ -238,7 +238,7 @@ export default function LyricBlockEditor({
                   }}
                   placeholder={isEmptyLyricBlock ? t("lyricsStudio.markerBlockPlaceholder") : t("lyricsStudio.lyricsPlaceholder")}
                   rows={4}
-                  className="min-h-[112px] w-full resize-y rounded-xl border border-white/10 bg-[#0f0f16] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-primary-500/60 disabled:cursor-wait disabled:opacity-60"
+                  className="min-h-[112px] w-full resize-y  border border-line bg-surface px-4 py-3 text-sm leading-6 text-ink outline-none transition placeholder:text-ink-dim focus:border-accent/60 disabled:cursor-wait disabled:opacity-60"
                   style={{ overflow: "auto" }}
                 />
 
@@ -255,10 +255,10 @@ export default function LyricBlockEditor({
                             ? t("lyricsStudio.generateBlockTooltip")
                             : t("lyricsStudio.addTopicMoodFirstTooltip")
                       }
-                      className="inline-flex min-w-[118px] items-center justify-center rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-500/50"
+                      className="inline-flex min-w-[118px] items-center justify-center  bg-accent px-3 py-2 text-sm font-semibold text-ink transition hover:bg-accent disabled:cursor-not-allowed disabled:bg-accent/50"
                     >
                       {block.generating ? (
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-line/30 border-t-white" />
                       ) : (
                         t("lyricsStudio.generateButton")
                       )}
@@ -274,7 +274,7 @@ export default function LyricBlockEditor({
                             ? t("lyricsStudio.improveTooltip")
                             : t("lyricsStudio.addLyricsToImproveTooltip")
                       }
-                      className="inline-flex items-center justify-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center gap-1  border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {improvingBlockId === block.id ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-200/30 border-t-amber-200" />
@@ -293,7 +293,7 @@ export default function LyricBlockEditor({
                             ? t("lyricsStudio.translateBlockTooltip")
                             : t("lyricsStudio.addContentToTranslateTooltip")
                       }
-                      className="inline-flex items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center  border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm font-semibold text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {translatingBlockId === block.id ? (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200/30 border-t-blue-200" />
@@ -302,12 +302,12 @@ export default function LyricBlockEditor({
                       )}
                     </button>
                   </div>
-                  <span className="text-xs text-white/35">{isEmptyLyricBlock ? t("lyricsStudio.markerLabel") : t("lyricsStudio.charsCount", { count: block.content.length })}</span>
+                  <span className="text-xs text-ink-dim">{isEmptyLyricBlock ? t("lyricsStudio.markerLabel") : t("lyricsStudio.charsCount", { count: block.content.length })}</span>
                 </div>
                 {improvingBlockId === block.id && (
                   <p className="mt-2 text-xs text-amber-200/80">{t("lyricsStudio.lyricIQImprovingHint")}</p>
                 )}
-                {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary-400" />}
+                {showDropAfter && <div className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" />}
               </article>
             );
           })}

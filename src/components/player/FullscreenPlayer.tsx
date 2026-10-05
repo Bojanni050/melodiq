@@ -387,7 +387,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={toggleBgZoom}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${bgZoom ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
               title={bgZoom ? "Disable background zoom" : "Enable background zoom"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,7 +397,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={() => setVisualizerEnabled(!visualizerEnabled)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${visualizerEnabled ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
               title={visualizerEnabled ? "Disable visualizer" : "Enable visualizer"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,7 +406,7 @@ export default function FullscreenPlayer({
             </button>
             <button
               onClick={() => setLyricsVisible((v) => !v)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-white" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-white/70"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${lyricsVisible ? "bg-white/20 text-ink" : "bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted"}`}
               title={lyricsVisible ? "Hide lyrics" : "Show lyrics"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,8 +417,8 @@ export default function FullscreenPlayer({
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
               </h2>
-              {artistLabel && <p className="text-sm text-white/60">{artistLabel}</p>}
-              {creditsLabel && <p className="text-xs text-white/45">{creditsLabel}</p>}
+              {artistLabel && <p className="text-sm text-ink-muted">{artistLabel}</p>}
+              {creditsLabel && <p className="text-xs text-ink-dim">{creditsLabel}</p>}
               <div className="mt-2">
                 <AudioSourceBadge source={audioSource} state={audioSourceState} />
               </div>
@@ -607,24 +607,24 @@ export default function FullscreenPlayer({
       </div>
       {visualizerEnabled && (
         <div className={`absolute bottom-0 left-0 right-0 flex items-center justify-center gap-4 pb-3 pointer-events-none z-10 transition-opacity duration-700 ${controlsVisible ? "opacity-100" : "opacity-0"}`}>
-          <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 pointer-events-auto">
-            <button onClick={() => cycleMode(-1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
+          <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-line pointer-events-auto">
+            <button onClick={() => cycleMode(-1)} className="text-ink-muted hover:text-ink transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentModeLabel}</span>
-            <button onClick={() => cycleMode(1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
+            <span className="text-[11px] text-ink-muted font-medium w-16 text-center select-none">{currentModeLabel}</span>
+            <button onClick={() => cycleMode(1)} className="text-ink-muted hover:text-ink transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
             <span className="w-px h-4 bg-white/15" />
-            <button onClick={() => cycleGradient(-1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
+            <button onClick={() => cycleGradient(-1)} className="text-ink-muted hover:text-ink transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <span className="text-[11px] text-white/70 font-medium w-16 text-center select-none">{currentGradientLabel}</span>
-            <button onClick={() => cycleGradient(1)} className="text-ink-muted hover:text-white transition-colors p-0.5">
+            <span className="text-[11px] text-ink-muted font-medium w-16 text-center select-none">{currentGradientLabel}</span>
+            <button onClick={() => cycleGradient(1)} className="text-ink-muted hover:text-ink transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
             <span className="w-px h-4 bg-white/15" />
-            <button onClick={() => setVisualizerEnabled(false)} className="text-ink-dim hover:text-white/70 transition-colors p-0.5">
+            <button onClick={() => setVisualizerEnabled(false)} className="text-ink-dim hover:text-ink-muted transition-colors p-0.5">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>

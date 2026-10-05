@@ -554,7 +554,7 @@ export default function PlaylistDetailPage() {
 
   if (!loading && !selectedPlaylist && !publishPromptRelease) {
     return (
-      <div className="relative h-screen bg-[#09090d] overflow-hidden text-ink">
+      <div className="relative h-screen bg-canvas overflow-hidden text-ink">
         {coverUrl && (
           <div
             className="absolute inset-0 bg-cover bg-center scale-115 blur-[80px] opacity-20 saturate-200 pointer-events-none"
@@ -587,7 +587,7 @@ export default function PlaylistDetailPage() {
   }
 
   return (
-    <div className="relative h-screen bg-[#09090d] overflow-hidden text-ink">
+    <div className="relative h-screen bg-canvas overflow-hidden text-ink">
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div

@@ -535,7 +535,7 @@ export default function SmartArchivePage() {
     : null;
 
   return (
-    <div className="relative h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="relative h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div
@@ -547,7 +547,7 @@ export default function SmartArchivePage() {
             <section className="px-1 py-2 sm:px-2 flex items-start justify-between gap-4 flex-wrap">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Smart Archive</h1>
-                <p className="text-sm text-white/50 mt-1 max-w-2xl">
+                <p className="text-sm text-ink-dim mt-1 max-w-2xl">
                   Tracks grouped by similar lyrics, prompt, and audio DNA — play them to compare, then archive
                   them or move them to a workspace (Smart Ordening). Nothing happens automatically.
                 </p>
@@ -558,7 +558,7 @@ export default function SmartArchivePage() {
                   <button
                     type="button"
                     onClick={handleOutputButtonClick}
-                    className="h-9 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1.5"
+                    className="h-9 rounded-full border border-line bg-white/5 px-3 text-xs font-medium text-ink-muted hover:text-ink hover:bg-white/10 transition-colors flex items-center gap-1.5"
                     title="Choose which speaker/sound card preview playback goes through"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -567,11 +567,11 @@ export default function SmartArchivePage() {
                     {selectedOutputLabel || "Preview output: default"}
                   </button>
                   {outputMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 rounded-xl border border-white/10 bg-[#1a1a2e] shadow-2xl py-1.5 z-20">
+                    <div className="absolute right-0 mt-2 w-64  border border-line bg-surface shadow-2xl py-1.5 z-20">
                       <button
                         type="button"
                         onClick={() => applyOutputDevice("")}
-                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-white/5 ${selectedOutputId === "" ? "text-white" : "text-white/60"}`}
+                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-white/5 ${selectedOutputId === "" ? "text-ink" : "text-ink-muted"}`}
                       >
                         Default output
                       </button>
@@ -580,7 +580,7 @@ export default function SmartArchivePage() {
                           key={device.deviceId}
                           type="button"
                           onClick={() => applyOutputDevice(device.deviceId)}
-                          className={`w-full text-left px-3 py-1.5 text-sm truncate hover:bg-white/5 ${selectedOutputId === device.deviceId ? "text-white" : "text-white/60"}`}
+                          className={`w-full text-left px-3 py-1.5 text-sm truncate hover:bg-white/5 ${selectedOutputId === device.deviceId ? "text-ink" : "text-ink-muted"}`}
                         >
                           {device.label || "Unnamed output device"}
                         </button>
@@ -596,21 +596,21 @@ export default function SmartArchivePage() {
             )}
 
             {archiveResults && (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-start justify-between gap-3">
-                <p className="text-sm text-white/80">
+              <div className=" border border-line bg-white/5 p-4 flex items-start justify-between gap-3">
+                <p className="text-sm text-ink-muted">
                   Archived {archiveResults.archivedCount} track{archiveResults.archivedCount === 1 ? "" : "s"}.
                   {archiveResults.failed.length > 0 ? ` ${archiveResults.failed.length} failed.` : ""}
                 </p>
-                <button onClick={clearArchiveResults} className="text-white/40 hover:text-white/70 transition-colors shrink-0">
+                <button onClick={clearArchiveResults} className="text-ink-dim hover:text-ink-muted transition-colors shrink-0">
                   ✕
                 </button>
               </div>
             )}
 
             {loading ? (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Scanning your library…</div>
+              <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">Scanning your library…</div>
             ) : groups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-3 text-white/30">
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-ink-dim">
                 <p className="text-sm">No duplicate or variant tracks found.</p>
               </div>
             ) : (
@@ -623,16 +623,16 @@ export default function SmartArchivePage() {
                   const allSelected = selectableCount > 0 && selectedSelectableCount === selectableCount;
                   const someSelected = selectedSelectableCount > 0 && !allSelected;
                   return (
-                    <div key={group.id} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-                      <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b border-white/10">
+                    <div key={group.id} className=" border border-line bg-white/5 overflow-hidden">
+                      <div className="flex items-center gap-2 flex-wrap px-4 py-3 border-b border-line">
                         {group.matchedOn.map((signal) => (
-                          <span key={signal} className="text-xs rounded-full bg-primary-500/20 text-primary-300 px-2.5 py-1">
+                          <span key={signal} className="text-xs rounded-full bg-accent/20 text-accent px-2.5 py-1">
                             {MATCH_LABELS[signal] ?? signal} {Math.round(group.score * 100)}%
                           </span>
                         ))}
                         {group.language && (
                           <span
-                            className="text-xs rounded-full bg-white/5 text-white/60 px-2.5 py-1"
+                            className="text-xs rounded-full bg-white/5 text-ink-muted px-2.5 py-1"
                             title="All tracks in this group share this lyrics language"
                           >
                             {group.language}
@@ -642,7 +642,7 @@ export default function SmartArchivePage() {
                           <button
                             type="button"
                             onClick={() => toggleSelectAllGroup(group.id)}
-                            className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white transition-colors"
+                            className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink transition-colors"
                             title={allSelected ? "Deselect all tracks in this group" : "Select all tracks in this group"}
                           >
                             {/* Mirrors the main track list: a filled dot when all
@@ -654,11 +654,11 @@ export default function SmartArchivePage() {
                                   ? "bg-blue-500"
                                   : someSelected
                                     ? "bg-blue-500/50"
-                                    : "border-2 border-white/20"
+                                    : "border-2 border-line/20"
                               }`}
                             >
                               {(allSelected || someSelected) && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-2.5 h-2.5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
@@ -702,24 +702,24 @@ export default function SmartArchivePage() {
                                 onClick={() => isPlayable && togglePreview(track.id)}
                                 disabled={!isPlayable}
                                 title={isPlayable ? (isThisPlaying ? "Pause preview" : "Play preview") : "Not ready to play"}
-                                className="w-10 h-10 rounded-md shrink-0 overflow-hidden bg-white/5 flex items-center justify-center relative group disabled:cursor-not-allowed"
+                                className="w-10 h-10  shrink-0 overflow-hidden bg-white/5 flex items-center justify-center relative group disabled:cursor-not-allowed"
                               >
                                 {track.hasCover ? (
                                   <img src={`/api/tracks/${track.id}/cover`} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 ) : (
-                                  <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                                   </svg>
                                 )}
                                 {isPlayable && (
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                     {isThisPlaying ? (
-                                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-4 h-4 text-ink" fill="currentColor" viewBox="0 0 24 24">
                                         <rect x="6" y="4" width="4" height="16" rx="1" />
                                         <rect x="14" y="4" width="4" height="16" rx="1" />
                                       </svg>
                                     ) : (
-                                      <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-4 h-4 text-ink ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z" />
                                       </svg>
                                     )}
@@ -742,7 +742,7 @@ export default function SmartArchivePage() {
                                       }
                                     }}
                                     title="Toggle Track Details"
-                                    className="text-sm font-medium text-white/80 truncate hover:text-white hover:underline underline-offset-2 text-left min-w-[6rem] max-w-[60vw] sm:max-w-xs"
+                                    className="text-sm font-medium text-ink-muted truncate hover:text-ink hover:underline underline-offset-2 text-left min-w-[6rem] max-w-[60vw] sm:max-w-xs"
                                     aria-expanded={showDetailPanel && detailTrackId === track.id}
                                   >
                                     {track.title || "Untitled"}
@@ -751,13 +751,13 @@ export default function SmartArchivePage() {
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); goToTrackInLibrary(track.id); }}
                                     title="Open in Library"
-                                    className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-white/15 text-white/50 hover:text-white hover:border-white/30 transition-colors"
+                                    className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-line-strong text-ink-dim hover:text-ink hover:border-line/30 transition-colors"
                                   >
                                     Library
                                   </button>
                                   {isThisPlaying && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-300 shrink-0 font-medium">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 font-medium">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                                       Now playing
                                     </span>
                                   )}
@@ -803,7 +803,7 @@ export default function SmartArchivePage() {
                                   )}
                                   {track.playlistNames.length > 0 && (
                                     <span
-                                      className="text-[10px] px-1.5 py-0.5 rounded border border-white/15 bg-white/5 text-white/60 shrink-0 truncate max-w-[16rem]"
+                                      className="text-[10px] px-1.5 py-0.5 rounded border border-line-strong bg-white/5 text-ink-muted shrink-0 truncate max-w-[16rem]"
                                       title={`In playlist${track.playlistNames.length === 1 ? "" : "s"}: ${track.playlistNames.join(", ")}`}
                                     >
                                       {track.playlistNames.join(", ")}
@@ -817,12 +817,12 @@ export default function SmartArchivePage() {
                                       {track.workspaceName}
                                     </span>
                                   )}
-                                  <span className="text-[10px] text-white/40 shrink-0">{formatDuration(track.duration)}</span>
+                                  <span className="text-[10px] text-ink-dim shrink-0">{formatDuration(track.duration)}</span>
                                   {track.status === "done" && (
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); toggleDna(track.id); }}
-                                      className="inline-flex items-center justify-center w-5 h-5 rounded text-white/35 hover:text-primary-300 hover:bg-primary-500/10 shrink-0 transition-colors"
+                                      className="inline-flex items-center justify-center w-5 h-5 rounded text-ink-dim hover:text-accent hover:bg-accent/10 shrink-0 transition-colors"
                                       title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                                       aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                                     >
@@ -873,10 +873,10 @@ export default function SmartArchivePage() {
                                   )}
                                 </div>
                                 {track.lyricsSnippet && (
-                                  <p className="text-xs text-white/40 mt-0.5 truncate">{track.lyricsSnippet}</p>
+                                  <p className="text-xs text-ink-dim mt-0.5 truncate">{track.lyricsSnippet}</p>
                                 )}
                                 {track.promptSnippet && (
-                                  <p className="text-xs text-white/30 mt-0.5 truncate">{track.promptSnippet}</p>
+                                  <p className="text-xs text-ink-dim mt-0.5 truncate">{track.promptSnippet}</p>
                                 )}
                                 {track.warnings.length > 0 && (
                                   <p className="text-xs text-amber-300/80 mt-1 flex items-start gap-1">
@@ -901,7 +901,7 @@ export default function SmartArchivePage() {
                         })}
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/10">
+                      <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-line">
                         <button
                           type="button"
                           onClick={() => handleMoveGroupClick(group)}
@@ -924,7 +924,7 @@ export default function SmartArchivePage() {
                           type="button"
                           onClick={() => handleArchiveGroupClick(group)}
                           disabled={archiving || checked.size === 0}
-                          className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/90 transition-colors"
+                          className="h-8 rounded-full bg-white px-3 text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent-strong transition-colors"
                         >
                           Archive selected ({checked.size})
                         </button>
@@ -958,8 +958,8 @@ export default function SmartArchivePage() {
                 }}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track title to show song info and lyrics.</p>
               </div>
             )}
@@ -969,12 +969,12 @@ export default function SmartArchivePage() {
 
       {confirmGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmGroup(null)} />          <div className="relative bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmGroup(null)} />          <div className="relative bg-surface border border-line  shadow-2xl p-6 w-full max-w-lg flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
             <div>
-              <h3 className="text-lg font-semibold text-white/90">
+              <h3 className="text-lg font-semibold text-ink">
                 Archive {confirmTracks.length} track{confirmTracks.length === 1 ? "" : "s"}?
               </h3>
-              <p className="text-sm text-white/50 mt-1">
+              <p className="text-sm text-ink-dim mt-1">
                 The original MP3 and Track DNA are always kept. Anything listed below is permanently deleted.
               </p>
             </div>
@@ -986,18 +986,18 @@ export default function SmartArchivePage() {
                 if (track.stemsCount > 0) deletions.push(`${track.stemsCount} stem${track.stemsCount === 1 ? "" : "s"}`);
                 if (track.mastersCount > 0) deletions.push(`${track.mastersCount} master version${track.mastersCount === 1 ? "" : "s"}`);
                 return (
-                  <div key={track.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div key={track.id} className=" border border-line bg-white/5 p-3">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
                         {track.hasCover ? (
                           <img src={`/api/tracks/${track.id}/cover`} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
-                          <svg className="w-3.5 h-3.5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                         )}
                       </div>
-                      <p className="text-sm text-white/80 truncate">{track.title || "Untitled"}</p>
+                      <p className="text-sm text-ink-muted truncate">{track.title || "Untitled"}</p>
                     </div>
                     {deletions.length > 0 && (
                       <ul className="text-xs text-red-300/80 mt-2 list-disc list-inside space-y-0.5">
@@ -1015,7 +1015,7 @@ export default function SmartArchivePage() {
                       </ul>
                     )}
                     {deletions.length === 0 && track.warnings.length === 0 && (
-                      <p className="text-xs text-white/40 mt-2">Nothing extra to delete — just archiving.</p>
+                      <p className="text-xs text-ink-dim mt-2">Nothing extra to delete — just archiving.</p>
                     )}
                     <p className="text-xs text-emerald-300/70 mt-1">Kept: original MP3, Track DNA, lyrics &amp; prompt.</p>
                   </div>
@@ -1028,7 +1028,7 @@ export default function SmartArchivePage() {
                 type="button"
                 onClick={() => setConfirmGroup(null)}
                 disabled={archiving}
-                className="px-4 py-1.5 rounded-lg text-sm text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors disabled:opacity-50"
+                className="px-4 py-1.5  text-sm text-ink-dim hover:text-ink-muted hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1036,7 +1036,7 @@ export default function SmartArchivePage() {
                 type="button"
                 onClick={executeArchiveConfirmedGroup}
                 disabled={archiving}
-                className="px-4 py-1.5 rounded-lg text-sm bg-white hover:bg-white/90 text-black font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-1.5  text-sm bg-white hover:bg-accent-strong text-black font-medium transition-colors disabled:opacity-50"
               >
                 {archiving ? "Archiving…" : `Archive ${confirmTracks.length} track${confirmTracks.length === 1 ? "" : "s"}`}
               </button>

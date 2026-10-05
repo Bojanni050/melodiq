@@ -45,15 +45,15 @@ export default function MasterRow({ variationDef, trackId }: { variationDef: Mas
 
   const isMastering = master?.status === "pending" || mastering;
   return (
-    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-      <span className="text-sm text-white/70">{variationDef.label}</span>
+    <div className="flex items-center justify-between  border border-line bg-white/5 px-3 py-2">
+      <span className="text-sm text-ink-muted">{variationDef.label}</span>
       {error && <span className="text-[11px] text-red-300">{error}</span>}
       {master?.status === "completed" && master.audioUrl ? (
-        <a href={master.audioUrl} download className="rounded px-2 py-1 text-[11px] text-primary-300 hover:bg-primary-500/10 transition-colors">Download</a>
+        <a href={master.audioUrl} download className="rounded px-2 py-1 text-[11px] text-accent hover:bg-accent/10 transition-colors">Download</a>
       ) : isMastering ? (
-        <span className="text-[11px] text-white/40">Mastering…</span>
+        <span className="text-[11px] text-ink-dim">Mastering…</span>
       ) : (
-        <button type="button" onClick={handleMaster} disabled={mastering} className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40">
+        <button type="button" onClick={handleMaster} disabled={mastering} className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors disabled:opacity-40">
           {master?.status === "failed" ? "Retry" : "Master"}
         </button>
       )}

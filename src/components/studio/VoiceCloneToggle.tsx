@@ -91,11 +91,11 @@ export default function VoiceCloneToggle() {
   }, [t]);
 
   return (
-    <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
+    <div className="mb-4 p-3  bg-white/5 border border-line">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-white/70">{t("studio.myClonedVoice")}</p>
-          <p className="text-[10px] text-white/40 mt-0.5">
+          <p className="text-sm font-medium text-ink-muted">{t("studio.myClonedVoice")}</p>
+          <p className="text-[10px] text-ink-dim mt-0.5">
             {!loaded && t("library.loading")}
             {loaded && !activeVoice && t("studio.noVoiceUploadedYet")}
             {loaded && activeVoice?.status === "pending" && t("studio.voiceCloningInProgress")}
@@ -107,7 +107,7 @@ export default function VoiceCloneToggle() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="text-sm px-3 py-1.5 rounded-md bg-primary-500/20 text-primary-300 hover:bg-primary-500/30 transition-colors disabled:opacity-50"
+          className="text-sm px-3 py-1.5  bg-accent/20 text-accent hover:bg-accent/30 transition-colors disabled:opacity-50"
         >
           {uploading ? t("account.uploading") : activeVoice ? t("studio.reUploadVoice") : t("studio.uploadVoice")}
         </button>
@@ -132,14 +132,14 @@ export default function VoiceCloneToggle() {
           checked={usePersonaVoice}
           disabled={!completedVoice}
           onChange={(e) => setUsePersonaVoice(e.target.checked)}
-          className="accent-primary-500 disabled:opacity-40"
+          className="accent-accent disabled:opacity-40"
         />
-        <span className={`text-sm ${completedVoice ? "text-white/70" : "text-white/30"}`}>
+        <span className={`text-sm ${completedVoice ? "text-ink-muted" : "text-ink-dim"}`}>
           {t("studio.useMyVoiceLabel")}
         </span>
       </label>
       {usePersonaVoice && (
-        <p className="text-[10px] text-white/25 mt-1">{t("studio.personaVoiceHint")}</p>
+        <p className="text-[10px] text-ink-dim mt-1">{t("studio.personaVoiceHint")}</p>
       )}
     </div>
   );

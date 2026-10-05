@@ -53,13 +53,13 @@ export default function AutocompleteInput({
         className={className}
       />
       {open && filtered.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-white/12 bg-[#1a1b27] shadow-lg overflow-hidden">
+        <ul className="absolute z-50 mt-1 w-full  border border-line bg-surface shadow-lg overflow-hidden">
           {filtered.map((s) => (
             <li key={s}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
-                className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 transition-colors"
+                className="w-full px-3 py-2 text-left text-sm text-ink-muted hover:bg-white/10 transition-colors"
               >
                 {s}
               </button>

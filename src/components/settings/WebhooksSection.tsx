@@ -15,7 +15,7 @@ export default function WebhooksSection({
   return (
     <ProviderAccordion title="Webhooks" description="Auto-derive webhook URLs from your app URL, or override individually">
       <div>
-        <label className="block text-sm font-medium text-white/50 mb-1">App URL</label>
+        <label className="block text-sm font-medium text-ink-dim mb-1">App URL</label>
         <input
           type="text"
           value={appUrl}
@@ -23,7 +23,7 @@ export default function WebhooksSection({
           className="input-field font-mono text-sm"
           placeholder="https://melodiq.yourdomain.com"
         />
-        <p className="text-xs text-white/25 mt-1">Used to auto-derive webhook URLs below</p>
+        <p className="text-xs text-ink-dim mt-1">Used to auto-derive webhook URLs below</p>
       </div>
       <WebhookRow
         label="PoYo Webhook URL"

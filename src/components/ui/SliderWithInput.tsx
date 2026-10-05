@@ -17,7 +17,7 @@ export default function SliderWithInput({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-white/60">{label}</label>
+        <label className="text-xs text-ink-muted">{label}</label>
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -31,9 +31,9 @@ export default function SliderWithInput({
               if (e.target.value === "") { onChange(50); return; }
               if (!isNaN(n)) onChange(Math.min(100, Math.max(1, n)));
             }}
-            className="w-12 rounded-lg border border-white/12 bg-[#11121a] px-2 py-0.5 text-center text-xs text-white outline-none focus:border-white/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-12  border border-line bg-surface px-2 py-0.5 text-center text-xs text-ink outline-none focus:border-line/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <span className="text-xs text-white/40">%</span>
+          <span className="text-xs text-ink-dim">%</span>
         </div>
       </div>
       <input
@@ -43,7 +43,7 @@ export default function SliderWithInput({
         value={display}
         disabled={disabled}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary-500 disabled:opacity-50"
+        className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-accent disabled:opacity-50"
       />
     </div>
   );

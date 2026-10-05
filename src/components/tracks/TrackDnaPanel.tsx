@@ -25,8 +25,8 @@ interface AdvancedDnaResult {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
-      <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">{label}</div>
-      <div className="text-sm font-medium text-white">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">{label}</div>
+      <div className="text-sm font-medium text-ink">{value}</div>
     </div>
   );
 }
@@ -42,7 +42,7 @@ function TrackDnaCard({
 }) {
   return (
     <div
-      className="relative mx-3 mb-2 space-y-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4"
+      className="relative mx-3 mb-2 space-y-4 overflow-hidden  border border-line bg-white/[0.03] p-4"
       onClick={onClick}
     >
       <div
@@ -114,7 +114,7 @@ export default function TrackDnaPanel({
   if (loading) {
     return (
       <TrackDnaCard>
-        <p className="text-sm text-white/40">Loading Track DNA…</p>
+        <p className="text-sm text-ink-dim">Loading Track DNA…</p>
       </TrackDnaCard>
     );
   }
@@ -122,7 +122,7 @@ export default function TrackDnaPanel({
   if (notFound) {
     return (
       <TrackDnaCard>
-        <p className="text-sm text-white/40">Track DNA isn&apos;t available for this track.</p>
+        <p className="text-sm text-ink-dim">Track DNA isn&apos;t available for this track.</p>
       </TrackDnaCard>
     );
   }
@@ -131,7 +131,7 @@ export default function TrackDnaPanel({
     return (
       <TrackDnaCard onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-white/40">
+          <p className="text-sm text-ink-dim">
             {onReanalyzeAudio
               ? "No Track DNA yet — analyze this track to see tempo, key, and atmosphere."
               : "No Track DNA yet."}
@@ -141,11 +141,11 @@ export default function TrackDnaPanel({
               type="button"
               onClick={(e) => { e.stopPropagation(); onReanalyzeAudio(); }}
               disabled={reanalyzingAudio}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary-400/30 bg-primary-500/10 px-3 py-1.5 text-xs font-medium text-primary-200 transition-colors hover:bg-primary-500/20 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
             >
               {reanalyzingAudio ? (
                 <>
-                  <span className="w-2 h-2 rounded-full border border-primary-200/50 border-t-transparent animate-spin" />
+                  <span className="w-2 h-2 rounded-full border border-accent/50 border-t-transparent animate-spin" />
                   Analyzing…
                 </>
               ) : (
@@ -164,18 +164,18 @@ export default function TrackDnaPanel({
     <TrackDnaCard onClick={(e) => e.stopPropagation()}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+          <h4 className="text-sm font-semibold text-ink">Track DNA</h4>
           {trackStatus === "done" && onReanalyzeAudio && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onReanalyzeAudio(); }}
               disabled={reanalyzingAudio}
               title="Re-run tempo/key/energy/loudness detection on the audio"
-              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-line bg-white/[0.04] text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors disabled:opacity-50"
             >
               {reanalyzingAudio ? (
                 <>
-                  <span className="w-2 h-2 rounded-full border border-white/40 border-t-transparent animate-spin" />
+                  <span className="w-2 h-2 rounded-full border border-line/40 border-t-transparent animate-spin" />
                   Analyzing…
                 </>
               ) : hasAudioFacts ? (
@@ -198,12 +198,12 @@ export default function TrackDnaPanel({
 
         {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
           <div className="space-y-1.5">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Atmosphere</div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Atmosphere</div>
             <div className="flex flex-wrap gap-1.5">
               {audioDna.atmosphereTags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs text-white/80"
+                  className="rounded-full border border-line bg-white/[0.06] px-2.5 py-1 text-xs text-ink-muted"
                 >
                   {tag}
                 </span>
@@ -213,23 +213,23 @@ export default function TrackDnaPanel({
         )}
 
         {audioDna.lyricsScore != null && (
-          <div className="space-y-1 border-t border-white/10 pt-3">
+          <div className="space-y-1 border-t border-line pt-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-white">Lyrics</span>
-              <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+              <span className="font-medium text-ink">Lyrics</span>
+              <span className="text-ink-dim">{audioDna.lyricsScore.toFixed(1)}/10</span>
             </div>
-            {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
+            {audioDna.lyricsNotes && <p className="text-sm text-ink-dim">{audioDna.lyricsNotes}</p>}
           </div>
         )}
 
         {/* ── Advanced DNA section — lyrics analysis, audio-based composition
              critique, and improvement tips all live here now (folded in from
              the former standalone "Analyze Composition" action). ────────── */}
-        <div className="border-t border-white/10 pt-3 space-y-3">
+        <div className="border-t border-line pt-3 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-sm">🧬</span>
-              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-white/50">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-dim">
                 Advanced Analysis
               </span>
             </div>
@@ -238,11 +238,11 @@ export default function TrackDnaPanel({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onRunAdvancedDna(); }}
                 disabled={advancedDnaRunning}
-                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-white/10 bg-white/[0.04] text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-line bg-white/[0.04] text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 {advancedDnaRunning ? (
                   <>
-                    <span className="w-2 h-2 rounded-full border border-white/40 border-t-transparent animate-spin" />
+                    <span className="w-2 h-2 rounded-full border border-line/40 border-t-transparent animate-spin" />
                     Analyzing…
                   </>
                 ) : advancedDnaResult ? (
@@ -255,36 +255,36 @@ export default function TrackDnaPanel({
           </div>
 
           {advancedDnaRunning && !advancedDnaResult && (
-            <p className="text-xs text-white/35 italic">Running advanced analysis…</p>
+            <p className="text-xs text-ink-dim italic">Running advanced analysis…</p>
           )}
 
           {advancedDnaResult ? (
             <div className="space-y-3">
               {advancedDnaResult.summary && (
-                <p className="text-sm text-white/80 leading-relaxed border-b border-white/10 pb-3">
+                <p className="text-sm text-ink-muted leading-relaxed border-b border-line pb-3">
                   {advancedDnaResult.summary}
                 </p>
               )}
               {advancedDnaResult.lyricsAnalysis && (
                 <div className="space-y-1">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Lyrics</div>
-                  <p className="text-sm text-white/70 leading-relaxed">{advancedDnaResult.lyricsAnalysis}</p>
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Lyrics</div>
+                  <p className="text-sm text-ink-muted leading-relaxed">{advancedDnaResult.lyricsAnalysis}</p>
                 </div>
               )}
               {advancedDnaResult.compositionAnalysis && (
                 <div className="space-y-1">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Composition &amp; Mix</div>
-                  <p className="text-sm text-white/70 leading-relaxed">{advancedDnaResult.compositionAnalysis}</p>
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Composition &amp; Mix</div>
+                  <p className="text-sm text-ink-muted leading-relaxed">{advancedDnaResult.compositionAnalysis}</p>
                 </div>
               )}
               {advancedDnaResult.tips.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-primary-300/80">
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-accent/80">
                     {advancedDnaResult.tips.length} {advancedDnaResult.tips.length === 1 ? "tip" : "tips"} for improvement
                   </div>
                   <ol className="space-y-1.5 list-decimal list-inside">
                     {advancedDnaResult.tips.map((tip, i) => (
-                      <li key={i} className="text-sm text-white/70 leading-relaxed">
+                      <li key={i} className="text-sm text-ink-muted leading-relaxed">
                         {tip}
                       </li>
                     ))}
@@ -293,7 +293,7 @@ export default function TrackDnaPanel({
               )}
             </div>
           ) : !advancedDnaRunning && (
-            <p className="text-xs text-white/30 italic">
+            <p className="text-xs text-ink-dim italic">
               Run an advanced analysis for a deep-dive into lyrics, composition, and improvement tips.
             </p>
           )}

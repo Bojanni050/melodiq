@@ -129,9 +129,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const panelContent = (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0d0d12]/95 backdrop-blur-sm border-b border-white/5 px-4 py-3 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-white/60">Track Details</h3>
-        <button onClick={onClose} className="text-white/50 hover:text-white" title="Close details">
+      <div className="sticky top-0 z-10 bg-canvas/95 backdrop-blur-sm border-b border-line px-4 py-3 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
+        <button onClick={onClose} className="text-ink-dim hover:text-ink" title="Close details">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -139,7 +139,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       </div>
 
       {/* Artwork with Overlay */}
-      <div className="shrink-0 aspect-square relative bg-linear-to-br from-primary-500/20 to-[#ec4899]/20 overflow-hidden">
+      <div className="shrink-0 aspect-square relative bg-linear-to-br from-accent/20 to-[#ec4899]/20 overflow-hidden">
         {track.coverUrl ? (
           <img
             src={track.coverUrl}
@@ -150,7 +150,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <svg className="w-24 h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-24 h-24 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
           </div>
@@ -170,7 +170,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
                 currentRating === "up"
                   ? "bg-pink-500/20 text-pink-400 border border-pink-500/30"
-                  : "bg-black/40 text-white/70 border border-white/10 hover:bg-black/60 hover:text-white"
+                  : "bg-black/40 text-ink-muted border border-line hover:bg-black/60 hover:text-ink"
               }`}
               title="Favoriet"
               aria-label={currentRating === "up" ? "Remove from Favorieten" : "Add to Favorieten"}
@@ -184,34 +184,34 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
         {/* Info Overlay (Bottom) */}
         <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col justify-end z-10">
-          <h2 className="text-xl font-bold text-white drop-shadow-md leading-tight">{title}</h2>
-          <p className="text-sm text-white/80 mt-1.5 drop-shadow-sm font-medium">
+          <h2 className="text-xl font-bold text-ink drop-shadow-md leading-tight">{title}</h2>
+          <p className="text-sm text-ink-muted mt-1.5 drop-shadow-sm font-medium">
             {artistLabel}{writerLabel ? ` · writer: ${writerLabel}` : ""}{composerLabel ? ` · composer: ${composerLabel}` : ""}
             {displayDuration && (
-              <span className="ml-1.5 text-white/60">• {formatDuration(displayDuration)}</span>
+              <span className="ml-1.5 text-ink-muted">• {formatDuration(displayDuration)}</span>
             )}
             {track.language && (
-              <span className="ml-1.5 text-white/60">• {track.language}</span>
+              <span className="ml-1.5 text-ink-muted">• {track.language}</span>
             )}
             {generatorLabel && (
-              <span className="ml-1.5 text-white/60" title={track.providerModel || undefined}>
+              <span className="ml-1.5 text-ink-muted" title={track.providerModel || undefined}>
                 • {generatorLabel}
               </span>
             )}
             {generationTime && (
-              <span className="ml-1.5 text-white/60" title="Time from generation start to completion">
+              <span className="ml-1.5 text-ink-muted" title="Time from generation start to completion">
                 • generated in {generationTime}
               </span>
             )}
           </p>
           {mode === "overlay" && promptFirstLine && (
-            <div className="mt-3 rounded-lg border border-white/10 bg-black/35 px-3 py-2 backdrop-blur-sm">
+            <div className="mt-3  border border-line bg-black/35 px-3 py-2 backdrop-blur-sm">
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-white/45">Prompt</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-ink-dim">Prompt</span>
                 <button
                   type="button"
                   onClick={() => handleCopy(track.prompt, "prompt-overlay")}
-                  className="rounded p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                  className="rounded p-1 text-ink-dim transition-colors hover:bg-white/10 hover:text-ink-muted"
                   title="Copy prompt"
                 >
                   {copiedField === "prompt-overlay" ? (
@@ -225,7 +225,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   )}
                 </button>
               </div>
-              <p className="truncate text-sm leading-relaxed text-white/75">{promptFirstLine}</p>
+              <p className="truncate text-sm leading-relaxed text-ink/75">{promptFirstLine}</p>
             </div>
           )}
           <div className="mt-2.5 flex items-end justify-between gap-2">
@@ -238,16 +238,16 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               {currentTrack?.id === track.id && (
                 <span className={`inline-flex items-center gap-1.5 rounded-full border backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
                   isPlaying
-                    ? "border-primary-500/40 bg-primary-500/20 text-primary-200"
-                    : "border-white/20 bg-black/40 text-white/60"
+                    ? "border-accent/40 bg-accent/20 text-accent"
+                    : "border-line/20 bg-black/40 text-ink-muted"
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? "bg-primary-400 animate-[pulse_1.4s_ease-in-out_infinite]" : "bg-white/40"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? "bg-accent animate-[pulse_1.4s_ease-in-out_infinite]" : "bg-white/40"}`} />
                   {isPlaying ? "Now playing" : "Paused"}
                 </span>
               )}
             </div>
             {currentWorkspace && (
-              <span className="inline-flex items-center rounded-full border border-white/20 bg-black/40 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium text-white/80 max-w-[160px] truncate">
+              <span className="inline-flex items-center rounded-full border border-line/20 bg-black/40 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-medium text-ink-muted max-w-[160px] truncate">
                 {currentWorkspace.name}
               </span>
             )}
@@ -265,7 +265,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               <button
                 type="button"
                 onClick={() => lyricsEdit.setLyricsExpanded((v) => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+                className="flex items-center gap-2 text-sm font-medium text-ink-dim uppercase tracking-wider hover:text-ink-muted transition-colors"
                 title={lyricsEdit.lyricsExpanded ? "Collapse lyrics" : "Expand lyrics"}
               >
                 <svg className={`w-3.5 h-3.5 transition-transform ${lyricsEdit.lyricsExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +278,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   <button
                     type="button"
                     onClick={lyricsEdit.startEditingLyrics}
-                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                     title={track.lyrics ? "Edit lyrics" : "Add lyrics"}
                   >
                     {track.lyrics ? "Edit" : "Add"}
@@ -289,7 +289,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                     <button
                       type="button"
                       onClick={lyricsEdit.cancelEditingLyrics}
-                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                      className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                       disabled={lyricsEdit.lyricsSaving}
                     >
                       Cancel
@@ -310,7 +310,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 {track.lyrics && !lyricsEdit.lyricsEditing && (
                   <button
                     onClick={() => handleCopy(track.lyrics!, "lyrics")}
-                    className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                    className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors"
                     title="Copy lyrics"
                   >
                     {copiedField === "lyrics" ? (
@@ -328,7 +328,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   <button
                     type="button"
                     onClick={() => translation.setShowingTranslation((v) => !v)}
-                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                     title={translation.showingTranslation ? "Show original lyrics" : `Show ${track.translatedLanguage ?? "translated"} lyrics`}
                   >
                     {translation.showingTranslation ? "Original" : track.translatedLanguage ?? "Translated"}
@@ -340,19 +340,19 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                       type="button"
                       onClick={() => track.language && translation.setTranslateMenuOpen((v) => !v)}
                       disabled={!track.language || translation.translating}
-                      className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                      className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                       title={track.language ? "Translate lyrics" : "Set a language first (see the auto-detected language above, or edit the track)"}
                     >
                       {translation.translating ? "Translating..." : "Translate"}
                     </button>
                     {translation.translateMenuOpen && (
-                      <div className="absolute right-0 top-full mt-1 z-20 w-40 max-h-56 overflow-y-auto rounded-lg border border-white/12 bg-[#181920] shadow-xl py-1">
+                      <div className="absolute right-0 top-full mt-1 z-20 w-40 max-h-56 overflow-y-auto  border border-line bg-surface shadow-xl py-1">
                         {TRANSLATE_LANGUAGES.filter((lang) => lang !== track.language).map((lang) => (
                           <button
                             key={lang}
                             type="button"
                             onClick={() => translation.handleTranslateLyrics(lang)}
-                            className="block w-full px-3 py-1.5 text-left text-[12px] text-white/70 hover:bg-white/10 hover:text-white/90 transition-colors"
+                            className="block w-full px-3 py-1.5 text-left text-[12px] text-ink-muted hover:bg-white/10 hover:text-ink transition-colors"
                           >
                             {lang}
                           </button>
@@ -372,14 +372,14 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   value={lyricsEdit.lyricsDraft}
                   onChange={(event) => lyricsEdit.setLyricsDraft(event.target.value)}
                   placeholder="Add or edit lyrics here"
-                  className="h-full w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
+                  className="h-full w-full resize-none  border border-line bg-surface px-3 py-2 text-sm text-ink-muted outline-none focus:border-line/30"
                   maxLength={20000}
                   disabled={lyricsEdit.lyricsSaving}
                 />
               </div>
             ) : track.lyrics ? (translation.showingTranslation && track.translatedLyrics) ? (
               <div className="flex-1 min-h-0 overflow-hidden">
-                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.translatedLyrics}</pre>
+                <pre className="h-full overflow-y-auto text-sm text-ink-muted whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.translatedLyrics}</pre>
               </div>
             ) : lyricsSync.hasTimings ? (
               <div className="flex-1 min-h-0 overflow-hidden">
@@ -401,10 +401,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                           isTrackPlaying ? "cursor-pointer" : ""
                         } ${
                           isActive
-                            ? "text-primary-400 font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
+                            ? "text-accent font-bold scale-[1.02] filter drop-shadow-[0_0_8px_rgba(255,133,80,0.45)] opacity-100"
                             : isPlayed
-                            ? "text-white/50 font-medium"
-                            : "text-white/25 font-medium hover:text-white/50"
+                            ? "text-ink-dim font-medium"
+                            : "text-ink-dim font-medium hover:text-ink-dim"
                         }`}
                       >
                         {line.text}
@@ -415,10 +415,10 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               </div>
             ) : (
               <div className="flex-1 min-h-0 overflow-hidden">
-                <pre className="h-full overflow-y-auto text-sm text-white/70 whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
+                <pre className="h-full overflow-y-auto text-sm text-ink-muted whitespace-pre-wrap leading-relaxed font-mono px-1 py-2 pb-16 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">{track.lyrics}</pre>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-white/12 bg-white/2 px-3 py-3 text-sm text-white/45">
+              <div className=" border border-dashed border-line bg-white/2 px-3 py-3 text-sm text-ink-dim">
                 {track.instrumental ? "Instrumental track — no lyrics." : "No lyrics yet."}
               </div>
             ))}
@@ -435,7 +435,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             <button
               type="button"
               onClick={() => prompt.setPromptExpanded((value) => !value)}
-              className="flex items-center gap-2 text-sm font-medium text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-ink-dim uppercase tracking-wider hover:text-ink-muted transition-colors"
               title={prompt.promptExpanded ? "Collapse prompt" : "Expand prompt"}
             >
               <svg className={`w-3.5 h-3.5 transition-transform ${prompt.promptExpanded ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,7 +448,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 <button
                   type="button"
                   onClick={prompt.startEditingPrompt}
-                  className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                   title="Edit prompt"
                 >
                   Edit
@@ -459,7 +459,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   <button
                     type="button"
                     onClick={prompt.cancelEditingPrompt}
-                    className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                    className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                     disabled={prompt.promptSaving}
                   >
                     Cancel
@@ -477,7 +477,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               {!prompt.promptEditing && (
                 <button
                   onClick={() => handleCopy(track.prompt, "prompt")}
-                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                  className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors"
                   title="Copy prompt"
                 >
                   {copiedField === "prompt" ? (
@@ -499,7 +499,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                 value={prompt.promptDraft}
                 onChange={(event) => prompt.setPromptDraft(event.target.value)}
                 placeholder="Add or edit the upload prompt"
-                className="h-32 w-full resize-none rounded-lg border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white/80 outline-none focus:border-white/30"
+                className="h-32 w-full resize-none  border border-line bg-surface px-3 py-2 text-sm text-ink-muted outline-none focus:border-line/30"
                 maxLength={10000}
                 disabled={prompt.promptSaving}
               />
@@ -508,9 +508,9 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
               )}
             </div>
           ) : prompt.promptExpanded ? (
-            <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
+            <p className="text-sm text-ink-muted leading-relaxed whitespace-pre-wrap">{track.prompt}</p>
           ) : (
-            <p className="text-sm text-white/40 leading-relaxed line-clamp-2">
+            <p className="text-sm text-ink-dim leading-relaxed line-clamp-2">
               {track.prompt}
             </p>
           )}
@@ -519,7 +519,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
         {/* Error */}
         {track.error && (
-          <div className="shrink-0 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="shrink-0 p-3 bg-red-500/10 border border-red-500/20 ">
             <p className="text-sm text-red-400">{track.error}</p>
           </div>
         )}
@@ -530,7 +530,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   if (mode === "sidebar") {
     return (
-      <div className="h-full w-full bg-[#0d0d12] overflow-hidden">
+      <div className="h-full w-full bg-canvas overflow-hidden">
         {panelContent}
       </div>
     );
@@ -540,7 +540,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-md bg-[#0d0d12] border-l border-white/5 overflow-y-auto"
+        className="relative w-full max-w-md bg-canvas border-l border-line overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {panelContent}

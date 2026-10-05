@@ -250,15 +250,15 @@ export default function ReleaseDetailPage() {
 
   if (!loading && !selectedRelease) {
     return (
-      <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+      <div className="h-screen bg-canvas overflow-hidden text-ink">
         <Sidebar credits={null} />
         <div className="h-[calc(100vh-var(--player-height))] flex items-center justify-center px-6" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/70">{t("releases.releaseNotFound")}</p>
+          <div className=" border border-line bg-white/5 p-8 text-center">
+            <p className="text-sm text-ink-muted">{t("releases.releaseNotFound")}</p>
             <button
               type="button"
               onClick={() => router.push("/releases")}
-              className="mt-4 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-white/80 transition-colors hover:bg-white/12 hover:text-white"
+              className="mt-4 rounded-full border border-line bg-white/8 px-4 py-2 text-sm text-ink-muted transition-colors hover:bg-white/12 hover:text-ink"
             >
               {t("releases.backToReleases")}
             </button>
@@ -269,7 +269,7 @@ export default function ReleaseDetailPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -279,7 +279,7 @@ export default function ReleaseDetailPage() {
               <button
                 type="button"
                 onClick={() => router.push("/releases")}
-                className="inline-flex items-center gap-1.5 text-sm text-white/55 transition-colors hover:text-white"
+                className="inline-flex items-center gap-1.5 text-sm text-ink/55 transition-colors hover:text-ink"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -296,7 +296,7 @@ export default function ReleaseDetailPage() {
                   onClick={() => coverInputRef.current?.click()}
                   disabled={uploadingCover}
                   title={t("releases.uploadCoverArt")}
-                  className="group relative shrink-0 h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] transition-opacity disabled:opacity-60"
+                  className="group relative shrink-0 h-24 w-24 overflow-hidden  border border-line bg-surface transition-opacity disabled:opacity-60"
                 >
                   {selectedRelease?.coverUrl ? (
                     <img
@@ -306,7 +306,7 @@ export default function ReleaseDetailPage() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <svg className="h-8 w-8 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="9" strokeWidth={1.2} />
                         <circle cx="12" cy="12" r="3" strokeWidth={1.2} />
                       </svg>
@@ -314,12 +314,12 @@ export default function ReleaseDetailPage() {
                   )}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     {uploadingCover ? (
-                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                      <svg className="animate-spin h-5 w-5 text-ink" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                       </svg>
                     ) : (
-                      <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-5 w-5 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
                     )}
@@ -343,7 +343,7 @@ export default function ReleaseDetailPage() {
                         onBlur={handleSaveTitle}
                         onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
                         maxLength={255}
-                        className="h-9 rounded-lg border border-white/15 bg-[#11121a] px-2.5 text-lg font-semibold text-white outline-none focus:border-white/30"
+                        className="h-9  border border-line-strong bg-surface px-2.5 text-lg font-semibold text-ink outline-none focus:border-line/30"
                       />
                     ) : (
                       <h2
@@ -354,7 +354,7 @@ export default function ReleaseDetailPage() {
                         {selectedRelease?.title}
                       </h2>
                     )}
-                    <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-white/60">
+                    <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
                       {selectedRelease?.type}
                     </span>
                   </div>
@@ -367,12 +367,12 @@ export default function ReleaseDetailPage() {
                       <div className="truncate">
                         <ArtistLink
                           name={artistLabel}
-                          className="text-sm font-semibold text-white/85 hover:underline hover:text-white"
+                          className="text-sm font-semibold text-ink/85 hover:underline hover:text-ink"
                         />
                       </div>
                     ) : null;
                   })()}
-                  <p className="text-sm text-white/55">
+                  <p className="text-sm text-ink/55">
                     {t("releases.tracksInRelease", {
                       count: releaseTracks.length,
                       duration: releaseTracksTotalDuration ? ` (${releaseTracksTotalDuration})` : "",
@@ -387,7 +387,7 @@ export default function ReleaseDetailPage() {
                       type="button"
                       onClick={() => selectedRelease && updateReleaseType(selectedRelease.id, t.value)}
                       className={`h-9 rounded-full px-3 text-sm font-medium transition-colors ${
-                        selectedRelease?.type === t.value ? "bg-primary-500/80 text-white" : "bg-white/5 text-white/60 hover:bg-white/10"
+                        selectedRelease?.type === t.value ? "bg-accent/80 text-ink" : "bg-white/5 text-ink-muted hover:bg-white/10"
                       }`}
                     >
                       {t.label}
@@ -401,7 +401,7 @@ export default function ReleaseDetailPage() {
                       }
                       setIsEditingOrder((v) => !v);
                     }}
-                    className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingOrder ? "border-white bg-white text-black hover:bg-white/90" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"}`}
+                    className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${isEditingOrder ? "border-line bg-accent text-ink hover:bg-accent-strong" : "border-line bg-white/5 text-ink-muted hover:bg-white/10 hover:text-ink"}`}
                   >
                     {isEditingOrder ? t("releases.saveOrder") : t("releases.editOrder")}
                   </button>
@@ -410,7 +410,7 @@ export default function ReleaseDetailPage() {
                     type="button"
                     onClick={handleRegenerateCover}
                     disabled={regeneratingCover}
-                    className="h-9 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-9 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {regeneratingCover ? (
                       <span className="inline-flex items-center gap-1.5">
@@ -426,7 +426,7 @@ export default function ReleaseDetailPage() {
                   <button
                     type="button"
                     onClick={() => setShowCoverManager(true)}
-                    className="h-9 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                    className="h-9 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
                   >
                     Manage Covers
                   </button>
@@ -439,7 +439,7 @@ export default function ReleaseDetailPage() {
                     className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       selectedRelease?.isPublic
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                        : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        : "border-line bg-white/5 text-ink-muted hover:bg-white/10 hover:text-ink"
                     }`}
                   >
                     {publishingRelease ? (
@@ -464,7 +464,7 @@ export default function ReleaseDetailPage() {
               )}
 
               {selectedRelease?.isSpotlight && (
-                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+                <div className=" border border-amber-400/30 bg-amber-400/10 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -476,7 +476,7 @@ export default function ReleaseDetailPage() {
               )}
 
               {selectedRelease?.type === "single" && releaseTracks.length > 1 && (
-                <p className="text-xs text-white/35">
+                <p className="text-xs text-ink-dim">
                   {t("releases.abTip")}
                 </p>
               )}
@@ -489,7 +489,7 @@ export default function ReleaseDetailPage() {
               )}
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("releases.loadingTracksList")}</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">{t("releases.loadingTracksList")}</div>
               ) : releaseTracks.length > 0 ? (
                 <TrackList
                   tracks={releaseTracks}
@@ -521,7 +521,7 @@ export default function ReleaseDetailPage() {
                   selectedTrackId={selectedTrack?.id ?? null}
                 />
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-sm text-ink/55">
                   {t("releases.noTracksYetDetail")}
                 </div>
               )}
@@ -531,16 +531,16 @@ export default function ReleaseDetailPage() {
                   {releaseTracks.map((track) => {
                     const rt = selectedRelease.tracks.find((t) => t.trackId === track.id);
                     return (
-                      <div key={`side-${track.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-white/3 px-3 py-1.5 text-sm">
-                        <span className="min-w-0 truncate text-white/60">{track.title || t("library.untitled")}</span>
+                      <div key={`side-${track.id}`} className="flex items-center justify-between gap-3  bg-white/3 px-3 py-1.5 text-sm">
+                        <span className="min-w-0 truncate text-ink-muted">{track.title || t("library.untitled")}</span>
                         <div className="flex shrink-0 gap-1">
                           {(["A", "B", null] as const).map((side) => (
                             <button
                               key={side ?? "none"}
                               type="button"
                               onClick={() => setTrackSide(selectedRelease.id, track.id, side)}
-                              className={`h-7 w-7 rounded-md text-xs font-medium transition-colors ${
-                                (rt?.side ?? null) === side ? "bg-primary-500/80 text-white" : "bg-white/5 text-white/45 hover:bg-white/10"
+                              className={`h-7 w-7  text-xs font-medium transition-colors ${
+                                (rt?.side ?? null) === side ? "bg-accent/80 text-ink" : "bg-white/5 text-ink-dim hover:bg-white/10"
                               }`}
                             >
                               {side ?? "–"}
@@ -567,8 +567,8 @@ export default function ReleaseDetailPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">{t("common.trackDetails")}</h3>
                 <p className="text-sm mt-3">{t("releases.selectTrackHint")}</p>
               </div>
             )}
@@ -596,12 +596,12 @@ export default function ReleaseDetailPage() {
             onClick={() => setPublishConfirmTracks(null)}
             className="absolute inset-0 bg-black/65"
           />
-          <div className="relative w-full max-w-[460px] rounded-3xl border border-white/12 bg-[#0f1119] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+          <div className="relative w-full max-w-[460px]  border border-line bg-surface p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
             {selectedRelease.isPublic ? (
               /* Unpublish confirmation */
               <>
-                <h3 className="text-lg font-semibold text-white">{t("releases.unpublishReleaseTitle")}</h3>
-                <p className="mt-2 text-sm text-white/60">
+                <h3 className="text-lg font-semibold text-ink">{t("releases.unpublishReleaseTitle")}</h3>
+                <p className="mt-2 text-sm text-ink-muted">
                   {t("releases.unpublishReleaseBody", {
                     title: selectedRelease.title,
                     count: releaseTracks.length,
@@ -612,14 +612,14 @@ export default function ReleaseDetailPage() {
                   <button
                     type="button"
                     onClick={() => setPublishConfirmTracks(null)}
-                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/14"
                   >
                     {t("common.cancel")}
                   </button>
                   <button
                     type="button"
                     onClick={confirmPublishToggle}
-                    className="h-10 rounded-full bg-white/10 px-4 text-sm font-medium text-white/80 transition-colors hover:bg-white/15"
+                    className="h-10 rounded-full bg-white/10 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/15"
                   >
                     {t("releases.unpublish")}
                   </button>
@@ -628,12 +628,12 @@ export default function ReleaseDetailPage() {
             ) : (
               /* Publish confirmation */
               <>
-                <h3 className="text-lg font-semibold text-white">{t("releases.publishReleaseTitle")}</h3>
-                <p className="mt-2 text-sm text-white/60">
+                <h3 className="text-lg font-semibold text-ink">{t("releases.publishReleaseTitle")}</h3>
+                <p className="mt-2 text-sm text-ink-muted">
                   {t("releases.publishReleaseBody", { title: selectedRelease.title })}
                 </p>
                 {publishConfirmTracks.length > 0 && (
-                  <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                  <div className="mt-4  border border-line bg-white/[0.04] p-4">
                     <p className="text-xs font-medium text-amber-400/90 mb-2">
                       {t("releases.willAlsoPublish", {
                         count: publishConfirmTracks.length,
@@ -642,7 +642,7 @@ export default function ReleaseDetailPage() {
                     </p>
                     <ul className="space-y-1">
                       {publishConfirmTracks.map((title, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-white/70">
+                        <li key={i} className="flex items-center gap-2 text-sm text-ink-muted">
                           <span className="h-1 w-1 rounded-full bg-white/30 shrink-0" />
                           {title}
                         </li>
@@ -654,14 +654,14 @@ export default function ReleaseDetailPage() {
                   <button
                     type="button"
                     onClick={() => setPublishConfirmTracks(null)}
-                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/14"
+                    className="h-10 rounded-full bg-white/8 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/14"
                   >
                     {t("common.cancel")}
                   </button>
                   <button
                     type="button"
                     onClick={confirmPublishToggle}
-                    className="h-10 rounded-full bg-emerald-600/80 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+                    className="h-10 rounded-full bg-emerald-600/80 px-4 text-sm font-medium text-ink transition-colors hover:bg-emerald-600"
                   >
                     {publishConfirmTracks.length > 0 ? t("releases.publishReleaseAndTracks") : t("releases.publishReleaseOnly")}
                   </button>

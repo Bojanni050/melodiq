@@ -88,16 +88,16 @@ export default function PlaylistPickerDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-[520px] rounded-[28px] border border-white/10 bg-[#181822] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+        className="relative w-full max-w-[520px] rounded-[28px] border border-line bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pb-3 pt-5">
-          <h3 className="text-xl leading-none font-medium text-white/90">Add to Playlist</h3>
+          <h3 className="text-xl leading-none font-medium text-ink">Add to Playlist</h3>
           <button
             type="button"
             onClick={onClose}
-            className="h-11 w-11 rounded-full bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="h-11 w-11 rounded-full bg-white/5 text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
             aria-label="Close add to playlist menu"
           >
             <svg className="mx-auto h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@ export default function PlaylistPickerDialog({
         <div className="max-h-[380px] overflow-y-auto px-3 pb-2">
           <div className="space-y-1">
             {selectablePlaylists.length === 0 ? (
-              <p className="text-sm text-white/40 italic px-3 py-6 text-center">No playlists yet</p>
+              <p className="text-sm text-ink-dim italic px-3 py-6 text-center">No playlists yet</p>
             ) : (
               selectablePlaylists.map((playlist) => {
                 const fully = alreadyInPlaylist(playlist.id);
@@ -123,14 +123,14 @@ export default function PlaylistPickerDialog({
                     key={playlist.id}
                     type="button"
                     onClick={() => togglePlaylist(playlist.id)}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 transition-colors hover:bg-white/10 group"
+                    className="flex w-full items-center gap-3  px-3 py-2.5 text-left text-ink/85 transition-colors hover:bg-white/10 group"
                   >
                     {/* Thumbnail */}
-                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-white/8 flex items-center justify-center">
+                    <div className="h-11 w-11 shrink-0 overflow-hidden  bg-white/8 flex items-center justify-center">
                       {coverUrl ? (
                         <img src={coverUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
-                        <svg className="w-5 h-5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                         </svg>
                       )}
@@ -138,16 +138,16 @@ export default function PlaylistPickerDialog({
 
                     {/* Name + track count */}
                     <span className="min-w-0 flex-1 truncate leading-tight font-medium text-base">{playlist.name}</span>
-                    <span className="shrink-0 text-xs text-white/60">{playlist.trackIds.length} tracks</span>
+                    <span className="shrink-0 text-xs text-ink-muted">{playlist.trackIds.length} tracks</span>
 
                     {/* Already-in / partial indicator */}
                     {fully && (
-                      <svg className="shrink-0 w-4 h-4 text-primary-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="shrink-0 w-4 h-4 text-accent/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                     {partial && (
-                      <svg className="shrink-0 w-4 h-4 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Some tracks already in playlist">
+                      <svg className="shrink-0 w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Some tracks already in playlist">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                       </svg>
                     )}
@@ -156,12 +156,12 @@ export default function PlaylistPickerDialog({
                     <span
                       className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                         isChecked
-                          ? "bg-primary-500 border-primary-500"
-                          : "border-white/20 group-hover:border-white/40"
+                          ? "bg-accent border-accent"
+                          : "border-line/20 group-hover:border-line/40"
                       }`}
                     >
                       {isChecked && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -174,12 +174,12 @@ export default function PlaylistPickerDialog({
         </div>
 
         {/* Footer: create input + actions */}
-        <div className="border-t border-white/10 px-5 pb-4 pt-3 space-y-3">
+        <div className="border-t border-line px-5 pb-4 pt-3 space-y-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleCreatePlaylist}
-              className="h-12 flex-1 flex items-center gap-2.5 rounded-lg border border-white/70 px-3 text-sm font-medium text-white/45 hover:border-white hover:text-white transition-colors"
+              className="h-12 flex-1 flex items-center gap-2.5  border border-line/70 px-3 text-sm font-medium text-ink-dim hover:border-line hover:text-ink transition-colors"
             >
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -189,7 +189,7 @@ export default function PlaylistPickerDialog({
             <button
               type="button"
               onClick={onClose}
-              className="h-12 rounded-lg bg-white/8 px-5 text-sm font-medium text-white/60 transition-colors hover:bg-white/14 hover:text-white/90"
+              className="h-12  bg-white/8 px-5 text-sm font-medium text-ink-muted transition-colors hover:bg-white/14 hover:text-ink"
             >
               Cancel
             </button>
@@ -197,7 +197,7 @@ export default function PlaylistPickerDialog({
               type="button"
               onClick={handleConfirm}
               disabled={selected.size === 0}
-              className="h-12 rounded-lg bg-primary-500/80 px-5 text-sm font-medium text-white transition-colors hover:bg-primary-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-12  bg-accent/80 px-5 text-sm font-medium text-ink transition-colors hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Add{selected.size > 0 ? ` (${selected.size})` : ""}
             </button>

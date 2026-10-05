@@ -19,7 +19,7 @@ export default function CoverArtSection({
   return (
     <ProviderAccordion title="Cover Art" description="AI-generated cover art for tracks and releases" status={status}>
       <div>
-        <label className="text-sm text-white/50 mb-1 block">Image generation provider</label>
+        <label className="text-sm text-ink-dim mb-1 block">Image generation provider</label>
         <select
           value={providerValue || "pixazo"}
           onChange={(e) => onProviderChange(e.target.value)}
@@ -27,10 +27,10 @@ export default function CoverArtSection({
         >
           <option value="pixazo">Pixazo (Flux 1 Schnell)</option>
         </select>
-        <p className="text-xs text-white/30 mt-1">Generates the actual cover image from the prompt an LLM writes.</p>
+        <p className="text-xs text-ink-dim mt-1">Generates the actual cover image from the prompt an LLM writes.</p>
       </div>
       <div>
-        <label className="text-sm text-white/50 mb-1 block">Pixazo API Key</label>
+        <label className="text-sm text-ink-dim mb-1 block">Pixazo API Key</label>
         <input
           type="password"
           value={value}
@@ -38,7 +38,7 @@ export default function CoverArtSection({
           placeholder="Your Pixazo subscription key"
           className="input-field"
         />
-        <p className="text-xs text-white/30 mt-1">Get your key at pixazo.ai · Flux 1 Schnell is free</p>
+        <p className="text-xs text-ink-dim mt-1">Get your key at pixazo.ai · Flux 1 Schnell is free</p>
       </div>
     </ProviderAccordion>
   );

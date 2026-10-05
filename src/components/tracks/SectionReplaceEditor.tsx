@@ -182,7 +182,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded px-2 py-1 text-[11px] text-white/60 hover:bg-white/10 hover:text-white/90 transition-colors"
+        className="rounded px-2 py-1 text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink transition-colors"
       >
         Edit section
       </button>
@@ -190,13 +190,13 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
   }
 
   return (
-    <div className="mt-2 rounded-xl border border-primary-500/30 bg-primary-500/5 p-3 space-y-3">
+    <div className="mt-2  border border-accent/30 bg-accent/5 p-3 space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-white/85">Section editor</p>
-          <p className="text-[11px] text-white/40">Click a section to select it, or drag on the waveform to fine-tune.</p>
+          <p className="text-sm font-medium text-ink/85">Section editor</p>
+          <p className="text-[11px] text-ink-dim">Click a section to select it, or drag on the waveform to fine-tune.</p>
         </div>
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-white/40 hover:text-white/70">
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-ink-dim hover:text-ink-muted">
           Close
         </button>
       </div>
@@ -209,7 +209,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
             type="button"
             onClick={() => selectSection(section)}
             title={`${section.label}: ${formatTime(section.start)}–${formatTime(section.end)}`}
-            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/85 transition-opacity hover:opacity-80"
+            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink/85 transition-opacity hover:opacity-80"
             style={{ backgroundColor: sectionColor(section.label) }}
           >
             {section.label}
@@ -218,7 +218,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
       </div>
 
       {/* Waveform with colored section backdrop + a single draggable/resizable selection region */}
-      <div className="relative overflow-hidden rounded-lg border border-white/10 bg-[#101118]">
+      <div className="relative overflow-hidden  border border-line bg-surface">
         <div className="pointer-events-none absolute inset-0 z-0">
           {sections.map((section) => (
             <div
@@ -234,7 +234,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
         </div>
         <div ref={containerRef} className="relative z-10" />
         {!wsReady && !wsError && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center text-[11px] text-white/40">
+          <div className="absolute inset-0 z-20 flex items-center justify-center text-[11px] text-ink-dim">
             Loading waveform…
           </div>
         )}
@@ -245,12 +245,12 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
         )}
       </div>
 
-      <div className="flex items-center justify-between text-[11px] text-white/50">
-        <button type="button" onClick={togglePlay} disabled={!wsReady} className="text-white/70 hover:text-white disabled:opacity-40">
+      <div className="flex items-center justify-between text-[11px] text-ink-dim">
+        <button type="button" onClick={togglePlay} disabled={!wsReady} className="text-ink-muted hover:text-ink disabled:opacity-40">
           {isPlaying ? "⏸ Pause" : "▶ Play"}
         </button>
         <span>{formatTime(currentTime)} / {formatTime(effectiveDuration)}</span>
-        <span className="text-primary-200">Selected: {formatTime(start)} – {formatTime(end)} ({formatTime(end - start)})</span>
+        <span className="text-accent">Selected: {formatTime(start)} – {formatTime(end)} ({formatTime(end - start)})</span>
       </div>
 
       <textarea
@@ -258,7 +258,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
         onChange={(event) => setLyrics(event.target.value)}
         rows={3}
         placeholder="New lyrics for this section (optional)"
-        className="w-full resize-none rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white/80 placeholder:text-white/25 outline-none focus:border-primary-400/60"
+        className="w-full resize-none  border border-line bg-black/20 px-3 py-2 text-sm text-ink-muted placeholder:text-ink-dim outline-none focus:border-accent/60"
       />
       {message && (
         <p className={`text-xs ${message.startsWith("Replacement") ? "text-emerald-300" : "text-red-300"}`}>{message}</p>
@@ -267,7 +267,7 @@ export default function SectionReplaceEditor({ track, onSubmitted }: Props) {
         type="button"
         onClick={submit}
         disabled={submitting}
-        className="w-full rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-400 disabled:opacity-50"
+        className="w-full  bg-accent px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-accent disabled:opacity-50"
       >
         {submitting ? "Starting replacement…" : `Replace ${formatTime(start)} – ${formatTime(end)}`}
       </button>

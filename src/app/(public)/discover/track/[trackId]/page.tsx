@@ -233,7 +233,7 @@ export default function TrackDnaPage() {
     : [];
 
   return (
-    <div className={`bg-[#09090d] text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+    <div className={`bg-canvas text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {authChecked && !isLoggedIn && <PublicNav />}
       <div className={isLoggedIn ? "h-[calc(100vh-var(--player-height))] flex" : "min-h-screen flex"}>
         {isLoggedIn && <Sidebar credits={null} />}

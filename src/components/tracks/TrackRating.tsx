@@ -19,8 +19,8 @@ export default function TrackRating({
         onRate("up");
       }}
       disabled={ratingLoading}
-      className={`hidden md:inline-flex p-1 rounded-lg transition-all duration-200 ${
-        isFavorite ? "text-pink-400" : "text-white/20 hover:text-pink-300"
+      className={`hidden md:inline-flex p-1  transition-all duration-200 ${
+        isFavorite ? "text-pink-400" : "text-ink-dim hover:text-pink-300"
       }`}
       style={{
         boxShadow: isFavorite

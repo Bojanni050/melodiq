@@ -16,40 +16,40 @@ export default function ArchivePanel({ tracks, loading, onRestore }: ArchivePane
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{t("library.archive")}</h2>
-          <p className="text-sm text-white/40 mt-0.5">{t("library.archiveDesc")}</p>
+          <p className="text-sm text-ink-dim mt-0.5">{t("library.archiveDesc")}</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-white/30 text-sm">{t("library.loading")}</div>
+        <div className="flex items-center justify-center py-20 text-ink-dim text-sm">{t("library.loading")}</div>
       ) : tracks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-white/30">
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-ink-dim">
           <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8v14a2 2 0 002 2h10a2 2 0 002-2V8M9 8V6a2 2 0 012-2h2a2 2 0 012 2v2m-6 0h6M9 14h.01M15 14h.01" />
           </svg>
           <p className="text-sm">{t("library.archiveEmpty")}</p>
         </div>
       ) : (
-        <div className="divide-y divide-white/5 rounded-xl border border-white/5 overflow-hidden">
+        <div className="divide-y divide-white/5  border border-line overflow-hidden">
           {tracks.map((track) => (
             <div key={track.id} className="flex items-center gap-3 px-4 py-3 bg-white/2 hover:bg-white/5 transition-colors">
-              <div className="w-10 h-10 rounded-md shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
+              <div className="w-10 h-10  shrink-0 overflow-hidden bg-white/5 flex items-center justify-center">
                 {track.s3KeyCover ? (
                   <img src={`/api/tracks/${track.id}/cover`} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
-                  <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                   </svg>
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/80 truncate">{track.title || track.prompt?.substring(0, 60) || t("library.untitled")}</p>
-                <p className="text-xs text-white/35 mt-0.5 flex items-center gap-1.5">
+                <p className="text-sm font-medium text-ink-muted truncate">{track.title || track.prompt?.substring(0, 60) || t("library.untitled")}</p>
+                <p className="text-xs text-ink-dim mt-0.5 flex items-center gap-1.5">
                   {track.hiddenAt && !track.archivedAt && (
                     <>
                       <span className="text-sky-300/80">{t("library.hiddenOn", { date: new Date(track.hiddenAt).toLocaleDateString() })}</span>
-                      <span className="text-white/25" title={t("library.hiddenKeptFiles")}>· {t("library.filesKept")}</span>
+                      <span className="text-ink-dim" title={t("library.hiddenKeptFiles")}>· {t("library.filesKept")}</span>
                     </>
                   )}
                   {track.archivedAt && (
@@ -67,7 +67,7 @@ export default function ArchivePanel({ tracks, loading, onRestore }: ArchivePane
                 <button
                   type="button"
                   onClick={() => onRestore(track.id)}
-                  className="text-sm text-white/50 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/10"
+                  className="text-sm text-ink-dim hover:text-ink transition-colors px-2 py-1  hover:bg-white/10"
                 >
                   {t("library.restore")}
                 </button>

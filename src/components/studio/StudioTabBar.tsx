@@ -3,9 +3,9 @@
 import clsx from "clsx";
 import { useT } from "@/hooks/useT";
 
-const SEGMENTED_BUTTON_BASE = "rounded-md px-3 py-1.5 text-sm font-medium transition";
-const SEGMENTED_BUTTON_ACTIVE = "bg-primary-500 text-white";
-const SEGMENTED_BUTTON_INACTIVE = "text-white/65 hover:bg-white/10 hover:text-white";
+const SEGMENTED_BUTTON_BASE = " px-3 py-1.5 text-sm font-medium transition";
+const SEGMENTED_BUTTON_ACTIVE = "bg-accent text-ink";
+const SEGMENTED_BUTTON_INACTIVE = "text-ink/65 hover:bg-white/10 hover:text-ink";
 
 interface StudioTabBarProps {
   activeTab: "workspaces" | "recent";
@@ -15,7 +15,7 @@ interface StudioTabBarProps {
 export default function StudioTabBar({ activeTab, onTabChange }: StudioTabBarProps) {
   const t = useT();
   return (
-    <div className="flex items-center gap-1 mb-3 rounded-lg border border-white/10 bg-white/5 p-1 w-fit">
+    <div className="flex items-center gap-1 mb-3  border border-line bg-white/5 p-1 w-fit">
       <button
         type="button"
         onClick={() => onTabChange("recent")}

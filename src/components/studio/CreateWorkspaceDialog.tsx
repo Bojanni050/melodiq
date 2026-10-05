@@ -25,7 +25,7 @@ export default function CreateWorkspaceDialog({
       <button
         type="button"
         onClick={onOpen}
-        className="rounded-md bg-white/5 px-3 py-1.5 text-sm text-white/70 hover:text-white/90"
+        className=" bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
       >
         {t("studio.createWorkspace")}
       </button>
@@ -39,20 +39,20 @@ export default function CreateWorkspaceDialog({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={onKeyDown}
         placeholder={t("studio.workspaceNamePlaceholder")}
-        className="h-8 rounded-md border border-white/15 bg-white/5 px-2.5 text-sm text-white placeholder:text-white/30"
+        className="h-8  border border-line-strong bg-white/5 px-2.5 text-sm text-ink placeholder:text-ink-dim"
         aria-label={t("studio.workspaceNamePlaceholder")}
       />
       <button
         type="button"
         onClick={onSubmit}
-        className="h-8 rounded-md bg-primary-500/80 px-3 text-sm text-white hover:bg-primary-500"
+        className="h-8  bg-accent/80 px-3 text-sm text-ink hover:bg-accent"
       >
         {t("releases.add")}
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="h-8 rounded-md bg-white/5 px-3 text-sm text-white/60 hover:text-white/80"
+        className="h-8  bg-white/5 px-3 text-sm text-ink-muted hover:text-ink-muted"
       >
         {t("common.cancel")}
       </button>

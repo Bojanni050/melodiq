@@ -60,7 +60,7 @@ const TrackListHeader = memo(function TrackListHeader({
   });
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-white/[0.04] backdrop-blur-md border-b border-white/8 mb-1">
+    <div className="sticky top-0 z-10 flex items-center gap-3 px-3 py-1.5 bg-white/[0.04] backdrop-blur-md border-b border-line mb-1">
       <button
         onClick={() => toggleSelectAll(displayedTracks.map((t) => t.id))}
         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
@@ -68,22 +68,22 @@ const TrackListHeader = memo(function TrackListHeader({
       >
         {allSelected ? (
           <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
         ) : hasSelection ? (
           <div className="w-4 h-4 rounded-full bg-blue-500/50 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
         ) : (
-          <div className="w-4 h-4 rounded-full border-2 border-white/20 hover:border-white/40 transition-colors" />
+          <div className="w-4 h-4 rounded-full border-2 border-line/20 hover:border-line/40 transition-colors" />
         )}
       </button>
       {enableDragReorder && (
-        <span className="text-[11px] text-white/25">Drag to reorder play order</span>
+        <span className="text-[11px] text-ink-dim">Drag to reorder play order</span>
       )}
       <div className="flex flex-1 items-center gap-2">
         <div className="relative flex-1">
@@ -92,14 +92,14 @@ const TrackListHeader = memo(function TrackListHeader({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search tracks"
-            className="h-7 w-full rounded-[20px] border border-white/10 bg-white/5 pl-2.5 pr-7 text-sm text-white/80 placeholder:text-white/35 outline-none transition-colors focus:border-white/25"
+            className="h-7 w-full rounded-[20px] border border-line bg-white/5 pl-2.5 pr-7 text-sm text-ink-muted placeholder:text-ink-dim outline-none transition-colors focus:border-line/25"
             aria-label="Search tracks"
           />
           {searchQuery.length > 0 && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white/75"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-ink-dim transition-colors hover:text-ink/75"
               title="Clear search"
               aria-label="Clear search"
             >
@@ -114,8 +114,8 @@ const TrackListHeader = memo(function TrackListHeader({
           onClick={() => setSearchLyrics(!searchLyrics)}
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
             searchLyrics
-              ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-              : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+              ? "border-accent/40 bg-accent/15 text-accent"
+              : "border-line bg-white/5 text-ink-dim hover:text-ink-muted"
           }`}
           title={searchLyrics ? "Also searching lyrics — click to search titles only" : "Also search lyrics text"}
           aria-pressed={searchLyrics}
@@ -123,28 +123,28 @@ const TrackListHeader = memo(function TrackListHeader({
           Lyrics
         </button>
         {!hideSortOptions && (<>
-        <label htmlFor="track-sort" className="text-[11px] text-white/35">Sort</label>
+        <label htmlFor="track-sort" className="text-[11px] text-ink-dim">Sort</label>
         <select
           id="track-sort"
           value={sortOrder}
           onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-          className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm text-white/75 outline-none hover:border-white/20"
+          className=" border border-line bg-white/5 px-2 py-1 text-sm text-ink/75 outline-none hover:border-line/20"
           aria-label="Sort tracks"
         >
-          <option value="newest" className="bg-[#161621]">New to old</option>
-          <option value="oldest" className="bg-[#161621]">Old to new</option>
-          <option value="title-asc" className="bg-[#161621]">A to Z</option>
-          <option value="title-desc" className="bg-[#161621]">Z to A</option>
+          <option value="newest" className="bg-surface">New to old</option>
+          <option value="oldest" className="bg-surface">Old to new</option>
+          <option value="title-asc" className="bg-surface">A to Z</option>
+          <option value="title-desc" className="bg-surface">Z to A</option>
         </select>
         </>)}
-        <span className="shrink-0 text-xs text-white/30">
+        <span className="shrink-0 text-xs text-ink-dim">
           {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
         </span>
         {showJumpToCurrent && onJumpToCurrent && (
           <button
             type="button"
             onClick={onJumpToCurrent}
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium border border-white/12 hover:bg-white hover:text-black hover:border-white transition-all"
+            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-ink-muted text-xs font-medium border border-line hover:bg-white hover:text-black hover:border-line transition-all"
             title="Spring naar huidige track"
           >
             <span>Huidige track</span>

@@ -44,8 +44,8 @@ export default function ProviderModelSection({
   const activeProviderKey = Object.keys(selectedProviders)[0];
 
   return (
-    <section className="section-card lg:sticky lg:top-0 lg:z-20 lg:bg-[#0a0a0f]/98 lg:backdrop-blur-sm lg:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-      <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.providerAndModel")}</h3>
+    <section className="section-card lg:sticky lg:top-0 lg:z-20 lg:bg-canvas/98 lg:backdrop-blur-sm lg:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      <h3 className="text-sm font-semibold text-ink-muted mb-3">{t("studio.providerAndModel")}</h3>
       <div className="flex gap-2">
         <select
           value={activeProviderKey || ""}
@@ -82,17 +82,17 @@ export default function ProviderModelSection({
           </select>
         )}
       </div>
-      <label className="mt-2 flex items-center gap-1.5 text-xs text-white/40 cursor-pointer select-none w-fit">
+      <label className="mt-2 flex items-center gap-1.5 text-xs text-ink-dim cursor-pointer select-none w-fit">
         <input
           type="checkbox"
           checked={rememberProviderChoice}
           onChange={(e) => setRememberProviderChoice(e.target.checked)}
-          className="h-3.5 w-3.5 rounded border-white/20 bg-transparent accent-primary-500"
+          className="h-3.5 w-3.5 rounded border-line/20 bg-transparent accent-accent"
         />
         {t("studio.rememberChoice")}
       </label>
       {activeProviderKey && (
-        <div className="mt-2 text-xs text-white/30">
+        <div className="mt-2 text-xs text-ink-dim">
           {(() => {
             const currentCredits = credits[activeProviderKey as keyof ProviderCredits];
             if (activeProviderKey === "lyria") return t("studio.payPerUse");

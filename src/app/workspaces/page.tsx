@@ -234,7 +234,7 @@ export default function WorkspacesPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -242,9 +242,9 @@ export default function WorkspacesPage() {
           <div className="max-w-[1600px] mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Workspace Manager</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">Workspace Manager</p>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Workspaces</h1>
-                <p className="max-w-2xl text-sm sm:text-base text-white/60">
+                <p className="max-w-2xl text-sm sm:text-base text-ink-muted">
                   Manage folders with the same layout and behavior as the Library workspace section.
                 </p>
               </div>
@@ -255,15 +255,15 @@ export default function WorkspacesPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">Workspaces</h2>
-                  <p className="text-sm text-white/55">Each workspace keeps its own folder gradient and a seeded collage of covers.</p>
+                  <p className="text-sm text-ink/55">Each workspace keeps its own folder gradient and a seeded collage of covers.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-full border border-white/10 bg-white/5 p-1">
+                  <div className="flex items-center rounded-full border border-line bg-white/5 p-1">
                     <button
                       type="button"
                       onClick={() => setWorkspaceDisplayMode("grid")}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${workspaceDisplayMode === "grid" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${workspaceDisplayMode === "grid" ? "bg-accent text-ink" : "text-ink-dim hover:text-ink"}`}
                       title="Grid view"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +273,7 @@ export default function WorkspacesPage() {
                     <button
                       type="button"
                       onClick={() => setWorkspaceDisplayMode("list")}
-                      className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${workspaceDisplayMode === "list" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${workspaceDisplayMode === "list" ? "bg-accent text-ink" : "text-ink-dim hover:text-ink"}`}
                       title="List view"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,13 +283,13 @@ export default function WorkspacesPage() {
                   </div>
 
                   {workspaceDisplayMode === "grid" && (
-                    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+                    <div className="flex items-center gap-1 rounded-full border border-line bg-white/5 p-1">
                       {[4, 8, 12, 16].map((size) => (
                         <button
                           key={size}
                           type="button"
                           onClick={() => setWorkspaceGridSize(size as 4 | 8 | 12 | 16)}
-                          className={`rounded-full px-2.5 py-1 text-xs transition ${workspaceGridSize === size ? "bg-primary-500 text-white" : "text-white/65 hover:text-white hover:bg-white/10"}`}
+                          className={`rounded-full px-2.5 py-1 text-xs transition ${workspaceGridSize === size ? "bg-accent text-ink" : "text-ink/65 hover:text-ink hover:bg-white/10"}`}
                           title={`Show ${size} workspace cards per row`}
                           aria-label={`Show ${size} workspace cards per row`}
                         >
@@ -300,7 +300,7 @@ export default function WorkspacesPage() {
                   )}
 
                   {showCreateWorkspace ? (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                    <div className="flex items-center gap-2 rounded-full border border-line bg-white/5 p-1.5">
                       <input
                         value={newWorkspaceName}
                         onChange={(event) => setNewWorkspaceName(event.target.value)}
@@ -312,13 +312,13 @@ export default function WorkspacesPage() {
                           }
                         }}
                         placeholder="Workspace name"
-                        className="h-9 w-52 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
+                        className="h-9 w-52 rounded-full bg-transparent px-3 text-sm text-ink placeholder:text-ink-dim outline-none"
                         autoFocus
                       />
                       <button
                         type="button"
                         onClick={handleCreateWorkspace}
-                        className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                        className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
                       >
                         Add
                       </button>
@@ -328,7 +328,7 @@ export default function WorkspacesPage() {
                           setShowCreateWorkspace(false);
                           setNewWorkspaceName("");
                         }}
-                        className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white"
+                        className="h-9 rounded-full px-4 text-sm text-ink-muted transition-colors hover:text-ink"
                       >
                         Cancel
                       </button>
@@ -337,7 +337,7 @@ export default function WorkspacesPage() {
                     <button
                       type="button"
                       onClick={() => setShowCreateWorkspace(true)}
-                      className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                      className="h-10 rounded-full border border-line bg-white/5 px-4 text-sm text-ink/75 transition-colors hover:bg-white/10 hover:text-ink"
                     >
                       + Create workspace
                     </button>
@@ -346,9 +346,9 @@ export default function WorkspacesPage() {
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading workspaces...</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">Loading workspaces...</div>
               ) : rootWorkspaces.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-sm text-ink/55">
                   No workspaces yet. Create one to start grouping tracks.
                 </div>
               ) : workspaceDisplayMode === "grid" ? (
@@ -362,7 +362,7 @@ export default function WorkspacesPage() {
                     return (
                       <article
                         key={workspace.id}
-                        className="group overflow-hidden rounded-[28px] border border-white/10 bg-[#0f1017] shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+                        className="group overflow-hidden rounded-[28px] border border-line bg-surface shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
                       >
                         <button
                           type="button"
@@ -380,21 +380,21 @@ export default function WorkspacesPage() {
                                     alt={workspace.name}
                                     loading="lazy"
                                     decoding="async"
-                                    className="h-full w-full rounded-2xl object-cover shadow-lg ring-1 ring-white/10"
+                                    className="h-full w-full  object-cover shadow-lg ring-1 ring-white/10"
                                   />
                                 ))}
                               </div>
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-3xl text-white/80 backdrop-blur-sm">+</div>
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-line/20 bg-white/10 text-3xl text-ink-muted backdrop-blur-sm">+</div>
                               </div>
                             )}
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                              <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-md">
-                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-white sm:text-sm">
+                              <div className=" border border-line bg-black/40 p-3 backdrop-blur-md">
+                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-ink sm:text-sm">
                                   {workspace.name}
                                 </h3>
-                                <p className="text-xs text-white/70">
+                                <p className="text-xs text-ink-muted">
                                   {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} subfolders` : ""}
                                 </p>
                               </div>
@@ -404,14 +404,14 @@ export default function WorkspacesPage() {
 
                         {workspace.id === DEFAULT_WORKSPACE_ID ? (
                           <div className="px-4 py-3">
-                            <span className="text-sm text-white/35">Default</span>
+                            <span className="text-sm text-ink-dim">Default</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end px-4 py-3">
                             <button
                               type="button"
                               onClick={() => deleteWorkspace(workspace.id)}
-                              className="text-sm text-white/35 transition-colors hover:text-red-400"
+                              className="text-sm text-ink-dim transition-colors hover:text-red-400"
                             >
                               Delete
                             </button>
@@ -431,14 +431,14 @@ export default function WorkspacesPage() {
                     return (
                       <div
                         key={workspace.id}
-                        className="group flex items-center gap-4 rounded-2xl border border-white/8 bg-[#0f1017] px-4 py-3 transition-colors hover:bg-white/4"
+                        className="group flex items-center gap-4  border border-line bg-surface px-4 py-3 transition-colors hover:bg-white/4"
                       >
-                        <div className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl ${getWorkspaceSwatchClass(workspace.id)}`}>
+                        <div className={`relative h-12 w-12 shrink-0 overflow-hidden  ${getWorkspaceSwatchClass(workspace.id)}`}>
                           {coverImages[0] ? (
                             <img src={coverImages[0]} alt={workspace.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
-                              <svg className="h-5 w-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="h-5 w-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                               </svg>
                             </div>
@@ -446,10 +446,10 @@ export default function WorkspacesPage() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className="whitespace-normal wrap-break-word text-base font-medium leading-snug text-white sm:text-sm">
+                          <p className="whitespace-normal wrap-break-word text-base font-medium leading-snug text-ink sm:text-sm">
                             {workspace.name}
                           </p>
-                          <p className="text-xs text-white/45">
+                          <p className="text-xs text-ink-dim">
                             {workspaceTracks.length} {workspaceTracks.length === 1 ? "track" : "tracks"}
                             {childCount > 0 ? ` • ${childCount} subfolders` : ""}
                           </p>
@@ -459,13 +459,13 @@ export default function WorkspacesPage() {
                           <button
                             type="button"
                             onClick={() => deleteWorkspace(workspace.id)}
-                            className="shrink-0 text-sm text-white/30 transition-colors hover:text-red-400"
+                            className="shrink-0 text-sm text-ink-dim transition-colors hover:text-red-400"
                           >
                             Delete
                           </button>
                         )}
 
-                        <svg className="h-4 w-4 shrink-0 text-white/20 group-hover:text-white/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-4 w-4 shrink-0 text-ink-dim group-hover:text-ink-dim transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
@@ -479,7 +479,7 @@ export default function WorkspacesPage() {
                   <button
                     type="button"
                     onClick={() => sentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                    className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#11121a]/90 text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-white hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
+                    className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface/90 text-ink-muted shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95 hover:border-line hover:shadow-[0_12px_40px_rgba(255,255,255,0.15)]"
                     title="Scroll to top"
                     aria-label="Scroll to top"
                   >
@@ -491,7 +491,7 @@ export default function WorkspacesPage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] p-5 text-sm text-white/60">
+            <section className=" border border-dashed border-line bg-white/[0.03] p-5 text-sm text-ink-muted">
               Click a folder to open its own page with track listing.
             </section>
           </div>
@@ -508,8 +508,8 @@ export default function WorkspacesPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track or press play to show track info and lyrics.</p>
               </div>
             )}

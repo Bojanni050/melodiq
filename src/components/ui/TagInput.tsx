@@ -78,7 +78,7 @@ export default function TagInput({
               key={suggestion}
               type="button"
               onClick={() => addTag(suggestion)}
-              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+              className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-line text-ink-dim hover:bg-white/10 hover:text-ink-muted transition-colors"
             >
               + {suggestion}
             </button>

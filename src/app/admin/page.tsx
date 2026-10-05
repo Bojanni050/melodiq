@@ -32,19 +32,19 @@ interface PerfSnapshot {
 function StatTile({ label, value, href }: { label: string; value: number; href?: string }) {
   const content = (
     <>
-      <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-white">{value.toLocaleString()}</p>
+      <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">{label}</p>
+      <p className="mt-1 text-2xl font-semibold text-ink">{value.toLocaleString()}</p>
     </>
   );
   if (href) {
     return (
-      <Link href={href} className="block rounded-2xl border border-white/10 bg-white/5 px-5 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.07]">
+      <Link href={href} className="block  border border-line bg-white/5 px-5 py-4 transition-colors hover:border-line/20 hover:bg-white/[0.07]">
         {content}
       </Link>
     );
   }
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+    <div className=" border border-line bg-white/5 px-5 py-4">
       {content}
     </div>
   );
@@ -164,20 +164,20 @@ export default function AdminPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
-        <main className="flex-1 flex items-center justify-center text-sm text-white/50">Checking access...</main>
+        <main className="flex-1 flex items-center justify-center text-sm text-ink-dim">Checking access...</main>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+      <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <Sidebar credits={null} />
         <main className="flex-1 flex items-center justify-center px-4">
-          <div className="max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-            <p className="text-sm text-white/60">This page is restricted to admins.</p>
+          <div className="max-w-sm  border border-line bg-white/5 p-8 text-center">
+            <p className="text-sm text-ink-muted">This page is restricted to admins.</p>
           </div>
         </main>
       </div>
@@ -185,17 +185,17 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
+    <div className="flex min-h-screen bg-canvas text-ink" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
       <Sidebar credits={null} />
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
         <div className="mx-auto max-w-4xl space-y-6 pb-16">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/35">Admin</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">Admin</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Platform Stats</h1>
           </div>
 
           {loading || !stats ? (
-            <p className="text-sm text-white/50">Loading...</p>
+            <p className="text-sm text-ink-dim">Loading...</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
               <StatTile label="Users" value={stats.totalUsers} href="/admin/users" />
@@ -204,11 +204,11 @@ export default function AdminPage() {
             </div>
           )}
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <section className=" border border-line bg-white/5 p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold">Performance Monitor</h2>
-                <p className="mt-1 text-sm text-white/40">Real-time prestatiegegevens en netwerkverbruik</p>
+                <p className="mt-1 text-sm text-ink-dim">Real-time prestatiegegevens en netwerkverbruik</p>
               </div>
               <button
                 type="button"
@@ -218,10 +218,10 @@ export default function AdminPage() {
                     (window as any).__melodiqPerf.setLogging(!perfLogging);
                   }
                 }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={` px-3 py-1.5 text-xs font-medium transition-colors ${
                   perfLogging
                     ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                    : "bg-white/10 text-white/60 hover:bg-white/15"
+                    : "bg-white/10 text-ink-muted hover:bg-white/15"
                 }`}
               >
                 {perfLogging ? "Logging aan" : "Logging uit"}
@@ -231,134 +231,134 @@ export default function AdminPage() {
             {perfSnapshot ? (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {/* Uptime & Visibility */}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Sessie</p>
-                  <p className="mt-1 text-2xl font-semibold text-white">
+                <div className=" border border-line bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Sessie</p>
+                  <p className="mt-1 text-2xl font-semibold text-ink">
                     {(perfSnapshot.uptimeMs / 1000 / 60).toFixed(0)} min
                   </p>
-                  <p className="text-xs text-white/40 mt-1">
+                  <p className="text-xs text-ink-dim mt-1">
                     Zichtbaar: {(perfSnapshot.visibleMs / 1000 / 60).toFixed(1)} min | 
                     Verborgen: {(perfSnapshot.hiddenMs / 1000 / 60).toFixed(1)} min
                   </p>
                 </div>
 
                 {/* Network Usage */}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Netwerkverbruik</p>
-                  <p className="mt-1 text-2xl font-semibold text-white">
+                <div className=" border border-line bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Netwerkverbruik</p>
+                  <p className="mt-1 text-2xl font-semibold text-ink">
                     {perfSnapshot.networkBytesFormatted}
                   </p>
                   <div className="mt-2 space-y-1 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-white/50">Audio</span>
-                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.audio)}</span>
+                      <span className="text-ink-dim">Audio</span>
+                      <span className="text-ink-muted">{formatBytes(perfSnapshot.networkBytesByCategory.audio)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/50">Afbeeldingen</span>
-                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.image)}</span>
+                      <span className="text-ink-dim">Afbeeldingen</span>
+                      <span className="text-ink-muted">{formatBytes(perfSnapshot.networkBytesByCategory.image)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/50">API</span>
-                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.api)}</span>
+                      <span className="text-ink-dim">API</span>
+                      <span className="text-ink-muted">{formatBytes(perfSnapshot.networkBytesByCategory.api)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/50">Overig</span>
-                      <span className="text-white/80">{formatBytes(perfSnapshot.networkBytesByCategory.other)}</span>
+                      <span className="text-ink-dim">Overig</span>
+                      <span className="text-ink-muted">{formatBytes(perfSnapshot.networkBytesByCategory.other)}</span>
                     </div>
                     {perfSnapshot.networkUncounted > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-white/50">Onbekend (cross-origin)</span>
-                        <span className="text-white/80">+{perfSnapshot.networkUncounted}</span>
+                        <span className="text-ink-dim">Onbekend (cross-origin)</span>
+                        <span className="text-ink-muted">+{perfSnapshot.networkUncounted}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Storage Usage */}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Browser opslag</p>
-                  <p className="mt-1 text-2xl font-semibold text-white">
+                <div className=" border border-line bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Browser opslag</p>
+                  <p className="mt-1 text-2xl font-semibold text-ink">
                     {perfSnapshot.storageUsageFormatted || "Onbekend"}
                   </p>
                   {perfSnapshot.storageQuotaBytes && (
-                    <p className="text-xs text-white/40 mt-1">
+                    <p className="text-xs text-ink-dim mt-1">
                       Quota: {formatBytes(perfSnapshot.storageQuotaBytes)}
                     </p>
                   )}
                 </div>
 
                 {/* Long Tasks */}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Main-thread belasting</p>
-                  <p className="mt-1 text-2xl font-semibold text-white">
+                <div className=" border border-line bg-white/5 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Main-thread belasting</p>
+                  <p className="mt-1 text-2xl font-semibold text-ink">
                     {perfSnapshot.longTaskCount}
                   </p>
-                  <p className="text-xs text-white/40 mt-1">
+                  <p className="text-xs text-ink-dim mt-1">
                     Totaal: {Math.round(perfSnapshot.longTaskTotalMs)}ms | 
                     Max: {Math.round(perfSnapshot.longTaskMaxMs)}ms
                   </p>
                 </div>
 
                 {/* Session Start */}
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 md:col-span-2">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/35">Sessie gestart</p>
-                  <p className="mt-1 text-lg font-semibold text-white">
+                <div className=" border border-line bg-white/5 p-4 md:col-span-2">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-ink-dim">Sessie gestart</p>
+                  <p className="mt-1 text-lg font-semibold text-ink">
                     {new Date(perfSnapshot.sessionStartedAt).toLocaleTimeString()}
                   </p>
-                  <p className="text-xs text-white/40 mt-1">
+                  <p className="text-xs text-ink-dim mt-1">
                     {new Date(perfSnapshot.sessionStartedAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-white/50">Performancedata wordt geladen...</p>
+              <p className="text-sm text-ink-dim">Performancedata wordt geladen...</p>
             )}
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <section className=" border border-line bg-white/5 p-5">
             <h2 className="text-lg font-semibold">Add User</h2>
-            <p className="mt-1 text-sm text-white/40">Creates an account directly — bypasses the registration gate.</p>
+            <p className="mt-1 text-sm text-ink-dim">Creates an account directly — bypasses the registration gate.</p>
 
             <form onSubmit={createUser} className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Email</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Email</label>
                 <input
                   type="email"
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink placeholder-white/30 focus:outline-none focus:border-accent"
                   placeholder="user@example.com"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Password</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Password</label>
                 <input
                   type="password"
                   required
                   minLength={8}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink placeholder-white/30 focus:outline-none focus:border-accent"
                   placeholder="At least 8 characters"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Name (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Name (optional)</label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink placeholder-white/30 focus:outline-none focus:border-accent"
                   placeholder="Display name"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-white/50">Role</label>
+                <label className="mb-1 block text-xs font-medium text-ink-dim">Role</label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                  className="w-full  border border-line bg-white/5 px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent"
                 >
                   {ROLES.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
@@ -370,7 +370,7 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={creatingUser}
-                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" bg-accent px-4 py-2 text-sm font-medium text-ink transition hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creatingUser ? "Creating…" : "Create user"}
                 </button>

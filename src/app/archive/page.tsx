@@ -429,7 +429,7 @@ export default function ArchivePage() {
   }, [entries, search, searchLyrics]);
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-canvas overflow-hidden text-ink">
       <Sidebar credits={null} />
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
@@ -441,42 +441,42 @@ export default function ArchivePage() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Master Tracks</h1>
                   {activeTab === "master" && entries.length > 0 && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                    <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim shrink-0">
                       {entries.length} {entries.length === 1 ? "track" : "tracks"}{playableTracks.length > 0 ? ` · ${playableTracks.length} playable` : ""}
                     </span>
                   )}
                   {activeTab !== "master" && tabTracks.length > 0 && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                    <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim shrink-0">
                       {tabTracks.length} {tabTracks.length === 1 ? "track" : "tracks"}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-white/40">
+                <p className="text-sm text-ink-dim">
                   {activeTab === "master"
                     ? "Your definitive lyrics & prompt per song — one source of truth."
                     : activeTab === "published"
                       ? "All tracks currently published to Discover."
                       : "Every finished track in your library."}
                 </p>
-                <div className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 p-1">
+                <div className="mt-3 inline-flex items-center rounded-full border border-line bg-white/5 p-1">
                   <button
                     type="button"
                     onClick={() => setActiveTab("master")}
-                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "master" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "master" ? "bg-accent text-ink" : "text-ink-muted hover:text-ink"}`}
                   >
                     Master
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("published")}
-                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "published" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "published" ? "bg-accent text-ink" : "text-ink-muted hover:text-ink"}`}
                   >
                     Published
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("all")}
-                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "all" ? "bg-white text-black" : "text-white/60 hover:text-white"}`}
+                    className={`h-8 rounded-full px-3 text-sm font-medium transition-colors ${activeTab === "all" ? "bg-accent text-ink" : "text-ink-muted hover:text-ink"}`}
                   >
                     All
                   </button>
@@ -489,7 +489,7 @@ export default function ArchivePage() {
                     <button
                       type="button"
                       onClick={handlePlayAll}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors shadow-lg"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-ink text-sm font-semibold hover:bg-accent-strong transition-colors shadow-lg"
                       title="Play all master tracks"
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -503,10 +503,10 @@ export default function ArchivePage() {
                   <button
                     type="button"
                     onClick={() => setShuffle((v) => !v)}
-                    className={`p-2 rounded-lg border transition-colors ${
+                    className={`p-2  border transition-colors ${
                       shuffle
-                        ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                        : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                        ? "border-accent/40 bg-accent/15 text-accent"
+                        : "border-line bg-white/5 text-ink-dim hover:text-ink-muted"
                     }`}
                     title="Shuffle"
                   >
@@ -519,10 +519,10 @@ export default function ArchivePage() {
                   <button
                     type="button"
                     onClick={() => setRepeat((v) => !v)}
-                    className={`p-2 rounded-lg border transition-colors ${
+                    className={`p-2  border transition-colors ${
                       repeat
-                        ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                        : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                        ? "border-accent/40 bg-accent/15 text-accent"
+                        : "border-line bg-white/5 text-ink-dim hover:text-ink-muted"
                     }`}
                     title="Repeat"
                   >
@@ -547,7 +547,7 @@ export default function ArchivePage() {
           {activeTab !== "master" ? (
             <div>
               {tracksLoading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">Loading tracks...</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">Loading tracks...</div>
               ) : (
                 <TrackList
                   tracks={tabTracks}
@@ -593,8 +593,8 @@ export default function ArchivePage() {
               onClick={() => setSearchLyrics((v) => !v)}
               className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                 searchLyrics
-                  ? "border-primary-400/40 bg-primary-500/15 text-primary-300"
-                  : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                  ? "border-accent/40 bg-accent/15 text-accent"
+                  : "border-line bg-white/5 text-ink-dim hover:text-ink-muted"
               }`}
               title={searchLyrics ? "Also searching lyrics — click to search titles only" : "Also search lyrics text"}
               aria-pressed={searchLyrics}
@@ -605,9 +605,9 @@ export default function ArchivePage() {
 
           <div>
           {loading ? (
-            <p className="text-sm text-white/40">Loading…</p>
+            <p className="text-sm text-ink-dim">Loading…</p>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-white/40 italic py-8 text-center">
+            <p className="text-sm text-ink-dim italic py-8 text-center">
               {entries.length === 0 ? "No master track entries yet. Add your first definitive lyrics + prompt." : "No matches."}
             </p>
           ) : (
@@ -628,19 +628,19 @@ export default function ArchivePage() {
                         handleOpenTrackDetails(entry);
                       }
                     }}
-                    className={`section-card space-y-3 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 focus-visible:outline-offset-1 ${
-                      isDetailSelected ? "bg-white/[0.11] border border-white/15" : "hover:bg-white/[0.04]"
+                    className={`section-card space-y-3 cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 ${
+                      isDetailSelected ? "bg-white/[0.11] border border-line-strong" : "hover:bg-white/[0.04]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       {/* Cover + play button */}
                       <div className="flex items-start gap-3">
                         <div className="relative shrink-0 group">
-                          <div className="w-12 h-12 rounded-lg bg-white/[0.06] overflow-hidden flex items-center justify-center">
+                          <div className="w-12 h-12  bg-white/[0.06] overflow-hidden flex items-center justify-center">
                             {entryCoverSrc(entry) ? (
                               <img src={entryCoverSrc(entry)!} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                             ) : (
-                              <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                               </svg>
                             )}
@@ -649,16 +649,16 @@ export default function ArchivePage() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handlePlayTrack(playable); }}
-                              className={`absolute inset-0 flex items-center justify-center rounded-lg transition-opacity ${
+                              className={`absolute inset-0 flex items-center justify-center  transition-opacity ${
                                 isCurrent ? "opacity-100 bg-black/50" : "opacity-0 group-hover:opacity-100 bg-black/60"
                               }`}
                             >
                               {isCurrent && isPlaying ? (
-                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-5 h-5 text-ink" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                               ) : (
-                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-5 h-5 text-ink" fill="currentColor" viewBox="0 0 20 20">
                                   <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                                 </svg>
                               )}
@@ -668,13 +668,13 @@ export default function ArchivePage() {
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-semibold text-white truncate">{entry.title}</h3>
+                            <h3 className="text-sm font-semibold text-ink truncate">{entry.title}</h3>
                             {entry.trackTitle && (
                               <span
-                                className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] text-white/60"
+                                className="shrink-0 rounded-full border border-line bg-white/[0.06] px-2 py-0.5 text-[10px] text-ink-muted"
                                 title={entry.trackId ? `Track ID: ${entry.trackId}` : undefined}
                               >
-                                Linked: {entry.trackTitle} <span className="font-mono text-white/35">#{shortTrackId(entry.trackId)}</span>
+                                Linked: {entry.trackTitle} <span className="font-mono text-ink-dim">#{shortTrackId(entry.trackId)}</span>
                               </span>
                             )}
                             {entry.trackId && releases.some((r) => r.tracks.some((t) => t.trackId === entry.trackId)) ? (
@@ -684,19 +684,19 @@ export default function ArchivePage() {
                                 Released
                               </span>
                             ) : (
-                              <span className="shrink-0 rounded-full border border-white/15 bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/40">
+                              <span className="shrink-0 rounded-full border border-line-strong bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ink-dim">
                                 Unreleased
                               </span>
                             )}
                             {isCurrent && (
-                              <span className="shrink-0 flex items-center gap-1 text-[10px] text-primary-300">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
+                              <span className="shrink-0 flex items-center gap-1 text-[10px] text-accent">
+                                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                                 Now playing
                               </span>
                             )}
                           </div>
-                          {entry.prompt && <p className="text-xs text-white/40 mt-1 line-clamp-1">{entry.prompt}</p>}
-                          {entry.lyrics && <p className="text-xs text-white/30 mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
+                          {entry.prompt && <p className="text-xs text-ink-dim mt-1 line-clamp-1">{entry.prompt}</p>}
+                          {entry.lyrics && <p className="text-xs text-ink-dim mt-1 line-clamp-2 whitespace-pre-line">{entry.lyrics}</p>}
                         </div>
                       </div>
 
@@ -727,7 +727,7 @@ export default function ArchivePage() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setDeleteTarget(entry); }}
-                          className="shrink-0 p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="shrink-0 p-1.5  text-ink-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           aria-label="Delete entry"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -738,7 +738,7 @@ export default function ArchivePage() {
                     </div>
 
                     {(entry.translations || []).length > 0 && (
-                      <div className="space-y-1.5 pl-3 border-l-2 border-white/5" onClick={(e) => e.stopPropagation()}>
+                      <div className="space-y-1.5 pl-3 border-l-2 border-line" onClick={(e) => e.stopPropagation()}>
                         {entry.translations!.map((translation) => (
                           <TranslationRow
                             key={translation.id}
@@ -763,7 +763,7 @@ export default function ArchivePage() {
                               return next;
                             });
                           }}
-                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-primary-400/25 bg-primary-500/10 text-primary-200/90 transition-colors hover:bg-primary-500/20"
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-accent/25 bg-accent/10 text-accent/90 transition-colors hover:bg-accent/20"
                           title={dnaOpenIds.has(entry.id) ? "Hide Track DNA" : "Show Track DNA"}
                         >
                           Track DNA
@@ -792,7 +792,7 @@ export default function ArchivePage() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setEditingTarget({ mode: "new-translation", parentId: entry.id, parentTitle: entry.title }); }}
-                      className="flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+                      className="flex items-center gap-1.5 text-xs font-medium text-ink-dim hover:text-ink-muted transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -821,8 +821,8 @@ export default function ArchivePage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
               </div>
             )}
@@ -861,7 +861,7 @@ export default function ArchivePage() {
           onClick={() => setReuseConfirmTrack(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+            className="w-full max-w-lg  border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start gap-3">
@@ -880,14 +880,14 @@ export default function ArchivePage() {
                       setReuseConfirmTrack(null);
                       if (pending) performReusePrompt(pending.track, pending.scope);
                     }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+                    className="inline-flex items-center gap-2  border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
                   >
                     Doorgaan
                   </button>
                   <button
                     type="button"
                     onClick={() => setReuseConfirmTrack(null)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                    className="inline-flex items-center gap-2  border border-line bg-transparent px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/5 hover:text-ink-muted"
                   >
                     Annuleren
                   </button>
@@ -902,27 +902,27 @@ export default function ArchivePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setDeleteTarget(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-[#181822] p-6 shadow-2xl"
+            className="relative w-full max-w-sm  border border-line bg-surface p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm text-white/85">
+            <p className="text-sm text-ink/85">
               Delete Master Tracks entry <span className="font-semibold">{deleteTarget.title}</span>?
             </p>
-            <p className="text-xs text-white/40 mt-1">
+            <p className="text-xs text-ink-dim mt-1">
               The original track itself is not deleted — only this Master Tracks reference.
             </p>
             <div className="flex justify-end gap-2 mt-5">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/60 hover:text-white/85 hover:bg-white/5 transition-colors"
+                className=" px-4 py-1.5 text-sm text-ink-muted hover:text-ink/85 hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(deleteTarget)}
-                className="rounded-lg bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
+                className=" bg-red-500/20 px-4 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/30 transition-colors"
               >
                 Delete
               </button>

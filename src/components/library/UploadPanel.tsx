@@ -311,19 +311,19 @@ export default function UploadPanel({
         className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
       />
 
-      <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-140 border-r border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+      <aside className="absolute left-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-140 border-r border-line bg-canvas shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
             <div>
               <h3 className="text-lg font-semibold">Upload Files</h3>
-              <p className="text-sm text-white/55">Queue up to {MAX_UPLOAD_QUEUE} files, edit titles, add metadata, then upload.</p>
+              <p className="text-sm text-ink/55">Queue up to {MAX_UPLOAD_QUEUE} files, edit titles, add metadata, then upload.</p>
             </div>
             <button
               type="button"
               onClick={onClose}
               title="Close upload panel"
               aria-label="Close upload panel"
-              className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded-full p-2 text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -333,12 +333,12 @@ export default function UploadPanel({
 
           <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
             <div className="space-y-2">
-              <label className="text-sm text-white/60" htmlFor="upload-panel-workspace-select">Workspace</label>
+              <label className="text-sm text-ink-muted" htmlFor="upload-panel-workspace-select">Workspace</label>
               <select
                 id="upload-panel-workspace-select"
                 value={uploadWorkspaceId}
                 onChange={(event) => setUploadWorkspaceId(event.target.value)}
-                className="h-10 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-10 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                 disabled={uploading}
               >
                 {workspaceOptions.map((workspace) => (
@@ -350,10 +350,10 @@ export default function UploadPanel({
             </div>
 
             {/* Instrumental toggle */}
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">
+            <div className="flex items-center justify-between  border border-line bg-white/4 px-4 py-2.5">
               <div>
-                <p className="text-sm font-medium text-white">Instrumental</p>
-                <p className="text-xs text-white/45">No lyrics — hides the lyrics field</p>
+                <p className="text-sm font-medium text-ink">Instrumental</p>
+                <p className="text-xs text-ink-dim">No lyrics — hides the lyrics field</p>
               </div>
               <button
                 type="button"
@@ -361,7 +361,7 @@ export default function UploadPanel({
                 aria-checked={uploadInstrumental}
                 disabled={uploading}
                 onClick={() => setUploadInstrumental((v) => !v)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${uploadInstrumental ? "bg-primary-500" : "bg-white/15"}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${uploadInstrumental ? "bg-accent" : "bg-white/15"}`}
               >
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${uploadInstrumental ? "translate-x-5" : "translate-x-0"}`} />
               </button>
@@ -369,7 +369,7 @@ export default function UploadPanel({
 
             <div className={`grid gap-3 transition-all duration-200 ${uploadInstrumental ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
               <div className="space-y-1">
-                <label htmlFor="upload-panel-prompt" className="text-sm text-white/60">Optional prompt (global)</label>
+                <label htmlFor="upload-panel-prompt" className="text-sm text-ink-muted">Optional prompt (global)</label>
                 <textarea
                   id="upload-panel-prompt"
                   value={uploadPromptDraft}
@@ -377,12 +377,12 @@ export default function UploadPanel({
                   rows={3}
                   disabled={uploading}
                   placeholder="Style / mood / context"
-                  className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                  className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
                 />
               </div>
               {!uploadInstrumental && (
                 <div className="space-y-1">
-                  <label htmlFor="upload-panel-lyrics" className="text-sm text-white/60">Optional lyrics (global)</label>
+                  <label htmlFor="upload-panel-lyrics" className="text-sm text-ink-muted">Optional lyrics (global)</label>
                   <textarea
                     id="upload-panel-lyrics"
                     value={uploadLyricsDraft}
@@ -390,7 +390,7 @@ export default function UploadPanel({
                     rows={3}
                     disabled={uploading}
                     placeholder="Paste lyrics"
-                    className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25"
+                    className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
                   />
                 </div>
               )}
@@ -433,12 +433,12 @@ export default function UploadPanel({
                 type="button"
                 disabled={uploading || queuedUploads.length >= MAX_UPLOAD_QUEUE}
                 onClick={() => uploadInputRef.current?.click()}
-                className="h-10 rounded-full border border-white/10 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+                className="h-10 rounded-full border border-line bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-65"
               >
                 Add Audio Files
               </button>
 
-              <span className="text-xs text-white/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
+              <span className="text-xs text-ink/55">{queuedUploads.length}/{MAX_UPLOAD_QUEUE} queued</span>
             </div>
 
             <div
@@ -446,33 +446,33 @@ export default function UploadPanel({
               onDragOver={handleUploadDragOver}
               onDragEnter={handleUploadDragOver}
               onDragLeave={handleUploadDragLeave}
-              className={`rounded-2xl border-2 border-dashed px-4 py-5 text-center transition-colors ${
+              className={` border-2 border-dashed px-4 py-5 text-center transition-colors ${
                 isUploadDropzoneActive
-                  ? "border-primary-400/80 bg-primary-500/10"
-                  : "border-white/15 bg-white/3"
+                  ? "border-accent/80 bg-accent/10"
+                  : "border-line-strong bg-white/3"
               } ${uploading ? "opacity-60" : ""}`}
             >
-              <p className="text-sm font-medium text-white/85">Drag and drop audio files here</p>
-              <p className="mt-1 text-xs text-white/55">Drop MP3, WAV, OGG, or FLAC files to add them to the upload queue.</p>
+              <p className="text-sm font-medium text-ink/85">Drag and drop audio files here</p>
+              <p className="mt-1 text-xs text-ink/55">Drop MP3, WAV, OGG, or FLAC files to add them to the upload queue.</p>
             </div>
 
             {uploadedHistory.length > 0 && queuedUploads.length === 0 ? (
-              <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
+              <div className="space-y-4  border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div>
-                  <h4 className="text-base font-semibold text-white">Upload Successful!</h4>
+                  <h4 className="text-base font-semibold text-ink">Upload Successful!</h4>
                   <p className="mt-1 text-xs text-emerald-200/80">
                     {uploadedHistory.length} {uploadedHistory.length === 1 ? "track has" : "tracks have"} been uploaded to your library.
                   </p>
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-white/10 bg-black/40 p-2.5 text-left">
+                <div className="max-h-48 overflow-y-auto space-y-1.5  border border-line bg-black/40 p-2.5 text-left">
                   {uploadedHistory.map((t) => (
                     <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
-                      <span className="truncate font-medium text-white/90">{t.title || "Untitled"}</span>
+                      <span className="truncate font-medium text-ink">{t.title || "Untitled"}</span>
                       <span className="shrink-0 uppercase text-emerald-400/80 font-mono text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded">
                         {t.format || "audio"}
                       </span>
@@ -487,36 +487,36 @@ export default function UploadPanel({
                       setUploadNotice(null);
                       setRejectedFiles([]);
                     }}
-                    className="flex-1 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-medium text-white transition-colors hover:bg-white/10"
+                    className="flex-1  border border-line-strong bg-white/5 py-2.5 text-xs font-medium text-ink transition-colors hover:bg-white/10"
                   >
                     Upload More
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 rounded-xl bg-emerald-500 py-2.5 text-xs font-semibold text-black transition-colors hover:bg-emerald-400"
+                    className="flex-1  bg-emerald-500 py-2.5 text-xs font-semibold text-black transition-colors hover:bg-emerald-400"
                   >
                     Done
                   </button>
                 </div>
               </div>
             ) : queuedUploads.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/12 bg-white/3 p-4 text-sm text-white/55">
+              <div className=" border border-dashed border-line bg-white/3 p-4 text-sm text-ink/55">
                 No files queued yet.
               </div>
             ) : (
               <div className="space-y-2">
                 {queuedUploads.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-white/10 bg-white/3 p-3">
+                  <div key={item.id} className=" border border-line bg-white/3 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-white">{item.file.name}</p>
-                        <p className="text-xs text-white/45">{formatFileSize(item.file.size)}</p>
+                        <p className="truncate text-sm font-medium text-ink">{item.file.name}</p>
+                        <p className="text-xs text-ink-dim">{formatFileSize(item.file.size)}</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setQueuedUploads((current) => current.filter((upload) => upload.id !== item.id))}
-                        className="rounded-full p-1.5 text-white/45 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                        className="rounded-full p-1.5 text-ink-dim transition-colors hover:bg-red-500/10 hover:text-red-300"
                         title="Remove from queue"
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -526,7 +526,7 @@ export default function UploadPanel({
                     </div>
 
                     <div className="mt-2 space-y-2">
-                      <label htmlFor={`upload-item-title-${item.id}`} className="text-sm text-white/60">Title</label>
+                      <label htmlFor={`upload-item-title-${item.id}`} className="text-sm text-ink-muted">Title</label>
                       <input
                         id={`upload-item-title-${item.id}`}
                         type="text"
@@ -540,12 +540,12 @@ export default function UploadPanel({
                           );
                         }}
                         disabled={uploading}
-                        className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                        className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                       />
 
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <label htmlFor={`upload-item-artist-${item.id}`} className="text-sm text-white/60">Artist</label>
+                          <label htmlFor={`upload-item-artist-${item.id}`} className="text-sm text-ink-muted">Artist</label>
                           <AutocompleteInput
                             id={`upload-item-artist-${item.id}`}
                             value={item.artistName}
@@ -555,11 +555,11 @@ export default function UploadPanel({
                             disabled={uploading}
                             placeholder="Artist name"
                             suggestions={knownArtistNames}
-                            className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                            className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                           />
                         </div>
                         <div className="space-y-1">
-                          <label htmlFor={`upload-item-composer-${item.id}`} className="text-sm text-white/60">Composer</label>
+                          <label htmlFor={`upload-item-composer-${item.id}`} className="text-sm text-ink-muted">Composer</label>
                           <AutocompleteInput
                             id={`upload-item-composer-${item.id}`}
                             value={item.composerName}
@@ -569,11 +569,11 @@ export default function UploadPanel({
                             disabled={uploading}
                             placeholder="Composer name"
                             suggestions={knownComposerNames}
-                            className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                            className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                           />
                         </div>
                         <div className="space-y-1">
-                          <label htmlFor={`upload-item-writer-${item.id}`} className="text-sm text-white/60">Written By</label>
+                          <label htmlFor={`upload-item-writer-${item.id}`} className="text-sm text-ink-muted">Written By</label>
                           <AutocompleteInput
                             id={`upload-item-writer-${item.id}`}
                             value={item.writerName}
@@ -583,15 +583,15 @@ export default function UploadPanel({
                             disabled={uploading}
                             placeholder="Lyrics writer"
                             suggestions={knownWriterNames}
-                            className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                            className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-sm text-white/60">Cover art</label>
+                        <label className="text-sm text-ink-muted">Cover art</label>
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
+                          <div className="h-12 w-12 shrink-0 overflow-hidden  bg-white/8 flex items-center justify-center">
                             {item.coverFile ? (
                               <img
                                 src={URL.createObjectURL(item.coverFile)}
@@ -601,7 +601,7 @@ export default function UploadPanel({
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             )}
@@ -609,7 +609,7 @@ export default function UploadPanel({
                           <div className="flex gap-2">
                             <label
                               htmlFor={`upload-item-cover-${item.id}`}
-                              className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                              className="cursor-pointer  border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                             >
                               {item.coverFile ? "Change" : "Upload image"}
                             </label>
@@ -633,7 +633,7 @@ export default function UploadPanel({
                                 onClick={() => setQueuedUploads((current) =>
                                   current.map((upload) => upload.id === item.id ? { ...upload, coverFile: null } : upload)
                                 )}
-                                className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
+                                className=" border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-dim hover:text-ink-muted transition-colors"
                               >
                                 Remove
                               </button>
@@ -643,7 +643,7 @@ export default function UploadPanel({
                       </div>
 
                       <div className="space-y-1">
-                        <label htmlFor={`upload-item-provider-${item.id}`} className="text-sm text-white/50">Source</label>
+                        <label htmlFor={`upload-item-provider-${item.id}`} className="text-sm text-ink-dim">Source</label>
                         <select
                           id={`upload-item-provider-${item.id}`}
                           value={UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) ? item.sourceProvider : "__custom__"}
@@ -654,7 +654,7 @@ export default function UploadPanel({
                             );
                           }}
                           disabled={uploading}
-                          className="h-8 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                          className="h-8 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
                         >
                           {UPLOAD_PROVIDERS.map((p) => (
                             <option key={p.value} value={p.value}>{p.label}</option>
@@ -666,7 +666,7 @@ export default function UploadPanel({
                       </div>
 
                       {item.sourceProvider === "suno" && (
-                        <div className="space-y-3 rounded-xl border border-white/8 bg-white/3 px-3 py-3">
+                        <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
                           <SliderWithInput
                             label="Style Influence"
                             value={item.sunoStyleInfluence}
@@ -687,7 +687,7 @@ export default function UploadPanel({
                       )}
 
                       <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <label className="text-sm text-white/50">Instrumental</label>
+                        <label className="text-sm text-ink-dim">Instrumental</label>
                         <button
                           type="button"
                           role="switch"
@@ -698,7 +698,7 @@ export default function UploadPanel({
                               upload.id === item.id ? { ...upload, instrumental: !upload.instrumental } : upload
                             )
                           )}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.instrumental ? "bg-primary-500" : "bg-white/15"}`}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.instrumental ? "bg-accent" : "bg-white/15"}`}
                         >
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.instrumental ? "translate-x-4" : "translate-x-0"}`} />
                         </button>
@@ -706,7 +706,7 @@ export default function UploadPanel({
 
                       <div className={`grid gap-2 ${item.instrumental ? "grid-cols-1" : "grid-cols-2"}`}>
                         <div className="space-y-1">
-                          <label htmlFor={`upload-item-prompt-${item.id}`} className="text-sm text-white/50">Prompt</label>
+                          <label htmlFor={`upload-item-prompt-${item.id}`} className="text-sm text-ink-dim">Prompt</label>
                           <textarea
                             id={`upload-item-prompt-${item.id}`}
                             value={item.prompt}
@@ -719,12 +719,12 @@ export default function UploadPanel({
                             rows={2}
                             disabled={uploading}
                             placeholder="Style / mood / context"
-                            className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+                            className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
                           />
                         </div>
                         {!item.instrumental && (
                           <div className="space-y-1">
-                            <label htmlFor={`upload-item-lyrics-${item.id}`} className="text-sm text-white/50">Lyrics</label>
+                            <label htmlFor={`upload-item-lyrics-${item.id}`} className="text-sm text-ink-dim">Lyrics</label>
                             <textarea
                               id={`upload-item-lyrics-${item.id}`}
                               value={item.lyrics}
@@ -737,7 +737,7 @@ export default function UploadPanel({
                               rows={2}
                               disabled={uploading}
                               placeholder="Paste lyrics"
-                              className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+                              className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
                             />
                           </div>
                         )}
@@ -751,13 +751,13 @@ export default function UploadPanel({
                             setPendingMetadataTargetId(item.id);
                             uploadMetadataInputRef.current?.click();
                           }}
-                          className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-sm font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
+                          className="h-8 rounded-full border border-line bg-surface px-3 text-sm font-medium text-ink-muted transition-colors hover:border-line/25 hover:text-ink"
                         >
                           {item.metadataFile ? "Replace metadata TXT/LRC" : "Attach metadata TXT/LRC"}
                         </button>
                         {item.metadataFile && (
                           <>
-                            <span className="truncate text-xs text-white/55">{item.metadataFile.name}</span>
+                            <span className="truncate text-xs text-ink/55">{item.metadataFile.name}</span>
                             <button
                               type="button"
                               onClick={() => {
@@ -783,13 +783,13 @@ export default function UploadPanel({
                             setPendingLicenseTargetId(item.id);
                             uploadLicenseInputRef.current?.click();
                           }}
-                          className="h-8 rounded-full border border-white/12 bg-[#11121a] px-3 text-sm font-medium text-white/80 transition-colors hover:border-white/25 hover:text-white"
+                          className="h-8 rounded-full border border-line bg-surface px-3 text-sm font-medium text-ink-muted transition-colors hover:border-line/25 hover:text-ink"
                         >
                           {item.licenseFile ? "Replace license PDF" : "Attach license PDF"}
                         </button>
                         {item.licenseFile && (
                           <>
-                            <span className="truncate text-xs text-white/55">{item.licenseFile.name}</span>
+                            <span className="truncate text-xs text-ink/55">{item.licenseFile.name}</span>
                             <button
                               type="button"
                               onClick={() => {
@@ -813,19 +813,19 @@ export default function UploadPanel({
             )}
 
             {uploadError && (
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
+              <div className=" border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
                 <span className="font-semibold">Error:</span> {uploadError}
               </div>
             )}
 
             {uploadNotice && (
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
+              <div className=" border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-400">
                 <span className="font-semibold">Success:</span> {uploadNotice}
               </div>
             )}
 
             {rejectedFiles.length > 0 && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3">
+              <div className=" border border-amber-500/20 bg-amber-500/5 p-3">
                 <p className="text-sm font-semibold text-amber-300">Rejected files</p>
                 <ul className="mt-2 space-y-1 text-sm text-amber-200/80">
                   {rejectedFiles.map((file, idx) => (
@@ -838,12 +838,12 @@ export default function UploadPanel({
             )}
           </div>
 
-          <div className="border-t border-white/10 px-5 py-4">
+          <div className="border-t border-line px-5 py-4">
             {uploadedHistory.length > 0 && queuedUploads.length === 0 ? (
               <button
                 type="button"
                 onClick={onClose}
-                className="h-11 w-full rounded-xl bg-emerald-500 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+                className="h-11 w-full  bg-emerald-500 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
               >
                 Done / View in Library
               </button>
@@ -852,7 +852,7 @@ export default function UploadPanel({
                 type="button"
                 disabled={uploading || queuedUploads.length === 0}
                 onClick={handleStartUpload}
-                className="h-11 w-full rounded-xl bg-white text-sm font-semibold text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-65"
+                className="h-11 w-full  bg-white text-sm font-semibold text-black transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-65"
               >
                 {uploading ? "Uploading..." : `Upload ${queuedUploads.length} file(s)`}
               </button>

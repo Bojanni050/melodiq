@@ -185,7 +185,7 @@ export default function PublicReleasePage() {
 
   if (notFound || (!loading && !release)) {
     return (
-      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+      <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
         {isLoggedIn && <Sidebar credits={null} />}
       {authChecked && !isLoggedIn && <PublicNav />}
         <div
@@ -213,7 +213,7 @@ export default function PublicReleasePage() {
   }
 
   return (
-    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div

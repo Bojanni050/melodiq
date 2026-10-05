@@ -148,25 +148,25 @@ export default function ReleasePollManager({
 
   if (loading) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
+      <div className=" border border-line bg-white/5 p-5 text-sm text-ink-muted">
         Stemming laden…
       </div>
     );
   }
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
+    <section className=" border border-line bg-white/5 p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-white">Stemming</h3>
-          <p className="text-xs text-white/50">
+          <h3 className="text-sm font-semibold text-ink">Stemming</h3>
+          <p className="text-xs text-ink-dim">
             Koppel een poll aan deze release — kies max {MAX_POLL_OPTIONS} versies waar fans op stemmen.
           </p>
         </div>
         {poll && (
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              poll.isClosed ? "bg-white/10 text-white/50" : "bg-emerald-500/15 text-emerald-300"
+              poll.isClosed ? "bg-white/10 text-ink-dim" : "bg-emerald-500/15 text-emerald-300"
             }`}
           >
             {poll.isClosed ? "Gesloten" : "Open"} · {poll.totalVotes}{" "}
@@ -176,7 +176,7 @@ export default function ReleasePollManager({
       </div>
 
       {tracks.length < 2 ? (
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-ink-dim">
           Voeg minimaal 2 tracks aan deze release toe om een stemming te starten.
         </p>
       ) : (
@@ -187,7 +187,7 @@ export default function ReleasePollManager({
             return (
               <label
                 key={track.id}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
+                className={`flex items-center gap-3  px-3 py-2 text-sm transition-colors ${
                   disabled ? "opacity-40" : "cursor-pointer hover:bg-white/5"
                 } ${checked ? "bg-white/8" : "bg-white/[0.03]"}`}
               >
@@ -196,13 +196,13 @@ export default function ReleasePollManager({
                   checked={checked}
                   disabled={disabled}
                   onChange={() => toggleTrack(track.id)}
-                  className="h-4 w-4 accent-fuchsia-500"
+                  className="h-4 w-4 accent-accent"
                 />
-                <span className="min-w-0 flex-1 truncate text-white/80">
+                <span className="min-w-0 flex-1 truncate text-ink-muted">
                   {track.title || "Untitled"}
                 </span>
                 {poll && (
-                  <span className="shrink-0 text-xs text-white/45">
+                  <span className="shrink-0 text-xs text-ink-dim">
                     {poll.options.find((o) => o.trackId === track.id)?.votes ?? 0} stemmen
                   </span>
                 )}
@@ -214,12 +214,12 @@ export default function ReleasePollManager({
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1">
-          <span className="block text-xs text-white/50">Stemmen sluit op (optioneel)</span>
+          <span className="block text-xs text-ink-dim">Stemmen sluit op (optioneel)</span>
           <input
             type="datetime-local"
             value={closesAt}
             onChange={(e) => setClosesAt(e.target.value)}
-            className="h-9 rounded-lg border border-white/15 bg-[#11121a] px-2.5 text-sm text-white outline-none focus:border-white/30"
+            className="h-9  border border-line-strong bg-surface px-2.5 text-sm text-ink outline-none focus:border-line/30"
           />
         </label>
         <div className="flex flex-wrap gap-2">
@@ -227,7 +227,7 @@ export default function ReleasePollManager({
             type="button"
             onClick={handleSave}
             disabled={saving || selected.length < 2 || tracks.length < 2}
-            className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving ? "Opslaan…" : poll ? "Poll bijwerken" : "Poll starten"}
           </button>
@@ -237,7 +237,7 @@ export default function ReleasePollManager({
                 type="button"
                 onClick={handleToggleOpen}
                 disabled={saving}
-                className="h-9 rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                className="h-9 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink disabled:opacity-50"
               >
                 {poll.isOpen ? "Sluiten" : "Heropenen"}
               </button>
@@ -260,14 +260,14 @@ export default function ReleasePollManager({
             const pct = poll.totalVotes > 0 ? Math.round((option.votes / poll.totalVotes) * 100) : 0;
             return (
               <div key={option.id} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-white/60">
+                <div className="flex items-center justify-between text-xs text-ink-muted">
                   <span className="truncate">{titleById.get(option.trackId) ?? option.trackId}</span>
                   <span>
                     {option.votes} · {pct}%
                   </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-fuchsia-500/80" style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-accent/80" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );

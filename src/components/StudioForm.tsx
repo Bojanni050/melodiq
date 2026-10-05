@@ -220,7 +220,7 @@ export default memo(function StudioForm({
     <div className="relative flex h-full min-h-0 flex-col gap-4">
       {/* Top Bar: Studio Header & Clear All */}
       <div className="flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-semibold tracking-tight text-white/90">{t("nav.music")}</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-ink">{t("nav.music")}</h2>
         <button
           type="button"
           onClick={() => setShowClearConfirm(true)}
@@ -282,8 +282,8 @@ export default memo(function StudioForm({
           iconBgClassName="bg-violet-500/20"
           message={
             <>
-              <p className="text-sm font-semibold text-white mb-1">{t("studio.noLyricsTitle")}</p>
-              <p className="text-sm text-white/65 leading-relaxed">
+              <p className="text-sm font-semibold text-ink mb-1">{t("studio.noLyricsTitle")}</p>
+              <p className="text-sm text-ink/65 leading-relaxed">
                 {t("studio.noLyricsBody")}
               </p>
             </>
@@ -314,7 +314,7 @@ export default memo(function StudioForm({
           message={t("studio.styleTooLongMessage", { count: promptCharCount, max: styleMaxChars })}
           cancelLabel={t("studio.adjustMyself")}
           confirmLabel={t("studio.optimize")}
-          confirmClassName="border-primary-400/30 bg-primary-500/15 text-primary-200 hover:bg-primary-500/25"
+          confirmClassName="border-accent/30 bg-accent/15 text-accent hover:bg-accent/25"
           onCancel={() => setShowStyleTooLongConfirm(false)}
           onConfirm={() => {
             setShowStyleTooLongConfirm(false);
@@ -337,9 +337,9 @@ export default memo(function StudioForm({
       {/* Inspiration Section (APIMart v6 inspo references — display only) */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">{t("studio.inspirationHeading")}</h3>
+          <h3 className="text-sm font-semibold text-ink-muted">{t("studio.inspirationHeading")}</h3>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-white/30 select-none">
+            <span className="text-[10px] font-mono text-ink-dim select-none">
               {inspiration.length}/{MAX_INSPIRATION_TRACKS}
             </span>
             <button
@@ -363,35 +363,35 @@ export default memo(function StudioForm({
         </div>
 
         {!inspirationEnabled && (
-          <p className="mb-3 text-xs text-white/40 italic">{t("studio.inspirationDisabledHint")}</p>
+          <p className="mb-3 text-xs text-ink-dim italic">{t("studio.inspirationDisabledHint")}</p>
         )}
 
         {inspiration.length > 0 && (
           <div className={`space-y-2 mb-3 ${!inspirationEnabled ? "opacity-40" : ""}`}>
             {inspiration.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2">
+              <div key={item.id} className="flex items-center gap-3  border border-line bg-white/[0.03] p-2">
                 {item.coverUrl ? (
                   <img
                     src={item.coverUrl}
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                    className="h-10 w-10 shrink-0  object-cover"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/8 text-white/30">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center  bg-white/8 text-ink-dim">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm text-white/85">
+                <span className="min-w-0 flex-1 truncate text-sm text-ink/85">
                   {item.title?.trim() || t("library.untitled")}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeInspirationTrack(item.id)}
-                  className="shrink-0 rounded p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+                  className="shrink-0 rounded p-1 text-ink-dim transition-colors hover:bg-white/10 hover:text-ink"
                   title={t("studio.inspirationRemove")}
                   aria-label={t("studio.inspirationRemove")}
                 >
@@ -412,11 +412,11 @@ export default memo(function StudioForm({
             setInspoDragActive(true);
           }}
           onDragLeave={() => setInspoDragActive(false)}
-          className={`rounded-xl border-2 border-dashed px-4 py-3 text-center transition-colors ${
-            inspoDragActive ? "border-primary-400/80 bg-primary-500/10" : "border-white/15 bg-white/[0.02]"
+          className={` border-2 border-dashed px-4 py-3 text-center transition-colors ${
+            inspoDragActive ? "border-accent/80 bg-accent/10" : "border-line-strong bg-white/[0.02]"
           }`}
         >
-          <p className="text-xs text-white/45">{t("studio.inspirationDropHint", { count: inspiration.length })}</p>
+          <p className="text-xs text-ink-dim">{t("studio.inspirationDropHint", { count: inspiration.length })}</p>
         </div>
 
         {inspoError && <p className="mt-2 text-xs text-red-400">{inspoError}</p>}
@@ -425,10 +425,10 @@ export default memo(function StudioForm({
         )}
 
         {inspirationEnabled && inspiration.length > 0 && (
-          <div className="mt-3 border-t border-white/10 pt-3">
+          <div className="mt-3 border-t border-line pt-3">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-white/60">{t("studio.inspirationAudioWeightLabel")}</label>
-              <span className="text-sm text-white/40 font-mono">
+              <label className="text-sm font-medium text-ink-muted">{t("studio.inspirationAudioWeightLabel")}</label>
+              <span className="text-sm text-ink-dim font-mono">
                 {inspoAudioWeight}% · {(inspoAudioWeight / 100).toFixed(2)}
               </span>
             </div>
@@ -439,14 +439,14 @@ export default memo(function StudioForm({
                 max="100"
                 value={inspoAudioWeight}
                 onChange={(e) => setInspoAudioWeight(Number(e.target.value))}
-                className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                 style={{
                   background: `linear-gradient(to right, #8b5cf6 ${inspoAudioWeight}%, rgba(255,255,255,0.1) ${inspoAudioWeight}%)`,
                 }}
                 aria-label={t("studio.inspirationAudioWeightLabel")}
               />
             </div>
-            <p className="text-[10px] text-white/25 mt-1">{t("studio.inspirationAudioWeightHint")}</p>
+            <p className="text-[10px] text-ink-dim mt-1">{t("studio.inspirationAudioWeightHint")}</p>
           </div>
         )}
       </section>
@@ -456,8 +456,8 @@ export default memo(function StudioForm({
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-white/80">{t("studio.lyrics")}</h3>
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${instrumental ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" : "bg-primary-500/20 text-primary-400 border border-primary-500/30"}`}>
+            <h3 className="text-sm font-semibold text-ink-muted">{t("studio.lyrics")}</h3>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${instrumental ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" : "bg-accent/20 text-accent border border-accent/30"}`}>
               {instrumental ? t("studio.instrumentalBadge") : t("studio.vocalBadge")}
             </span>
           </div>
@@ -477,15 +477,15 @@ export default memo(function StudioForm({
                   instrumental ? "translate-x-6" : ""
                 }`}
               />
-              <span className="absolute left-1 top-0.5 text-[9px] font-bold text-white/60">V</span>
-              <span className="absolute right-1 top-0.5 text-[9px] font-bold text-white/60">I</span>
+              <span className="absolute left-1 top-0.5 text-[9px] font-bold text-ink-muted">V</span>
+              <span className="absolute right-1 top-0.5 text-[9px] font-bold text-ink-muted">I</span>
             </button>
           </div>
         </div>
 
         {isHeartMulaSelected && (
-          <p className="text-sm text-white/30 italic mb-2">
-            {t("studio.heartMulaLyricsHintPrefix")} <span className="text-white/50 font-mono">[Verse]</span>, <span className="text-white/50 font-mono">[Chorus]</span>, <span className="text-white/50 font-mono">[Bridge]</span>{t("studio.heartMulaLyricsHintSuffix")} <span className="text-white/50 font-mono">[intro-short]</span>, <span className="text-white/50 font-mono">[inst-medium]</span>, <span className="text-white/50 font-mono">[outro-short]</span>.
+          <p className="text-sm text-ink-dim italic mb-2">
+            {t("studio.heartMulaLyricsHintPrefix")} <span className="text-ink-dim font-mono">[Verse]</span>, <span className="text-ink-dim font-mono">[Chorus]</span>, <span className="text-ink-dim font-mono">[Bridge]</span>{t("studio.heartMulaLyricsHintSuffix")} <span className="text-ink-dim font-mono">[intro-short]</span>, <span className="text-ink-dim font-mono">[inst-medium]</span>, <span className="text-ink-dim font-mono">[outro-short]</span>.
           </p>
         )}
         {(!instrumental || isHeartMulaSelected) && (
@@ -540,12 +540,12 @@ ${t("studio.yourChorusHere")}`}
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-[#12121a]/85 px-2 py-1 rounded-lg border border-white/5 shadow-md">
+              <div className="flex items-center gap-1.5 bg-surface/85 px-2 py-1  border border-line shadow-md">
                 <button
                   type="button"
                   onClick={() => handleCopy(lyrics, "lyrics")}
                   disabled={!lyrics.trim()}
-                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title={t("studio.copyLyrics")}
                   aria-label={t("studio.copyLyrics")}
                 >
@@ -570,7 +570,7 @@ ${t("studio.yourChorusHere")}`}
                     }
                   }}
                   disabled={!lyrics.trim()}
-                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title={t("studio.saveLyrics")}
                   aria-label={t("studio.saveLyrics")}
                 >
@@ -589,7 +589,7 @@ ${t("studio.yourChorusHere")}`}
                   type="button"
                   onClick={() => setLyrics("")}
                   disabled={!lyrics.trim()}
-                  className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title={t("studio.clearLyrics")}
                   aria-label={t("studio.clearLyrics")}
                 >
@@ -599,7 +599,7 @@ ${t("studio.yourChorusHere")}`}
                 </button>
                 <div className="h-3.5 w-px bg-white/10" />
                 <span className={`text-[10px] font-mono select-none ${
-                  lyricsCharCount >= lyricsMaxChars ? "text-red-400" : "text-white/30"
+                  lyricsCharCount >= lyricsMaxChars ? "text-red-400" : "text-ink-dim"
                 }`}>
                   {lyricsCharCount}/{lyricsMaxChars}
                 </span>
@@ -611,8 +611,8 @@ ${t("studio.yourChorusHere")}`}
         )}
 
         {instrumental && !isHeartMulaSelected && (
-          <p className="text-sm text-white/30 italic">
-            🎵 <span className="text-white/50">{t("studio.instrumentalModeLabel")}</span> {t("studio.instrumentalModeHint")}
+          <p className="text-sm text-ink-dim italic">
+            🎵 <span className="text-ink-dim">{t("studio.instrumentalModeLabel")}</span> {t("studio.instrumentalModeHint")}
           </p>
         )}
       </section>
@@ -620,17 +620,17 @@ ${t("studio.yourChorusHere")}`}
       {/* Expanded lyrics overlay */}
       {lyricsExpanded && (
         <div
-          className="absolute inset-0 z-50 flex flex-col bg-[#0d0d12]/98 backdrop-blur-sm p-4 rounded-xl"
+          className="absolute inset-0 z-50 flex flex-col bg-canvas/98 backdrop-blur-sm p-4 "
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-white/80">{t("studio.lyrics")}</h3>
-              <span className={`text-xs text-white/30`}>{lyricsCharCount}/{lyricsMaxChars}</span>
+              <h3 className="text-sm font-semibold text-ink-muted">{t("studio.lyrics")}</h3>
+              <span className={`text-xs text-ink-dim`}>{lyricsCharCount}/{lyricsMaxChars}</span>
             </div>
             <button
               type="button"
               onClick={() => setLyricsExpanded(false)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition"
+              className="flex items-center gap-1.5  px-3 py-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-white/10 transition"
               title={t("studio.collapseLyricsEditor")}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -645,7 +645,7 @@ ${t("studio.yourChorusHere")}`}
             placeholder={isHeartMulaSelected
               ? `${t("studio.lyricsPlaceholderHeartMulaIntro")}\n\n[Verse]\n${t("studio.yourLyricsHere")}\n\n[Chorus]\n${t("studio.yourChorusHere")}\n\n[intro-short]\n[outro-short]`
               : `${t("studio.lyricsPlaceholderDefaultIntro")}\n\n[Verse]\n${t("studio.yourLyricsHere")}\n\n[Chorus]\n${t("studio.yourChorusHere")}`}
-            className="flex-1 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-base leading-relaxed text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-primary-500/50 resize-none"
+            className="flex-1 w-full  border border-line bg-white/5 p-4 text-base leading-relaxed text-ink placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-accent/50 resize-none"
             autoFocus
           />
         </div>
@@ -654,10 +654,10 @@ ${t("studio.yourChorusHere")}`}
       {/* Style Section */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white/80">{isHeartMulaSelected ? t("studio.styleTagsHeading") : t("studio.stylePromptHeading")}</h3>
+          <h3 className="text-sm font-semibold text-ink-muted">{isHeartMulaSelected ? t("studio.styleTagsHeading") : t("studio.stylePromptHeading")}</h3>
         </div>
         {isHeartMulaSelected && (
-          <p className="text-sm text-white/30 italic mb-2">
+          <p className="text-sm text-ink-dim italic mb-2">
             {t("studio.styleTagsHint")}
           </p>
         )}
@@ -690,12 +690,12 @@ ${t("studio.yourChorusHere")}`}
             <PresetsManager songIdea={songIdea} setSongIdea={setSongIdea} />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#12121a]/85 px-2 py-1 rounded-lg border border-white/5 shadow-md">
+          <div className="flex items-center gap-1.5 bg-surface/85 px-2 py-1  border border-line shadow-md">
             <button
               type="button"
               onClick={() => handleCopy(songIdea, "style")}
               disabled={!songIdea.trim()}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={t("studio.copyStyle")}
               aria-label={t("studio.copyStyle")}
             >
@@ -713,7 +713,7 @@ ${t("studio.yourChorusHere")}`}
               type="button"
               onClick={() => setSongIdea("")}
               disabled={!songIdea.trim()}
-              className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={t("studio.clearStyle")}
               aria-label={t("studio.clearStyle")}
             >
@@ -724,7 +724,7 @@ ${t("studio.yourChorusHere")}`}
             <div className="h-3.5 w-px bg-white/10" />
             <span
               className={`text-[10px] font-mono select-none ${
-                promptCharCount >= styleMaxChars ? "text-red-400" : "text-white/30"
+                promptCharCount >= styleMaxChars ? "text-red-400" : "text-ink-dim"
               }`}
             >
               {promptCharCount}/{styleMaxChars}
@@ -738,11 +738,11 @@ ${t("studio.yourChorusHere")}`}
             <div className="my-4 h-px bg-white/10" />
 
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">{t("studio.slidersHeading")}</h4>
+              <h4 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">{t("studio.slidersHeading")}</h4>
               <button
                 type="button"
                 onClick={() => setShowProTips(!showProTips)}
-                className="flex items-center gap-1 text-sm text-primary-400 hover:text-primary-300 transition-colors"
+                className="flex items-center gap-1 text-sm text-accent hover:text-accent transition-colors"
               >
                 <svg className={`w-3 h-3 transition-transform duration-200 ${showProTips ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -752,12 +752,12 @@ ${t("studio.yourChorusHere")}`}
             </div>
 
             {showProTips && (
-              <div className="mb-4 p-3 rounded-lg bg-primary-500/5 border border-primary-500/20 space-y-2">
-                <p className="text-sm text-primary-300 font-medium">{t("studio.proTipsHeading")}</p>
-                <ul className="text-sm text-white/40 space-y-1.5 list-disc list-inside">
-                  <li><span className="text-white/60">{t("studio.proTip1Label")}</span> {t("studio.proTip1Text")}</li>
-                  <li><span className="text-white/60">{t("studio.proTip2Label")}</span> {t("studio.proTip2Text")}</li>
-                  <li><span className="text-white/60">{t("studio.proTip3Label")}</span> {t("studio.proTip3Text")}</li>
+              <div className="mb-4 p-3  bg-accent/5 border border-accent/20 space-y-2">
+                <p className="text-sm text-accent font-medium">{t("studio.proTipsHeading")}</p>
+                <ul className="text-sm text-ink-dim space-y-1.5 list-disc list-inside">
+                  <li><span className="text-ink-muted">{t("studio.proTip1Label")}</span> {t("studio.proTip1Text")}</li>
+                  <li><span className="text-ink-muted">{t("studio.proTip2Label")}</span> {t("studio.proTip2Text")}</li>
+                  <li><span className="text-ink-muted">{t("studio.proTip3Label")}</span> {t("studio.proTip3Text")}</li>
                 </ul>
               </div>
             )}
@@ -765,25 +765,25 @@ ${t("studio.yourChorusHere")}`}
             {/* Weirdness Slider */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">{t("studio.weirdnessLabel")}</label>
-                <span className="text-sm text-white/40 font-mono">{weirdness}%</span>
+                <label className="text-sm font-medium text-ink-muted">{t("studio.weirdnessLabel")}</label>
+                <span className="text-sm text-ink-dim font-mono">{weirdness}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.safeLabel")}</span>
+                <span className="text-[10px] text-ink-dim uppercase tracking-wider">{t("studio.safeLabel")}</span>
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={weirdness}
                   onChange={(e) => setWeirdness(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                   style={{
                     background: `linear-gradient(to right, #8b5cf6 ${weirdness}%, rgba(255,255,255,0.1) ${weirdness}%)`,
                   }}
                 />
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.chaosLabel")}</span>
+                <span className="text-[10px] text-ink-dim uppercase tracking-wider">{t("studio.chaosLabel")}</span>
               </div>
-              <p className="text-[10px] text-white/25 mt-1">
+              <p className="text-[10px] text-ink-dim mt-1">
                 {weirdness <= 20 ? t("studio.weirdnessDescLow") : weirdness <= 60 ? t("studio.weirdnessDescMid") : t("studio.weirdnessDescHigh")}
               </p>
             </div>
@@ -791,25 +791,25 @@ ${t("studio.yourChorusHere")}`}
             {/* Style Influence Slider */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">{t("studio.styleInfluenceLabel")}</label>
-                <span className="text-sm text-white/40 font-mono">{styleInfluence}%</span>
+                <label className="text-sm font-medium text-ink-muted">{t("studio.styleInfluenceLabel")}</label>
+                <span className="text-sm text-ink-dim font-mono">{styleInfluence}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.looseLabel")}</span>
+                <span className="text-[10px] text-ink-dim uppercase tracking-wider">{t("studio.looseLabel")}</span>
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={styleInfluence}
                   onChange={(e) => setStyleInfluence(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                   style={{
                     background: `linear-gradient(to right, #8b5cf6 ${styleInfluence}%, rgba(255,255,255,0.1) ${styleInfluence}%)`,
                   }}
                 />
-                <span className="text-[10px] text-white/25 uppercase tracking-wider">{t("studio.strongLabel")}</span>
+                <span className="text-[10px] text-ink-dim uppercase tracking-wider">{t("studio.strongLabel")}</span>
               </div>
-              <p className="text-[10px] text-white/25 mt-1">
+              <p className="text-[10px] text-ink-dim mt-1">
                 {styleInfluence <= 40 ? t("studio.styleInfluenceDescLow") : styleInfluence <= 70 ? t("studio.styleInfluenceDescMid") : t("studio.styleInfluenceDescHigh")}
               </p>
             </div>
@@ -822,26 +822,26 @@ ${t("studio.yourChorusHere")}`}
             <div className="my-4 h-px bg-white/10" />
 
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">{t("studio.apiMartSettingsHeading")}</h4>
+              <h4 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">{t("studio.apiMartSettingsHeading")}</h4>
             </div>
 
             {/* Exclude Styles (Negative Tags) */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-white/60 mb-1.5">{t("studio.excludeStylesLabel")}</label>
+              <label className="block text-sm font-medium text-ink-muted mb-1.5">{t("studio.excludeStylesLabel")}</label>
               <input
                 type="text"
                 placeholder={t("studio.excludeStylesPlaceholder")}
                 value={negativeTags}
                 onChange={(e) => setNegativeTags(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
+                className="w-full px-3 py-2 bg-white/5 border border-line  text-sm text-ink placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all"
               />
             </div>
 
             {/* Style Weight */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">{t("studio.styleWeightLabel")}</label>
-                <span className="text-sm text-white/40 font-mono">{(styleInfluence / 100).toFixed(2)}</span>
+                <label className="text-sm font-medium text-ink-muted">{t("studio.styleWeightLabel")}</label>
+                <span className="text-sm text-ink-dim font-mono">{(styleInfluence / 100).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -850,20 +850,20 @@ ${t("studio.yourChorusHere")}`}
                   max="100"
                   value={styleInfluence}
                   onChange={(e) => setStyleInfluence(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                   style={{
                     background: `linear-gradient(to right, #8b5cf6 ${styleInfluence}%, rgba(255,255,255,0.1) ${styleInfluence}%)`,
                   }}
                 />
               </div>
-              <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
+              <p className="text-[10px] text-ink-dim mt-1">{t("studio.customTrueHint")}</p>
             </div>
 
             {/* Weirdness Constraint (Creativity) */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-white/60">{t("studio.creativityWeirdnessLabel")}</label>
-                <span className="text-sm text-white/40 font-mono">{(weirdness / 100).toFixed(2)}</span>
+                <label className="text-sm font-medium text-ink-muted">{t("studio.creativityWeirdnessLabel")}</label>
+                <span className="text-sm text-ink-dim font-mono">{(weirdness / 100).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -872,21 +872,21 @@ ${t("studio.yourChorusHere")}`}
                   max="100"
                   value={weirdness}
                   onChange={(e) => setWeirdness(Number(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                   style={{
                     background: `linear-gradient(to right, #8b5cf6 ${weirdness}%, rgba(255,255,255,0.1) ${weirdness}%)`,
                   }}
                 />
               </div>
-              <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
+              <p className="text-[10px] text-ink-dim mt-1">{t("studio.customTrueHint")}</p>
             </div>
 
             {/* Audio Weight — only relevant when a cloned/uploaded voice is used */}
             {usePersonaVoice && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-white/60">{t("studio.audioWeightLabel")}</label>
-                  <span className="text-sm text-white/40 font-mono">{(audioWeight / 100).toFixed(2)}</span>
+                  <label className="text-sm font-medium text-ink-muted">{t("studio.audioWeightLabel")}</label>
+                  <span className="text-sm text-ink-dim font-mono">{(audioWeight / 100).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -895,13 +895,13 @@ ${t("studio.yourChorusHere")}`}
                     max="100"
                     value={audioWeight}
                     onChange={(e) => setAudioWeight(Number(e.target.value))}
-                    className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-primary-500"
+                    className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 cursor-pointer accent-accent"
                     style={{
                       background: `linear-gradient(to right, #8b5cf6 ${audioWeight}%, rgba(255,255,255,0.1) ${audioWeight}%)`,
                     }}
                   />
                 </div>
-                <p className="text-[10px] text-white/25 mt-1">{t("studio.customTrueHint")}</p>
+                <p className="text-[10px] text-ink-dim mt-1">{t("studio.customTrueHint")}</p>
               </div>
             )}
 
@@ -911,36 +911,36 @@ ${t("studio.yourChorusHere")}`}
               ["v6", "v6-wild", "v6-mini"].includes(selectedProviders["apimart"]) && (
               <>
                 <div className="my-3 h-px bg-white/10" />
-                <h5 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">V6 Options</h5>
+                <h5 className="text-xs font-semibold text-ink-dim uppercase tracking-wider mb-3">V6 Options</h5>
 
                 {/* Style Variety */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-white/60 mb-2">Style Variety</label>
+                  <label className="block text-sm font-medium text-ink-muted mb-2">Style Variety</label>
                   <div className="flex gap-1.5 flex-wrap">
                     {(["off", "normal", "high", "extra", "max"] as const).map((v) => (
                       <button
                         key={v}
                         type="button"
                         onClick={() => setApimartVariety(v)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        className={`px-2.5 py-1  text-xs font-medium transition-colors ${
                           apimartVariety === v
                             ? "bg-violet-500/40 text-violet-200 border border-violet-400/40"
-                            : "bg-white/5 text-white/40 border border-white/10 hover:bg-white/10"
+                            : "bg-white/5 text-ink-dim border border-line hover:bg-white/10"
                         }`}
                       >
                         {v.charAt(0).toUpperCase() + v.slice(1)}
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-white/25 mt-1">Style variation level. Independent of Max mode billing.</p>
+                  <p className="text-[10px] text-ink-dim mt-1">Style variation level. Independent of Max mode billing.</p>
                 </div>
 
                 {/* Max Mode */}
                 <div className="mb-4">
                   <label className="flex items-center justify-between cursor-pointer">
                     <div>
-                      <span className="text-sm font-medium text-white/60">Max Mode</span>
-                      <p className="text-[10px] text-white/25 mt-0.5">Higher quality — billed at 2× the standard price</p>
+                      <span className="text-sm font-medium text-ink-muted">Max Mode</span>
+                      <p className="text-[10px] text-ink-dim mt-0.5">Higher quality — billed at 2× the standard price</p>
                     </div>
                     <button
                       type="button"
@@ -962,17 +962,17 @@ ${t("studio.yourChorusHere")}`}
 
                 {/* Audio Format */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-white/60 mb-2">Audio Format</label>
+                  <label className="block text-sm font-medium text-ink-muted mb-2">Audio Format</label>
                   <div className="flex gap-1.5">
                     {(["mp3", "m4a", "wav"] as const).map((fmt) => (
                       <button
                         key={fmt}
                         type="button"
                         onClick={() => setApimartAudioFormat(fmt)}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-colors ${
+                        className={`flex-1 py-1.5  text-xs font-medium uppercase tracking-wide transition-colors ${
                           apimartAudioFormat === fmt
                             ? "bg-violet-500/40 text-violet-200 border border-violet-400/40"
-                            : "bg-white/5 text-white/40 border border-white/10 hover:bg-white/10"
+                            : "bg-white/5 text-ink-dim border border-line hover:bg-white/10"
                         }`}
                       >
                         {fmt}
@@ -996,15 +996,15 @@ ${t("studio.yourChorusHere")}`}
 
       {!instrumental && (
         <section className="section-card">
-          <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.vocalGenderHeading")}</h3>
-          <div className="flex rounded-lg overflow-hidden border border-white/10">
+          <h3 className="text-sm font-semibold text-ink-muted mb-3">{t("studio.vocalGenderHeading")}</h3>
+          <div className="flex  overflow-hidden border border-line">
             <button
               type="button"
               onClick={() => setVocalGender(vocalGender === "female" ? "auto" : "female")}
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 vocalGender === "female"
                   ? "bg-pink-500/30 text-pink-300"
-                  : "bg-white/5 text-white/40 hover:bg-white/10"
+                  : "bg-white/5 text-ink-dim hover:bg-white/10"
               }`}
             >
               👩‍🎤 {t("studio.femaleOption")}
@@ -1015,7 +1015,7 @@ ${t("studio.yourChorusHere")}`}
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 vocalGender === "male"
                   ? "bg-blue-500/30 text-blue-300"
-                  : "bg-white/5 text-white/40 hover:bg-white/10"
+                  : "bg-white/5 text-ink-dim hover:bg-white/10"
               }`}
             >
               👨‍🎤 {t("studio.maleOption")}
@@ -1035,10 +1035,10 @@ ${t("studio.yourChorusHere")}`}
 
       {/* Credits Section */}
       <section className="section-card">
-        <h3 className="text-sm font-semibold text-white/80 mb-3">{t("studio.creditsHeading")}</h3>
+        <h3 className="text-sm font-semibold text-ink-muted mb-3">{t("studio.creditsHeading")}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] text-white/50 mb-1">{t("studio.artistLabel")}</label>
+            <label className="block text-[10px] text-ink-dim mb-1">{t("studio.artistLabel")}</label>
             {artistAliasOptions.length > 0 ? (
               <select
                 value={artistName}
@@ -1064,7 +1064,7 @@ ${t("studio.yourChorusHere")}`}
             )}
           </div>
           <div>
-            <label className="block text-[10px] text-white/50 mb-1">{t("studio.writerLabel")}</label>
+            <label className="block text-[10px] text-ink-dim mb-1">{t("studio.writerLabel")}</label>
             <input
               type="text"
               value={writerName}
@@ -1079,13 +1079,13 @@ ${t("studio.yourChorusHere")}`}
       </div>
 
       {/* Generate Button */}
-      <div className="sticky bottom-0 z-10 space-y-2 rounded-xl border border-white/10 bg-[#11111a]/95 p-3 backdrop-blur-sm">
-        <label className="flex items-start gap-2.5 text-sm text-white/70">
+      <div className="sticky bottom-0 z-10 space-y-2  border border-line bg-surface/95 p-3 backdrop-blur-sm">
+        <label className="flex items-start gap-2.5 text-sm text-ink-muted">
           <input
             type="checkbox"
             checked={autoCreateWorkspaceFromGeneratedTitle}
             onChange={(e) => setAutoCreateWorkspaceFromGeneratedTitle(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-white/30 bg-white/5 text-primary-500 focus:ring-primary-500/40"
+            className="mt-0.5 h-4 w-4 rounded border-line/30 bg-white/5 text-accent focus:ring-accent/40"
           />
           <span>
             {t("studio.autoCreateWorkspaceLabel")}

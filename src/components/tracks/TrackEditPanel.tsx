@@ -89,13 +89,13 @@ function AutocompleteInput({
         className={className}
       />
       {open && filtered.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full rounded-xl border border-white/12 bg-[#1a1b27] shadow-lg overflow-hidden">
+        <ul className="absolute z-50 mt-1 w-full  border border-line bg-surface shadow-lg overflow-hidden">
           {filtered.map((s) => (
             <li key={s}>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
-                className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 transition-colors"
+                className="w-full px-3 py-2 text-left text-sm text-ink-muted hover:bg-white/10 transition-colors"
               >
                 {s}
               </button>
@@ -120,7 +120,7 @@ function SliderWithInput({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-white/60">{label}</label>
+        <label className="text-xs text-ink-muted">{label}</label>
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -133,9 +133,9 @@ function SliderWithInput({
               const n = parseInt(e.target.value, 10);
               if (!isNaN(n)) onChange(Math.min(100, Math.max(1, n)));
             }}
-            className="w-12 rounded-lg border border-white/12 bg-[#11121a] px-2 py-0.5 text-center text-xs text-white outline-none focus:border-white/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-12  border border-line bg-surface px-2 py-0.5 text-center text-xs text-ink outline-none focus:border-line/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <span className="text-xs text-white/40">%</span>
+          <span className="text-xs text-ink-dim">%</span>
         </div>
       </div>
       <input
@@ -144,7 +144,7 @@ function SliderWithInput({
         max={100}
         value={display}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-primary-500"
+        className="w-full h-1.5 cursor-pointer appearance-none rounded-full bg-white/10 accent-accent"
       />
     </div>
   );
@@ -298,19 +298,19 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
       />
 
-      <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-120 border-l border-white/10 bg-[#0d0e15] shadow-[0_24px_80px_rgba(0,0,0,0.45)] flex flex-col">
+      <aside className="absolute right-0 top-0 h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] w-full max-w-120 border-l border-line bg-canvas shadow-[0_24px_80px_rgba(0,0,0,0.45)] flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4 shrink-0">
+        <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4 shrink-0">
           <div>
             <h3 className="text-lg font-semibold">Edit Track Details</h3>
-            <p className="text-sm text-white/50 mt-0.5 truncate max-w-[260px]">
+            <p className="text-sm text-ink-dim mt-0.5 truncate max-w-[260px]">
               {track.title ?? track.prompt.substring(0, 60)}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-full p-2 text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
             aria-label="Close"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,24 +323,24 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Title */}
           <div className="space-y-1">
-            <label className="text-sm text-white/60">Title</label>
+            <label className="text-sm text-ink-muted">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Track title"
-              className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+              className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
             />
           </div>
 
           {/* Release status + Publish date side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Release Status</label>
+              <label className="text-sm text-ink-muted">Release Status</label>
               <select
                 value={releaseStatus}
                 onChange={(e) => setReleaseStatus(e.target.value)}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               >
                 <option value="concept">Concept</option>
                 <option value="published">Published</option>
@@ -348,27 +348,27 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Publish Date</label>
+              <label className="text-sm text-ink-muted">Publish Date</label>
               <input
                 type="date"
                 value={publishDate}
                 onChange={(e) => setPublishDate(e.target.value)}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25 [color-scheme:dark]"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25 [color-scheme:dark]"
               />
             </div>
           </div>
 
           {/* Cover art */}
           <div className="space-y-1">
-            <label className="text-sm text-white/60">Cover art</label>
+            <label className="text-sm text-ink-muted">Cover art</label>
             <div className="flex items-center gap-3">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white/8 flex items-center justify-center">
+              <div className="h-14 w-14 shrink-0 overflow-hidden  bg-white/8 flex items-center justify-center">
                 {coverPreview ? (
                   <img src={coverPreview} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : track.coverUrl ? (
                   <img src={track.coverUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : (
-                  <svg className="w-5 h-5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 )}
@@ -376,7 +376,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               <div className="flex gap-2">
                 <label
                   htmlFor="edit-cover-input"
-                  className="cursor-pointer rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/60 hover:bg-white/10 hover:text-white/80 transition-colors"
+                  className="cursor-pointer  border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-muted hover:bg-white/10 hover:text-ink-muted transition-colors"
                 >
                   {coverFile ? "Change" : "Upload image"}
                 </label>
@@ -391,7 +391,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                   <button
                     type="button"
                     onClick={() => handleCoverFileChange(null)}
-                    className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-white/40 hover:text-white/70 transition-colors"
+                    className=" border border-line bg-white/5 px-3 py-1.5 text-sm text-ink-dim hover:text-ink-muted transition-colors"
                   >
                     Remove
                   </button>
@@ -403,33 +403,33 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Artist + Composer + Written By side by side */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Artist</label>
+              <label className="text-sm text-ink-muted">Artist</label>
               <AutocompleteInput
                 value={artistName}
                 onChange={setArtistName}
                 placeholder="Artist name"
                 suggestions={mergedArtistNames}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Composer</label>
+              <label className="text-sm text-ink-muted">Composer</label>
               <AutocompleteInput
                 value={composerName}
                 onChange={setComposerName}
                 placeholder="Composer name"
                 suggestions={mergedComposerNames}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Written By</label>
+              <label className="text-sm text-ink-muted">Written By</label>
               <AutocompleteInput
                 value={writerName}
                 onChange={setWriterName}
                 placeholder="Lyrics writer"
                 suggestions={mergedWriterNames}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               />
             </div>
           </div>
@@ -437,14 +437,14 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Source + Language side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Source</label>
+              <label className="text-sm text-ink-muted">Source</label>
               <select
                 value={knownProvider ? provider : "__custom__"}
                 onChange={(e) => {
                   const v = e.target.value;
                   setProvider(v === "__custom__" ? provider : v);
                 }}
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               >
                 {PROVIDERS.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
@@ -455,20 +455,20 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Language</label>
+              <label className="text-sm text-ink-muted">Language</label>
               <input
                 type="text"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 placeholder="e.g. English"
-                className="h-9 w-full rounded-xl border border-white/12 bg-[#11121a] px-3 text-sm text-white outline-none focus:border-white/25"
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               />
             </div>
           </div>
 
           {/* Suno sliders */}
           {provider === "suno" && (
-            <div className="space-y-3 rounded-xl border border-white/8 bg-white/3 px-3 py-3">
+            <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
               <SliderWithInput
                 label="Style Influence"
                 value={sunoStyleInfluence}
@@ -483,34 +483,34 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           )}
 
           {/* Instrumental toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">
+          <div className="flex items-center justify-between  border border-line bg-white/4 px-4 py-2.5">
             <div>
-              <p className="text-sm font-medium text-white">Instrumental</p>
-              <p className="text-xs text-white/45">No vocals / lyrics</p>
+              <p className="text-sm font-medium text-ink">Instrumental</p>
+              <p className="text-xs text-ink-dim">No vocals / lyrics</p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={instrumental}
               onClick={() => setInstrumental((v) => !v)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${instrumental ? "bg-primary-500" : "bg-white/15"}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${instrumental ? "bg-accent" : "bg-white/15"}`}
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${instrumental ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
           {/* Collaboration toggle */}
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 px-4 py-2.5">
+          <div className="flex items-center justify-between  border border-line bg-white/4 px-4 py-2.5">
             <div>
-              <p className="text-sm font-medium text-white">This is a collaboration</p>
-              <p className="text-xs text-white/45">Made together with another artist</p>
+              <p className="text-sm font-medium text-ink">This is a collaboration</p>
+              <p className="text-xs text-ink-dim">Made together with another artist</p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={isCollaboration}
               onClick={() => setIsCollaboration((v) => !v)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${isCollaboration ? "bg-primary-500" : "bg-white/15"}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${isCollaboration ? "bg-accent" : "bg-white/15"}`}
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${isCollaboration ? "translate-x-5" : "translate-x-0"}`} />
             </button>
@@ -518,26 +518,26 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
 
           {/* Prompt */}
           <div className="space-y-1">
-            <label className="text-sm text-white/60">Prompt / Style</label>
+            <label className="text-sm text-ink-muted">Prompt / Style</label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
               placeholder="Style, mood, genre..."
-              className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+              className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
             />
           </div>
 
           {/* Lyrics */}
           {!instrumental && (
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Lyrics</label>
+              <label className="text-sm text-ink-muted">Lyrics</label>
               <textarea
                 value={lyrics}
                 onChange={(e) => setLyrics(e.target.value)}
                 rows={8}
                 placeholder="Paste lyrics here..."
-                className="w-full rounded-xl border border-white/12 bg-[#11121a] px-3 py-2 text-sm text-white outline-none focus:border-white/25 resize-none"
+                className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
               />
             </div>
           )}
@@ -545,46 +545,46 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
           {/* Section replace (Suno replace-music via APIMart) */}
           {provider === "apimart" && !!track.jobId && (
             <div className="space-y-1">
-              <label className="text-sm text-white/60">Replace a section</label>
+              <label className="text-sm text-ink-muted">Replace a section</label>
               <SectionReplaceEditor track={track} onSubmitted={() => {}} />
             </div>
           )}
 
           {/* Track DNA — read-only structured display */}
-          <div className="relative space-y-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="relative space-y-3 overflow-hidden  border border-line bg-white/[0.03] p-4">
             {/* Subtle DNA helix background */}
             <div
               className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-[0.12] blur-sm"
               style={{ backgroundImage: "url(/images/track-dna-helix.png)" }}
             />
             <div className="relative space-y-3">
-            <h4 className="text-sm font-semibold text-white">Track DNA</h4>
+            <h4 className="text-sm font-semibold text-ink">Track DNA</h4>
 
             {/* Audio facts */}
             {parsedAudioDna && (parsedAudioDna.tempo != null || parsedAudioDna.key != null || parsedAudioDna.energy != null || parsedAudioDna.loudness != null) && (
               <div className="grid grid-cols-2 gap-3">
                 {parsedAudioDna.tempo != null && (
                   <div className="space-y-0.5">
-                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Tempo</div>
-                    <div className="text-sm font-medium text-white">{parsedAudioDna.tempo} BPM</div>
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Tempo</div>
+                    <div className="text-sm font-medium text-ink">{parsedAudioDna.tempo} BPM</div>
                   </div>
                 )}
                 {parsedAudioDna.key != null && (
                   <div className="space-y-0.5">
-                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Key</div>
-                    <div className="text-sm font-medium text-white">{parsedAudioDna.key}</div>
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Key</div>
+                    <div className="text-sm font-medium text-ink">{parsedAudioDna.key}</div>
                   </div>
                 )}
                 {parsedAudioDna.energy != null && (
                   <div className="space-y-0.5">
-                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Energy</div>
-                    <div className="text-sm font-medium text-white">{parsedAudioDna.energy}%</div>
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Energy</div>
+                    <div className="text-sm font-medium text-ink">{parsedAudioDna.energy}%</div>
                   </div>
                 )}
                 {parsedAudioDna.loudness != null && (
                   <div className="space-y-0.5">
-                    <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Loudness</div>
-                    <div className="text-sm font-medium text-white">{parsedAudioDna.loudness.toFixed(1)} LUFS</div>
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Loudness</div>
+                    <div className="text-sm font-medium text-ink">{parsedAudioDna.loudness.toFixed(1)} LUFS</div>
                   </div>
                 )}
               </div>
@@ -593,12 +593,12 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             {/* Atmosphere tags */}
             {parsedAudioDna?.atmosphereTags && parsedAudioDna.atmosphereTags.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[10px] uppercase tracking-[0.12em] text-white/40">Atmosphere</div>
+                <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Atmosphere</div>
                 <div className="flex flex-wrap gap-1.5">
                   {parsedAudioDna.atmosphereTags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-xs text-white/80"
+                      className="rounded-full border border-line bg-white/[0.06] px-2.5 py-1 text-xs text-ink-muted"
                     >
                       {tag}
                     </span>
@@ -609,20 +609,20 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
 
             {/* Lyrics score */}
             {parsedAudioDna?.lyricsScore != null && (
-              <div className="space-y-1 border-t border-white/10 pt-3">
+              <div className="space-y-1 border-t border-line pt-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-white">Lyrics</span>
-                  <span className="text-white/50">{parsedAudioDna.lyricsScore.toFixed(1)}/10</span>
+                  <span className="font-medium text-ink">Lyrics</span>
+                  <span className="text-ink-dim">{parsedAudioDna.lyricsScore.toFixed(1)}/10</span>
                 </div>
                 {parsedAudioDna.lyricsNotes && (
-                  <p className="text-sm text-white/40">{parsedAudioDna.lyricsNotes}</p>
+                  <p className="text-sm text-ink-dim">{parsedAudioDna.lyricsNotes}</p>
                 )}
               </div>
             )}
 
             {/* Fallback when no DNA data at all */}
             {!parsedAudioDna && (
-              <p className="text-sm text-white/40">Track DNA is still being analysed…</p>
+              <p className="text-sm text-ink-dim">Track DNA is still being analysed…</p>
             )}
             </div>
           </div>
@@ -633,11 +633,11 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/10 px-5 py-4 shrink-0 flex items-center justify-end gap-3">
+        <div className="border-t border-line px-5 py-4 shrink-0 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="h-9 rounded-full border border-white/12 px-4 text-sm text-white/60 hover:text-white transition-colors"
+            className="h-9 rounded-full border border-line px-4 text-sm text-ink-muted hover:text-ink transition-colors"
           >
             Cancel
           </button>
@@ -645,7 +645,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="h-9 rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-white/90 disabled:opacity-60 transition-colors"
+            className="h-9 rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-accent-strong disabled:opacity-60 transition-colors"
           >
             {saving ? "Saving…" : "Save"}
           </button>

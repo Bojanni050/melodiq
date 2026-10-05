@@ -49,7 +49,7 @@ export default function ProviderSection({
     <ProviderAccordion title={provider.name} description={provider.description} status={status} activePurposes={activePurposes}>
       {provider.fields.map((field) => (
         <div key={field.key}>
-          <label className="block text-sm font-medium text-white/50 mb-1">{field.label}</label>
+          <label className="block text-sm font-medium text-ink-dim mb-1">{field.label}</label>
           <input
             type={field.type}
             value={values[field.key] || ""}

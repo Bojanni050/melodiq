@@ -34,19 +34,19 @@ export default function StyleSummary({
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#181820]/80 p-4 space-y-3">
+    <section className=" border border-line bg-surface/80 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/85">{t("melody.generatedPromptHeading")}</h3>
+        <h3 className="text-sm font-semibold text-ink/85">{t("melody.generatedPromptHeading")}</h3>
         <button
           type="button"
           onClick={copy}
-          className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+          className=" border border-line bg-white/5 px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink"
         >
           {copied ? t("melody.copied") : t("melody.copy")}
         </button>
       </div>
-      <p className="text-sm leading-relaxed text-white/85">{summary}</p>
-      <p className="text-xs text-white/40">
+      <p className="text-sm leading-relaxed text-ink/85">{summary}</p>
+      <p className="text-xs text-ink-dim">
         {t("melody.promptHint")}
       </p>
     </section>

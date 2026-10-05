@@ -15,7 +15,7 @@ export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirm
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
+        className="w-full max-w-lg  border border-amber-500/30 bg-[#2b1f10] p-4 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -30,14 +30,14 @@ export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirm
               <button
                 type="button"
                 onClick={onConfirm}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
+                className="inline-flex items-center gap-2  border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
               >
                 {t("library.continue")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white/80"
+                className="inline-flex items-center gap-2  border border-line bg-transparent px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/5 hover:text-ink-muted"
               >
                 {t("common.cancel")}
               </button>

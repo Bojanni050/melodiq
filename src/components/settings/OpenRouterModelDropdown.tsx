@@ -30,7 +30,7 @@ export default function OpenRouterModelDropdown({
 }) {
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-white/50 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-ink-dim mb-1">{label}</label>
       {allModelsLoaded ? (
         <button
           type="button"
@@ -48,13 +48,13 @@ export default function OpenRouterModelDropdown({
           </svg>
         </button>
       ) : (
-        <div className="input-field font-mono text-sm text-white/60">
+        <div className="input-field font-mono text-sm text-ink-muted">
           {selected ? selected.name : "Retrieve models to select"}
         </div>
       )}
 
       {open && options.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-white/10 bg-[#1a1a24] p-2 shadow-xl">
+        <div className="absolute z-50 mt-1 w-full  border border-line bg-surface p-2 shadow-xl">
           <ModelSelector
             label={`${label} options`}
             selected={selected}

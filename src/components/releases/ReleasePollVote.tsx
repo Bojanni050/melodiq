@@ -85,11 +85,11 @@ export default function ReleasePollVote({
   const closesLabel = formatClosesAt(poll.closesAt);
 
   return (
-    <section className="rounded-3xl border border-fuchsia-400/20 bg-fuchsia-400/[0.06] p-5 space-y-4">
+    <section className=" border border-accent/20 bg-accent/[0.06] p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-white">Welke versie is jouw favoriet?</h3>
-          <p className="text-xs text-white/50">
+          <h3 className="text-sm font-semibold text-ink">Welke versie is jouw favoriet?</h3>
+          <p className="text-xs text-ink-dim">
             {poll.totalVotes} {poll.totalVotes === 1 ? "stem" : "stemmen"}
             {closesLabel && !poll.isClosed ? ` · sluit ${closesLabel}` : ""}
             {poll.isClosed ? " · gesloten" : ""}
@@ -109,15 +109,15 @@ export default function ReleasePollVote({
           return (
             <div
               key={option.id}
-              className={`rounded-2xl border p-3 transition-colors ${
-                isMine ? "border-emerald-400/40 bg-emerald-400/[0.07]" : "border-white/10 bg-white/[0.04]"
+              className={` border p-3 transition-colors ${
+                isMine ? "border-emerald-400/40 bg-emerald-400/[0.07]" : "border-line bg-white/[0.04]"
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
                   {trackTitles[option.trackId] ?? "Versie"}
                 </span>
-                <span className="shrink-0 text-xs text-white/55">
+                <span className="shrink-0 text-xs text-ink/55">
                   {option.votes} · {pct}%
                 </span>
                 {!poll.isClosed && (
@@ -128,7 +128,7 @@ export default function ReleasePollVote({
                     className={`h-8 shrink-0 rounded-full px-4 text-xs font-semibold transition-colors disabled:opacity-50 ${
                       isMine
                         ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
-                        : "bg-white text-black hover:bg-white/90"
+                        : "bg-accent text-ink hover:bg-accent-strong"
                     }`}
                   >
                     {voting === option.id ? "…" : isMine ? "✓ Gekozen" : "Stem"}
@@ -137,7 +137,7 @@ export default function ReleasePollVote({
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className={`h-full rounded-full ${isMine ? "bg-emerald-400" : "bg-fuchsia-500/80"}`}
+                  className={`h-full rounded-full ${isMine ? "bg-emerald-400" : "bg-accent/80"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>

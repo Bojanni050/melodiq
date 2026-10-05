@@ -66,7 +66,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
           setMenuOpen((prev) => !prev);
           setSubmenuOpen(false);
         }}
-        className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white/75 backdrop-blur-sm transition-colors hover:bg-black/85 hover:text-white shadow-md"
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-black/60 text-ink/75 backdrop-blur-sm transition-colors hover:bg-black/85 hover:text-ink shadow-md"
         title={t("discover.trackOptions")}
         aria-label={t("discover.trackOptions")}
       >
@@ -77,7 +77,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
 
       {menuOpen && (
         <div
-          className="absolute right-0 top-8.5 z-30 min-w-44 rounded-xl border border-white/10 bg-[#12121a] p-1.5 shadow-2xl backdrop-blur-md text-left"
+          className="absolute right-0 top-8.5 z-30 min-w-44  border border-line bg-surface p-1.5 shadow-2xl backdrop-blur-md text-left"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -87,7 +87,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
           <button
             type="button"
             onClick={handleGoToTrack}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
+            className="flex w-full items-center justify-between  px-3 py-1.5 text-xs font-medium text-ink/85 transition-colors hover:bg-white/10"
           >
             <span>{t("discover.goToTrack")}</span>
           </button>
@@ -99,7 +99,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
             <button
               type="button"
               disabled
-              className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs text-white/30 cursor-not-allowed opacity-50"
+              className="flex w-full items-center justify-between  px-3 py-1.5 text-xs text-ink-dim cursor-not-allowed opacity-50"
               title={t("discover.trackNotInRelease")}
             >
               <span>{t("discover.goToRelease")}</span>
@@ -108,7 +108,7 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
             <button
               type="button"
               onClick={(e) => handleGoToSingleRelease(e, trackReleases[0].id)}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
+              className="flex w-full items-center justify-between  px-3 py-1.5 text-xs font-medium text-ink/85 transition-colors hover:bg-white/10"
             >
               <span>{t("discover.goToRelease")}</span>
             </button>
@@ -121,20 +121,20 @@ export default function DiscoverTrackOptionsMenu({ trackId }: DiscoverTrackOptio
                   e.stopPropagation();
                   setSubmenuOpen((prev) => !prev);
                 }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/10"
+                className="flex w-full items-center justify-between gap-2  px-3 py-1.5 text-xs font-medium text-ink/85 transition-colors hover:bg-white/10"
               >
                 <span>{t("discover.goToRelease")}</span>
-                <span className={`text-xs text-white/40 transition-transform ${submenuOpen ? "rotate-90" : ""}`}>›</span>
+                <span className={`text-xs text-ink-dim transition-transform ${submenuOpen ? "rotate-90" : ""}`}>›</span>
               </button>
 
               {submenuOpen && (
-                <div className="my-1 space-y-0.5 border-l border-white/10 pl-2.5 py-0.5">
+                <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
                   {trackReleases.map((release) => (
                     <button
                       key={release.id}
                       type="button"
                       onClick={(e) => handleGoToSingleRelease(e, release.id)}
-                      className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                      className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
                     >
                       {release.title}
                     </button>

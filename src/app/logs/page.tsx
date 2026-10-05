@@ -72,14 +72,14 @@ export default function LogsPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0a0a0f] overflow-hidden">
+    <div className="h-screen bg-canvas overflow-hidden">
       <Sidebar credits={null} />
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] overflow-y-auto pt-[53px] lg:pt-0" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
-        <div className="sticky top-0 z-20 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+        <div className="sticky top-0 z-20 bg-canvas/95 backdrop-blur-sm border-b border-line">
           <div className="flex items-center justify-between px-4 py-3">
             <div>
               <h1 className="text-lg font-bold">API Logs</h1>
-              <p className="text-xs text-white/40 mt-0.5">Provider calls, webhooks, LLM dispatches</p>
+              <p className="text-xs text-ink-dim mt-0.5">Provider calls, webhooks, LLM dispatches</p>
             </div>
             <button onClick={fetchLogs} className="btn-secondary text-xs px-3 py-1.5">
               Refresh
@@ -89,12 +89,12 @@ export default function LogsPage() {
         <main className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-line/20 border-t-white/60 rounded-full animate-spin" />
             </div>
           ) : logs.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-white/30 text-sm">No logs yet</p>
-              <p className="text-white/20 text-xs mt-1">Enable API logging in Settings</p>
+              <p className="text-ink-dim text-sm">No logs yet</p>
+              <p className="text-ink-dim text-xs mt-1">Enable API logging in Settings</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -111,9 +111,9 @@ export default function LogsPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-xs text-white/40">{formatDate(log.createdAt)}</p>
-                          <p className="mt-1 font-mono text-xs text-white/70 truncate">{log.endpoint}</p>
-                          <p className="mt-1 text-xs text-white/55 capitalize">
+                          <p className="text-xs text-ink-dim">{formatDate(log.createdAt)}</p>
+                          <p className="mt-1 font-mono text-xs text-ink-muted truncate">{log.endpoint}</p>
+                          <p className="mt-1 text-xs text-ink/55 capitalize">
                             {log.type} • {log.provider}
                           </p>
                         </div>
@@ -125,23 +125,23 @@ export default function LogsPage() {
                           >
                             {log.statusCode || "-"}
                           </span>
-                          <span className="text-xs text-white/40">{formatDuration(log.duration)}</span>
-                          <span className="text-xs text-white/50">{isExpanded ? "Hide" : "Show"}</span>
+                          <span className="text-xs text-ink-dim">{formatDuration(log.duration)}</span>
+                          <span className="text-xs text-ink-dim">{isExpanded ? "Hide" : "Show"}</span>
                         </div>
                       </div>
                     </button>
 
                     {isExpanded ? (
-                      <div className="border-t border-white/5 px-3 py-3 grid gap-3 lg:grid-cols-2">
+                      <div className="border-t border-line px-3 py-3 grid gap-3 lg:grid-cols-2">
                         <div className="min-w-0">
-                          <p className="text-[11px] uppercase tracking-wide text-white/45 mb-1.5">Input</p>
-                          <pre className="w-full overflow-x-auto rounded-lg border border-white/10 bg-[#0f0f16] p-3 text-xs text-white/80 leading-5 whitespace-pre-wrap break-words">
+                          <p className="text-[11px] uppercase tracking-wide text-ink-dim mb-1.5">Input</p>
+                          <pre className="w-full overflow-x-auto  border border-line bg-surface p-3 text-xs text-ink-muted leading-5 whitespace-pre-wrap break-words">
                             {formatPayload(log.request)}
                           </pre>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] uppercase tracking-wide text-white/45 mb-1.5">Output</p>
-                          <pre className="w-full overflow-x-auto rounded-lg border border-white/10 bg-[#0f0f16] p-3 text-xs text-white/80 leading-5 whitespace-pre-wrap break-words">
+                          <p className="text-[11px] uppercase tracking-wide text-ink-dim mb-1.5">Output</p>
+                          <pre className="w-full overflow-x-auto  border border-line bg-surface p-3 text-xs text-ink-muted leading-5 whitespace-pre-wrap break-words">
                             {formatPayload(log.response)}
                           </pre>
                         </div>
