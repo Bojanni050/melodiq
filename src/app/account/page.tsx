@@ -129,6 +129,11 @@ export default function AccountPage() {
     const data = await res.json();
     if (res.ok) {
       setUser(data.user);
+      // Mirror the saved profile into the global user store so pages that
+      // read aliases from there (Studio, Releases, Playlists, ...) see the
+      // new value immediately instead of after a full reload — loadUser
+      // caches once per session and would otherwise keep the stale list.
+      if (authUser) setAuthUser({ ...authUser, ...data.user });
       setProfileMessage(t("account.profileUpdated"));
     } else {
       setProfileMessageError(true);
