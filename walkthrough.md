@@ -1765,3 +1765,9 @@ pm run build � succesvol.
 - Findings: In het uploadformulier stond het globale promptveld links en lyrics rechts; Bo wil ze omgewisseld.
 - Conclusions: De globale velden staan nu lyrics-links, prompt-rechts. De conditionele weergave bij instrumental blijft (dan alleen prompt).
 - Actions: `src/components/library/UploadPanel.tsx`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-06 di (Accountpagina: succesmeldingen in het rood)
+
+- Findings: De melding "Profiel succesvol bijgewerkt" verscheen in het rood. De kleur werd bepaald met `message.includes("successfully")` — dat snuift op de Engelse tekst en matcht het Nederlandse "succesvol" niet, dus de groene tak werd alleen in het Engels bereikt. Dezelfde fragiele tekst-matching stond ook bij de security-melding, en de image-upload-meldingen (heroini-grootte, uploadresultaat) zetten nooit iets explicits.
+- Conclusions: Kleur bepalen op de inhoud van een i18n-tekenreeks is verkeerd op elke taal behalve één. De succes/fout-status is al bekend op het moment van instellen (`res.ok` vs. else) en hoort daar als booleaanse vlag bewaard te blijven: twee nieuwe states `profileMessageError`/`securityMessageError`, gereset bij elke nieuwe poging om valse kleuren te voorkomen.
+- Actions: `src/app/account/page.tsx` — error-vlaggen toegevoegd voor elk pad dat een melding zet (profiel opslaan, wachtwoord opslaan incl. validatie, hero-afmeting, image-upload incl. catch); de twee JSX-kleuren omgezet van `includes("successfully")`-snuiven naar de vlag. Gevalideerd met `npm run build` (geslaagd); validated.
