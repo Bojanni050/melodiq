@@ -64,10 +64,47 @@ export type QueuedUploadItem = {
   lyrics: string;
   instrumental: boolean;
   sourceProvider: string;
+  /** Chosen model/version for the source (Suno v3.5..v6, Mureka V6..V9.5, …). */
+  sourceModel: string | null;
   sunoStyleInfluence: number | null;
   sunoWeirdness: number | null;
+  /** APIMart Suno v6 options (recorded only when source = Suno v6). */
+  sunoVariety: string | null;
+  sunoMaxMode: boolean;
+  sunoAudioFormat: string | null;
   licenseFile: File | null;
 };
+
+/**
+ * Selectable versions per upload source. Suno uses the APIMart model ids
+ * (incl. the v6 family); Mureka goes up to V9.5.
+ */
+export const UPLOAD_PROVIDER_MODELS: Record<string, { value: string; label: string }[]> = {
+  suno: [
+    { value: "v3.5", label: "v3.5" },
+    { value: "v4", label: "v4" },
+    { value: "v4.5", label: "v4.5" },
+    { value: "v4.5+", label: "v4.5+" },
+    { value: "v4.5-all", label: "v4.5-all" },
+    { value: "v5", label: "v5" },
+    { value: "v5.5", label: "v5.5" },
+    { value: "v6", label: "v6" },
+    { value: "v6-mini", label: "v6-mini" },
+    { value: "v6-wild", label: "v6-wild" },
+  ],
+  mureka: [
+    { value: "V6", label: "V6" },
+    { value: "V7", label: "V7" },
+    { value: "V8", label: "V8" },
+    { value: "V9", label: "V9" },
+    { value: "V9.5", label: "V9.5" },
+  ],
+};
+
+/** True when a Suno model id is one of the v6 variants with extra options. */
+export function isSunoV6Model(model: string | null | undefined): boolean {
+  return model === "v6" || model === "v6-mini" || model === "v6-wild";
+}
 
 export function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

@@ -11,6 +11,8 @@ import {
   titleFromUploadFilename,
   MAX_UPLOAD_QUEUE,
   UPLOAD_PROVIDERS,
+  UPLOAD_PROVIDER_MODELS,
+  isSunoV6Model,
   type LibraryTrack,
   type QueuedUploadItem,
 } from "./types";
@@ -96,8 +98,12 @@ export default function UploadPanel({
         lyrics: uploadLyricsDraft,
         instrumental: uploadInstrumental,
         sourceProvider: "upload",
+        sourceModel: null,
         sunoStyleInfluence: 50,
         sunoWeirdness: 50,
+        sunoVariety: "off",
+        sunoMaxMode: false,
+        sunoAudioFormat: "mp3",
         licenseFile: null,
       }));
 
@@ -227,8 +233,12 @@ export default function UploadPanel({
             lyrics: item.instrumental ? null : (item.lyrics.trim() || null),
             instrumental: item.instrumental,
             sourceProvider: item.sourceProvider || null,
+            sourceModel: item.sourceModel || null,
             sunoStyleInfluence: item.sourceProvider === "suno" ? item.sunoStyleInfluence : null,
             sunoWeirdness: item.sourceProvider === "suno" ? item.sunoWeirdness : null,
+            sunoVariety: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoVariety : null,
+            sunoMaxMode: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoMaxMode : false,
+            sunoAudioFormat: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoAudioFormat : null,
           }))
         )
       );
@@ -649,8 +659,10 @@ export default function UploadPanel({
                           value={UPLOAD_PROVIDERS.some((p) => p.value === item.sourceProvider) ? item.sourceProvider : "__custom__"}
                           onChange={(event) => {
                             const v = event.target.value;
+                            const resolved = v === "__custom__" ? "" : v;
+                            const models = UPLOAD_PROVIDER_MODELS[resolved];
                             setQueuedUploads((current) =>
-                              current.map((upload) => upload.id === item.id ? { ...upload, sourceProvider: v === "__custom__" ? "" : v } : upload)
+                              current.map((upload) => upload.id === item.id ? { ...upload, sourceProvider: resolved, sourceModel: models ? models[0].value : null } : upload)
                             );
                           }}
                           disabled={uploading}
@@ -664,6 +676,25 @@ export default function UploadPanel({
                           )}
                         </select>
                       </div>
+
+                      {UPLOAD_PROVIDER_MODELS[item.sourceProvider] && (
+                        <div className="space-y-1">
+                          <label htmlFor={`upload-item-version-${item.id}`} className="text-sm text-ink-dim">Version</label>
+                          <select
+                            id={`upload-item-version-${item.id}`}
+                            value={item.sourceModel ?? UPLOAD_PROVIDER_MODELS[item.sourceProvider][0].value}
+                            onChange={(event) => setQueuedUploads((current) =>
+                              current.map((upload) => upload.id === item.id ? { ...upload, sourceModel: event.target.value } : upload)
+                            )}
+                            disabled={uploading}
+                            className="h-8 w-full border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
+                          >
+                            {UPLOAD_PROVIDER_MODELS[item.sourceProvider].map((m) => (
+                              <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {item.sourceProvider === "suno" && (
                         <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
@@ -683,6 +714,62 @@ export default function UploadPanel({
                             )}
                             disabled={uploading}
                           />
+                        </div>
+                      )}
+
+                      {item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) && (
+                        <div className="space-y-3 border border-line bg-white/3 px-3 py-3">
+                          <div>
+                            <label className="block text-sm text-ink-dim mb-2">Style Variety</label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(["off", "normal", "high", "extra", "max"] as const).map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  disabled={uploading}
+                                  onClick={() => setQueuedUploads((current) =>
+                                    current.map((u) => u.id === item.id ? { ...u, sunoVariety: v } : u)
+                                  )}
+                                  className={`px-2.5 py-1 text-xs font-medium transition-colors border ${item.sunoVariety === v ? "border-violet-400/40 bg-violet-500/40 text-violet-200" : "border-line bg-white/5 text-ink-dim hover:bg-white/10"}`}
+                                >
+                                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-ink-dim">Max Mode</span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={item.sunoMaxMode}
+                              disabled={uploading}
+                              onClick={() => setQueuedUploads((current) =>
+                                current.map((u) => u.id === item.id ? { ...u, sunoMaxMode: !u.sunoMaxMode } : u)
+                              )}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.sunoMaxMode ? "bg-violet-500" : "bg-white/15"}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.sunoMaxMode ? "translate-x-4" : "translate-x-0"}`} />
+                            </button>
+                          </div>
+                          <div>
+                            <label className="block text-sm text-ink-dim mb-2">Audio Format</label>
+                            <div className="flex gap-1.5">
+                              {(["mp3", "m4a", "wav"] as const).map((fmt) => (
+                                <button
+                                  key={fmt}
+                                  type="button"
+                                  disabled={uploading}
+                                  onClick={() => setQueuedUploads((current) =>
+                                    current.map((u) => u.id === item.id ? { ...u, sunoAudioFormat: fmt } : u)
+                                  )}
+                                  className={`flex-1 py-1.5 text-xs font-medium uppercase tracking-wide transition-colors border ${item.sunoAudioFormat === fmt ? "border-violet-400/40 bg-violet-500/40 text-violet-200" : "border-line bg-white/5 text-ink-dim hover:bg-white/10"}`}
+                                >
+                                  {fmt}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
 
