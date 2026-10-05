@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import PublicNav from "@/components/PublicNav";
 import { useParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
@@ -233,13 +232,12 @@ export default function TrackDnaPage() {
     : [];
 
   return (
-    <div className={`bg-canvas text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
-      {authChecked && !isLoggedIn && <PublicNav />}
-      <div className={isLoggedIn ? "h-[calc(100vh-var(--player-height))] flex" : "min-h-screen flex"}>
-        {isLoggedIn && <Sidebar credits={null} />}
+    <div className="bg-canvas text-ink h-screen overflow-hidden">
+      <div className="h-[calc(100vh-var(--player-height))] flex">
+        <Sidebar credits={null} />
         <main
           className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 pb-16 @container"
-          style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
+          style={{ paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
         >
           <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import PublicNav from "@/components/PublicNav";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
 import TrackList from "@/components/TrackList";
 import TrackDetail from "@/components/TrackDetail";
@@ -228,13 +227,12 @@ export default function PublicPlaylistPage() {
 
   if (notFound || (!loading && !playlist)) {
     return (
-      <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
-        {isLoggedIn && <Sidebar credits={null} />}
-      {authChecked && !isLoggedIn && <PublicNav />}
+      <div className="relative h-screen bg-canvas overflow-hidden text-ink">
+        <Sidebar credits={null} />
         <div
-          className={`${isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" : "flex-1 min-h-0"} flex items-center justify-center px-6`}
+          className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex items-center justify-center px-6"
           style={{
-            marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+            marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
           }}
         >
           <div className=" border border-line bg-white/5 p-8 text-center max-w-md">
@@ -256,7 +254,7 @@ export default function PublicPlaylistPage() {
   }
 
   return (
-    <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className="relative h-screen bg-canvas overflow-hidden text-ink">
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div
@@ -264,17 +262,16 @@ export default function PublicPlaylistPage() {
           style={{ backgroundImage: `url(${coverUrl})` }}
         />
       )}
-      {isLoggedIn && <Sidebar credits={null} />}
-      {authChecked && !isLoggedIn && <PublicNav />}
+      <Sidebar credits={null} />
 
       <div
-        className={`${isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" : "flex-1 min-h-0"} flex`}
+        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
         style={{
-          marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
+          marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
         }}
       >
         <main
-          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 ${isLoggedIn ? "pt-18.25" : "pt-5"} ${
+          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
             isLoggedIn && isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >

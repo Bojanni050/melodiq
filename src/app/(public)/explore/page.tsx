@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import PublicNav from "@/components/PublicNav";
+import Sidebar from "@/components/Sidebar";
 import ArtistLink from "@/components/artist/ArtistLink";
-import { usePlayerStore } from "@/lib/store";
+import { usePlayerStore, useSidebarStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
 
@@ -27,6 +27,9 @@ export default function ExplorePage() {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const globalIsPlaying = usePlayerStore((s) => s.isPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
+  const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
+  const isQHD = useSidebarStore((s) => s.isQHD);
+  const isDesktop = useSidebarStore((s) => s.isDesktop);
 
   useEffect(() => {
     let active = true;
@@ -83,9 +86,12 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      <PublicNav />
+      <Sidebar credits={null} />
 
-      <main className="px-4 py-8 sm:px-8 sm:py-12">
+      <main
+        className="px-4 pb-8 pt-18.25 sm:px-8 lg:pt-12"
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+      >
         <div className="mb-8">
           <h1 className="text-3xl font-bold sm:text-4xl">Published Tracks</h1>
           <p className="mt-2 text-ink-dim">

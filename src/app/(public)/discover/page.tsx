@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import PublicNav from "@/components/PublicNav";
 import Sidebar from "@/components/Sidebar";
 import DiscoverTrackOptionsMenu from "@/components/discover/DiscoverTrackOptionsMenu";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
@@ -539,12 +538,11 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className={`bg-canvas text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
-      {authChecked && !isLoggedIn && <PublicNav />}
-      {isLoggedIn && <Sidebar credits={null} />}
+    <div className="bg-canvas text-ink h-screen overflow-hidden">
+      <Sidebar credits={null} />
       <div
-        className={isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" : "min-h-screen flex"}
-        style={isLoggedIn ? { marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
+        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
       >
       <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
 

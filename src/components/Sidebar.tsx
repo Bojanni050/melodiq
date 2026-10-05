@@ -86,6 +86,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             label: t("nav.browse"),
             items: [
               { href: "/discover", label: t("nav.discover"), icon: "discover" },
+              { href: "/explore", label: "Explore", icon: "discover" },
               { href: "/discover/releases", label: t("nav.releasesBrowse"), icon: "releases" },
               { href: "/library", label: t("nav.library"), icon: "library" },
               { href: "/playlists", label: t("nav.playlists"), icon: "playlists" },
@@ -97,6 +98,7 @@ export default function Sidebar({ credits }: SidebarProps) {
             label: t("nav.browse"),
             items: [
               { href: "/discover", label: t("nav.discover"), icon: "discover" },
+              { href: "/explore", label: "Explore", icon: "discover" },
               { href: "/discover/releases", label: t("nav.releasesBrowse"), icon: "releases" },
             ],
           },
@@ -130,14 +132,18 @@ export default function Sidebar({ credits }: SidebarProps) {
           },
         ]
       : []),
-    {
-      label: t("nav.account"),
-      items: [
-        { href: "/account", label: t("nav.accountLink"), icon: "account" },
-        { href: "/artist-pages", label: t("nav.artistPages"), icon: "artist-pages" },
-        { href: "/settings", label: t("nav.settings"), icon: "settings" },
-      ],
-    },
+    ...(user
+      ? [
+          {
+            label: t("nav.account"),
+            items: [
+              { href: "/account", label: t("nav.accountLink"), icon: "account" },
+              { href: "/artist-pages", label: t("nav.artistPages"), icon: "artist-pages" },
+              { href: "/settings", label: t("nav.settings"), icon: "settings" },
+            ],
+          },
+        ]
+      : []),
     ...(isAdmin
       ? [
           {
@@ -407,21 +413,33 @@ export default function Sidebar({ credits }: SidebarProps) {
 
         {/* Bottom section */}
         <div className="px-3 pb-24 space-y-3 border-t border-line pt-3">
-          {credits !== null && (
+          {user && credits !== null && (
             <div className="px-3 py-2 bg-white/[0.03]">
               <p className="text-sm text-ink-dim">Credits</p>
               <p className="text-sm font-medium text-ink">{credits.toLocaleString()}</p>
             </div>
           )}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            {!collapsed && <span>Logout</span>}
-          </button>
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              {!collapsed && <span>Logout</span>}
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-accent text-ink hover:bg-accent-strong transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l4-4m0 0l-4-4m4 4H3m12 0V7a3 3 0 013-3h2a2 2 0 012 2v12a2 2 0 01-2 2h-2a3 3 0 01-3-3" />
+              </svg>
+              {!collapsed && <span>{t("auth.signInLower")}</span>}
+            </Link>
+          )}
         </div>
       </aside>
 
@@ -569,24 +587,37 @@ export default function Sidebar({ credits }: SidebarProps) {
               ))}
             </nav>
             <div className="px-3 pb-6 pt-3 border-t border-line space-y-3">
-              {credits !== null && (
+              {user && credits !== null && (
                 <div className="px-3 py-2 bg-white/[0.03]">
                   <p className="text-[11px] text-ink-dim">Credits</p>
                   <p className="text-sm font-medium text-ink">{credits.toLocaleString()}</p>
                 </div>
               )}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  void handleLogout();
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
-              >
-                <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Logout</span>
-              </button>
+              {user ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    void handleLogout();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-ink-dim hover:text-ink hover:bg-white/[0.03] transition-colors"
+                >
+                  <svg className="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium bg-accent text-ink hover:bg-accent-strong transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l4-4m0 0l-4-4m4 4H3m12 0V7a3 3 0 013-3h2a2 2 0 012 2v12a2 2 0 01-2 2h-2a3 3 0 01-3-3" />
+                  </svg>
+                  <span>{t("auth.signInLower")}</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>

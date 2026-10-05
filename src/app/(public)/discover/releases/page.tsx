@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import PublicNav from "@/components/PublicNav";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
 import TrackCard from "@/components/tracks/TrackCard";
 import TrackDetail from "@/components/TrackDetail";
@@ -240,16 +239,15 @@ function DiscoverReleasesPageInner() {
   }
 
   return (
-    <div className={`relative h-screen bg-canvas overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
-      {isLoggedIn && <Sidebar credits={null} />}
-      {authChecked && !isLoggedIn && <PublicNav />}
+    <div className="relative h-screen bg-canvas overflow-hidden text-ink">
+      <Sidebar credits={null} />
 
       <div
-        className={`${isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))]" : "flex-1 min-h-0"} flex`}
-        style={{ marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
+        className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex"
+        style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}
       >
         <main
-          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 ${isLoggedIn ? "pt-18.25" : "pt-5"} ${
+          className={`relative z-10 min-w-0 flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 ${
             isLoggedIn && isListener ? "lg:pt-20" : "lg:pt-5"
           }`}
         >
