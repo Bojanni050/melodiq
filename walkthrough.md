@@ -1777,3 +1777,9 @@ pm run build � succesvol.
 - Findings: Na "Profiel opslaan" verscheen een nieuw aangemaakte alias niet in de dropdowns van Studio/Releases/Playlists; pas na F5. Oorzaak: de accountpagina schreef het opgeslagen profiel alleen naar lokale state, niet naar de zustand `useUserStore`, en `loadUser` daar cached hard (`if (get().user) return`) — andere pagina's bleven dus de oude aliaslijst zien tot een volledige herlaad.
 - Conclusions: De store bijwerken op de plek waar de update gebeurt is de juiste fix; de cache in `loadUser` bewust laten ( Scheelt een fetch op elke paginaload) en alleen dit ene pad bijwerken volgt het bestaande `handleLanguageChange`-patroon op dezelfde pagina, dat `setAuthUser({ ...authUser, ...data.user })` al deed.
 - Actions: `src/app/account/page.tsx` — na succesvolle profielopslag nu ook `setAuthUser({ ...authUser, ...data.user })`, met commentaar waarom. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-06 di (Track-cards toonden oude artiest tot herlaad)
+
+- Findings: Na "Release bewerken → artiestalias → toepassen op release én tracks" zag je de nieuwe naam meteen op de release, maar de trackrijen bleven de oude tonen tot een herlaad. De optimistische update-keten was er wel: de releases-list pagina zet de trackrijen bij in `tracksById` (regel ~322) en releases/[releaseId] via `setTracks` (regel ~511).
+- Conclusions: `TrackCard` is `React.memo` met een custom comparator; `artistName` stond niet in de veldlijst, dus het nieuwe track-object met de nieuwe naam slaagde voor de gelijkheidscheck en de kaart re-renderde nooit. `artistName` is een direct gerenderd veld en hoort in de comparator; alleen dat veld bijwerken houdt de memo-optimisatie in stand voor alle andere renders.
+- Actions: `src/components/tracks/TrackCard.tsx` — `prevProps.track.artistName === nextProps.track.artistName` toegevoegd aan de memo-comparator. Gevalideerd met `npm run build` (geslaagd); validated.

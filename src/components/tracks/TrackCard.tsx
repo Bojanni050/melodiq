@@ -1378,6 +1378,7 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.othersPlayCount === nextProps.track.othersPlayCount &&
     prevProps.track.coverUrl === nextProps.track.coverUrl &&
     prevProps.track.rating === nextProps.track.rating &&
+    prevProps.track.artistName === nextProps.track.artistName &&
     prevProps.track.s3KeyHd === nextProps.track.s3KeyHd &&
     prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
     prevProps.track.instrumental === nextProps.track.instrumental &&
