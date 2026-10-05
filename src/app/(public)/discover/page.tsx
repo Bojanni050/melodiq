@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import PublicNav from "@/components/PublicNav";
 import Sidebar from "@/components/Sidebar";
 import DiscoverTrackOptionsMenu from "@/components/discover/DiscoverTrackOptionsMenu";
 import TrackDetail, { type TrackDetailTrack } from "@/components/TrackDetail";
@@ -550,31 +551,14 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="h-screen bg-[#0a0a0f] text-white overflow-hidden">
+    <div className={`bg-[#0a0a0f] text-white ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+      {authChecked && !isLoggedIn && <PublicNav />}
       {isLoggedIn && <Sidebar credits={null} />}
       <div
         className={isLoggedIn ? "h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" : "min-h-screen flex"}
         style={isLoggedIn ? { marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
       >
       <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8">
-        {authChecked && !isLoggedIn && (
-          <header className="mb-8 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <svg className="h-7 w-7 text-primary-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-              </svg>
-              <span className="bg-linear-to-r from-primary-400 to-primary-500 bg-clip-text text-lg font-bold text-transparent">
-                MelodIQ
-              </span>
-            </div>
-            <Link
-              href="/login"
-              className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
-            >
-              Sign in
-            </Link>
-          </header>
-        )}
 
         <div className="space-y-8 pb-16">
           <div>
