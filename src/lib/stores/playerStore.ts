@@ -407,6 +407,7 @@ export const usePlayerStore = create<PlayerState>()(
           queue: state.queue.slice(0, PERSISTED_QUEUE_LIMIT).map(scrubTrack).filter(Boolean),
           currentTrack: scrubTrack(state.currentTrack),
           autoPlayNext: state.autoPlayNext,
+          showTrackDetailsPanel: state.showTrackDetailsPanel,
           rightPanelWidth: state.rightPanelWidth,
           isFullscreen: state.isFullscreen,
           progress: state.progress,
@@ -419,14 +420,6 @@ export const usePlayerStore = create<PlayerState>()(
           normalizeVolume: state.normalizeVolume,
         };
       },
-      // The song details panel always starts expanded on every page load
-      // (Player.tsx still collapses it on mobile), so ignore a value an
-      // earlier version persisted.
-      merge: (persisted, current) => ({
-        ...current,
-        ...(persisted as Partial<typeof current>),
-        showTrackDetailsPanel: true,
-      }),
     }
   )
 );
