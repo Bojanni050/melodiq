@@ -46,8 +46,8 @@ interface AudioDna {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-0.5">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">{label}</div>
-      <div className="text-sm font-medium text-white">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.14em] text-ink-dim">{label}</div>
+      <div className="text-sm font-medium text-ink">{value}</div>
     </div>
   );
 }
@@ -233,7 +233,7 @@ export default function TrackDnaPage() {
     : [];
 
   return (
-    <div className={`bg-[#09090d] text-white ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+    <div className={`bg-[#09090d] text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {authChecked && !isLoggedIn && <PublicNav />}
       <div className={isLoggedIn ? "h-[calc(100vh-var(--player-height))] flex" : "min-h-screen flex"}>
         {isLoggedIn && <Sidebar credits={null} />}
@@ -241,7 +241,7 @@ export default function TrackDnaPage() {
           className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 pb-16 @container"
           style={isLoggedIn ? { paddingLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 } : undefined}
         >
-          <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80">
+          <Link href={backTarget.href} className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink-muted">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -249,30 +249,30 @@ export default function TrackDnaPage() {
           </Link>
 
           {loading ? (
-            <p className="mt-6 text-sm text-white/50">Loading…</p>
+            <p className="mt-6 text-sm text-ink-dim">Loading…</p>
           ) : notFound || !track ? (
-            <div className="mx-auto mt-6 max-w-2xl rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
-              <p className="text-sm text-white/60">This track isn&apos;t available.</p>
-              <Link href={backTarget.href} className="mt-3 inline-block text-sm text-primary-400 hover:text-primary-300">
+            <div className="mx-auto mt-6 max-w-2xl  border border-line bg-white/[0.03] p-8 text-center">
+              <p className="text-sm text-ink-muted">This track isn&apos;t available.</p>
+              <Link href={backTarget.href} className="mt-3 inline-block text-sm text-accent hover:text-accent">
                 {backTarget.label}
               </Link>
             </div>
           ) : (
             <div className="mt-6 space-y-6">
               {/* Hero header — cover art left, artist/writer info beside it */}
-              <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-900/60 via-primary-900/30 to-[#0d0e15]">
+              <section className="relative overflow-hidden  border border-line bg-gradient-to-br from-sky-900/60 via-accent-strong/30 to-[#0d0e15]">
                 <div className="flex flex-col items-start gap-6 p-6 @sm:flex-row @sm:items-end @sm:p-8">
                   <button
                     type="button"
                     onClick={handlePlayClick}
-                    className="group relative h-36 w-36 shrink-0 overflow-hidden rounded-xl shadow-2xl shadow-black/50 @sm:h-48 @sm:w-48"
+                    className="group relative h-36 w-36 shrink-0 overflow-hidden  shadow-2xl shadow-black/50 @sm:h-48 @sm:w-48"
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {coverSrc() ? (
                       <img src={coverSrc()!} alt={track.title} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-                        <svg className="h-10 w-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                        <svg className="h-10 w-10 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
@@ -298,25 +298,25 @@ export default function TrackDnaPage() {
                   </button>
 
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">Single</p>
-                    <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-white @sm:text-5xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted">Single</p>
+                    <h1 className="mt-2 truncate text-3xl font-black tracking-tight text-ink @sm:text-5xl">
                       {track.title}
                     </h1>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white/70">
+                    <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-ink-muted">
                       {credits.map((name, i) => (
                         <span key={name} className="flex items-center gap-1.5">
-                          {i > 0 && <span className="text-white/35">•</span>}
-                          <span className="font-semibold text-white/90">{name}</span>
+                          {i > 0 && <span className="text-ink-dim">•</span>}
+                          <span className="font-semibold text-ink">{name}</span>
                         </span>
                       ))}
                       {releaseYear && (
                         <span className="flex items-center gap-1.5">
-                          <span className="text-white/35">•</span>
+                          <span className="text-ink-dim">•</span>
                           {releaseYear}
                         </span>
                       )}
                       <span className="flex items-center gap-1.5">
-                        <span className="text-white/35">•</span>
+                        <span className="text-ink-dim">•</span>
                         {formatDuration(track.duration)}
                       </span>
                     </div>
@@ -343,14 +343,14 @@ export default function TrackDnaPage() {
                     </svg>
                   )}
                 </button>
-                <p className="text-sm text-white/40">
+                <p className="text-sm text-ink-dim">
                   {track.totalPlays.toLocaleString()} {track.totalPlays === 1 ? "play" : "plays"}
                 </p>
               </div>
 
               {/* Track card row — single-track "list" styled like a streaming release page */}
               <section>
-                <div className="flex items-center gap-3 border-b border-white/8 px-3 pb-2 text-xs uppercase tracking-wide text-white/35">
+                <div className="flex items-center gap-3 border-b border-line px-3 pb-2 text-xs uppercase tracking-wide text-ink-dim">
                   <span className="w-5 text-center">#</span>
                   <span className="flex-1">Title</span>
                   <span className="hidden @sm:block w-24 text-right">Plays</span>
@@ -364,11 +364,11 @@ export default function TrackDnaPage() {
                 <button
                   type="button"
                   onClick={handlePlayClick}
-                  className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                  className="group flex w-full items-center gap-3  px-3 py-2.5 text-left transition-colors hover:bg-white/5"
                 >
-                  <span className="relative w-5 shrink-0 text-center text-sm text-white/40">
+                  <span className="relative w-5 shrink-0 text-center text-sm text-ink-dim">
                     <span className="group-hover:hidden">{isCurrentTrack && isPlaying ? "▶" : "1"}</span>
-                    <svg className="hidden h-4 w-4 group-hover:inline text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="hidden h-4 w-4 group-hover:inline text-ink" fill="currentColor" viewBox="0 0 24 24">
                       {isPlaying && isCurrentTrack ? (
                         <>
                           <rect x="6" y="4" width="4" height="16" rx="1" />
@@ -379,21 +379,21 @@ export default function TrackDnaPage() {
                       )}
                     </svg>
                   </span>
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
+                  <div className="h-10 w-10 shrink-0 overflow-hidden  bg-white/5">
                     {coverSrc() ? (
                       <img src={coverSrc()!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`truncate text-sm font-medium ${isCurrentTrack ? "text-primary-300" : "text-white"}`}>
+                    <p className={`truncate text-sm font-medium ${isCurrentTrack ? "text-accent" : "text-ink"}`}>
                       {track.title}
                     </p>
-                    <p className="truncate text-xs text-white/45">{credits.join(", ") || "Unknown Artist"}</p>
+                    <p className="truncate text-xs text-ink-dim">{credits.join(", ") || "Unknown Artist"}</p>
                   </div>
-                  <span className="hidden @sm:block w-24 shrink-0 text-right text-sm text-white/45">
+                  <span className="hidden @sm:block w-24 shrink-0 text-right text-sm text-ink-dim">
                     {track.totalPlays.toLocaleString()}
                   </span>
-                  <span className="w-12 shrink-0 text-right text-sm text-white/45">
+                  <span className="w-12 shrink-0 text-right text-sm text-ink-dim">
                     {formatDuration(track.duration)}
                   </span>
                 </button>
@@ -401,8 +401,8 @@ export default function TrackDnaPage() {
 
               {/* Track DNA — auto-computed analysis, not part of the shared Track Details sidebar */}
               {audioDna && (hasAudioFacts || (audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0) || audioDna.lyricsScore != null) && (
-                <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-5 @sm:p-6">
-                  <h2 className="text-sm font-semibold text-white/80">Track DNA</h2>
+                <section className="space-y-4  border border-line bg-white/[0.03] p-5 @sm:p-6">
+                  <h2 className="text-sm font-semibold text-ink-muted">Track DNA</h2>
 
                   {hasAudioFacts && (
                     <div className="grid grid-cols-2 gap-4 @sm:grid-cols-4">
@@ -417,12 +417,12 @@ export default function TrackDnaPage() {
 
                   {audioDna.atmosphereTags && audioDna.atmosphereTags.length > 0 && (
                     <div className="space-y-2">
-                      <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Atmosphere</div>
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-ink-dim">Atmosphere</div>
                       <div className="flex flex-wrap gap-1.5">
                         {audioDna.atmosphereTags.map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs text-white/80"
+                            className="rounded-full border border-line bg-white/[0.06] px-3 py-1 text-xs text-ink-muted"
                           >
                             {tag}
                           </span>
@@ -432,12 +432,12 @@ export default function TrackDnaPage() {
                   )}
 
                   {audioDna.lyricsScore != null && (
-                    <div className="space-y-1 border-t border-white/10 pt-4">
+                    <div className="space-y-1 border-t border-line pt-4">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-white">Lyrics</span>
-                        <span className="text-white/50">{audioDna.lyricsScore.toFixed(1)}/10</span>
+                        <span className="font-medium text-ink">Lyrics</span>
+                        <span className="text-ink-dim">{audioDna.lyricsScore.toFixed(1)}/10</span>
                       </div>
-                      {audioDna.lyricsNotes && <p className="text-sm text-white/40">{audioDna.lyricsNotes}</p>}
+                      {audioDna.lyricsNotes && <p className="text-sm text-ink-dim">{audioDna.lyricsNotes}</p>}
                     </div>
                   )}
 

@@ -373,12 +373,12 @@ export default function DiscoverPage() {
         className="flex flex-col gap-1.5 text-left cursor-pointer"
       >
         <div className="group relative aspect-square w-full">
-          <div className="absolute inset-0 overflow-hidden rounded-xl">
+          <div className="absolute inset-0 overflow-hidden ">
             {cover ? (
               <img src={cover} alt={track.title ?? "Track"} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
@@ -402,15 +402,15 @@ export default function DiscoverPage() {
               </div>
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
-              <p className="truncate text-sm font-semibold text-white drop-shadow">{track.title || track.prompt.substring(0, 40)}</p>
-              <p className="truncate text-xs text-white/70">{track.artistName || t("releases.unknownArtist")}</p>
+              <p className="truncate text-sm font-semibold text-ink drop-shadow">{track.title || track.prompt.substring(0, 40)}</p>
+              <p className="truncate text-xs text-ink-muted">{track.artistName || t("releases.unknownArtist")}</p>
             </div>
           </div>
           {/* Sibling of the overflow-hidden cover box, not a child of it — its
-              dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
+              dropdown panel would otherwise get clipped by +overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
         </div>
-        <div className="flex items-center justify-between text-[11px] text-white/35">
+        <div className="flex items-center justify-between text-[11px] text-ink-dim">
           <span>{formatDuration(track.duration)}</span>
           <span>{t("discover.plays", { count: (track.playCount ?? 0).toLocaleString() })}</span>
         </div>
@@ -503,14 +503,14 @@ export default function DiscoverPage() {
               e.stopPropagation();
               handlePlay(track);
             }}
-            className="absolute inset-0 overflow-hidden rounded-xl"
+            className="absolute inset-0 overflow-hidden "
             aria-label={isPlaying ? t("discover.pause", { title: track.title }) : t("discover.play", { title: track.title })}
           >
             {cover ? (
               <img src={cover} alt={track.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-                <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
@@ -534,15 +534,15 @@ export default function DiscoverPage() {
               </div>
             </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
-              <p className="truncate text-sm font-semibold text-white drop-shadow">{track.title}</p>
-              <p className="truncate text-xs text-white/70">{track.artistName || t("releases.unknownArtist")}</p>
+              <p className="truncate text-sm font-semibold text-ink drop-shadow">{track.title}</p>
+              <p className="truncate text-xs text-ink-muted">{track.artistName || t("releases.unknownArtist")}</p>
             </div>
           </button>
           {/* Sibling of the overflow-hidden play button, not a child of it — its
-              dropdown panel would otherwise get clipped by rounded-xl+overflow-hidden. */}
+              dropdown panel would otherwise get clipped by +overflow-hidden. */}
           <DiscoverTrackOptionsMenu trackId={track.id} />
         </div>
-        <div className="flex items-center justify-between text-[11px] text-white/35">
+        <div className="flex items-center justify-between text-[11px] text-ink-dim">
           <span>{formatDuration(track.duration)}</span>
           <span>{t("discover.plays", { count: track.totalPlays.toLocaleString() })}</span>
         </div>
@@ -551,7 +551,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className={`bg-[#0a0a0f] text-white ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+    <div className={`bg-[#0a0a0f] text-ink ${isLoggedIn ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {authChecked && !isLoggedIn && <PublicNav />}
       {isLoggedIn && <Sidebar credits={null} />}
       <div
@@ -562,9 +562,9 @@ export default function DiscoverPage() {
 
         <div className="space-y-8 pb-16">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("discover.overview")}</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">{t("discover.overview")}</p>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Discover</h1>
-            <p className="mt-1 text-sm text-white/55">{t("discover.subtitle")}</p>
+            <p className="mt-1 text-sm text-ink/55">{t("discover.subtitle")}</p>
           </div>
 
           {showOwnerSections && (
@@ -573,23 +573,23 @@ export default function DiscoverPage() {
                 <h2 className="text-base font-semibold">{t("discover.yourTracks")}</h2>
                 {!myTracksLoading && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                    <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim">
                       {t("discover.generatedCount", { count: totalTrackCount })}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                    <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim">
                       {t("discover.thisWeekCount", { count: tracksThisWeek })}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">
+                    <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim">
                       {t("discover.thisMonthCount", { count: tracksThisMonth })}
                     </span>
                   </div>
                 )}
               </div>
               {myTracksLoading ? (
-                <p className="text-sm text-white/50">{t("library.loading")}</p>
+                <p className="text-sm text-ink-dim">{t("library.loading")}</p>
               ) : topPlayedTracks.length > 0 ? (
                 <>
-                  <p className="text-xs text-white/40">{t("discover.topMostPlayed", { count: topPlayedTracks.length })}</p>
+                  <p className="text-xs text-ink-dim">{t("discover.topMostPlayed", { count: topPlayedTracks.length })}</p>
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
                     {topPlayedTracks.map((track) => (
                       <MyTrackCard key={track.id} track={track} />
@@ -597,8 +597,8 @@ export default function DiscoverPage() {
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-white/45">
-                  {t("discover.noTracksYetPrefix")}<Link href="/studio" className="text-primary-400 hover:underline">{t("nav.music")}</Link>{t("discover.noTracksYetSuffix")}
+                <p className="text-sm text-ink-dim">
+                  {t("discover.noTracksYetPrefix")}<Link href="/studio" className="text-accent hover:underline">{t("nav.music")}</Link>{t("discover.noTracksYetSuffix")}
                 </p>
               )}
             </section>
@@ -608,11 +608,11 @@ export default function DiscoverPage() {
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">{t("discover.recentlyGenerated")}</h2>
-                <Link href="/library" className="text-xs text-white/40 hover:text-white/70 transition-colors">
+                <Link href="/library" className="text-xs text-ink-dim hover:text-ink-muted transition-colors">
                   {t("discover.viewAll")}
                 </Link>
               </div>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-ink-dim">
                 {t("discover.yourLatestTracks", { count: recentTracks.length, tracksWord: recentTracks.length === 1 ? t("releases.track") : t("releases.tracks") })}
               </p>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
@@ -624,7 +624,7 @@ export default function DiscoverPage() {
           )}
 
           {loading ? (
-            <p className="text-sm text-white/50">{t("library.loading")}</p>
+            <p className="text-sm text-ink-dim">{t("library.loading")}</p>
           ) : (
             <>
               <section className="space-y-3">
@@ -636,7 +636,7 @@ export default function DiscoverPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-white/45">{t("discover.nothingTrending")}</p>
+                  <p className="text-sm text-ink-dim">{t("discover.nothingTrending")}</p>
                 )}
               </section>
 
@@ -650,7 +650,7 @@ export default function DiscoverPage() {
                         href={`/discover/playlist/${playlist.id}`}
                         className="flex flex-col gap-1.5"
                       >
-                        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
+                        <div className="relative aspect-square w-full overflow-hidden ">
                           {playlist.coverUrl ? (
                             <img
                               src={playlist.coverUrl}
@@ -660,20 +660,20 @@ export default function DiscoverPage() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-fuchsia-600/40 to-primary-900/40">
-                              <svg className="h-10 w-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                              <svg className="h-10 w-10 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM3 13l6-1.5M3 13v-2l6-1.5" />
                               </svg>
                             </div>
                           )}
                           <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
-                            <p className="truncate text-sm font-semibold text-white drop-shadow">{playlist.name}</p>
+                            <p className="truncate text-sm font-semibold text-ink drop-shadow">{playlist.name}</p>
                             {playlist.description && (
-                              <p className="truncate text-xs text-white/70">{playlist.description}</p>
+                              <p className="truncate text-xs text-ink-muted">{playlist.description}</p>
                             )}
                           </div>
                         </div>
-                        <p className="text-[11px] text-white/35">
+                        <p className="text-[11px] text-ink-dim">
                           {playlist.trackCount} {playlist.trackCount === 1 ? t("releases.track") : t("releases.tracks")}
                         </p>
                       </Link>
@@ -685,7 +685,7 @@ export default function DiscoverPage() {
                             disabled={index === 0}
                             title={t("discover.movePlaylistUp")}
                             aria-label={t("discover.movePlaylistUp")}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-black/85 disabled:opacity-30"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-ink/85 transition-colors hover:bg-black/85 disabled:opacity-30"
                           >
                             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                           </button>
@@ -695,7 +695,7 @@ export default function DiscoverPage() {
                             disabled={index === publishedPlaylists.length - 1}
                             title={t("discover.movePlaylistDown")}
                             aria-label={t("discover.movePlaylistDown")}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-black/85 disabled:opacity-30"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-ink/85 transition-colors hover:bg-black/85 disabled:opacity-30"
                           >
                             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                           </button>
@@ -704,7 +704,7 @@ export default function DiscoverPage() {
                             onClick={() => void handleUnpublishPlaylist(playlist.id)}
                             title={t("discover.unpublishPlaylist")}
                             aria-label={t("discover.unpublishPlaylist")}
-                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 transition-colors hover:bg-red-600/80"
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-ink/85 transition-colors hover:bg-red-600/80"
                           >
                             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
@@ -725,7 +725,7 @@ export default function DiscoverPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-white/45">{t("discover.noPublishedTracksYet")}</p>
+                  <p className="text-sm text-ink-dim">{t("discover.noPublishedTracksYet")}</p>
                 )}
               </section>
             </>
@@ -745,8 +745,8 @@ export default function DiscoverPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">{t("common.trackDetails")}</h3>
                 <p className="text-sm mt-3">{t("discover.trackDetailsHint")}</p>
               </div>
             )}

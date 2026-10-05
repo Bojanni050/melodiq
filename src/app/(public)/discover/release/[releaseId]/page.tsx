@@ -185,7 +185,7 @@ export default function PublicReleasePage() {
 
   if (notFound || (!loading && !release)) {
     return (
-      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
         {isLoggedIn && <Sidebar credits={null} />}
       {authChecked && !isLoggedIn && <PublicNav />}
         <div
@@ -194,15 +194,15 @@ export default function PublicReleasePage() {
             marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
           }}
         >
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center max-w-md">
-            <h2 className="text-lg font-semibold text-white">Release not found</h2>
-            <p className="text-sm text-white/60 mt-2">
+          <div className=" border border-line bg-white/5 p-8 text-center max-w-md">
+            <h2 className="text-lg font-semibold text-ink">Release not found</h2>
+            <p className="text-sm text-ink-muted mt-2">
               This release is unavailable or was unpublished.
             </p>
             <button
               type="button"
               onClick={() => router.push(backTarget.href)}
-              className="mt-5 rounded-full border border-white/12 bg-white/8 px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white"
+              className="mt-5 rounded-full border border-line bg-white/8 px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-white/15 hover:text-ink"
             >
               {backTarget.label}
             </button>
@@ -213,7 +213,7 @@ export default function PublicReleasePage() {
   }
 
   return (
-    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div
@@ -239,12 +239,12 @@ export default function PublicReleasePage() {
             {/* Hero header — cover art left, artist/writer info beside it */}
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
-                <div className="h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-2xl shadow-black/50 sm:h-44 sm:w-44">
+                <div className="h-32 w-32 shrink-0 overflow-hidden  border border-line bg-surface shadow-2xl shadow-black/50 sm:h-44 sm:w-44">
                   {release?.coverUrl ? (
                     <img src={release.coverUrl} alt={release.title} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
-                      <svg className="h-10 w-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                      <svg className="h-10 w-10 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
@@ -253,18 +253,18 @@ export default function PublicReleasePage() {
 
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-white/60">
+                    <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
                       {release?.type}
                     </span>
-                    <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
+                    <span className="shrink-0 rounded-full border border-accent/40 bg-accent/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
                       ● Public
                     </span>
                   </div>
-                  <h1 className="truncate text-3xl font-black tracking-tight text-white sm:text-4xl">
+                  <h1 className="truncate text-3xl font-black tracking-tight text-ink sm:text-4xl">
                     {release?.title}
                   </h1>
-                  <p className="text-sm text-white/60">
-                    <ArtistLink name={release?.artistName} className="text-white/85 font-semibold hover:underline hover:text-white" />
+                  <p className="text-sm text-ink-muted">
+                    <ArtistLink name={release?.artistName} className="text-ink/85 font-semibold hover:underline hover:text-ink" />
                     {releaseTracks.length > 0 && (
                       <>
                         {" "}
@@ -274,14 +274,14 @@ export default function PublicReleasePage() {
                     )}
                   </p>
                   {release?.description && (
-                    <p className="text-sm text-white/45 max-w-xl">{release.description}</p>
+                    <p className="text-sm text-ink-dim max-w-xl">{release.description}</p>
                   )}
                 </div>
 
                 <button
                   type="button"
                   onClick={() => router.push(backTarget.href)}
-                  className="h-9 shrink-0 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white inline-flex items-center gap-1.5 self-start"
+                  className="h-9 shrink-0 rounded-full border border-line bg-white/5 px-3.5 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink inline-flex items-center gap-1.5 self-start"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -302,7 +302,7 @@ export default function PublicReleasePage() {
                 />
               )}
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">
                   Loading release tracks...
                 </div>
               ) : releaseTracks.length > 0 ? (
@@ -324,7 +324,7 @@ export default function PublicReleasePage() {
                   selectedTrackId={selectedTrack?.id ?? null}
                 />
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-center text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-center text-sm text-ink/55">
                   This release has no published tracks.
                 </div>
               )}
@@ -347,8 +347,8 @@ export default function PublicReleasePage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
               </div>
             )}

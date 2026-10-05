@@ -227,7 +227,7 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-[#09090d] overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div className="h-[calc(100vh-var(--player-height)-var(--non-admin-header-height,0px))] flex" style={{ marginLeft: !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240 }}>
@@ -235,31 +235,31 @@ export default function PlaylistsPage() {
           <div className="max-w-400 mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("playlists.tagline")}</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">{t("playlists.tagline")}</p>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{t("playlists.title")}</h1>
               </div>
             </section>
 
             <section className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/60">
+                <div className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-muted">
                   {t("playlists.countLabel", { count: playlists.length })}
                 </div>
                 {showCreatePlaylist ? (
-                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1.5">
+                  <div className="flex items-center gap-2 rounded-full border border-line bg-white/5 p-1.5">
                     <input
                       value={newPlaylistName}
                       onChange={(e) => setNewPlaylistName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") handleCreatePlaylist(); if (e.key === "Escape") { setShowCreatePlaylist(false); setNewPlaylistName(""); } }}
                       placeholder={t("playlists.namePlaceholder")}
                       maxLength={100}
-                      className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-white placeholder:text-white/30 outline-none"
+                      className="h-9 w-48 rounded-full bg-transparent px-3 text-sm text-ink placeholder:text-ink-dim outline-none"
                       autoFocus
                     />
-                    <button type="button" onClick={handleCreatePlaylist} className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-white/90">
+                    <button type="button" onClick={handleCreatePlaylist} className="h-9 rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong">
                       {t("playlists.add")}
                     </button>
-                    <button type="button" onClick={() => { setShowCreatePlaylist(false); setNewPlaylistName(""); }} className="h-9 rounded-full px-4 text-sm text-white/60 transition-colors hover:text-white">
+                    <button type="button" onClick={() => { setShowCreatePlaylist(false); setNewPlaylistName(""); }} className="h-9 rounded-full px-4 text-sm text-ink-muted transition-colors hover:text-ink">
                       {t("playlists.cancel")}
                     </button>
                   </div>
@@ -267,7 +267,7 @@ export default function PlaylistsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreatePlaylist(true)}
-                    className="h-10 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                    className="h-10 rounded-full border border-line bg-white/5 px-4 text-sm text-ink/75 transition-colors hover:bg-white/10 hover:text-ink"
                   >
                     {t("playlists.createPlaylist")}
                   </button>
@@ -275,9 +275,9 @@ export default function PlaylistsPage() {
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("playlists.loading")}</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">{t("playlists.loading")}</div>
               ) : playlists.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/3 p-8 text-sm text-ink/55">
                   {t("playlists.noPlaylistsYet")}
                 </div>
               ) : (
@@ -289,7 +289,7 @@ export default function PlaylistsPage() {
                     return (
                       <article
                         key={playlist.id}
-                        className="group overflow-hidden rounded-[26px] border border-white/10 bg-[#0f1017] shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+                        className="group overflow-hidden rounded-[26px] border border-line bg-surface shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
                       >
                         <button
                           type="button"
@@ -307,15 +307,15 @@ export default function PlaylistsPage() {
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">
-                                <svg className="h-14 w-14 text-white/35" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="h-14 w-14 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                                 </svg>
                               </div>
                             )}
                             <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10" />
                             <div className="absolute inset-x-0 bottom-0 p-4">
-                              <h3 className="truncate text-lg font-semibold text-white">{playlist.name}</h3>
-                              <p className="text-sm text-white/75">{t("playlists.songsCount", { count: playlistTracks.length })}</p>
+                              <h3 className="truncate text-lg font-semibold text-ink">{playlist.name}</h3>
+                              <p className="text-sm text-ink/75">{t("playlists.songsCount", { count: playlistTracks.length })}</p>
                             </div>
                           </div>
                         </button>
@@ -327,33 +327,33 @@ export default function PlaylistsPage() {
 
               {publishedPlaylists.length > 0 && (
                 <div className="space-y-4 pt-10">
-                  <h2 className="text-xl font-semibold tracking-tight text-white">{t("playlists.curatedByMelodiq")}</h2>
+                  <h2 className="text-xl font-semibold tracking-tight text-ink">{t("playlists.curatedByMelodiq")}</h2>
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                     {publishedPlaylists.map((playlist) => (
                       <Link
                         key={playlist.id}
                         href={`/discover/playlist/${playlist.id}?from=playlists`}
-                        className="group flex flex-col gap-3 rounded-[26px] border border-white/10 bg-[#0f1017] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition-colors hover:border-white/20"
+                        className="group flex flex-col gap-3 rounded-[26px] border border-line bg-surface p-4 shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition-colors hover:border-line/20"
                       >
-                        <div className="flex aspect-4/3 w-full items-center justify-center rounded-2xl bg-linear-to-br from-fuchsia-600/40 to-primary-900/40 overflow-hidden relative">
-                          <svg className="h-12 w-12 text-white/50 transition-transform duration-500 group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex aspect-4/3 w-full items-center justify-center  bg-surface-2 overflow-hidden relative">
+                          <svg className="h-12 w-12 text-ink-dim transition-transform duration-500 group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                           </svg>
                           <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="truncate text-lg font-semibold text-white">{playlist.name}</h3>
+                          <h3 className="truncate text-lg font-semibold text-ink">{playlist.name}</h3>
                           {playlist.description && (
-                            <p className="truncate text-sm text-white/50 mt-0.5">{playlist.description}</p>
+                            <p className="truncate text-sm text-ink-dim mt-0.5">{playlist.description}</p>
                           )}
                         </div>
                         <div className="mt-auto flex items-center justify-between">
-                          <p className="text-sm text-white/40">
+                          <p className="text-sm text-ink-dim">
                             {playlist.trackCount === 1
                               ? t("playlists.songCountSingular", { count: playlist.trackCount })
                               : t("playlists.songCountPlural", { count: playlist.trackCount })}
                           </p>
-                          <span className="text-sm text-white/60 transition-colors group-hover:text-white">{t("playlists.view")}</span>
+                          <span className="text-sm text-ink-muted transition-colors group-hover:text-ink">{t("playlists.view")}</span>
                         </div>
                       </Link>
                     ))}
@@ -375,8 +375,8 @@ export default function PlaylistsPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">{t("common.trackDetails")}</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">{t("common.trackDetails")}</h3>
                 <p className="text-sm mt-3">{t("playlists.selectTrackHint")}</p>
               </div>
             )}

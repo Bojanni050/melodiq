@@ -240,7 +240,7 @@ function DiscoverReleasesPageInner() {
   }
 
   return (
-    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {isLoggedIn && <Sidebar credits={null} />}
       {authChecked && !isLoggedIn && <PublicNav />}
 
@@ -263,7 +263,7 @@ function DiscoverReleasesPageInner() {
                       <button
                         type="button"
                         onClick={handlePlayAll}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-ink shadow-lg shadow-accent/30 transition-transform hover:scale-105 active:scale-95"
                         aria-label="Play all releases"
                         title="Play all releases"
                       >
@@ -273,13 +273,13 @@ function DiscoverReleasesPageInner() {
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-white/45">
+                  <p className="text-sm text-ink-dim">
                     Published singles, EPs, and albums from every artist on Melodiq.
                   </p>
                 </div>
                 <Link
                   href={backTarget.href}
-                  className="inline-flex items-center gap-1.5 self-start rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  className="inline-flex items-center gap-1.5 self-start rounded-full border border-line bg-white/5 px-3.5 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -296,7 +296,7 @@ function DiscoverReleasesPageInner() {
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
-                    className="appearance-none rounded-full border border-white/10 bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-white/80 outline-none transition-colors hover:bg-white/10"
+                    className="appearance-none rounded-full border border-line bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-ink-muted outline-none transition-colors hover:bg-white/10"
                     aria-label="Filter by release type"
                   >
                     {TYPE_FILTERS.map((f) => (
@@ -305,7 +305,7 @@ function DiscoverReleasesPageInner() {
                       </option>
                     ))}
                   </select>
-                  <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
@@ -313,20 +313,20 @@ function DiscoverReleasesPageInner() {
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                    className="appearance-none rounded-full border border-white/10 bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-white/80 outline-none transition-colors hover:bg-white/10"
+                    className="appearance-none rounded-full border border-line bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-ink-muted outline-none transition-colors hover:bg-white/10"
                     aria-label="Sort releases"
                   >
                     <option value="date" className="bg-[#161621]">Release date</option>
                     <option value="title" className="bg-[#161621]">Title</option>
                   </select>
-                  <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </div>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">
                   Loading releases...
                 </div>
               ) : displayedReleases.length > 0 ? (
@@ -341,20 +341,20 @@ function DiscoverReleasesPageInner() {
                     return (
                       <section
                         key={release.id}
-                        className="rounded-3xl border border-white/8 bg-white/[0.02] p-4 sm:p-6 space-y-5"
+                        className=" border border-line bg-white/[0.02] p-4 sm:p-6 space-y-5"
                       >
                         {/* Hero — cover art left, meta to the right */}
                         <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
                           <div className="group/cover relative h-28 w-28 shrink-0 sm:h-36 sm:w-36">
                             <Link
                               href={`/discover/release/${release.id}`}
-                              className="block h-full w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40"
+                              className="block h-full w-full overflow-hidden  border border-line bg-surface shadow-xl shadow-black/40"
                             >
                               {release.coverUrl ? (
                                 <img src={release.coverUrl} alt={release.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
-                                  <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                                  <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                                   </svg>
                                 </div>
@@ -383,7 +383,7 @@ function DiscoverReleasesPageInner() {
                                     }
                                     playReleaseTrack(release.id, releaseTrackItems[0]);
                                   }}
-                                  className="absolute inset-0 flex items-center justify-center rounded-2xl transition-colors group-hover/cover:bg-black/45"
+                                  className="absolute inset-0 flex items-center justify-center  transition-colors group-hover/cover:bg-black/45"
                                   aria-label={label}
                                   title={label}
                                 >
@@ -395,12 +395,12 @@ function DiscoverReleasesPageInner() {
                                     }`}
                                   >
                                     {isThisReleasePlaying ? (
-                                      <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <svg className="h-4 w-4 text-ink" fill="currentColor" viewBox="0 0 24 24">
                                         <rect x="6" y="4" width="4" height="16" rx="1" />
                                         <rect x="14" y="4" width="4" height="16" rx="1" />
                                       </svg>
                                     ) : (
-                                      <svg className="h-4 w-4 translate-x-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <svg className="h-4 w-4 translate-x-0.5 text-ink" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z" />
                                       </svg>
                                     )}
@@ -413,21 +413,21 @@ function DiscoverReleasesPageInner() {
                           <div className="min-w-0 flex-1 space-y-1.5">
                             <Link
                               href={`/discover/release/${release.id}`}
-                              className="block truncate text-xl font-bold tracking-tight text-white hover:underline sm:text-2xl"
+                              className="block truncate text-xl font-bold tracking-tight text-ink hover:underline sm:text-2xl"
                             >
                               {release.title}
                             </Link>
-                            <p className="text-sm text-white/60">
-                              <ArtistLink name={release.artistName} className="text-white/85 font-semibold hover:underline hover:text-white" />
-                              <span className="mx-1.5 text-white/25">·</span>
+                            <p className="text-sm text-ink-muted">
+                              <ArtistLink name={release.artistName} className="text-ink/85 font-semibold hover:underline hover:text-ink" />
+                              <span className="mx-1.5 text-ink-dim">·</span>
                               <span className="capitalize">{release.type}</span>
                               {year && (
                                 <>
-                                  <span className="mx-1.5 text-white/25">·</span>
+                                  <span className="mx-1.5 text-ink-dim">·</span>
                                   {year}
                                 </>
                               )}
-                              <span className="mx-1.5 text-white/25">·</span>
+                              <span className="mx-1.5 text-ink-dim">·</span>
                               {releaseTrackItems.length} {releaseTrackItems.length === 1 ? "track" : "tracks"}
                               {totalDuration ? `, ${totalDuration}` : ""}
                             </p>
@@ -459,14 +459,14 @@ function DiscoverReleasesPageInner() {
                             ))}
                           </div>
                         ) : (
-                          <p className="px-1 text-sm text-white/40">This release has no published tracks.</p>
+                          <p className="px-1 text-sm text-ink-dim">This release has no published tracks.</p>
                         )}
                       </section>
                     );
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-white/45 px-1">No published releases yet.</p>
+                <p className="text-sm text-ink-dim px-1">No published releases yet.</p>
               )}
             </section>
           </div>
@@ -487,8 +487,8 @@ function DiscoverReleasesPageInner() {
                 onDownload={handleDownloadFromDetailsPanel}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
               </div>
             )}

@@ -82,13 +82,13 @@ export default function ExplorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-[#0a0a0f] text-ink">
       <PublicNav />
 
       <main className="px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold sm:text-4xl">Published Tracks</h1>
-          <p className="mt-2 text-white/50">
+          <p className="mt-2 text-ink-dim">
             Discover songs made with MelodIQ. Browse published tracks and follow the artists behind them.
           </p>
         </div>
@@ -97,15 +97,15 @@ export default function ExplorePage() {
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square w-full rounded-xl bg-white/10" />
+                <div className="aspect-square w-full  bg-white/10" />
                 <div className="mt-3 h-4 w-3/4 rounded bg-white/10" />
                 <div className="mt-2 h-3 w-1/2 rounded bg-white/10" />
               </div>
             ))}
           </div>
         ) : published.length === 0 ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] text-center">
-            <p className="text-white/40">No published tracks yet.</p>
+          <div className="flex min-h-[300px] flex-col items-center justify-center  border border-dashed border-line bg-white/[0.02] text-center">
+            <p className="text-ink-dim">No published tracks yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,300px))] gap-3">
@@ -121,14 +121,14 @@ export default function ExplorePage() {
                   <button
                     type="button"
                     onClick={() => handlePlay(track)}
-                    className="absolute inset-0 overflow-hidden rounded-xl"
+                    className="absolute inset-0 overflow-hidden "
                     aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
                   >
                     {cover ? (
                       <img src={cover} alt={track.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-600/40 to-primary-900/40">
-                        <svg className="h-8 w-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                        <svg className="h-8 w-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0zM3 13l6-1.5M3 13v-2l6-1.5" />
                         </svg>
                       </div>
@@ -155,18 +155,18 @@ export default function ExplorePage() {
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-3 pt-12 text-left">
                     <Link
                       href={`/discover/track/${track.id}`}
-                      className="pointer-events-auto block truncate text-sm font-semibold text-white drop-shadow hover:text-primary-300 transition-colors"
+                      className="pointer-events-auto block truncate text-sm font-semibold text-ink drop-shadow hover:text-accent transition-colors"
                     >
                       {track.title}
                     </Link>
                     <ArtistLink
                       name={track.artistName || "Unknown Artist"}
                       {...(track.artistId ? { fallbackHref: `/discover/artist/${track.artistId}` } : {})}
-                      className="pointer-events-auto block truncate text-xs text-white/70 hover:text-primary-300 transition-colors"
+                      className="pointer-events-auto block truncate text-xs text-ink-muted hover:text-accent transition-colors"
                     />
                   </div>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-white/35">
+                  <div className="flex items-center justify-between text-[11px] text-ink-dim">
                     <span>{formatDuration(track.duration)}</span>
                     <span>{track.totalPlays.toLocaleString()} plays</span>
                   </div>

@@ -228,7 +228,7 @@ export default function PublicPlaylistPage() {
 
   if (notFound || (!loading && !playlist)) {
     return (
-      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+      <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
         {isLoggedIn && <Sidebar credits={null} />}
       {authChecked && !isLoggedIn && <PublicNav />}
         <div
@@ -237,15 +237,15 @@ export default function PublicPlaylistPage() {
             marginLeft: !isLoggedIn || !isDesktop ? 0 : sidebarCollapsed ? 60 : isQHD ? 300 : 240,
           }}
         >
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center max-w-md">
-            <h2 className="text-lg font-semibold text-white">Playlist not found</h2>
-            <p className="text-sm text-white/60 mt-2">
+          <div className=" border border-line bg-white/5 p-8 text-center max-w-md">
+            <h2 className="text-lg font-semibold text-ink">Playlist not found</h2>
+            <p className="text-sm text-ink-muted mt-2">
               This public playlist is unavailable or was unpublished.
             </p>
             <button
               type="button"
               onClick={() => router.push(backTarget.href)}
-              className="mt-5 rounded-full border border-white/12 bg-white/8 px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white"
+              className="mt-5 rounded-full border border-line bg-white/8 px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-white/15 hover:text-ink"
             >
               {backTarget.label}
             </button>
@@ -256,7 +256,7 @@ export default function PublicPlaylistPage() {
   }
 
   return (
-    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-white ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
+    <div className={`relative h-screen bg-[#09090d] overflow-hidden text-ink ${isLoggedIn ? "" : "flex flex-col pb-(--player-height)"}`}>
       {/* Blurred cover art as background */}
       {coverUrl && (
         <div
@@ -283,12 +283,12 @@ export default function PublicPlaylistPage() {
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex items-end gap-4 min-w-0">
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#1a1b25] shadow-xl shadow-black/40 sm:h-24 sm:w-24">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden  border border-line bg-surface shadow-xl shadow-black/40 sm:h-24 sm:w-24">
                     {playlist?.coverUrl ? (
                       <img src={playlist.coverUrl} alt={playlist.name} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-600/40 to-primary-900/40">
-                        <svg className="h-7 w-7 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex h-full w-full items-center justify-center bg-surface-2">
+                        <svg className="h-7 w-7 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-2v13M9 19a3 3 0 11-6 0 3 3 0 016 0zM21 17a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
@@ -299,28 +299,28 @@ export default function PublicPlaylistPage() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
                         Discover
-                        <span className="mx-2 text-white/25 font-light">/</span>
-                        <span className="text-white/60">
+                        <span className="mx-2 text-ink-dim font-light">/</span>
+                        <span className="text-ink-muted">
                           {playlist?.name ?? "Playlist"}
                         </span>
                       </h1>
-                      <span className="shrink-0 rounded-full border border-fuchsia-400/40 bg-fuchsia-400/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200">
+                      <span className="shrink-0 rounded-full border border-accent/40 bg-accent/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
                         ● Public
                       </span>
                       {playlistTracks.length > 0 && (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 shrink-0">
+                        <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-ink-dim shrink-0">
                           {playlistTracks.length} tracks
                           {playlistTracksTotalDuration ? ` (${playlistTracksTotalDuration})` : ""}
                         </span>
                       )}
                     </div>
                     {playlist?.artistName && (
-                      <p className="text-xs text-white/40">
-                        Curated by <span className="text-white/70">{playlist.artistName}</span>
+                      <p className="text-xs text-ink-dim">
+                        Curated by <span className="text-ink-muted">{playlist.artistName}</span>
                       </p>
                     )}
                     {playlist?.description && (
-                      <p className="text-sm text-white/50 max-w-xl">
+                      <p className="text-sm text-ink-dim max-w-xl">
                         {playlist.description}
                       </p>
                     )}
@@ -332,7 +332,7 @@ export default function PublicPlaylistPage() {
                     <button
                       type="button"
                       onClick={handlePlayFromStart}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105 active:scale-95"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-ink shadow-lg shadow-accent/30 transition-transform hover:scale-105 active:scale-95"
                       aria-label={`Play ${playlist?.name ?? "playlist"}`}
                       title={`Play ${playlist?.name ?? "playlist"}`}
                     >
@@ -344,7 +344,7 @@ export default function PublicPlaylistPage() {
                   <button
                     type="button"
                     onClick={() => router.push(backTarget.href)}
-                    className="h-9 rounded-full border border-white/10 bg-white/5 px-3.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white inline-flex items-center gap-1.5"
+                    className="h-9 rounded-full border border-line bg-white/5 px-3.5 text-sm font-medium text-ink-muted transition-colors hover:bg-white/10 hover:text-ink inline-flex items-center gap-1.5"
                   >
                     <svg
                       className="w-4 h-4"
@@ -368,7 +368,7 @@ export default function PublicPlaylistPage() {
             {/* Track List Section */}
             <section className="space-y-4">
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">
                   Loading playlist tracks...
                 </div>
               ) : playlistTracks.length > 0 ? (
@@ -390,7 +390,7 @@ export default function PublicPlaylistPage() {
                   selectedTrackId={selectedTrack?.id ?? null}
                 />
               ) : (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/[0.03] p-8 text-center text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-center text-sm text-ink/55">
                   This playlist has no tracks.
                 </div>
               )}
@@ -413,8 +413,8 @@ export default function PublicPlaylistPage() {
                 onDownload={handleDownloadTrack}
               />
             ) : (
-              <div className="h-full px-5 py-6 text-white/45">
-                <h3 className="text-sm font-medium text-white/60">Track Details</h3>
+              <div className="h-full px-5 py-6 text-ink-dim">
+                <h3 className="text-sm font-medium text-ink-muted">Track Details</h3>
                 <p className="text-sm mt-3">Select a track to show song info and lyrics.</p>
               </div>
             )}

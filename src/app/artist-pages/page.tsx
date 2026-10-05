@@ -35,9 +35,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium uppercase tracking-wider text-white/35 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium uppercase tracking-wider text-ink-dim mb-1.5">{label}</label>
       {children}
-      {hint && <p className="text-xs text-white/25 mt-1.5">{hint}</p>}
+      {hint && <p className="text-xs text-ink-dim mt-1.5">{hint}</p>}
     </div>
   );
 }
@@ -169,7 +169,7 @@ export default function ArtistPagesPage() {
   }
 
   return (
-    <div className="h-screen bg-[#09090d] overflow-hidden text-white">
+    <div className="h-screen bg-[#09090d] overflow-hidden text-ink">
       <Sidebar credits={null} />
 
       <div
@@ -182,22 +182,22 @@ export default function ArtistPagesPage() {
           <div className="max-w-400 mx-auto space-y-6">
             <section className="px-1 py-2 sm:px-2">
               <div className="flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-[0.28em] text-white/35">{t("artistPages.tagline")}</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-ink-dim">{t("artistPages.tagline")}</p>
                 <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{t("artistPages.title")}</h1>
               </div>
             </section>
 
-            {message && <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div>}
-            {error && <div className="rounded-2xl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</div>}
+            {message && <div className=" border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{message}</div>}
+            {error && <div className=" border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</div>}
 
             <section className="space-y-4">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-white/35">{t("artistPages.pagesHeading")}</h2>
-              <p className="text-xs text-white/25 -mt-2">{t("artistPages.tracksHint")}</p>
+              <h2 className="text-xs font-medium uppercase tracking-wider text-ink-dim">{t("artistPages.pagesHeading")}</h2>
+              <p className="text-xs text-ink-dim -mt-2">{t("artistPages.tracksHint")}</p>
 
               {loading ? (
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-sm text-white/60">{t("artistPages.loading")}</div>
+                <div className=" border border-line bg-white/5 p-8 text-sm text-ink-muted">{t("artistPages.loading")}</div>
               ) : pages.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/3 p-8 text-sm text-ink/55">
                   {t("artistPages.noneYet")}
                 </div>
               ) : (
@@ -208,7 +208,7 @@ export default function ArtistPagesPage() {
                     return (
                       <article
                         key={page.id}
-                        className="rounded-[26px] border border-white/10 bg-[#0f1017] p-5 sm:p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] space-y-5"
+                        className="rounded-[26px] border border-line bg-surface p-5 sm:p-6 shadow-[0_18px_60px_rgba(0,0,0,0.25)] space-y-5"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
@@ -217,10 +217,10 @@ export default function ArtistPagesPage() {
                               <img
                                 src={`/api/artist/${page.slug}/image?variant=profile`}
                                 alt={page.alias}
-                                className="h-11 w-11 rounded-full object-cover border border-white/10"
+                                className="h-11 w-11 rounded-full object-cover border border-line"
                               />
                             ) : (
-                              <div className="h-11 w-11 rounded-full border border-white/10 bg-white/5" />
+                              <div className="h-11 w-11 rounded-full border border-line bg-white/5" />
                             )}
                             <div>
                               <h3 className="text-lg font-medium">{page.alias}</h3>
@@ -228,7 +228,7 @@ export default function ArtistPagesPage() {
                                 href={`/artist/${page.slug}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-xs text-white/40 hover:text-white/70 transition-colors"
+                                className="text-xs text-ink-dim hover:text-ink-muted transition-colors"
                               >
                                 /artist/{page.slug}
                               </Link>
@@ -239,14 +239,14 @@ export default function ArtistPagesPage() {
                               href={`/artist/${page.slug}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                              className="rounded-full border border-line bg-white/5 px-3 py-1.5 text-xs text-ink/75 transition-colors hover:bg-white/10 hover:text-ink"
                             >
                               {t("artistPages.open")}
                             </Link>
                             <button
                               type="button"
                               onClick={() => handleDelete(page.id, page.alias)}
-                              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/50 transition-colors hover:border-red-400/40 hover:text-red-200"
+                              className="rounded-full border border-line bg-white/5 px-3 py-1.5 text-xs text-ink-dim transition-colors hover:border-red-400/40 hover:text-red-200"
                             >
                               {t("artistPages.delete")}
                             </button>
@@ -270,7 +270,7 @@ export default function ArtistPagesPage() {
                           <Field
                             label={t("artistPages.profileImage")}
                           >
-                            <label className="flex h-10 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm text-white/75 transition-colors hover:bg-white/10">
+                            <label className="flex h-10 cursor-pointer items-center justify-center rounded-full border border-line bg-white/5 text-sm text-ink/75 transition-colors hover:bg-white/10">
                               {uploading === `${page.id}:profile` ? t("artistPages.uploading") : t("artistPages.chooseImage")}
                               <input
                                 type="file"
@@ -290,7 +290,7 @@ export default function ArtistPagesPage() {
                           label={t("artistPages.heroImage")}
                           hint={t("artistPages.heroImageHint")}
                         >
-                          <label className="flex h-10 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm text-white/75 transition-colors hover:bg-white/10">
+                          <label className="flex h-10 cursor-pointer items-center justify-center rounded-full border border-line bg-white/5 text-sm text-ink/75 transition-colors hover:bg-white/10">
                             {uploading === `${page.id}:hero` ? t("artistPages.uploading") : t("artistPages.chooseImage")}
                             <input
                               type="file"
@@ -325,7 +325,7 @@ export default function ArtistPagesPage() {
                             type="button"
                             onClick={() => handleSave(page.id)}
                             disabled={isSaving}
-                            className="h-10 rounded-full bg-white px-5 text-sm font-medium text-black transition-colors hover:bg-white/90 disabled:opacity-50"
+                            className="h-10 rounded-full bg-white px-5 text-sm font-medium text-black transition-colors hover:bg-accent-strong disabled:opacity-50"
                           >
                             {isSaving ? t("artistPages.saving") : t("artistPages.save")}
                           </button>
@@ -338,10 +338,10 @@ export default function ArtistPagesPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-white/35">{t("artistPages.createHeading")}</h2>
+              <h2 className="text-xs font-medium uppercase tracking-wider text-ink-dim">{t("artistPages.createHeading")}</h2>
 
               {!loading && availableAliases.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/12 bg-white/3 p-8 text-sm text-white/55">
+                <div className=" border border-dashed border-line bg-white/3 p-8 text-sm text-ink/55">
                   {pages.length === 0 ? t("artistPages.noAliasesAtAll") : t("artistPages.noAliasesLeft")}
                 </div>
               ) : (
@@ -352,7 +352,7 @@ export default function ArtistPagesPage() {
                       type="button"
                       onClick={() => handleCreate(alias)}
                       disabled={creating !== null}
-                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                      className="rounded-full border border-line bg-white/5 px-4 py-2 text-sm text-ink/75 transition-colors hover:bg-white/10 hover:text-ink disabled:opacity-50"
                     >
                       {creating === alias ? t("artistPages.creating") : `${t("artistPages.create")} · ${alias}`}
                     </button>
