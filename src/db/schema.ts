@@ -26,6 +26,11 @@ export const users = pgTable("users", {
   artistAliases: text("artist_aliases"),
   composerAlias: varchar("composer_alias", { length: 255 }),
   writerAlias: varchar("writer_alias", { length: 255 }),
+  // Extra composer / writer aliases as JSON arrays (primary + 4 more). The
+  // scalar composerAlias/writerAlias above mirror the first slot, so existing
+  // fallbacks keep working unchanged.
+  composerAliases: text("composer_aliases"),
+  writerAliases: text("writer_aliases"),
   bio: text("bio"),
   profileImageUrl: text("profile_image_url"),
   heroImageUrl: text("hero_image_url"),

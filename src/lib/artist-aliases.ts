@@ -45,3 +45,54 @@ export function validateArtistAliases(value: unknown): { ok: true; aliases: stri
   }
   return { ok: true, aliases };
 }
+
+// Composer / writer aliases use the same JSON-array storage as artist aliases,
+// with 5 slots each (the scalar composerAlias/writerAlias mirrors slot 0).
+export const MAX_COMPOSER_ALIASES = 5;
+export const MAX_WRITER_ALIASES = 5;
+
+export function parseAliasList(raw: string | null | undefined, max: number): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((v): v is string => typeof v === "string")
+      .slice(0, max);
+  } catch {
+    return [];
+  }
+}
+
+export function serializeAliasList(aliases: string[], max: number): string | null {
+  const trimmed = aliases.slice(0, max).map((a) => a.trim());
+  while (trimmed.length > 0 && trimmed[trimmed.length - 1] === "") {
+    trimmed.pop();
+  }
+  if (trimmed.length === 0) return null;
+  return JSON.stringify(trimmed);
+}
+
+export function validateAliasList(
+  value: unknown,
+  max: number,
+  label: string
+): { ok: true; aliases: string[] } | { ok: false; error: string } {
+  if (!Array.isArray(value)) {
+    return { ok: false, error: `Invalid ${label} — expected an array` };
+  }
+  if (value.length > max) {
+    return { ok: false, error: `Maximum of ${max} ${label}` };
+  }
+  const aliases: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "string") {
+      return { ok: false, error: `Invalid ${label} — each alias must be a string` };
+    }
+    if (entry.length > ALIAS_MAX_LENGTH) {
+      return { ok: false, error: `${label} too long (max ${ALIAS_MAX_LENGTH} characters)` };
+    }
+    aliases.push(entry);
+  }
+  return { ok: true, aliases };
+}

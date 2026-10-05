@@ -10,6 +10,8 @@ export interface UserProfile {
   artistAliases?: string[];
   composerAlias: string | null;
   writerAlias: string | null;
+  composerAliases?: string[];
+  writerAliases?: string[];
   role: UserRole;
   language: string;
   createdAt: string;

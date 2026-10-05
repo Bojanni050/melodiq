@@ -90,6 +90,7 @@ export default function ArchivePage() {
     const names = new Set<string>();
     allTracks.forEach((t) => { if (t.composerName) names.add(t.composerName); });
     if (user?.composerAlias) names.add(user.composerAlias);
+    (user?.composerAliases ?? []).forEach((a) => { if (a) names.add(a); });
     return Array.from(names).sort();
   }, [allTracks, user]);
 
@@ -97,6 +98,7 @@ export default function ArchivePage() {
     const names = new Set<string>();
     allTracks.forEach((t) => { if (t.writerName) names.add(t.writerName); });
     if (user?.writerAlias) names.add(user.writerAlias);
+    (user?.writerAliases ?? []).forEach((a) => { if (a) names.add(a); });
     return Array.from(names).sort();
   }, [allTracks, user]);
 

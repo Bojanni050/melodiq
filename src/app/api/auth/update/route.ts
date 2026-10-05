@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
-import { parseArtistAliases, serializeArtistAliases, validateArtistAliases } from "@/lib/artist-aliases";
+import { parseArtistAliases, serializeArtistAliases, validateArtistAliases, parseAliasList, serializeAliasList, validateAliasList, MAX_COMPOSER_ALIASES, MAX_WRITER_ALIASES } from "@/lib/artist-aliases";
 
 type JsonObject = Record<string, unknown>;
 
@@ -27,6 +27,8 @@ export async function PUT(request: NextRequest) {
   const artistAliases = body.artistAliases;
   const composerAlias = body.composerAlias;
   const writerAlias = body.writerAlias;
+  const composerAliases = body.composerAliases;
+  const writerAliases = body.writerAliases;
   const bio = body.bio;
   const language = body.language;
   const currentPassword = body.currentPassword;
@@ -114,6 +116,22 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  // Multiple composer / writer aliases. The scalar column always mirrors the
+  // first slot so existing fallbacks keep reading a single value.
+  if (composerAliases !== undefined) {
+    const validated = validateAliasList(composerAliases, MAX_COMPOSER_ALIASES, "composer aliases");
+    if (!validated.ok) return NextResponse.json({ error: validated.error }, { status: 400 });
+    updates.composerAliases = serializeAliasList(validated.aliases, MAX_COMPOSER_ALIASES);
+    updates.composerAlias = validated.aliases[0]?.trim() || null;
+  }
+
+  if (writerAliases !== undefined) {
+    const validated = validateAliasList(writerAliases, MAX_WRITER_ALIASES, "writer aliases");
+    if (!validated.ok) return NextResponse.json({ error: validated.error }, { status: 400 });
+    updates.writerAliases = serializeAliasList(validated.aliases, MAX_WRITER_ALIASES);
+    updates.writerAlias = validated.aliases[0]?.trim() || null;
+  }
+
   if (bio !== undefined) {
     if (bio === null) {
       updates.bio = null;
@@ -161,6 +179,8 @@ export async function PUT(request: NextRequest) {
       artistAliases: users.artistAliases,
       composerAlias: users.composerAlias,
       writerAlias: users.writerAlias,
+      composerAliases: users.composerAliases,
+      writerAliases: users.writerAliases,
       bio: users.bio,
             profileImageUrl: users.profileImageUrl,
             heroImageUrl: users.heroImageUrl,
@@ -170,6 +190,11 @@ export async function PUT(request: NextRequest) {
 
   const row = updated[0];
   return NextResponse.json({
-    user: { ...row, artistAliases: parseArtistAliases(row.artistAliases) },
+    user: {
+      ...row,
+      artistAliases: parseArtistAliases(row.artistAliases),
+      composerAliases: parseAliasList(row.composerAliases, MAX_COMPOSER_ALIASES),
+      writerAliases: parseAliasList(row.writerAliases, MAX_WRITER_ALIASES),
+    },
   });
 }

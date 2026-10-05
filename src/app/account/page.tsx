@@ -6,7 +6,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, useUserStore, useLocaleStore, LOCALES, type Locale } from "@/lib/store";
 import { useT } from "@/hooks/useT";
-import { MAX_ARTIST_ALIASES } from "@/lib/artist-aliases";
+import { MAX_ARTIST_ALIASES, MAX_COMPOSER_ALIASES, MAX_WRITER_ALIASES } from "@/lib/artist-aliases";
 
 interface User {
   id: string;
@@ -16,6 +16,8 @@ interface User {
   artistAliases: string[];
   composerAlias: string | null;
   writerAlias: string | null;
+  composerAliases: string[];
+  writerAliases: string[];
   bio: string | null;
   profileImageUrl: string | null;
   heroImageUrl: string | null;
@@ -59,8 +61,8 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [artistAliases, setArtistAliases] = useState<string[]>(Array(MAX_ARTIST_ALIASES).fill(""));
-  const [composerAlias, setComposerAlias] = useState("");
-  const [writerAlias, setWriterAlias] = useState("");
+  const [composerAliases, setComposerAliases] = useState<string[]>(Array(MAX_COMPOSER_ALIASES).fill(""));
+  const [writerAliases, setWriterAliases] = useState<string[]>(Array(MAX_WRITER_ALIASES).fill(""));
   const [bio, setBio] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -92,8 +94,18 @@ export default function AccountPage() {
         setArtistAliases(
           Array.from({ length: MAX_ARTIST_ALIASES }, (_, i) => loadedAliases[i] || "")
         );
-        setComposerAlias(data.user?.composerAlias || "");
-        setWriterAlias(data.user?.writerAlias || "");
+        const loadedComposers: string[] = data.user?.composerAliases?.length
+          ? data.user.composerAliases
+          : data.user?.composerAlias
+            ? [data.user.composerAlias]
+            : [];
+        setComposerAliases(Array.from({ length: MAX_COMPOSER_ALIASES }, (_, i) => loadedComposers[i] || ""));
+        const loadedWriters: string[] = data.user?.writerAliases?.length
+          ? data.user.writerAliases
+          : data.user?.writerAlias
+            ? [data.user.writerAlias]
+            : [];
+        setWriterAliases(Array.from({ length: MAX_WRITER_ALIASES }, (_, i) => loadedWriters[i] || ""));
         setBio(data.user?.bio || "");
       } else {
         router.push("/login");
@@ -109,7 +121,7 @@ export default function AccountPage() {
     const res = await fetch("/api/auth/update", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, artistAliases, composerAlias, writerAlias, bio }),
+      body: JSON.stringify({ name, artistAliases, composerAliases, writerAliases, bio }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -319,31 +331,45 @@ export default function AccountPage() {
                     </div>
                   </Field>
 
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <Field label={t("account.composerAlias")} hint={t("account.composerAliasHint")}>
-                      <input
-                        type="text"
-                        value={composerAlias}
-                        onChange={(e) => setComposerAlias(e.target.value)}
-                        className="input-field text-sm"
-                        placeholder={t("account.aliasNamePlaceholder")}
-                        maxLength={255}
-                      />
-                    </Field>
-                    <Field label={t("account.writerAlias")} hint={t("account.writerAliasHint")}>
-                      <input
-                        type="text"
-                        value={writerAlias}
-                        onChange={(e) => setWriterAlias(e.target.value)}
-                        className="input-field text-sm"
-                        placeholder={t("account.aliasNamePlaceholder")}
-                        maxLength={255}
-                      />
-                    </Field>
-                    <Field label={t("account.memberSince")}>
-                      <p className="text-sm text-ink-muted py-2">{memberSince}</p>
-                    </Field>
-                  </div>
+                  <Field label={t("account.composerAlias")} hint={t("account.composerAliasHint")}>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {composerAliases.map((alias, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          value={alias}
+                          onChange={(e) =>
+                            setComposerAliases((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
+                          }
+                          className="input-field text-sm"
+                          placeholder={i === 0 ? t("account.aliasPlaceholderPrimary") : t("account.aliasPlaceholder", { n: i + 1 })}
+                          maxLength={255}
+                        />
+                      ))}
+                    </div>
+                  </Field>
+
+                  <Field label={t("account.writerAlias")} hint={t("account.writerAliasHint")}>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {writerAliases.map((alias, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          value={alias}
+                          onChange={(e) =>
+                            setWriterAliases((prev) => prev.map((a, idx) => (idx === i ? e.target.value : a)))
+                          }
+                          className="input-field text-sm"
+                          placeholder={i === 0 ? t("account.aliasPlaceholderPrimary") : t("account.aliasPlaceholder", { n: i + 1 })}
+                          maxLength={255}
+                        />
+                      ))}
+                    </div>
+                  </Field>
+
+                  <Field label={t("account.memberSince")}>
+                    <p className="text-sm text-ink-muted py-2">{memberSince}</p>
+                  </Field>
                 </div>
 
                   {/* Profile photo + Hero image */}

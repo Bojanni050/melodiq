@@ -443,6 +443,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'user';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_url text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hero_image_url text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS composer_aliases text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_aliases text;
 `;
 
 // Handles existing databases where playlists was created before these columns existed.
