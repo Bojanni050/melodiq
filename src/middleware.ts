@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isPublicApi = pathname.startsWith("/api/webhooks/");
-  const isPwaAsset = pathname === "/manifest.webmanifest" || pathname.startsWith("/icons/");
+  const isPwaAsset = pathname === "/manifest.webmanifest" || pathname === "/robots.txt" || pathname.startsWith("/icons/");
   const isApi = pathname.startsWith("/api/");
   // Public routes live in the src/app/(public) route group (URLs unchanged).
   // Song DNA (Discover) and the public Explore page stay browsable while
