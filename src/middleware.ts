@@ -15,6 +15,8 @@ export async function middleware(request: NextRequest) {
   // getPublishedTrackById in src/lib/songs.ts. Their own API routes under
   // /api/discover/* are already public (no auth) server-side and pass
   // through via isApi above.
+  // "/" only redirects to /discover (src/app/page.tsx), so it must be public too.
+  const isPublicRoot = pathname === "/";
   const isPublicDiscover = pathname === "/discover" || pathname.startsWith("/discover/");
   const isPublicExplore = pathname === "/explore" || pathname.startsWith("/explore/");
   // Public per-alias artist pages (/artist/[slug]) with their own API routes.
@@ -29,7 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicApi || isPwaAsset || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
+  if (isPublicApi || isPwaAsset || isPublicRoot || isPublicDiscover || isPublicExplore || isPublicArtist) return NextResponse.next();
 
   if (!isApi && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
