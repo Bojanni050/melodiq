@@ -958,14 +958,19 @@ const TrackCard = memo(function TrackCard({
             </div>
           ) : (
             <div
-              className="text-xs text-ink-dim hover:text-accent mt-0.5 truncate cursor-pointer select-none transition-colors"
+              className={`text-xs text-ink-dim mt-0.5 truncate select-none transition-colors ${artistPageSlug ? "cursor-pointer hover:text-accent" : "cursor-default"}`}
               onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
-              title={track.artistName ? "Click to view artist page · double-click to edit" : "Click to view artist page · double-click to add artist name"}
+              title={
+                artistPageSlug
+                  ? "Click to view artist page · double-click to edit"
+                  : track.artistName || artistAlias
+                    ? "Double-click to edit"
+                    : "Double-click to add artist name"
+              }
             >
               {track.artistName || artistAlias ? (
                 <ArtistLink
                   name={track.artistName || artistAlias}
-                  fallbackHref={track.artistId ? `/discover/artist/${track.artistId}` : user?.id ? `/discover/artist/${user.id}` : null}
                   className="hover:text-accent transition-colors"
                 />
               ) : (
@@ -1166,11 +1171,7 @@ const TrackCard = memo(function TrackCard({
               generatingTcl={generatingTcl}
               isListener={isListenerRole}
               onGoToArtist={
-                artistPageSlug
-                  ? () => router.push(`/artist/${artistPageSlug}`)
-                  : track.artistId
-                    ? () => router.push(`/discover/artist/${track.artistId}`)
-                    : undefined
+                artistPageSlug ? () => router.push(`/artist/${artistPageSlug}`) : undefined
               }
             />
           )}

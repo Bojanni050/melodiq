@@ -167,7 +167,6 @@ export default function ExplorePage() {
                     </Link>
                     <ArtistLink
                       name={track.artistName || "Unknown Artist"}
-                      {...(track.artistId ? { fallbackHref: `/discover/artist/${track.artistId}` } : {})}
                       className="pointer-events-auto block truncate text-xs text-ink-muted hover:text-accent transition-colors"
                     />
                   </div>
