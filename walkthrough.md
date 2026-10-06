@@ -1807,3 +1807,9 @@ pm run build � succesvol.
 - Findings: De queue bestond alleen in de store: TrackActionMenu heeft "Add to queue", de playerbar toont op md+ een teller-badge, maar nergens was de lijst zelf te zien.
 - Conclusions: De queue horen bij de track die nu speelt, dus in het Track Details-paneel (knop "Show song details" in de playerbar) — dat volgt de now-playing track al en is op elke route open. Alleen in sidebar-modus en alleen als het paneel de nu-spelende track toont, zodat de overlay op een willekeurige track geen betekenisloze queue toont. Rows: nummer, cover-thumb, titel/artiest; klik speelt direct (nieuwe store-actie `playQueueItem` springt midden in de queue en zet wat overslaat weg, standaard queue-UX; Player pakt het via het normale trackwissel-effect), X verwijdert één item, Clear leegt de queue (huidige track blijft doorspelen).
 - Actions: `src/lib/stores/playerStore.ts` — `playQueueItem(trackId)`-actie; `src/components/TrackDetail.tsx` — queue-sectie bovenin de Details Container. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-07 wo (Details-paneel: tabs Lyrics ↔ Queue)
+
+- Findings: De gisteren toegevoegde queue-sectie schoof de lyrics weg; Bo wil gewoon kunnen wisselen tussen beide weergaven.
+- Conclusions: Twee tabs in het now-playing sidebar-paneel (nav zoals de accountpagina-tabs: uppercase labels, accent-ondertstreep): "Lyrics" toont het bestaande lyrics+prompt-blok ongewijzigd, "Queue" neemt het hele paneel in met scrolbare lijst en lege-state ("Nothing queued yet"). De condities `isNowPlayingPanel`/`showQueueTab` zijn bewust éénmalig bovenin gedefinieerd omdat de ternary ze op twee scheide punten nodig heeft.
+- Actions: `src/components/TrackDetail.tsx` — `detailTab`-state + tab-nav; queue- en lyrics/prompt-blokken via ternary gewisseld. Gevalideerd met `npm run build` (geslaagd); validated.

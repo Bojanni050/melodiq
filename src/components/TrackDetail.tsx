@@ -82,6 +82,13 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const translation = useLyricsTranslation(track, initialTrack, applyTrackUpdate);
   const lyricsSync = useSyncedLyrics(track);
 
+  // Sidebar panel tabs: the now-playing track's content (lyrics + prompt) or
+  // the autoplay queue. Defaults to lyrics so the panel keeps its old look;
+  // only the now-playing sidebar panel offers the queue tab.
+  const [detailTab, setDetailTab] = useState<"lyrics" | "queue">("lyrics");
+  const isNowPlayingPanel = mode === "sidebar" && currentTrack?.id === track.id;
+  const showQueueTab = isNowPlayingPanel && detailTab === "queue";
+
   useEffect(() => {
     void loadUser();
   }, [loadUser]);
@@ -258,74 +265,107 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
       {/* Details Container */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
 
-        {/* Queue — what autoplay will run next. Only shown while this panel
-            is following the now-playing track (sidebar mode); the overlay on
-            an arbitrary track has no meaningful queue context. */}
-        {mode === "sidebar" && currentTrack?.id === track.id && queue.length > 0 && (
-          <section className="shrink-0">
-            <div className="flex items-center justify-between mb-2">
+        {/* Sidebar-only tabs: the track's own content (lyrics + prompt) or
+            the autoplay queue. The now-playing panel is the one place both
+            make sense; a track overlay has no meaningful queue context. */}
+        {isNowPlayingPanel && (
+          <nav className="shrink-0 flex items-center gap-6 border-b border-line" aria-label="Track details views">
+            {([["lyrics", "Lyrics"], ["queue", `Queue${queue.length > 0 ? ` · ${queue.length}` : ""}`]] as const).map(([tabId, label]) => (
+              <button
+                key={tabId}
+                type="button"
+                onClick={() => setDetailTab(tabId)}
+                className={`relative pb-2 text-xs font-medium uppercase tracking-wider transition-colors ${
+                  detailTab === tabId ? "text-ink" : "text-ink-dim hover:text-ink-muted"
+                }`}
+              >
+                {label}
+                {detailTab === tabId && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
+                )}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {showQueueTab ? (
+          <section className="flex-1 min-h-0 flex flex-col">
+            <div className="shrink-0 flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-ink-dim uppercase tracking-wider">
                 Queue · {queue.length}
               </h4>
-              <button
-                type="button"
-                onClick={clearQueue}
-                className="rounded px-2 py-1 text-[11px] text-ink-dim transition-colors hover:bg-white/10 hover:text-ink-muted"
-                title="Clear the queue (playback of the current track continues)"
-              >
-                Clear
-              </button>
+              {queue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearQueue}
+                  className="rounded px-2 py-1 text-[11px] text-ink-dim transition-colors hover:bg-white/10 hover:text-ink-muted"
+                  title="Clear the queue (playback of the current track continues)"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-            <ul className="space-y-0.5">
-              {queue.map((item, index) => {
-                const thumb = item.coverUrl || (item.s3KeyCover ? `/api/tracks/${item.id}/cover` : null);
-                const artistLabel = (item.artistName || "").trim();
-                const itemTitle = (item.title || item.prompt?.substring(0, 50) || "Untitled").replace(/\s*\(2\)\s*$/, "");
-                return (
-                  <li
-                    key={`${item.id}-${index}`}
-                    className="group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/[0.04]"
-                  >
-                    <span className="w-4 shrink-0 text-right text-[11px] tabular-nums text-ink-dim">{index + 1}</span>
-                    <button
-                      type="button"
-                      onClick={() => playQueueItem(item.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-                      title="Play now"
+            {queue.length === 0 ? (
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-2 text-center">
+                <svg className="h-6 w-6 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h10" />
+                </svg>
+                <p className="text-sm text-ink-dim">Nothing queued yet.</p>
+                <p className="text-xs text-ink-dim">Use "Add to queue" on any track card.</p>
+              </div>
+            ) : (
+              <ul className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
+                {queue.map((item, index) => {
+                  const thumb = item.coverUrl || (item.s3KeyCover ? `/api/tracks/${item.id}/cover` : null);
+                  const artistLabel = (item.artistName || "").trim();
+                  const itemTitle = (item.title || item.prompt?.substring(0, 50) || "Untitled").replace(/\s*\(2\)\s*$/, "");
+                  return (
+                    <li
+                      key={`${item.id}-${index}`}
+                      className="group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/[0.04]"
                     >
-                      {thumb ? (
-                        <img src={thumb} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded object-cover" />
-                      ) : (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/[0.06]">
-                          <svg className="h-4 w-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
-                          </svg>
-                        </span>
-                      )}
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm text-ink">{itemTitle}</span>
-                        {artistLabel && (
-                          <span className="block truncate text-[11px] text-ink-dim">{artistLabel}</span>
+                      <span className="w-4 shrink-0 text-right text-[11px] tabular-nums text-ink-dim">{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => playQueueItem(item.id)}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                        title="Play now"
+                      >
+                        {thumb ? (
+                          <img src={thumb} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded object-cover" />
+                        ) : (
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/[0.06]">
+                            <svg className="h-4 w-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+                            </svg>
+                          </span>
                         )}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeFromQueue(item.id)}
-                      className="shrink-0 rounded p-1 text-ink-dim opacity-0 transition-all hover:bg-white/10 hover:text-ink group-hover:opacity-100"
-                      title="Remove from queue"
-                      aria-label={`Remove ${itemTitle} from queue`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm text-ink">{itemTitle}</span>
+                          {artistLabel && (
+                            <span className="block truncate text-[11px] text-ink-dim">{artistLabel}</span>
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeFromQueue(item.id)}
+                        className="shrink-0 rounded p-1 text-ink-dim opacity-0 transition-all hover:bg-white/10 hover:text-ink group-hover:opacity-100"
+                        title="Remove from queue"
+                        aria-label={`Remove ${itemTitle} from queue`}
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
-        )}
+        ) : (
+        <>
 
         {/* Lyrics */}
         {(track.lyrics || resolvedAllowLyricsEdit) && (
@@ -584,6 +624,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
             </p>
           )}
         </div>
+        )}
+        </>
         )}
 
         {/* Error */}
