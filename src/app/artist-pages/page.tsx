@@ -17,6 +17,18 @@ interface ArtistPageRow {
   bioNl: string | null;
   imageS3Key: string | null;
   heroS3Key: string | null;
+  updatedAt?: string;
+}
+
+/**
+ * Version token for an artist page's image URLs — differs whenever the row
+ * changed (bio edit or image upload), which is exactly what both images need,
+ * because they're served with `Cache-Control: immutable` and never revalidated.
+ */
+function imageVersion(updatedAt: string | Date | unknown): string {
+  if (!updatedAt) return "0";
+  const time = new Date(updatedAt as string | Date).getTime();
+  return Number.isFinite(time) ? time.toString(36) : "0";
 }
 
 /** Per-page form state, kept apart from the server rows so typing stays local. */
@@ -217,7 +229,7 @@ export default function ArtistPagesPage() {
                             {page.imageS3Key ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={`/api/artist/${page.slug}/image?variant=profile`}
+                                src={`/api/artist/${page.slug}/image?variant=profile&v=${imageVersion(page.updatedAt)}`}
                                 alt={page.alias}
                                 className="h-11 w-11 rounded-full object-cover border border-line"
                               />

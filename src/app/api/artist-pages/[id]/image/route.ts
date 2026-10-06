@@ -7,6 +7,7 @@ import { artistPages } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
 import { uploadToS3 } from "@/lib/s3";
+import { invalidateCachedCover } from "@/lib/cover-cache";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -25,7 +26,12 @@ export async function POST(
 
   const { id } = await params;
   const [page] = await db
-    .select({ id: artistPages.id, userId: artistPages.userId })
+    .select({
+      id: artistPages.id,
+      userId: artistPages.userId,
+      imageS3Key: artistPages.imageS3Key,
+      heroS3Key: artistPages.heroS3Key,
+    })
     .from(artistPages)
     .where(and(eq(artistPages.id, id), eq(artistPages.userId, userId)))
     .limit(1);
@@ -79,10 +85,21 @@ export async function POST(
   const key = `artist-pages/${userId}/${page.id}/${type}.${ext}`;
   await uploadToS3(key, uploadBuffer, contentType);
 
+  // Both branches bump updatedAt — the display URLs version-cache-bust on it,
+  // otherwise the browser's immutable max-age=86400 cache keeps showing the
+  // previous upload for up to a day even after a successful replace.
   await db
     .update(artistPages)
-    .set(type === "profile" ? { imageS3Key: key } : { heroS3Key: key, updatedAt: new Date() })
+    .set(type === "profile"
+      ? { imageS3Key: key, updatedAt: new Date() }
+      : { heroS3Key: key, updatedAt: new Date() })
     .where(and(eq(artistPages.id, page.id), eq(artistPages.userId, userId)));
+
+  const oldKey = type === "profile" ? page.imageS3Key : page.heroS3Key;
+  await Promise.all([
+    invalidateCachedCover(key),
+    oldKey && oldKey !== key ? invalidateCachedCover(oldKey) : Promise.resolve(),
+  ]);
 
   return NextResponse.json({ ok: true, type });
 }

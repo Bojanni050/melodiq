@@ -47,6 +47,7 @@ export async function GET(
       bioNl: artistPages.bioNl,
       imageS3Key: artistPages.imageS3Key,
       heroS3Key: artistPages.heroS3Key,
+      updatedAt: artistPages.updatedAt,
       userId: artistPages.userId,
     })
     .from(artistPages)
@@ -117,8 +118,12 @@ export async function GET(
     : owner?.createdAt?.getFullYear() ?? new Date().getFullYear();
 
   const heroTrack = rows.find((r) => r.coverUrl || r.s3KeyCover) ?? null;
+  // updatedAt wins and VERSION-cache-busts the image URLs: both images cache
+  // `immutable` in the browser, so any change (re-uploaded profile or hero) has
+  // to change the URL itself, or clients keep the old bytes for up to a day.
+  const imageVersion = page.updatedAt ? new Date(page.updatedAt).getTime().toString(36) : "";
   const imageUrl = (variant: "profile" | "hero") =>
-    prefixCdn(cdnUrl, `/api/artist/${page.slug}/image?variant=${variant}`);
+    prefixCdn(cdnUrl, `/api/artist/${page.slug}/image?variant=${variant}${imageVersion ? `&v=${imageVersion}` : ""}`);
 
   return NextResponse.json({
     artist: {

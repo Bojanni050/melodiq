@@ -175,6 +175,16 @@ export function coverResponse(
 }
 
 /**
+ * Drop exactly one cached cover from disk. Needed when an S3 object that
+ * caches under a stable key is overwritten in place (e.g. re-uploading an
+ * artist page image that reuses `...profile.avif`): without this the disk
+ * copy keeps serving the old bytes forever, even across restarts.
+ */
+export async function invalidateCachedCover(s3Key: string): Promise<void> {
+  await fsp.rm(cachePath(s3Key), { force: true }).catch(() => {});
+}
+
+/**
  * Clear the entire cover cache — deletes all cached files.
  */
 export async function clearCoverCache(): Promise<{ deletedCount: number }> {
