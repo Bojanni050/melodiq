@@ -1066,7 +1066,12 @@ const TrackCard = memo(function TrackCard({
           {/* Mobile Download Buttons Row */}
           {track.status === "done" && (
             <div className="flex sm:hidden items-center gap-2 mt-1.5">
-              {track.audioUrl && (
+              {/* Two identical labels (e.g. FLAC + FLAC when the upload itself
+                  is FLAC and the HD slot holds the provider's original FLAC)
+                  read as a glitch — deduplicate: an HD badge in the same
+                  format already covers the download, so the primary only
+                  shows when it's a different format. */}
+              {track.audioUrl && (hdLabel !== mp3Label) && (
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
                   disabled={actions.downloading}
@@ -1157,7 +1162,10 @@ const TrackCard = memo(function TrackCard({
           )}
           {track.status === "done" && (
             <>
-              {track.audioUrl && (
+              {/* Same dedupe as the mobile row above: an HD badge in the same
+                  format as the primary covers that download, so the primary
+                  badge only shows when it's a different format. */}
+              {track.audioUrl && (hdLabel !== mp3Label) && (
                 <button
                   onClick={(e) => { e.stopPropagation(); actions.handleDownload(track.audioUrl!); }}
                   disabled={actions.downloading}
