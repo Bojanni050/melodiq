@@ -51,7 +51,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const { user, loadUser } = useUserStore();
-  const { currentTrack, isPlaying, audioElement } = usePlayerStore();
+  const { currentTrack, isPlaying, audioElement, queue, playQueueItem, removeFromQueue, clearQueue } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
   // Role-based visibility: the prompt/lyrics content itself is shown to
@@ -257,6 +257,75 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
       {/* Details Container */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden px-6 py-5 space-y-6">
+
+        {/* Queue — what autoplay will run next. Only shown while this panel
+            is following the now-playing track (sidebar mode); the overlay on
+            an arbitrary track has no meaningful queue context. */}
+        {mode === "sidebar" && currentTrack?.id === track.id && queue.length > 0 && (
+          <section className="shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-ink-dim uppercase tracking-wider">
+                Queue · {queue.length}
+              </h4>
+              <button
+                type="button"
+                onClick={clearQueue}
+                className="rounded px-2 py-1 text-[11px] text-ink-dim transition-colors hover:bg-white/10 hover:text-ink-muted"
+                title="Clear the queue (playback of the current track continues)"
+              >
+                Clear
+              </button>
+            </div>
+            <ul className="space-y-0.5">
+              {queue.map((item, index) => {
+                const thumb = item.coverUrl || (item.s3KeyCover ? `/api/tracks/${item.id}/cover` : null);
+                const artistLabel = (item.artistName || "").trim();
+                const itemTitle = (item.title || item.prompt?.substring(0, 50) || "Untitled").replace(/\s*\(2\)\s*$/, "");
+                return (
+                  <li
+                    key={`${item.id}-${index}`}
+                    className="group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/[0.04]"
+                  >
+                    <span className="w-4 shrink-0 text-right text-[11px] tabular-nums text-ink-dim">{index + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => playQueueItem(item.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                      title="Play now"
+                    >
+                      {thumb ? (
+                        <img src={thumb} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded object-cover" />
+                      ) : (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/[0.06]">
+                          <svg className="h-4 w-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+                          </svg>
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-ink">{itemTitle}</span>
+                        {artistLabel && (
+                          <span className="block truncate text-[11px] text-ink-dim">{artistLabel}</span>
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFromQueue(item.id)}
+                      className="shrink-0 rounded p-1 text-ink-dim opacity-0 transition-all hover:bg-white/10 hover:text-ink group-hover:opacity-100"
+                      title="Remove from queue"
+                      aria-label={`Remove ${itemTitle} from queue`}
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* Lyrics */}
         {(track.lyrics || resolvedAllowLyricsEdit) && (

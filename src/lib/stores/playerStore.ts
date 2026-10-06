@@ -70,6 +70,7 @@ interface PlayerState {
   clearQueue: () => void;
   setQueue: (queue: Track[]) => void;
   playNext: () => void;
+  playQueueItem: (trackId: string) => void;
   playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
   setAudioElement: (audioElement: HTMLAudioElement | null) => void;
@@ -195,6 +196,24 @@ export const usePlayerStore = create<PlayerState>()(
               ? [...state.history, state.currentTrack].slice(-50)
               : state.history,
             showTrackDetailsPanel: (nextTrack.lyrics && nextTrack.lyrics.trim()) ? true : state.showTrackDetailsPanel,
+          };
+        }),
+      playQueueItem: (trackId) =>
+        // Jump straight to a queued track. Anything queued before it is
+        // skipped (standard queue UX); the current track moves to history so
+        // "previous" still returns to it. The Player's track-change effect
+        // picks this up exactly like playNext and starts the audio.
+        set((state) => {
+          const index = state.queue.findIndex((t) => t.id === trackId);
+          if (index < 0) return state;
+          const [nextTrack, ...rest] = state.queue.slice(index);
+          return {
+            currentTrack: nextTrack,
+            queue: rest,
+            isPlaying: true,
+            history: state.currentTrack
+              ? [...state.history, state.currentTrack].slice(-50)
+              : state.history,
           };
         }),
       playPrevious: () =>
