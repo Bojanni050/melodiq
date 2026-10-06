@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore, usePlayerStore, useWorkspaceStore } from "@/lib/store";
 import { formatGenerationTime } from "@/lib/track-utils";
@@ -51,7 +52,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const { user, loadUser } = useUserStore();
-  const { currentTrack, isPlaying, audioElement, queue, playQueueItem, removeFromQueue, clearQueue } = usePlayerStore();
+  const { currentTrack, isPlaying, audioElement, queue, playQueueItem, removeFromQueue, clearQueue, reorderQueueItem } = usePlayerStore();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
 
   // Role-based visibility: the prompt/lyrics content itself is shown to
@@ -88,6 +89,12 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
   const [detailTab, setDetailTab] = useState<"lyrics" | "queue">("lyrics");
   const isNowPlayingPanel = mode === "sidebar" && currentTrack?.id === track.id;
   const showQueueTab = isNowPlayingPanel && detailTab === "queue";
+
+  // Queue drag & drop: the dragged track id lives in a ref (survives
+  // re-renders without effect plumbing), the insertion indicator in state so
+  // the rows can show where the drop will land.
+  const queueDragIdRef = useRef<string | null>(null);
+  const [queueDropTarget, setQueueDropTarget] = useState<{ id: string; before: boolean } | null>(null);
 
   useEffect(() => {
     void loadUser();
@@ -319,10 +326,53 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
                   const thumb = item.coverUrl || (item.s3KeyCover ? `/api/tracks/${item.id}/cover` : null);
                   const artistLabel = (item.artistName || "").trim();
                   const itemTitle = (item.title || item.prompt?.substring(0, 50) || "Untitled").replace(/\s*\(2\)\s*$/, "");
+                  const isDropBefore = queueDropTarget?.id === item.id && queueDropTarget.before;
+                  const isDropAfter = queueDropTarget?.id === item.id && !queueDropTarget.before;
                   return (
                     <li
                       key={`${item.id}-${index}`}
-                      className="group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/[0.04]"
+                      draggable
+                      onDragStart={(e: DragEvent<HTMLLIElement>) => {
+                        // Plain text keeps native drag from complaining in
+                        // Firefox (it refuses drops without data set).
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", item.id);
+                        queueDragIdRef.current = item.id;
+                        setQueueDropTarget(null);
+                      }}
+                      onDragOver={(e: DragEvent<HTMLLIElement>) => {
+                        if (queueDragIdRef.current == null) return;
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const before = e.clientY < rect.top + rect.height / 2;
+                        const target = { id: item.id, before };
+                        setQueueDropTarget((prev) =>
+                          prev && prev.id === target.id && prev.before === target.before ? prev : target
+                        );
+                      }}
+                      onDragEnd={() => {
+                        queueDragIdRef.current = null;
+                        setQueueDropTarget(null);
+                      }}
+                      onDrop={(e: DragEvent<HTMLLIElement>) => {
+                        e.preventDefault();
+                        const dragId = queueDragIdRef.current;
+                        const dropBefore = queueDropTarget?.id === item.id ? queueDropTarget.before : true;
+                        let insert = index;
+                        if (!dropBefore) insert += 1;
+                        if (dragId) reorderQueueItem(dragId, insert);
+                        queueDragIdRef.current = null;
+                        setQueueDropTarget(null);
+                      }}
+                      className={`group flex items-center gap-2.5 rounded px-2 py-1.5 transition-colors hover:bg-white/[0.04] ${
+                        queueDragIdRef.current === item.id ? "opacity-40" : ""
+                      } ${
+                        isDropBefore
+                          ? "shadow-[inset_0_2px_0_rgba(255,133,80,0.9)]"
+                          : isDropAfter
+                          ? "shadow-[inset_0_-2px_0_rgba(255,133,80,0.9)]"
+                          : ""
+                      }`}
                     >
                       <span className="w-4 shrink-0 text-right text-[11px] tabular-nums text-ink-dim">{index + 1}</span>
                       <button

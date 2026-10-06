@@ -1813,3 +1813,9 @@ pm run build � succesvol.
 - Findings: De gisteren toegevoegde queue-sectie schoof de lyrics weg; Bo wil gewoon kunnen wisselen tussen beide weergaven.
 - Conclusions: Twee tabs in het now-playing sidebar-paneel (nav zoals de accountpagina-tabs: uppercase labels, accent-ondertstreep): "Lyrics" toont het bestaande lyrics+prompt-blok ongewijzigd, "Queue" neemt het hele paneel in met scrolbare lijst en lege-state ("Nothing queued yet"). De condities `isNowPlayingPanel`/`showQueueTab` zijn bewust éénmalig bovenin gedefinieerd omdat de ternary ze op twee scheide punten nodig heeft.
 - Actions: `src/components/TrackDetail.tsx` — `detailTab`-state + tab-nav; queue- en lyrics/prompt-blokken via ternary gewisseld. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-07 wo (Queue drag & drop)
+
+- Findings: De queue zat vast in de volgorde waarin tracks zijn toegevoegd.
+- Conclusions: HTML5-drag op de queue-rijen, net als de rijen in TrackList die dat patroon al gebruiken. De drop-indicator wordt een 2px accentregel via inset-shadow (geen layout-shift): boven = vóór de rij, onder = na de rij. In de store is dat `reorderQueueItem(trackId, insertAtIndex)` met gap-index-semantiek: eerst de gesleepte entry verwijderen, daarna de insertie-index met één corrigeren als de doelpositie onder de oorspronkelijke positie lag; terugleggen op de eigen plek is expliciet een no-op. Track-id's zijn uniek in de queue (enqueueTrack dedupet), dus trackId is een betrouwbare drag-key. Klik-om-af-te-spelen blijft werken: een drag vuurt geen click, en `setData("text/plain")` voorkomt dat Firefox de drop weigert.
+- Actions: `src/lib/stores/playerStore.ts` — `reorderQueueItem`; `src/components/TrackDetail.tsx` — draggable rows met `queueDragIdRef` (ref voor de gesleepte id zodat her-renders hem houden) en `queueDropTarget`-state voor de indicator. Gevalideerd met `npm run build` (geslaagd); validated.

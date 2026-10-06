@@ -71,6 +71,7 @@ interface PlayerState {
   setQueue: (queue: Track[]) => void;
   playNext: () => void;
   playQueueItem: (trackId: string) => void;
+  reorderQueueItem: (trackId: string, insertAtIndex: number) => void;
   playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
   setAudioElement: (audioElement: HTMLAudioElement | null) => void;
@@ -215,6 +216,22 @@ export const usePlayerStore = create<PlayerState>()(
               ? [...state.history, state.currentTrack].slice(-50)
               : state.history,
           };
+        }),
+      // Drag-drop reorder from the queue panel. insertAtIndex is a gap index
+      // into the array AS IT IS NOW (0 = before the first entry). Removing the
+      // dragged entry first shifts every later position down by one, so the
+      // insertion point is corrected below; dropping it back where it came
+      // from (gap before or after itself) is a no-op.
+      reorderQueueItem: (trackId, insertAtIndex) =>
+        set((state) => {
+          const from = state.queue.findIndex((t) => t.id === trackId);
+          if (from < 0) return state;
+          const insert = Math.max(0, Math.min(state.queue.length, insertAtIndex));
+          if (insert === from || insert === from + 1) return state;
+          const next = [...state.queue];
+          const [moved] = next.splice(from, 1);
+          next.splice(insert > from ? insert - 1 : insert, 0, moved);
+          return { queue: next };
         }),
       playPrevious: () =>
         set((state) => {
