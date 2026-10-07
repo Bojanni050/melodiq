@@ -1831,3 +1831,9 @@ pm run build � succesvol.
 - Findings: "Verdwijnen" toonde FLAC · OGG · FLAC. Geen databug: de primary slot (`format`) én de HD slot (`formatHd`/`s3KeyHd`) kunnen beiden FLAC bevatten (upload is FLAC; de HD-slot is normaal de provider-WAV → FLAC via wav-herstel). De badge-rij toonde primair + OGG + HD letterlijk naast elkaar, dus twee keer hetzelfde label — dat leest als een storing.
 - Conclusions: Dedupe op label, niet op bestand: zodra de HD-badge hetzelfde formaat toont is de primary-download redundant (zelfde codec), dus dan alleen de HD-badge. Niet samenvoegen tot één knop met twee functies — dat verhult welke file de knop precies neemt.
 - Actions: `src/components/tracks/TrackCard.tsx` — de primary (mobiel + desktop) downloadbadge alleen tonen als `hdLabel !== mp3Label`. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-07 wo (DNA-knop prominenter)
+
+- Findings: De DNA-toggle was een ongestijlde tekstknop in de badgerij en verdween tegen de Release/TCL/Uploaded-labels.
+- Conclusions: Pill-badge met accentkleur en dubbele-helix-icoon, zodat de interactie zich token-technisch onderscheidt van de passieve statuslabels; open staat volledig accent-gevuld (hetzelfde geactiveerde patroon als overige toggles) met het chevron-al-draai-gedrag ongemoeid, en `aria-expanded` toegevoegd. Bewust geen kleur uit de label-reeks (emerald/pink/cyan) zodat de knop niet als derde statuslabel leest.
+- Actions: `src/components/tracks/TrackCard.tsx` — DNA-knop omgeststijl naar accentpill met helix-SVG + chevron. Gevalideerd met `npm run build` (geslaagd); validated.

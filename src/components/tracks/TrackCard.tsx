@@ -999,10 +999,21 @@ const TrackCard = memo(function TrackCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setDnaOpen((v) => !v); }}
-                className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-ink-dim hover:text-accent hover:bg-accent/10 shrink-0 transition-colors"
+                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold shrink-0 transition-colors ${
+                  dnaOpen
+                    ? "bg-accent/85 text-ink"
+                    : "border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20"
+                }`}
                 title={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
                 aria-label={dnaOpen ? "Hide Track DNA" : "Show Track DNA"}
+                aria-expanded={dnaOpen}
               >
+                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <path d="M4 4c4 0 4 5 8 5s4-5 8-5" />
+                  <path d="M4 15c4 0 4 5 8 5s4-5 8-5" />
+                  <path d="M7 7.5 17 13.5" opacity="0.5" />
+                  <path d="M17 7.5 7 13.5" opacity="0.5" />
+                </svg>
                 DNA
                 <svg
                   className={`w-3 h-3 shrink-0 transition-transform ${dnaOpen ? "rotate-180" : ""}`}
