@@ -83,11 +83,6 @@ function CompactPlayButton({
           </svg>
         )}
       </button>
-      {playable && track.duration != null && (
-        <span className="font-mono text-[11px] text-ink-dim tabular-nums">
-          {formatDuration(track.duration)}
-        </span>
-      )}
     </span>
   );
 }
@@ -1258,6 +1253,15 @@ const TrackCard = memo(function TrackCard({
 
         {/* Time + actions */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* Release rows (hideCover) carry no cover, so their only natural
+              duration spot is here, ahead of the metadata block — better than
+              parking it next to the small play button where it read as part
+              of the player. */}
+          {hideCover && track.status === "done" && track.duration != null && (
+            <span className="font-mono text-[11px] text-ink-dim tabular-nums whitespace-nowrap">
+              {formatDuration(track.duration)}
+            </span>
+          )}
           <div className="mr-1 text-right leading-tight">
             <p className="hidden sm:block text-[11px] text-ink-dim whitespace-nowrap">{createdAt.date}</p>
             <p className="hidden sm:block text-[10px] text-ink-dim whitespace-nowrap">{createdAt.time}</p>

@@ -1838,6 +1838,12 @@ pm run build � succesvol.
 - Conclusions: Pill-badge met accentkleur en dubbele-helix-icoon, zodat de interactie zich token-technisch onderscheidt van de passieve statuslabels; open staat volledig accent-gevuld (hetzelfde geactiveerde patroon als overige toggles) met het chevron-al-draai-gedrag ongemoeid, en `aria-expanded` toegevoegd. Bewust geen kleur uit de label-reeks (emerald/pink/cyan) zodat de knop niet als derde statuslabel leest.
 - Actions: `src/components/tracks/TrackCard.tsx` — DNA-knop omgeststijl naar accentpill met helix-SVG + chevron. Gevalideerd met `npm run build` (geslaagd); validated.
 
+## 2026-10-07 wo (Tracktijd release-rijen naar de rechterzijde)
+
+- Findings: In release-lijsten (hideCover) stond de tracktijd direct naast de CompactPlayButton, waar het las als een player-positiewaarde in plaats van de tracklengte; Bo wil hem in de lege ruimte rechts, vlak vóór de rechterkolom met datum/heart.
+- Conclusions: Verplaatsen i.p.v. dupliceren: CompactPlayButton toont de duur niet meer, en de "Time + actions"-cluster toont hem als eerste, vóór createdAt — hetzelfde patroon als de relaxed-rij (die zijn duur al rechts vóór TrackRating toont), alleen uitgemetst op `hideCover`, want rijen mét cover tonen de duur al op de cover-overlay en zouden hem dubbel zeigen.
+- Actions: `src/components/tracks/TrackCard.tsx` — duur-span verwijderd uit CompactPlayButton; duur toegevoegd als eerste van het rechtercluster, gated op `hideCover && status === "done" && duration != null`. Gevalideerd met `npm run build` (geslaagd); validated.
+
 ## 2026-10-07 wo (Mobiel: cover boven titel; releases zonder trackcovers)
 
 - Findings: Op mobiel stond de 90px-cover naast de titel in een volle rij — krap en slecht tikbaar (play-icoon alleen zichtbaar bij hover, wat niet bestaat op touch). Bij releases stonden per-track covers onder de grote releasecover: dubbelop.
