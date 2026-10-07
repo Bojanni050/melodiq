@@ -1850,6 +1850,12 @@ pm run build � succesvol.
 - Conclusions: Één-veld-bug: de afgeleide `topP` bestond al in scope, dus de fix is de waarde die de route ook bij generatie accepteert hergebruiken, met commentaar waarom contextLevel verkeerd is.
 - Actions: `src/app/lyrics-studio/page.tsx` — `improveBlockWithLyricIQ` verstuurt nu `topP` i.p.v. `contextLevel`. Gevalideerd met `npm run build` (geslaagd); validated.
 
+## 2026-10-07 wo (Rhyme volgt creativiteitsslider; verses 4-of-8)
+
+- Findings: De generate-block route dwong te allen tijde exact N regels per blok en had geen rijminstructie; Bo wil (1) rijm toegepast wanneer het kan, sterkte volgens de creativiteitsslider, en (2) verses op eigen inzicht 4 óf 8 regels.
+- Conclusions: Rijm bewust gekoppeld aan de Creativity-slider (temperature-variant), niet aan Literalness — die regelt al poëtisch vs. letterlijk. Laag (≤3): consistente scheme (AABB/ABAB), rijm heeft voorrang en alleen ineens een duidelijk slechtere line mag afwijken; midden: rijm waar het natuurlijk landt; hoog (≥8): rijm optioneel, authenticiteit wint. Verses: de per-blok lineCount-teller wordt voor verses buiten de prompt gelaten ("4 or 8 — choose whichever serves best"); de teller in de UI blijft zichtbaar voor de overige bloktypes. De client stuurt nu ook `creativityLevel` mee.
+- Actions: `src/app/api/lyric-studio/generate-block/route.ts` — `creativityLevel` geaccepteerd/gevalideerd, `rhymeInstruction`-trap, verse-variant van de lineCount-instructie; `src/app/lyrics-studio/page.tsx` — `creativityLevel` in de generate-block-payload. Gevalideerd met `npm run build` (geslaagd); validated.
+
 ## 2026-10-07 wo (Mobiel: cover boven titel; releases zonder trackcovers)
 
 - Findings: Op mobiel stond de 90px-cover naast de titel in een volle rij — krap en slecht tikbaar (play-icoon alleen zichtbaar bij hover, wat niet bestaat op touch). Bij releases stonden per-track covers onder de grote releasecover: dubbelop.

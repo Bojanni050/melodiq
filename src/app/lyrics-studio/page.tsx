@@ -321,6 +321,9 @@ export default function LyricsStudioPage() {
         chorusMode: options?.chorusMode, isFirstChorus: options?.isFirstChorus, temperature, topP,
         llmModel: llmModel.trim() || undefined,
         literalnessLevel,
+        // Drives the rhyme strength: the more creative the setting, the freer
+        // the model is to leave rhyme behind when it costs authenticity.
+        creativityLevel,
         lineCount: resolveBlockLineCount(block),
       }),
     });

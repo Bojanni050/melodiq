@@ -40,6 +40,7 @@ interface GenerateBlockBody {
   llmModel?: unknown;
   literalnessLevel?: unknown;
   lineCount?: unknown;
+  creativityLevel?: unknown;
 }
 
 type ChorusMode = "repeat" | "variation";
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel, literalnessLevel, lineCount } = body;
+  const { blockType, blockLabel, topic, mood, language, style, existingBlocks, chorusMode, isFirstChorus, temperature, topP, llmModel, literalnessLevel, lineCount, creativityLevel } = body;
   const vocalistTag = body.vocalistTag;
   const performerDirections = body.performerDirections;
 
@@ -164,6 +165,9 @@ export async function POST(request: NextRequest) {
   }
   if (literalnessLevel !== undefined && (typeof literalnessLevel !== "number" || literalnessLevel < 1 || literalnessLevel > 10)) {
     return NextResponse.json({ error: "literalnessLevel must be between 1 and 10" }, { status: 400 });
+  }
+  if (creativityLevel !== undefined && (typeof creativityLevel !== "number" || creativityLevel < 1 || creativityLevel > 10)) {
+    return NextResponse.json({ error: "creativityLevel must be between 1 and 10" }, { status: 400 });
   }
   if (lineCount !== undefined && (typeof lineCount !== "number" || !Number.isFinite(lineCount) || lineCount < 1 || lineCount > 16)) {
     return NextResponse.json({ error: "lineCount must be between 1 and 16" }, { status: 400 });
@@ -222,7 +226,25 @@ ${dirNote}`;
         : "Ground the writing in specific, concrete detail rather than naming the emotion outright — show it through what's seen, heard, or touched, not just how it's labeled.";
 
   const lineCountValue = typeof lineCount === "number" ? Math.min(16, Math.max(1, Math.round(lineCount))) : 4;
-  const lineCountInstruction = `The section must contain exactly ${lineCountValue} lyric lines — no more, no fewer. Count only sung lyric lines; performer tags like [male] and blank lines don't count.`;
+  // Verses breathe: the model picks 4 or 8 lines per section instead of the
+  // per-block fixed count. Everything else keeps the exact-line contract —
+  // performer tags and blank lines still don't count as lyric lines.
+  const lineCountInstruction =
+    blockType === "verse"
+      ? "The section must contain either 4 or 8 lyric lines — choose whichever serves this verse best, then commit to it. Count only sung lyric lines; performer tags like [male] and blank lines don't count."
+      : `The section must contain exactly ${lineCountValue} lyric lines — no more, no fewer. Count only sung lyric lines; performer tags like [male] and blank lines don't count.`;
+
+  // Rhyme strength follows the creativity slider: low creativity wants the
+  // familiar, dependable sound of rhyme; high creativity prefers authenticity
+  // and treats rhyme as something that only earns its place when it appears
+  // naturally rather than being forced.
+  const creativityLevelValue = typeof creativityLevel === "number" ? Math.round(creativityLevel) : 5;
+  const rhymeInstruction =
+    creativityLevelValue <= 3
+      ? "Write with a clear, consistent rhyme scheme (e.g. couplets AABB or alternating ABAB) where it fits naturally. Prioritize rhyme — deviate only when a line would be clearly worse for it."
+      : creativityLevelValue >= 8
+        ? "Treat rhyme as optional: never sacrifice meaning, imagery or authenticity for a rhyme. When a good rhyme lands naturally, take it; otherwise leave the scheme open."
+        : "Favor rhyme where it lands naturally — take a good rhyme when it fits without forcing the wording, and skip it when forcing one would cost authenticity.";
 
   let chorusInstruction = "";
   if (blockType === "chorus") {
@@ -255,6 +277,7 @@ Avoid AI songwriting clichés: stock breakup/nostalgia props like "your coat sti
 ${buildAvoidWordsInstruction()}
 Chorus lines should be punchy and memorable — build around one crucial, hook-worthy line rather than several competing ideas
 Bridge should contrast emotionally with the verses
+${rhymeInstruction}
 ${lineCountInstruction}
 ${performerTagInstruction ? `${performerTagInstruction}\n` : ""}Return only the raw lyric text, nothing else`;
   const userPrompt = `Write the ${blockLabel} (${blockType}) for a song.
