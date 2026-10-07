@@ -38,6 +38,7 @@ export default memo(function TrackList({
   onEditDetails,
   selectedTrackId,
   dragOrderKey,
+  hideCovers = false,
   relaxed = false,
 }: {
   tracks: TrackItem[];
@@ -66,6 +67,8 @@ export default memo(function TrackList({
   selectedTrackId?: string | null;
   /** Relax mode: pass through to TrackCard's minimal row. */
   relaxed?: boolean;
+  /** Hide per-track covers (release listings — the release cover leads). */
+  hideCovers?: boolean;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -1067,6 +1070,7 @@ export default memo(function TrackList({
                     onEditDetails={onEditDetails}
                     isDetailSelected={selectedTrackId === track.id}
                     relaxed={relaxed}
+                    hideCover={hideCovers}
                   />
                 </div>
               );

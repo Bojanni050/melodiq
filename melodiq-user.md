@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202610031541**
+**Versie: 202610072006**
 
 > AI Music Generation Web App
 
@@ -212,6 +212,8 @@ For MusicGPT, lyrics are limited to 3000 characters. If you exceed this, generat
 - If multiple tracks are selected in a track list, **Move To Workspace** applies to all selected tracks (tracks already in that workspace are skipped silently)
 - Moving a track to a workspace that already contains it is now silently skipped (no duplicate assignment)
 - Track listings now show which workspace each track belongs to
+- Op mobiel staat de cover nu bóven de titel en artiest in de tracklist: een brede banner met zichtbare play-knop (geen hover op touch), overal waar tracks staan. De compacte relax-weergave in Library blijft zoals hij is.
+- Bij releases staat geen cover meer in de tracklisting — alleen de grote cover van de release zelf; rijen houden een compacte play-knop met duur.
 - Track actions include **Move To Workspace** so songs can be filed into workspace folders from the track menu
 - **Move To Workspace** now opens a large overlay dialog with a scrollable workspace list, per-workspace clip counts, and an inline create field/button at the bottom
 - Workspace names are now unique (case-insensitive); creating a workspace with an existing name will merge into that workspace instead of creating a duplicate, with a confirmation popup in Move To Workspace

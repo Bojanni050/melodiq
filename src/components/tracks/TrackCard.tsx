@@ -44,6 +44,54 @@ async function settingsFetcher(url: string): Promise<Record<string, string>> {
   return res.json();
 }
 
+/** Play-only fallback used when the cover is hidden (release listings). */
+function CompactPlayButton({
+  track,
+  isCurrentlyPlaying,
+  isPlaying,
+  onPlayClick,
+}: {
+  track: TrackItem;
+  isCurrentlyPlaying: boolean;
+  isPlaying: boolean;
+  onPlayClick: () => void;
+}) {
+  const playable = track.status === "done";
+  return (
+    <span className="flex shrink-0 items-center gap-1.5">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!playable) return;
+          onPlayClick();
+        }}
+        disabled={!playable}
+        className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/8 text-ink transition-colors hover:bg-white/15 disabled:opacity-40 ${
+          isCurrentlyPlaying ? "ring-2 ring-accent/40" : ""
+        }`}
+        aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
+      >
+        {isCurrentlyPlaying && isPlaying ? (
+          <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+        ) : (
+          <svg className="ml-0.5 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+      {playable && track.duration != null && (
+        <span className="font-mono text-[11px] text-ink-dim tabular-nums">
+          {formatDuration(track.duration)}
+        </span>
+      )}
+    </span>
+  );
+}
+
 const TrackCard = memo(function TrackCard({
   track,
   onPlay,
@@ -67,6 +115,7 @@ const TrackCard = memo(function TrackCard({
   isDetailSelected = false,
   isOwner = true,
   relaxed = false,
+  hideCover = false,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -95,6 +144,8 @@ const TrackCard = memo(function TrackCard({
   isOwner?: boolean;
   /** Relax mode: render only cover, title, artist, heart, playtime and DNA. */
   relaxed?: boolean;
+  /** Hide the cover artwork (e.g. release listings, where the release cover leads). A compact play button takes its place. */
+  hideCover?: boolean;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const user = useUserStore((state) => state.user);
@@ -579,21 +630,36 @@ const TrackCard = memo(function TrackCard({
     return (
       <>
         <div className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/5">
-          <TrackPlayButton
-            track={track}
-            isCurrentlyPlaying={isCurrentlyPlaying}
-            isPlaying={isPlaying}
-            effectiveCoverUrl={effectiveCoverUrl}
-            effectiveThumbUrl={effectiveThumbUrl}
-            isAnalyzing={advancedDnaRunning}
-            onPlayClick={() => {
-              const now = Date.now();
-              if (now - playClickCooldownRef.current < 350) return;
-              playClickCooldownRef.current = now;
-              if (isCurrentlyPlaying) setIsPlaying(!isPlaying);
-              else onPlay(track);
-            }}
-          />
+          {hideCover ? (
+            <CompactPlayButton
+              track={track}
+              isCurrentlyPlaying={isCurrentlyPlaying}
+              isPlaying={isPlaying}
+              onPlayClick={() => {
+                const now = Date.now();
+                if (now - playClickCooldownRef.current < 350) return;
+                playClickCooldownRef.current = now;
+                if (isCurrentlyPlaying) setIsPlaying(!isPlaying);
+                else onPlay(track);
+              }}
+            />
+          ) : (
+            <TrackPlayButton
+              track={track}
+              isCurrentlyPlaying={isCurrentlyPlaying}
+              isPlaying={isPlaying}
+              effectiveCoverUrl={effectiveCoverUrl}
+              effectiveThumbUrl={effectiveThumbUrl}
+              isAnalyzing={advancedDnaRunning}
+              onPlayClick={() => {
+                const now = Date.now();
+                if (now - playClickCooldownRef.current < 350) return;
+                playClickCooldownRef.current = now;
+                if (isCurrentlyPlaying) setIsPlaying(!isPlaying);
+                else onPlay(track);
+              }}
+            />
+          )}
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onSelect(track)}>
             <h3 className={`truncate text-sm font-medium ${isCurrentlyPlaying ? "text-accent" : "text-ink"}`}>
               {title}
@@ -794,7 +860,7 @@ const TrackCard = memo(function TrackCard({
       <div
         role="button"
         tabIndex={0}
-        className={`group flex items-center gap-3 px-3 py-2.5  transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 ${
+        className={`group flex flex-wrap items-center gap-3 px-3 py-2.5  transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 ${
           isCurrentlyPlaying
             ? "bg-white/[0.03] border border-line border-l-2 border-l-accent"
             : isDetailSelected
@@ -847,25 +913,44 @@ const TrackCard = memo(function TrackCard({
           )}
         </button>
 
-        {/* Play button / artwork */}
-        <TrackPlayButton
-          track={track}
-          isCurrentlyPlaying={isCurrentlyPlaying}
-          isPlaying={isPlaying}
-          effectiveCoverUrl={effectiveCoverUrl}
-          effectiveThumbUrl={effectiveThumbUrl}
-          isAnalyzing={advancedDnaRunning}
-          onPlayClick={() => {
-            const now = Date.now();
-            if (now - playClickCooldownRef.current < 350) return;
-            playClickCooldownRef.current = now;
-            if (isCurrentlyPlaying) {
-              setIsPlaying(!isPlaying);
-            } else {
-              onPlay(track);
-            }
-          }}
-        />
+        {/* Play button / artwork — on mobile the cover spans full width above the title */}
+        {hideCover ? (
+          <CompactPlayButton
+            track={track}
+            isCurrentlyPlaying={isCurrentlyPlaying}
+            isPlaying={isPlaying}
+            onPlayClick={() => {
+              const now = Date.now();
+              if (now - playClickCooldownRef.current < 350) return;
+              playClickCooldownRef.current = now;
+              if (isCurrentlyPlaying) {
+                setIsPlaying(!isPlaying);
+              } else {
+                onPlay(track);
+              }
+            }}
+          />
+        ) : (
+          <TrackPlayButton
+            track={track}
+            isCurrentlyPlaying={isCurrentlyPlaying}
+            isPlaying={isPlaying}
+            effectiveCoverUrl={effectiveCoverUrl}
+            effectiveThumbUrl={effectiveThumbUrl}
+            isAnalyzing={advancedDnaRunning}
+            className="max-sm:order-first max-sm:h-48 max-sm:w-full max-sm:basis-full"
+            onPlayClick={() => {
+              const now = Date.now();
+              if (now - playClickCooldownRef.current < 350) return;
+              playClickCooldownRef.current = now;
+              if (isCurrentlyPlaying) {
+                setIsPlaying(!isPlaying);
+              } else {
+                onPlay(track);
+              }
+            }}
+          />
+        )}
 
         {/* Track info */}
         <div className="flex-1 min-w-0">

@@ -12,6 +12,7 @@ interface TrackPlayButtonProps {
   effectiveThumbUrl: string | null;
   onPlayClick: () => void;
   isAnalyzing?: boolean;
+  className?: string;
 }
 
 export default function TrackPlayButton({
@@ -22,6 +23,7 @@ export default function TrackPlayButton({
   effectiveThumbUrl,
   onPlayClick,
   isAnalyzing = false,
+  className = "",
 }: TrackPlayButtonProps) {
   const isGeneratingOrPending = track.status === "generating" || track.status === "pending";
   const isArchived = Boolean(track.archivedAt);
@@ -42,9 +44,7 @@ export default function TrackPlayButton({
       onDoubleClick={(e) => {
         e.stopPropagation();
       }}
-      className={`relative w-[90px] h-[90px]  shrink-0 overflow-hidden transition-colors group/play ${
-        isCurrentlyPlaying ? "ring-2 ring-accent/40" : ""
-      }`}
+      className={`relative w-[90px] h-[90px]  shrink-0 overflow-hidden transition-colors group/play ${isCurrentlyPlaying ? "ring-2 ring-accent/40" : ""} ${className}`}
       data-now-playing={isCurrentlyPlaying ? "true" : undefined}
       aria-label={isCurrentlyPlaying && isPlaying ? "Pause" : "Play"}
     >
@@ -74,19 +74,19 @@ export default function TrackPlayButton({
           {isCurrentlyPlaying ? (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               {isPlaying ? (
-                <svg className="w-4 h-4 text-ink" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 max-sm:h-7 max-sm:w-7 text-ink" fill="currentColor" viewBox="0 0 24 24">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4 ml-0.5 text-ink" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 ml-0.5 max-sm:h-7 max-sm:w-7 text-ink" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               )}
             </div>
           ) : (
-            <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 transition-colors flex items-center justify-center">
-              <svg className="w-4 h-4 ml-0.5 text-ink opacity-0 group-hover/play:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+            <div className="absolute inset-0 bg-black/0 group-hover/play:bg-black/40 max-sm:bg-black/25 transition-colors flex items-center justify-center">
+              <svg className="w-4 h-4 ml-0.5 max-sm:h-7 max-sm:w-7 text-ink opacity-0 group-hover/play:opacity-100 max-sm:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>

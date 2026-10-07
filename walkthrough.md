@@ -1837,3 +1837,9 @@ pm run build � succesvol.
 - Findings: De DNA-toggle was een ongestijlde tekstknop in de badgerij en verdween tegen de Release/TCL/Uploaded-labels.
 - Conclusions: Pill-badge met accentkleur en dubbele-helix-icoon, zodat de interactie zich token-technisch onderscheidt van de passieve statuslabels; open staat volledig accent-gevuld (hetzelfde geactiveerde patroon als overige toggles) met het chevron-al-draai-gedrag ongemoeid, en `aria-expanded` toegevoegd. Bewust geen kleur uit de label-reeks (emerald/pink/cyan) zodat de knop niet als derde statuslabel leest.
 - Actions: `src/components/tracks/TrackCard.tsx` — DNA-knop omgeststijl naar accentpill met helix-SVG + chevron. Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-10-07 wo (Mobiel: cover boven titel; releases zonder trackcovers)
+
+- Findings: Op mobiel stond de 90px-cover naast de titel in een volle rij — krap en slecht tikbaar (play-icoon alleen zichtbaar bij hover, wat niet bestaat op touch). Bij releases stonden per-track covers onder de grote releasecover: dubbelop.
+- Conclusions: Eén centrale wijziging in `TrackCard` dekt alle lijsten: de coverknop krijgt `max-sm:order-first max-sm:basis-full max-sm:h-48` in een `flex-wrap`-rij, dus op mobiel een brede banner boven titel/artiest met altijd-zichtbare play-knop; sm+ ongewijzigd. Relax-rijen (Library density-opt-in) blijven compact. Voor releases een `hideCover`-prop (compacte play-knop + duur behouden) via `TrackList.hideCovers` op de release-detailpagina en direct op de releases-overzichtskaart.
+- Actions: `TrackPlayButton.tsx` — `className`-prop + mobiele play-affordance; `TrackCard.tsx` — `hideCover` + `CompactPlayButton`, `flex-wrap`-rij, stacked-cover klassen; `TrackList.tsx` — `hideCovers`; `releases/page.tsx` + `releases/[releaseId]/page.tsx` — covers uit; `melodiq-user.md` + versie `202610072006`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

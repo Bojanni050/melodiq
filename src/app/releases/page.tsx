@@ -726,6 +726,7 @@ export default function ReleasesPage() {
                               <TrackCard
                                 key={track.id}
                                 track={track}
+                                hideCover
                                 onPlay={(t) => playReleaseTrack(release.id, t)}
                                 onSelect={(t) =>
                                   openTrackDetails({
