@@ -633,11 +633,6 @@ const TrackCard = memo(function TrackCard({
     return (
       <>
         <div className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/5">
-          {trackNumber != null && (
-            <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
-              {trackNumber}
-            </span>
-          )}
           {hideCover ? (
             <CompactPlayButton
               track={track}
@@ -667,6 +662,11 @@ const TrackCard = memo(function TrackCard({
                 else onPlay(track);
               }}
             />
+          )}
+          {trackNumber != null && (
+            <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
+              {trackNumber}
+            </span>
           )}
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onSelect(track)}>
             <h3 className={`truncate text-sm font-medium ${isCurrentlyPlaying ? "text-accent" : "text-ink"}`}>
@@ -900,11 +900,6 @@ const TrackCard = memo(function TrackCard({
         }}
       >
         {/* Selection dot */}
-        {trackNumber != null && (
-          <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
-            {trackNumber}
-          </span>
-        )}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSelection?.(track.id, selectionModeFromEvent(e)); }}
           onDoubleClick={(e) => e.stopPropagation()}
@@ -963,6 +958,11 @@ const TrackCard = memo(function TrackCard({
               }
             }}
           />
+        )}
+        {trackNumber != null && (
+          <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
+            {trackNumber}
+          </span>
         )}
 
         {/* Track info */}

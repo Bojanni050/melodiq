@@ -1849,3 +1849,9 @@ pm run build � succesvol.
 - Findings: Release-tracklistings (detail + Mijn Releases-overzicht) toonden geen volgnummers.
 - Conclusions: Nummering als presentatie-prop op de rij (`TrackCard.trackNumber`, vóór de selectie-dot) met `TrackList.showTrackNumbers` die de display-volgorde nummert (paginatie snijdt vanaf 0, dus index+1 klopt; bij sleep-volgorde op de detailpagina loopt de nummering mee). Geen datawijziging nodig.
 - Actions: `TrackCard.tsx` — `trackNumber`-prop in volle + relaxte rij; `TrackList.tsx` — `showTrackNumbers`; `releases/[releaseId]/page.tsx` — `showTrackNumbers`; `releases/page.tsx` — `trackNumber={trackIndex + 1}`; `melodiq-user.md` + versie `202610072029`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-07 wo (Nummer achter playknop; publieke releases mee)
+
+- Findings: Nummer stond vóór de playknop; Bo wil ze omgewisseld (geldt desktop + mobiel). En de wijzigingen waren wel op Mijn Releases te zien maar niet op de (publieke) Releases-pagina — die staat onder de `(public)`-routegroep (`discover/release(s)`), een tweede paar listings dat nog de oude props had.
+- Conclusions: Nummer verhuisd naar direct ná cover/playknop (rij: dot, play, nummer, info) in volle + relaxte rij — op mobiel schuift het mee in de tweede regel onder de banner. Dezelfde `hideCovers`/`showTrackNumbers`/`hideCover`/`trackNumber`-set op beide publieke Discover-releasepagina's gezet.
+- Actions: `TrackCard.tsx` — nummer-positie; `(public)/discover/release/[releaseId]/page.tsx` + `(public)/discover/releases/page.tsx` — covers uit, nummers aan; `melodiq-user.md` versie `202610072038`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

@@ -319,6 +319,8 @@ export default function PublicReleasePage() {
                   }
                   playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
                   selectedTrackId={selectedTrack?.id ?? null}
+                  hideCovers
+                  showTrackNumbers
                 />
               ) : (
                 <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-center text-sm text-ink/55">

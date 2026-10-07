@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202610072029**
+**Versie: 202610072038**
 
 > AI Music Generation Web App
 
