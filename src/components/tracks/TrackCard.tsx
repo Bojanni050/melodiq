@@ -116,6 +116,7 @@ const TrackCard = memo(function TrackCard({
   isOwner = true,
   relaxed = false,
   hideCover = false,
+  trackNumber,
 }: {
   track: TrackItem;
   onPlay: (track: TrackItem) => void;
@@ -146,6 +147,8 @@ const TrackCard = memo(function TrackCard({
   relaxed?: boolean;
   /** Hide the cover artwork (e.g. release listings, where the release cover leads). A compact play button takes its place. */
   hideCover?: boolean;
+  /** 1-based position shown in front of the row (release track listings). */
+  trackNumber?: number;
 }) {
   const isSelected = useSelectionStore((state) => state.selectedIds.has(track.id));
   const user = useUserStore((state) => state.user);
@@ -630,6 +633,11 @@ const TrackCard = memo(function TrackCard({
     return (
       <>
         <div className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/5">
+          {trackNumber != null && (
+            <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
+              {trackNumber}
+            </span>
+          )}
           {hideCover ? (
             <CompactPlayButton
               track={track}
@@ -892,6 +900,11 @@ const TrackCard = memo(function TrackCard({
         }}
       >
         {/* Selection dot */}
+        {trackNumber != null && (
+          <span className="w-6 shrink-0 text-right font-mono text-xs text-ink-dim tabular-nums" aria-hidden="true">
+            {trackNumber}
+          </span>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleSelection?.(track.id, selectionModeFromEvent(e)); }}
           onDoubleClick={(e) => e.stopPropagation()}

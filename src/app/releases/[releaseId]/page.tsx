@@ -520,6 +520,7 @@ export default function ReleaseDetailPage() {
                   }
                   selectedTrackId={selectedTrack?.id ?? null}
                   hideCovers
+                  showTrackNumbers
                 />
               ) : (
                 <div className=" border border-dashed border-line bg-white/[0.03] p-8 text-sm text-ink/55">

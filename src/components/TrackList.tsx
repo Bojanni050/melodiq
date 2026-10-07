@@ -39,6 +39,7 @@ export default memo(function TrackList({
   selectedTrackId,
   dragOrderKey,
   hideCovers = false,
+  showTrackNumbers = false,
   relaxed = false,
 }: {
   tracks: TrackItem[];
@@ -69,6 +70,8 @@ export default memo(function TrackList({
   relaxed?: boolean;
   /** Hide per-track covers (release listings — the release cover leads). */
   hideCovers?: boolean;
+  /** Number rows 1-based in display order (release track listings). */
+  showTrackNumbers?: boolean;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -1034,7 +1037,7 @@ export default memo(function TrackList({
           </div>
         ) : (
           <>
-            {paginatedTracks.map((track) => {
+            {paginatedTracks.map((track, index) => {
               return (
                 <div
                   key={track.id}
@@ -1071,6 +1074,7 @@ export default memo(function TrackList({
                     isDetailSelected={selectedTrackId === track.id}
                     relaxed={relaxed}
                     hideCover={hideCovers}
+                    trackNumber={showTrackNumbers ? index + 1 : undefined}
                   />
                 </div>
               );

@@ -1843,3 +1843,9 @@ pm run build � succesvol.
 - Findings: Op mobiel stond de 90px-cover naast de titel in een volle rij — krap en slecht tikbaar (play-icoon alleen zichtbaar bij hover, wat niet bestaat op touch). Bij releases stonden per-track covers onder de grote releasecover: dubbelop.
 - Conclusions: Eén centrale wijziging in `TrackCard` dekt alle lijsten: de coverknop krijgt `max-sm:order-first max-sm:basis-full max-sm:h-48` in een `flex-wrap`-rij, dus op mobiel een brede banner boven titel/artiest met altijd-zichtbare play-knop; sm+ ongewijzigd. Relax-rijen (Library density-opt-in) blijven compact. Voor releases een `hideCover`-prop (compacte play-knop + duur behouden) via `TrackList.hideCovers` op de release-detailpagina en direct op de releases-overzichtskaart.
 - Actions: `TrackPlayButton.tsx` — `className`-prop + mobiele play-affordance; `TrackCard.tsx` — `hideCover` + `CompactPlayButton`, `flex-wrap`-rij, stacked-cover klassen; `TrackList.tsx` — `hideCovers`; `releases/page.tsx` + `releases/[releaseId]/page.tsx` — covers uit; `melodiq-user.md` + versie `202610072006`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.
+
+## 2026-10-07 wo (Tracknummers op releases)
+
+- Findings: Release-tracklistings (detail + Mijn Releases-overzicht) toonden geen volgnummers.
+- Conclusions: Nummering als presentatie-prop op de rij (`TrackCard.trackNumber`, vóór de selectie-dot) met `TrackList.showTrackNumbers` die de display-volgorde nummert (paginatie snijdt vanaf 0, dus index+1 klopt; bij sleep-volgorde op de detailpagina loopt de nummering mee). Geen datawijziging nodig.
+- Actions: `TrackCard.tsx` — `trackNumber`-prop in volle + relaxte rij; `TrackList.tsx` — `showTrackNumbers`; `releases/[releaseId]/page.tsx` — `showTrackNumbers`; `releases/page.tsx` — `trackNumber={trackIndex + 1}`; `melodiq-user.md` + versie `202610072029`. Gevalideerd met `npm run build` (geslaagd) en `npm run test` (139 geslaagd); validated.

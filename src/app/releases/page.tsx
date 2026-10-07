@@ -722,11 +722,12 @@ export default function ReleasesPage() {
                         {/* Tracks */}
                         {releaseTrackItems.length > 0 ? (
                           <div className="space-y-1">
-                            {releaseTrackItems.map((track) => (
+                            {releaseTrackItems.map((track, trackIndex) => (
                               <TrackCard
                                 key={track.id}
                                 track={track}
                                 hideCover
+                                trackNumber={trackIndex + 1}
                                 onPlay={(t) => playReleaseTrack(release.id, t)}
                                 onSelect={(t) =>
                                   openTrackDetails({
