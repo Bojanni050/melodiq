@@ -360,7 +360,9 @@ export default function LyricsStudioPage() {
           mood,
           style,
           temperature,
-          topP: contextLevel,
+          // Same derived 0.1–1.0 scale as generation; contextLevel is 1–10 and
+          // the API rejects anything outside 0.1–1.0.
+          topP,
           llmModel: llmModel.trim() || undefined,
         }),
       });

@@ -1844,6 +1844,12 @@ pm run build � succesvol.
 - Conclusions: Verplaatsen i.p.v. dupliceren: CompactPlayButton toont de duur niet meer, en de "Time + actions"-cluster toont hem als eerste, vóór createdAt — hetzelfde patroon als de relaxed-rij (die zijn duur al rechts vóór TrackRating toont), alleen uitgemetst op `hideCover`, want rijen mét cover tonen de duur al op de cover-overlay en zouden hem dubbel zeigen.
 - Actions: `src/components/tracks/TrackCard.tsx` — duur-span verwijderd uit CompactPlayButton; duur toegevoegd als eerste van het rechtercluster, gated op `hideCover && status === "done" && duration != null`. Gevalideerd met `npm run build` (geslaagd); validated.
 
+## 2026-10-07 wo (LyricIQ werkte niet)
+
+- Findings: Elke LyricIQ-klik mislukte met de "kon deze sectie niet verbeteren"-notice. De route vereist topP 0.1–1.0 en weigerde met 400; `improveBlockWithLyricIQ` stuurde de rauwe `contextLevel` (1–10) i.p.v. de al berekende `topP` (regel 192: `0.1 + ((contextLevel-1)/9)*0.9`). De gewone block-generatie gebruikte de goede schaal wél — alleen LyricIQ niet.
+- Conclusions: Één-veld-bug: de afgeleide `topP` bestond al in scope, dus de fix is de waarde die de route ook bij generatie accepteert hergebruiken, met commentaar waarom contextLevel verkeerd is.
+- Actions: `src/app/lyrics-studio/page.tsx` — `improveBlockWithLyricIQ` verstuurt nu `topP` i.p.v. `contextLevel`. Gevalideerd met `npm run build` (geslaagd); validated.
+
 ## 2026-10-07 wo (Mobiel: cover boven titel; releases zonder trackcovers)
 
 - Findings: Op mobiel stond de 90px-cover naast de titel in een volle rij — krap en slecht tikbaar (play-icoon alleen zichtbaar bij hover, wat niet bestaat op touch). Bij releases stonden per-track covers onder de grote releasecover: dubbelop.
