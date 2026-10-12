@@ -50,6 +50,8 @@ export default function Player() {
     setVolume,
     shuffleEnabled,
     setShuffleEnabled,
+    repeatMode,
+    cycleRepeatMode,
   } = usePlayerStore(
     useShallow((s) => ({
       currentTrack: s.currentTrack,
@@ -70,6 +72,8 @@ export default function Player() {
       setVolume: s.setVolume,
       shuffleEnabled: s.shuffleEnabled,
       setShuffleEnabled: s.setShuffleEnabled,
+      repeatMode: s.repeatMode,
+      cycleRepeatMode: s.cycleRepeatMode,
     }))
   );
   const router = useRouter();
@@ -89,6 +93,7 @@ export default function Player() {
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const [ratingLoading, setRatingLoading] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const playlists = usePlaylistStore((state) => state.playlists);
   const addTrackToPlaylist = usePlaylistStore((state) => state.addTrackToPlaylist);
@@ -96,6 +101,29 @@ export default function Player() {
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (currentTrack?.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
+
+  useEffect(() => {
+    setRatingLoading(false);
+  }, [currentTrack?.id]);
+
+  const handleRating = useCallback(async () => {
+    if (!currentTrack || currentTrack.publicSource || currentTrack.status !== "done" || ratingLoading) return;
+    const rating = currentTrack.rating === "up" ? null : "up";
+    setRatingLoading(true);
+    try {
+      const res = await fetch(`/api/tracks/${currentTrack.id}/rating`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        usePlayerStore.getState().syncTrackSnapshots([updated]);
+      }
+    } finally {
+      setRatingLoading(false);
+    }
+  }, [currentTrack, ratingLoading]);
 
   const detectAudioSource = useCallback(async (streamUrl: string): Promise<{ source: AudioSource; state: AudioSourceState }> => {
     try {
@@ -219,17 +247,70 @@ export default function Player() {
       clearPlayTimer();
       clearCoverAutoGenerateTimer();
       clearLanguageDetectTimer();
-      const { autoPlayNext, queue, playNext, pauseBetweenTracks, setIsPlaying, setProgress } = usePlayerStore.getState();
-      if (autoPlayNext && queue.length > 0) {
+      const {
+        autoPlayNext,
+        queue,
+        playNext,
+        pauseBetweenTracks,
+        setIsPlaying,
+        setProgress,
+        setQueue,
+        repeatMode,
+        currentTrack,
+        playContext,
+      } = usePlayerStore.getState();
+
+      // Restart the currently-loaded track from the top. Used by repeat-one
+      // and by repeat-all when the context holds nothing but this track.
+      // Switching currentTrack to its own id would not re-trigger the
+      // track-change load effect, so seek the element instead.
+      const restartCurrent = () => {
+        setProgress(0);
+        const audioEl = audioRef.current;
+        if (!audioEl) return;
+        audioEl.currentTime = 0;
+        setCurrentTime(0);
+        void audioEl.play().catch(() => {});
+      };
+
+      const advance = () => {
         if (pauseBetweenTracks) {
           if (trackPauseTimerRef.current) clearTimeout(trackPauseTimerRef.current);
           trackPauseTimerRef.current = setTimeout(() => {
             trackPauseTimerRef.current = null;
-            playNext();
+            usePlayerStore.getState().playNext();
           }, 1000);
         } else {
           playNext();
         }
+      };
+
+      // Repeat-one takes precedence over the queue: keep replaying this track
+      // without consuming what's queued behind it.
+      if (repeatMode === "track" && currentTrack) {
+        restartCurrent();
+        return;
+      }
+
+      if (autoPlayNext && queue.length > 0) {
+        advance();
+        return;
+      }
+
+      // Queue drained. With repeat-all, rebuild it from the play context
+      // ("album"/playlist), skipping the track that just finished so it wraps
+      // seamlessly instead of stuttering on the same one.
+      if (autoPlayNext && repeatMode === "all" && playContext && playContext.length > 0) {
+        const loopQueue = playContext.filter(
+          (t) => t.status === "done" && !t.archivedAt && !t.hiddenAt && t.id !== currentTrack?.id
+        );
+        if (loopQueue.length > 0) {
+          setQueue(loopQueue);
+          advance();
+          return;
+        }
+        // Single-track context — nothing else to loop to, so replay it.
+        restartCurrent();
         return;
       }
 
@@ -857,6 +938,20 @@ export default function Player() {
                       </svg>
                     </button>
                   )}
+                  {currentTrack.status === "done" && !currentTrack.publicSource && (
+                    <button
+                      type="button"
+                      onClick={() => void handleRating()}
+                      disabled={ratingLoading}
+                      className={`shrink-0 rounded-full p-1 transition-colors disabled:opacity-50 ${currentTrack.rating === "up" ? "text-pink-400" : "text-ink-dim hover:text-pink-300"}`}
+                      title={currentTrack.rating === "up" ? "Remove from Favorieten" : "Add to Favorieten"}
+                      aria-label={currentTrack.rating === "up" ? "Remove from Favorieten" : "Add to Favorieten"}
+                    >
+                      <svg className="h-4 w-4" fill={currentTrack.rating === "up" ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
                 <p className="text-sm text-ink-dim truncate">
                   {artistLabel ? `${artistLabel} — ` : ""}{composerLabel ? `composer: ${composerLabel} — ` : ""}{writerLabel ? `writer: ${writerLabel} — ` : ""}{formatProviderLabel(currentTrack.provider)}
@@ -885,6 +980,34 @@ export default function Player() {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
               </svg>
+            </button>
+            <button
+              onClick={cycleRepeatMode}
+              className={`relative hidden sm:block p-2 rounded-full transition-colors ${repeatMode !== "off" ? "text-accent" : "text-ink-dim hover:text-ink"}`}
+              title={
+                repeatMode === "track"
+                  ? "Repeat track"
+                  : repeatMode === "all"
+                    ? "Repeat album/playlist"
+                    : "Repeat off"
+              }
+              aria-label={
+                repeatMode === "track"
+                  ? "Repeat track"
+                  : repeatMode === "all"
+                    ? "Repeat album/playlist"
+                    : "Repeat off"
+              }
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 2l4 4-4 4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 11V9a4 4 0 014-4h14" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 22l-4-4 4-4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13v2a4 4 0 01-4 4H3" />
+              </svg>
+              {repeatMode === "track" && (
+                <span className="absolute -bottom-0.5 -right-0.5 text-[9px] font-bold leading-none">1</span>
+              )}
             </button>
             <button
               onClick={handlePrevious}

@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import type { TrackDetailTrack } from "./types";
 
-export function useTrackRating(track: TrackDetailTrack, initialTrack: TrackDetailTrack) {
+export function useTrackRating(
+  track: TrackDetailTrack,
+  initialTrack: TrackDetailTrack,
+  onUpdated?: (track: TrackDetailTrack) => void,
+) {
   const [currentRating, setCurrentRating] = useState<string | null>(initialTrack.rating ?? null);
   const [ratingLoading, setRatingLoading] = useState(false);
 
@@ -24,7 +28,9 @@ export function useTrackRating(track: TrackDetailTrack, initialTrack: TrackDetai
       });
 
       if (res.ok) {
-        setCurrentRating(rating);
+        const updatedTrack = await res.json() as TrackDetailTrack;
+        setCurrentRating(updatedTrack.rating ?? rating);
+        onUpdated?.(updatedTrack);
       } else {
         const body = await res.json().catch(() => null);
         console.error(`Failed to update rating: HTTP ${res.status}`, body);

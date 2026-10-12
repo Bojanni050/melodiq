@@ -57,6 +57,7 @@ describe("player track switching (A -> B gesture)", () => {
       isPlaying: false,
       playContext: null,
       audioElement: null,
+      repeatMode: "off",
     });
     vi.restoreAllMocks();
   });
@@ -188,5 +189,26 @@ describe("player track switching (A -> B gesture)", () => {
     expect(audio.play).toHaveBeenCalled();
 
     vi.unstubAllGlobals();
+  });
+});
+
+describe("player repeat mode", () => {
+  beforeEach(() => {
+    usePlayerStore.setState({ repeatMode: "off" });
+  });
+
+  it("cycles off -> all -> track -> off", () => {
+    expect(usePlayerStore.getState().repeatMode).toBe("off");
+    usePlayerStore.getState().cycleRepeatMode();
+    expect(usePlayerStore.getState().repeatMode).toBe("all");
+    usePlayerStore.getState().cycleRepeatMode();
+    expect(usePlayerStore.getState().repeatMode).toBe("track");
+    usePlayerStore.getState().cycleRepeatMode();
+    expect(usePlayerStore.getState().repeatMode).toBe("off");
+  });
+
+  it("setRepeatMode sets an explicit mode", () => {
+    usePlayerStore.getState().setRepeatMode("track");
+    expect(usePlayerStore.getState().repeatMode).toBe("track");
   });
 });

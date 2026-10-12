@@ -3,6 +3,12 @@ import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
 import { withCdn } from "@/lib/cdn-client";
 
+// Playback repeat behaviour:
+// - "off"   → stop after the queue drains (default)
+// - "all"   → loop the whole play context ("album"/playlist) back to the top
+// - "track" → replay the current track forever
+export type RepeatMode = "off" | "all" | "track";
+
 export interface Track {
   id: string;
   title: string | null;
@@ -87,6 +93,7 @@ interface PlayerState {
   visualizerMode: number;
   visualizerGradient: string;
   shuffleEnabled: boolean;
+  repeatMode: RepeatMode;
   pauseBetweenTracks: boolean;
   normalizeVolume: boolean;
   setVolume: (volume: number) => void;
@@ -97,6 +104,8 @@ interface PlayerState {
   setVisualizerMode: (mode: number) => void;
   setVisualizerGradient: (gradient: string) => void;
   setShuffleEnabled: (enabled: boolean) => void;
+  setRepeatMode: (mode: RepeatMode) => void;
+  cycleRepeatMode: () => void;
   setPauseBetweenTracks: (enabled: boolean) => void;
   setNormalizeVolume: (enabled: boolean) => void;
 }
@@ -121,6 +130,7 @@ export const usePlayerStore = create<PlayerState>()(
       visualizerMode: 2,
       visualizerGradient: "prism",
       shuffleEnabled: false,
+      repeatMode: "off",
       pauseBetweenTracks: true,
       normalizeVolume: false,
       setCurrentTrack: (track) => {
@@ -412,6 +422,16 @@ export const usePlayerStore = create<PlayerState>()(
       setVisualizerMode: (mode) => set({ visualizerMode: mode }),
       setVisualizerGradient: (gradient) => set({ visualizerGradient: gradient }),
       setShuffleEnabled: (enabled) => set({ shuffleEnabled: enabled }),
+      setRepeatMode: (mode) => set({ repeatMode: mode }),
+      cycleRepeatMode: () =>
+        set((state) => ({
+          repeatMode:
+            state.repeatMode === "off"
+              ? "all"
+              : state.repeatMode === "all"
+                ? "track"
+                : "off",
+        })),
       setPauseBetweenTracks: (enabled) => set({ pauseBetweenTracks: enabled }),
       setNormalizeVolume: (enabled) => set({ normalizeVolume: enabled }),
     }),
@@ -452,6 +472,7 @@ export const usePlayerStore = create<PlayerState>()(
           visualizerMode: state.visualizerMode,
           visualizerGradient: state.visualizerGradient,
           shuffleEnabled: state.shuffleEnabled,
+          repeatMode: state.repeatMode,
           pauseBetweenTracks: state.pauseBetweenTracks,
           normalizeVolume: state.normalizeVolume,
         };

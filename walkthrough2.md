@@ -479,3 +479,19 @@
   - `src/components/tracks/TrackCard.tsx` (Library) en `src/components/tracks/TrackOptionsMenu.tsx` (Slim Archief) — geven `handleUploadWavFile` door zodra `status === "done" && !s3KeyHd`.
   - Modified `melodiq-user.md` — optie beschreven, versie bijgewerkt naar `202610022334`.
   - Validated with `npm run build` (geslaagd, exitcode 0); ✅ gevalideerd
+
+## 2026-10-12 (Favoriet vanuit release-sidebar en speler)
+
+- Findings: De release-detailpagina gaf geen update terug aan de tracklijst nadat een favoriet was aangepast, en de vaste speler had nog geen favorietactie.
+- Conclusions: De rating-hook geeft de serverupdate door aan de bestaande sync-flow; de speler gebruikt dezelfde rating-API en synchroniseert current track, queue en play context centraal.
+- Actions: `src/components/track-detail/useTrackRating.ts`, `src/components/TrackDetail.tsx`, `src/app/releases/[releaseId]/page.tsx` en `src/components/Player.tsx` aangepast; walkthrough bijgewerkt; `npm run build` geslaagd.
+
+## 2026-10-12 (Repeat-modus in de speler)
+
+- Findings: De speler had wel shuffle en autoplay, maar geen repeat. Aan het einde van de queue stopte de weergave altijd; er was geen manier om één nummer te herhalen of een album/playlist te loopen.
+- Conclusions: Drie-standen-model (`off` → `all` → `track`, Spotify-volgorde) in de playerStore, zodat de keuze persistent is en één cyclusknop volstaat. `repeat track` herstart het huidige audiо-element (seek naar 0 + play) in plaats van `currentTrack` op dezelfde id te zetten — een identieke id laat de track-change laadeffect niet opnieuw vuren. `repeat all` bouwt bij een lege queue de queue opnieuw op uit `playContext`, waarbij het zojuist afgespeelde nummer wordt overgeslagen zodat de loop naadloos aansluit; bevat de context maar één nummer, dan valt hij terug op de herstart-logica. De knop staat naast shuffle in dezelfde (desktop-)transportrij, dus ook in fullscreen zichtbaar.
+- Actions:
+  - `src/lib/stores/playerStore.ts` — `RepeatMode`-type, `repeatMode` + `setRepeatMode`/`cycleRepeatMode`, default `off`, en opgenomen in de persist-partialize.
+  - `src/components/Player.tsx` — selector uitgebreid; `handleEnded` herschreven met `restartCurrent`/`advance` en de repeat-takken; repeat-cyclusknop met "1"-badge bij repeat track.
+  - `src/lib/stores/__tests__/player-switch.test.ts` — tests voor de cyclus en `setRepeatMode`; `repeatMode` gereset in `beforeEach`.
+  - Validated with `npx vitest run` (5 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd

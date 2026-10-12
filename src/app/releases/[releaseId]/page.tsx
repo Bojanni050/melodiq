@@ -567,6 +567,9 @@ export default function ReleaseDetailPage() {
                 onClose={closeTrackDetails}
                 onPlay={handlePlayTrack}
                 onDownload={handleDownloadTrack}
+                onTrackUpdated={(updatedTrack) => {
+                  setTracks((prev) => prev.map((item) => item.id === updatedTrack.id ? { ...item, ...updatedTrack } : item));
+                }}
               />
             ) : (
               <div className="h-full px-5 py-6 text-ink-dim">

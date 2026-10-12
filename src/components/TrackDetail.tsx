@@ -76,7 +76,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
     void mutate("/api/tracks");
   }, [setLocalTrack, onTrackUpdated, mutate]);
 
-  const { currentRating, ratingLoading, handleRating } = useTrackRating(track, initialTrack);
+  const { currentRating, ratingLoading, handleRating } = useTrackRating(track, initialTrack, onTrackUpdated);
   const { copiedField, handleCopy } = useCopyToClipboard();
   const prompt = usePromptEditor(track, initialTrack, applyTrackUpdate);
   const lyricsEdit = useLyricsEditor(track, initialTrack, applyTrackUpdate);
