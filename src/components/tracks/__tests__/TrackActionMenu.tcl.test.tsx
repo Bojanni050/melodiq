@@ -19,6 +19,12 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(trigger);
 }
 
+// Grouped actions live in collapsible submenus that start closed, so a test
+// that exercises one has to expand it first.
+async function openSection(user: ReturnType<typeof userEvent.setup>, label: string) {
+  await user.click(screen.getByText(label));
+}
+
 type MenuProps = ComponentProps<typeof TrackActionMenu>;
 
 // Every prop is optional in practice — the component renders whichever
@@ -28,10 +34,21 @@ function renderMenu(props: Partial<MenuProps> = {}) {
 }
 
 describe("TrackActionMenu — time-coded lyrics entries", () => {
+  it("keeps the Lyrics actions collapsed until the section is opened", async () => {
+    const user = userEvent.setup();
+    renderMenu({ onGenerateTclClick: vi.fn() });
+    await openMenu(user);
+
+    expect(screen.queryByText("Generate Time-Coded Lyrics")).toBeNull();
+    await openSection(user, "Lyrics");
+    expect(screen.getByText("Generate Time-Coded Lyrics")).toBeTruthy();
+  });
+
   it("offers Generate, and no editor or regenerate entry, when there is no alignment yet", async () => {
     const user = userEvent.setup();
     renderMenu({ onGenerateTclClick: vi.fn() });
     await openMenu(user);
+    await openSection(user, "Lyrics");
 
     expect(screen.getByText("Generate Time-Coded Lyrics")).toBeTruthy();
     expect(screen.queryByText("Open in Time-Coded Lyrics Editor")).toBeNull();
@@ -42,6 +59,7 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
     const user = userEvent.setup();
     renderMenu({ onOpenTclEditorClick: vi.fn(), onRegenerateTclClick: vi.fn() });
     await openMenu(user);
+    await openSection(user, "Lyrics");
 
     expect(screen.getByText("Open in Time-Coded Lyrics Editor")).toBeTruthy();
     expect(screen.getByText("Regenerate Time-Coded Lyrics")).toBeTruthy();
@@ -61,6 +79,7 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
     const onOpenTclEditorClick = vi.fn();
     renderMenu({ onOpenTclEditorClick });
     await openMenu(user);
+    await openSection(user, "Lyrics");
 
     await user.click(screen.getByText("Open in Time-Coded Lyrics Editor"));
     expect(onOpenTclEditorClick).toHaveBeenCalledTimes(1);
@@ -71,6 +90,7 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
     const onRegenerateTclClick = vi.fn();
     renderMenu({ onRegenerateTclClick });
     await openMenu(user);
+    await openSection(user, "Lyrics");
 
     await user.click(screen.getByText("Regenerate Time-Coded Lyrics"));
     expect(onRegenerateTclClick).toHaveBeenCalledTimes(1);
@@ -83,6 +103,7 @@ describe("TrackActionMenu — time-coded lyrics entries", () => {
       generatingTcl: true,
     });
     await openMenu(user);
+    await openSection(user, "Lyrics");
 
     const button = screen.getByText("Regenerating Time-Coded Lyrics...");
     expect(button.closest("button")?.disabled).toBe(true);

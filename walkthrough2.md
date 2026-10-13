@@ -509,3 +509,12 @@
   - `src/app/(public)/explore/page.tsx` — `data-track-id` op de kaarten + sticky knop.
   - `src/app/releases/page.tsx` en `src/app/(public)/discover/releases/page.tsx` — `data-track-id`-wrapper om elke `TrackCard`; knop alleen in list-mode (`enabled={viewMode === "list"}` op Mijn Releases).
   - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (141 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-13 (Track-actiemenu in submenu's)
+
+- Findings: Het owner-trackmenu (`TrackActionMenu`) was uitgegroeid tot ruim dertig losse regels — sommige gegroepeerd onder vette kopjes (Track DNA, Lyrics, Production, Remove from playlist/release), de meeste niet. Alleen Reuse Prompt en Go To Release klapten al open.
+- Conclusions: De bestaande secties zijn inklapbare submenu's geworden, met dezelfde chevron-uitklap als Reuse Prompt al had. Eén gedeelde `MenuSection`-component in het bestand houdt de markup identiek; een echte `state`-key (`openSection`) houdt maximaal één submenu tegelijk open, zodat het menu compact blijft. De kopjes Track DNA, Lyrics, Production en de conversie-acties (WAV/OGG/WAV-upload) zitten nu achter één regel. De destructieve acties (Verbergen, Archiveren) en de primaire acties (Ga naar track, Edit, Publish, Move/queue/playlist/inspiration) blijven bewust op het hoogste niveau, zodat ze niet weggestopt raken. "Link to Master Tracks" blijft los staan: het hoort niet semantisch bij Track DNA.
+- Actions:
+  - `src/components/tracks/TrackActionMenu.tsx` — nieuwe `MenuSection` + `openSection`/`toggleSection`-state (verving `reuseSubmenuOpen`/`releaseSubmenuOpen`); secties: Reuse Prompt, Cover & titel (regenerate/manage/regenerate title), Track DNA, Lyrics, Production, Audio format, Remove from playlist, Go To Release, Remove from release; overige acties herbruimbaar op topniveau; menu-toggle reset de open sectie.
+  - `src/components/tracks/__tests__/TrackActionMenu.tcl.test.tsx` — nieuwe `openSection`-helper; TCL-tests openen nu eerst de Lyrics-sectie; extra test dat de Lyrics-acties standaard ingeklapt zijn.
+  - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (142 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd

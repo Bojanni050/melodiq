@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { usePlaylistStore, useReleaseStore, useStudioStore } from "@/lib/store";
 import CoverManager from "./CoverManager";
@@ -67,6 +67,45 @@ interface TrackActionMenuProps {
   onGoToArtist?: () => void;
 }
 
+/**
+ * A collapsible submenu row. Closed by default so the owner menu — which now
+ * carries well over a dozen actions — stays scannable; the chevron rotates
+ * open like the Reuse Prompt / Go To Release submenus already did.
+ */
+function MenuSection({
+  label,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        aria-expanded={open}
+        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
+      >
+        <span>{label}</span>
+        <span className={`text-ink-dim transition-transform ${open ? "rotate-90" : ""}`}>›</span>
+      </button>
+      {open && (
+        <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
+          {children}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function TrackActionMenu({
   track,
   onReusePrompt,
@@ -116,8 +155,10 @@ export default function TrackActionMenu({
 }: TrackActionMenuProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [releaseSubmenuOpen, setReleaseSubmenuOpen] = useState(false);
-  const [reuseSubmenuOpen, setReuseSubmenuOpen] = useState(false);
+  // Only one submenu open at a time keeps the menu compact and predictable.
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const toggleSection = (key: string) =>
+    setOpenSection((prev) => (prev === key ? null : key));
   const [showCoverManager, setShowCoverManager] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const wavFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -146,7 +187,10 @@ export default function TrackActionMenu({
       <button
         onClick={(e) => {
           e.stopPropagation();
-          setMenuOpen((open) => !open);
+          setMenuOpen((open) => {
+            if (open) setOpenSection(null);
+            return !open;
+          });
         }}
         className="p-1.5 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors"
         title="Track actions"
@@ -239,278 +283,287 @@ export default function TrackActionMenu({
           )}
           <div className="my-1 h-px bg-white/10" />
           {onReusePrompt && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReuseSubmenuOpen((prev) => !prev);
-                }}
-                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
-                aria-expanded={reuseSubmenuOpen}
-              >
-                <span>Reuse Prompt</span>
-                <span className={`text-ink-dim transition-transform ${reuseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
-              </button>
-              {reuseSubmenuOpen && (
-                <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
-                  {(Object.keys(REUSE_SCOPE_LABEL) as ReuseScope[]).map((scope) => (
-                    <button
-                      key={scope}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        onReusePrompt(track, scope);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                    >
-                      {REUSE_SCOPE_LABEL[scope]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+            <MenuSection
+              label="Reuse Prompt"
+              open={openSection === "reuse"}
+              onToggle={() => toggleSection("reuse")}
+            >
+              {(Object.keys(REUSE_SCOPE_LABEL) as ReuseScope[]).map((scope) => (
+                <button
+                  key={scope}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    onReusePrompt(track, scope);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+                >
+                  {REUSE_SCOPE_LABEL[scope]}
+                </button>
+              ))}
+            </MenuSection>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRegenerateCover();
-              setMenuOpen(false);
-            }}
-            disabled={isRegeneratingCover}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+          <MenuSection
+            label="Cover & titel"
+            open={openSection === "cover"}
+            onToggle={() => toggleSection("cover")}
           >
-            {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(false);
-              setShowCoverManager(true);
-            }}
-            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-          >
-            Manage Covers
-          </button>
-          {onRegenerateTitle && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onRegenerateTitle();
+                onRegenerateCover();
                 setMenuOpen(false);
               }}
-              disabled={isRegeneratingTitle}
+              disabled={isRegeneratingCover}
               className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isRegeneratingTitle ? "Regenerating title..." : "Regenerate Title"}
+              {isRegeneratingCover ? "Regenerating cover..." : "Regenerate Cover Art"}
             </button>
-          )}
-          {onLinkToArchiveClick && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpen(false);
-                          onLinkToArchiveClick();
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                      >
-                        Link to Master Tracks
-                      </button>
-                    )}
-                    {(onAdvancedDnaClick || onAnalyzeAudioClick) && (
-                      <>
-                        <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Track DNA</p>
-                        {onAnalyzeAudioClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAnalyzeAudioClick();
-                              setMenuOpen(false);
-                            }}
-                            disabled={analyzingAudio}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {analyzingAudio ? "Analyzing audio..." : "Analyze Audio (Tempo/Key)"}
-                          </button>
-                        )}
-                        {onAdvancedDnaClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAdvancedDnaClick();
-                              setMenuOpen(false);
-                            }}
-                            disabled={advancedDnaRunning}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {advancedDnaRunning ? "Running advanced analysis..." : "Advanced Track DNA"}
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {(onGenerateTclClick || onOpenTclEditorClick || onRegenerateTclClick) && (
-                      <>
-                        <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Lyrics</p>
-                        {onOpenTclEditorClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onOpenTclEditorClick();
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                          >
-                            Open in Time-Coded Lyrics Editor
-                          </button>
-                        )}
-                        {onGenerateTclClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onGenerateTclClick();
-                              setMenuOpen(false);
-                            }}
-                            disabled={generatingTcl}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {generatingTcl ? "Generating Time-Coded Lyrics..." : "Generate Time-Coded Lyrics"}
-                          </button>
-                        )}
-                        {onRegenerateTclClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRegenerateTclClick();
-                              setMenuOpen(false);
-                            }}
-                            disabled={generatingTcl}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-amber-300/90 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {generatingTcl ? "Regenerating Time-Coded Lyrics..." : "Regenerate Time-Coded Lyrics"}
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (
-                      <>
-                        <div className="my-1 h-px bg-white/10" />
-                        <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Production</p>
-                        {onStemsClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onStemsClick();
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                          >
-                            Stems
-                          </button>
-                        )}
-                        {onMasteringClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onMasteringClick();
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                          >
-                            Mastering
-                          </button>
-                        )}
-                        {onEditSectionClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditSectionClick();
-                              setMenuOpen(false);
-                            }}
-                            className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </>
-                    )}
-                        {onRetryWavClick && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                // Deliberately doesn't close the menu — the request is async and the
-                // loading/result text below would never be seen otherwise.
-                onRetryWavClick();
+                setMenuOpen(false);
+                setShowCoverManager(true);
               }}
-              disabled={retryingWav}
-              className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                retryWavResult === "error" ? "text-red-300" : retryWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
-              } disabled:opacity-50`}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
             >
-              {retryingWav
-                ? "Converting to WAV..."
-                : retryWavResult === "success"
-                  ? "WAV conversie aangevraagd ✓"
-                  : retryWavResult === "error"
-                    ? "Mislukt — probeer opnieuw"
-                    : "Convert to WAV"}
+              Manage Covers
             </button>
-          )}
-          {onUploadWavFile && !track.s3KeyHd && (
-            <>
+            {onRegenerateTitle && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  wavFileInputRef.current?.click();
+                  onRegenerateTitle();
+                  setMenuOpen(false);
                 }}
-                disabled={uploadingWav}
-                className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                  uploadWavResult === "error" ? "text-red-300" : uploadWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
-                } disabled:opacity-50`}
+                disabled={isRegeneratingTitle}
+                className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {uploadingWav
-                  ? "WAV uploaden..."
-                  : uploadWavResult === "success"
-                    ? "WAV versie toegevoegd ✓"
-                    : uploadWavResult === "error"
-                      ? "Mislukt — probeer opnieuw"
-                      : "WAV versie toevoegen"}
+                {isRegeneratingTitle ? "Regenerating title..." : "Regenerate Title"}
               </button>
-              <input
-                ref={wavFileInputRef}
-                type="file"
-                accept=".wav,.flac,audio/wav,audio/flac"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = "";
-                  if (file) onUploadWavFile(file);
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </>
-          )}
-          {onConvertOggClick && (
+            )}
+          </MenuSection>
+          {onLinkToArchiveClick && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onConvertOggClick();
+                setMenuOpen(false);
+                onLinkToArchiveClick();
               }}
-              disabled={convertingOgg}
-              className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-ink-muted"
-              } disabled:opacity-50`}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
             >
-              {convertingOgg
-                ? "Converting to OGG..."
-                : convertOggResult === "success"
-                  ? "OGG conversie voltooid ✓"
-                  : convertOggResult === "error"
-                    ? "Mislukt — probeer opnieuw"
-                    : "Convert to Ogg"}
+              Link to Master Tracks
             </button>
           )}
-          <button
+          {(onAdvancedDnaClick || onAnalyzeAudioClick) && (
+            <MenuSection
+              label="Track DNA"
+              open={openSection === "dna"}
+              onToggle={() => toggleSection("dna")}
+            >
+              {onAnalyzeAudioClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAnalyzeAudioClick();
+                    setMenuOpen(false);
+                  }}
+                  disabled={analyzingAudio}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {analyzingAudio ? "Analyzing audio..." : "Analyze Audio (Tempo/Key)"}
+                </button>
+              )}
+              {onAdvancedDnaClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdvancedDnaClick();
+                    setMenuOpen(false);
+                  }}
+                  disabled={advancedDnaRunning}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {advancedDnaRunning ? "Running advanced analysis..." : "Advanced Track DNA"}
+                </button>
+              )}
+            </MenuSection>
+          )}
+          {(onGenerateTclClick || onOpenTclEditorClick || onRegenerateTclClick) && (
+            <MenuSection
+              label="Lyrics"
+              open={openSection === "lyrics"}
+              onToggle={() => toggleSection("lyrics")}
+            >
+              {onOpenTclEditorClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenTclEditorClick();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+                >
+                  Open in Time-Coded Lyrics Editor
+                </button>
+              )}
+              {onGenerateTclClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGenerateTclClick();
+                    setMenuOpen(false);
+                  }}
+                  disabled={generatingTcl}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingTcl ? "Generating Time-Coded Lyrics..." : "Generate Time-Coded Lyrics"}
+                </button>
+              )}
+              {onRegenerateTclClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRegenerateTclClick();
+                    setMenuOpen(false);
+                  }}
+                  disabled={generatingTcl}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-amber-300/90 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingTcl ? "Regenerating Time-Coded Lyrics..." : "Regenerate Time-Coded Lyrics"}
+                </button>
+              )}
+            </MenuSection>
+          )}
+          {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (
+            <MenuSection
+              label="Production"
+              open={openSection === "production"}
+              onToggle={() => toggleSection("production")}
+            >
+              {onStemsClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStemsClick();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+                >
+                  Stems
+                </button>
+              )}
+              {onMasteringClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMasteringClick();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+                >
+                  Mastering
+                </button>
+              )}
+              {onEditSectionClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditSectionClick();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+                >
+                  Edit
+                </button>
+              )}
+            </MenuSection>
+          )}
+          {(onRetryWavClick || (onUploadWavFile && !track.s3KeyHd) || onConvertOggClick) && (
+            <MenuSection
+              label="Audio format"
+              open={openSection === "format"}
+              onToggle={() => toggleSection("format")}
+            >
+              {onRetryWavClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Deliberately doesn't close the menu — the request is async and the
+                    // loading/result text below would never be seen otherwise.
+                    onRetryWavClick();
+                  }}
+                  disabled={retryingWav}
+                  className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                    retryWavResult === "error" ? "text-red-300" : retryWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
+                  } disabled:opacity-50`}
+                >
+                  {retryingWav
+                    ? "Converting to WAV..."
+                    : retryWavResult === "success"
+                      ? "WAV conversie aangevraagd ✓"
+                      : retryWavResult === "error"
+                        ? "Mislukt — probeer opnieuw"
+                        : "Convert to WAV"}
+                </button>
+              )}
+              {onUploadWavFile && !track.s3KeyHd && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      wavFileInputRef.current?.click();
+                    }}
+                    disabled={uploadingWav}
+                    className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                      uploadWavResult === "error" ? "text-red-300" : uploadWavResult === "success" ? "text-emerald-300" : "text-ink-muted"
+                    } disabled:opacity-50`}
+                  >
+                    {uploadingWav
+                      ? "WAV uploaden..."
+                      : uploadWavResult === "success"
+                        ? "WAV versie toegevoegd ✓"
+                        : uploadWavResult === "error"
+                          ? "Mislukt — probeer opnieuw"
+                          : "WAV versie toevoegen"}
+                  </button>
+                  <input
+                    ref={wavFileInputRef}
+                    type="file"
+                    accept=".wav,.flac,audio/wav,audio/flac"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) onUploadWavFile(file);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </>
+              )}
+              {onConvertOggClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onConvertOggClick();
+                  }}
+                  disabled={convertingOgg}
+                  className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
+                    convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-ink-muted"
+                  } disabled:opacity-50`}
+                >
+                  {convertingOgg
+                    ? "Converting to OGG..."
+                    : convertOggResult === "success"
+                      ? "OGG conversie voltooid ✓"
+                      : convertOggResult === "error"
+                        ? "Mislukt — probeer opnieuw"
+                        : "Convert to Ogg"}
+                </button>
+              )}
+            </MenuSection>
+          )}
+                    <button
             onClick={(e) => {
               e.stopPropagation();
               onMoveToWorkspaceClick();
@@ -564,9 +617,11 @@ export default function TrackActionMenu({
           </button>
 
           {playlistsContainingTrack.length > 0 && (
-            <>
-              <div className="my-1 h-px bg-white/10" />
-              <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Remove from playlist</p>
+            <MenuSection
+              label="Remove from playlist"
+              open={openSection === "remove-playlist"}
+              onToggle={() => toggleSection("remove-playlist")}
+            >
               {playlistsContainingTrack.map((playlist) => (
                 <button
                   key={`remove-${playlist.id}`}
@@ -580,7 +635,7 @@ export default function TrackActionMenu({
                   {playlist.name}
                 </button>
               ))}
-            </>
+            </MenuSection>
           )}
 
           {onOpenReleasePicker && (
@@ -611,40 +666,32 @@ export default function TrackActionMenu({
                 </button>
               )}
               {releasesContainingTrack.length > 1 && (
-                <div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setReleaseSubmenuOpen((prev) => !prev);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5 flex items-center justify-between gap-2"
-                  >
-                    <span>Go To Release</span>
-                    <span className={`text-ink-dim transition-transform ${releaseSubmenuOpen ? "rotate-90" : ""}`}>›</span>
-                  </button>
-                  {releaseSubmenuOpen && (
-                    <div className="my-1 space-y-0.5 border-l border-line pl-2.5 py-0.5">
-                      {releasesContainingTrack.map((release) => (
-                        <button
-                          key={`goto-release-${release.id}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpen(false);
-                            router.push(`/releases/${release.id}`);
-                          }}
-                          className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink"
-                        >
-                          {release.title}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <MenuSection
+                  label="Go To Release"
+                  open={openSection === "goto-release"}
+                  onToggle={() => toggleSection("goto-release")}
+                >
+                  {releasesContainingTrack.map((release) => (
+                    <button
+                      key={`goto-release-${release.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        router.push(`/releases/${release.id}`);
+                      }}
+                      className="block w-full truncate rounded px-2 py-1 text-left text-[11px] text-ink-muted hover:bg-white/10 hover:text-ink"
+                    >
+                      {release.title}
+                    </button>
+                  ))}
+                </MenuSection>
               )}
               {onRemoveFromReleaseClick && releasesContainingTrack.length > 0 && (
-                <>
-                  <div className="my-1 h-px bg-white/10" />
-                  <p className="px-2.5 pb-1 text-[11px] uppercase tracking-wide text-ink-dim">Remove from release</p>
+                <MenuSection
+                  label="Remove from release"
+                  open={openSection === "remove-release"}
+                  onToggle={() => toggleSection("remove-release")}
+                >
                   {releasesContainingTrack.map((release) => (
                     <button
                       key={`remove-release-${release.id}`}
@@ -658,13 +705,13 @@ export default function TrackActionMenu({
                       {release.title}
                     </button>
                   ))}
-                </>
+                </MenuSection>
               )}
             </>
           )}
-           </>
-           )}
-           {onHideClick && (
+          </>
+          )}
+          {onHideClick && (
             <>
               <div className="my-1 h-px bg-white/10" />
               <button
