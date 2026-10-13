@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import ArtistLink from "@/components/artist/ArtistLink";
+import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 import { usePlayerStore, useSidebarStore } from "@/lib/store";
 import { formatDuration } from "@/lib/track-utils";
 import { withCdn } from "@/lib/cdn-client";
+import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
 
 interface PublicTrack {
   id: string;
@@ -30,6 +32,9 @@ export default function ExplorePage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
+
+  const publishedIds = useMemo(() => published.map((t) => t.id), [published]);
+  const { showJumpToCurrentTrack, jumpToCurrentTrack } = useJumpToCurrentTrack(publishedIds);
 
   useEffect(() => {
     let active = true;
@@ -121,6 +126,7 @@ export default function ExplorePage() {
               return (
                 <div
                   key={track.id}
+                  data-track-id={track.id}
                   className="flex flex-col gap-1.5"
                 >
                   <div className="group relative aspect-square w-full">
@@ -178,6 +184,12 @@ export default function ExplorePage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {showJumpToCurrentTrack && (
+          <div className="pointer-events-none sticky bottom-24 z-40 flex justify-end">
+            <JumpToCurrentTrackButton floating onClick={jumpToCurrentTrack} />
           </div>
         )}
       </main>

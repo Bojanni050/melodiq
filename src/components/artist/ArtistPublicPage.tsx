@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatDuration } from "@/lib/track-utils";
 import { useLocaleStore, usePlayerStore } from "@/lib/store";
 import { withCdn } from "@/lib/cdn-client";
+import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
+import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 
 export interface PublicArtistTrack {
   id: string;
@@ -73,6 +75,9 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   const setGlobalIsPlaying = usePlayerStore((s) => s.setIsPlaying);
   const playTrackFromGesture = usePlayerStore((s) => s.playTrackFromGesture);
   const locale = useLocaleStore((s) => s.locale);
+
+  const trackIds = useMemo(() => tracks.map((t) => t.id), [tracks]);
+  const { showJumpToCurrentTrack, jumpToCurrentTrack } = useJumpToCurrentTrack(trackIds);
 
   // Prefer the visitor's language, fall back to the other one.
   const localizedBio = locale === "nl"
@@ -306,6 +311,7 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                 return (
                   <div
                     key={track.id}
+                    data-track-id={track.id}
                     onMouseEnter={() => setHoveredId(track.id)}
                     onMouseLeave={() => setHoveredId((id) => (id === track.id ? null : id))}
                     onClick={() => handleTrackClick(track)}
@@ -347,6 +353,12 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                 );
               })}
             </>
+          )}
+
+          {showJumpToCurrentTrack && (
+            <div className="pointer-events-none sticky bottom-24 z-40 flex justify-end">
+              <JumpToCurrentTrackButton floating onClick={jumpToCurrentTrack} />
+            </div>
           )}
         </div>
       </section>

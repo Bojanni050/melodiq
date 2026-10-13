@@ -9,6 +9,7 @@ import SelectionActionPill from "@/components/tracks/SelectionActionPill";
 import type { PlaylistOption, ReuseScope, TrackItem } from "@/components/tracks/types";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, type SelectionMode } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
+import { scrollToTrackRow } from "@/hooks/useJumpToCurrentTrack";
 import {
   readPersistedTrackOrder,
   writePersistedTrackOrder,
@@ -426,12 +427,7 @@ export default memo(function TrackList({
 
   useEffect(() => {
     function scrollToEl(trackId: string) {
-      const el = document.querySelector(`[data-track-id="${trackId}"]`);
-      if (!el) return false;
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("ring-2", "ring-accent/40", "");
-      window.setTimeout(() => el.classList.remove("ring-2", "ring-accent/40", ""), 1500);
-      return true;
+      return scrollToTrackRow(trackId);
     }
     function handleScrollToTrack(event: Event) {
       const trackId = (event as CustomEvent<{ trackId: string }>).detail?.trackId;

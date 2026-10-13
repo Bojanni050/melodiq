@@ -495,3 +495,17 @@
   - `src/components/Player.tsx` — selector uitgebreid; `handleEnded` herschreven met `restartCurrent`/`advance` en de repeat-takken; repeat-cyclusknop met "1"-badge bij repeat track.
   - `src/lib/stores/__tests__/player-switch.test.ts` — tests voor de cyclus en `setRepeatMode`; `repeatMode` gereset in `beforeEach`.
   - Validated with `npx vitest run` (5 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-13 (Huidige-track-knop op elke tracklisting-pagina)
+
+- Findings: De "Huidige track"-pil zat alleen in `TrackListHeader` en was dus enkel zichtbaar op pagina's die `TrackList` gebruiken (Library, Archive, Workspaces, release-detail, Discover playlist/release). Pagina's die zelf trackrijen renderen — de publieke artiestenpagina (`ArtistPublicPage`), Mijn Releases, Discover Releases en Explore — hadden geen enkele manier om vanaf de pagina naar de nu spelende track te springen.
+- Conclusions: Eén herbruikbare hook + knop in plaats van per pagina losse scroll-logica. De hook (`useJumpToCurrentTrack`) gebruikt dezelfde regel als de Library: de knop verschijnt alleen als de nu spelende track in deze lijst voorkomt én de rij uit het viewport is gescrold. Rijen worden gevonden via het bestaande `data-track-id`-conventie, dus een pagina hoeft alleen dat attribuut op de rij te zetten. De knop is `sticky` gepositioneerd (niet `fixed`), zodat hij binnen de scroll-container blijft en niet over het Track Details-paneel valt. Smart Archive is bewust overgeslagen: dat is een groeperingspagina, geen tracklisting. `TrackListHeader` en de scroll-highlight van `TrackList` gebruiken nu dezelfde bouwstenen, zodat de pill en de ring-flash niet uit elkaar kunnen lopen.
+- Actions:
+  - Created `src/hooks/useJumpToCurrentTrack.ts` — `scrollToTrackRow()` (scroll + ring-flash) en `useJumpToCurrentTrack(trackIds, enabled)` met zichtbaarheidsdetectie via IntersectionObserver plus korte retry zolang een rij nog niet in de DOM staat.
+  - Created `src/components/tracks/JumpToCurrentTrackButton.tsx` — gedeelde pill, met `inline` (list-header) en `floating` (sticky boven de speler) modus.
+  - `src/components/tracks/TrackListHeader.tsx` — inline button vervangen door de gedeelde component.
+  - `src/components/TrackList.tsx` — `scrollToEl` delegeert nu aan `scrollToTrackRow`.
+  - `src/components/artist/ArtistPublicPage.tsx` — `data-track-id` op de rijen + sticky knop onder de tracks-sectie.
+  - `src/app/(public)/explore/page.tsx` — `data-track-id` op de kaarten + sticky knop.
+  - `src/app/releases/page.tsx` en `src/app/(public)/discover/releases/page.tsx` — `data-track-id`-wrapper om elke `TrackCard`; knop alleen in list-mode (`enabled={viewMode === "list"}` op Mijn Releases).
+  - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (141 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd

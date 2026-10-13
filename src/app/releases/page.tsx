@@ -11,6 +11,8 @@ import ArtistLink from "@/components/artist/ArtistLink";
 import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore, useStudioStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
+import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 import type { ReuseScope, TrackItem } from "@/components/tracks/types";
 import { buildReusePayload } from "@/lib/reuse-prompt";
 import { useT } from "@/hooks/useT";
@@ -123,6 +125,13 @@ export default function ReleasesPage() {
   const allTracks = useMemo(
     () => Array.from(trackItemsByRelease.values()).flat(),
     [trackItemsByRelease]
+  );
+
+  const allTrackIds = useMemo(() => allTracks.map((t) => t.id), [allTracks]);
+  // Only list mode draws rows; in grid mode there is nothing to scroll to.
+  const { showJumpToCurrentTrack, jumpToCurrentTrack } = useJumpToCurrentTrack(
+    allTrackIds,
+    viewMode === "list"
   );
 
   const sortedReleases = useMemo(() => {
@@ -723,8 +732,8 @@ export default function ReleasesPage() {
                         {releaseTrackItems.length > 0 ? (
                           <div className="space-y-1">
                             {releaseTrackItems.map((track, trackIndex) => (
+                              <div key={track.id} data-track-id={track.id}>
                               <TrackCard
-                                key={track.id}
                                 track={track}
                                 hideCover
                                 trackNumber={trackIndex + 1}
@@ -768,6 +777,7 @@ export default function ReleasesPage() {
                                 }
                                 isDetailSelected={selectedTrack?.id === track.id}
                               />
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -782,6 +792,12 @@ export default function ReleasesPage() {
               )}
             </section>
           </div>
+
+          {showJumpToCurrentTrack && (
+            <div className="pointer-events-none sticky bottom-6 z-40 flex justify-end">
+              <JumpToCurrentTrackButton floating onClick={jumpToCurrentTrack} />
+            </div>
+          )}
         </main>
 
         {viewMode === "list" && (

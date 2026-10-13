@@ -12,6 +12,8 @@ import { usePlayerStore, usePlaylistStore, useSidebarStore, useUserStore } from 
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useSmartBack } from "@/lib/smart-back";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
+import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
+import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 import { publicReleaseTracksToTrackItems, type PublicReleaseSummary } from "@/lib/public-release";
 import type { TrackItem } from "@/components/tracks/types";
 
@@ -119,6 +121,9 @@ function DiscoverReleasesPageInner() {
     () => Array.from(trackItemsByRelease.values()).flat(),
     [trackItemsByRelease]
   );
+
+  const allTrackIds = useMemo(() => allTracks.map((t) => t.id), [allTracks]);
+  const { showJumpToCurrentTrack, jumpToCurrentTrack } = useJumpToCurrentTrack(allTrackIds);
 
   const releaseIdByTrackId = useMemo(() => {
     const map = new Map<string, string>();
@@ -436,8 +441,8 @@ function DiscoverReleasesPageInner() {
                         {releaseTrackItems.length > 0 ? (
                           <div className="space-y-1">
                             {releaseTrackItems.map((track, trackIndex) => (
+                              <div key={track.id} data-track-id={track.id}>
                               <TrackCard
-                                key={track.id}
                                 track={track}
                                 hideCover
                                 trackNumber={trackIndex + 1}
@@ -456,6 +461,7 @@ function DiscoverReleasesPageInner() {
                                 playlists={playlists.map((p) => ({ id: p.id, name: p.name }))}
                                 isDetailSelected={selectedTrack?.id === track.id}
                               />
+                              </div>
                             ))}
                           </div>
                         ) : (
@@ -470,6 +476,12 @@ function DiscoverReleasesPageInner() {
               )}
             </section>
           </div>
+
+          {showJumpToCurrentTrack && (
+            <div className="pointer-events-none sticky bottom-6 z-40 flex justify-end">
+              <JumpToCurrentTrackButton floating onClick={jumpToCurrentTrack} />
+            </div>
+          )}
         </main>
 
         <ResizablePanel

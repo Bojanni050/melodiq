@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import type { TrackItem } from "@/components/tracks/types";
+import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 import { useSelectionStore } from "@/lib/store";
 import type { SortOrder } from "./trackListOrder";
 
@@ -141,14 +142,7 @@ const TrackListHeader = memo(function TrackListHeader({
           {hasSelection ? `${visibleSelectedCount} of ${displayedTracks.length}` : `${displayedTracks.length} tracks`}
         </span>
         {showJumpToCurrent && onJumpToCurrent && (
-          <button
-            type="button"
-            onClick={onJumpToCurrent}
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-ink-muted text-xs font-medium border border-line hover:bg-white hover:text-black hover:border-line transition-all"
-            title="Spring naar huidige track"
-          >
-            <span>Huidige track</span>
-          </button>
+          <JumpToCurrentTrackButton onClick={onJumpToCurrent} />
         )}
         {/* Failed tracks are dead weight but not a duplicate problem, so they
             are only ever visible here — never in a Smart Archive group. */}
