@@ -534,3 +534,11 @@
 - Actions:
   - `src/lib/providers/tempolor.ts` — `getTempolorCredits()` leest nu `data.balance`, parseert het defensief en retourneert `Math.round(num * 10)`.
   - Validated with `npx tsc --noEmit` (0 errors) en `npm run test` (142 geslaagd); ✅ gevalideerd
+
+## 2026-10-14 (Workspaces-grid in Releases-stijl + sortering)
+
+- Findings: De Workspaces-grid (2×2 cover-collage) zag er anders uit dan de kaarten op Mijn Releases: elke collage-cover had een `ring-1 ring-white/10` + `shadow-lg`, de naam/meta zat in een omkaderd `bg-black/40`-blokje, en de kaart had `rounded-[28px]`/`aspect-[4/3]`. Bo wilde de Workspaces-kaarten in de Releases-stijl ("geen rand om cover heen") + een sorteeroptie.
+- Conclusions: De kaarten volgen nu exact het Releases-grid-recept: `rounded-[26px]`, `aspect-4/3`, cover vult de kaart, gradient-scrim (`bg-linear-to-t from-black/65 …`) over de collage in plaats van een omkaderd labelblok, `truncate text-lg`-titel + `text-sm text-ink/75`-meta en een footer-rij (`px-4 py-3`) met een "Open workspace"-tekstlink plus Default/Delete. De ring/rand en het kader rond de covers zijn weg; de collage-tiles schalen mee op hover (`group-hover:scale-105`), net als Releases. Sortering volgt de bestaande track-sorteerwoordenschat (`newest`/`oldest`/`title-asc`/`title-desc` + `default` die de serverorde houdt) zodat de labels ("New to old", "Old to new", "A to Z", "Z to A") overal gelijk lezen; de dropdown is geplaatst naast de grid/list- en grid-grootte-toggle en werkt in beide weergaven. Beginwaarde is "New to old".
+- Actions:
+  - `src/app/workspaces/page.tsx` — `WorkspaceSort`-type + `WORKSPACE_SORT_OPTIONS`; `workspaceSort`-state; `rootWorkspaces` sorteert nu (na filteren op root); sorteer-`<select>` in de toolbar; grid-`<article>` herstyled naar de Releases-kaart (collage zonder ring/kader, scrim + overlay-tekst, `rounded-[26px]`, `aspect-4/3`, "Open workspace"-footer).
+  - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd); ✅ gevalideerd

@@ -34,7 +34,19 @@ type Track = {
 };
 
 type WorkspaceDisplayMode = "grid" | "list";
+type WorkspaceSort = "default" | "newest" | "oldest" | "title-asc" | "title-desc";
 const WORKSPACE_GRID_SIZE_STORAGE_KEY = "melodiq.workspace-grid-size";
+
+// Mirrors the sort vocabulary used by the shared track list (TrackListHeader /
+// trackListOrder) so the labels read the same everywhere; "default" keeps the
+// order the server returned, the rest are explicit overrides.
+const WORKSPACE_SORT_OPTIONS: { value: WorkspaceSort; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "newest", label: "New to old" },
+  { value: "oldest", label: "Old to new" },
+  { value: "title-asc", label: "A to Z" },
+  { value: "title-desc", label: "Z to A" },
+];
 
 function hashString(value: string) {
   let hash = 0;
@@ -122,6 +134,7 @@ export default function WorkspacesPage() {
   }
   const [loading, setLoading] = useState(true);
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState<WorkspaceDisplayMode>("grid");
+  const [workspaceSort, setWorkspaceSort] = useState<WorkspaceSort>("newest");
   const [workspaceGridSize, setWorkspaceGridSize] = useState<4 | 8 | 12 | 16>(8);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
@@ -190,10 +203,22 @@ export default function WorkspacesPage() {
     window.localStorage.setItem(WORKSPACE_GRID_SIZE_STORAGE_KEY, String(workspaceGridSize));
   }, [workspaceGridSize]);
 
-  const rootWorkspaces = useMemo(
-    () => workspaces.filter((workspace) => !workspace.parentWorkspaceId),
-    [workspaces],
-  );
+  const rootWorkspaces = useMemo(() => {
+    const roots = workspaces.filter((workspace) => !workspace.parentWorkspaceId);
+    if (workspaceSort === "default") return roots;
+
+    const sorted = [...roots];
+    if (workspaceSort === "title-asc" || workspaceSort === "title-desc") {
+      const direction = workspaceSort === "title-asc" ? 1 : -1;
+      sorted.sort((a, b) => a.name.localeCompare(b.name) * direction);
+    } else {
+      const direction = workspaceSort === "newest" ? 1 : -1;
+      sorted.sort(
+        (a, b) => (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) * direction,
+      );
+    }
+    return sorted;
+  }, [workspaces, workspaceSort]);
 
   const childWorkspacesByParent = useMemo(() => {
     const grouped = new Map<string, typeof workspaces>();
@@ -299,6 +324,24 @@ export default function WorkspacesPage() {
                     </div>
                   )}
 
+                  <div className="relative">
+                    <select
+                      value={workspaceSort}
+                      onChange={(event) => setWorkspaceSort(event.target.value as WorkspaceSort)}
+                      className="appearance-none rounded-full border border-line bg-white/5 py-1.5 pl-3.5 pr-8 text-sm font-medium text-ink-muted outline-none transition-colors hover:bg-white/10"
+                      aria-label="Sort workspaces"
+                    >
+                      {WORKSPACE_SORT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="bg-surface">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <svg className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
                   {showCreateWorkspace ? (
                     <div className="flex items-center gap-2 rounded-full border border-line bg-white/5 p-1.5">
                       <input
@@ -362,15 +405,14 @@ export default function WorkspacesPage() {
                     return (
                       <article
                         key={workspace.id}
-                        className="group overflow-hidden rounded-[28px] border border-line bg-surface shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
+                        className="group overflow-hidden rounded-[26px] border border-line bg-surface shadow-[0_18px_60px_rgba(0,0,0,0.25)]"
                       >
                         <button
                           type="button"
                           onClick={() => openWorkspace(workspace.id)}
                           className="block w-full text-left"
                         >
-                          <div className="relative aspect-[4/3] overflow-hidden" style={{ backgroundImage: gradient }}>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_35%),linear-gradient(180deg,transparent,rgba(0,0,0,0.38))]" />
+                          <div className="relative aspect-4/3 overflow-hidden" style={{ backgroundImage: gradient }}>
                             {coverImages.length > 0 ? (
                               <div className="absolute inset-4 grid grid-cols-2 grid-rows-2 gap-2">
                                 {coverImages.slice(0, 4).map((coverUrl, index) => (
@@ -380,34 +422,38 @@ export default function WorkspacesPage() {
                                     alt={workspace.name}
                                     loading="lazy"
                                     decoding="async"
-                                    className="h-full w-full  object-cover shadow-lg ring-1 ring-white/10"
+                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   />
                                 ))}
                               </div>
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-line/20 bg-white/10 text-3xl text-ink-muted backdrop-blur-sm">+</div>
+                                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-3xl text-ink-muted backdrop-blur-sm">+</div>
                               </div>
                             )}
+                            <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10" />
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-                              <div className=" border border-line bg-black/40 p-3 backdrop-blur-md">
-                                <h3 className="whitespace-normal wrap-break-word text-base font-semibold leading-snug text-ink sm:text-sm">
-                                  {workspace.name}
-                                </h3>
-                                <p className="text-xs text-ink-muted">
-                                  {workspaceTracks.length} tracks{childCount > 0 ? ` • ${childCount} subfolders` : ""}
-                                </p>
-                              </div>
+                              <h3 className="truncate text-lg font-semibold text-ink">
+                                {workspace.name}
+                              </h3>
+                              <p className="text-sm text-ink/75">
+                                {workspaceTracks.length} tracks{childCount > 0 ? ` · ${childCount} subfolders` : ""}
+                              </p>
                             </div>
                           </div>
                         </button>
 
-                        {workspace.id === DEFAULT_WORKSPACE_ID ? (
-                          <div className="px-4 py-3">
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => openWorkspace(workspace.id)}
+                            className="text-sm text-ink-muted transition-colors hover:text-ink"
+                          >
+                            Open workspace
+                          </button>
+                          {workspace.id === DEFAULT_WORKSPACE_ID ? (
                             <span className="text-sm text-ink-dim">Default</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end px-4 py-3">
+                          ) : (
                             <button
                               type="button"
                               onClick={() => deleteWorkspace(workspace.id)}
@@ -415,8 +461,8 @@ export default function WorkspacesPage() {
                             >
                               Delete
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </article>
                     );
                   })}
