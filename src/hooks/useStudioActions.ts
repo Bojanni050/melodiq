@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { mutate } from "swr";
 import { useStudioStore, useWorkspaceStore, DEFAULT_WORKSPACE_ID } from "@/lib/store";
 import { isApimartV6Model } from "@/lib/inspiration";
+import type { ReuseScope } from "@/lib/reuse-prompt";
 import type { Track, TracksResponse } from "./useTrackManager";
 
 const MUSICGPT_LYRICS_MAX_CHARS = 3000;
@@ -279,12 +280,15 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     }
   }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks, tracksRef, onWorkspaceOpened]);
 
-  const handleReusePrompt = useCallback((track: Track, clearTitle = false) => {
+  const handleReusePrompt = useCallback((track: Track, scope: ReuseScope = "both", clearTitle = false) => {
     const studio = useStudioStore.getState();
+    // Clear first, then write, like the previous behaviour did.
     studio.setSongIdea("");
     studio.setLyrics("");
-    studio.setSongIdea(track.prompt || "");
-    studio.setLyrics(track.lyrics || "");
+    // The scope from the menu's submenu is honoured here too: "Only Lyrics"
+    // must not quietly carry the prompt along (and vice versa).
+    studio.setSongIdea(scope === "lyrics" ? "" : track.prompt || "");
+    studio.setLyrics(scope === "style" ? "" : track.lyrics || "");
     // The reuse dialog's title answer: "clear" empties the field (and the
     // track's own title is not carried over), otherwise it is.
     if (clearTitle) studio.setTitle("");

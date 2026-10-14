@@ -558,3 +558,13 @@
   - `src/lib/i18n/messages/en.ts` + `nl.ts` — `library.reuseTitleQuestion`, `reuseTitleHint`, `clearTitle`, `keepTitle`.
   - `src/lib/__tests__/reuse-prompt.test.ts` — tests voor `clearTitle`.
   - Validated with `npx tsc --noEmit` (0 errors), `npx vitest run src/lib/__tests__/reuse-prompt.test.ts` (11 passed) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-14 (Reuse Prompt in Studio: scope-submenu werkte niet)
+
+- Findings: In de Studio zelf negeerde `useStudioActions.handleReusePrompt` de scope uit het submenu van TrackActionMenu ("Only Lyrics" / "Only Styles" / "Both"): de handler zette altijd prompt én lyrics, dus wie binnen de Studio "Only Lyrics" koos kreeg stilzwijgend ook de prompt mee. De submenu-opties worden namelijk wél getoond — de menu-keten geeft `(track, scope)` door, maar de props van RecentTracksPanel/WorkspacePanel waren als `(track) => void` getypeerd en de handler las `scope` niet.
+- Conclusions: De Studio-reuse respecteert nu dezelfde scope-regels als de pagina's die via sessionStorage gaan: `lyrics` → alleen lyrics (songIdea leeg), `style` → alleen prompt (lyrics leeg), `both` → beide. De titel-logica van de vorige wijziging blijft: `clearTitle` wist, anders wordt de tracktitel overgenomen. De prop-types van de twee studio-panels zijn verbreed naar `(track, scope)` zodat de scope expliciet is in plaats van stilzwijgend weg te vallen; de Studio-dialoogstate bewaart nu `{ track, scope }` en geeft de scope mee aan `applyReusePrompt`.
+- Actions:
+  - `src/hooks/useStudioActions.ts` — `handleReusePrompt(track, scope = "both", clearTitle = false)`; respecteert `lyrics`/`style`/`both`; `ReuseScope` geïmporteerd.
+  - `src/app/studio/page.tsx` — `reuseConfirmTrack` bewaart `{ track, scope }`; `handleReusePrompt(track, scope)`; `applyReusePrompt(pending.track, pending.scope, clearTitle)`; `ReuseScope` geïmporteerd.
+  - `src/components/studio/RecentTracksPanel.tsx` + `src/components/studio/WorkspacePanel.tsx` — `onReusePrompt: (track: Track, scope: ReuseScope) => void`.
+  - Validated with `npx tsc --noEmit` (0 errors), `npx vitest run src/lib/__tests__/reuse-prompt.test.ts` (11 passed) en `npm run build` (geslaagd); ✅ gevalideerd

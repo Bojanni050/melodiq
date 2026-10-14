@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { getWorkspaceCoverCollage, getWorkspaceGradient } from "@/lib/track-utils";
 import CreateWorkspaceDialog from "@/components/studio/CreateWorkspaceDialog";
 import TrackList from "@/components/TrackList";
+import type { ReuseScope } from "@/lib/reuse-prompt";
 import type { Track } from "@/hooks/useTrackManager";
 import type { Workspace } from "@/lib/store";
 import { useT } from "@/hooks/useT";
@@ -47,7 +48,7 @@ interface WorkspacePanelProps {
   handleCreateFolderKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onSelectTrack: (track: Track) => void;
   onDeleteTrack: (trackId: string) => void;
-  onReusePrompt: (track: Track) => void;
+  onReusePrompt: (track: Track, scope: ReuseScope) => void;
   onAddToQueue: (track: Track) => void;
   onAddToPlaylist: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;

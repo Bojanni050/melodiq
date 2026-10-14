@@ -1,6 +1,7 @@
 "use client";
 
 import TrackList from "@/components/TrackList";
+import type { ReuseScope } from "@/lib/reuse-prompt";
 import type { Track } from "@/hooks/useTrackManager";
 import { useT } from "@/hooks/useT";
 
@@ -9,7 +10,7 @@ interface RecentTracksPanelProps {
   isGenerating: boolean;
   onSelect: (track: Track) => void;
   onDelete: (trackId: string) => void;
-  onReusePrompt: (track: Track) => void;
+  onReusePrompt: (track: Track, scope: ReuseScope) => void;
   onAddToQueue: (track: Track) => void;
   onAddToPlaylist: (trackId: string, playlistId: string, options?: { allowDuplicate?: boolean }) => void;
   onMoveToWorkspace: (trackId: string, workspaceId: string) => void;

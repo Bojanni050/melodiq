@@ -14,6 +14,7 @@ import WorkspacePanel from "@/components/studio/WorkspacePanel";
 import RecentTracksPanel from "@/components/studio/RecentTracksPanel";
 import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
 import { useTrackManager, type Track } from "@/hooks/useTrackManager";
+import type { ReuseScope } from "@/lib/reuse-prompt";
 import { useStudioActions } from "@/hooks/useStudioActions";
 import { useWorkspaceView } from "@/hooks/useWorkspaceView";
 import { useTrackPlayer } from "@/hooks/useTrackPlayer";
@@ -70,8 +71,11 @@ export default function StudioPage() {
 
   // Reuse Prompt always asks the title question first, also inside the Studio
   // (where the action applies immediately instead of going through sessionStorage).
-  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<Track | null>(null);
-  const handleReusePrompt = useCallback((track: Track) => setReuseConfirmTrack(track), []);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: Track; scope: ReuseScope } | null>(null);
+  const handleReusePrompt = useCallback(
+    (track: Track, scope: ReuseScope) => setReuseConfirmTrack({ track, scope }),
+    []
+  );
 
   const {
     credits,
@@ -321,7 +325,7 @@ export default function StudioPage() {
           onConfirm={({ clearTitle }) => {
             const pending = reuseConfirmTrack;
             setReuseConfirmTrack(null);
-            if (pending) applyReusePrompt(pending, clearTitle);
+            if (pending) applyReusePrompt(pending.track, pending.scope, clearTitle);
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />
