@@ -90,7 +90,7 @@ export const useStudioStore = create<StudioState>()(
       title: "",
       artistName: "",
       writerName: "",
-      autoCreateWorkspaceFromGeneratedTitle: false,
+      autoCreateWorkspaceFromGeneratedTitle: true,
       selectedProviders: { apimart: "v6" },
       rememberProviderChoice: true,
       language: "English",
@@ -211,7 +211,7 @@ export const useStudioStore = create<StudioState>()(
           title: "",
           artistName: "",
           writerName: "",
-          autoCreateWorkspaceFromGeneratedTitle: false,
+          autoCreateWorkspaceFromGeneratedTitle: true,
           selectedProviders: { apimart: "v6" },
           language: "English",
           customLanguage: "",
@@ -236,6 +236,13 @@ export const useStudioStore = create<StudioState>()(
       name: "melodiq-studio",
       storage: createDebouncedStorage(500),
       skipHydration: true,
+      // v1: auto-create a workspace from the generated title is on by default now;
+      // older persisted states (which stored the old default `false`) are migrated.
+      version: 1,
+      migrate: (persistedState: any) =>
+        persistedState && typeof persistedState === "object"
+          ? { ...persistedState, autoCreateWorkspaceFromGeneratedTitle: true }
+          : (persistedState as any),
       partialize: (state) => {
         const { savedLyrics: _sl, savedLyricsLoaded: _sll, ...rest } = state as any;
         return rest;

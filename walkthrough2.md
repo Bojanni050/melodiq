@@ -518,3 +518,11 @@
   - `src/components/tracks/TrackActionMenu.tsx` — nieuwe `MenuSection` + `openSection`/`toggleSection`-state (verving `reuseSubmenuOpen`/`releaseSubmenuOpen`); secties: Reuse Prompt, Cover & titel (regenerate/manage/regenerate title), Track DNA, Lyrics, Production, Audio format, Remove from playlist, Go To Release, Remove from release; overige acties herbruimbaar op topniveau; menu-toggle reset de open sectie.
   - `src/components/tracks/__tests__/TrackActionMenu.tcl.test.tsx` — nieuwe `openSection`-helper; TCL-tests openen nu eerst de Lyrics-sectie; extra test dat de Lyrics-acties standaard ingeklapt zijn.
   - Validated with `npx tsc --noEmit` (0 errors), `npm run test` (142 geslaagd) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-14 (Werkruimte automatisch aanmaken — default aan)
+
+- Findings: De checkbox "Automatisch werkruimte aanmaken op basis van gegenereerde titel en openen" in de Studio-generatebalk stond uitgevinkt. Bo wil hem standaard aangevinkt.
+- Conclusions: Default in de store omgezet naar `true`, inclusief de `reset()`-tak (Clear all / lyrics-studio-payload) zodat de nieuwe default consistent is zodra het formulier wordt geleegd. Omdat de store via `persist` in localStorage staat, zou een bestaande gebruiker de oude `false` uit de opslag blijven krijgen; daarom `version: 1` + `migrate` toegevoegd die oudere persisted states éénmalig naar `true` zet. Na die migratie blijft een handmatige uncheck gewoon bewaard (zelfde versie). Alternatief was de bestaande `merge`-backfill, maar die kan een bewust uitgevinkte waarde niet onderscheiden van de oude default — de versiemigratie is de idiomatische en eenmalige route.
+- Actions:
+  - `src/lib/stores/studioStore.ts` — `autoCreateWorkspaceFromGeneratedTitle` initial state en `reset()` naar `true`; persist-optie `version: 1` + `migrate` die oudere states naar `true` zet.
+  - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd); ✅ gevalideerd
