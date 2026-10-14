@@ -36,6 +36,7 @@ export default function Player() {
     queue,
     history,
     isPlaying,
+    resumeBlocked,
     volume,
     autoPlayNext,
     showTrackDetailsPanel,
@@ -58,6 +59,7 @@ export default function Player() {
       queue: s.queue,
       history: s.history,
       isPlaying: s.isPlaying,
+      resumeBlocked: s.resumeBlocked,
       volume: s.volume,
       autoPlayNext: s.autoPlayNext,
       showTrackDetailsPanel: s.showTrackDetailsPanel,
@@ -179,7 +181,14 @@ export default function Player() {
         }
 
         if (error.name === "NotAllowedError") {
-          usePlayerStore.getState().setIsPlaying(false);
+          const blocked = usePlayerStore.getState();
+          blocked.setIsPlaying(false);
+          // Only offer a retry-on-input when there really is a source loaded
+          // to resume: calling play() before the load effect has assigned one
+          // rejects too, and that is not an autoplay block.
+          if (audioRef.current?.src) {
+            blocked.setResumeBlocked(true);
+          }
           return;
         }
 
@@ -741,6 +750,26 @@ export default function Player() {
       }
     }
   }, [isPlaying, tryPlay]);
+
+  // A reload (F5, a crash, or a hard navigation Next.js falls back to when an
+  // RSC payload fails) leaves the fresh document without user activation, so
+  // the browser can refuse the resume attempt with NotAllowedError. The track
+  // is then loaded and parked at the stored position; retry once the user
+  // actually touches the page.
+  useEffect(() => {
+    if (!resumeBlocked) return;
+    const retry = () => {
+      usePlayerStore.getState().setResumeBlocked(false);
+      usePlayerStore.getState().setIsPlaying(true);
+      void tryPlay();
+    };
+    window.addEventListener("pointerdown", retry, { once: true });
+    window.addEventListener("keydown", retry, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", retry);
+      window.removeEventListener("keydown", retry);
+    };
+  }, [resumeBlocked, tryPlay]);
 
   useEffect(() => {
     if (audioRef.current) {

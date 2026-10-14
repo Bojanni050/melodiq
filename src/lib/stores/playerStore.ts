@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
+import { shouldResumePlayback } from "@/lib/playerResume";
 import { withCdn } from "@/lib/cdn-client";
 
 // Playback repeat behaviour:
@@ -67,6 +68,14 @@ interface PlayerState {
   rightPanelWidth: number;
   volume: number;
   progress: number;
+  // Last moment playback was known to be alive; written by setIsPlaying and
+  // setProgress and persisted, so a reload right after the page died can be
+  // told apart from opening the app hours later (see lib/playerResume.ts).
+  lastActiveAt: number;
+  // True when the browser refused a play() with NotAllowedError. A freshly
+  // loaded document has no user activation yet, so a resume-over-reload can be
+  // blocked; Player.tsx then retries once on the first real input.
+  resumeBlocked: boolean;
   audioElement: HTMLAudioElement | null;
   playContext: Track[] | null;
   isFullscreen: boolean;
@@ -80,6 +89,7 @@ interface PlayerState {
   reorderQueueItem: (trackId: string, insertAtIndex: number) => void;
   playPrevious: () => void;
   setIsPlaying: (playing: boolean) => void;
+  setResumeBlocked: (blocked: boolean) => void;
   setAudioElement: (audioElement: HTMLAudioElement | null) => void;
   playTrackFromGesture: (track: Track) => void;
   setPlayContext: (tracks: Track[] | null) => void;
@@ -122,6 +132,8 @@ export const usePlayerStore = create<PlayerState>()(
       rightPanelWidth: 500,
       volume: 0.8,
       progress: 0,
+      lastActiveAt: 0,
+      resumeBlocked: false,
       audioElement: null,
       playContext: null,
       isFullscreen: false,
@@ -262,7 +274,9 @@ export const usePlayerStore = create<PlayerState>()(
             showTrackDetailsPanel: (previousTrack.lyrics && previousTrack.lyrics.trim()) ? true : state.showTrackDetailsPanel,
           };
         }),
-      setIsPlaying: (playing) => set({ isPlaying: playing }),
+      setIsPlaying: (playing) =>
+        set(playing ? { isPlaying: true, lastActiveAt: Date.now() } : { isPlaying: false }),
+      setResumeBlocked: (blocked) => set({ resumeBlocked: blocked }),
       setAudioElement: (audioElement) => set({ audioElement }),
       playTrackFromGesture: (track) => {
         get().setCurrentTrack(track);
@@ -415,7 +429,7 @@ export const usePlayerStore = create<PlayerState>()(
       setRightPanelWidth: (width) =>
         set({ rightPanelWidth: Math.max(320, Math.min(560, Math.round(width))) }),
       setVolume: (volume) => set({ volume }),
-      setProgress: (progress) => set({ progress }),
+      setProgress: (progress) => set({ progress, lastActiveAt: Date.now() }),
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
       setPlayHighestQuality: (enabled) => set({ playHighestQuality: enabled }),
       setVisualizerEnabled: (enabled) => set({ visualizerEnabled: enabled }),
@@ -438,6 +452,24 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: "melodiq-player",
       storage: createDebouncedStorage(300),
+      // Resume-over-reload gate: the persisted isPlaying flag only counts when
+      // playback was alive moments before the reload. Opening the app hours
+      // later must not start playing by itself.
+      merge: (persisted, current) => {
+        const merged = {
+          ...current,
+          ...(persisted as Partial<PlayerState> | undefined),
+        } as PlayerState;
+        // The popped-out player window shares this localStorage entry, but must
+        // never start its own playback on open — the main window is already
+        // playing that audio. Only the main document resumes.
+        const isPopupWindow =
+          typeof window !== "undefined" && window.location.pathname === "/player-window";
+        if (isPopupWindow || !shouldResumePlayback(merged.isPlaying, merged.lastActiveAt)) {
+          merged.isPlaying = false;
+        }
+        return merged;
+      },
       partialize: (state) => {
         // Scrub bulky fields (lyrics/timings) from tracks before persisting to avoid localStorage quota limits
         const scrubTrack = (track: any) => {
@@ -467,6 +499,8 @@ export const usePlayerStore = create<PlayerState>()(
           rightPanelWidth: state.rightPanelWidth,
           isFullscreen: state.isFullscreen,
           progress: state.progress,
+          isPlaying: state.isPlaying,
+          lastActiveAt: state.lastActiveAt,
           playHighestQuality: state.playHighestQuality,
           visualizerEnabled: state.visualizerEnabled,
           visualizerMode: state.visualizerMode,
