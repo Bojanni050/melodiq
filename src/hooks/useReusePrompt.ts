@@ -27,8 +27,11 @@ export function useReusePrompt() {
 
   /** Writes the payload and navigates. Safe to call directly once confirmed. */
   const performReuse = useCallback(
-    (track: ReuseTrack, scope: ReuseScope) => {
-      sessionStorage.setItem(REUSE_PROMPT_STORAGE_KEY, JSON.stringify(buildReusePayload(track, scope)));
+    (track: ReuseTrack, scope: ReuseScope, clearTitle = false) => {
+      sessionStorage.setItem(
+        REUSE_PROMPT_STORAGE_KEY,
+        JSON.stringify(buildReusePayload(track, scope, { clearTitle }))
+      );
       router.push("/studio");
     },
     [router]
@@ -43,30 +46,33 @@ export function useReusePrompt() {
     (
       track: ReuseTrack,
       scope: ReuseScope = "both",
-      options?: { confirm?: (message: string) => boolean }
+      options?: { confirm?: (message: string) => boolean; clearTitle?: boolean }
     ) => {
       const { songIdea, lyrics } = useStudioStore.getState();
       if (songIdea.trim() || lyrics.trim()) {
         const message = "Dit vervangt de huidige inhoud van de Studio. Doorgaan?";
         if (options?.confirm) {
-          if (options.confirm(message)) performReuse(track, scope);
+          if (options.confirm(message)) performReuse(track, scope, options?.clearTitle);
           return;
         }
         setPendingReuse({ track, scope });
         return;
       }
-      performReuse(track, scope);
+      performReuse(track, scope, options?.clearTitle);
     },
     [performReuse]
   );
 
   /** Call after the user confirms the parked reuse. */
-  const confirmPendingReuse = useCallback(() => {
-    if (!pendingReuse) return;
-    const { track, scope } = pendingReuse;
-    setPendingReuse(null);
-    performReuse(track, scope);
-  }, [pendingReuse, performReuse]);
+  const confirmPendingReuse = useCallback(
+    (clearTitle = false) => {
+      if (!pendingReuse) return;
+      const { track, scope } = pendingReuse;
+      setPendingReuse(null);
+      performReuse(track, scope, clearTitle);
+    },
+    [pendingReuse, performReuse]
+  );
 
   const cancelPendingReuse = useCallback(() => setPendingReuse(null), []);
 

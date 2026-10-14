@@ -54,6 +54,24 @@ describe("buildReusePayload", () => {
     expect(buildReusePayload({ ...track, title: "  ", vocalGender: "auto" }, "both")).not.toHaveProperty("title");
     expect(buildReusePayload({ ...track, title: "  ", vocalGender: "auto" }, "both")).not.toHaveProperty("vocalGender");
   });
+  it("clears the title instead of carrying it when the dialog says so", () => {
+    const rich = { ...track, title: "Midnight Drive", vocalGender: "female" };
+    const payload = buildReusePayload(rich, "both", { clearTitle: true });
+    expect(payload).toEqual({
+      songIdea: track.prompt,
+      lyrics: track.lyrics,
+      clearTitle: true,
+      vocalGender: "female",
+    });
+    expect(payload).not.toHaveProperty("title");
+  });
+
+  it("only emits clearTitle for 'clear' — 'keep' carries the track title as before", () => {
+    const rich = { ...track, title: "Midnight Drive" };
+    expect(buildReusePayload(rich, "both", { clearTitle: false }).title).toBe("Midnight Drive");
+    expect(buildReusePayload(rich, "both", { clearTitle: false })).not.toHaveProperty("clearTitle");
+    expect(buildReusePayload(rich, "both", {})).not.toHaveProperty("clearTitle");
+  });
 });
 
 describe("REUSE_SCOPE_LABEL", () => {

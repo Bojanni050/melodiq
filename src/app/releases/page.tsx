@@ -8,13 +8,14 @@ import TrackDetail from "@/components/TrackDetail";
 import TrackEditPanel from "@/components/tracks/TrackEditPanel";
 import ResizablePanel from "@/components/studio/ResizablePanel";
 import ArtistLink from "@/components/artist/ArtistLink";
-import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore, useStudioStore } from "@/lib/store";
+import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
 import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
 import type { ReuseScope, TrackItem } from "@/components/tracks/types";
 import { buildReusePayload } from "@/lib/reuse-prompt";
+import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
 import { useT } from "@/hooks/useT";
 
 const RELEASE_TYPES: { value: string; label: string }[] = [
@@ -59,6 +60,7 @@ export default function ReleasesPage() {
   const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [editingTrack, setEditingTrack] = useState<TrackItem | null>(null);
   const [gridMenuReleaseId, setGridMenuReleaseId] = useState<string | null>(null);
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<{ track: TrackItem; scope: ReuseScope } | null>(null);
 
   const createRelease = useReleaseStore((state) => state.createRelease);
   const currentTrack = usePlayerStore((s) => s.currentTrack);
@@ -246,14 +248,15 @@ export default function ReleasesPage() {
     player.playTrackFromGesture(standalone);
   }
 
-  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
-    const { songIdea, lyrics } = useStudioStore.getState();
-    if (songIdea.trim() || lyrics.trim()) {
-      // If there's already content in studio, confirm before overwriting
-      if (!window.confirm("This will replace your current studio content. Continue?")) return;
-    }
-    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify(buildReusePayload(track, scope)));
+  function performReusePrompt(track: TrackItem, scope: ReuseScope, clearTitle: boolean) {
+    sessionStorage.setItem("melodiq-reuse-prompt-payload", JSON.stringify(buildReusePayload(track, scope, { clearTitle })));
     router.push("/studio");
+  }
+
+  function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
+    // Always show the dialog: besides warning about overwriting the Studio,
+    // it asks whether the title should be cleared.
+    setReuseConfirmTrack({ track, scope });
   }
 
   function handlePlayFromDetailsPanel(url: string) {
@@ -1005,6 +1008,17 @@ export default function ReleasesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {reuseConfirmTrack && (
+        <ReuseConfirmDialog
+          onConfirm={({ clearTitle }) => {
+            const pending = reuseConfirmTrack;
+            setReuseConfirmTrack(null);
+            if (pending) performReusePrompt(pending.track, pending.scope, clearTitle);
+          }}
+          onCancel={() => setReuseConfirmTrack(null)}
+        />
       )}
 
       {pendingDelete && (

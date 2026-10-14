@@ -1,14 +1,26 @@
 "use client";
 
 import { useT } from "@/hooks/useT";
+import { useStudioStore } from "@/lib/store";
 
 interface ReuseConfirmDialogProps {
-  onConfirm: () => void;
+  /** `clearTitle` is the answer to the title question — both answers continue the reuse. */
+  onConfirm: (options: { clearTitle: boolean }) => void;
   onCancel: () => void;
 }
 
+/**
+ * Shown on every "Reuse Prompt". The title question is always asked: the
+ * payload otherwise carries the source track's title into the Studio, and a
+ * reused prompt usually means a new song. The overwrite warning only appears
+ * when there is actually Studio content to lose.
+ */
 export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirmDialogProps) {
   const t = useT();
+  const hasExistingContent = useStudioStore((state) =>
+    Boolean(state.songIdea.trim() || state.lyrics.trim())
+  );
+
   return (
     <div
       className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
@@ -23,21 +35,32 @@ export default function ReuseConfirmDialog({ onConfirm, onCancel }: ReuseConfirm
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
           </svg>
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-amber-100">
-              {t("library.reuseConfirmMessage")}
+            {hasExistingContent && (
+              <p className="text-sm text-amber-100">{t("library.reuseConfirmMessage")}</p>
+            )}
+            <p className={`text-sm font-medium text-amber-100 ${hasExistingContent ? "mt-3" : ""}`}>
+              {t("library.reuseTitleQuestion")}
             </p>
-            <div className="mt-3 flex items-center gap-2">
+            <p className="mt-1 text-xs text-amber-100/70">{t("library.reuseTitleHint")}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={onConfirm}
+                onClick={() => onConfirm({ clearTitle: true })}
                 className="inline-flex items-center gap-2  border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-sm font-medium text-amber-100 transition hover:bg-amber-500/25"
               >
-                {t("library.continue")}
+                {t("library.clearTitle")}
+              </button>
+              <button
+                type="button"
+                onClick={() => onConfirm({ clearTitle: false })}
+                className="inline-flex items-center gap-2  border border-line bg-transparent px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/5 hover:text-ink"
+              >
+                {t("library.keepTitle")}
               </button>
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex items-center gap-2  border border-line bg-transparent px-3 py-2 text-sm font-medium text-ink-muted transition hover:bg-white/5 hover:text-ink-muted"
+                className="ml-auto px-2 py-2 text-xs font-medium text-ink-dim transition hover:text-ink-muted"
               >
                 {t("common.cancel")}
               </button>

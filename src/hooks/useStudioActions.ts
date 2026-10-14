@@ -279,14 +279,19 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     }
   }, [getEffectiveLanguage, handleGenerateTitle, fetchTracks, tracksRef, onWorkspaceOpened]);
 
-  const handleReusePrompt = useCallback((track: Track) => {
+  const handleReusePrompt = useCallback((track: Track, clearTitle = false) => {
     const studio = useStudioStore.getState();
     studio.setSongIdea("");
     studio.setLyrics("");
     studio.setSongIdea(track.prompt || "");
     studio.setLyrics(track.lyrics || "");
-    const title = typeof track.title === "string" ? track.title.trim() : "";
-    if (title) studio.setTitle(title);
+    // The reuse dialog's title answer: "clear" empties the field (and the
+    // track's own title is not carried over), otherwise it is.
+    if (clearTitle) studio.setTitle("");
+    else {
+      const title = typeof track.title === "string" ? track.title.trim() : "";
+      if (title) studio.setTitle(title);
+    }
     if (track.vocalGender === "female" || track.vocalGender === "male") studio.setVocalGender(track.vocalGender);
   }, []);
 

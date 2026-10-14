@@ -68,6 +68,10 @@ const en = {
     filesKept: "all files kept",
     hiddenKeptFiles: "Hidden tracks keep every audio file — restoring them is fully reversible.",
     reuseConfirmMessage: 'The Studio already has a song idea and/or lyrics. Continuing with "Reuse Prompt" will overwrite them.',
+    reuseTitleQuestion: "Clear the title?",
+    reuseTitleHint: "The Studio title field is emptied, so the reused track's title is not carried over.",
+    clearTitle: "Clear title",
+    keepTitle: "Keep title",
     continue: "Continue",
   },
   releases: {

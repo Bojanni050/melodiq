@@ -14,7 +14,6 @@ import {
   usePlaylistStore,
   useReleaseStore,
   useSidebarStore,
-  useStudioStore,
   useUserStore,
   useWorkspaceStore,
 } from "@/lib/store";
@@ -327,21 +326,17 @@ export default function PlaylistDetailPage() {
     setTracks((current) => current.filter((track) => track.id !== trackId));
   }
 
-  function performReusePrompt(track: TrackItem, scope: ReuseScope) {
+  function performReusePrompt(track: TrackItem, scope: ReuseScope, clearTitle: boolean) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify(buildReusePayload(track, scope)),
+      JSON.stringify(buildReusePayload(track, scope, { clearTitle })),
     );
     router.push("/studio");
   }
 
   function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
-    const { songIdea, lyrics } = useStudioStore.getState();
-    if (songIdea.trim() || lyrics.trim()) {
-      setReuseConfirmTrack({ track, scope });
-      return;
-    }
-    performReusePrompt(track, scope);
+    // Always show the dialog: it doubles as the title question.
+    setReuseConfirmTrack({ track, scope });
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -912,10 +907,10 @@ export default function PlaylistDetailPage() {
 
       {reuseConfirmTrack && (
         <ReuseConfirmDialog
-          onConfirm={() => {
+          onConfirm={({ clearTitle }) => {
             const pending = reuseConfirmTrack;
             setReuseConfirmTrack(null);
-            if (pending) performReusePrompt(pending.track, pending.scope);
+            if (pending) performReusePrompt(pending.track, pending.scope, clearTitle);
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />

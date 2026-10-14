@@ -21,7 +21,6 @@ import {
   usePlaylistStore,
   useReleaseStore,
   useSidebarStore,
-  useStudioStore,
   useUserStore,
   useWorkspaceStore,
 } from "@/lib/store";
@@ -375,23 +374,18 @@ export default function LibraryPage() {
     [parentWorkspaceNameById, workspaces],
   );
 
-  function performReusePrompt(track: TrackItem, scope: ReuseScope) {
+  function performReusePrompt(track: TrackItem, scope: ReuseScope, clearTitle: boolean) {
     sessionStorage.setItem(
       "melodiq-reuse-prompt-payload",
-      JSON.stringify(buildReusePayload(track, scope))
+      JSON.stringify(buildReusePayload(track, scope, { clearTitle }))
     );
     router.push("/studio");
   }
 
   function handleReusePrompt(track: TrackItem, scope: ReuseScope) {
-    const { songIdea, lyrics } = useStudioStore.getState();
-    if (songIdea.trim() || lyrics.trim()) {
-      // The scope has to survive the dialog: the user picked "Only Lyrics" on
-      // the menu, and the dialog must not silently widen that to both.
-      setReuseConfirmTrack({ track, scope });
-      return;
-    }
-    performReusePrompt(track, scope);
+    // The dialog is shown unconditionally: it also asks the title question,
+    // which matters even when the Studio has no content yet.
+    setReuseConfirmTrack({ track, scope });
   }
 
   const handleTrackUpdated = useCallback((updatedTrack: TrackDetailTrack) => {
@@ -716,10 +710,10 @@ export default function LibraryPage() {
 
       {reuseConfirmTrack && (
         <ReuseConfirmDialog
-          onConfirm={() => {
+          onConfirm={({ clearTitle }) => {
             const pending = reuseConfirmTrack;
             setReuseConfirmTrack(null);
-            if (pending) performReusePrompt(pending.track, pending.scope);
+            if (pending) performReusePrompt(pending.track, pending.scope, clearTitle);
           }}
           onCancel={() => setReuseConfirmTrack(null)}
         />

@@ -27,6 +27,13 @@ export interface ReusePayload {
   lyrics: string;
   title?: string;
   vocalGender?: "female" | "male";
+  /** Set when the user chose to clear the Studio title; the Studio then empties it. */
+  clearTitle?: boolean;
+}
+
+/** Answer to the Reuse Prompt dialog's title question. */
+export interface ReuseOptions {
+  clearTitle?: boolean;
 }
 
 function normalizeReuseVocalGender(value: unknown): "female" | "male" | undefined {
@@ -52,14 +59,26 @@ export const REUSE_SCOPE_LABEL: Record<ReuseScope, string> = {
  * ride along in every scope — but only when the track actually has them. An
  * absent key leaves the Studio's current value untouched (notably vocal
  * gender on pre-migration tracks, which stored none).
+ *
+ * `clearTitle` comes from the Reuse Prompt dialog's title question: the user
+ * explicitly asked to start without a title, so it wins over the track's own
+ * title and the Studio empties the field.
  */
-export function buildReusePayload(track: ReuseTrack, scope: ReuseScope): ReusePayload {
+export function buildReusePayload(
+  track: ReuseTrack,
+  scope: ReuseScope,
+  options?: ReuseOptions
+): ReusePayload {
   const payload: ReusePayload = {
     songIdea: scope === "lyrics" ? "" : track.prompt || "",
     lyrics: scope === "style" ? "" : track.lyrics || "",
   };
-  const title = typeof track.title === "string" ? track.title.trim() : "";
-  if (title) payload.title = track.title!.trim();
+  if (options?.clearTitle) {
+    payload.clearTitle = true;
+  } else {
+    const title = typeof track.title === "string" ? track.title.trim() : "";
+    if (title) payload.title = title;
+  }
   const vocalGender = normalizeReuseVocalGender(track.vocalGender);
   if (vocalGender) payload.vocalGender = vocalGender;
   return payload;

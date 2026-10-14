@@ -542,3 +542,19 @@
 - Actions:
   - `src/app/workspaces/page.tsx` — `WorkspaceSort`-type + `WORKSPACE_SORT_OPTIONS`; `workspaceSort`-state; `rootWorkspaces` sorteert nu (na filteren op root); sorteer-`<select>` in de toolbar; grid-`<article>` herstyled naar de Releases-kaart (collage zonder ring/kader, scrim + overlay-tekst, `rounded-[26px]`, `aspect-4/3`, "Open workspace"-footer).
   - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-14 (Reuse Prompt: titel-popup)
+
+- Findings: "Reuse Prompt" nam stilzwijgend de titel van de bron-track over in de Studio (`buildReusePayload` zette `title` en de Studio zette die). Wie een prompt hergebruikte voor een nieuw nummer zat zo met de oude titel in het veld. De bevestigingsdialoog verscheen bovendien alleen als de Studio al een song idea/lyrics had, en op Releases/Smart Archive/Studio was het een `window.confirm` — dus juist in de gevallen zonder bestaande inhoud werd er niets gevraagd. Bo: "wanneer re-use prompt wordt gedaan, doe pop-up met vraag of titel gewist moet worden".
+- Conclusions: De popup verschijnt nu **altijd** bij Reuse Prompt (bevestigd met Bo) en stelt de titelvraag centraal: "Titel wissen?" met de antwoorden *Titel wissen* / *Titel behouden* (beide gaan door) plus een *Annuleren*. "Wissen" wist het titelveld in de Studio (payload krijgt `clearTitle: true`, de tracktitel wordt niet meegereisd) — ook als er al een titel stond; "behouden" houdt het oude gedrag (tracktitel overnemen, anders Studiotitel laten staan). De bestaande overschrijf-waarschuwing blijft, maar verschijnt alleen als de Studio daadwerkelijk inhoud heeft (`ReuseConfirmDialog` leest dat zelf via de studio-store). De architectuur blijft het bestaande sessionStorage-payload-pad: alleen `clearTitle` is nieuw, zodat maar één plek (de Studio-mount) de titel hoeft te zetten.
+- Actions:
+  - `src/lib/reuse-prompt.ts` — `ReusePayload.clearTitle?` + `ReuseOptions`; `buildReusePayload(track, scope, options?)` zet bij `clearTitle` geen `title` maar `clearTitle: true`.
+  - `src/components/library/ReuseConfirmDialog.tsx` — herschreven: altijd bruikbaar (ook zonder bestaande inhoud), titelvraag + twee antwoorden + Annuleren; `onConfirm({ clearTitle })`; `hasExistingContent` komt uit de studio-store. Verving zo ook de inline kopie in Archive.
+  - `src/app/studio/page.tsx` — leest `clearTitle` en doet `studio.setTitle("")`; Reuse Prompt binnen de Studio (TrackList + RecentTracksPanel) opent nu ook de dialoog en past daarna `applyReusePrompt(track, clearTitle)` toe.
+  - `src/hooks/useStudioActions.ts` — `handleReusePrompt(track, clearTitle = false)` wist of zet de titel.
+  - `src/app/library/page.tsx`, `src/app/archive/page.tsx`, `src/app/playlists/[playlistId]/page.tsx`, `src/app/releases/page.tsx`, `src/app/smart-archive/page.tsx` — `handleReusePrompt` parkeert voortaan altijd in de dialoogstate; `performReusePrompt(track, scope, clearTitle)`; de twee `window.confirm`-plekken (Releases, Smart Archive) gebruiken nu dezelfde `ReuseConfirmDialog`. Ongebruikte `useStudioStore`-imports opgeruimd.
+  - `src/app/studio/page.tsx` + `ReuseConfirmDialog` — `aspect-4/3` etc. ongewijzigd; alleen de titel-flow.
+  - `src/hooks/useReusePrompt.ts` — dode maar bestaande hook gelijkgetrokken (`clearTitle` doorvoeren), zodat hij niet afdrijft.
+  - `src/lib/i18n/messages/en.ts` + `nl.ts` — `library.reuseTitleQuestion`, `reuseTitleHint`, `clearTitle`, `keepTitle`.
+  - `src/lib/__tests__/reuse-prompt.test.ts` — tests voor `clearTitle`.
+  - Validated with `npx tsc --noEmit` (0 errors), `npx vitest run src/lib/__tests__/reuse-prompt.test.ts` (11 passed) en `npm run build` (geslaagd); ✅ gevalideerd

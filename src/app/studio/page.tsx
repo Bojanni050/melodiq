@@ -12,6 +12,7 @@ import NoticeBar from "@/components/studio/NoticeBar";
 import StudioTabBar from "@/components/studio/StudioTabBar";
 import WorkspacePanel from "@/components/studio/WorkspacePanel";
 import RecentTracksPanel from "@/components/studio/RecentTracksPanel";
+import ReuseConfirmDialog from "@/components/library/ReuseConfirmDialog";
 import { useTrackManager, type Track } from "@/hooks/useTrackManager";
 import { useStudioActions } from "@/hooks/useStudioActions";
 import { useWorkspaceView } from "@/hooks/useWorkspaceView";
@@ -60,12 +61,17 @@ export default function StudioPage() {
     handleOptimize,
     handleGenerateTitle,
     handleGenerate,
-    handleReusePrompt,
+    handleReusePrompt: applyReusePrompt,
   } = useStudioActions({
     tracksRef,
     fetchTracks,
     onWorkspaceOpened: handleWorkspaceOpened,
   });
+
+  // Reuse Prompt always asks the title question first, also inside the Studio
+  // (where the action applies immediately instead of going through sessionStorage).
+  const [reuseConfirmTrack, setReuseConfirmTrack] = useState<Track | null>(null);
+  const handleReusePrompt = useCallback((track: Track) => setReuseConfirmTrack(track), []);
 
   const {
     credits,
@@ -119,11 +125,14 @@ export default function StudioPage() {
       const reuseRaw = sessionStorage.getItem("melodiq-reuse-prompt-payload");
       if (reuseRaw) {
         sessionStorage.removeItem("melodiq-reuse-prompt-payload");
-        const payload = JSON.parse(reuseRaw) as { songIdea: string; lyrics: string; title?: string; vocalGender?: "female" | "male" };
+        const payload = JSON.parse(reuseRaw) as { songIdea: string; lyrics: string; title?: string; vocalGender?: "female" | "male"; clearTitle?: boolean };
         const studio = useStudioStore.getState();
         studio.setSongIdea(payload.songIdea);
         studio.setLyrics(payload.lyrics);
-        if (typeof payload.title === "string" && payload.title.trim()) studio.setTitle(payload.title.trim());
+        // The dialog's title answer beats the track's own title: "clear title"
+        // means the Studio starts with an empty field.
+        if (payload.clearTitle) studio.setTitle("");
+        else if (typeof payload.title === "string" && payload.title.trim()) studio.setTitle(payload.title.trim());
         if (payload.vocalGender === "female" || payload.vocalGender === "male") studio.setVocalGender(payload.vocalGender);
       }
     } catch {
@@ -306,6 +315,17 @@ export default function StudioPage() {
           </div>
         </ResizablePanel>
       </div>
+
+      {reuseConfirmTrack && (
+        <ReuseConfirmDialog
+          onConfirm={({ clearTitle }) => {
+            const pending = reuseConfirmTrack;
+            setReuseConfirmTrack(null);
+            if (pending) applyReusePrompt(pending, clearTitle);
+          }}
+          onCancel={() => setReuseConfirmTrack(null)}
+        />
+      )}
 
       {editingTrack && (
         <TrackEditPanel

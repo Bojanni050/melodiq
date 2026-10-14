@@ -71,6 +71,10 @@ const nl: typeof en = {
     filesKept: "alle bestanden bewaard",
     hiddenKeptFiles: "Verborgen tracks behouden alle audiobestanden — herstellen is volledig omkeerbaar.",
     reuseConfirmMessage: 'De Studio bevat al een song idea en/of lyrics. Doorgaan met "Reuse Prompt" overschrijft deze.',
+    reuseTitleQuestion: "Titel wissen?",
+    reuseTitleHint: "Het titelveld in de Studio wordt leeggemaakt; de titel van de track wordt dus niet overgenomen.",
+    clearTitle: "Titel wissen",
+    keepTitle: "Titel behouden",
     continue: "Doorgaan",
   },
   releases: {
