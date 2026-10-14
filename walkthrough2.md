@@ -526,3 +526,11 @@
 - Actions:
   - `src/lib/stores/studioStore.ts` — `autoCreateWorkspaceFromGeneratedTitle` initial state en `reset()` naar `true`; persist-optie `version: 1` + `migrate` die oudere states naar `true` zet.
   - Validated with `npx tsc --noEmit` (0 errors) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-14 (Tempolor credits x10)
+
+- Findings: Het Tempolor-creditsaldo in de sidebar/Studio werd te laag weergegeven: de API geeft `data.balance` met één decimaal te weinig (bv. 12.3 waar 123 credits bedoeld is), terwijl het getal rechtstreeks uit `getTempolorCredits()` in de UI belandde.
+- Conclusions: De correctie hoort in de provider, niet in de UI, zodat elke afnemer (sidebar, Studio, `/api/settings/test`) hetzelfde getal ziet. Komma één plaats naar rechts (`* 10`) met afronding naar een geheel getal, in dezelfde stijl als de bestaande PoYo-omrekening (die decimalen naar hele credits schaalt). Daarbij is de waarde nu defensief geparseerd (`typeof raw === "string" ? parseFloat : Number`) en op `Number.isFinite` gecontroleerd, zodat een niet-numerieke respons `null` geeft in plaats van `NaN` in de UI.
+- Actions:
+  - `src/lib/providers/tempolor.ts` — `getTempolorCredits()` leest nu `data.balance`, parseert het defensief en retourneert `Math.round(num * 10)`.
+  - Validated with `npx tsc --noEmit` (0 errors) en `npm run test` (142 geslaagd); ✅ gevalideerd

@@ -156,7 +156,13 @@ export async function getTempolorCredits() {
       {},
       { headers: { Authorization: API_KEY } }
     );
-    return response.data?.data?.balance ?? null;
+    const raw = response.data?.data?.balance;
+    if (raw === null || raw === undefined) return null;
+    // Tempolor returns the balance one decimal place too low (e.g. 12.3 for
+    // 123 credits), so shift the decimal point one place to the right.
+    const num = typeof raw === "string" ? parseFloat(raw) : Number(raw);
+    if (!Number.isFinite(num)) return null;
+    return Math.round(num * 10);
   } catch (error: any) {
     console.warn("[tempolor] Failed to fetch credits:", error.message);
     return null;
