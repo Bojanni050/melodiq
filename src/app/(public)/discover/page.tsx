@@ -26,6 +26,7 @@ interface PublicTrack {
   publishDate: string | null;
   lyrics: string | null;
   lyricsTimestamps: string | null;
+  prompt: string | null;
 }
 
 interface PublicPlaylist {
@@ -425,7 +426,7 @@ export default function DiscoverPage() {
       title: track.title,
       provider: "discover",
       providerModel: "discover",
-      prompt: "",
+      prompt: track.prompt ?? "",
       lyrics: track.lyrics,
       lyricsTimestamps: track.lyricsTimestamps,
       status: "done",
@@ -458,7 +459,7 @@ export default function DiscoverPage() {
       title: track.title,
       provider: "discover",
       providerModel: "discover",
-      prompt: "",
+      prompt: track.prompt ?? "",
       status: "done",
       audioUrl: null,
       audioUrlHd: null,

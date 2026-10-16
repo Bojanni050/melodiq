@@ -31,6 +31,7 @@ interface PublicPlaylistTrack {
   totalPlays: number;
   lyrics: string | null;
   lyricsTimestamps: string | null;
+  prompt: string | null;
 }
 
 interface PublicPlaylistData {
@@ -117,7 +118,7 @@ export default function PublicPlaylistPage() {
       title: t.title ?? null,
       provider: "discover",
       providerModel: "discover",
-      prompt: "",
+      prompt: t.prompt ?? "",
       lyrics: t.lyrics ?? null,
       lyricsTimestamps: t.lyricsTimestamps ?? null,
       status: "done",

@@ -48,6 +48,7 @@ export async function GET(
       othersPlayCount: tracks.othersPlayCount,
       lyrics: tracks.lyrics,
       lyricsTimestamps: tracks.lyricsTimestamps,
+      prompt: tracks.prompt,
     })
     .from(playlistTracks)
     .innerJoin(tracks, eq(tracks.id, playlistTracks.trackId))
@@ -69,6 +70,7 @@ export async function GET(
     totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
     lyrics: row.lyrics || null,
     lyricsTimestamps: row.lyricsTimestamps || null,
+    prompt: row.prompt || null,
   }));
 
   // Own cover, or a random cover among the playlist's tracks — the proxy

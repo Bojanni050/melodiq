@@ -13,6 +13,7 @@ export interface PublicReleaseTrack {
   totalPlays: number;
   lyrics: string | null;
   lyricsTimestamps: string | null;
+  prompt: string | null;
   side: string | null;
 }
 
@@ -43,7 +44,7 @@ export function publicReleaseTracksToTrackItems(
     title: t.title ?? null,
     provider: "discover",
     providerModel: "discover",
-    prompt: "",
+    prompt: t.prompt ?? "",
     lyrics: t.lyrics ?? null,
     lyricsTimestamps: t.lyricsTimestamps ?? null,
     status: "done",

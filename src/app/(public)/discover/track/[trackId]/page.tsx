@@ -26,6 +26,7 @@ interface PublicTrack {
   publishDate: string | null;
   lyrics: string | null;
   lyricsTimestamps: string | null;
+  prompt: string | null;
   language: string | null;
 }
 
@@ -137,7 +138,7 @@ export default function TrackDnaPage() {
       title: track.title,
       provider: "discover",
       providerModel: "discover",
-      prompt: "",
+      prompt: track.prompt ?? "",
       lyrics: track.lyrics,
       lyricsTimestamps: track.lyricsTimestamps,
       language: track.language,
@@ -184,7 +185,7 @@ export default function TrackDnaPage() {
       title: track.title,
       provider: "discover",
       providerModel: "discover",
-      prompt: "",
+      prompt: track.prompt ?? "",
       status: "done",
       audioUrl: null,
       audioUrlHd: null,

@@ -47,6 +47,7 @@ export async function GET() {
       othersPlayCount: tracks.othersPlayCount,
       lyrics: tracks.lyrics,
       lyricsTimestamps: tracks.lyricsTimestamps,
+      prompt: tracks.prompt,
       releaseStatus: tracks.releaseStatus,
     })
     .from(releaseTracks)
@@ -79,6 +80,7 @@ export async function GET() {
         totalPlays: (row.playCount ?? 0) + (row.othersPlayCount ?? 0),
         lyrics: row.lyrics || null,
         lyricsTimestamps: row.lyricsTimestamps || null,
+        prompt: row.prompt || null,
         side: row.side,
       }));
 

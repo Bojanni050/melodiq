@@ -4,9 +4,9 @@ import { getPublishedTracksFeed } from "@/lib/songs";
 
 export const dynamic = "force-dynamic";
 
-// Public, no auth: browsable catalog of published tracks. Includes lyrics
-// (read-only) but never prompt/trackDna — see getPublishedTracksFeed for
-// what's exposed.
+// Public, no auth: browsable catalog of published tracks. Includes lyrics and
+// the style prompt (read-only) but never trackDna — see getPublishedTracksFeed
+// for what's exposed.
 export async function GET() {
   const published = await getPublishedTracksFeed(50);
   const trending = [...published].sort((a, b) => b.totalPlays - a.totalPlays).slice(0, 10);

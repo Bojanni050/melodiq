@@ -64,6 +64,7 @@ export async function GET(
       publishDate: track.publishDate ? track.publishDate.toISOString() : null,
       lyrics: track.lyrics || null,
       lyricsTimestamps: track.lyricsTimestamps || null,
+      prompt: track.prompt || null,
       language: track.language || null,
     },
     audioDna,

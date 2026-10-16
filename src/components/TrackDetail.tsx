@@ -57,7 +57,7 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
 
   // Role-based visibility: the prompt/lyrics content itself is shown to
   // every role (a listener browsing a public track sees whatever the API
-  // actually sent — public tracks just never carry a prompt, see
+  // actually sent — public published tracks carry lyrics and prompt, see
   // PublicTrackSummary), but the editing and translation affordances are
   // admin-only. Callers can still override allowLyricsEdit explicitly if
   // they need to.
@@ -585,9 +585,8 @@ export default function TrackDetail({ track: initialTrack, onClose, onPlay, onDo
         )}
 
         {/* Prompt — shown to every role when there's actual content; public
-            tracks never carry a prompt (see PublicTrackSummary) so this
-            naturally stays hidden there unless the viewer is an admin, who
-            can add one via Edit. */}
+            published tracks now carry their prompt (see PublicTrackSummary),
+            so listeners see it read-only while admins can still edit it. */}
         {(track.prompt || isAdmin) && (
         <div className="shrink-0">
           <div className="flex items-center justify-between mb-2">
