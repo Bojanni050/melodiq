@@ -1110,7 +1110,7 @@ export default function Player() {
           </div>
 
           {/* Right Controls */}
-          <div className="hidden sm:flex items-center justify-end gap-1 flex-shrink-0 sm:w-[200px] lg:w-[240px]">
+          <div className="flex items-center justify-end gap-1 flex-shrink-0 sm:w-[200px] lg:w-[240px]">
             {/* Queue info */}
             {queue.length > 0 && (
               <div className="hidden md:flex items-center gap-1 text-xs text-ink-dim px-2 py-1 rounded-full bg-white/5" title={`${queue.length} tracks in queue`}>
@@ -1125,7 +1125,7 @@ export default function Player() {
             <button
               type="button"
               onClick={() => setAutoPlayNext(!autoPlayNext)}
-              className={`p-2 rounded-full transition-colors ${autoPlayNext ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
+              className={`hidden sm:block p-2 rounded-full transition-colors ${autoPlayNext ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
               title={autoPlayNext ? "Autoplay on" : "Autoplay off"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1138,7 +1138,7 @@ export default function Player() {
             <button
               type="button"
               onClick={() => setShowTrackDetailsPanel(!showTrackDetailsPanel)}
-              className={`p-2 rounded-full transition-colors ${showTrackDetailsPanel ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
+              className={`hidden sm:block p-2 rounded-full transition-colors ${showTrackDetailsPanel ? "text-accent hover:text-accent-strong" : "text-ink-dim hover:text-ink"}`}
               title={showTrackDetailsPanel ? "Hide song details" : "Show song details"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1151,7 +1151,7 @@ export default function Player() {
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
               disabled={!currentTrack}
-              className="p-2 rounded-full text-ink-dim hover:text-ink disabled:opacity-20 transition-colors"
+              className="hidden sm:block p-2 rounded-full text-ink-dim hover:text-ink disabled:opacity-20 transition-colors"
               title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1164,7 +1164,7 @@ export default function Player() {
                 type="button"
                 onClick={handlePopOutPlayer}
                 disabled={!currentTrack}
-                className={`p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-accent bg-white/10" : "text-ink-dim hover:text-ink"}`}
+                className={`hidden sm:block p-2 rounded-full transition-colors disabled:opacity-20 ${popupOpen ? "text-accent bg-white/10" : "text-ink-dim hover:text-ink"}`}
                 title={popupOpen ? "Close pop-out player window" : "Open player in a second window (drag to another monitor)"}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1189,7 +1189,7 @@ export default function Player() {
                 </button>
 
                 {actionsMenuOpen && (
-                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 border border-line bg-surface p-1.5 space-y-1">
+                  <div className="absolute bottom-10 right-0 z-[70] min-w-52 max-h-[60vh] overflow-y-auto border border-line bg-surface p-1.5 space-y-1">
                     {/* Go to track in library */}
                     <button
                       type="button"
