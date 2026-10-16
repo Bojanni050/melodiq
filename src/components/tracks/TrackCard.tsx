@@ -1384,7 +1384,7 @@ const TrackCard = memo(function TrackCard({
             <button
               onClick={actions.handleDelete}
               disabled={actions.deleting}
-              className="p-1.5 rounded hover:bg-red-500/10 text-ink-dim hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+              className="p-1.5 rounded hover:bg-red-500/10 text-ink-dim hover:text-red-400 transition-colors [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
               title={actions.deleting ? "Deleting..." : "Delete track"}
             >
               {actions.deleting ? (
