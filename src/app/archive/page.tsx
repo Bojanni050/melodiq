@@ -622,7 +622,8 @@ export default function ArchivePage() {
                     tabIndex={0}
                     onClick={() => handleOpenTrackDetails(entry)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
+                      // Space belongs to the global player hotkey (play/pause).
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleOpenTrackDetails(entry);
                       }

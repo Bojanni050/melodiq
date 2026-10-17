@@ -887,7 +887,10 @@ const TrackCard = memo(function TrackCard({
           onSelect(track);
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+          // Space is claimed globally by the player hotkey (play/pause). If the
+          // row also handled it, it would restart playback in the same keydown
+          // and the store would fall out of sync with the audio element.
+          if (e.key === "Enter") {
             e.preventDefault();
             if (track.status === "done") onPlay(track);
             else onSelect(track);

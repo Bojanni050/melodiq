@@ -592,3 +592,13 @@
   - `src/components/TrackDetail.tsx` — verouderde comments bijgewerkt.
   - Buiten scope gelaten: `/explore` (eigen feed, toont ook geen lyrics) en `/api/discover/artist/[userId]` (exposeert nog steeds geen lyrics/prompt).
   - Validated met `npx tsc --noEmit` (0 fouten) en `npm run build` (geslaagd); ✅ gevalideerd
+
+## 2026-10-17 (Spatiebalk pauzeerde de track niet)
+
+- Findings: Bo meldde "wanneer ik spatie druk dan gaat player icoon wel veranderen maar track pauzeert niet". In `usePlayerHotkeys.ts` claimt de globale hotkey Space en doet bij een spelende track `audio.pause()` + `setIsPlaying(false)`. Maar twee trackrijen hadden daarnaast een eigen `onKeyDown` die ook op `" "` reageerde: `TrackCard` (`src/components/tracks/TrackCard.tsx`, gebruikt in library/releases/playlists/workspaces/smart-archive) deed `onPlay(track)` en `src/app/archive/page.tsx` deed `handleOpenTrackDetails(entry)` — beide met `preventDefault()`. React 19 delegeert op de root-container, dus die rij-listener vuurt vóór de window-listener. Gevolg bij focus op een rij (een klik op de rij zet focus op de `div[tabIndex=0]`): de rij startte de weergave (via `playTrackFromGesture`: `setCurrentTrack` zet `isPlaying: true`, waarna de eigenlijke `audioElement.play()` in een `requestAnimationFrame` volgt), de globale hotkey zag daarna `isPlaying === true` en pauzeerde, en de uitgestelde rAF-play startte het geluid alsnog. Netto: icoon naar Play, muziek speelt door.
+- Conclusions: Space moet van precies één plek zijn: de globale player-hotkey (zoals bij YouTube/Spotify). Daarom de `" "`-tak uit de rij-handlers gehaald en alleen `Enter` laten staan, met een korte comment zodat niemand de spatie er terugzet. Een `event.defaultPrevented`-check in de hotkey is bewust NIET gedaan — dan wint de rij alsnog en pauzeert Space nog steeds niet. Bewuste trade-off: ARIA verwacht Space op `role="button"`, maar in deze app is Space de afspelen/pauzeren-sneltoets; het track-detail/afspelen blijft bereikbaar via Enter en via de muis.
+- Actions:
+  - `src/components/tracks/TrackCard.tsx` — `onKeyDown` reageert alleen nog op `"Enter"` (was `"Enter" || " "`), met toelichtende comment.
+  - `src/app/archive/page.tsx` — idem in de archive-kaart (`handleOpenTrackDetails` alleen nog op Enter).
+  - Bevestigd via greps dat dit de enige twee element-level Space-handlers in `src` waren (enige globale `event.code === "Space"` blijft `src/components/player/hooks/usePlayerHotkeys.ts:13`).
+  - Validated met `npm run build` (geslaagd) en `npx vitest run` (150/150 tests in 16 files); ✅ gevalideerd
