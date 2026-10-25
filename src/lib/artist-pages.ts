@@ -83,6 +83,15 @@ export function normalizeArtistPageBio(value: unknown): { ok: true; bio: string 
 }
 
 /** True when `alias` is one of the user's own artist names (account aliases). */
+/**
+ * Generation stores the second variant of a pair as "<title> (2)" so the two
+ * can be told apart in the owner's library. That marker is internal: public
+ * artist pages show the plain title.
+ */
+export function publicTrackTitle(title: string | null | undefined): string {
+  return (title ?? "").replace(/\s*\(2\)\s*$/, "").trim() || "Untitled";
+}
+
 export function isOwnArtistAlias(aliases: string[], alias: string): boolean {
   const target = alias.trim().toLowerCase();
   return aliases.some((entry) => entry.trim().toLowerCase() === target);

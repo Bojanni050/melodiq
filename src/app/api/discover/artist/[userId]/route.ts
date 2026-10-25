@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
 import { getCdnUrl } from "@/lib/cdn-server";
 import { prefixCdn } from "@/lib/cdn";
+import { publicTrackTitle } from "@/lib/artist-pages";
 
 interface AudioDnaShape {
   atmosphereTags?: string[] | null;
@@ -80,7 +81,7 @@ export async function GET(
     const year = (row.publishDate ?? row.createdAt).getFullYear();
     return {
       id: row.id,
-      title: row.title || "Untitled",
+      title: publicTrackTitle(row.title),
       hasCoverProxy: Boolean(!row.coverUrl && row.s3KeyCover),
       coverUrl: rewriteCoverUrl(row.coverUrl),
       duration: row.duration,

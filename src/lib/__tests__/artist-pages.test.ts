@@ -9,6 +9,7 @@ import {
   publishedArtistTracksFilter,
   slugifyArtistPageSlug,
   validateArtistPageSlug,
+  publicTrackTitle,
 } from "@/lib/artist-pages";
 
 const dialect = new PgDialect();
@@ -152,5 +153,16 @@ describe("publishedArtistTracksFilter", () => {
     expect(sql).toContain('"tracks"."artist_name" = $2');
     expect(sql).not.toContain("lower(");
     expect(sql).not.toContain("ILIKE");
+  });
+});
+
+describe("publicTrackTitle", () => {
+  it("strips the internal variant marker", () => {
+    expect(publicTrackTitle("Same Fire Not The Same (2)")).toBe("Same Fire Not The Same");
+  });
+  it("keeps other titles and falls back to Untitled", () => {
+    expect(publicTrackTitle("Song (Live)")).toBe("Song (Live)");
+    expect(publicTrackTitle(null)).toBe("Untitled");
+    expect(publicTrackTitle("(2)")).toBe("Untitled");
   });
 });
