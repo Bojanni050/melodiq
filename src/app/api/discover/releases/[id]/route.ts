@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { releaseTracks, releases, tracks, users } from "@/db/schema";
 import { prefixCdn } from "@/lib/cdn";
+import { publicTrackTitle } from "@/lib/artist-pages";
 import { getCdnUrl } from "@/lib/cdn-server";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +67,7 @@ export async function GET(
   const publishedRows = releaseTrackRows.filter((row) => row.releaseStatus === "published");
   const serialized = publishedRows.map((row) => ({
     id: row.trackId,
-    title: row.title || "Untitled",
+    title: publicTrackTitle(row.title),
     artistName: row.artistName,
     composerName: row.composerName,
     writerName: row.writerName,

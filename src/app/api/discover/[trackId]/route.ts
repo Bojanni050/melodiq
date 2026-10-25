@@ -5,6 +5,7 @@ import { verifyToken } from "@/lib/auth";
 import { getAudioDna, getTrackDnaAccess } from "@/lib/songs";
 import { getCdnUrl } from "@/lib/cdn-server";
 import { prefixCdn } from "@/lib/cdn";
+import { publicTrackTitle } from "@/lib/artist-pages";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -52,7 +53,7 @@ export async function GET(
   return NextResponse.json({
     track: {
       id: track.id,
-      title: track.title || "Untitled",
+      title: publicTrackTitle(track.title),
       artistName: track.artistName || owner?.artistAlias || owner?.name || null,
       writerName: track.writerName || null,
       composerName: track.composerName || null,

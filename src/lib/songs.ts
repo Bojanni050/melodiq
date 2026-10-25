@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
 import { prefixCdn } from "@/lib/cdn";
 import { getCdnUrl } from "@/lib/cdn-server";
+import { publicTrackTitle } from "@/lib/artist-pages";
 
 export type PublicTrackSummary = {
   id: string;
@@ -31,7 +32,7 @@ function toPublicTrackSummary(
   const owner = ownerById.get(track.userId);
   return {
     id: track.id,
-    title: track.title || "Untitled",
+    title: publicTrackTitle(track.title),
     artistName: track.artistName || owner?.artistAlias || owner?.name || null,
     artistId: owner?.id || track.userId,
     coverUrl: track.coverUrl?.startsWith("/api/tracks/")
