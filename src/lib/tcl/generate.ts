@@ -1,7 +1,9 @@
 import { db } from "@/db";
 import { tracks, trackAlignments } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getPresignedUrl } from "@/lib/s3";
+import { getPresignedUrl, downloadFromS3, uploadToS3, deleteFromS3 } from "@/lib/s3";
+import { transcodeToMp3 } from "@/lib/transcode";
+import { getBestSourceForOggConversion } from "@/lib/audio-format";
 import { getSetting } from "@/lib/settings";
 import { getEngine } from "./engines";
 import type { TclDocument } from "./types";
@@ -100,8 +102,31 @@ export async function runTimeCodedLyricsAlignment(songId: string): Promise<Gener
     return { success: false, error: "No finished audio available for this track" };
   }
 
+  // MP3-always for external alignment services: engines receive either the
+  // URL of an existing S3 mp3 or a temporary, freshly transcoded one that is
+  // deleted right after the alignment call (convert -> send -> delete).
+  let tempS3Key: string | null = null;
+
   try {
-    const audioUrl = await getPresignedUrl(audioKey, 900);
+    let audioUrl: string;
+    const mp3Key = track.s3KeyMp3 || (track.format === "mp3" && track.s3Key ? track.s3Key : null);
+    if (mp3Key) {
+      audioUrl = await getPresignedUrl(mp3Key, 900);
+    } else {
+      const source =
+        getBestSourceForOggConversion(track) ??
+        (track.s3KeyOgg ? { s3Key: track.s3KeyOgg, format: "ogg" } : null);
+      if (!source?.s3Key) {
+        throw new Error("No usable audio source to transcode to mp3 for alignment");
+      }
+      const sourceBuffer = await downloadFromS3(source.s3Key);
+      const mp3Buffer = await transcodeToMp3(sourceBuffer);
+      tempS3Key = `tracks/${track.id}/tcl-alignment-${Date.now()}.mp3`;
+      await uploadToS3(tempS3Key, mp3Buffer, "audio/mpeg");
+      audioUrl = await getPresignedUrl(tempS3Key, 900);
+      console.info(`[tcl] track ${track.id}: transcoded ${source.format} (${source.s3Key}) to temporary mp3 ${tempS3Key} (${mp3Buffer.length} bytes) for alignment`);
+    }
+
     const engineName = await resolveEngineName();
     const engine = getEngine(engineName);
     const doc = await engine.align({ audioUrl, lyrics: track.lyrics });
@@ -132,5 +157,11 @@ export async function runTimeCodedLyricsAlignment(songId: string): Promise<Gener
       .set({ status: "failed", error: message, updatedAt: new Date() })
       .where(eq(trackAlignments.trackId, track.id));
     return { success: false, error: message };
+  } finally {
+    if (tempS3Key) {
+      deleteFromS3(tempS3Key).catch((deleteError) =>
+        console.warn(`[tcl] track ${songId}: failed to delete temporary alignment mp3 ${tempS3Key}:`, deleteError)
+      );
+    }
   }
 }

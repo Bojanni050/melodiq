@@ -29,7 +29,7 @@ export const elevenlabsEngine: AlignmentEngine = {
       .join("\n");
 
     const form = new FormData();
-    form.append("file", new Blob([audioRes.data]), "audio.mp3");
+    form.append("file", new Blob([audioRes.data], { type: "audio/mpeg" }), "audio.mp3");
     form.append("text", plainLyrics);
 
     let response;
