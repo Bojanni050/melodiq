@@ -192,8 +192,13 @@ const TrackCard = memo(function TrackCard({
   const [dnaRefreshKey, setDnaRefreshKey] = useState(0);
   const [retryingWav, setRetryingWav] = useState(false);
   const [retryWavResult, setRetryWavResult] = useState<"success" | "error" | null>(null);
-  const [convertingOgg, setConvertingOgg] = useState(false);
-  const [convertOggResult, setConvertOggResult] = useState<"success" | "error" | null>(null);
+  const [convertingMp3, setConvertingMp3] = useState(false);
+  const [convertMp3Result, setConvertMp3Result] = useState<"success" | "error" | null>(null);
+  const [localS3KeyMp3, setLocalS3KeyMp3] = useState<string | null>(track.s3KeyMp3 ?? null);
+
+  useEffect(() => {
+    setLocalS3KeyMp3(track.s3KeyMp3 ?? null);
+  }, [track.s3KeyMp3]);
   const [localS3KeyOgg, setLocalS3KeyOgg] = useState<string | null>(track.s3KeyOgg ?? null);
   const [localFormat, setLocalFormat] = useState<string | null>(track.format ?? null);
 
@@ -205,6 +210,7 @@ const TrackCard = memo(function TrackCard({
     setLocalFormat(track.format ?? null);
   }, [track.format]);
 
+  const effectiveS3KeyMp3 = localS3KeyMp3 ?? track.s3KeyMp3 ?? null;
   const effectiveS3KeyOgg = localS3KeyOgg ?? track.s3KeyOgg ?? null;
   const effectiveFormat = localFormat ?? track.format ?? "mp3";
   const [togglingPublish, setTogglingPublish] = useState(false);
@@ -375,43 +381,39 @@ const TrackCard = memo(function TrackCard({
     }
   }
 
-  async function handleConvertOgg() {
-    setConvertingOgg(true);
-    setConvertOggResult(null);
+  async function handleConvertMp3() {
+    setConvertingMp3(true);
+    setConvertMp3Result(null);
     try {
-      const res = await fetch(`/api/tracks/${track.id}/convert-ogg`, {
+      const res = await fetch(`/api/tracks/${track.id}/convert-mp3`, {
         method: "POST",
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.success) {
-        console.error(`Failed to convert to OGG: HTTP ${res.status}`, body);
-        setConvertOggResult("error");
-      } else if (!isForExpectedTrack(body?.trackId, track.id, "convert-ogg")) {
-        setConvertOggResult("error");
+        console.error(`Failed to convert to MP3: HTTP ${res.status}`, body);
+        setConvertMp3Result("error");
+      } else if (!isForExpectedTrack(body?.trackId, track.id, "convert-mp3")) {
+        setConvertMp3Result("error");
       } else {
-        setConvertOggResult("success");
-        const nextOggKey = body.s3KeyOgg || `tracks/${track.id}/audio.ogg`;
-        setLocalS3KeyOgg(nextOggKey);
-        if (body.deletedMp3 || track.format === "mp3") {
-          setLocalFormat("ogg");
-        }
+        setConvertMp3Result("success");
+        const nextMp3Key = body.s3KeyMp3 || `tracks/${track.id}/audio.mp3`;
+        setLocalS3KeyMp3(nextMp3Key);
         mutate((key: any) => typeof key === "string" && key.startsWith("/api/tracks"), undefined, { revalidate: true });
         window.dispatchEvent(new CustomEvent("tracks-changed"));
         const cur = usePlayerStore.getState().currentTrack;
         if (cur && cur.id === track.id) {
           usePlayerStore.getState().setCurrentTrack({
             ...cur,
-            s3KeyOgg: nextOggKey,
-            format: body.deletedMp3 || cur.format === "mp3" ? "ogg" : cur.format,
+            s3KeyMp3: nextMp3Key,
           });
         }
       }
     } catch (error) {
-      console.error("Failed to convert to OGG:", error);
-      setConvertOggResult("error");
+      console.error("Failed to convert to MP3:", error);
+      setConvertMp3Result("error");
     } finally {
-      setConvertingOgg(false);
-      setTimeout(() => setConvertOggResult(null), 4000);
+      setConvertingMp3(false);
+      setTimeout(() => setConvertMp3Result(null), 4000);
     }
   }
 
@@ -1357,13 +1359,13 @@ const TrackCard = memo(function TrackCard({
               }
               uploadingWav={actions.uploadingWav}
               uploadWavResult={actions.uploadWavResult}
-              onConvertOggClick={
-                track.status === "done" && !effectiveS3KeyOgg && effectiveFormat !== "ogg"
-                  ? handleConvertOgg
+              onConvertMp3Click={
+                track.status === "done" && !effectiveS3KeyMp3 && effectiveFormat !== "mp3"
+                  ? handleConvertMp3
                   : undefined
               }
-              convertingOgg={convertingOgg}
-              convertOggResult={convertOggResult}
+              convertingMp3={convertingMp3}
+              convertMp3Result={convertMp3Result}
               canExtractStems={track.provider === "apimart" && !!track.jobId}
               onStemsClick={() => setStemsOpen((v) => !v)}
               onMasteringClick={() => setMasteringOpen((v) => !v)}

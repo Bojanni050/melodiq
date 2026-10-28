@@ -47,9 +47,9 @@ interface TrackActionMenuProps {
   onUploadWavFile?: (file: File) => void;
   uploadingWav?: boolean;
   uploadWavResult?: "success" | "error" | null;
-  onConvertOggClick?: () => void;
-  convertingOgg?: boolean;
-  convertOggResult?: "success" | "error" | null;
+  onConvertMp3Click?: () => void;
+  convertingMp3?: boolean;
+  convertMp3Result?: "success" | "error" | null;
   /** Stem / Mastering / Section-edit — only shown when canExtractStems is true */
   canExtractStems?: boolean;
   onStemsClick?: () => void;
@@ -136,9 +136,9 @@ export default function TrackActionMenu({
   onUploadWavFile,
   uploadingWav,
   uploadWavResult,
-  onConvertOggClick,
-  convertingOgg,
-  convertOggResult,
+  onConvertMp3Click,
+  convertingMp3,
+  convertMp3Result,
   canExtractStems,
   onStemsClick,
   onMasteringClick,
@@ -479,7 +479,7 @@ export default function TrackActionMenu({
               )}
             </MenuSection>
           )}
-          {(onRetryWavClick || (onUploadWavFile && !track.s3KeyHd) || onConvertOggClick) && (
+          {(onRetryWavClick || (onUploadWavFile && !track.s3KeyHd) || onConvertMp3Click) && (
             <MenuSection
               label="Audio format"
               open={openSection === "format"}
@@ -541,24 +541,24 @@ export default function TrackActionMenu({
                   />
                 </>
               )}
-              {onConvertOggClick && (
+              {onConvertMp3Click && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onConvertOggClick();
+                    onConvertMp3Click();
                   }}
-                  disabled={convertingOgg}
+                  disabled={convertingMp3}
                   className={`w-full text-left px-2.5 py-1.5 rounded text-sm hover:bg-white/5 disabled:cursor-not-allowed ${
-                    convertOggResult === "error" ? "text-red-300" : convertOggResult === "success" ? "text-emerald-300" : "text-ink-muted"
+                    convertMp3Result === "error" ? "text-red-300" : convertMp3Result === "success" ? "text-emerald-300" : "text-ink-muted"
                   } disabled:opacity-50`}
                 >
-                  {convertingOgg
-                    ? "Converting to OGG..."
-                    : convertOggResult === "success"
-                      ? "OGG conversie voltooid ✓"
-                      : convertOggResult === "error"
+                  {convertingMp3
+                    ? "Converteren naar MP3 320k..."
+                    : convertMp3Result === "success"
+                      ? "MP3-conversie voltooid ✓"
+                      : convertMp3Result === "error"
                         ? "Mislukt — probeer opnieuw"
-                        : "Convert to Ogg"}
+                        : "Converteer naar MP3 320k"}
                 </button>
               )}
             </MenuSection>
