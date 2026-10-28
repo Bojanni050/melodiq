@@ -85,6 +85,30 @@ async function fetchEdenAiModels(): Promise<LLMModel[]> {
   return data.models || [];
 }
 
+// DeepInfra's model catalog is public too (no API key needed), so it gets the
+// same eager-load + "Retrieve Models" retry treatment as Eden AI.
+async function fetchDeepInfraModels(): Promise<LLMModel[]> {
+  const res = await fetch("/api/settings/deepinfra-models");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.models || [];
+}
+
+const PROVIDER_KEY_PREFIX: Record<string, string> = {
+  openrouter: "OPENROUTER",
+  openai: "OPENAI",
+  edenai: "EDENAI",
+  deepinfra: "DEEPINFRA",
+};
+
+// Setting key that holds the selected model for one purpose on one provider,
+// e.g. ("edenai", "PROMPT_MODEL") -> "EDENAI_PROMPT_MODEL". Keeps the seven
+// select handlers provider-aware now that there are four LLM providers.
+function providerModelKey(provider: string | undefined, suffix: string): string {
+  const prefix = PROVIDER_KEY_PREFIX[provider || "openrouter"] || "OPENROUTER";
+  return `${prefix}_${suffix}`;
+}
+
 export default function SettingsPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
@@ -103,6 +127,8 @@ export default function SettingsPage() {
   const [allModels, setAllModels] = useState<LLMModel[]>([]);
   const [edenAiModels, setEdenAiModels] = useState<LLMModel[]>([]);
   const [retrievingEdenAiModels, setRetrievingEdenAiModels] = useState(false);
+  const [deepInfraModels, setDeepInfraModels] = useState<LLMModel[]>([]);
+  const [retrievingDeepInfraModels, setRetrievingDeepInfraModels] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showPromptModelDropdown, setShowPromptModelDropdown] = useState(false);
   const [showLyricsModelDropdown, setShowLyricsModelDropdown] = useState(false);
@@ -152,6 +178,9 @@ export default function SettingsPage() {
           OPENAI_PROMPT_MODEL: data.OPENAI_PROMPT_MODEL || data.OPENAI_MODEL || "gpt-4o",
           OPENAI_LYRICS_MODEL: data.OPENAI_LYRICS_MODEL || data.OPENAI_MODEL || "gpt-4o",
           OPENAI_TRACKDNA_MODEL: data.OPENAI_TRACKDNA_MODEL || data.OPENAI_MODEL || "gpt-4o",
+          DEEPINFRA_PROMPT_MODEL: data.DEEPINFRA_PROMPT_MODEL || data.DEEPINFRA_MODEL || "",
+          DEEPINFRA_LYRICS_MODEL: data.DEEPINFRA_LYRICS_MODEL || data.DEEPINFRA_MODEL || "",
+          DEEPINFRA_TRACKDNA_MODEL: data.DEEPINFRA_TRACKDNA_MODEL || data.DEEPINFRA_MODEL || "",
         };
         const withWebhookDefaults = applyWebhookDefaults(settings);
         setValues(withWebhookDefaults);
@@ -170,6 +199,13 @@ export default function SettingsPage() {
         if (settings.EDENAI_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.EDENAI_ADVANCED_DNA_MODEL));
         if (settings.EDENAI_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.EDENAI_LYRICIQ_MODEL));
         if (settings.EDENAI_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.EDENAI_TIMECODED_MODEL));
+        if (settings.DEEPINFRA_PROMPT_MODEL) setSelectedPromptModel(createModelPlaceholder(settings.DEEPINFRA_PROMPT_MODEL));
+        if (settings.DEEPINFRA_LYRICS_MODEL) setSelectedLyricsModel(createModelPlaceholder(settings.DEEPINFRA_LYRICS_MODEL));
+        if (settings.DEEPINFRA_IMAGE_MODEL) setSelectedImageModel(createModelPlaceholder(settings.DEEPINFRA_IMAGE_MODEL));
+        if (settings.DEEPINFRA_TRACKDNA_MODEL) setSelectedTrackDnaModel(createModelPlaceholder(settings.DEEPINFRA_TRACKDNA_MODEL));
+        if (settings.DEEPINFRA_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.DEEPINFRA_ADVANCED_DNA_MODEL));
+        if (settings.DEEPINFRA_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.DEEPINFRA_LYRICIQ_MODEL));
+        if (settings.DEEPINFRA_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.DEEPINFRA_TIMECODED_MODEL));
       }
     }
     loadSettings();
@@ -181,6 +217,7 @@ export default function SettingsPage() {
   // button exists as well (getEdenAiModels) in case this initial fetch fails.
   useEffect(() => {
     fetchEdenAiModels().then(setEdenAiModels);
+    fetchDeepInfraModels().then(setDeepInfraModels);
   }, []);
 
   async function getEdenAiModels() {
@@ -189,6 +226,15 @@ export default function SettingsPage() {
       setEdenAiModels(await fetchEdenAiModels());
     } finally {
       setRetrievingEdenAiModels(false);
+    }
+  }
+
+  async function getDeepInfraModels() {
+    setRetrievingDeepInfraModels(true);
+    try {
+      setDeepInfraModels(await fetchDeepInfraModels());
+    } finally {
+      setRetrievingDeepInfraModels(false);
     }
   }
 
@@ -219,6 +265,34 @@ export default function SettingsPage() {
     values.EDENAI_ADVANCED_DNA_MODEL,
     values.EDENAI_LYRICIQ_MODEL,
     values.EDENAI_TIMECODED_MODEL,
+  ]);
+
+  // Same placeholder -> full model upgrade for DeepInfra, from its own catalog.
+  useEffect(() => {
+    if (deepInfraModels.length === 0) return;
+    const upgrade = (key: string, setter: (m: LLMModel) => void) => {
+      const id = values[key];
+      if (!id) return;
+      const match = deepInfraModels.find((m) => m.id === id);
+      if (match) setter(match);
+    };
+    upgrade("DEEPINFRA_PROMPT_MODEL", setSelectedPromptModel);
+    upgrade("DEEPINFRA_LYRICS_MODEL", setSelectedLyricsModel);
+    upgrade("DEEPINFRA_IMAGE_MODEL", setSelectedImageModel);
+    upgrade("DEEPINFRA_TRACKDNA_MODEL", setSelectedTrackDnaModel);
+    upgrade("DEEPINFRA_ADVANCED_DNA_MODEL", setSelectedAdvancedDnaModel);
+    upgrade("DEEPINFRA_LYRICIQ_MODEL", setSelectedLyricIqModel);
+    upgrade("DEEPINFRA_TIMECODED_MODEL", setSelectedTimecodedModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    deepInfraModels,
+    values.DEEPINFRA_PROMPT_MODEL,
+    values.DEEPINFRA_LYRICS_MODEL,
+    values.DEEPINFRA_IMAGE_MODEL,
+    values.DEEPINFRA_TRACKDNA_MODEL,
+    values.DEEPINFRA_ADVANCED_DNA_MODEL,
+    values.DEEPINFRA_LYRICIQ_MODEL,
+    values.DEEPINFRA_TIMECODED_MODEL,
   ]);
 
   function updateField(key: string, value: string) {
@@ -262,44 +336,44 @@ export default function SettingsPage() {
 
   function selectPromptModel(model: LLMModel) {
     setSelectedPromptModel(model);
-    updateField(values.PROMPT_LLM_PROVIDER === "edenai" ? "EDENAI_PROMPT_MODEL" : "OPENROUTER_PROMPT_MODEL", model.id);
+    updateField(providerModelKey(values.PROMPT_LLM_PROVIDER, "PROMPT_MODEL"), model.id);
     setShowPromptModelDropdown(false);
   }
 
   function selectLyricsModel(model: LLMModel) {
     setSelectedLyricsModel(model);
-    updateField(values.LYRICS_LLM_PROVIDER === "edenai" ? "EDENAI_LYRICS_MODEL" : "OPENROUTER_LYRICS_MODEL", model.id);
+    updateField(providerModelKey(values.LYRICS_LLM_PROVIDER, "LYRICS_MODEL"), model.id);
     setShowLyricsModelDropdown(false);
   }
 
   function selectImageModel(model: LLMModel) {
     setSelectedImageModel(model);
-    updateField(values.IMAGE_LLM_PROVIDER === "edenai" ? "EDENAI_IMAGE_MODEL" : "OPENROUTER_IMAGE_MODEL", model.id);
+    updateField(providerModelKey(values.IMAGE_LLM_PROVIDER, "IMAGE_MODEL"), model.id);
     setShowImageModelDropdown(false);
   }
 
   function selectTrackDnaModel(model: LLMModel) {
     setSelectedTrackDnaModel(model);
-    updateField(values.TRACKDNA_LLM_PROVIDER === "edenai" ? "EDENAI_TRACKDNA_MODEL" : "OPENROUTER_TRACKDNA_MODEL", model.id);
+    updateField(providerModelKey(values.TRACKDNA_LLM_PROVIDER, "TRACKDNA_MODEL"), model.id);
     setShowTrackDnaModelDropdown(false);
   }
 
   function selectAdvancedDnaModel(model: LLMModel) {
     setSelectedAdvancedDnaModel(model);
-    updateField(values.ADVANCED_LLM_PROVIDER === "edenai" ? "EDENAI_ADVANCED_DNA_MODEL" : "OPENROUTER_ADVANCED_DNA_MODEL", model.id);
+    updateField(providerModelKey(values.ADVANCED_LLM_PROVIDER, "ADVANCED_DNA_MODEL"), model.id);
     setShowAdvancedDnaModelDropdown(false);
   }
 
   function selectLyricIqModel(model: LLMModel) {
     setSelectedLyricIqModel(model);
-    updateField(values.LYRICIQ_LLM_PROVIDER === "edenai" ? "EDENAI_LYRICIQ_MODEL" : "OPENROUTER_LYRICIQ_MODEL", model.id);
+    updateField(providerModelKey(values.LYRICIQ_LLM_PROVIDER, "LYRICIQ_MODEL"), model.id);
     setShowLyricIqModelDropdown(false);
   }
 
   function selectTimecodedModel(model: LLMModel) {
     setSelectedTimecodedModel(model);
     // Timecoded has no dedicated provider setting — it follows LYRICS_LLM_PROVIDER.
-    updateField(values.LYRICS_LLM_PROVIDER === "edenai" ? "EDENAI_TIMECODED_MODEL" : "OPENROUTER_TIMECODED_MODEL", model.id);
+    updateField(providerModelKey(values.LYRICS_LLM_PROVIDER, "TIMECODED_MODEL"), model.id);
     setShowTimecodedModelDropdown(false);
   }
 
@@ -463,6 +537,7 @@ export default function SettingsPage() {
 
   const filteredModels = sortByName(searchModels(allModels));
   const filteredEdenAiModels = sortByName(searchModels(edenAiModels));
+  const filteredDeepInfraModels = sortByName(searchModels(deepInfraModels));
 
   // Advanced DNA's composition critique is the one DNA purpose that benefits
   // from actually listening to the track rather than judging from text alone
@@ -471,12 +546,15 @@ export default function SettingsPage() {
     models.filter((m) => m.capabilities?.inputModalities?.includes("audio"));
   const filteredModelsForAdvancedDna = audioCapableModels(filteredModels);
   const filteredEdenAiModelsForAdvancedDna = audioCapableModels(filteredEdenAiModels);
+  // DeepInfra's catalog has no audio-input models, so this is (correctly) empty.
+  const filteredDeepInfraModelsForAdvancedDna = audioCapableModels(filteredDeepInfraModels);
 
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc", "elevenlabs"].includes(p.id));
-  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai"].includes(p.id));
+  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai", "deepinfra"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
   const edenaiProvider = llmProviders.find((p) => p.id === "edenai")!;
+  const deepinfraProvider = llmProviders.find((p) => p.id === "deepinfra")!;
   // Routing purposes currently served by a given LLM provider (empty = not used).
   const purposesFor = (providerId: string) =>
     LLM_ROUTING_PURPOSES.filter((p) => (values[p.key] || "openrouter") === providerId).map((p) => p.label);
@@ -530,6 +608,14 @@ export default function SettingsPage() {
                         testingModels={retrievingEdenAiModels}
                         activePurposes={purposesFor("edenai")}
                       />
+                      <ProviderSection
+                        provider={deepinfraProvider}
+                        values={values}
+                        onFieldChange={updateField}
+                        onGetModels={getDeepInfraModels}
+                        testingModels={retrievingDeepInfraModels}
+                        activePurposes={purposesFor("deepinfra")}
+                      />
                     </div>
                   )}
 
@@ -563,8 +649,11 @@ export default function SettingsPage() {
                   filteredModels={filteredModels}
                   edenAiModels={edenAiModels}
                   filteredEdenAiModels={filteredEdenAiModels}
+                  deepInfraModels={deepInfraModels}
+                  filteredDeepInfraModels={filteredDeepInfraModels}
                   filteredModelsForAdvancedDna={filteredModelsForAdvancedDna}
                   filteredEdenAiModelsForAdvancedDna={filteredEdenAiModelsForAdvancedDna}
+                  filteredDeepInfraModelsForAdvancedDna={filteredDeepInfraModelsForAdvancedDna}
                   modelSearchQuery={modelSearchQuery}
                   selectedPromptModel={selectedPromptModel}
                   selectedLyricsModel={selectedLyricsModel}
@@ -603,6 +692,8 @@ export default function SettingsPage() {
                   testingModels={testingModels}
                   onGetEdenAiModels={getEdenAiModels}
                   testingEdenAiModels={retrievingEdenAiModels}
+                  onGetDeepInfraModels={getDeepInfraModels}
+                  testingDeepInfraModels={retrievingDeepInfraModels}
                 />
               )}
 

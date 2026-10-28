@@ -261,7 +261,8 @@ The Settings page lets you configure each provider independently:
 - Separate OpenRouter/OpenAI models for prompt generation and lyric generation
 - OpenRouter image prompt model selection with pricing info
 - On the **LLM** tab each provider now shows an **Active** chip listing the purposes it currently handles (e.g. "Active: Prompt, Lyrics"), or "Not in use" — so you can see at a glance which provider is actually routing.
-- **Retrieve Models** buttons exist for both OpenRouter (needs your API key) and Eden AI (public catalog, no key) — on the LLM tab inside the provider card, and in AI Routing per provider that is actually in use. Use them to (re)load the model dropdowns if they show "Retrieve models to select".
+- **LLM Routing** now supports **DeepInfra** as a fourth provider next to OpenRouter, OpenAI and Eden AI. DeepInfra is OpenAI-compatible (`https://api.deepinfra.com/v1/openai`) and serves open models such as DeepSeek, Qwen, Llama and Mistral; paste a `di_…` key in Settings and pick a model per purpose. Note: DeepInfra has no audio-input models, so Advanced DNA audio analysis can't be routed there.
+- **Retrieve Models** buttons exist for OpenRouter (needs your API key), Eden AI (public catalog, no key) and DeepInfra (public catalog, no key) — on the LLM tab inside the provider card, and in AI Routing per provider that is actually in use. Use them to (re)load the model dropdowns if they show "Retrieve models to select".
 - MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
 
 ---

@@ -60,8 +60,56 @@ async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: st
   return { ok: false, info: `Failed (404): could not find a working WaveSpeed endpoint. Last: ${lastMessage}` };
 }
 
-const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string; body?: Record<string, unknown> }> = {
-  lyria: {
+// DeepInfra's /v1/openai/models catalog is public, so it can't prove a key is
+// valid — a minimal 1-token chat completion can. The cheapest chat model in
+// the catalog is used so the check costs (almost) nothing.
+async function testDeepInfraApiKey(apiKey: string): Promise<{ ok: boolean; info: string }> {
+  try {
+    const modelsRes = await axios.get("https://api.deepinfra.com/v1/openai/models", {
+      timeout: 15000,
+    });
+
+    const chatModels = (modelsRes.data?.data || []).filter((m: any) =>
+      (m.metadata?.tags || []).includes("chat")
+    );
+    if (chatModels.length === 0) {
+      return { ok: false, info: "Reached DeepInfra, but its catalog listed no chat models." };
+    }
+
+    const cost = (m: any) =>
+      (m.metadata?.pricing?.input_tokens ?? Number.MAX_SAFE_INTEGER) +
+      (m.metadata?.pricing?.output_tokens ?? 0);
+    const model = chatModels.reduce((cheapest: any, m: any) => (cost(m) < cost(cheapest) ? m : cheapest));
+
+    const res = await axios.post(
+      "https://api.deepinfra.com/v1/openai/chat/completions",
+      {
+        model: model.id,
+        messages: [{ role: "user", content: "hi" }],
+        max_tokens: 1,
+      },
+      {
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        timeout: 20000,
+        validateStatus: () => true,
+      }
+    );
+
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, info: `Unauthorized (${res.status}). Check DEEPINFRA_API_KEY.` };
+    }
+    if (res.status < 200 || res.status >= 300) {
+      const message = res.data?.error?.message || res.data?.message || `HTTP ${res.status}`;
+      return { ok: false, info: `Failed (${res.status}): ${typeof message === "string" ? message : "Request failed"}` };
+    }
+
+    return { ok: true, info: `Connected — DeepInfra API is active (tested ${model.id})` };
+  } catch (error: any) {
+    return { ok: false, info: `Network error: ${error?.message || "request failed"}` };
+  }
+}
+
+const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string; body?: Record<string, unknown> }> = {  lyria: {
     url: "https://generativelanguage.googleapis.com/v1beta/models",
     keyPrefix: "",
     method: "GET",
@@ -152,6 +200,11 @@ export async function POST(request: Request) {
 
   if (provider === "mureka") {
     const result = await testWaveSpeedApiKey(apiKey);
+    return NextResponse.json({ success: result.ok, message: result.info });
+  }
+
+  if (provider === "deepinfra") {
+    const result = await testDeepInfraApiKey(apiKey);
     return NextResponse.json({ success: result.ok, message: result.info });
   }
 

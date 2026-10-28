@@ -5,7 +5,11 @@ import { logToFile } from "@/lib/file-logger";
 
 const LOG_FILE = "track-dna.log";
 
-export type LLMProvider = "openrouter" | "openai" | "edenai";
+// DeepInfra serves an OpenAI-compatible API under this prefix; the chat
+// completion path and the public model catalog both hang off it.
+const DEEPINFRA_BASE_URL = "https://api.deepinfra.com/v1/openai";
+
+export type LLMProvider = "openrouter" | "openai" | "edenai" | "deepinfra";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
 
 interface CallLLMOptions {
@@ -14,12 +18,15 @@ interface CallLLMOptions {
   openRouterModelOverride?: string;
   openAiModelOverride?: string;
   edenAiModelOverride?: string;
+  deepInfraModelOverride?: string;
   temperature?: number;
   topP?: number;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
-  if (value === "openrouter" || value === "openai" || value === "edenai") return value;
+  if (value === "openrouter" || value === "openai" || value === "edenai" || value === "deepinfra") {
+    return value;
+  }
   return "";
 }
 
@@ -95,6 +102,18 @@ export async function callLLM(
     (await getSetting("EDENAI_MODEL")) ||
     process.env.EDENAI_MODEL ||
     "openai/gpt-4o-mini";
+  const DEEPINFRA_KEY = (await getSetting("DEEPINFRA_API_KEY")) || process.env.DEEPINFRA_API_KEY || "";
+  const DEEPINFRA_MODEL =
+    normalizedOptions.deepInfraModelOverride ||
+    (purpose === "prompt" ? await getSetting("DEEPINFRA_PROMPT_MODEL") : "") ||
+    (purpose === "lyrics" ? await getSetting("DEEPINFRA_LYRICS_MODEL") : "") ||
+    (purpose === "image" ? await getSetting("DEEPINFRA_IMAGE_MODEL") : "") ||
+    (purpose === "trackdna" ? await getSetting("DEEPINFRA_TRACKDNA_MODEL") : "") ||
+    (purpose === "advanced" ? await getSetting("DEEPINFRA_ADVANCED_DNA_MODEL") : "") ||
+    (purpose === "lyriciq" ? await getSetting("DEEPINFRA_LYRICIQ_MODEL") : "") ||
+    (await getSetting("DEEPINFRA_MODEL")) ||
+    process.env.DEEPINFRA_MODEL ||
+    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
 
   if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
     let res;
@@ -265,6 +284,62 @@ export async function callLLM(
     return content;
   }
 
+  if (requestedProvider === "deepinfra" && DEEPINFRA_KEY) {
+    let res;
+    try {
+      // DeepInfra exposes an OpenAI-compatible surface under /v1/openai.
+      res = await axios.post(
+        `${DEEPINFRA_BASE_URL}/chat/completions`,
+        {
+          model: DEEPINFRA_MODEL,
+          temperature: normalizedOptions.temperature,
+          top_p: normalizedOptions.topP,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${DEEPINFRA_KEY}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 60_000,
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const looksLikeHtml =
+        typeof data === "string" && data.trimStart().startsWith("<");
+      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+
+      if (looksLikeHtml || isParseError) {
+        throw new Error(
+          `DeepInfra (${DEEPINFRA_MODEL}) returned a non-JSON response` +
+          (status ? ` (HTTP ${status})` : "") +
+          `. The model is likely overloaded or unavailable — try again or switch model.`
+        );
+      }
+
+      const apiMessage =
+        (typeof data === "object" && (data?.error?.message || data?.message)) ||
+        err?.message ||
+        "DeepInfra request failed";
+      throw new Error(
+        `DeepInfra request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+      );
+    }
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        `DeepInfra response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    return content;
+  }
+
   throw new Error(`No ${requestedProvider} LLM provider configured. Check the selected provider and API key in Settings.`);
 }
 
@@ -415,7 +490,7 @@ Rules:
 // model, so it bypasses callLLM's text-only request body and builds its own
 // — but it still follows the "advanced" purpose provider/key/model settings
 // like everything else, so switching ADVANCED_LLM_PROVIDER is respected.
-const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
+const DEFAULT_AUDIO_MODEL: Record<Exclude<LLMProvider, "deepinfra">, string> = {
   openrouter: "google/gemini-2.5-flash",
   edenai: "google/gemini-2.5-flash",
   openai: "gpt-4o-audio-preview",
@@ -480,6 +555,15 @@ async function resolveAudioProviderConfig(purpose: LLMPurpose): Promise<AudioPro
       url: "https://api.edenai.run/v3/chat/completions",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     };
+  }
+
+  if (provider === "deepinfra") {
+    // DeepInfra's catalog contains no audio-input chat models (only TTS/STT
+    // endpoints, which this OpenAI-compatible audio call can't use) — so
+    // Advanced/Track DNA audio analysis has to be routed elsewhere.
+    throw new Error(
+      "DeepInfra has no audio-input chat models. Route Advanced DNA to OpenRouter, OpenAI or Eden AI."
+    );
   }
 
   return null;
@@ -611,16 +695,18 @@ Type: ${type}
 Musical Style/Genre Cues: ${songContent}
 ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
 
-  const [openRouterImageModel, openAiImageModel, edenAiImageModel] = await Promise.all([
+  const [openRouterImageModel, openAiImageModel, edenAiImageModel, deepInfraImageModel] = await Promise.all([
     getSetting("OPENROUTER_IMAGE_MODEL"),
     getSetting("OPENAI_IMAGE_MODEL"),
     getSetting("EDENAI_IMAGE_MODEL"),
+    getSetting("DEEPINFRA_IMAGE_MODEL"),
   ]);
   return callLLM(userPrompt, systemPrompt, {
     purpose: "image",
     openRouterModelOverride: openRouterImageModel || undefined,
     openAiModelOverride: openAiImageModel || undefined,
     edenAiModelOverride: edenAiImageModel || undefined,
+    deepInfraModelOverride: deepInfraImageModel || undefined,
   });
 }
 

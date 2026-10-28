@@ -271,6 +271,68 @@ export const PROVIDERS: ProviderConfig[] = [
     testEndpoint: "edenai",
   },
   {
+    id: "deepinfra",
+    name: "DeepInfra",
+    description: "OpenAI-compatible API for open models (DeepSeek, Qwen, Llama, Mistral, etc.)",
+    fields: [
+      {
+        key: "DEEPINFRA_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "di_...",
+      },
+      {
+        key: "DEEPINFRA_MODEL",
+        label: "Default Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_PROMPT_MODEL",
+        label: "Prompt Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_LYRICS_MODEL",
+        label: "Lyrics Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_IMAGE_MODEL",
+        label: "Image Prompt Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_TRACKDNA_MODEL",
+        label: "Track DNA Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_ADVANCED_DNA_MODEL",
+        label: "Advanced DNA Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_LYRICIQ_MODEL",
+        label: "LyricIQ Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+      {
+        key: "DEEPINFRA_TIMECODED_MODEL",
+        label: "Timecoded Editor Model",
+        type: "text",
+        placeholder: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+      },
+    ],
+    testEndpoint: "deepinfra",
+  },
+  {
     id: "apiframe",
     name: "APIFrame",
     description: "Unified AI music generation (Suno, Udio, Lyria, Mureka, ElevenLabs)",

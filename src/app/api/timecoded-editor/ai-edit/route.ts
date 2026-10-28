@@ -155,6 +155,12 @@ export async function POST(request: NextRequest) {
     (await getSetting("EDENAI_MODEL")) ||
     process.env.EDENAI_MODEL ||
     "openai/gpt-4o-mini";
+  const timecodedModelDeepInfra =
+    (await getSetting("DEEPINFRA_TIMECODED_MODEL")) ||
+    (await getSetting("DEEPINFRA_LYRICS_MODEL")) ||
+    (await getSetting("DEEPINFRA_MODEL")) ||
+    process.env.DEEPINFRA_MODEL ||
+    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
 
   const systemPrompt = buildSystemPrompt(action as AIEditAction, typeof language === "string" ? language : undefined);
   const userPrompt = JSON.stringify(validatedLines, null, 2);
@@ -166,6 +172,7 @@ export async function POST(request: NextRequest) {
       openRouterModelOverride: timecodedModel,
       openAiModelOverride: timecodedModelOpenAi,
       edenAiModelOverride: timecodedModelEdenAi,
+      deepInfraModelOverride: timecodedModelDeepInfra,
       temperature: 0.3, // low temperature for editing tasks
     });
 

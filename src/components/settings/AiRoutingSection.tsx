@@ -14,11 +14,11 @@ const TCL_EDITOR_BEHAVIOR_OPTIONS: Array<{ value: TclEditorBehavior; label: stri
 // The OpenRouterModelDropdown fetches its option list from OpenRouter's own
 // /models endpoint, so it only ever makes sense — and only ever writes the
 // right setting key — when that purpose's provider is actually "openrouter".
-// Eden AI gets the same picker backed by its own public catalog
-// (EDENAI_*_MODEL keys); OpenAI has no picker in this app and falls back to
-// a plain text field bound to its OPENAI_*_MODEL setting — rather than
-// silently showing/editing OpenRouter models for a purpose that isn't
-// routed to OpenRouter.
+// Eden AI and DeepInfra get the same picker backed by their own public
+// catalogs (EDENAI_*_MODEL / DEEPINFRA_*_MODEL keys); OpenAI has no picker in
+// this app and falls back to a plain text field bound to its OPENAI_*_MODEL
+// setting — rather than silently showing/editing OpenRouter models for a
+// purpose that isn't routed to OpenRouter.
 function ModelField({
   label,
   provider,
@@ -27,6 +27,7 @@ function ModelField({
   onFieldChange,
   openRouterDropdown,
   edenAiDropdown,
+  deepInfraDropdown,
 }: {
   label: string;
   provider: string;
@@ -35,6 +36,7 @@ function ModelField({
   onFieldChange: (key: string, value: string) => void;
   openRouterDropdown: ReactNode;
   edenAiDropdown: ReactNode;
+  deepInfraDropdown: ReactNode;
 }) {
   if (provider === "openai") {
     return (
@@ -55,6 +57,10 @@ function ModelField({
     return <>{edenAiDropdown}</>;
   }
 
+  if (provider === "deepinfra") {
+    return <>{deepInfraDropdown}</>;
+  }
+
   return <>{openRouterDropdown}</>;
 }
 
@@ -65,8 +71,11 @@ export default function AiRoutingSection({
   filteredModels,
   edenAiModels,
   filteredEdenAiModels,
+  deepInfraModels,
+  filteredDeepInfraModels,
   filteredModelsForAdvancedDna,
   filteredEdenAiModelsForAdvancedDna,
+  filteredDeepInfraModelsForAdvancedDna,
   modelSearchQuery,
   selectedPromptModel,
   selectedLyricsModel,
@@ -105,6 +114,8 @@ export default function AiRoutingSection({
   testingModels,
   onGetEdenAiModels,
   testingEdenAiModels,
+  onGetDeepInfraModels,
+  testingDeepInfraModels,
 }: {
   values: Record<string, string>;
   onFieldChange: (key: string, value: string) => void;
@@ -112,8 +123,11 @@ export default function AiRoutingSection({
   filteredModels: LLMModel[];
   edenAiModels: LLMModel[];
   filteredEdenAiModels: LLMModel[];
+  deepInfraModels: LLMModel[];
+  filteredDeepInfraModels: LLMModel[];
   filteredModelsForAdvancedDna: LLMModel[];
   filteredEdenAiModelsForAdvancedDna: LLMModel[];
+  filteredDeepInfraModelsForAdvancedDna: LLMModel[];
   modelSearchQuery: string;
   selectedPromptModel: LLMModel | null;
   selectedLyricsModel: LLMModel | null;
@@ -152,6 +166,8 @@ export default function AiRoutingSection({
   testingModels?: boolean;
   onGetEdenAiModels?: () => void;
   testingEdenAiModels?: boolean;
+  onGetDeepInfraModels?: () => void;
+  testingDeepInfraModels?: boolean;
 }) {
   // Which providers are actually routed to by the purposes above — the
   // header shows a Retrieve Models button only for those (Eden AI's catalog
@@ -183,6 +199,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">Used by Generate Style / prompt optimization.</p>
           </div>
@@ -196,6 +213,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">Used to write the visual scene description for auto-generated cover art.</p>
           </div>
@@ -209,6 +227,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">Used by Generate Lyrics and Lyric Studio block generation.</p>
           </div>
@@ -222,6 +241,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">
               Used by the automatic Track DNA analysis (atmosphere tags and lyrics quality score) that runs once
@@ -239,6 +259,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">
               Used by Advanced Track DNA, which listens to the actual audio (alongside the lyrics and style
@@ -256,6 +277,7 @@ export default function AiRoutingSection({
               <option value="openrouter">OpenRouter</option>
               <option value="openai">OpenAI</option>
               <option value="edenai">Eden AI</option>
+              <option value="deepinfra">DeepInfra</option>
             </select>
             <p className="text-xs text-ink-dim mt-1">
               Used by the LyricIQ™ songwriting assistant that polishes an existing block in the Lyric Studio.
@@ -303,11 +325,11 @@ export default function AiRoutingSection({
             <h2 className="text-sm font-semibold">Models</h2>
             <p className="text-sm text-ink-dim">
               Model used per purpose. Shows the model picker for the provider that purpose is routed to above
-              (OpenRouter / Eden AI), or a plain model field for OpenAI. Use Retrieve Models to (re)load the
-              picker options.
+              (OpenRouter / Eden AI / DeepInfra), or a plain model field for OpenAI. Use Retrieve Models to
+              (re)load the picker options.
             </p>
           </div>
-          {(onGetModels && routedProviders.has("openrouter")) || (onGetEdenAiModels && routedProviders.has("edenai")) ? (
+          {(onGetModels && routedProviders.has("openrouter")) || (onGetEdenAiModels && routedProviders.has("edenai")) || (onGetDeepInfraModels && routedProviders.has("deepinfra")) ? (
             <div className="shrink-0 flex items-center gap-2">
               {onGetModels && routedProviders.has("openrouter") && (
                 <button
@@ -363,6 +385,33 @@ export default function AiRoutingSection({
                   )}
                 </button>
               )}
+              {onGetDeepInfraModels && routedProviders.has("deepinfra") && (
+                <button
+                  type="button"
+                  onClick={onGetDeepInfraModels}
+                  disabled={testingDeepInfraModels}
+                  className="inline-flex items-center gap-1.5  border border-line bg-white/5 px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {testingDeepInfraModels ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Retrieving…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 5.36A9 9 0 0020.49 15" />
+                      </svg>
+                      Retrieve DeepInfra Models
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           ) : null}
         </div>
@@ -394,6 +443,20 @@ export default function AiRoutingSection({
                 open={showPromptDropdown}
                 options={filteredEdenAiModels}
                 allModelsLoaded={edenAiModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onTogglePromptDropdown}
+                onSelect={onPromptModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
+            deepInfraDropdown={
+              <OpenRouterModelDropdown
+                label="Prompt Model (DeepInfra)"
+                selected={selectedPromptModel}
+                open={showPromptDropdown}
+                options={filteredDeepInfraModels}
+                allModelsLoaded={deepInfraModels.length > 0}
                 searchQuery={modelSearchQuery}
                 onToggle={onTogglePromptDropdown}
                 onSelect={onPromptModelSelect}
@@ -436,6 +499,20 @@ export default function AiRoutingSection({
                 onReadMore={onReadMore}
               />
             }
+            deepInfraDropdown={
+              <OpenRouterModelDropdown
+                label="Lyrics Model (DeepInfra)"
+                selected={selectedLyricsModel}
+                open={showLyricsDropdown}
+                options={filteredDeepInfraModels}
+                allModelsLoaded={deepInfraModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleLyricsDropdown}
+                onSelect={onLyricsModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
           <ModelField
             label="Image Prompt Model"
@@ -471,6 +548,20 @@ export default function AiRoutingSection({
                 onReadMore={onReadMore}
               />
             }
+            deepInfraDropdown={
+              <OpenRouterModelDropdown
+                label="Image Prompt Model (DeepInfra)"
+                selected={selectedImageModel}
+                open={showImageDropdown}
+                options={filteredDeepInfraModels}
+                allModelsLoaded={deepInfraModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleImageDropdown}
+                onSelect={onImageModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
           <ModelField
             label="Track DNA Model"
@@ -499,6 +590,20 @@ export default function AiRoutingSection({
                 open={showTrackDnaDropdown}
                 options={filteredEdenAiModels}
                 allModelsLoaded={edenAiModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleTrackDnaDropdown}
+                onSelect={onTrackDnaModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
+            deepInfraDropdown={
+              <OpenRouterModelDropdown
+                label="Track DNA Model (DeepInfra)"
+                selected={selectedTrackDnaModel}
+                open={showTrackDnaDropdown}
+                options={filteredDeepInfraModels}
+                allModelsLoaded={deepInfraModels.length > 0}
                 searchQuery={modelSearchQuery}
                 onToggle={onToggleTrackDnaDropdown}
                 onSelect={onTrackDnaModelSelect}
@@ -544,6 +649,21 @@ export default function AiRoutingSection({
                   showRecommended={false}
                 />
               }
+              deepInfraDropdown={
+                <OpenRouterModelDropdown
+                  label="Advanced DNA Model (DeepInfra)"
+                  selected={selectedAdvancedDnaModel}
+                  open={showAdvancedDnaDropdown}
+                  options={filteredDeepInfraModelsForAdvancedDna}
+                  allModelsLoaded={deepInfraModels.length > 0}
+                  searchQuery={modelSearchQuery}
+                  onToggle={onToggleAdvancedDnaDropdown}
+                  onSelect={onAdvancedDnaModelSelect}
+                  onSearchQueryChange={onSearchQueryChange}
+                  onReadMore={onReadMore}
+                  showRecommended={false}
+                />
+              }
             />
             <p className="text-xs text-ink-dim mt-1">Only models that can process audio input are listed, for future composition analysis from the actual track.</p>
           </div>
@@ -581,6 +701,20 @@ export default function AiRoutingSection({
                 onReadMore={onReadMore}
               />
             }
+            deepInfraDropdown={
+              <OpenRouterModelDropdown
+                label="LyricIQ Model (DeepInfra)"
+                selected={selectedLyricIqModel}
+                open={showLyricIqDropdown}
+                options={filteredDeepInfraModels}
+                allModelsLoaded={deepInfraModels.length > 0}
+                searchQuery={modelSearchQuery}
+                onToggle={onToggleLyricIqDropdown}
+                onSelect={onLyricIqModelSelect}
+                onSearchQueryChange={onSearchQueryChange}
+                onReadMore={onReadMore}
+              />
+            }
           />
           {isAdmin && onTimecodedModelSelect && onToggleTimecodedDropdown && (
             <div>
@@ -611,6 +745,20 @@ export default function AiRoutingSection({
                     open={!!showTimecodedDropdown}
                     options={filteredEdenAiModels}
                     allModelsLoaded={edenAiModels.length > 0}
+                    searchQuery={modelSearchQuery}
+                    onToggle={onToggleTimecodedDropdown}
+                    onSelect={onTimecodedModelSelect}
+                    onSearchQueryChange={onSearchQueryChange}
+                    onReadMore={onReadMore}
+                  />
+                }
+                deepInfraDropdown={
+                  <OpenRouterModelDropdown
+                    label="Timecoded Editor Model (DeepInfra)"
+                    selected={selectedTimecodedModel ?? null}
+                    open={!!showTimecodedDropdown}
+                    options={filteredDeepInfraModels}
+                    allModelsLoaded={deepInfraModels.length > 0}
                     searchQuery={modelSearchQuery}
                     onToggle={onToggleTimecodedDropdown}
                     onSelect={onTimecodedModelSelect}
