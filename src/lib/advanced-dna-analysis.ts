@@ -2,7 +2,7 @@ import { callLLMWithAudio } from "@/lib/providers/llm";
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { downloadFromS3 } from "@/lib/s3";
+import { resolveDnaAudioSource } from "@/lib/dna-audio-source";
 import { logToFile } from "@/lib/file-logger";
 
 const ANALYSIS_LANGUAGE_NAME: Record<string, string> = {
@@ -60,12 +60,13 @@ export async function analyzeAdvancedDna(
   }
   log(`[advanced-dna] track ${trackId}: starting analysis (forceRefresh=${forceRefresh}, instrumental=${!!track.instrumental})`);
 
-  const audioS3Key = track.s3KeyMp3 || track.s3Key;
-  if (!audioS3Key) {
-    warn(`[advanced-dna] track ${trackId}: no audio file available (s3Key/s3KeyMp3 both empty)`);
+  // Always analyse the smallest available audio file: ogg -> mp3 -> transcode
+  // to ogg first (see resolveDnaAudioSource).
+  const audioSource = await resolveDnaAudioSource(track);
+  if (!audioSource) {
+    warn(`[advanced-dna] track ${trackId}: no audio file available (no mp3/ogg and transcode failed)`);
     return null;
   }
-  const audioFormat = track.s3KeyMp3 ? "mp3" : track.format || "mp3";
   const lyrics = track.lyrics?.trim() || null;
   const prompt = track.prompt || null;
   const hasLyrics = !!lyrics && !track.instrumental;
@@ -97,15 +98,14 @@ Rules:
   userText += `\n\nStyle/prompt (background context only, not the basis for your analysis): ${prompt || "Not provided"}`;
 
   try {
-    const audioBuffer = await downloadFromS3(audioS3Key);
     log(
-      `[advanced-dna] track ${trackId}: downloaded ${audioBuffer?.length ?? 0} bytes (format=${audioFormat}), hasLyrics=${hasLyrics}`
+      `[advanced-dna] track ${trackId}: using ${audioSource.format} (${audioSource.s3Key}, ${audioSource.audioBuffer?.length ?? 0} bytes), hasLyrics=${hasLyrics}`
     );
 
     const raw = await callLLMWithAudio(
       "advanced",
-      audioBuffer,
-      audioFormat,
+      audioSource.audioBuffer,
+      audioSource.format,
       systemPrompt,
       userText,
       "[llm][advanced]"

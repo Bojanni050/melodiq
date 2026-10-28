@@ -3,7 +3,7 @@ import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { scoreLyricsQuality } from "@/lib/providers/llm";
 import { extractAudioFeatures } from "@/lib/audio-features";
-import { downloadFromS3 } from "@/lib/s3";
+import { resolveDnaAudioSource, type DnaAudioSource } from "@/lib/dna-audio-source";
 import { logToFile } from "@/lib/file-logger";
 import type { AudioDna } from "@/lib/songs";
 
@@ -94,17 +94,22 @@ export async function analyzeTrackDna(
  */
 export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
-  if (!track || track.status !== "done" || !track.s3Key) {
-    log(`[track-dna-analysis] audio re-analysis track ${trackId}: skip (status=${track?.status ?? "not-found"}, s3Key=${!!track?.s3Key})`);
+  if (!track || track.status !== "done") {
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: skip (status=${track?.status ?? "not-found"})`);
     return null;
   }
 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
 
   try {
-    const audioBuffer = await downloadFromS3(track.s3Key);
-    log(`[track-dna-analysis] audio re-analysis track ${trackId}: downloaded ${audioBuffer?.length ?? 0} bytes`);
-    const features = await extractAudioFeatures(audioBuffer);
+    // Smallest available source: ogg -> mp3 -> transcode to ogg first.
+    const audioSource: DnaAudioSource | null = await resolveDnaAudioSource(track);
+    if (!audioSource) {
+      log(`[track-dna-analysis] audio re-analysis track ${trackId}: no audio source available`);
+      return null;
+    }
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: using ${audioSource.format} (${audioSource.audioBuffer?.length ?? 0} bytes)`);
+    const features = await extractAudioFeatures(audioSource.audioBuffer);
     if (!features) {
       log(`[track-dna-analysis] audio re-analysis track ${trackId}: no features extracted`);
       return null;
