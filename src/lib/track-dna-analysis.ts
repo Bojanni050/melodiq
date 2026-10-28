@@ -32,7 +32,10 @@ export async function analyzeTrackDna(
   opts: { includeLyricsIfMissing?: boolean } = {}
 ): Promise<AudioDna | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
-  if (!track || track.status !== "done") return null;
+  if (!track || track.status !== "done") {
+    log(`[track-dna-analysis] track ${trackId}: skip (status=${track?.status ?? "not-found"})`);
+    return null;
+  }
 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
   const needsLyrics =
@@ -41,7 +44,14 @@ export async function analyzeTrackDna(
     !track.instrumental &&
     !!track.lyrics?.trim();
 
-  if (!needsLyrics) return null;
+  if (!needsLyrics) {
+    log(
+      `[track-dna-analysis] track ${trackId}: skip lyrics scoring (includeMissing=${!!opts.includeLyricsIfMissing}, hasScore=${existing.lyricsScore != null}, instrumental=${!!track.instrumental}, hasLyrics=${!!track.lyrics?.trim()})`
+    );
+    return null;
+  }
+
+  log(`[track-dna-analysis] track ${trackId}: scoring lyrics (${track.lyrics!.length} chars, prompt length=${track.prompt?.length ?? 0})`);
 
   try {
     const lyrics = await scoreLyricsQuality(track.lyrics!).catch((error) => {
@@ -67,6 +77,7 @@ export async function analyzeTrackDna(
     };
 
     await db.update(tracks).set({ audioDna: JSON.stringify(audioDna) }).where(eq(tracks.id, trackId));
+    log(`[track-dna-analysis] track ${trackId}: saved lyricsScore=${lyrics.score} computedAt=${audioDna.computedAt}`);
     return audioDna;
   } catch (error) {
     warn(`[track-dna-analysis] failed for track ${trackId}:`, error);
@@ -83,14 +94,22 @@ export async function analyzeTrackDna(
  */
 export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
-  if (!track || track.status !== "done" || !track.s3Key) return null;
+  if (!track || track.status !== "done" || !track.s3Key) {
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: skip (status=${track?.status ?? "not-found"}, s3Key=${!!track?.s3Key})`);
+    return null;
+  }
 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
 
   try {
     const audioBuffer = await downloadFromS3(track.s3Key);
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: downloaded ${audioBuffer?.length ?? 0} bytes`);
     const features = await extractAudioFeatures(audioBuffer);
-    if (!features) return null;
+    if (!features) {
+      log(`[track-dna-analysis] audio re-analysis track ${trackId}: no features extracted`);
+      return null;
+    }
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: features=${JSON.stringify(features)}`);
 
     const audioDna: AudioDna = {
       tempo: features.tempo ?? existing.tempo ?? null,
@@ -106,9 +125,10 @@ export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna 
     };
 
     await db.update(tracks).set({ audioDna: JSON.stringify(audioDna) }).where(eq(tracks.id, trackId));
+    log(`[track-dna-analysis] audio re-analysis track ${trackId}: saved tempo=${audioDna.tempo} key=${audioDna.key} energy=${audioDna.energy} loudness=${audioDna.loudness}`);
     return audioDna;
   } catch (error) {
-    console.error(`[track-dna-analysis] audio re-analysis failed for track ${trackId}:`, error);
+    warn(`[track-dna-analysis] audio re-analysis failed for track ${trackId}:`, error);
     return null;
   }
 }

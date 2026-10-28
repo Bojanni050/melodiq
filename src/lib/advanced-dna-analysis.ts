@@ -45,13 +45,20 @@ export async function analyzeAdvancedDna(
   { forceRefresh = false }: { forceRefresh?: boolean } = {}
 ): Promise<AdvancedDnaResult | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
-  if (!track) return null;
+  if (!track) {
+    log(`[advanced-dna] track ${trackId}: skip (not found)`);
+    return null;
+  }
 
   // Return the cached result unless a refresh is explicitly requested.
   if (!forceRefresh && track.advancedDna) {
     const cached = parseAdvancedDna(track.advancedDna);
-    if (cached) return cached;
+    if (cached) {
+      log(`[advanced-dna] track ${trackId}: using cached result (tips=${cached.tips.length})`);
+      return cached;
+    }
   }
+  log(`[advanced-dna] track ${trackId}: starting analysis (forceRefresh=${forceRefresh}, instrumental=${!!track.instrumental})`);
 
   const audioS3Key = track.s3KeyMp3 || track.s3Key;
   if (!audioS3Key) {
@@ -59,7 +66,6 @@ export async function analyzeAdvancedDna(
     return null;
   }
   const audioFormat = track.s3KeyMp3 ? "mp3" : track.format || "mp3";
-
   const lyrics = track.lyrics?.trim() || null;
   const prompt = track.prompt || null;
   const hasLyrics = !!lyrics && !track.instrumental;
@@ -124,7 +130,9 @@ Rules:
     // Persist the result so it survives page reloads.
     await db.update(tracks).set({ advancedDna: JSON.stringify(result) }).where(eq(tracks.id, trackId));
 
-    log(`[advanced-dna] track ${trackId}: success, tips=${result.tips.length}`);
+    log(
+      `[advanced-dna] track ${trackId}: success (tips=${result.tips.length}, summary=${result.summary?.length ?? 0} chars, lyricsAnalysis=${result.lyricsAnalysis?.length ?? 0} chars, compositionAnalysis=${result.compositionAnalysis?.length ?? 0} chars)`
+    );
     return result;
   } catch (error) {
     warn(`[advanced-dna] analysis failed for track ${trackId}:`, error);
