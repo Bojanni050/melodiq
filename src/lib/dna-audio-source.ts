@@ -1,8 +1,5 @@
-import { db } from "@/db";
-import { tracks } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { downloadFromS3, uploadToS3 } from "@/lib/s3";
-import { transcodeToOgg } from "@/lib/transcode";
+import { downloadFromS3 } from "@/lib/s3";
+import { transcodeToMp3 } from "@/lib/transcode";
 import { getBestSourceForOggConversion, type TrackAudioFields } from "@/lib/audio-format";
 import { logToFile } from "@/lib/file-logger";
 
@@ -18,71 +15,62 @@ function warn(message: string, error?: unknown): void {
 
 export interface DnaAudioSource {
   audioBuffer: Buffer;
-  format: "mp3" | "ogg";
+  format: "mp3";
   s3Key: string;
 }
 
 /**
- * Resolves the smallest available audio file for Track DNA analyses:
+ * Resolves the audio sent to Track DNA analyses.
  *
- * 1. OGG Vorbis (s3KeyOgg, or format='ogg' on s3Key) — smallest
- * 2. MP3 (s3KeyMp3, or format='mp3' on s3Key)
- * 3. Nothing lossy available: transcode the best remaining source
- *    (WAV/FLAC/master) to Ogg Vorbis, upload it as the track's s3KeyOgg
- *    (so it persists for playback and future analyses) and return it
- *    in-memory. Original sources are never deleted or overwritten.
+ * Always hands the analysis an MP3: the best available source
+ * (WAV/FLAC → OGG/MP3 → fallback) is downloaded and, unless it is already
+ * an MP3, transcoded to MP3 (192kbps) in-memory. Nothing is uploaded to
+ * S3 or written to disk — the buffer lives only for the duration of the
+ * analysis, so there is nothing to clean up afterwards. Original sources
+ * on S3 are never touched.
  *
- * Falls back to MP3 when the OGG download fails. Returns null when the
- * track has no usable audio at all. Never throws for the transcode/upload
- * path's side effects — the analysis can still proceed with the buffer.
+ * Returns null when the track has no usable audio at all, or when the
+ * transcode fails.
  */
 export async function resolveDnaAudioSource(
   tr: TrackAudioFields & { id: string }
 ): Promise<DnaAudioSource | null> {
-  const oggKey = tr.s3KeyOgg || (tr.format === "ogg" && tr.s3Key ? tr.s3Key : null);
-  if (oggKey) {
-    try {
-      const audioBuffer = await downloadFromS3(oggKey);
-      log(`[dna-audio] track ${tr.id}: using ogg (${oggKey}, ${audioBuffer?.length ?? 0} bytes)`);
-      return { audioBuffer, format: "ogg", s3Key: oggKey };
-    } catch (error) {
-      warn(`[dna-audio] track ${tr.id}: ogg download failed, falling back to mp3:`, error);
-    }
-  }
+  // Best quality source first (WAV/FLAC/MP3); fall back to an OGG when the
+  // track only has OGG audio (getBestSourceForOggConversion skips pure-OGG tracks).
+  const source =
+    getBestSourceForOggConversion(tr) ??
+    (tr.s3KeyOgg
+      ? { s3Key: tr.s3KeyOgg, format: "ogg" }
+      : tr.format === "ogg" && tr.s3Key
+        ? { s3Key: tr.s3Key, format: "ogg" }
+        : null);
 
-  const mp3Key = tr.s3KeyMp3 || (tr.format === "mp3" && tr.s3Key ? tr.s3Key : null);
-  if (mp3Key) {
-    const audioBuffer = await downloadFromS3(mp3Key);
-    log(`[dna-audio] track ${tr.id}: using mp3 (${mp3Key}, ${audioBuffer?.length ?? 0} bytes)`);
-    return { audioBuffer, format: "mp3", s3Key: mp3Key };
-  }
-
-  // No mp3/ogg available — create the ogg first, then hand it to the analysis.
-  const source = getBestSourceForOggConversion(tr);
   if (!source?.s3Key) {
     warn(`[dna-audio] track ${tr.id}: no audio source available at all`);
     return null;
   }
 
+  const sourceBuffer = await downloadFromS3(source.s3Key);
+  if (!sourceBuffer?.length) {
+    warn(`[dna-audio] track ${tr.id}: download of ${source.s3Key} returned no audio`);
+    return null;
+  }
+
+  // Already MP3 — send it as-is, no needless re-encode (that would only
+  // add generational loss). This satisfies "always send MP3" directly.
+  if (source.format === "mp3") {
+    log(`[dna-audio] track ${tr.id}: using mp3 as-is (${source.s3Key}, ${sourceBuffer.length} bytes)`);
+    return { audioBuffer: sourceBuffer, format: "mp3", s3Key: source.s3Key };
+  }
+
   try {
-    const sourceBuffer = await downloadFromS3(source.s3Key);
-    const oggBuffer = await transcodeToOgg(sourceBuffer);
-    const s3KeyOgg = `tracks/${tr.id}/audio.ogg`;
-    log(`[dna-audio] track ${tr.id}: no mp3/ogg — transcoded ${source.s3Key} (${source.format}, ${sourceBuffer?.length ?? 0} bytes) to ogg (${oggBuffer?.length ?? 0} bytes)`);
-
-    // Persist the transcode so playback and later analyses reuse it
-    // (best-effort: a failed upload still lets the analysis continue).
-    try {
-      await uploadToS3(s3KeyOgg, oggBuffer, "audio/ogg");
-      await db.update(tracks).set({ s3KeyOgg }).where(eq(tracks.id, tr.id));
-      log(`[dna-audio] track ${tr.id}: uploaded ogg as ${s3KeyOgg} and stored it in s3KeyOgg`);
-    } catch (error) {
-      warn(`[dna-audio] track ${tr.id}: ogg upload/persist failed (analysis continues with in-memory buffer):`, error);
-    }
-
-    return { audioBuffer: oggBuffer, format: "ogg", s3Key: s3KeyOgg };
+    const mp3Buffer = await transcodeToMp3(sourceBuffer);
+    log(
+      `[dna-audio] track ${tr.id}: transcoded ${source.format} (${source.s3Key}, ${sourceBuffer.length} bytes) to mp3 in-memory (${mp3Buffer.length} bytes); not persisted`
+    );
+    return { audioBuffer: mp3Buffer, format: "mp3", s3Key: source.s3Key };
   } catch (error) {
-    warn(`[dna-audio] track ${tr.id}: ogg transcode failed for source ${source.s3Key}:`, error);
+    warn(`[dna-audio] track ${tr.id}: mp3 transcode failed for source ${source.s3Key}:`, error);
     return null;
   }
 }

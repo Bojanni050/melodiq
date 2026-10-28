@@ -61,7 +61,7 @@ export async function analyzeAdvancedDna(
   log(`[advanced-dna] track ${trackId}: starting analysis (forceRefresh=${forceRefresh}, instrumental=${!!track.instrumental})`);
 
   // Always analyse the smallest available audio file: ogg -> mp3 -> transcode
-  // to ogg first (see resolveDnaAudioSource).
+  // Always analysed as MP3 (see resolveDnaAudioSource).
   const audioSource = await resolveDnaAudioSource(track);
   if (!audioSource) {
     warn(`[advanced-dna] track ${trackId}: no audio file available (no mp3/ogg and transcode failed)`);

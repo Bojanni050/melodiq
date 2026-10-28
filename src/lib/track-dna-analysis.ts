@@ -102,7 +102,7 @@ export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
 
   try {
-    // Smallest available source: ogg -> mp3 -> transcode to ogg first.
+    // Always analysed as MP3 (see resolveDnaAudioSource).
     const audioSource: DnaAudioSource | null = await resolveDnaAudioSource(track);
     if (!audioSource) {
       log(`[track-dna-analysis] audio re-analysis track ${trackId}: no audio source available`);
