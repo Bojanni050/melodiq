@@ -16,6 +16,23 @@ function getLogDir(): string {
   return "/data/logs";
 }
 
+/**
+ * Reads the last `maxLines` lines of a log file as an array (oldest first).
+ * Returns an empty array when the file doesn't exist yet. Never throws.
+ */
+export function readLogFile(file: string, maxLines = 300): string[] {
+  try {
+    const filePath = path.join(getLogDir(), file);
+    if (!fs.existsSync(filePath)) return [];
+    const lines = fs.readFileSync(filePath, "utf8").split("\n");
+    if (lines.length && lines[lines.length - 1] === "") lines.pop();
+    return lines.slice(-maxLines);
+  } catch (error) {
+    console.warn(`[file-logger] failed to read ${file}:`, error);
+    return [];
+  }
+}
+
 function ensureLogDir(): string {
   const dir = getLogDir();
   if (!fs.existsSync(dir)) {
