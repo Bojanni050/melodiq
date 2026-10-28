@@ -60,31 +60,34 @@ async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: st
   return { ok: false, info: `Failed (404): could not find a working WaveSpeed endpoint. Last: ${lastMessage}` };
 }
 
-// DeepInfra's /v1/openai/models catalog is public, so it can't prove a key is
-// valid — a minimal 1-token chat completion can. The cheapest chat model in
-// the catalog is used so the check costs (almost) nothing.
+// DeepInfra's native catalog (https://api.deepinfra.com/models/list) is public,
+// so it can't prove a key is valid — a minimal 1-token chat completion can. The
+// cheapest non-deprecated text model in that catalog is used so the check costs
+// (almost) nothing. Deprecated models are skipped: they may be gone server-side.
 async function testDeepInfraApiKey(apiKey: string): Promise<{ ok: boolean; info: string }> {
   try {
-    const modelsRes = await axios.get("https://api.deepinfra.com/v1/openai/models", {
+    const modelsRes = await axios.get("https://api.deepinfra.com/models/list", {
       timeout: 15000,
     });
 
-    const chatModels = (modelsRes.data?.data || []).filter((m: any) =>
-      (m.metadata?.tags || []).includes("chat")
+    const catalog: any[] = Array.isArray(modelsRes.data) ? modelsRes.data : [];
+    const chatModels = catalog.filter(
+      (m: any) =>
+        m.type === "text-generation" && !m.deprecated && !m.private && m.pricing?.type === "tokens"
     );
     if (chatModels.length === 0) {
       return { ok: false, info: "Reached DeepInfra, but its catalog listed no chat models." };
     }
 
     const cost = (m: any) =>
-      (m.metadata?.pricing?.input_tokens ?? Number.MAX_SAFE_INTEGER) +
-      (m.metadata?.pricing?.output_tokens ?? 0);
+      (m.pricing?.cents_per_input_token ?? Number.MAX_SAFE_INTEGER) +
+      (m.pricing?.cents_per_output_token ?? 0);
     const model = chatModels.reduce((cheapest: any, m: any) => (cost(m) < cost(cheapest) ? m : cheapest));
 
     const res = await axios.post(
       "https://api.deepinfra.com/v1/openai/chat/completions",
       {
-        model: model.id,
+        model: model.model_name,
         messages: [{ role: "user", content: "hi" }],
         max_tokens: 1,
       },
@@ -103,7 +106,7 @@ async function testDeepInfraApiKey(apiKey: string): Promise<{ ok: boolean; info:
       return { ok: false, info: `Failed (${res.status}): ${typeof message === "string" ? message : "Request failed"}` };
     }
 
-    return { ok: true, info: `Connected — DeepInfra API is active (tested ${model.id})` };
+    return { ok: true, info: `Connected — DeepInfra API is active (tested ${model.model_name})` };
   } catch (error: any) {
     return { ok: false, info: `Network error: ${error?.message || "request failed"}` };
   }

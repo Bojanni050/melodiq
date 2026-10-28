@@ -490,10 +490,13 @@ Rules:
 // model, so it bypasses callLLM's text-only request body and builds its own
 // — but it still follows the "advanced" purpose provider/key/model settings
 // like everything else, so switching ADVANCED_LLM_PROVIDER is respected.
-const DEFAULT_AUDIO_MODEL: Record<Exclude<LLMProvider, "deepinfra">, string> = {
+const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
   openrouter: "google/gemini-2.5-flash",
   edenai: "google/gemini-2.5-flash",
   openai: "gpt-4o-audio-preview",
+  // DeepInfra serves Gemini through its OpenAI-compatible endpoint and tags it
+  // with "input-audio", so the same model works as a safe audio fallback.
+  deepinfra: "google/gemini-2.5-flash",
 };
 
 interface AudioProviderConfig {
@@ -558,12 +561,17 @@ async function resolveAudioProviderConfig(purpose: LLMPurpose): Promise<AudioPro
   }
 
   if (provider === "deepinfra") {
-    // DeepInfra's catalog contains no audio-input chat models (only TTS/STT
-    // endpoints, which this OpenAI-compatible audio call can't use) — so
-    // Advanced/Track DNA audio analysis has to be routed elsewhere.
-    throw new Error(
-      "DeepInfra has no audio-input chat models. Route Advanced DNA to OpenRouter, OpenAI or Eden AI."
-    );
+    const apiKey = (await getSetting("DEEPINFRA_API_KEY")) || process.env.DEEPINFRA_API_KEY || "";
+    if (!apiKey) return null;
+    const model =
+      (await getSetting(`DEEPINFRA_${modelSettingSuffix}`)) || DEFAULT_AUDIO_MODEL.deepinfra;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: `${DEEPINFRA_BASE_URL}/chat/completions`,
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
   }
 
   return null;

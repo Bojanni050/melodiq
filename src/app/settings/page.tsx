@@ -546,7 +546,8 @@ export default function SettingsPage() {
     models.filter((m) => m.capabilities?.inputModalities?.includes("audio"));
   const filteredModelsForAdvancedDna = audioCapableModels(filteredModels);
   const filteredEdenAiModelsForAdvancedDna = audioCapableModels(filteredEdenAiModels);
-  // DeepInfra's catalog has no audio-input models, so this is (correctly) empty.
+  // DeepInfra's native catalog tags audio-capable chat models (input-audio),
+  // so Advanced DNA can be routed there too.
   const filteredDeepInfraModelsForAdvancedDna = audioCapableModels(filteredDeepInfraModels);
 
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc", "elevenlabs"].includes(p.id));
