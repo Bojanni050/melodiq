@@ -26,10 +26,11 @@ export function resolveFfmpegPath(): string | null {
 }
 
 /**
- * Transcode any audio buffer to MP3 (192kbps) using ffmpeg.
+ * Transcode any audio buffer to MP3 using ffmpeg.
+ * Bitrate in kbps, default 192 (analysis/transcode); upload pipeline uses 320.
  * Returns the MP3 as a Buffer.
  */
-export function transcodeToMp3(input: Buffer): Promise<Buffer> {
+export function transcodeToMp3(input: Buffer, bitrateKbps: number = 192): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const bin = resolveFfmpegPath();
     if (!bin) {
@@ -44,7 +45,7 @@ export function transcodeToMp3(input: Buffer): Promise<Buffer> {
       "-vn",
       "-ar", "44100",
       "-ac", "2",
-      "-b:a", "192k",
+      "-b:a", `${bitrateKbps}k`,
       "-f", "mp3",
       "pipe:1",
     ]);
