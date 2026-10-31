@@ -256,9 +256,15 @@ export default function CoverManager({
 
             {Array.from({ length: Math.max(0, 3 - totalCount) }).map((_, i) => (
               <div key={`empty-${i}`} className="flex flex-col items-center gap-2">
-                <div className="aspect-square w-full  border-2 border-dashed border-line flex items-center justify-center">
-                  <svg className="w-8 h-8 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || !canAddMore}
+                  className="aspect-square w-full border-2 border-dashed border-line flex items-center justify-center text-ink-dim hover:border-line/50 hover:text-ink-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Add image"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
+                </button>
                 <span className="text-[10px] text-ink-dim">Empty</span>
               </div>
             ))}
