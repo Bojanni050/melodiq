@@ -252,7 +252,7 @@ const en = {
     inspirationDisabledHint: "Disabled — generating normally, your tracks are kept.",
     inspirationDropHint: "Drag tracks here for inspiration ({count}/4)",
     inspirationRemove: "Remove inspiration",
-    inspirationV6Only: "Only works with APIMart v6 or PoYo v6 — select one above to generate with these references.",
+    inspirationV6Only: "Only works with APIMart v6 or PoYo v6/v5.5 — select one above to generate with these references.",
     inspirationFull: "Maximum 4 inspiration tracks.",
     inspirationNoAudio: "That track has no audio yet.",
     inspirationLoadFailed: "Could not load that track.",

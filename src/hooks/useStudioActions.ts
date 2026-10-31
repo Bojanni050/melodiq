@@ -106,7 +106,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     if (inspirationEnabled && inspiration.length > 0) {
       const hasInspoCapableProvider = Object.entries(selectedProviders).some(([p, m]) => supportsInspiration(p, m));
       if (!hasInspoCapableProvider) {
-        setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 of PoYo v6 — selecteer zo'n provider of verwijder de inspiratietracks." });
+        setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 of PoYo v6/v5.5 — selecteer zo'n provider of verwijder de inspiratietracks." });
         return;
       }
     }

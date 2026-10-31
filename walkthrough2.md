@@ -669,3 +669,14 @@
   - `src/lib/i18n/messages/{nl,en}.ts` — `studio.inspirationV6Only`-tekst genoemd "APIMart v6 of PoYo v6" i.p.v. alleen APIMart.
   - `src/lib/__tests__/inspiration.test.ts` — tests voor `isPoyoV6Model` en `supportsInspiration` toegevoegd.
   - Gevalideerd met `npx tsc --noEmit` (schoon), `npx vitest run` (152/152) en `npm run build` (geslaagd); validated.
+
+## 2026-10-31 (PoYo-inspiratie verbreed naar v5.5)
+
+- Findings: Bo dacht dat Suno v5.5 ook inspiratiemogelijkheden had en vroeg of dat kon worden toegevoegd (naast de net gebouwde v6-only PoYo-inspiratie).
+- Conclusions: PoYo's eigen docs beperken `audio_urls` niet tot v6 (werkt op V4 t/m V6), maar Bo wilde het bewust niet volledig openstellen: alleen v5.5 erbij, v5/v4.5/v4 blijven buiten beschouwing.
+- Actions:
+  - `src/lib/inspiration.ts` — nieuwe `POYO_INSPO_MODELS` (= `POYO_V6_MODELS` + `"v5.5"`) en `isPoyoInspoModel`; `supportsInspiration` gebruikt deze nu voor poyo i.p.v. het strikte `isPoyoV6Model` (dat blijft bestaan, puur voor de V6 Options-sectie met Style Variety).
+  - `src/lib/__tests__/inspiration.test.ts` — test toegevoegd dat `isPoyoInspoModel` v5.5 accepteert maar v5/v4.5 niet.
+  - `src/lib/i18n/messages/{nl,en}.ts`, `src/app/api/generate/route.ts`, `src/hooks/useStudioActions.ts` — foutmeldingen bijgewerkt naar "APIMart v6 of PoYo v6/v5.5".
+  - Geen wijziging nodig in `generatePoYo`/`dispatchPoYoInspo`: de audio_urls-logica was al model-agnostisch, alleen de v6-only *gate* in `supportsInspiration` is verbreed.
+  - Gevalideerd met `npx tsc --noEmit` (schoon), `npx vitest run` (153/153) en `npm run build` (geslaagd); validated.

@@ -255,7 +255,7 @@ const nl: typeof en = {
     inspirationDisabledHint: "Uitgeschakeld — er wordt normaal gegenereerd, je tracks blijven bewaard.",
     inspirationDropHint: "Sleep tracks hierheen voor inspiratie ({count}/4)",
     inspirationRemove: "Verwijder inspiratie",
-    inspirationV6Only: "Werkt alleen met APIMart v6 of PoYo v6 — selecteer die hierboven om met deze referenties te genereren.",
+    inspirationV6Only: "Werkt alleen met APIMart v6 of PoYo v6/v5.5 — selecteer die hierboven om met deze referenties te genereren.",
     inspirationFull: "Maximaal 4 inspiratietracks.",
     inspirationNoAudio: "Die track heeft nog geen audio.",
     inspirationLoadFailed: "Die track kon niet worden geladen.",

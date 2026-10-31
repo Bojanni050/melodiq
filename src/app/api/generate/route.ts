@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     ? [...new Set(inspirationTrackIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4)
     : [];
   if (normalizedInspirationTrackIds.length > 0 && !supportsInspiration(provider, providerModel)) {
-    return NextResponse.json({ error: "Inspiration requires APIMart v6 or PoYo v6" }, { status: 400 });
+    return NextResponse.json({ error: "Inspiration requires APIMart v6 or PoYo v6/v5.5" }, { status: 400 });
   }
   const normalizedInspirationAudioWeight =
     typeof inspirationAudioWeight === "number" && Number.isFinite(inspirationAudioWeight)
