@@ -629,3 +629,15 @@
   - `src/app/settings/page.tsx` — verouderde comment bij `filteredDeepInfraModelsForAdvancedDna` gecorrigeerd (audio is nu mogelijk).
   - `melodiq-user.md` — DeepInfra-regel bijgewerkt: pickers tonen context, prijs en modaliteiten uit de native catalogus; Advanced DNA toont alleen audio-capabele modellen.
   - Live gecontroleerd tegen de catalogus: 91 modellen, 39 text-only, 29 text+image, 10 met audio, 16 met video; `npx tsc --noEmit` schoon, `npm run build` geslaagd, `npm run test` 150/150; validated.
+
+## 2026-10-31 (PoYo-provider uitgebreid met Suno v6-familie)
+
+- Findings: Bo wilde de drie v6-modelvarianten (v6, v6 Wild, v6 Mini) incl. bijbehorende instellingen toevoegen aan de PoYo-provider. PoYo kende tot nu toe alleen V4/V4.5/V5/V5.5. APIMart had deze drie v6-varianten al (`v6`, `v6-wild`, `v6-mini`, zie `src/lib/inspiration.ts`), maar dat is een andere gateway met een eigen modelnaamconventie (lowercase/streepjes) dan PoYo (uppercase/underscore, bv. `V5_5`).
+- Conclusions: Opgezocht op poyo.ai/models/generate-music welke `mv`-waarden het Suno-v6-gezin daar gebruikt: `V6` (flagship), `V6_MINI` (sneller/lichter, voor drafts), `V6_WILD` (experimenteel, minder voorspelbare arrangementen). Alle drie ondersteunen dezelfde custom-mode-instellingen als de bestaande modellen (duration 10-360s, vocal gender, negative tags, style weight/weirdness constraint/audio weight 0-1, personas) — dus geen nieuwe UI-instellingen nodig, alleen de modelnamen zelf moesten erbij. PoYo's `normalizePoYoModel` verving alleen punten door underscores (`/\./g`), niet streepjes, dus UI-waarden als `v6-wild` zouden fout genormaliseerd worden (`V6-WILD` i.p.v. `V6_WILD`) — regex uitgebreid naar `/[.-]/g`.
+- Actions:
+  - `src/lib/providers/poyo.ts` — `POYO_VALID_MODELS` uitgebreid met `V6`, `V6_WILD`, `V6_MINI`; `normalizePoYoModel` regex `/\./g` → `/[.-]/g`.
+  - `src/app/api/generate/route.ts` — dezelfde drie modellen toegevoegd aan de lokale `poyoValidModels`-lijst en dezelfde regex-fix in `normalizedPoYoModel`.
+  - `src/components/studio/ProviderModelSection.tsx` — `poyo.models` krijgt `v6`, `v6-wild`, `v6-mini` vooraan (nieuwste eerst, net als bij APIMart).
+  - `src/lib/format-generator.ts` — `MODEL_LABEL.poyo` uitgebreid met `v6` → "Suno 6", `v6wild` → "Suno 6 Wild", `v6mini` → "Suno 6 Mini".
+  - Geen wijziging nodig in `StudioForm.tsx`: de weirdness/styleInfluence/vocalGender-sliders voor PoYo zijn al model-onafhankelijk zichtbaar.
+  - Gevalideerd met `npx tsc --noEmit` (schoon) en `npx vitest run src/lib/__tests__/format-generator.test.ts src/lib/__tests__/inspiration.test.ts` (12/12 geslaagd); validated.

@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
   const resolvedWriterName = (typeof writerName === "string" ? writerName.trim() : "") || defaultWriterName;
 
   const allowedProviders = ["lyria", "poyo", "tempolor", "musicgpt", "minimax", "mureka", "heartmula", "apiframe", "apimart"];
-  const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5"];
+  const poyoValidModels = ["V4", "V4_5", "V4_SALL", "V4_SPLUS", "V5", "V5_5", "V6", "V6_WILD", "V6_MINI"];
   const isMinimaxViaPoYo = provider === "poyo" && providerModel === "minimax-music-2.6";
-  const normalizedPoYoModel = providerModel?.toUpperCase().replace(/\./g, "_") || "V5_5";
+  const normalizedPoYoModel = providerModel?.toUpperCase().replace(/[.-]/g, "_") || "V5_5";
 
   // Input validation
   if (!prompt || typeof prompt !== "string") {

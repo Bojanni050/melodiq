@@ -4,7 +4,7 @@ import { useT } from "@/hooks/useT";
 
 const PROVIDERS = {
   lyria: { name: "Lyria", fullName: "Google Lyria 3", models: ["lyria-3-pro-preview", "lyria-3-clip-preview"], icon: "G" },
-  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v5.5", "v5", "v4.5", "v4", "minimax-music-2.6"], icon: "P" },
+  poyo: { name: "PoYo", fullName: "PoYo (Suno)", models: ["v6", "v6-wild", "v6-mini", "v5.5", "v5", "v4.5", "v4", "minimax-music-2.6"], icon: "P" },
   tempolor: { name: "Tempolor", fullName: "Tempolor", models: ["tempolor-latest", "TemPolor i4", "TemPolor i3", "Eleven Music V2", "Lyria 3 Pro", "Mureka V9.5", "Mureka V9", "MiniMax 3.0"], icon: "T" },
   musicgpt: { name: "MusicGPT", fullName: "MusicGPT v6", models: ["v6"], icon: "M" },
   minimax: { name: "Minimax", fullName: "MiniMax Music 2.6", models: ["music-2.6"], icon: "X" },
