@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { mutate } from "swr";
 import { useStudioStore, useWorkspaceStore, DEFAULT_WORKSPACE_ID } from "@/lib/store";
-import { isApimartV6Model } from "@/lib/inspiration";
+import { supportsInspiration } from "@/lib/inspiration";
 import type { ReuseScope } from "@/lib/reuse-prompt";
 import type { Track, TracksResponse } from "./useTrackManager";
 
@@ -104,9 +104,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     }
 
     if (inspirationEnabled && inspiration.length > 0) {
-      const apimartModel = selectedProviders["apimart"];
-      if (!apimartModel || !isApimartV6Model(apimartModel)) {
-        setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 — selecteer die provider of verwijder de inspiratietracks." });
+      const hasInspoCapableProvider = Object.entries(selectedProviders).some(([p, m]) => supportsInspiration(p, m));
+      if (!hasInspoCapableProvider) {
+        setNotice({ type: "error", message: "Inspiratie werkt alleen met APIMart v6 of PoYo v6 — selecteer zo'n provider of verwijder de inspiratietracks." });
         return;
       }
     }
@@ -189,15 +189,16 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               apimartAudioFormat: provider === "apimart" ? apimartAudioFormat : undefined,
               // PoYo Suno V6 option (variety only — PoYo has no max-mode/format equivalent)
               poyoVariety: provider === "poyo" ? poyoVariety : undefined,
-              // Inspo references (APIMart v6 only — server validates).
-              // Disabled or empty = no inspiration = normal generation, so
-              // omit the field entirely; sending [] trips the server guard.
+              // Inspo references (APIMart v6 / PoYo v6 only — server validates).
+              // Disabled, empty, or an unsupported model = no inspiration =
+              // normal generation, so omit the field entirely; sending [] trips
+              // the server guard.
               inspirationTrackIds:
-                provider === "apimart" && inspirationEnabled && inspiration.length > 0
+                supportsInspiration(provider, providerModel) && inspirationEnabled && inspiration.length > 0
                   ? inspiration.map((item) => item.id)
                   : undefined,
               inspirationAudioWeight:
-                provider === "apimart" && inspirationEnabled && inspiration.length > 0
+                supportsInspiration(provider, providerModel) && inspirationEnabled && inspiration.length > 0
                   ? inspoAudioWeight
                   : undefined,
             }),

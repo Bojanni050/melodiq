@@ -13,6 +13,7 @@ import { logApi } from "@/lib/logger";
 import {
   dispatchMinimaxViaPoYo,
   dispatchPoYo,
+  dispatchPoYoInspo,
   dispatchLyria,
   dispatchMinimax,
   dispatchTempolor,
@@ -24,7 +25,7 @@ import {
   dispatchApimartInspo,
   type GenerationContext,
 } from "@/lib/services/generationService";
-import { isApimartV6Model } from "@/lib/inspiration";
+import { supportsInspiration } from "@/lib/inspiration";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -98,12 +99,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
   // Empty or missing = no inspiration = normal generation. Only a
-  // non-empty list takes the inspo path (and then requires APIMart v6).
+  // non-empty list takes the inspo path (and then requires APIMart or PoYo v6).
   const normalizedInspirationTrackIds = Array.isArray(inspirationTrackIds)
     ? [...new Set(inspirationTrackIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4)
     : [];
-  if (normalizedInspirationTrackIds.length > 0 && (provider !== "apimart" || !isApimartV6Model(providerModel))) {
-    return NextResponse.json({ error: "Inspiration requires APIMart v6" }, { status: 400 });
+  if (normalizedInspirationTrackIds.length > 0 && !supportsInspiration(provider, providerModel)) {
+    return NextResponse.json({ error: "Inspiration requires APIMart v6 or PoYo v6" }, { status: 400 });
   }
   const normalizedInspirationAudioWeight =
     typeof inspirationAudioWeight === "number" && Number.isFinite(inspirationAudioWeight)
@@ -141,7 +142,10 @@ export async function POST(request: NextRequest) {
 
   // Providers that manage their own track insertion
   if (isMinimaxViaPoYo) return dispatchMinimaxViaPoYo(ctx);
-  if (provider === "poyo") return dispatchPoYo(ctx);
+  if (provider === "poyo") {
+    if (normalizedInspirationTrackIds.length > 0) return dispatchPoYoInspo(ctx);
+    return dispatchPoYo(ctx);
+  }
 
   // All remaining providers share a single upfront pending track insert
   const track = await insertPendingTrack({

@@ -11,7 +11,7 @@ import PresetsManager from "@/components/studio/PresetsManager";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useStudioStore } from "@/lib/store";
 import { useUserStore } from "@/lib/stores/userStore";
-import { isApimartV6Model, MAX_INSPIRATION_TRACKS } from "@/lib/inspiration";
+import { supportsInspiration, MAX_INSPIRATION_TRACKS } from "@/lib/inspiration";
 import { useT } from "@/hooks/useT";
 
 export default memo(function StudioForm({
@@ -136,8 +136,7 @@ export default memo(function StudioForm({
   }, [providersCollapsed]);
 
   const activeProviderKey = Object.keys(selectedProviders)[0];
-  const apimartModel = selectedProviders["apimart"];
-  const inspoV6Ready = !!apimartModel && isApimartV6Model(apimartModel);
+  const inspoV6Ready = Object.entries(selectedProviders).some(([p, m]) => supportsInspiration(p, m));
 
   async function handleInspoDrop(event: React.DragEvent) {
     event.preventDefault();
@@ -336,7 +335,7 @@ export default memo(function StudioForm({
         setRememberProviderChoice={setRememberProviderChoice}
       />
 
-      {/* Inspiration Section (APIMart v6 inspo references — display only) */}
+      {/* Inspiration Section (APIMart v6 / PoYo v6 audio references - display only) */}
       <section className="section-card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-ink-muted">{t("studio.inspirationHeading")}</h3>

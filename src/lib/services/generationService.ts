@@ -73,6 +73,32 @@ function copyrightError(error: any) {
   return { isCopyright, errorMessage };
 }
 
+// S3 is private — gateways need a public URL for "Use As Inspiration" audio
+// references, same pattern as voice cloning.
+const INSPO_AUDIO_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+async function resolveInspirationAudioUrls(userId: string, inspirationTrackIds: string[] | undefined): Promise<string[]> {
+  const ids = [...new Set((inspirationTrackIds ?? []).filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4);
+  if (ids.length === 0) throw new Error("Select 1-4 inspiration tracks");
+
+  const rows = await db
+    .select({ id: tracks.id, title: tracks.title, s3Key: tracks.s3Key, s3KeyHd: tracks.s3KeyHd, status: tracks.status })
+    .from(tracks)
+    .where(and(eq(tracks.userId, userId), inArray(tracks.id, ids)));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  const audioUrls: string[] = [];
+  for (const id of ids) {
+    const row = byId.get(id);
+    const key = row?.s3Key ?? row?.s3KeyHd ?? null;
+    if (!row || row.status !== "done" || !key) {
+      throw new Error(`Inspiration track "${row?.title?.trim() || "untitled"}" has no audio yet`);
+    }
+    audioUrls.push(await getPresignedUrl(key, INSPO_AUDIO_URL_TTL_SECONDS));
+  }
+  return audioUrls;
+}
+
 // ---------------------------------------------------------------------------
 // PoYo (Minimax 2.6 via PoYo) — single async track
 // ---------------------------------------------------------------------------
@@ -132,6 +158,52 @@ export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse
     spawnCoverArtBatchAsync([u1, u2].map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "poyo");
 
     await logApi({ userId, type: "generation", provider: "poyo", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt }), response: JSON.stringify({ status: "generating", jobIds: genResult.jobIds }), statusCode: 200, duration: Date.now() - startTime });
+    return NextResponse.json({ tracks: [u1, u2] });
+  } catch (error: any) {
+    const { isCopyright, errorMessage } = copyrightError(error);
+    await markTracksFailedBatch([reserved1.id!, reserved2.id!], errorMessage);
+    await logApi({ userId, type: "generation", provider, endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt }), response: JSON.stringify({ error: error.message }), statusCode: error.statusCode || 500, duration: Date.now() - startTime });
+    return NextResponse.json({ error: errorMessage }, { status: isCopyright ? 400 : 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PoYo inspo — async, dual track from 1–4 audio references (v6 family only)
+// ---------------------------------------------------------------------------
+
+export async function dispatchPoYoInspo(ctx: GenerationContext): Promise<NextResponse> {
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety, inspoAudioWeight, inspirationTrackIds } = ctx;
+
+  const audioUrls = await resolveInspirationAudioUrls(userId, inspirationTrackIds);
+  const inspoWeight01 =
+    typeof inspoAudioWeight === "number" && Number.isFinite(inspoAudioWeight)
+      ? Math.min(100, Math.max(0, Math.round(inspoAudioWeight))) / 100
+      : 0.2;
+
+  const [track1, track2] = await Promise.all([
+    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+  ]);
+
+  const [reserved1, reserved2] = await Promise.all([
+    reserveTrackS3Keys(track1.id!),
+    reserveTrackS3Keys(track2.id!),
+  ]);
+
+  try {
+    const genResult = await generatePoYo({ prompt, lyrics, instrumental, model: normalizedPoYoModel, title: resolvedTitle || undefined, gender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined, weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleInfluence: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, variety: poyoVariety, audioUrls, audioWeight: inspoWeight01 });
+    const [baseJobId] = genResult.jobIds;
+    if (!baseJobId) throw { message: "PoYo returned no task ID", statusCode: 500 };
+    const secondJobId = genResult.jobIds[1] ?? `${baseJobId}:v2`;
+
+    const [u1, u2] = await Promise.all([
+      markTrackGenerating(reserved1.id!, baseJobId),
+      markTrackGenerating(reserved2.id!, secondJobId),
+    ]);
+
+    spawnCoverArtBatchAsync([u1, u2].map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "poyo");
+
+    await logApi({ userId, type: "generation", provider: "poyo", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: audioUrls.length, audioWeight: inspoWeight01 }), response: JSON.stringify({ status: "generating", jobIds: genResult.jobIds }), statusCode: 200, duration: Date.now() - startTime });
     return NextResponse.json({ tracks: [u1, u2] });
   } catch (error: any) {
     const { isCopyright, errorMessage } = copyrightError(error);
@@ -379,8 +451,6 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
 // ---------------------------------------------------------------------------
 // APIMart inspo — async, dual track from 1–4 audio references (v6 only)
 // ---------------------------------------------------------------------------
-
-const INSPO_AUDIO_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 export async function dispatchApimartInspo(ctx: GenerationContext, track: any): Promise<NextResponse> {
   const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, inspoAudioWeight, negativeTags, apimartVariety, apimartMaxMode, apimartAudioFormat, inspirationTrackIds } = ctx;

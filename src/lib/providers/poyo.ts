@@ -64,6 +64,8 @@ export async function generatePoYo({
   weirdness,
   styleInfluence,
   variety,
+  audioUrls,
+  audioWeight,
 }: {
   prompt: string;
   lyrics?: string;
@@ -75,6 +77,12 @@ export async function generatePoYo({
   styleInfluence?: number;
   /** V6 family only (V6/V6_WILD/V6_MINI): style variation, 0-4. 0 keeps style tags as written. */
   variety?: number;
+  /** "Use as inspiration" audio references (HTTP(S) URLs). PoYo only accepts
+   * audio_urls in non-custom mode, so passing these forces custom_mode: false
+   * regardless of the lyrics argument. */
+  audioUrls?: string[];
+  /** Balance weight for audio features, 0-1. Only meaningful alongside audioUrls. */
+  audioWeight?: number;
 }) {
   const API_KEY = await getSetting("POYO_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("poyo");
@@ -85,6 +93,11 @@ export async function generatePoYo({
     data?: { task_id?: string };
   };
 
+  const hasAudioRefs = Array.isArray(audioUrls) && audioUrls.length > 0;
+  // audio_urls is only accepted in non-custom mode — forces custom_mode: false
+  // even when lyrics were supplied.
+  const customMode = hasAudioRefs ? false : !!lyrics;
+
   try {
     const response = await axios.post<PoYoSubmitResponse>(
       "https://api.poyo.ai/api/generate/submit",
@@ -92,22 +105,31 @@ export async function generatePoYo({
         model: "generate-music",
         callback_url: WEBHOOK_URL,
         input: {
-          custom_mode: !!lyrics,
+          custom_mode: customMode,
           instrumental: instrumental ?? false,
           mv: normalizePoYoModel(model),
           ...(gender ? { vocal_gender: gender === "male" ? "m" : "f" } : {}),
           ...(weirdness !== undefined ? { weirdness_constraint: weirdness } : {}),
           ...(styleInfluence !== undefined ? { style_weight: styleInfluence } : {}),
           ...(variety ? { variety } : {}),
-          ...(lyrics
+          ...(hasAudioRefs ? { audio_urls: audioUrls } : {}),
+          ...(hasAudioRefs && audioWeight !== undefined ? { audio_weight: audioWeight } : {}),
+          ...(customMode
             ? {
                 prompt: lyrics,   // PoYo sings whatever is in `prompt` in custom mode
                 style: prompt,    // our style prompt goes here
                 title: title || "Generated Track",
               }
-            : {
-                prompt,           // non-custom: style/idea, PoYo auto-generates lyrics
-              }),
+            : hasAudioRefs
+              ? {
+                  // Non-custom + audio refs: style/lyrics may accompany the attachments.
+                  style: prompt,
+                  ...(lyrics ? { lyrics } : {}),
+                  ...(title ? { title } : {}),
+                }
+              : {
+                  prompt,           // non-custom: style/idea, PoYo auto-generates lyrics
+                }),
         },
       },
       {
