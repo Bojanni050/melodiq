@@ -53,6 +53,8 @@ export type GenerationContext = {
   apimartVariety?: "off" | "normal" | "high" | "extra" | "max";
   apimartMaxMode?: boolean;
   apimartAudioFormat?: "mp3" | "m4a" | "wav";
+  // PoYo Suno V6 option — variety only, 0-4 (no max-mode/format equivalent)
+  poyoVariety?: number;
   // APIMart v6 inspo: ids of own finished tracks used as audio references
   inspirationTrackIds?: string[];
   /** 0–100 (%). Mapped to inspo `audio_weight` 0.00–1.00. Default 20. */
@@ -104,7 +106,7 @@ export async function dispatchMinimaxViaPoYo(ctx: GenerationContext): Promise<Ne
 // ---------------------------------------------------------------------------
 
 export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety } = ctx;
 
   const [track1, track2] = await Promise.all([
     insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
@@ -117,7 +119,7 @@ export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse
   ]);
 
   try {
-    const genResult = await generatePoYo({ prompt, lyrics, instrumental, model: normalizedPoYoModel, title: resolvedTitle || undefined, gender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined, weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleInfluence: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined });
+    const genResult = await generatePoYo({ prompt, lyrics, instrumental, model: normalizedPoYoModel, title: resolvedTitle || undefined, gender: vocalGender && vocalGender !== "auto" ? vocalGender : undefined, weirdness: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleInfluence: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, variety: poyoVariety });
     const [baseJobId] = genResult.jobIds;
     if (!baseJobId) throw { message: "PoYo returned no task ID", statusCode: 500 };
     const secondJobId = genResult.jobIds[1] ?? `${baseJobId}:v2`;

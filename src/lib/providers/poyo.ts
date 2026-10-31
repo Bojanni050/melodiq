@@ -63,6 +63,7 @@ export async function generatePoYo({
   gender,
   weirdness,
   styleInfluence,
+  variety,
 }: {
   prompt: string;
   lyrics?: string;
@@ -72,6 +73,8 @@ export async function generatePoYo({
   gender?: string;
   weirdness?: number;
   styleInfluence?: number;
+  /** V6 family only (V6/V6_WILD/V6_MINI): style variation, 0-4. 0 keeps style tags as written. */
+  variety?: number;
 }) {
   const API_KEY = await getSetting("POYO_API_KEY");
   const WEBHOOK_URL = await getWebhookUrl("poyo");
@@ -95,6 +98,7 @@ export async function generatePoYo({
           ...(gender ? { vocal_gender: gender === "male" ? "m" : "f" } : {}),
           ...(weirdness !== undefined ? { weirdness_constraint: weirdness } : {}),
           ...(styleInfluence !== undefined ? { style_weight: styleInfluence } : {}),
+          ...(variety ? { variety } : {}),
           ...(lyrics
             ? {
                 prompt: lyrics,   // PoYo sings whatever is in `prompt` in custom mode

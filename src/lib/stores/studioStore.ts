@@ -35,6 +35,9 @@ interface StudioState {
   apimartVariety: "off" | "normal" | "high" | "extra" | "max";
   apimartMaxMode: boolean;
   apimartAudioFormat: "mp3" | "m4a" | "wav";
+  // PoYo Suno V6 options — PoYo's API only exposes variety for the V6 family,
+  // no max-mode or output-format equivalent (unlike APIMart).
+  poyoVariety: "off" | "normal" | "high" | "extra" | "max";
   // Inspiration references for APIMart v6 inspo generation (display only —
   // lyrics/style are never copied from these tracks). inspirationEnabled lets
   // the user park tracks here but generate normally.
@@ -69,6 +72,7 @@ interface StudioState {
   setApimartVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
   setApimartMaxMode: (val: boolean) => void;
   setApimartAudioFormat: (val: "mp3" | "m4a" | "wav") => void;
+  setPoyoVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
   addInspirationTrack: (track: InspirationTrack) => boolean;
   removeInspirationTrack: (id: string) => void;
   clearInspiration: () => void;
@@ -107,6 +111,7 @@ export const useStudioStore = create<StudioState>()(
       apimartVariety: "off",
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
+      poyoVariety: "off",
       inspiration: [],
       inspirationEnabled: true,
       inspoAudioWeight: 20,
@@ -150,6 +155,7 @@ export const useStudioStore = create<StudioState>()(
       setApimartVariety: (val) => set({ apimartVariety: val }),
       setApimartMaxMode: (val) => set({ apimartMaxMode: val }),
       setApimartAudioFormat: (val) => set({ apimartAudioFormat: val }),
+      setPoyoVariety: (val) => set({ poyoVariety: val }),
       addInspirationTrack: (track) => {
         const current = get().inspiration;
         if (current.some((t) => t.id === track.id)) return true;
@@ -227,6 +233,7 @@ export const useStudioStore = create<StudioState>()(
           apimartVariety: "off",
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",
+          poyoVariety: "off",
           inspiration: [],
       inspirationEnabled: true,
           inspoAudioWeight: 20,
@@ -263,6 +270,7 @@ export const useStudioStore = create<StudioState>()(
         if (merged.apimartVariety === undefined) merged.apimartVariety = "off";
         if (merged.apimartMaxMode === undefined) merged.apimartMaxMode = false;
         if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
+        if (merged.poyoVariety === undefined) merged.poyoVariety = "off";
         if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
         if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
         if (typeof merged.inspoAudioWeight !== "number" || Number.isNaN(merged.inspoAudioWeight)) merged.inspoAudioWeight = 20;

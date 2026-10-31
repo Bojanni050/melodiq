@@ -50,8 +50,14 @@ export async function POST(request: NextRequest) {
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags,
     personaId, artistName, writerName,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
+    poyoVariety,
     inspirationTrackIds, inspirationAudioWeight,
   } = body;
+
+  // PoYo's V6 family uses a numeric 0-4 "variety" field (same range as the
+  // UI's off/normal/high/extra/max labels, reused from the APIMart V6 control).
+  const POYO_VARIETY_LEVELS: Record<string, number> = { off: 0, normal: 1, high: 2, extra: 3, max: 4 };
+  const normalizedPoYoVariety = typeof poyoVariety === "string" ? POYO_VARIETY_LEVELS[poyoVariety] : undefined;
 
   const normalizedPrompt = typeof prompt === "string" ? prompt.trim() : "";
   const normalizedTitle = typeof title === "string" ? title.trim() : "";
@@ -128,6 +134,7 @@ export async function POST(request: NextRequest) {
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
     normalizedPoYoModel, isMinimaxViaPoYo,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
+    poyoVariety: normalizedPoYoVariety,
     inspirationTrackIds: normalizedInspirationTrackIds,
     inspoAudioWeight: normalizedInspirationAudioWeight,
   };

@@ -90,6 +90,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       apimartVariety,
       apimartMaxMode,
       apimartAudioFormat,
+      poyoVariety,
       inspiration,
       inspirationEnabled,
       inspoAudioWeight,
@@ -186,6 +187,8 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
               apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,
               apimartAudioFormat: provider === "apimart" ? apimartAudioFormat : undefined,
+              // PoYo Suno V6 option (variety only — PoYo has no max-mode/format equivalent)
+              poyoVariety: provider === "poyo" ? poyoVariety : undefined,
               // Inspo references (APIMart v6 only — server validates).
               // Disabled or empty = no inspiration = normal generation, so
               // omit the field entirely; sending [] trips the server guard.

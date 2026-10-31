@@ -57,6 +57,7 @@ export default memo(function StudioForm({
     apimartVariety,
     apimartMaxMode,
     apimartAudioFormat,
+    poyoVariety,
     setSongIdea,
     setLyrics,
     setTitle,
@@ -76,6 +77,7 @@ export default memo(function StudioForm({
     setApimartVariety,
     setApimartMaxMode,
     setApimartAudioFormat,
+    setPoyoVariety,
     fetchSavedLyrics,
     saveLyric,
     loadSavedLyric,
@@ -813,6 +815,38 @@ ${t("studio.yourChorusHere")}`}
                 {styleInfluence <= 40 ? t("studio.styleInfluenceDescLow") : styleInfluence <= 70 ? t("studio.styleInfluenceDescMid") : t("studio.styleInfluenceDescHigh")}
               </p>
             </div>
+
+            {/* V6 Options — only shown when a v6 model is selected. PoYo's API
+                only exposes Variety for the V6 family, no Max Mode or output
+                format equivalent (unlike APIMart). */}
+            {["v6", "v6-wild", "v6-mini"].includes(selectedProviders["poyo"]) && (
+              <>
+                <div className="my-3 h-px bg-white/10" />
+                <h5 className="text-xs font-semibold text-ink-dim uppercase tracking-wider mb-3">V6 Options</h5>
+
+                {/* Style Variety */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-ink-muted mb-2">Style Variety</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {(["off", "normal", "high", "extra", "max"] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setPoyoVariety(v)}
+                        className={`px-2.5 py-1  text-xs font-medium transition-colors ${
+                          poyoVariety === v
+                            ? "bg-violet-500/40 text-violet-200 border border-violet-400/40"
+                            : "bg-white/5 text-ink-dim border border-line hover:bg-white/10"
+                        }`}
+                      >
+                        {v.charAt(0).toUpperCase() + v.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-ink-dim mt-1">Style variation level.</p>
+                </div>
+              </>
+            )}
           </>
         )}
 

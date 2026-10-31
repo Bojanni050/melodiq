@@ -641,3 +641,16 @@
   - `src/lib/format-generator.ts` — `MODEL_LABEL.poyo` uitgebreid met `v6` → "Suno 6", `v6wild` → "Suno 6 Wild", `v6mini` → "Suno 6 Mini".
   - Geen wijziging nodig in `StudioForm.tsx`: de weirdness/styleInfluence/vocalGender-sliders voor PoYo zijn al model-onafhankelijk zichtbaar.
   - Gevalideerd met `npx tsc --noEmit` (schoon) en `npx vitest run src/lib/__tests__/format-generator.test.ts src/lib/__tests__/inspiration.test.ts` (12/12 geslaagd); validated.
+
+## 2026-10-31 (PoYo V6 Options: Style Variety erbij, net als APIMart)
+
+- Findings: Bo vroeg om de "extra velden" die APIMart bij Suno v6 heeft (Style Variety, Max Mode, Audio Format — zie `StudioForm.tsx` "V6 Options"-blok onder APIMart) ook voor de drie v6-versies bij PoYo toe te voegen.
+- Conclusions: Uitgezocht via poyo.ai/models/generate-music welke van de drie velden PoYo's eigen Suno-API daadwerkelijk ondersteunt. Alleen Variety (0-4, "0 houdt je style tags zoals geschreven") wordt door PoYo gedocumenteerd voor de V5.5/V6-familie. Max Mode wordt nergens genoemd en een audio-formaat-parameter bestaat niet op het generate-music-endpoint (PoYo heeft alleen losse convert-to-wav/create-music-video-endpoints, geen `audio_format`-veld bij generatie). Dus bewust alleen Variety toegevoegd, Max Mode en Audio Format NIET — stilzwijgend meesturen van een niet-ondersteund veld zou een no-op of foutieve aanname zijn geweest. Voor UX-consistentie dezelfde vijf labels (off/normal/high/extra/max) als bij APIMart gebruikt, gemapt naar PoYo's numerieke 0-4-schaal server-side in `generate/route.ts` (niet in de PoYo-library zelf, zodat `poyo.ts` dicht bij de rauwe API blijft).
+- Actions:
+  - `src/lib/stores/studioStore.ts` — nieuw veld `poyoVariety` ("off"|"normal"|"high"|"extra"|"max", default "off") + `setPoyoVariety`, met reset- en persisted-merge-defaults naast de bestaande `apimartVariety`.
+  - `src/components/StudioForm.tsx` — "V6 Options"-blok (alleen Style Variety) toegevoegd binnen de bestaande PoYo-sliders-sectie, zichtbaar zodra `selectedProviders["poyo"]` een van `v6`/`v6-wild`/`v6-mini` is.
+  - `src/hooks/useStudioActions.ts` — `poyoVariety` uit de store gelezen en als `poyoVariety` (alleen voor provider `poyo`) meegestuurd naar `/api/generate`.
+  - `src/app/api/generate/route.ts` — `poyoVariety`-string gemapt naar numeriek 0-4 (`POYO_VARIETY_LEVELS`) en als `poyoVariety` in de `GenerationContext` gezet.
+  - `src/lib/services/generationService.ts` — `GenerationContext.poyoVariety?: number`; `dispatchPoYo` geeft het door aan `generatePoYo({ variety })`.
+  - `src/lib/providers/poyo.ts` — `generatePoYo` accepteert `variety?: number` en stuurt `variety` alleen mee in de `input`-body als het truthy is (0/undefined = veld weglaten, zelfde patroon als weirdness/styleInfluence).
+  - Gevalideerd met `npx tsc --noEmit` (schoon), `npx vitest run` (150/150) en `npm run build` (geslaagd); validated.
