@@ -305,7 +305,7 @@ const TrackCard = memo(function TrackCard({
       }
 
       const [advancedDnaRunning, setAdvancedDnaRunning] = useState(false);
-      const [advancedDnaResult, setAdvancedDnaResult] = useState<{ summary: string | null; lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>(() => {
+      const [advancedDnaResult, setAdvancedDnaResult] = useState<{ summary: string | null; lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[]; compositionScore?: number | null; vocalScore?: number | null; productionScore?: number | null; overallScore?: number | null } | null>(() => {
         if (!track.advancedDna) return null;
         try { return JSON.parse(track.advancedDna); } catch { return null; }
       });

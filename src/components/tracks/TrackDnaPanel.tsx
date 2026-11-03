@@ -20,6 +20,10 @@ interface AdvancedDnaResult {
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
+  compositionScore?: number | null;
+  vocalScore?: number | null;
+  productionScore?: number | null;
+  overallScore?: number | null;
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -170,7 +174,7 @@ export default function TrackDnaPanel({
               type="button"
               onClick={(e) => { e.stopPropagation(); onReanalyzeAudio(); }}
               disabled={reanalyzingAudio}
-              title="Re-run tempo/key/energy/loudness detection on the audio"
+              title="Re-run the Track DNA analysis, backfilling any missing tempo/key/energy/loudness, atmosphere and lyrics-score fields"
               className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-line bg-white/[0.04] text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors disabled:opacity-50"
             >
               {reanalyzingAudio ? (
@@ -215,7 +219,7 @@ export default function TrackDnaPanel({
         {audioDna.lyricsScore != null && (
           <div className="space-y-1 border-t border-line pt-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-ink">Lyrics</span>
+              <span className="font-medium text-ink">Lyrics score</span>
               <span className="text-ink-dim">{audioDna.lyricsScore.toFixed(1)}/10</span>
             </div>
             {audioDna.lyricsNotes && <p className="text-sm text-ink-dim">{audioDna.lyricsNotes}</p>}
@@ -265,9 +269,37 @@ export default function TrackDnaPanel({
                   {advancedDnaResult.summary}
                 </p>
               )}
+              {advancedDnaResult.overallScore != null && (
+                <div className="flex items-center justify-between rounded border border-accent/30 bg-accent/10 px-3 py-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">Overall score</span>
+                  <span className="text-sm font-semibold text-accent">{advancedDnaResult.overallScore.toFixed(1)}/10</span>
+                </div>
+              )}
+              {(advancedDnaResult.compositionScore != null || advancedDnaResult.vocalScore != null || advancedDnaResult.productionScore != null) && (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {advancedDnaResult.compositionScore != null && (
+                    <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Composition score</div>
+                      <div className="text-sm font-medium text-ink">{advancedDnaResult.compositionScore.toFixed(1)}/10</div>
+                    </div>
+                  )}
+                  {advancedDnaResult.vocalScore != null && (
+                    <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Vocal score</div>
+                      <div className="text-sm font-medium text-ink">{advancedDnaResult.vocalScore.toFixed(1)}/10</div>
+                    </div>
+                  )}
+                  {advancedDnaResult.productionScore != null && (
+                    <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                      <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Production score</div>
+                      <div className="text-sm font-medium text-ink">{advancedDnaResult.productionScore.toFixed(1)}/10</div>
+                    </div>
+                  )}
+                </div>
+              )}
               {advancedDnaResult.lyricsAnalysis && (
                 <div className="space-y-1">
-                  <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Lyrics</div>
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Lyrics analysis</div>
                   <p className="text-sm text-ink-muted leading-relaxed">{advancedDnaResult.lyricsAnalysis}</p>
                 </div>
               )}
@@ -294,7 +326,7 @@ export default function TrackDnaPanel({
             </div>
           ) : !advancedDnaRunning && (
             <p className="text-xs text-ink-dim italic">
-              Run an advanced analysis for a deep-dive into lyrics, composition, and improvement tips.
+              Run an advanced analysis for a deep-dive into lyrics, composition, vocal and production scores, and improvement tips.
             </p>
           )}
         </div>

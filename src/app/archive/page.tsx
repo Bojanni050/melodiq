@@ -45,7 +45,7 @@ export default function ArchivePage() {
   const [dnaRefreshKeys, setDnaRefreshKeys] = useState<Record<string, number>>({});
   const [togglingPublishIds, setTogglingPublishIds] = useState<Set<string>>(new Set());
   const [advancedDnaRunningIds, setAdvancedDnaRunningIds] = useState<Set<string>>(new Set());
-  const [advancedDnaResults, setAdvancedDnaResults] = useState<Record<string, { summary: string | null; lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[] } | null>>({});
+  const [advancedDnaResults, setAdvancedDnaResults] = useState<Record<string, { summary: string | null; lyricsAnalysis: string | null; compositionAnalysis: string | null; tips: string[]; compositionScore?: number | null; vocalScore?: number | null; productionScore?: number | null; overallScore?: number | null } | null>>({});
 
   const [activeTab, setActiveTab] = useState<MasterTracksTab>("master");
   const [allTracks, setAllTracks] = useState<TrackItem[]>([]);

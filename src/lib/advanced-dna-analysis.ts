@@ -25,6 +25,10 @@ export interface AdvancedDnaResult {
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
+  compositionScore: number | null;
+  vocalScore: number | null;
+  productionScore: number | null;
+  overallScore: number | null;
 }
 
 function parseAdvancedDna(raw: string | null): AdvancedDnaResult | null {
@@ -87,11 +91,14 @@ Where to draw each judgment from — this matters:
 
 Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
-- Format exactly: {"summary": "max 2 short sentences describing the song", "lyricsAnalysis": "a thorough paragraph (4-6 sentences) on lyrics quality", "compositionAnalysis": "a thorough paragraph (4-6 sentences) on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"]}
+- Format exactly: {"summary": "max 2 short sentences describing the song", "lyricsAnalysis": "a thorough paragraph (4-6 sentences) on lyrics quality", "compositionAnalysis": "a thorough paragraph (4-6 sentences) on composition/mix quality, grounded in what you actually hear", "tips": ["tip1", "tip2", "tip3", "tip4", "tip5"], "compositionScore": <number 1-10, one decimal>, "vocalScore": <number 1-10, one decimal, or null if there are no vocals>, "productionScore": <number 1-10, one decimal>}
 - summary: max 2 concise sentences capturing tempo/mood/genre feel and the song's subject or theme, e.g. "Midtempo ballad about losing your youth, built around warm acoustic guitar and soft strings." Ground the instrumentation part in what you actually hear.
 - Each tip: 1-2 sentences, specific and actionable, and grounded in something specific you heard or read — not generic songwriting advice.
 - Maximum 5 tips (fewer OK if not applicable).
 - If lyrics are not available, set lyricsAnalysis to null.
+- compositionScore: 1-10 rating of the composition itself — structure, arrangement, melodic/harmonic development, dynamics and build across sections.
+- vocalScore: 1-10 rating of the vocal performance — pitch accuracy, delivery, emotion, phrasing, how well it sits in the mix. null when the track is an instrumental or has no vocals.
+- productionScore: 1-10 rating of the production/mix — clarity, balance, stereo image, loudness/ mastering feel, overall polish.
 - Be honest and critical — the goal is improvement.`;
 
   let userText = hasLyrics ? `Lyrics:\n${lyrics!.slice(0, 4000)}` : "Lyrics: none (instrumental or not provided)";
@@ -120,11 +127,26 @@ Rules:
     }
 
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    const parseScore = (value: unknown): number | null => {
+      const num = Number(value);
+      if (value == null || !Number.isFinite(num)) return null;
+      if (num < 1 || num > 10) return null;
+      return Math.round(num * 10) / 10;
+    };
+    const compositionScore = parseScore(parsed.compositionScore);
+    const vocalScore = parseScore(parsed.vocalScore);
+    const productionScore = parseScore(parsed.productionScore);
+    const subScores = [compositionScore, vocalScore, productionScore].filter((s): s is number => s != null);
+    const overallScore = subScores.length > 0 ? Math.round((subScores.reduce((a, b) => a + b, 0) / subScores.length) * 10) / 10 : null;
     const result: AdvancedDnaResult = {
       summary: typeof parsed.summary === "string" ? parsed.summary.slice(0, 400) : null,
       lyricsAnalysis: typeof parsed.lyricsAnalysis === "string" ? parsed.lyricsAnalysis : null,
       compositionAnalysis: typeof parsed.compositionAnalysis === "string" ? parsed.compositionAnalysis : null,
       tips: Array.isArray(parsed.tips) ? parsed.tips.filter((t: unknown): t is string => typeof t === "string").slice(0, 5) : [],
+      compositionScore,
+      vocalScore,
+      productionScore,
+      overallScore,
     };
 
     // Persist the result so it survives page reloads.

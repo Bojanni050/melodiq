@@ -5,9 +5,10 @@ import { and, eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { reanalyzeAudioFeatures } from "@/lib/track-dna-analysis";
 
-// On-demand re-run of just the DSP audio signals (tempo/key/energy/loudness)
-// for an already-finished track — lets the user backfill tracks whose
-// original extraction failed silently, without touching the LLM-derived DNA.
+// On-demand re-run of the auto Track DNA analysis for an already-finished
+// track — lets the user backfill tracks whose original analysis failed
+// silently or predates the DNA pipeline, filling in missing
+// tempo/key/energy/loudness, atmosphere tags and lyrics score.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

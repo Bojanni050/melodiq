@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { scoreLyricsQuality } from "@/lib/providers/llm";
+import { extractAtmosphereTags, scoreLyricsQuality } from "@/lib/providers/llm";
 import { extractAudioFeatures } from "@/lib/audio-features";
 import { resolveDnaAudioSource, type DnaAudioSource } from "@/lib/dna-audio-source";
 import { logToFile } from "@/lib/file-logger";
@@ -86,11 +86,12 @@ export async function analyzeTrackDna(
 }
 
 /**
- * Re-runs just the DSP-derived signals (tempo/key/energy/loudness) for a
- * single already-finished track, keeping every other Track DNA field
- * untouched. Exists to backfill/repair tracks whose original extraction
- * silently failed (e.g. the ffmpeg-static/Alpine incompatibility) without
- * re-running the paid LLM composition/lyrics analysis.
+ * Re-runs the auto Track DNA analysis (tempo/key/energy/loudness, atmosphere
+ * tags, lyrics score) for a single already-finished track, backfilling only
+ * the fields that are still missing. Exists to backfill/repair tracks whose
+ * original extraction silently failed (e.g. uploaded tracks, or the
+ * ffmpeg-static/Alpine incompatibility) — already-present fields are kept
+ * untouched so re-running never wastes a paid LLM call on data we have.
  */
 export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna | null> {
   const [track] = await db.select().from(tracks).where(eq(tracks.id, trackId)).limit(1);
@@ -100,34 +101,67 @@ export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna 
   }
 
   const existing: Partial<AudioDna> = track.audioDna ? JSON.parse(track.audioDna) : {};
+  const needsDsp = existing.tempo == null || existing.key == null || existing.energy == null || existing.loudness == null;
+  const needsAtmosphere = (existing.atmosphereTags ?? []).length === 0 && !!track.prompt?.trim();
+  const needsLyrics = existing.lyricsScore == null && !track.instrumental && !!track.lyrics?.trim();
 
   try {
     // Always analysed as MP3 (see resolveDnaAudioSource).
-    const audioSource: DnaAudioSource | null = await resolveDnaAudioSource(track);
-    if (!audioSource) {
-      log(`[track-dna-analysis] audio re-analysis track ${trackId}: no audio source available`);
-      return null;
+    let features: Awaited<ReturnType<typeof extractAudioFeatures>> = null;
+    if (needsDsp) {
+      const audioSource: DnaAudioSource | null = await resolveDnaAudioSource(track);
+      if (!audioSource) {
+        log(`[track-dna-analysis] audio re-analysis track ${trackId}: no audio source available`);
+        return null;
+      }
+      log(`[track-dna-analysis] audio re-analysis track ${trackId}: using ${audioSource.format} (${audioSource.audioBuffer?.length ?? 0} bytes)`);
+      features = await extractAudioFeatures(audioSource.audioBuffer);
+      if (!features) {
+        log(`[track-dna-analysis] audio re-analysis track ${trackId}: no features extracted`);
+      } else {
+        log(`[track-dna-analysis] audio re-analysis track ${trackId}: features=${JSON.stringify(features)}`);
+      }
     }
-    log(`[track-dna-analysis] audio re-analysis track ${trackId}: using ${audioSource.format} (${audioSource.audioBuffer?.length ?? 0} bytes)`);
-    const features = await extractAudioFeatures(audioSource.audioBuffer);
-    if (!features) {
-      log(`[track-dna-analysis] audio re-analysis track ${trackId}: no features extracted`);
-      return null;
-    }
-    log(`[track-dna-analysis] audio re-analysis track ${trackId}: features=${JSON.stringify(features)}`);
+
+    const [atmosphereTags, lyricsResult] = await Promise.all([
+      needsAtmosphere
+        ? extractAtmosphereTags(track.prompt!).catch((error) => {
+            warn(`[track-dna-analysis] atmosphere tag extraction failed for track ${trackId}:`, error);
+            return null;
+          })
+        : Promise.resolve(null),
+      needsLyrics
+        ? scoreLyricsQuality(track.lyrics!).catch((error) => {
+            warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
+            return null;
+          })
+        : Promise.resolve(null),
+    ]);
 
     const audioDna: AudioDna = {
-      tempo: features.tempo ?? existing.tempo ?? null,
-      key: features.key ?? existing.key ?? null,
-      energy: features.energy ?? existing.energy ?? null,
-      loudness: features.loudness ?? existing.loudness ?? null,
-      atmosphereTags: existing.atmosphereTags ?? null,
-      lyricsScore: existing.lyricsScore ?? null,
-      lyricsNotes: existing.lyricsNotes ?? null,
+      tempo: features?.tempo ?? existing.tempo ?? null,
+      key: features?.key ?? existing.key ?? null,
+      energy: features?.energy ?? existing.energy ?? null,
+      loudness: features?.loudness ?? existing.loudness ?? null,
+      atmosphereTags: atmosphereTags ?? existing.atmosphereTags ?? null,
+      lyricsScore: lyricsResult?.score ?? existing.lyricsScore ?? null,
+      lyricsNotes: lyricsResult?.notes ?? existing.lyricsNotes ?? null,
       compositionScore: existing.compositionScore ?? null,
       compositionNotes: existing.compositionNotes ?? null,
       computedAt: new Date().toISOString(),
     };
+
+    const stillEmpty =
+      audioDna.tempo == null &&
+      audioDna.key == null &&
+      audioDna.energy == null &&
+      audioDna.loudness == null &&
+      (audioDna.atmosphereTags ?? []).length === 0 &&
+      audioDna.lyricsScore == null;
+    if (stillEmpty) {
+      log(`[track-dna-analysis] audio re-analysis track ${trackId}: nothing could be analyzed`);
+      return null;
+    }
 
     await db.update(tracks).set({ audioDna: JSON.stringify(audioDna) }).where(eq(tracks.id, trackId));
     log(`[track-dna-analysis] audio re-analysis track ${trackId}: saved tempo=${audioDna.tempo} key=${audioDna.key} energy=${audioDna.energy} loudness=${audioDna.loudness}`);

@@ -41,7 +41,7 @@ function knownTrackDna(track: TrackItem): string {
     dna.energy != null ? `Energy: ${dna.energy}%` : "",
     dna.loudness != null ? `Loudness: ${dna.loudness.toFixed(1)} LUFS` : "",
     dna.atmosphereTags?.length ? `Atmosphere: ${dna.atmosphereTags.join(", ")}` : "",
-    dna.lyricsScore != null ? `Lyrics: ${dna.lyricsScore.toFixed(1)}/10${dna.lyricsNotes ? ` — ${dna.lyricsNotes}` : ""}` : "",
+    dna.lyricsScore != null ? `Lyrics score: ${dna.lyricsScore.toFixed(1)}/10${dna.lyricsNotes ? ` — ${dna.lyricsNotes}` : ""}` : "",
     dna.compositionScore != null ? `Composition: ${dna.compositionScore.toFixed(1)}/10${dna.compositionNotes ? ` — ${dna.compositionNotes}` : ""}` : "",
   ].filter(Boolean).join("\n");
 }
@@ -611,7 +611,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             {parsedAudioDna?.lyricsScore != null && (
               <div className="space-y-1 border-t border-line pt-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-ink">Lyrics</span>
+                  <span className="font-medium text-ink">Lyrics score</span>
                   <span className="text-ink-dim">{parsedAudioDna.lyricsScore.toFixed(1)}/10</span>
                 </div>
                 {parsedAudioDna.lyricsNotes && (

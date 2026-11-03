@@ -5,6 +5,10 @@ interface AdvancedDnaResultProps {
   lyricsAnalysis: string | null;
   compositionAnalysis: string | null;
   tips: string[];
+  compositionScore?: number | null;
+  vocalScore?: number | null;
+  productionScore?: number | null;
+  overallScore?: number | null;
   onClose: () => void;
 }
 
@@ -13,6 +17,10 @@ export default function AdvancedDnaResult({
   lyricsAnalysis,
   compositionAnalysis,
   tips,
+  compositionScore,
+  vocalScore,
+  productionScore,
+  overallScore,
   onClose,
 }: AdvancedDnaResultProps) {
   return (
@@ -38,6 +46,36 @@ export default function AdvancedDnaResult({
 
         {summary && (
           <p className="text-sm text-ink-muted leading-relaxed border-b border-line pb-4">{summary}</p>
+        )}
+
+        {overallScore != null && (
+          <div className="flex items-center justify-between rounded border border-accent/30 bg-accent/10 px-3 py-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-accent">Overall score</span>
+            <span className="text-sm font-semibold text-accent">{overallScore.toFixed(1)}/10</span>
+          </div>
+        )}
+
+        {(compositionScore != null || vocalScore != null || productionScore != null) && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {compositionScore != null && (
+              <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Composition score</div>
+                <div className="text-sm font-medium text-ink">{compositionScore.toFixed(1)}/10</div>
+              </div>
+            )}
+            {vocalScore != null && (
+              <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Vocal score</div>
+                <div className="text-sm font-medium text-ink">{vocalScore.toFixed(1)}/10</div>
+              </div>
+            )}
+            {productionScore != null && (
+              <div className="space-y-0.5 rounded border border-line bg-white/[0.04] px-2.5 py-2">
+                <div className="text-[10px] uppercase tracking-[0.12em] text-ink-dim">Production score</div>
+                <div className="text-sm font-medium text-ink">{productionScore.toFixed(1)}/10</div>
+              </div>
+            )}
+          </div>
         )}
 
         {lyricsAnalysis && (
