@@ -841,7 +841,7 @@ export default function SettingsPage() {
                       <div>
                         <p className="text-sm text-ink-muted font-medium mb-1.5">Database backup</p>
                         <p className="text-xs text-ink-dim mb-2">
-                          Volledig JSON backup — tracks, workspaces, playlists en volgorde.
+                          Volledig JSON backup van jouw data — tracks, stems, masters, workspaces, playlists, releases, lyrics, presets, archief, DNA en covers (zonder wachtwoord).
                         </p>
                         <a
                           href="/api/export/db"
@@ -850,6 +850,20 @@ export default function SettingsPage() {
                         >
                           Download backup
                         </a>
+                        {user?.role === "admin" && (
+                          <div className="mt-3">
+                            <p className="text-xs text-ink-dim mb-2">
+                              Admin: complete PostgreSQL-dump (alle gebruikers, .sql.gz).
+                            </p>
+                            <a
+                              href="/api/admin/export/db"
+                              download
+                              className="inline-block  border border-line bg-white/5 px-3 py-1.5 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink"
+                            >
+                              Download volledige database dump
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </section>

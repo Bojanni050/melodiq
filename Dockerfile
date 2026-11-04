@@ -38,7 +38,7 @@ COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/src/lib ./src/lib
 
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg postgresql16-client
 RUN mkdir -p /data/audio-cache /data/cover-cache && chown nextjs:nodejs /data/audio-cache /data/cover-cache
 
 USER nextjs
