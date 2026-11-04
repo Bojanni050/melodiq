@@ -62,6 +62,15 @@ export function isCached(s3Key: string, format: string): boolean {
  * response's Content-Length instead of `fs.statSync`, since the on-disk
  * file may still be mid-write when `cached` is false.
  */
+// Cache fills currently in progress, keyed by destination path. Concurrent
+// cache misses for the same file (the player's Range probe plus the <audio>
+// element's own request, seeks, prefetch) used to each start a full S3
+// download AND each write to the same ".tmp" file -- competing for
+// bandwidth (audible as stuttering) and interleaving writes into a corrupt
+// cache entry. Only the first miss fills the cache; the rest just stream
+// from S3 for their own client.
+const inflightFills = new Set<string>();
+
 export async function getCachedAudioStream(
   s3Key: string,
   format: string,
@@ -84,16 +93,31 @@ export async function getCachedAudioStream(
   }
 
   const size = Number(response.headers.get("content-length") || 0);
+
+  // Another request is already filling the cache for this file: serve this
+  // client straight from S3 without a second disk writer.
+  if (inflightFills.has(dest)) {
+    return { filePath: dest, stream: Readable.fromWeb(response.body as any), cached: false, size };
+  }
+  inflightFills.add(dest);
+
   const [clientSide, diskSide] = response.body.tee();
 
-  // Write atomically: write to a temp file then rename, in the background.
-  const tmp = dest + ".tmp";
+  // Write atomically: write to a unique temp file then rename, in the background.
+  const tmp = `${dest}.${process.pid}.${Date.now()}.tmp`;
   void pipeline(Readable.fromWeb(diskSide as any), fs.createWriteStream(tmp))
-    .then(() => fs.renameSync(tmp, dest))
+    .then(() => {
+      // Never publish a truncated download as a valid cache entry.
+      if (size > 0 && fs.statSync(tmp).size !== size) {
+        throw new Error(`incomplete download (${fs.statSync(tmp).size}/${size} bytes)`);
+      }
+      fs.renameSync(tmp, dest);
+    })
     .catch((err) => {
       console.error(`[audio-cache] background caching failed for ${s3Key}:`, err);
       try { fs.unlinkSync(tmp); } catch {}
-    });
+    })
+    .finally(() => inflightFills.delete(dest));
 
   return { filePath: dest, stream: Readable.fromWeb(clientSide as any), cached: false, size };
 }
