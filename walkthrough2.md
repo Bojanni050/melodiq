@@ -680,3 +680,12 @@
   - `src/lib/i18n/messages/{nl,en}.ts`, `src/app/api/generate/route.ts`, `src/hooks/useStudioActions.ts` — foutmeldingen bijgewerkt naar "APIMart v6 of PoYo v6/v5.5".
   - Geen wijziging nodig in `generatePoYo`/`dispatchPoYoInspo`: de audio_urls-logica was al model-agnostisch, alleen de v6-only *gate* in `supportsInspiration` is verbreed.
   - Gevalideerd met `npx tsc --noEmit` (schoon), `npx vitest run` (153/153) en `npm run build` (geslaagd); validated.
+
+## 2026-11-06 (Released/Unreleased-label volgt publish-status)
+
+- Findings: Het `Released`/`Unreleased`-label op trackrijen bleef staan na Publish/Unpublish via het track options menu. Het label was gebaseerd op release-lidmaatschap uit de release store, maar een publish/unpublish mutatie verandert alleen `releaseStatus` (de server maakt/unpublisht de auto-single) en herlaadt de release store nooit — dus de badge bleef `Unreleased`.
+- Conclusions: Het label moet de publish-status van de track weerspiegelen, niet alleen lidmaatschap. Daarnaast wordt na een toggle de release store herladen, zodat release-afgeleide UI (Releases-pagina, release pickers) de automatisch aangemaakte/uitgezette single meteen ziet. Een lokale spiegel van `releaseStatus` laat het label direct flippen, ook op pagina's die niet op `tracks-changed` luisteren.
+- Actions:
+  - `src/components/tracks/TrackCard.tsx` — `releasedTrackIds`/`isInRelease` verwijderd; lokale `localReleaseStatus`-state (gesynchroniseerd met `track.releaseStatus`) toegevoegd; badge en `isPublished`-prop gebruiken die state; `handleTogglePublish` zet de state optimistisch na succes en roept `useReleaseStore.getState().loadReleases()` aan.
+  - `src/app/archive/page.tsx` — `Released`-badge gebruikt nu `entry.releaseStatus === "published"` (die door de bestaande toggle al lokaal wordt bijgewerkt) i.p.v. release-store-lidmaatschap; ongebruikte `releases`-subscription verwijderd.
+  - Gevalideerd met `npm run build` (geslaagd); validated.

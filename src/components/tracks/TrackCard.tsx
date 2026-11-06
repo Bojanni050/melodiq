@@ -14,7 +14,7 @@ import type { PlaylistOption, ReuseScope, TrackItem } from "@/components/tracks/
 import { STEM_TYPES } from "@/lib/stem-types";
 import { MASTER_VARIATIONS } from "@/lib/master-types";
 import { withCdn } from "@/lib/cdn-client";
-import { playlistByTrackId, releasedTrackIds } from "@/lib/stores/trackIndexes";
+import { playlistByTrackId } from "@/lib/stores/trackIndexes";
 import { normalizeTclEditorBehavior } from "@/lib/tcl/editor-behavior";
 import { useSWRConfig } from "swr";
 
@@ -161,7 +161,6 @@ const TrackCard = memo(function TrackCard({
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const archiveLinkKind = useArchiveLinksStore((state) => state.links[track.id]);
-  const isInRelease = useReleaseStore((state) => releasedTrackIds(state.releases).has(track.id));
   const loadArchiveLinks = useArchiveLinksStore((state) => state.load);
   useEffect(() => {
     loadArchiveLinks();
@@ -214,6 +213,12 @@ const TrackCard = memo(function TrackCard({
   const effectiveS3KeyOgg = localS3KeyOgg ?? track.s3KeyOgg ?? null;
   const effectiveFormat = localFormat ?? track.format ?? "mp3";
   const [togglingPublish, setTogglingPublish] = useState(false);
+  // Local mirror of the publish status so the Released/Unreleased label flips
+  // immediately after a toggle, without waiting for the parent list to refetch.
+  const [localReleaseStatus, setLocalReleaseStatus] = useState<string | null>(track.releaseStatus ?? null);
+  useEffect(() => {
+    setLocalReleaseStatus(track.releaseStatus ?? null);
+  }, [track.releaseStatus]);
   const [generatingTcl, setGeneratingTcl] = useState(false);
   const [tclError, setTclError] = useState<string | null>(null);
   const [confirmRegenerateTcl, setConfirmRegenerateTcl] = useState(false);
@@ -419,7 +424,7 @@ const TrackCard = memo(function TrackCard({
 
   async function handleTogglePublish() {
     if (track.status !== "done") return;
-    const isCurrentlyPublished = track.releaseStatus === "published";
+    const isCurrentlyPublished = localReleaseStatus === "published";
     const nextStatus = isCurrentlyPublished ? "unpublished" : "published";
     const nextPublishDate = isCurrentlyPublished ? null : new Date().toISOString();
     setTogglingPublish(true);
@@ -436,6 +441,11 @@ const TrackCard = memo(function TrackCard({
         console.error(`Failed to update publish status: HTTP ${res.status}`);
         return;
       }
+      setLocalReleaseStatus(nextStatus);
+      // Publishing auto-creates a single release and unpublishing unpublishes
+      // it server-side — reload so release-derived UI (Releases page, release
+      // pickers, badges) matches.
+      void useReleaseStore.getState().loadReleases();
       void mutate("/api/tracks");
       window.dispatchEvent(new CustomEvent("tracks-changed"));
     } catch (error) {
@@ -1062,12 +1072,12 @@ const TrackCard = memo(function TrackCard({
             {track.status === "done" && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
-                  isInRelease
+                  localReleaseStatus === "published"
                     ? "border border-green-300/30 bg-green-400/10 text-green-200"
                     : "border border-line-strong bg-white/[0.05] text-ink-dim"
                 }`}
               >
-                {isInRelease ? "Released" : "Unreleased"}
+                {localReleaseStatus === "published" ? "Released" : "Unreleased"}
               </span>
             )}
             {track.status === "done" && hasTcl && (
@@ -1370,7 +1380,7 @@ const TrackCard = memo(function TrackCard({
               onStemsClick={() => setStemsOpen((v) => !v)}
               onMasteringClick={() => setMasteringOpen((v) => !v)}
               onEditSectionClick={() => setEditSectionOpen((v) => !v)}
-              isPublished={track.releaseStatus === "published"}
+              isPublished={localReleaseStatus === "published"}
               onTogglePublish={track.status === "done" ? handleTogglePublish : undefined}
               togglingPublish={togglingPublish}
               onGenerateTclClick={canGenerateTcl ? handleGenerateTclClick : undefined}
