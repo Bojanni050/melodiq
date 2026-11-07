@@ -703,3 +703,9 @@
   - `src/app/api/timecoded-editor/ai-edit/route.ts` — `HOPSCOTCH_TIMECODED_MODEL` → `_LYRICS_MODEL` → `_MODEL` → env → default, doorgegeven als `hopscotchModelOverride`.
   - `.env.example` / `.env.production.example` — `HOPSCOTCH_API_KEY` + `HOPSCOTCH_MODEL` met base-URL-comment; `melodiq-user.md` — Hopscotch en de key-based Retrieve-flow toegelicht.
   - Gevalideerd met `npm run build` (geslaagd); validated.
+
+## 2026-11-07 (Artiestenpagina's bewerken: tabs per artiest + hero-preview)
+
+- Findings: De edit-pagina `/artist-pages` toonde alle artiesten als losse kaarten onder elkaar, en de hero-afbeelding was alleen uploadbaar, niet zichtbaar.
+- Conclusions: Eén tab per artiest (alias + profielfoto) met alleen de gekozen kaart eronder houdt de pagina overzichtelijk; de hero toon ik via de bestaande publieke `variant=hero`-route, met dezelfde `v`-cachebuster als de profielfoto zodat een nieuwe upload direct zichtbaar is.
+- Actions: `src/app/artist-pages/page.tsx` - `activeId`-state + tablist, alleen actieve pagina gerenderd (valt terug op de eerste), hero-preview boven de uploadknop; validated met `tsc --noEmit` en `npm run build`.

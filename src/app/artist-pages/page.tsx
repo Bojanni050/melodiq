@@ -75,6 +75,9 @@ export default function ArtistPagesPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [flashId, setFlashId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // Fall back to the first page when nothing is selected or the selected page was deleted.
+  const activePage = pages.find((p) => p.id === activeId) ?? pages[0] ?? null;
 
   const load = useCallback(async () => {
     const res = await fetch("/api/artist-pages");
@@ -216,7 +219,39 @@ export default function ArtistPagesPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {pages.map((page) => {
+                  <div role="tablist" className="flex flex-wrap gap-2">
+                    {pages.map((page) => {
+                      const selected = page.id === activePage?.id;
+                      return (
+                        <button
+                          key={page.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={selected}
+                          onClick={() => setActiveId(page.id)}
+                          className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                            selected
+                              ? "border-transparent bg-white text-black"
+                              : "border-line bg-white/5 text-ink/75 hover:bg-white/10 hover:text-ink"
+                          }`}
+                        >
+                          {page.imageS3Key ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={`/api/artist/${page.slug}/image?variant=profile&v=${imageVersion(page.updatedAt)}`}
+                              alt=""
+                              className="h-6 w-6 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="h-6 w-6 rounded-full border border-line bg-white/10" />
+                          )}
+                          {page.alias}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {pages.filter((page) => page.id === activePage?.id).map((page) => {
                     const draft = drafts[page.id] ?? { bio: page.bio ?? "", bioNl: page.bioNl ?? "", slug: page.slug };
                     const isSaving = savingId === page.id;
                     return (
@@ -304,6 +339,14 @@ export default function ArtistPagesPage() {
                           label={t("artistPages.heroImage")}
                           hint={t("artistPages.heroImageHint")}
                         >
+                          {page.heroS3Key && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={`/api/artist/${page.slug}/image?variant=hero&v=${imageVersion(page.updatedAt)}`}
+                              alt={`${page.alias} hero`}
+                              className="mb-3 aspect-[3/1] w-full rounded-2xl border border-line object-cover"
+                            />
+                          )}
                           <label className="flex h-10 cursor-pointer items-center justify-center rounded-full border border-line bg-white/5 text-sm text-ink/75 transition-colors hover:bg-white/10">
                             {uploading === `${page.id}:hero` ? t("artistPages.uploading") : t("artistPages.chooseImage")}
                             <input
