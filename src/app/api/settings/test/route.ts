@@ -112,6 +112,101 @@ async function testDeepInfraApiKey(apiKey: string): Promise<{ ok: boolean; info:
   }
 }
 
+// Hopscotch's /v1/models needs the key, so it doubles as the key check and the
+// catalog source. Each entry is an OpenAI model object plus a `uniblock` block
+// with capabilities, context window and the provider's list price.
+async function testHopscotchApiKey(
+  apiKey: string
+): Promise<{ ok: boolean; info: string; models?: any[] }> {
+  try {
+    const res = await axios.get("https://api.hopscotchlabs.ai/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      timeout: 15000,
+      validateStatus: () => true,
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, info: `Unauthorized (${res.status}). Check HOPSCOTCH_API_KEY.` };
+    }
+    if (res.status < 200 || res.status >= 300) {
+      const message = res.data?.error?.message || res.data?.message || `HTTP ${res.status}`;
+      return {
+        ok: false,
+        info: `Failed (${res.status}): ${typeof message === "string" ? message : "Request failed"}`,
+      };
+    }
+
+    const entries: any[] = Array.isArray(res.data?.data)
+      ? res.data.data
+      : Array.isArray(res.data?.models)
+        ? res.data.models
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+    // `input_rate_thousandths` / `output_rate_thousandths` are thousandths of a
+    // currency unit per million tokens; LLMModel stores USD per token.
+    const perToken = (thousandths: unknown): number | undefined => {
+      const n = Number(thousandths);
+      return Number.isFinite(n) && n > 0 ? n / 1000 / 1_000_000 : undefined;
+    };
+    const isYes = (value: unknown) => value === true || value === "yes";
+
+    const models = entries
+      .map((m: any) => {
+        const ext = m.uniblock || {};
+        const capabilities = ext.capabilities || {};
+        const families: string[] = Array.isArray(ext.endpoint_families) ? ext.endpoint_families : [];
+        const servesChat =
+          families.length === 0 ||
+          families.some((f) =>
+            ["chat", "responses", "completions", "messages"].includes(String(f).toLowerCase())
+          );
+        if (!servesChat) return null;
+
+        const promptRate = perToken(ext.input_rate_thousandths);
+        const completionRate = perToken(ext.output_rate_thousandths) ?? promptRate;
+        const inputModalities = ["text"];
+        if (isYes(capabilities.vision)) inputModalities.push("image");
+        if (isYes(capabilities.audio)) inputModalities.push("audio");
+
+        const providers: string[] = Array.isArray(ext.provider_display_names)
+          ? ext.provider_display_names.filter(Boolean)
+          : [];
+        const description =
+          (typeof ext.description === "string" && ext.description) ||
+          [ext.author, providers.length ? `via ${providers.join(", ")}` : ""]
+            .filter(Boolean)
+            .join(" ");
+
+        return {
+          id: m.id,
+          name: ext.display_name || m.id,
+          description,
+          pricing: {
+            prompt: promptRate ?? 0,
+            completion: completionRate ?? 0,
+          },
+          context_length: ext.context_window_tokens ?? 0,
+          architecture: {
+            modality: `${inputModalities.join("+")}->text`,
+            tokenizer: "",
+            instruct_type: m.owned_by || "",
+          },
+          capabilities: {
+            inputModalities,
+            outputModalities: ["text"],
+          },
+        };
+      })
+      .filter(Boolean);
+
+    return { ok: true, info: `Connected — ${models.length} models available`, models };
+  } catch (error: any) {
+    return { ok: false, info: `Network error: ${error?.message || "request failed"}` };
+  }
+}
+
 const TEST_ENDPOINTS: Record<string, { url: string; keyPrefix: string; method: "GET" | "POST"; authHeader?: string; authPrefix?: string; body?: Record<string, unknown> }> = {  lyria: {
     url: "https://generativelanguage.googleapis.com/v1beta/models",
     keyPrefix: "",
@@ -209,6 +304,11 @@ export async function POST(request: Request) {
   if (provider === "deepinfra") {
     const result = await testDeepInfraApiKey(apiKey);
     return NextResponse.json({ success: result.ok, message: result.info });
+  }
+
+  if (provider === "hopscotch") {
+    const result = await testHopscotchApiKey(apiKey);
+    return NextResponse.json({ success: result.ok, message: result.info, models: result.models || [] });
   }
 
   const endpoint = TEST_ENDPOINTS[provider];

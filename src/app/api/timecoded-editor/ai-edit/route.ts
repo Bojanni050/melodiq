@@ -161,6 +161,12 @@ export async function POST(request: NextRequest) {
     (await getSetting("DEEPINFRA_MODEL")) ||
     process.env.DEEPINFRA_MODEL ||
     "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
+  const timecodedModelHopscotch =
+    (await getSetting("HOPSCOTCH_TIMECODED_MODEL")) ||
+    (await getSetting("HOPSCOTCH_LYRICS_MODEL")) ||
+    (await getSetting("HOPSCOTCH_MODEL")) ||
+    process.env.HOPSCOTCH_MODEL ||
+    "openai/gpt-4o-mini";
 
   const systemPrompt = buildSystemPrompt(action as AIEditAction, typeof language === "string" ? language : undefined);
   const userPrompt = JSON.stringify(validatedLines, null, 2);
@@ -173,6 +179,7 @@ export async function POST(request: NextRequest) {
       openAiModelOverride: timecodedModelOpenAi,
       edenAiModelOverride: timecodedModelEdenAi,
       deepInfraModelOverride: timecodedModelDeepInfra,
+      hopscotchModelOverride: timecodedModelHopscotch,
       temperature: 0.3, // low temperature for editing tasks
     });
 

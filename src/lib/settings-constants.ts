@@ -333,6 +333,68 @@ export const PROVIDERS: ProviderConfig[] = [
     testEndpoint: "deepinfra",
   },
   {
+    id: "hopscotch",
+    name: "Hopscotch",
+    description: "OpenAI-compatible router across providers (OpenAI, Anthropic, Google, Meta, etc.)",
+    fields: [
+      {
+        key: "HOPSCOTCH_API_KEY",
+        label: "API Key",
+        type: "password",
+        placeholder: "ub_live_...",
+      },
+      {
+        key: "HOPSCOTCH_MODEL",
+        label: "Default Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_PROMPT_MODEL",
+        label: "Prompt Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_LYRICS_MODEL",
+        label: "Lyrics Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_IMAGE_MODEL",
+        label: "Image Prompt Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_TRACKDNA_MODEL",
+        label: "Track DNA Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_ADVANCED_DNA_MODEL",
+        label: "Advanced DNA Model",
+        type: "text",
+        placeholder: "google/gemini-2.5-flash",
+      },
+      {
+        key: "HOPSCOTCH_LYRICIQ_MODEL",
+        label: "LyricIQ Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+      {
+        key: "HOPSCOTCH_TIMECODED_MODEL",
+        label: "Timecoded Editor Model",
+        type: "text",
+        placeholder: "openai/gpt-4o-mini",
+      },
+    ],
+    testEndpoint: "hopscotch",
+  },
+  {
     id: "apiframe",
     name: "APIFrame",
     description: "Unified AI music generation (Suno, Udio, Lyria, Mureka, ElevenLabs)",

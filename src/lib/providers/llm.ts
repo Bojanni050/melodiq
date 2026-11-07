@@ -9,7 +9,11 @@ const LOG_FILE = "track-dna.log";
 // completion path and the public model catalog both hang off it.
 const DEEPINFRA_BASE_URL = "https://api.deepinfra.com/v1/openai";
 
-export type LLMProvider = "openrouter" | "openai" | "edenai" | "deepinfra";
+// Hopscotch is an OpenAI-compatible LLM router. Its SDK base URL is the /v1
+// prefix; model ids are always provider-pinned ("provider/model").
+const HOPSCOTCH_BASE_URL = "https://api.hopscotchlabs.ai/v1";
+
+export type LLMProvider = "openrouter" | "openai" | "edenai" | "deepinfra" | "hopscotch";
 export type LLMPurpose = "prompt" | "lyrics" | "image" | "trackdna" | "advanced" | "lyriciq" | "default";
 
 interface CallLLMOptions {
@@ -19,12 +23,19 @@ interface CallLLMOptions {
   openAiModelOverride?: string;
   edenAiModelOverride?: string;
   deepInfraModelOverride?: string;
+  hopscotchModelOverride?: string;
   temperature?: number;
   topP?: number;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
-  if (value === "openrouter" || value === "openai" || value === "edenai" || value === "deepinfra") {
+  if (
+    value === "openrouter" ||
+    value === "openai" ||
+    value === "edenai" ||
+    value === "deepinfra" ||
+    value === "hopscotch"
+  ) {
     return value;
   }
   return "";
@@ -114,6 +125,18 @@ export async function callLLM(
     (await getSetting("DEEPINFRA_MODEL")) ||
     process.env.DEEPINFRA_MODEL ||
     "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
+  const HOPSCOTCH_KEY = (await getSetting("HOPSCOTCH_API_KEY")) || process.env.HOPSCOTCH_API_KEY || "";
+  const HOPSCOTCH_MODEL =
+    normalizedOptions.hopscotchModelOverride ||
+    (purpose === "prompt" ? await getSetting("HOPSCOTCH_PROMPT_MODEL") : "") ||
+    (purpose === "lyrics" ? await getSetting("HOPSCOTCH_LYRICS_MODEL") : "") ||
+    (purpose === "image" ? await getSetting("HOPSCOTCH_IMAGE_MODEL") : "") ||
+    (purpose === "trackdna" ? await getSetting("HOPSCOTCH_TRACKDNA_MODEL") : "") ||
+    (purpose === "advanced" ? await getSetting("HOPSCOTCH_ADVANCED_DNA_MODEL") : "") ||
+    (purpose === "lyriciq" ? await getSetting("HOPSCOTCH_LYRICIQ_MODEL") : "") ||
+    (await getSetting("HOPSCOTCH_MODEL")) ||
+    process.env.HOPSCOTCH_MODEL ||
+    "openai/gpt-4o-mini";
 
   if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
     let res;
@@ -340,6 +363,63 @@ export async function callLLM(
     return content;
   }
 
+  if (requestedProvider === "hopscotch" && HOPSCOTCH_KEY) {
+    let res;
+    try {
+      // Hopscotch is an OpenAI-compatible router; the model must be
+      // provider-pinned (e.g. "openai/gpt-4o-mini").
+      res = await axios.post(
+        `${HOPSCOTCH_BASE_URL}/chat/completions`,
+        {
+          model: HOPSCOTCH_MODEL,
+          temperature: normalizedOptions.temperature,
+          top_p: normalizedOptions.topP,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${HOPSCOTCH_KEY}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 60_000,
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const looksLikeHtml =
+        typeof data === "string" && data.trimStart().startsWith("<");
+      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+
+      if (looksLikeHtml || isParseError) {
+        throw new Error(
+          `Hopscotch (${HOPSCOTCH_MODEL}) returned a non-JSON response` +
+          (status ? ` (HTTP ${status})` : "") +
+          `. The model is likely overloaded or unavailable — try again or switch model.`
+        );
+      }
+
+      const apiMessage =
+        (typeof data === "object" && (data?.error?.message || data?.message)) ||
+        err?.message ||
+        "Hopscotch request failed";
+      throw new Error(
+        `Hopscotch request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+      );
+    }
+
+    const content = res.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error(
+        `Hopscotch response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    return content;
+  }
+
   throw new Error(`No ${requestedProvider} LLM provider configured. Check the selected provider and API key in Settings.`);
 }
 
@@ -496,7 +576,10 @@ const DEFAULT_AUDIO_MODEL: Record<LLMProvider, string> = {
   openai: "gpt-4o-audio-preview",
   // DeepInfra serves Gemini through its OpenAI-compatible endpoint and tags it
   // with "input-audio", so the same model works as a safe audio fallback.
+  // Hopscotch routes to the same multimodal models (e.g. Gemini 2.5 Flash),
+  // which accepts audio input through the OpenAI-compatible content shape.
   deepinfra: "google/gemini-2.5-flash",
+  hopscotch: "google/gemini-2.5-flash",
 };
 
 interface AudioProviderConfig {
@@ -570,6 +653,20 @@ async function resolveAudioProviderConfig(purpose: LLMPurpose): Promise<AudioPro
       apiKey,
       model,
       url: `${DEEPINFRA_BASE_URL}/chat/completions`,
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    };
+  }
+
+  if (provider === "hopscotch") {
+    const apiKey = (await getSetting("HOPSCOTCH_API_KEY")) || process.env.HOPSCOTCH_API_KEY || "";
+    if (!apiKey) return null;
+    const model =
+      (await getSetting(`HOPSCOTCH_${modelSettingSuffix}`)) || DEFAULT_AUDIO_MODEL.hopscotch;
+    return {
+      provider,
+      apiKey,
+      model,
+      url: `${HOPSCOTCH_BASE_URL}/chat/completions`,
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     };
   }
@@ -703,11 +800,12 @@ Type: ${type}
 Musical Style/Genre Cues: ${songContent}
 ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
 
-  const [openRouterImageModel, openAiImageModel, edenAiImageModel, deepInfraImageModel] = await Promise.all([
+  const [openRouterImageModel, openAiImageModel, edenAiImageModel, deepInfraImageModel, hopscotchImageModel] = await Promise.all([
     getSetting("OPENROUTER_IMAGE_MODEL"),
     getSetting("OPENAI_IMAGE_MODEL"),
     getSetting("EDENAI_IMAGE_MODEL"),
     getSetting("DEEPINFRA_IMAGE_MODEL"),
+    getSetting("HOPSCOTCH_IMAGE_MODEL"),
   ]);
   return callLLM(userPrompt, systemPrompt, {
     purpose: "image",
@@ -715,6 +813,7 @@ ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
     openAiModelOverride: openAiImageModel || undefined,
     edenAiModelOverride: edenAiImageModel || undefined,
     deepInfraModelOverride: deepInfraImageModel || undefined,
+    hopscotchModelOverride: hopscotchImageModel || undefined,
   });
 }
 

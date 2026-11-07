@@ -99,6 +99,7 @@ const PROVIDER_KEY_PREFIX: Record<string, string> = {
   openai: "OPENAI",
   edenai: "EDENAI",
   deepinfra: "DEEPINFRA",
+  hopscotch: "HOPSCOTCH",
 };
 
 // Setting key that holds the selected model for one purpose on one provider,
@@ -129,6 +130,8 @@ export default function SettingsPage() {
   const [retrievingEdenAiModels, setRetrievingEdenAiModels] = useState(false);
   const [deepInfraModels, setDeepInfraModels] = useState<LLMModel[]>([]);
   const [retrievingDeepInfraModels, setRetrievingDeepInfraModels] = useState(false);
+  const [hopscotchModels, setHopscotchModels] = useState<LLMModel[]>([]);
+  const [retrievingHopscotchModels, setRetrievingHopscotchModels] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [showPromptModelDropdown, setShowPromptModelDropdown] = useState(false);
   const [showLyricsModelDropdown, setShowLyricsModelDropdown] = useState(false);
@@ -181,6 +184,9 @@ export default function SettingsPage() {
           DEEPINFRA_PROMPT_MODEL: data.DEEPINFRA_PROMPT_MODEL || data.DEEPINFRA_MODEL || "",
           DEEPINFRA_LYRICS_MODEL: data.DEEPINFRA_LYRICS_MODEL || data.DEEPINFRA_MODEL || "",
           DEEPINFRA_TRACKDNA_MODEL: data.DEEPINFRA_TRACKDNA_MODEL || data.DEEPINFRA_MODEL || "",
+          HOPSCOTCH_PROMPT_MODEL: data.HOPSCOTCH_PROMPT_MODEL || data.HOPSCOTCH_MODEL || "",
+          HOPSCOTCH_LYRICS_MODEL: data.HOPSCOTCH_LYRICS_MODEL || data.HOPSCOTCH_MODEL || "",
+          HOPSCOTCH_TRACKDNA_MODEL: data.HOPSCOTCH_TRACKDNA_MODEL || data.HOPSCOTCH_MODEL || "",
         };
         const withWebhookDefaults = applyWebhookDefaults(settings);
         setValues(withWebhookDefaults);
@@ -206,6 +212,13 @@ export default function SettingsPage() {
         if (settings.DEEPINFRA_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.DEEPINFRA_ADVANCED_DNA_MODEL));
         if (settings.DEEPINFRA_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.DEEPINFRA_LYRICIQ_MODEL));
         if (settings.DEEPINFRA_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.DEEPINFRA_TIMECODED_MODEL));
+        if (settings.HOPSCOTCH_PROMPT_MODEL) setSelectedPromptModel(createModelPlaceholder(settings.HOPSCOTCH_PROMPT_MODEL));
+        if (settings.HOPSCOTCH_LYRICS_MODEL) setSelectedLyricsModel(createModelPlaceholder(settings.HOPSCOTCH_LYRICS_MODEL));
+        if (settings.HOPSCOTCH_IMAGE_MODEL) setSelectedImageModel(createModelPlaceholder(settings.HOPSCOTCH_IMAGE_MODEL));
+        if (settings.HOPSCOTCH_TRACKDNA_MODEL) setSelectedTrackDnaModel(createModelPlaceholder(settings.HOPSCOTCH_TRACKDNA_MODEL));
+        if (settings.HOPSCOTCH_ADVANCED_DNA_MODEL) setSelectedAdvancedDnaModel(createModelPlaceholder(settings.HOPSCOTCH_ADVANCED_DNA_MODEL));
+        if (settings.HOPSCOTCH_LYRICIQ_MODEL) setSelectedLyricIqModel(createModelPlaceholder(settings.HOPSCOTCH_LYRICIQ_MODEL));
+        if (settings.HOPSCOTCH_TIMECODED_MODEL) setSelectedTimecodedModel(createModelPlaceholder(settings.HOPSCOTCH_TIMECODED_MODEL));
       }
     }
     loadSettings();
@@ -235,6 +248,45 @@ export default function SettingsPage() {
       setDeepInfraModels(await fetchDeepInfraModels());
     } finally {
       setRetrievingDeepInfraModels(false);
+    }
+  }
+
+  // Hopscotch's /v1/models requires the key, so (like OpenRouter) this posts
+  // the key currently in the form to the test route, which returns the catalog.
+  async function getHopscotchModels() {
+    const apiKey = values.HOPSCOTCH_API_KEY || "";
+    if (!apiKey) return;
+    setRetrievingHopscotchModels(true);
+    try {
+      const res = await fetch("/api/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "hopscotch", apiKey }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const fetched: LLMModel[] = data.models || [];
+        setHopscotchModels(fetched);
+        setModelSearchQuery("");
+        const match = (key: string, fallbackKey?: string) =>
+          fetched.find((m) => m.id === (values[key] || (fallbackKey ? values[fallbackKey] : "")));
+        const matchPrompt = match("HOPSCOTCH_PROMPT_MODEL", "HOPSCOTCH_MODEL");
+        const matchLyrics = match("HOPSCOTCH_LYRICS_MODEL", "HOPSCOTCH_MODEL");
+        const matchImage = match("HOPSCOTCH_IMAGE_MODEL");
+        const matchTrackDna = match("HOPSCOTCH_TRACKDNA_MODEL", "HOPSCOTCH_MODEL");
+        const matchAdvancedDna = match("HOPSCOTCH_ADVANCED_DNA_MODEL", "HOPSCOTCH_MODEL");
+        const matchLyricIq = match("HOPSCOTCH_LYRICIQ_MODEL", "HOPSCOTCH_MODEL");
+        const matchTimecoded = match("HOPSCOTCH_TIMECODED_MODEL", "HOPSCOTCH_MODEL");
+        if (matchPrompt) setSelectedPromptModel(matchPrompt);
+        if (matchLyrics) setSelectedLyricsModel(matchLyrics);
+        if (matchImage) setSelectedImageModel(matchImage);
+        if (matchTrackDna) setSelectedTrackDnaModel(matchTrackDna);
+        if (matchAdvancedDna) setSelectedAdvancedDnaModel(matchAdvancedDna);
+        if (matchLyricIq) setSelectedLyricIqModel(matchLyricIq);
+        if (matchTimecoded) setSelectedTimecodedModel(matchTimecoded);
+      }
+    } finally {
+      setRetrievingHopscotchModels(false);
     }
   }
 
@@ -293,6 +345,35 @@ export default function SettingsPage() {
     values.DEEPINFRA_ADVANCED_DNA_MODEL,
     values.DEEPINFRA_LYRICIQ_MODEL,
     values.DEEPINFRA_TIMECODED_MODEL,
+  ]);
+
+  // Same placeholder -> full model upgrade for Hopscotch, from the catalog the
+  // Retrieve button fetched with the key.
+  useEffect(() => {
+    if (hopscotchModels.length === 0) return;
+    const upgrade = (key: string, setter: (m: LLMModel) => void) => {
+      const id = values[key];
+      if (!id) return;
+      const match = hopscotchModels.find((m) => m.id === id);
+      if (match) setter(match);
+    };
+    upgrade("HOPSCOTCH_PROMPT_MODEL", setSelectedPromptModel);
+    upgrade("HOPSCOTCH_LYRICS_MODEL", setSelectedLyricsModel);
+    upgrade("HOPSCOTCH_IMAGE_MODEL", setSelectedImageModel);
+    upgrade("HOPSCOTCH_TRACKDNA_MODEL", setSelectedTrackDnaModel);
+    upgrade("HOPSCOTCH_ADVANCED_DNA_MODEL", setSelectedAdvancedDnaModel);
+    upgrade("HOPSCOTCH_LYRICIQ_MODEL", setSelectedLyricIqModel);
+    upgrade("HOPSCOTCH_TIMECODED_MODEL", setSelectedTimecodedModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    hopscotchModels,
+    values.HOPSCOTCH_PROMPT_MODEL,
+    values.HOPSCOTCH_LYRICS_MODEL,
+    values.HOPSCOTCH_IMAGE_MODEL,
+    values.HOPSCOTCH_TRACKDNA_MODEL,
+    values.HOPSCOTCH_ADVANCED_DNA_MODEL,
+    values.HOPSCOTCH_LYRICIQ_MODEL,
+    values.HOPSCOTCH_TIMECODED_MODEL,
   ]);
 
   function updateField(key: string, value: string) {
@@ -538,6 +619,7 @@ export default function SettingsPage() {
   const filteredModels = sortByName(searchModels(allModels));
   const filteredEdenAiModels = sortByName(searchModels(edenAiModels));
   const filteredDeepInfraModels = sortByName(searchModels(deepInfraModels));
+  const filteredHopscotchModels = sortByName(searchModels(hopscotchModels));
 
   // Advanced DNA's composition critique is the one DNA purpose that benefits
   // from actually listening to the track rather than judging from text alone
@@ -549,13 +631,17 @@ export default function SettingsPage() {
   // DeepInfra's native catalog tags audio-capable chat models (input-audio),
   // so Advanced DNA can be routed there too.
   const filteredDeepInfraModelsForAdvancedDna = audioCapableModels(filteredDeepInfraModels);
+  // Hopscotch's catalog records an explicit audio capability per model, so the
+  // same filter applies there.
+  const filteredHopscotchModelsForAdvancedDna = audioCapableModels(filteredHopscotchModels);
 
   const musicProviders = PROVIDERS.filter((p) => ["lyria", "poyo", "tempolor", "musicgpt", "mureka", "apiframe", "apimart", "quicklrc", "elevenlabs"].includes(p.id));
-  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai", "deepinfra"].includes(p.id));
+  const llmProviders = PROVIDERS.filter((p) => ["openrouter", "openai", "edenai", "deepinfra", "hopscotch"].includes(p.id));
   const openrouterProvider = llmProviders.find((p) => p.id === "openrouter")!;
   const openaiProvider = llmProviders.find((p) => p.id === "openai")!;
   const edenaiProvider = llmProviders.find((p) => p.id === "edenai")!;
   const deepinfraProvider = llmProviders.find((p) => p.id === "deepinfra")!;
+  const hopscotchProvider = llmProviders.find((p) => p.id === "hopscotch")!;
   // Routing purposes currently served by a given LLM provider (empty = not used).
   const purposesFor = (providerId: string) =>
     LLM_ROUTING_PURPOSES.filter((p) => (values[p.key] || "openrouter") === providerId).map((p) => p.label);
@@ -617,6 +703,14 @@ export default function SettingsPage() {
                         testingModels={retrievingDeepInfraModels}
                         activePurposes={purposesFor("deepinfra")}
                       />
+                      <ProviderSection
+                        provider={hopscotchProvider}
+                        values={values}
+                        onFieldChange={updateField}
+                        onGetModels={getHopscotchModels}
+                        testingModels={retrievingHopscotchModels}
+                        activePurposes={purposesFor("hopscotch")}
+                      />
                     </div>
                   )}
 
@@ -652,9 +746,12 @@ export default function SettingsPage() {
                   filteredEdenAiModels={filteredEdenAiModels}
                   deepInfraModels={deepInfraModels}
                   filteredDeepInfraModels={filteredDeepInfraModels}
+                  hopscotchModels={hopscotchModels}
+                  filteredHopscotchModels={filteredHopscotchModels}
                   filteredModelsForAdvancedDna={filteredModelsForAdvancedDna}
                   filteredEdenAiModelsForAdvancedDna={filteredEdenAiModelsForAdvancedDna}
                   filteredDeepInfraModelsForAdvancedDna={filteredDeepInfraModelsForAdvancedDna}
+                  filteredHopscotchModelsForAdvancedDna={filteredHopscotchModelsForAdvancedDna}
                   modelSearchQuery={modelSearchQuery}
                   selectedPromptModel={selectedPromptModel}
                   selectedLyricsModel={selectedLyricsModel}
@@ -695,6 +792,8 @@ export default function SettingsPage() {
                   testingEdenAiModels={retrievingEdenAiModels}
                   onGetDeepInfraModels={getDeepInfraModels}
                   testingDeepInfraModels={retrievingDeepInfraModels}
+                  onGetHopscotchModels={getHopscotchModels}
+                  testingHopscotchModels={retrievingHopscotchModels}
                 />
               )}
 
