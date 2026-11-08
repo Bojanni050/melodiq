@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { formatDuration } from "@/lib/track-utils";
@@ -30,6 +30,8 @@ export interface PublicArtist {
   imageUrl: string | null;
   /** Full-bleed background. Falls back to the first track's cover server-side. */
   heroUrl: string | null;
+  /** Gallery photo URLs in display order. Absent or empty hides the section. */
+  gallery?: string[];
 }
 
 interface Props {
@@ -39,7 +41,7 @@ interface Props {
   notFound: boolean;
 }
 
-const NAV_LINKS = ["Bio", "Music"];
+const NAV_LINKS = ["Bio", "Music", "Photos"];
 
 function formatPlays(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
@@ -60,6 +62,8 @@ function formatPlays(n: number): string {
  */
 export default function ArtistPublicPage({ artist, tracks, loading, notFound }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Index of the photo open in the lightbox, or null when closed.
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const router = useRouter();
 
   function handleBack() {
@@ -118,6 +122,21 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
       publicSource: true,
     });
   }
+
+  const gallery = artist?.gallery ?? [];
+
+  // Keyboard control for the lightbox; only attached while it is open.
+  useEffect(() => {
+    if (lightbox === null) return;
+    const count = gallery.length;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightbox(null);
+      else if (e.key === "ArrowRight") setLightbox((i) => (i === null ? i : (i + 1) % count));
+      else if (e.key === "ArrowLeft") setLightbox((i) => (i === null ? i : (i - 1 + count) % count));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, gallery.length]);
 
   if (loading) {
     return <div className="min-h-screen bg-canvas" />;
@@ -362,6 +381,97 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
           )}
         </div>
       </section>
+
+      {/* Photo gallery */}
+      {gallery.length > 0 && (
+        <section id="photos" className="border-t border-line px-6 pb-24 pt-12">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mb-8 flex items-baseline justify-between">
+              <h2 className="font-display text-[clamp(32px,5vw,64px)] font-black text-ink">
+                Photos
+              </h2>
+              <span className="font-mono text-[11px] text-ink-dim">{gallery.length}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {gallery.map((src, index) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => setLightbox(index)}
+                  aria-label={`${artist.name} photo ${index + 1}`}
+                  className="group aspect-square cursor-pointer overflow-hidden border border-line bg-surface p-0"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {lightbox !== null && gallery[lightbox] && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${artist.name} photos`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/95 p-4"
+          onClick={() => setLightbox(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={gallery[lightbox]}
+            alt=""
+            className="max-h-full max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-canvas/70 p-0 text-ink"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <path d="M3 3l10 10M13 3L3 13" />
+            </svg>
+          </button>
+          {gallery.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox((lightbox - 1 + gallery.length) % gallery.length);
+                }}
+                aria-label="Previous photo"
+                className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-canvas/70 p-0 text-ink"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox((lightbox + 1) % gallery.length);
+                }}
+                aria-label="Next photo"
+                className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-canvas/70 p-0 text-ink"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3l5 5-5 5" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="flex items-center justify-between border-t border-line px-6 py-8 sm:px-12">

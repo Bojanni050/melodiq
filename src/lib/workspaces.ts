@@ -92,6 +92,8 @@ export async function ensureWorkspaceSchema(): Promise<void> {
       await db.execute(sql`CREATE INDEX IF NOT EXISTS artist_pages_user_id_idx ON artist_pages(user_id)`);
       await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS artist_pages_user_alias_unique ON artist_pages(user_id, alias)`);
       await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS artist_pages_slug_unique ON artist_pages(slug)`);
+      await db.execute(sql`ALTER TABLE artist_pages ADD COLUMN IF NOT EXISTS bio_nl text`);
+      await db.execute(sql`ALTER TABLE artist_pages ADD COLUMN IF NOT EXISTS gallery_s3_keys text`);
     } catch {
       // If schema updates are blocked by DB permissions, we keep read-path fallbacks active.
     }

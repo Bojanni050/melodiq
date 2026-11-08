@@ -235,6 +235,7 @@ CREATE INDEX IF NOT EXISTS "artist_pages_user_id_idx" ON "artist_pages"("user_id
 CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_user_alias_unique" ON "artist_pages"("user_id", "alias");
 CREATE UNIQUE INDEX IF NOT EXISTS "artist_pages_slug_unique" ON "artist_pages"("slug");
 ALTER TABLE artist_pages ADD COLUMN IF NOT EXISTS bio_nl text;
+ALTER TABLE artist_pages ADD COLUMN IF NOT EXISTS gallery_s3_keys text;
 
 CREATE TABLE IF NOT EXISTS "api_logs" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),

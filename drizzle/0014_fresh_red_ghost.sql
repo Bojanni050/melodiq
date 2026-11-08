@@ -1,0 +1,1 @@
+ALTER TABLE "artist_pages" ADD COLUMN "gallery_s3_keys" text;

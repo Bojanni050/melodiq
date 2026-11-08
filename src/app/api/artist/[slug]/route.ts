@@ -6,7 +6,7 @@ import { artistPages, tracks, users } from "@/db/schema";
 import { getCdnUrl } from "@/lib/cdn-server";
 import { prefixCdn } from "@/lib/cdn";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
-import { publishedArtistTracksFilter } from "@/lib/artist-pages";
+import { galleryPhotoId, parseGalleryKeys, publishedArtistTracksFilter } from "@/lib/artist-pages";
 
 interface AudioDnaShape {
   atmosphereTags?: string[] | null;
@@ -47,6 +47,7 @@ export async function GET(
       bioNl: artistPages.bioNl,
       imageS3Key: artistPages.imageS3Key,
       heroS3Key: artistPages.heroS3Key,
+      galleryS3Keys: artistPages.galleryS3Keys,
       updatedAt: artistPages.updatedAt,
       userId: artistPages.userId,
     })
@@ -141,6 +142,12 @@ export async function GET(
       },
       imageUrl: page.imageS3Key ? imageUrl("profile") : null,
       heroUrl: page.heroS3Key ? imageUrl("hero") : heroTrack ? rewriteCoverUrl(heroTrack.coverUrl) || withDiscoverProxy(heroTrack.id) : null,
+      gallery: parseGalleryKeys(page.galleryS3Keys).map((key) =>
+        prefixCdn(
+          cdnUrl,
+          `/api/artist/${page.slug}/image?variant=gallery&photo=${galleryPhotoId(key)}${imageVersion ? `&v=${imageVersion}` : ""}`
+        )
+      ),
     },
     tracks: trackList,
   });

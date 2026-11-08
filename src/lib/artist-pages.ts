@@ -116,3 +116,23 @@ export function publishedArtistTracksFilter(userId: string, alias: string): SQL 
     isNull(tracks.hiddenAt)
   ) as SQL;
 }
+
+export const ARTIST_PAGE_GALLERY_MAX = 24;
+
+/** Parses the stored JSON array of gallery S3 keys; anything malformed is an empty gallery. */
+export function parseGalleryKeys(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Public photo id: the file name of the S3 key without its extension (a uuid). */
+export function galleryPhotoId(key: string): string {
+  const name = key.split("/").pop() ?? key;
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(0, dot) : name;
+}

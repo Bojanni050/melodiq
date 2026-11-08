@@ -77,6 +77,10 @@ export const artistPages = pgTable("artist_pages", {
   bioNl: text("bio_nl"),
   imageS3Key: text("image_s3_key"),
   heroS3Key: text("hero_s3_key"),
+  // Photo gallery: JSON array of S3 keys in display order (see parseGalleryKeys
+  // in lib/artist-pages.ts). A text column rather than a child table because the
+  // gallery is small, capped, and only ever read and written as one list.
+  galleryS3Keys: text("gallery_s3_keys"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

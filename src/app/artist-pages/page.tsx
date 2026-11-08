@@ -7,7 +7,12 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { useSidebarStore, useUserStore } from "@/lib/store";
 import { useT } from "@/hooks/useT";
-import { ARTIST_PAGE_BIO_MAX_LENGTH } from "@/lib/artist-pages";
+import {
+  ARTIST_PAGE_BIO_MAX_LENGTH,
+  ARTIST_PAGE_GALLERY_MAX,
+  galleryPhotoId,
+  parseGalleryKeys,
+} from "@/lib/artist-pages";
 
 interface ArtistPageRow {
   id: string;
@@ -17,6 +22,7 @@ interface ArtistPageRow {
   bioNl: string | null;
   imageS3Key: string | null;
   heroS3Key: string | null;
+  galleryS3Keys: string | null;
   updatedAt?: string;
 }
 
@@ -183,6 +189,40 @@ export default function ArtistPagesPage() {
       setError(data.error || t("account.uploadFailed"));
     }
     setUploading(null);
+  }
+
+  async function handleGalleryAdd(id: string, files: File[]) {
+    setUploading(`${id}:gallery`);
+    setMessage("");
+    setError("");
+    const fd = new FormData();
+    files.forEach((file) => fd.append("files", file));
+    const res = await fetch(`/api/artist-pages/${id}/gallery`, { method: "POST", body: fd });
+    if (res.ok) {
+      await load();
+      setMessage(t("account.imageUploaded"));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || t("account.uploadFailed"));
+    }
+    setUploading(null);
+  }
+
+  async function handleGalleryRemove(id: string, photoId: string) {
+    if (!window.confirm(t("artistPages.galleryRemoveConfirm"))) return;
+    setMessage("");
+    setError("");
+    const res = await fetch(`/api/artist-pages/${id}/gallery`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photoId }),
+    });
+    if (res.ok) {
+      await load();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || t("artistPages.deleteFailed"));
+    }
   }
 
   return (
@@ -361,6 +401,68 @@ export default function ArtistPagesPage() {
                             />
                           </label>
                         </Field>
+
+                        {(() => {
+                          const photoIds = parseGalleryKeys(page.galleryS3Keys).map(galleryPhotoId);
+                          const full = photoIds.length >= ARTIST_PAGE_GALLERY_MAX;
+                          return (
+                            <Field
+                              label={`${t("artistPages.gallery")} (${photoIds.length}/${ARTIST_PAGE_GALLERY_MAX})`}
+                              hint={t("artistPages.galleryHint", { max: String(ARTIST_PAGE_GALLERY_MAX) })}
+                            >
+                              {photoIds.length === 0 ? (
+                                <p className="mb-3 text-sm text-ink-dim">{t("artistPages.galleryEmpty")}</p>
+                              ) : (
+                                <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                                  {photoIds.map((photoId) => (
+                                    <div key={photoId} className="group relative aspect-square overflow-hidden rounded-2xl border border-line">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={`/api/artist/${page.slug}/image?variant=gallery&photo=${photoId}&v=${imageVersion(page.updatedAt)}`}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleGalleryRemove(page.id, photoId)}
+                                        aria-label={t("artistPages.galleryRemove")}
+                                        title={t("artistPages.galleryRemove")}
+                                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-canvas/70 text-ink transition-colors hover:text-red-200"
+                                      >
+                                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+                                          <path d="M2 2l8 8M10 2l-8 8" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <label
+                                className={`flex h-10 items-center justify-center rounded-full border border-line bg-white/5 text-sm text-ink/75 transition-colors ${
+                                  full ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-white/10"
+                                }`}
+                              >
+                                {uploading === `${page.id}:gallery`
+                                  ? t("artistPages.uploading")
+                                  : full
+                                    ? t("artistPages.galleryFull")
+                                    : t("artistPages.galleryAdd")}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  disabled={full || uploading === `${page.id}:gallery`}
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const files = Array.from(e.target.files ?? []);
+                                    e.target.value = "";
+                                    if (files.length > 0) handleGalleryAdd(page.id, files);
+                                  }}
+                                />
+                              </label>
+                            </Field>
+                          );
+                        })()}
 
                         <Field
                           label={t("artistPages.bio")}
