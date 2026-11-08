@@ -93,7 +93,8 @@ export async function GET(
     const year = (row.publishDate ?? row.createdAt).getFullYear();
     return {
       id: row.id,
-      title: row.title || "Untitled",
+      // Same rule as TrackCard/Player: a trailing " (2)" is the second Suno variant, not part of the title.
+      title: (row.title || "Untitled").replace(/\s*\(2\)\s*$/, ""),
       hasCoverProxy: Boolean(!row.coverUrl && row.s3KeyCover),
       coverUrl: rewriteCoverUrl(row.coverUrl),
       duration: row.duration,
