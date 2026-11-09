@@ -1069,7 +1069,11 @@ const TrackCard = memo(function TrackCard({
             <span className={`${status.label === "Ready" ? "hidden sm:inline-flex" : "inline-flex"} text-[10px] px-1.5 py-0.5 rounded ${status.color} ${statusAnimationClass} shrink-0`}>
               {status.label}
             </span>
-            {track.status === "done" && (
+            {/* Publish state is an owner-side concept: every track on a public
+                page (discover/release/artist) is published by definition, and
+                those public payloads carry no releaseStatus — which used to
+                render a nonsensical "Unreleased" tag on every row. */}
+            {track.status === "done" && !track.publicSource && (
               <span
                 className={`hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
                   localReleaseStatus === "published"

@@ -721,3 +721,9 @@
 - Findings: De artiestenpagina toonde "Not Mad (2)" in plaats van "Not Mad". Het achtervoegsel " (2)" is de tweede Suno-variant; TrackCard, Player en de rest van de app strippen het al, maar de twee publieke artiest-API's gaven `tracks.title` ongewijzigd door.
 - Conclusions: Zelfde regel (`/\s*\(2\)\s*$/`) server-side toegepast, zodat beide publieke artiestenpagina's (`/artist/[slug]` en `/discover/artist/[userId]`) consistent zijn met de rest van de app.
 - Actions: `src/app/api/artist/[slug]/route.ts` en `src/app/api/discover/artist/[userId]/route.ts` - titel gestript; validated met `tsc --noEmit` en `npm run build`.
+
+## 2026-11-09 (Geen "Unreleased"-tag meer op publieke pagina's)
+
+- Findings: Op de releases-pagina stond bij elke trackrij de tag `Unreleased`, ook bij releases die allang gepubliceerd waren. De badge in `TrackCard` werd gevoed door `track.releaseStatus`, maar de publieke API's mappen hun payload via `publicReleaseTracksToTrackItems()` (en vergelijkbare publieke mappers) zonder dat veld; met `publicSource: true` en `releaseStatus: null` viel de badge dus altijd terug op `Unreleased`.
+- Conclusions: Publish-status is owner-informatie. Een publieke pagina toont per definitie al gepubliceerde tracks en heeft het veld niet nodig, dus de badge wordt daar volledig verborgen in plaats van een verkeerde waarde te tonen. De owner-kant (library, releases, archief) blijft ongewijzigd en blijft de echte status tonen.
+- Actions: `src/components/tracks/TrackCard.tsx` - badge-conditie uitgebreid met `!track.publicSource` plus toelichtend commentaar; validated met `npm run build` (compiled successfully, TypeScript clean).
