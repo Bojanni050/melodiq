@@ -36,6 +36,30 @@ async function normalizeReleaseOrder(releaseId: string, orderedRows: Array<{ id:
   await applyPositions(0);
 }
 
+// Adding a track to an already-public release should not leave it as a draft:
+// the release page would show "Unreleased" for a track that is live. Mirrors the
+// publish branch of toggle-public, and leaves an already-published track alone so
+// its original publishDate survives.
+async function publishTracksForPublicRelease(
+  userId: string,
+  trackIds: string[],
+  isPublic: boolean
+) {
+  if (!isPublic || trackIds.length === 0) return;
+
+  const now = new Date();
+  await db
+    .update(tracks)
+    .set({ releaseStatus: "published", publishDate: now, updatedAt: now })
+    .where(
+      and(
+        inArray(tracks.id, trackIds),
+        eq(tracks.userId, userId),
+        sql`${tracks.releaseStatus} != 'published'`
+      )
+    );
+}
+
 async function respondWithRelease(userId: string, releaseId: string) {
   const hydrated = await getUserReleasesWithTracks(userId);
   const release = hydrated.find((item) => item.id === releaseId);
@@ -134,6 +158,8 @@ export async function PATCH(
         side,
       });
 
+      await publishTracksForPublicRelease(auth.userId, [trackId], existing.isPublic);
+
       if (nextPosition === 0 && track[0].prompt) {
         // First track added to this release — use it as inspiration for an auto-generated cover.
         // Fire-and-forget: fails silently, response doesn't wait on it.
@@ -211,6 +237,8 @@ export async function PATCH(
           side,
         }))
       );
+
+      await publishTracksForPublicRelease(auth.userId, candidates, existing.isPublic);
 
       if (base === 0) {
         const first = byId.get(candidates[0]);

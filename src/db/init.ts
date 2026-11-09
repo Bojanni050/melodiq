@@ -532,6 +532,22 @@ CREATE TRIGGER track_masters_set_completed_at
   EXECUTE FUNCTION set_completed_at();
 `;
 
+// One-off repair, safe to repeat: a public release is live, so every track on it
+// must be published too. Tracks added after a release went public used to keep
+// their draft status, which hid them from /api/discover/releases (it filters on
+// release_status = 'published') and left an "Unreleased" badge in the owner view.
+const repairReleaseTrackStatusSql = `
+UPDATE tracks AS t
+SET release_status = 'published',
+    publish_date = COALESCE(t.publish_date, now()),
+    updated_at = now()
+FROM release_tracks AS rt
+JOIN releases AS r ON r.id = rt.release_id
+WHERE rt.track_id = t.id
+  AND r.is_public = true
+  AND t.release_status <> 'published'
+`;
+
 async function executeSqlStatements(client: postgres.Sql, sqlBlob: string) {
   const statements = sqlBlob
     .split(";")
@@ -586,6 +602,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterReleasesSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);
     await executeSqlStatements(targetClient, dropSongsSql);
+    await targetClient.unsafe(repairReleaseTrackStatusSql);
     await targetClient.unsafe(completedAtTriggerSql);
     console.log("Database schema ensured (tables, indexes, columns, constraints)");
   } catch (error) {
