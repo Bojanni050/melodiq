@@ -51,8 +51,6 @@ export default function UploadPanel({
   const [queuedUploads, setQueuedUploads] = useState<QueuedUploadItem[]>([]);
   const [pendingMetadataTargetId, setPendingMetadataTargetId] = useState<string | null>(null);
   const [pendingLicenseTargetId, setPendingLicenseTargetId] = useState<string | null>(null);
-  const [uploadPromptDraft, setUploadPromptDraft] = useState("");
-  const [uploadLyricsDraft, setUploadLyricsDraft] = useState("");
   const [uploadInstrumental, setUploadInstrumental] = useState(false);
   const [uploadedHistory, setUploadedHistory] = useState<LibraryTrack[]>([]);
 
@@ -94,8 +92,8 @@ export default function UploadPanel({
         writerName: "",
         coverFile: null,
         metadataFile: null,
-        prompt: uploadPromptDraft,
-        lyrics: uploadLyricsDraft,
+        prompt: "",
+        lyrics: "",
         instrumental: uploadInstrumental,
         sourceProvider: "upload",
         sourceModel: null,
@@ -363,7 +361,7 @@ export default function UploadPanel({
             <div className="flex items-center justify-between  border border-line bg-white/4 px-4 py-2.5">
               <div>
                 <p className="text-sm font-medium text-ink">Instrumental</p>
-                <p className="text-xs text-ink-dim">No lyrics — hides the lyrics field</p>
+                <p className="text-xs text-ink-dim">Default for files you queue next — no lyrics field</p>
               </div>
               <button
                 type="button"
@@ -375,35 +373,6 @@ export default function UploadPanel({
               >
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${uploadInstrumental ? "translate-x-5" : "translate-x-0"}`} />
               </button>
-            </div>
-
-            <div className={`grid gap-3 transition-all duration-200 ${uploadInstrumental ? "sm:grid-cols-1" : "sm:grid-cols-2"}`}>
-              {!uploadInstrumental && (
-                <div className="space-y-1">
-                  <label htmlFor="upload-panel-lyrics" className="text-sm text-ink-muted">Optional lyrics (global)</label>
-                  <textarea
-                    id="upload-panel-lyrics"
-                    value={uploadLyricsDraft}
-                    onChange={(event) => setUploadLyricsDraft(event.target.value)}
-                    rows={3}
-                    disabled={uploading}
-                    placeholder="Paste lyrics"
-                    className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
-                  />
-                </div>
-              )}
-              <div className="space-y-1">
-                <label htmlFor="upload-panel-prompt" className="text-sm text-ink-muted">Optional prompt (global)</label>
-                <textarea
-                  id="upload-panel-prompt"
-                  value={uploadPromptDraft}
-                  onChange={(event) => setUploadPromptDraft(event.target.value)}
-                  rows={3}
-                  disabled={uploading}
-                  placeholder="Style / mood / context"
-                  className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25"
-                />
-              </div>
             </div>
 
             <div className="flex items-center justify-between gap-2">
@@ -792,23 +761,6 @@ export default function UploadPanel({
                       </div>
 
                       <div className={`grid gap-2 ${item.instrumental ? "grid-cols-1" : "grid-cols-2"}`}>
-                        <div className="space-y-1">
-                          <label htmlFor={`upload-item-prompt-${item.id}`} className="text-sm text-ink-dim">Prompt</label>
-                          <textarea
-                            id={`upload-item-prompt-${item.id}`}
-                            value={item.prompt}
-                            onChange={(event) => {
-                              const v = event.target.value;
-                              setQueuedUploads((current) =>
-                                current.map((upload) => upload.id === item.id ? { ...upload, prompt: v } : upload)
-                              );
-                            }}
-                            rows={2}
-                            disabled={uploading}
-                            placeholder="Style / mood / context"
-                            className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
-                          />
-                        </div>
                         {!item.instrumental && (
                           <div className="space-y-1">
                             <label htmlFor={`upload-item-lyrics-${item.id}`} className="text-sm text-ink-dim">Lyrics</label>
@@ -828,6 +780,23 @@ export default function UploadPanel({
                             />
                           </div>
                         )}
+                        <div className="space-y-1">
+                          <label htmlFor={`upload-item-prompt-${item.id}`} className="text-sm text-ink-dim">Prompt</label>
+                          <textarea
+                            id={`upload-item-prompt-${item.id}`}
+                            value={item.prompt}
+                            onChange={(event) => {
+                              const v = event.target.value;
+                              setQueuedUploads((current) =>
+                                current.map((upload) => upload.id === item.id ? { ...upload, prompt: v } : upload)
+                              );
+                            }}
+                            rows={2}
+                            disabled={uploading}
+                            placeholder="Style / mood / context"
+                            className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
+                          />
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
