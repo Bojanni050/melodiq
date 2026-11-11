@@ -781,7 +781,10 @@ export async function POST(request: NextRequest) {
         const itemOverride = uploadItemOverrides[index];
         const isInstrumental = itemOverride?.instrumental ?? globalUploadInstrumental;
         const resolvedProvider = itemOverride?.sourceProvider ?? "upload";
-        const uploadPrompt = sidecarMetadata?.prompt ?? itemOverride?.prompt ?? globalUploadPrompt ?? `Uploaded file: ${file.name}`;
+        // Geen standaardtekst meer: zonder sidecar/veld blijft prompt leeg.
+        // "Uploaded file: <naam>" overschreef anders een prompt die de gebruiker
+        // bewust leeg liet of later zelf wilde vullen.
+        const uploadPrompt = sidecarMetadata?.prompt ?? itemOverride?.prompt ?? globalUploadPrompt ?? "";
         const uploadLyrics = isInstrumental ? null : (sidecarMetadata?.lyrics ?? itemOverride?.lyrics ?? globalUploadLyrics ?? null);
         const uploadLyricsTimestamps = sidecarMetadata?.lyricsTimestamps ?? null;
         const uploadTitle = itemOverride?.title ?? titleFromFilename(file.name);

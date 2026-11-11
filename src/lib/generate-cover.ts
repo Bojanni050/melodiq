@@ -158,7 +158,9 @@ export async function generateAndSaveCoverArt(track: {
   lyrics?: string | null;
 }, options?: { forceNew?: boolean }): Promise<void> {
   try {
-    const shouldReuse = !options?.forceNew;
+    // Zonder prompt is er niets om op te matchen: anders zouden alle uploads
+    // zonder prompt dezelfde (eerst gevonden) cover hergebruiken.
+    const shouldReuse = !options?.forceNew && track.prompt.trim().length > 0;
     const existing = shouldReuse
       ? await findExistingCover({
           userId: track.userId,
