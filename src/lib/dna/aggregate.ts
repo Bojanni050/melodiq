@@ -1,0 +1,776 @@
+import type {
+  AdvancedDnaSummary,
+  DnaBuildResult,
+  DnaCategory,
+  DnaProfileSummary,
+  DnaSourceTrack,
+  DnaTrait,
+} from "./types";
+
+/**
+ * Deterministic Melody DNA aggregation.
+ *
+ * Design rules:
+ * - Only finished, non-deleted tracks are sources (filtered in the repository).
+ * - Every source carries a weight: explicit ratings dominate, plays add a
+ *   little, archived/hidden tracks count less, and older tracks fade with a
+ *   one-year half-life (floored so a long catalogue never fully loses a taste).
+ * - Confidence always reflects evidence: `coverage(n) * agreement`. A trait
+ *   built from two tracks can never look as certain as one built from forty,
+ *   and disagreement between tracks lowers it further.
+ * - Missing signals produce no trait at all instead of a zero value, so the UI
+ *   can show "still learning" rather than inventing numbers.
+ */
+
+const DAY_MS = 86_400_000;
+const HALF_LIFE_DAYS = 365;
+const MIN_RECENCY = 0.2;
+/** Tracks needed before coverage reaches half of its maximum (n/(n+3)). */
+const COVERAGE_HALF_POINT = 3;
+
+const RATING_UP_MULTIPLIER = 3;
+const RATING_DOWN_MULTIPLIER = 0.25;
+const ARCHIVED_MULTIPLIER = 0.5;
+
+/** Genres and moods we can recognise deterministically in a prompt. */
+const GENRE_TERMS = [
+  "drum and bass",
+  "singer-songwriter",
+  "lo-fi",
+  "synthpop",
+  "synthwave",
+  "darksynth",
+  "darkwave",
+  "dream pop",
+  "city pop",
+  "vaporwave",
+  "shoegaze",
+  "post-punk",
+  "post rock",
+  "new wave",
+  "hip hop",
+  "trip hop",
+  "r&b",
+  "neo soul",
+  "indie pop",
+  "indie rock",
+  "indie folk",
+  "alt pop",
+  "pop punk",
+  "hard rock",
+  "soft rock",
+  "classic rock",
+  "progressive rock",
+  "psychedelic rock",
+  "metalcore",
+  "death metal",
+  "black metal",
+  "pop",
+  "rock",
+  "indie",
+  "alternative",
+  "electronic",
+  "electronica",
+  "edm",
+  "house",
+  "deep house",
+  "tech house",
+  "techno",
+  "trance",
+  "dubstep",
+  "breakbeat",
+  "garage",
+  "grime",
+  "trap",
+  "drill",
+  "rap",
+  "soul",
+  "funk",
+  "disco",
+  "jazz",
+  "blues",
+  "country",
+  "folk",
+  "americana",
+  "bluegrass",
+  "metal",
+  "punk",
+  "hardcore",
+  "emo",
+  "ambient",
+  "cinematic",
+  "orchestral",
+  "classical",
+  "chillout",
+  "downtempo",
+  "reggae",
+  "dancehall",
+  "latin",
+  "afrobeat",
+  "salsa",
+  "bossa nova",
+  "gospel",
+  "acoustic",
+  "ballad",
+  "industrial",
+  "k-pop",
+  "j-pop",
+];
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  eng: "English",
+  english: "English",
+  nl: "Dutch",
+  dutch: "Dutch",
+  de: "German",
+  german: "German",
+  fr: "French",
+  french: "French",
+  es: "Spanish",
+  spanish: "Spanish",
+  it: "Italian",
+  italian: "Italian",
+  pt: "Portuguese",
+  portuguese: "Portuguese",
+  sv: "Swedish",
+  swedish: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
+  fi: "Finnish",
+  pl: "Polish",
+  tr: "Turkish",
+  ja: "Japanese",
+  japanese: "Japanese",
+  ko: "Korean",
+  korean: "Korean",
+  zh: "Chinese",
+};
+
+type Weighted = { value: number; weight: number };
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function capitalise(value: string): string {
+  return value.length === 0 ? value : value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function normaliseText(value: string): string {
+  return ` ${value.toLowerCase().replace(/[^a-z0-9&]+/g, " ").trim()} `;
+}
+
+/**
+ * Relative weight of one track in the profile: explicit feedback first, then
+ * plays, then recency. Kept exported because the tests pin this down and later
+ * phases (feedback calibration) will build on it.
+ */
+export function sourceWeight(track: DnaSourceTrack, now: Date): number {
+  let weight = 1;
+
+  if (track.rating === "up") weight *= RATING_UP_MULTIPLIER;
+  else if (track.rating === "down") weight *= RATING_DOWN_MULTIPLIER;
+
+  if (track.playCount > 0) {
+    // Logarithmic: the difference between 0 and 5 plays matters far more than
+    // between 50 and 55.
+    weight *= 1 + Math.min(1, Math.log10(1 + track.playCount) / 2);
+  }
+
+  if (track.archivedAt || track.hiddenAt) weight *= ARCHIVED_MULTIPLIER;
+
+  if (track.createdAt) {
+    const ageDays = Math.max(0, (now.getTime() - track.createdAt.getTime()) / DAY_MS);
+    const decay = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
+    weight *= Math.max(MIN_RECENCY, decay);
+  }
+
+  return weight;
+}
+
+/** n/(n+k): rises quickly with the first few tracks, then flattens out. */
+function coverage(count: number): number {
+  if (count <= 0) return 0;
+  return count / (count + COVERAGE_HALF_POINT);
+}
+
+/**
+ * Weighted mean plus the weighted spread. Spread is what separates "all my
+ * tracks sit around 90 BPM" from "my tracks are everywhere", so it feeds
+ * confidence rather than being thrown away.
+ */
+function weightedStats(samples: Weighted[]): { mean: number; spread: number; weight: number } | null {
+  const usable = samples.filter((s) => Number.isFinite(s.value) && s.weight > 0);
+  if (usable.length === 0) return null;
+
+  const totalWeight = usable.reduce((sum, s) => sum + s.weight, 0);
+  if (totalWeight <= 0) return null;
+
+  const mean = usable.reduce((sum, s) => sum + s.value * s.weight, 0) / totalWeight;
+  const variance = usable.reduce((sum, s) => sum + s.weight * (s.value - mean) ** 2, 0) / totalWeight;
+
+  return { mean, spread: Math.sqrt(variance), weight: totalWeight };
+}
+
+/** Longest + strongest label list, e.g. genres or atmospheres. */
+function weightedCounts(entries: { value: string; weight: number }[]): { value: string; weight: number; count: number }[] {
+  const buckets = new Map<string, { value: string; weight: number; count: number }>();
+  for (const entry of entries) {
+    const key = entry.value.trim().toLowerCase();
+    if (!key || entry.weight <= 0) continue;
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.weight += entry.weight;
+      bucket.count += 1;
+    } else {
+      buckets.set(key, { value: key, weight: entry.weight, count: 1 });
+    }
+  }
+  return [...buckets.values()].sort(
+    (a, b) => b.weight - a.weight || b.count - a.count || a.value.localeCompare(b.value),
+  );
+}
+
+function listTrait(options: {
+  key: string;
+  category: DnaCategory;
+  label: string;
+  values: { value: string; weight: number }[];
+  limit: number;
+}): DnaTrait | null {
+  const ranked = weightedCounts(options.values);
+  if (ranked.length === 0) return null;
+
+  const top = ranked.slice(0, options.limit);
+  const totalWeight = ranked.reduce((sum, item) => sum + item.weight, 0);
+  const sourceCount = ranked.reduce((sum, item) => sum + item.count, 0);
+  // A single dominant tag is more meaningful than a scattering of one-offs, so
+  // the top tag's share of the weight drives agreement.
+  const agreement = totalWeight > 0 ? top[0].weight / totalWeight : 0;
+
+  return {
+    key: options.key,
+    category: options.category,
+    label: options.label,
+    kind: "list",
+    valueNumber: round1(agreement * 100),
+    valueText: JSON.stringify(top.map((item) => item.value)),
+    unit: null,
+    display: top.map((item) => item.value).join(", "),
+    confidence: round1(clamp01(coverage(sourceCount) * Math.max(0.35, agreement)) * 100) / 100,
+    sourceCount,
+    weight: round1(totalWeight),
+  };
+}
+
+function numericTrait(options: {
+  key: string;
+  category: DnaCategory;
+  label: string;
+  values: Weighted[];
+  unit: string | null;
+  /** Spread at which agreement hits zero. */
+  spreadScale: number;
+  format?: (value: number) => string;
+}): DnaTrait | null {
+  const stats = weightedStats(options.values);
+  if (!stats) return null;
+
+  const sourceCount = options.values.filter((s) => s.weight > 0).length;
+  const agreement = clamp01(1 - stats.spread / options.spreadScale);
+  const display = options.format
+    ? options.format(stats.mean)
+    : options.unit
+      ? `${round1(stats.mean)} ${options.unit}`
+      : `${round1(stats.mean)}`;
+
+  return {
+    key: options.key,
+    category: options.category,
+    label: options.label,
+    kind: "number",
+    valueNumber: round1(stats.mean),
+    valueText: null,
+    unit: options.unit,
+    display,
+    // Floored so a coherent-but-small catalogue still reads as "learning"
+    // rather than "unknown"; the multiplier encodes agreement.
+    confidence: round1(clamp01(coverage(sourceCount) * Math.max(0.3, agreement)) * 100) / 100,
+    sourceCount,
+    weight: round1(stats.weight),
+  };
+}
+
+function textTrait(options: {
+  key: string;
+  category: DnaCategory;
+  label: string;
+  values: { value: string; weight: number }[];
+}): DnaTrait | null {
+  const ranked = weightedCounts(options.values);
+  if (ranked.length === 0) return null;
+
+  const totalWeight = ranked.reduce((sum, item) => sum + item.weight, 0);
+  const sourceCount = ranked.reduce((sum, item) => sum + item.count, 0);
+  const top = ranked[0];
+  const share = totalWeight > 0 ? top.weight / totalWeight : 0;
+  const label = LANGUAGE_NAMES[top.value] ?? capitalise(top.value);
+
+  return {
+    key: options.key,
+    category: options.category,
+    label: options.label,
+    kind: "text",
+    valueNumber: round1(share * 100),
+    valueText: label,
+    unit: null,
+    display: `${label} ${Math.round(share * 100)}%`,
+    confidence: round1(clamp01(coverage(sourceCount) * Math.max(0.35, share)) * 100) / 100,
+    sourceCount,
+    weight: round1(totalWeight),
+  };
+}
+
+function ratioTrait(options: {
+  key: string;
+  category: DnaCategory;
+  label: string;
+  /** Numerator / denominator over weighted counts. */
+  values: Weighted[];
+  display: (ratio: number) => string;
+}): DnaTrait | null {
+  const stats = weightedStats(options.values);
+  if (!stats) return null;
+
+  const sourceCount = options.values.filter((s) => s.weight > 0).length;
+  const ratio = clamp01(stats.mean);
+
+  return {
+    key: options.key,
+    category: options.category,
+    label: options.label,
+    kind: "ratio",
+    valueNumber: round1(ratio * 100),
+    valueText: null,
+    unit: "%",
+    display: options.display(ratio),
+    confidence: round1(coverage(sourceCount) * 100) / 100,
+    sourceCount,
+    weight: round1(stats.weight),
+  };
+}
+
+/** Longest tags first, so "indie pop" wins and then hides the generic "pop". */
+const GENRE_TERMS_BY_LENGTH = [...GENRE_TERMS].sort((a, b) => b.length - a.length);
+
+export function detectGenres(prompt: string | null): string[] {
+  if (!prompt) return [];
+  let haystack = normaliseText(prompt);
+  const found: string[] = [];
+
+  for (const term of GENRE_TERMS_BY_LENGTH) {
+    const needle = normaliseText(term);
+    if (!haystack.includes(needle)) continue;
+    found.push(term);
+    // Consume the span: without this, "indie pop" would also report "pop" and
+    // the genre list would show the same influence twice.
+    haystack = haystack.split(needle).join(" ".repeat(needle.length));
+  }
+
+  return found;
+}
+
+function countWords(lyrics: string | null): number | null {
+  if (!lyrics) return null;
+  const words = lyrics.trim().split(/\s+/).filter(Boolean);
+  return words.length > 0 ? words.length : null;
+}
+
+function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function tempoBand(bpm: number | null): string {
+  if (bpm === null) return "Midtempo";
+  if (bpm < 70) return "Downtempo";
+  if (bpm < 95) return "Midtempo";
+  if (bpm < 120) return "Uptempo";
+  return "High-tempo";
+}
+
+function buildSummary(context: {
+  sourceCount: number;
+  ratedCount: number;
+  likedCount: number;
+  tempo: number | null;
+  energy: number | null;
+  vocalGender: string | null;
+  language: string | null;
+  atmospheres: string[];
+  genres: string[];
+}): string {
+  const parts: string[] = [];
+  const { sourceCount, ratedCount, likedCount } = context;
+
+  parts.push(
+    ratedCount > 0
+      ? `Built from ${sourceCount} finished ${sourceCount === 1 ? "track" : "tracks"}, ${ratedCount} rated and ${likedCount} loved.`
+      : `Built from ${sourceCount} finished ${sourceCount === 1 ? "track" : "tracks"} — no ratings yet.`,
+  );
+
+  const sound: string[] = [];
+  if (context.tempo !== null) sound.push(`around ${Math.round(context.tempo)} BPM`);
+  if (context.energy !== null) sound.push(`${Math.round(context.energy)}/100 energy`);
+  if (context.vocalGender) sound.push(`${context.vocalGender} vocals`);
+  if (context.language) sound.push(`${context.language.toLowerCase()} lyrics`);
+  if (sound.length > 0) parts.push(`Typically ${sound.join(", ")}.`);
+
+  if (context.genres.length > 0) {
+    parts.push(`Mostly ${context.genres.slice(0, 3).join(", ")}.`);
+  }
+  if (context.atmospheres.length > 0) {
+    parts.push(`Returns to ${context.atmospheres.slice(0, 3).join(", ")}.`);
+  }
+  if (ratedCount === 0) {
+    parts.push("Rating a few tracks will sharpen this profile.");
+  }
+
+  return parts.join(" ");
+}
+
+function buildName(context: {
+  tempo: number | null;
+  genres: string[];
+  atmospheres: string[];
+  instrumentalOnly: boolean;
+}): string {
+  const band = tempoBand(context.tempo);
+  const genre = context.genres[0] ?? null;
+  const atmosphere = context.atmospheres[0] ?? null;
+
+  if (genre) {
+    return atmosphere ? `${band} ${atmosphere} ${genre}` : `${band} ${genre}`;
+  }
+  if (atmosphere) return `${band} ${atmosphere}`;
+  return context.instrumentalOnly ? `${band} instrumentals` : `${band} songs`;
+}
+
+/**
+ * Builds the whole profile in one pass. Pure: same sources + same `now` always
+ * yields the same traits, which is what makes the API recompute idempotent.
+ */
+export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date } = {}): DnaBuildResult {
+  const now = options.now ?? new Date();
+  const usable = sources.filter((track) => track && track.id);
+
+  if (usable.length === 0) {
+    const emptyProfile: DnaProfileSummary = {
+      name: "Not enough tracks yet",
+      summary:
+        "Melody DNA needs a few finished tracks with Track DNA analysis before it can describe your sound. Generate and finish a song to get started.",
+      sourceCount: 0,
+      ratedCount: 0,
+      likedCount: 0,
+      dislikedCount: 0,
+    };
+    return { profile: emptyProfile, traits: [] };
+  }
+
+  const weighted = usable.map((track) => ({ track, weight: sourceWeight(track, now) }));
+  const rated = usable.filter((track) => track.rating === "up" || track.rating === "down");
+  const liked = usable.filter((track) => track.rating === "up");
+  const disliked = usable.filter((track) => track.rating === "down");
+
+  const withVocals = usable.filter((track) => !track.instrumental);
+
+  const tempoValues: Weighted[] = [];
+  const energyValues: Weighted[] = [];
+  const atmosphereValues: { value: string; weight: number }[] = [];
+  const genreValues: { value: string; weight: number }[] = [];
+  const instrumentalValues: Weighted[] = [];
+  const productionValues: Weighted[] = [];
+  const genderValues: { value: string; weight: number }[] = [];
+  const vocalScoreValues: Weighted[] = [];
+  const lengthValues: Weighted[] = [];
+  const compositionValues: Weighted[] = [];
+  const languageValues: { value: string; weight: number }[] = [];
+  const lyricWordValues: Weighted[] = [];
+  const lyricScoreValues: Weighted[] = [];
+  const lovedGenreValues: { value: string; weight: number }[] = [];
+  const avoidedGenreValues: { value: string; weight: number }[] = [];
+  const loveRateValues: Weighted[] = [];
+  const overallValues: Weighted[] = [];
+
+  for (const { track, weight } of weighted) {
+    const audio = track.audioDna;
+    const advanced: AdvancedDnaSummary | null = track.advancedDna;
+
+    if (audio?.tempo != null && Number.isFinite(audio.tempo) && audio.tempo > 0) {
+      tempoValues.push({ value: audio.tempo, weight });
+    }
+    if (audio?.energy != null && Number.isFinite(audio.energy)) {
+      energyValues.push({ value: audio.energy, weight });
+    }
+    if (audio?.atmosphereTags?.length) {
+      for (const tag of audio.atmosphereTags) {
+        atmosphereValues.push({ value: tag, weight });
+      }
+    }
+    if (audio?.lyricsScore != null) {
+      lyricScoreValues.push({ value: audio.lyricsScore, weight });
+    }
+
+    for (const genre of detectGenres(track.prompt)) {
+      genreValues.push({ value: genre, weight });
+    }
+
+    // Shares are plain counts: weighting them by rating/plays would make
+    // "60% instrumental" mean something other than 60% of the catalogue.
+    instrumentalValues.push({ value: track.instrumental ? 1 : 0, weight: 1 });
+
+    if (advanced?.productionScore != null) {
+      productionValues.push({ value: advanced.productionScore, weight });
+    }
+    if (advanced?.vocalScore != null) {
+      vocalScoreValues.push({ value: advanced.vocalScore, weight });
+    }
+    if (advanced?.compositionScore != null) {
+      compositionValues.push({ value: advanced.compositionScore, weight });
+    }
+    if (advanced?.overallScore != null) {
+      overallValues.push({ value: advanced.overallScore, weight });
+    }
+
+    if (!track.instrumental && track.vocalGender) {
+      genderValues.push({ value: track.vocalGender, weight });
+    }
+
+    if (track.duration != null && track.duration > 0) {
+      lengthValues.push({ value: track.duration, weight });
+    }
+
+    if (!track.instrumental && track.language) {
+      languageValues.push({ value: track.language, weight });
+    }
+
+    const words = countWords(track.lyrics);
+    if (words !== null) {
+      lyricWordValues.push({ value: words, weight });
+    }
+
+    if (track.rating === "up" || track.rating === "down") {
+      const genreHit = detectGenres(track.prompt);
+      if (track.rating === "up") {
+        loveRateValues.push({ value: 1, weight: 1 });
+        for (const genre of genreHit) lovedGenreValues.push({ value: genre, weight });
+      } else {
+        loveRateValues.push({ value: 0, weight: 1 });
+        for (const genre of genreHit) avoidedGenreValues.push({ value: genre, weight });
+      }
+    }
+  }
+
+  const traits: (DnaTrait | null)[] = [
+    // ── Sound ────────────────────────────────────────────────────────────────
+    numericTrait({
+      key: "tempo",
+      category: "sound",
+      label: "Tempo",
+      values: tempoValues,
+      unit: "BPM",
+      spreadScale: 40,
+      format: (value) => `${Math.round(value)} BPM`,
+    }),
+    numericTrait({
+      key: "energy",
+      category: "sound",
+      label: "Energy",
+      values: energyValues,
+      unit: null,
+      spreadScale: 30,
+      format: (value) => `${Math.round(value)}/100`,
+    }),
+    listTrait({
+      key: "atmospheres",
+      category: "sound",
+      label: "Atmospheres",
+      values: atmosphereValues,
+      limit: 3,
+    }),
+    listTrait({
+      key: "genres",
+      category: "sound",
+      label: "Genres",
+      values: genreValues,
+      limit: 3,
+    }),
+    ratioTrait({
+      key: "instrumental_share",
+      category: "sound",
+      label: "Instrumentals",
+      values: instrumentalValues,
+      display: (ratio) => `${Math.round(ratio * 100)}% instrumental`,
+    }),
+    numericTrait({
+      key: "production_score",
+      category: "sound",
+      label: "Production score",
+      values: productionValues,
+      unit: "/10",
+      spreadScale: 4,
+      format: (value) => `${round1(value)}/10`,
+    }),
+
+    // ── Voice ────────────────────────────────────────────────────────────────
+    textTrait({
+      key: "vocal_gender",
+      category: "voice",
+      label: "Vocal gender",
+      values: genderValues,
+    }),
+    numericTrait({
+      key: "vocal_score",
+      category: "voice",
+      label: "Vocal strength",
+      values: vocalScoreValues,
+      unit: "/10",
+      spreadScale: 4,
+      format: (value) => `${round1(value)}/10`,
+    }),
+
+    // ── Structure ────────────────────────────────────────────────────────────
+    numericTrait({
+      key: "length",
+      category: "structure",
+      label: "Average length",
+      values: lengthValues,
+      unit: "s",
+      spreadScale: 90,
+      format: (value) => formatDuration(value),
+    }),
+    numericTrait({
+      key: "composition_score",
+      category: "structure",
+      label: "Composition score",
+      values: compositionValues,
+      unit: "/10",
+      spreadScale: 4,
+      format: (value) => `${round1(value)}/10`,
+    }),
+
+    // ── Words ────────────────────────────────────────────────────────────────
+    textTrait({
+      key: "language",
+      category: "words",
+      label: "Language",
+      values: languageValues,
+    }),
+    numericTrait({
+      key: "lyric_words",
+      category: "words",
+      label: "Lyrics per song",
+      values: lyricWordValues,
+      unit: "words",
+      spreadScale: 120,
+      format: (value) => `${Math.round(value)} words`,
+    }),
+    numericTrait({
+      key: "lyric_score",
+      category: "words",
+      label: "Lyric score",
+      values: lyricScoreValues,
+      unit: "/10",
+      spreadScale: 4,
+      format: (value) => `${round1(value)}/10`,
+    }),
+
+    // ── Taste ────────────────────────────────────────────────────────────────
+    listTrait({
+      key: "loved_genres",
+      category: "taste",
+      label: "Genres you love",
+      values: lovedGenreValues,
+      limit: 3,
+    }),
+    listTrait({
+      key: "avoided_genres",
+      category: "taste",
+      label: "Genres you skip",
+      values: avoidedGenreValues,
+      limit: 3,
+    }),
+    ratioTrait({
+      key: "love_rate",
+      category: "taste",
+      label: "Loved share",
+      values: loveRateValues,
+      display: (ratio) => `${Math.round(ratio * 100)}% of rated tracks loved`,
+    }),
+    numericTrait({
+      key: "overall_score",
+      category: "taste",
+      label: "Overall score",
+      values: overallValues,
+      unit: "/10",
+      spreadScale: 4,
+      format: (value) => `${round1(value)}/10`,
+    }),
+  ];
+
+  const builtTraits = traits.filter((trait): trait is DnaTrait => trait !== null);
+
+  const tempoTrait = builtTraits.find((trait) => trait.key === "tempo") ?? null;
+  const energyTrait = builtTraits.find((trait) => trait.key === "energy") ?? null;
+  const atmosphereTrait = builtTraits.find((trait) => trait.key === "atmospheres") ?? null;
+  const genreTrait = builtTraits.find((trait) => trait.key === "genres") ?? null;
+  const languageTrait = builtTraits.find((trait) => trait.key === "language") ?? null;
+  const genderTrait = builtTraits.find((trait) => trait.key === "vocal_gender") ?? null;
+
+  const readList = (trait: DnaTrait | null): string[] => {
+    if (!trait?.valueText) return [];
+    try {
+      const parsed: unknown = JSON.parse(trait.valueText);
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const profile: DnaProfileSummary = {
+    name: buildName({
+      tempo: tempoTrait?.valueNumber ?? null,
+      genres: readList(genreTrait),
+      atmospheres: readList(atmosphereTrait),
+      instrumentalOnly: withVocals.length === 0,
+    }),
+    summary: buildSummary({
+      sourceCount: usable.length,
+      ratedCount: rated.length,
+      likedCount: liked.length,
+      tempo: tempoTrait?.valueNumber ?? null,
+      energy: energyTrait?.valueNumber ?? null,
+      vocalGender: genderTrait?.valueText ?? null,
+      language: languageTrait?.valueText ?? null,
+      atmospheres: readList(atmosphereTrait),
+      genres: readList(genreTrait),
+    }),
+    sourceCount: usable.length,
+    ratedCount: rated.length,
+    likedCount: liked.length,
+    dislikedCount: disliked.length,
+  };
+
+  // Stable, predictable order: category order, then the order the builders
+  // declared (which is the order the UI renders).
+  const categoryOrder: DnaCategory[] = ["sound", "voice", "structure", "words", "taste"];
+  builtTraits.sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
+
+  return { profile, traits: builtTraits };
+}

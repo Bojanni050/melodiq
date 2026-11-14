@@ -719,3 +719,77 @@ export const coverImagesRelations = relations(coverImages, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ─── Melody DNA ───────────────────────────────────────────────────────────────
+// Per-track Track DNA (tracks.audioDna / advancedDna / trackDna) describes one
+// song. Melody DNA is the per-user layer on top of it: a recomputed, versioned
+// snapshot of what this user's own catalogue sounds like, how they write and
+// what they rate. Traits are replaced wholesale on every recompute (see
+// lib/dna/repository.ts) — nothing here is hand-edited in v1.
+export const dnaProfiles = pgTable("dna_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  // Derived human-readable shape of the profile ("Midtempo cinematic pop").
+  // Derived, not user-authored, so a recompute may freely rewrite it.
+  name: varchar("name", { length: 160 }),
+  summary: text("summary"),
+  // Finished tracks that contributed, plus how many were explicitly rated —
+  // the UI uses the difference to explain why confidence is still low.
+  sourceCount: integer("source_count").default(0).notNull(),
+  ratedCount: integer("rated_count").default(0).notNull(),
+  likedCount: integer("liked_count").default(0).notNull(),
+  dislikedCount: integer("disliked_count").default(0).notNull(),
+  computedAt: timestamp("computed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  // One profile per user; recompute upserts on this key instead of appending
+  // history, so /api/dna always reads one current snapshot.
+  uniqueIndex("dna_profiles_user_unique").on(table.userId),
+]);
+
+export const dnaTraits = pgTable("dna_traits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  // One of the five DNA groups shown in the UI: sound | voice | structure |
+  // words | taste (see lib/dna/types.ts).
+  category: varchar("category", { length: 20 }).notNull(),
+  // Stable trait id ("tempo", "genres", ...): unique per profile so a
+  // recompute replaces the same row rather than growing the table.
+  traitKey: varchar("trait_key", { length: 60 }).notNull(),
+  label: varchar("label", { length: 160 }).notNull(),
+  // number | text | list | ratio — how valueNumber/valueText/display are read.
+  kind: varchar("kind", { length: 20 }).notNull(),
+  valueNumber: real("value_number"),
+  // JSON for kind="list", plain text for kind="text", null otherwise.
+  valueText: text("value_text"),
+  unit: varchar("unit", { length: 20 }),
+  display: varchar("display", { length: 255 }),
+  // 0..1: how much evidence stands behind this trait, already factoring in
+  // agreement between tracks. Low values must surface as "still learning"
+  // instead of being presented as settled fact.
+  confidence: real("confidence").default(0).notNull(),
+  sourceCount: integer("source_count").default(0).notNull(),
+  // Summed signal weight (recency, ratings, plays) behind the trait.
+  weight: real("weight").default(0).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("dna_traits_profile_key_unique").on(table.profileId, table.traitKey),
+  index("dna_traits_user_id_idx").on(table.userId),
+]);
+
+export const dnaProfilesRelations = relations(dnaProfiles, ({ one, many }) => ({
+  user: one(users, {
+    fields: [dnaProfiles.userId],
+    references: [users.id],
+  }),
+  traits: many(dnaTraits),
+}));
+
+export const dnaTraitsRelations = relations(dnaTraits, ({ one }) => ({
+  profile: one(dnaProfiles, {
+    fields: [dnaTraits.profileId],
+    references: [dnaProfiles.id],
+  }),
+}));

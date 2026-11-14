@@ -374,6 +374,46 @@ CREATE TABLE IF NOT EXISTS "cloned_voices" (
 
 CREATE INDEX IF NOT EXISTS "cloned_voices_user_id_idx" ON "cloned_voices"("user_id");
 
+-- Melody DNA: one profile row per user plus the traits a recompute derives from
+-- their finished tracks. Mirrors drizzle/0015_melody_dna.sql; kept here because
+-- deployed databases are maintained through initializeDatabase() on boot.
+CREATE TABLE IF NOT EXISTS "dna_profiles" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "name" varchar(160),
+  "summary" text,
+  "source_count" integer NOT NULL DEFAULT 0,
+  "rated_count" integer NOT NULL DEFAULT 0,
+  "liked_count" integer NOT NULL DEFAULT 0,
+  "disliked_count" integer NOT NULL DEFAULT 0,
+  "computed_at" timestamp,
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "dna_profiles_user_unique" ON "dna_profiles"("user_id");
+
+CREATE TABLE IF NOT EXISTS "dna_traits" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "profile_id" uuid NOT NULL,
+  "user_id" uuid NOT NULL,
+  "category" varchar(20) NOT NULL,
+  "trait_key" varchar(60) NOT NULL,
+  "label" varchar(160) NOT NULL,
+  "kind" varchar(20) NOT NULL,
+  "value_number" real,
+  "value_text" text,
+  "unit" varchar(20),
+  "display" varchar(255),
+  "confidence" real NOT NULL DEFAULT 0,
+  "source_count" integer NOT NULL DEFAULT 0,
+  "weight" real NOT NULL DEFAULT 0,
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "dna_traits_profile_key_unique" ON "dna_traits"("profile_id", "trait_key");
+CREATE INDEX IF NOT EXISTS "dna_traits_user_id_idx" ON "dna_traits"("user_id");
+
 CREATE INDEX IF NOT EXISTS "tracks_user_id_idx" ON "tracks"("user_id");
 CREATE INDEX IF NOT EXISTS "tracks_user_id_status_idx" ON "tracks"("user_id", "status");
 CREATE INDEX IF NOT EXISTS "tracks_status_idx" ON "tracks"("status");
