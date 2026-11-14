@@ -110,6 +110,7 @@ export default function Sidebar({ credits }: SidebarProps) {
               { href: "/releases", label: t("nav.myReleases"), icon: "releases" },
               { href: "/archive", label: t("nav.masterTracks"), icon: "archive" },
               { href: "/smart-archive", label: t("nav.smartArchive"), icon: "smart-archive" },
+              { href: "/dna", label: t("nav.myDna"), icon: "dna" },
               { href: "/workspaces", label: t("nav.workspaces"), icon: "workspaces" },
             ],
           },
@@ -255,6 +256,12 @@ export default function Sidebar({ credits }: SidebarProps) {
         return (
           <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v4a1 1 0 001 1h4M9 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8l-5-5H9zm-2 11l2.5 2.5L15 11" />
+          </svg>
+        );
+      case "dna":
+        return (
+          <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 3c0 4 10 5 10 9S7 17 7 21M17 3c0 4-10 5-10 9s10 5 10 9M8.5 7h7M8.5 17h7M9 12h6" />
           </svg>
         );
       case "admin":
