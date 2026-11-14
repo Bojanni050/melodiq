@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import DnaHelix from "@/components/dna/DnaHelix";
+import ShareDnaCard from "@/components/dna/ShareDnaCard";
 import { useLocaleStore, useSidebarStore } from "@/lib/store";
 import { useT } from "@/hooks/useT";
 import type { TranslationKey } from "@/lib/i18n/translate";
@@ -323,6 +325,38 @@ export default function DnaPage() {
   );
   const nextStageAt = stage === "seed" ? SPROUT_AT : stage === "sprout" ? GROWN_AT : null;
 
+  // The helix and the share card read the same localised traits as the cards
+  // below, so a node label never contradicts the section it points at.
+  const categoryLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const category of data?.categories ?? []) {
+      const labelKey = CATEGORY_LABEL_KEYS[category.id];
+      map[category.id] = labelKey ? t(labelKey) : category.label;
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.categories, locale]);
+
+  const helixTraits = useMemo(
+    () =>
+      traits.map((trait) => {
+        const labelKey = TRAIT_LABEL_KEYS[trait.key];
+        return {
+          key: trait.key,
+          category: trait.category,
+          label: labelKey ? t(labelKey) : trait.label,
+          display: trait.display ?? "",
+          confidence: trait.confidence,
+          verdict: trait.verdict,
+          direction: trait.direction,
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [traits, locale]
+  );
+
+  const [selectedTrait, setSelectedTrait] = useState<string | null>(null);
+
   const isEmpty = !loading && (!profile || profile.sourceCount === 0);
 
   return (
@@ -399,27 +433,40 @@ export default function DnaPage() {
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                      <button
-                        type="button"
-                        onClick={handleRebuild}
-                        disabled={rebuilding}
-                        className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <svg
-                          className={`h-3.5 w-3.5 ${rebuilding ? "animate-spin" : ""}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <ShareDnaCard
+                          name={profile?.name || t("dna.title")}
+                          summary={profile?.summary ?? ""}
+                          stageLabel={stageLabel}
+                          statsLine={t("dna.cardStats", {
+                            tracks: sourceCount,
+                            rated: profile?.ratedCount ?? 0,
+                            loved: profile?.likedCount ?? 0,
+                          })}
+                          traits={helixTraits}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRebuild}
+                          disabled={rebuilding}
+                          className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h5M20 20v-5h-5M20 9A8 8 0 006.3 5.7L4 9m16 6l-2.3 3.3A8 8 0 014 15"
-                          />
-                        </svg>
-                        {rebuilding ? t("dna.rebuilding") : t("dna.rebuild")}
-                      </button>
+                          <svg
+                            className={`h-3.5 w-3.5 ${rebuilding ? "animate-spin" : ""}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h5M20 20v-5h-5M20 9A8 8 0 006.3 5.7L4 9m16 6l-2.3 3.3A8 8 0 014 15"
+                            />
+                          </svg>
+                          {rebuilding ? t("dna.rebuilding") : t("dna.rebuild")}
+                        </button>
+                      </div>
                       <p className="text-right text-xs text-ink-dim">
                         {profile?.computedAt
                           ? t("dna.updated", { when: formatWhen(profile.computedAt, locale) })
@@ -478,6 +525,24 @@ export default function DnaPage() {
                   ) : null}
                 </section>
 
+                <section className="border border-line bg-surface/20">
+                  <header className="flex items-center gap-2 border-b border-line px-4 py-3">
+                    <span className="h-2 w-2 rounded-full bg-accent" />
+                    <h2 className="text-sm font-medium">{t("dna.helixTitle")}</h2>
+                    <span className="ml-auto text-xs tabular-nums text-ink-dim">{traits.length}</span>
+                  </header>
+                  <div className="px-2 py-3 sm:px-4">
+                    <DnaHelix
+                      traits={helixTraits}
+                      categoryLabels={categoryLabels}
+                      selectedKey={selectedTrait}
+                      onSelect={(key) =>
+                        setSelectedTrait((current) => (current === key ? null : key))
+                      }
+                    />
+                  </div>
+                </section>
+
                 {(error || notice) && (
                   <div className="flex items-start justify-between gap-3 border border-line bg-white/5 px-4 py-3">
                     <p className={`text-sm ${error ? "text-amber-400/90" : "text-ink-muted"}`}>
@@ -530,7 +595,10 @@ export default function DnaPage() {
                               return (
                                 <div
                                   key={trait.key}
-                                  className="border border-line bg-canvas/40 p-3.5"
+                                  id={`trait-${trait.key}`}
+                                  className={`border bg-canvas/40 p-3.5 transition-colors ${
+                                    selectedTrait === trait.key ? "border-accent/50" : "border-line"
+                                  }`}
                                 >
                                   <div className="flex items-start justify-between gap-2">
                                     <p className="text-xs text-ink-muted">
