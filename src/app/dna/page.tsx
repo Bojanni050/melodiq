@@ -289,6 +289,33 @@ export default function DnaPage() {
   const solidCount = traits.filter((trait) => trait.confidence >= SOLID_CONFIDENCE).length;
   const coverage = traits.length > 0 ? Math.round((solidCount / traits.length) * 100) : 0;
 
+  // Preview of the hint /api/generate appends at "Strong". Refetched whenever a
+  // confidence or correction changes, so it never drifts from the payload.
+  const [dnaHint, setDnaHint] = useState("");
+  const hintSignature = traits
+    .map((trait) => `${trait.key}:${trait.confidence}:${trait.direction ?? ""}`)
+    .join("|");
+
+  useEffect(() => {
+    if (traits.length === 0) {
+      setDnaHint("");
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/dna/context?strength=strong")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload: { text?: string } | null) => {
+        if (!cancelled) setDnaHint(payload?.text ?? "");
+      })
+      .catch(() => {
+        // A missing preview is not worth an error banner.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hintSignature]);
+
   const sourceCount = profile?.sourceCount ?? 0;
   const stage = sourceCount >= GROWN_AT ? "grown" : sourceCount >= SPROUT_AT ? "sprout" : "seed";
   const stageLabel = t(
@@ -439,6 +466,16 @@ export default function DnaPage() {
                       />
                     </div>
                   </div>
+
+                  {dnaHint ? (
+                    <div className="mt-4 border border-line bg-canvas/60 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-wide text-ink-dim">
+                        {t("dna.contextTitle")}
+                      </p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{dnaHint}</p>
+                      <p className="mt-2 text-[11px] text-ink-dim">{t("dna.contextHint")}</p>
+                    </div>
+                  ) : null}
                 </section>
 
                 {(error || notice) && (

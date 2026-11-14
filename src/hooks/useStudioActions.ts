@@ -91,6 +91,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       apimartMaxMode,
       apimartAudioFormat,
       poyoVariety,
+      dnaInfluence,
       inspiration,
       inspirationEnabled,
       inspoAudioWeight,
@@ -182,6 +183,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               styleInfluence,
               audioWeight,
               negativeTags,
+              // "off" when the user turned Melody DNA off; the server appends a
+              // trimmed hint to the style prompt and stores what it sent.
+              dnaInfluence,
               personaId: provider === "apimart" ? personaId : undefined,
               // APIMart Suno V6 options
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,

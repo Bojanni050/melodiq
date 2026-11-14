@@ -9,6 +9,8 @@
  * "both" is the default and the historical behaviour: the prompt becomes the
  * song idea and the lyrics are carried over as well.
  */
+import { stripDnaHint } from "@/lib/dna/context";
+
 export type ReuseScope = "lyrics" | "style" | "both";
 
 export type StudioVocalGender = "female" | "male" | "auto";
@@ -70,7 +72,7 @@ export function buildReusePayload(
   options?: ReuseOptions
 ): ReusePayload {
   const payload: ReusePayload = {
-    songIdea: scope === "lyrics" ? "" : track.prompt || "",
+    songIdea: scope === "lyrics" ? "" : stripDnaHint(track.prompt || ""),
     lyrics: scope === "style" ? "" : track.lyrics || "",
   };
   if (options?.clearTitle) {

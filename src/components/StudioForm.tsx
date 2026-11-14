@@ -58,6 +58,7 @@ export default memo(function StudioForm({
     apimartMaxMode,
     apimartAudioFormat,
     poyoVariety,
+    dnaInfluence,
     setSongIdea,
     setLyrics,
     setTitle,
@@ -78,6 +79,7 @@ export default memo(function StudioForm({
     setApimartMaxMode,
     setApimartAudioFormat,
     setPoyoVariety,
+    setDnaInfluence,
     fetchSavedLyrics,
     saveLyric,
     loadSavedLyric,
@@ -731,6 +733,39 @@ ${t("studio.yourChorusHere")}`}
               {promptCharCount}/{styleMaxChars}
             </span>
           </div>
+        </div>
+
+        {/* Melody DNA — appended to the style prompt by /api/generate. Kept out
+            of the textarea so the counter above stays truthful about what the
+            user typed; the server trims the hint if there is no room left. */}
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-ink-dim">{t("studio.dnaLabel")}</span>
+            <div className="flex gap-1.5">
+              {(["off", "subtle", "strong"] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setDnaInfluence(level)}
+                  aria-pressed={dnaInfluence === level}
+                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors border ${
+                    dnaInfluence === level
+                      ? "bg-accent/15 text-accent border-accent/40"
+                      : "bg-white/5 text-ink-dim border-line hover:bg-white/10"
+                  }`}
+                >
+                  {level === "off" ? t("studio.dnaOff") : level === "subtle" ? t("studio.dnaSubtle") : t("studio.dnaStrong")}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-[10px] text-ink-dim mt-1">
+            {dnaInfluence === "off"
+              ? t("studio.dnaDescOff")
+              : dnaInfluence === "strong"
+                ? t("studio.dnaDescStrong")
+                : t("studio.dnaDescSubtle")}
+          </p>
         </div>
 
         {/* PoYo Sliders — only for PoYo provider */}

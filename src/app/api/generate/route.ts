@@ -26,6 +26,8 @@ import {
   type GenerationContext,
 } from "@/lib/services/generationService";
 import { supportsInspiration } from "@/lib/inspiration";
+import { isDnaStrength, loadDnaContext } from "@/lib/dna/context-service";
+import { mergeDnaIntoPrompt } from "@/lib/dna/context";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -53,6 +55,7 @@ export async function POST(request: NextRequest) {
     apimartVariety, apimartMaxMode, apimartAudioFormat,
     poyoVariety,
     inspirationTrackIds, inspirationAudioWeight,
+    dnaInfluence,
   } = body;
 
   // PoYo's V6 family uses a numeric 0-4 "variety" field (same range as the
@@ -126,11 +129,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Missing API configuration: ${validation.missing.join(", ")}. Please configure these in Settings.` }, { status: 400 });
   }
 
-  // Resolve title (AI + fallbacks)
+  // Melody DNA: opt-in per request ("off" when the field is absent, so API
+  // clients keep their exact prompt). The hint is appended to the style string
+  // the provider receives and is trimmed to fit — the user's own prompt is
+  // never shortened.
+  const dnaStrength = isDnaStrength(dnaInfluence) ? dnaInfluence : "off";
+  let effectivePrompt = normalizedPrompt;
+  if (dnaStrength !== "off") {
+    const dnaContext = await loadDnaContext(userId, dnaStrength);
+    effectivePrompt = mergeDnaIntoPrompt(normalizedPrompt, dnaContext.text, dnaStrength);
+  }
+
+  // Resolve title (AI + fallbacks). Uses the raw prompt: DNA tags would only
+  // pull the title towards genre words.
   const resolvedTitle = await resolveTrackTitle({ userTitle: normalizedTitle, instrumental: instrumental || false, prompt: normalizedPrompt, provider });
 
   const ctx: GenerationContext = {
-    userId, startTime, provider, providerModel, prompt, lyrics, instrumental: instrumental || false,
+    userId, startTime, provider, providerModel, prompt: effectivePrompt, lyrics, instrumental: instrumental || false,
     resolvedTitle, resolvedArtistName, resolvedWriterName,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
     normalizedPoYoModel, isMinimaxViaPoYo,
@@ -149,7 +164,7 @@ export async function POST(request: NextRequest) {
 
   // All remaining providers share a single upfront pending track insert
   const track = await insertPendingTrack({
-    userId, provider, providerModel, prompt, lyrics: lyrics || null,
+    userId, provider, providerModel, prompt: effectivePrompt, lyrics: lyrics || null,
     instrumental: instrumental || false, title: resolvedTitle,
     artistName: resolvedArtistName, writerName: resolvedWriterName,
     vocalGender: normalizeVocalGender(vocalGender),

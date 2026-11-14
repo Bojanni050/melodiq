@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
 import { MAX_INSPIRATION_TRACKS, type InspirationTrack } from "@/lib/inspiration";
+import type { DnaStrength } from "@/lib/dna/context";
 
 export interface SavedLyric {
   id: string;
@@ -38,6 +39,8 @@ interface StudioState {
   // PoYo Suno V6 options — PoYo's API only exposes variety for the V6 family,
   // no max-mode or output-format equivalent (unlike APIMart).
   poyoVariety: "off" | "normal" | "high" | "extra" | "max";
+  /** How much of the user's Melody DNA is appended to the style prompt. */
+  dnaInfluence: DnaStrength;
   // Inspiration references for APIMart v6 inspo generation (display only —
   // lyrics/style are never copied from these tracks). inspirationEnabled lets
   // the user park tracks here but generate normally.
@@ -73,6 +76,7 @@ interface StudioState {
   setApimartMaxMode: (val: boolean) => void;
   setApimartAudioFormat: (val: "mp3" | "m4a" | "wav") => void;
   setPoyoVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
+  setDnaInfluence: (val: DnaStrength) => void;
   addInspirationTrack: (track: InspirationTrack) => boolean;
   removeInspirationTrack: (id: string) => void;
   clearInspiration: () => void;
@@ -112,6 +116,7 @@ export const useStudioStore = create<StudioState>()(
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
       poyoVariety: "off",
+      dnaInfluence: "subtle",
       inspiration: [],
       inspirationEnabled: true,
       inspoAudioWeight: 20,
@@ -156,6 +161,7 @@ export const useStudioStore = create<StudioState>()(
       setApimartMaxMode: (val) => set({ apimartMaxMode: val }),
       setApimartAudioFormat: (val) => set({ apimartAudioFormat: val }),
       setPoyoVariety: (val) => set({ poyoVariety: val }),
+      setDnaInfluence: (val) => set({ dnaInfluence: val }),
       addInspirationTrack: (track) => {
         const current = get().inspiration;
         if (current.some((t) => t.id === track.id)) return true;
@@ -234,6 +240,7 @@ export const useStudioStore = create<StudioState>()(
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",
           poyoVariety: "off",
+          dnaInfluence: "subtle",
           inspiration: [],
       inspirationEnabled: true,
           inspoAudioWeight: 20,
