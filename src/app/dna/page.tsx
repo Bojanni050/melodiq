@@ -19,7 +19,12 @@ type DnaTraitPayload = {
   confidence: number;
   sourceCount: number;
   weight: number;
+  verdict: "confirmed" | "disputed" | null;
+  direction: "more" | "less" | null;
+  feedbackAt: string | null;
 };
+
+type DnaFeedbackKind = "confirm" | "reject" | "more" | "less" | "reset";
 
 type DnaProfilePayload = {
   name: string | null;
@@ -108,6 +113,81 @@ function formatWhen(iso: string, locale: string): string {
   });
 }
 
+// Corrections the user can give per trait. "More/less" is a preference for the
+// generator, not evidence about the catalogue, so it never moves confidence.
+const FEEDBACK_ACTIONS: { kind: DnaFeedbackKind; glyph: string; labelKey: TranslationKey }[] = [
+  { kind: "confirm", glyph: "✓", labelKey: "dna.confirm" },
+  { kind: "reject", glyph: "✕", labelKey: "dna.dispute" },
+  { kind: "more", glyph: "↑", labelKey: "dna.more" },
+  { kind: "less", glyph: "↓", labelKey: "dna.less" },
+];
+
+const FEEDBACK_ACTIVE_STYLES: Record<string, string> = {
+  confirm: "border-emerald-400/50 bg-emerald-400/10 text-emerald-300",
+  reject: "border-amber-400/50 bg-amber-400/10 text-amber-300",
+  more: "border-accent/60 bg-accent/10 text-accent",
+  less: "border-accent/60 bg-accent/10 text-accent",
+};
+
+function isFeedbackActive(trait: DnaTraitPayload, kind: DnaFeedbackKind): boolean {
+  if (kind === "confirm") return trait.verdict === "confirmed";
+  if (kind === "reject") return trait.verdict === "disputed";
+  return trait.direction === kind;
+}
+
+function TraitFeedback({
+  trait,
+  pending,
+  onSend,
+}: {
+  trait: DnaTraitPayload;
+  pending: boolean;
+  onSend: (traitKey: string, kind: DnaFeedbackKind) => void;
+}) {
+  const t = useT();
+  const hasStance = trait.verdict !== null || trait.direction !== null;
+
+  return (
+    <div className="flex items-center gap-1">
+      {FEEDBACK_ACTIONS.map(({ kind, glyph, labelKey }) => {
+        const active = isFeedbackActive(trait, kind);
+        return (
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={active}
+            // Already-active options stay disabled: changing a verdict means
+            // picking another one, and clearing has its own button.
+            disabled={pending || active}
+            title={t(labelKey)}
+            aria-label={t(labelKey)}
+            onClick={() => onSend(trait.key, kind)}
+            className={`flex h-6 w-6 items-center justify-center border text-[11px] leading-none transition-colors disabled:cursor-default ${
+              active
+                ? FEEDBACK_ACTIVE_STYLES[kind]
+                : "border-line text-ink-dim enabled:hover:border-line-strong enabled:hover:text-ink-muted"
+            }`}
+          >
+            {glyph}
+          </button>
+        );
+      })}
+      {hasStance && (
+        <button
+          type="button"
+          disabled={pending}
+          title={t("dna.clearFeedback")}
+          aria-label={t("dna.clearFeedback")}
+          onClick={() => onSend(trait.key, "reset")}
+          className="ml-1 flex h-6 w-6 items-center justify-center border border-line text-[11px] leading-none text-ink-dim transition-colors disabled:cursor-default enabled:hover:border-line-strong enabled:hover:text-ink-muted"
+        >
+          ↺
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function DnaPage() {
   const t = useT();
   const locale = useLocaleStore((s) => s.locale);
@@ -120,6 +200,7 @@ export default function DnaPage() {
   const [rebuilding, setRebuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingTrait, setPendingTrait] = useState<string | null>(null);
 
   // First visit has no profile to read yet, so it is built once automatically.
   // Guarded with a ref because React may replay the effect (StrictMode) and a
@@ -170,6 +251,27 @@ export default function DnaPage() {
       setError(t("dna.rebuildFailed"));
     } finally {
       setRebuilding(false);
+    }
+  }
+
+  /** One correction at a time per trait; the response already holds the result. */
+  async function handleFeedback(traitKey: string, kind: DnaFeedbackKind) {
+    if (pendingTrait) return;
+    setPendingTrait(traitKey);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/dna/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ traitKey, kind }),
+      });
+      if (!res.ok) throw new Error("feedback failed");
+      setData((await res.json()) as DnaResponse);
+    } catch {
+      setError(t("dna.feedbackFailed"));
+    } finally {
+      setPendingTrait(null);
     }
   }
 
@@ -399,11 +501,23 @@ export default function DnaPage() {
                                     </p>
                                     <span
                                       className={`shrink-0 text-[10px] uppercase tracking-wide ${
-                                        solid ? style.text : "text-ink-dim"
+                                        trait.verdict === "confirmed"
+                                          ? "text-emerald-300"
+                                          : trait.verdict === "disputed"
+                                            ? "text-amber-300"
+                                            : solid
+                                              ? style.text
+                                              : "text-ink-dim"
                                       }`}
                                       title={`${Math.round(trait.confidence * 100)}%`}
                                     >
-                                      {solid ? t("dna.solid") : t("dna.learning")}
+                                      {trait.verdict === "confirmed"
+                                        ? t("dna.confirmed")
+                                        : trait.verdict === "disputed"
+                                          ? t("dna.disputed")
+                                          : solid
+                                            ? t("dna.solid")
+                                            : t("dna.learning")}
                                     </span>
                                   </div>
 
@@ -448,6 +562,14 @@ export default function DnaPage() {
                                         ? t("dna.sourceOne")
                                         : t("dna.sourceMany", { count: trait.sourceCount })}
                                     </span>
+                                  </div>
+
+                                  <div className="mt-2.5 border-t border-line/60 pt-2.5">
+                                    <TraitFeedback
+                                      trait={trait}
+                                      pending={pendingTrait === trait.key}
+                                      onSend={handleFeedback}
+                                    />
                                   </div>
                                 </div>
                               );

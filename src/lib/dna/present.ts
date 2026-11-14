@@ -1,3 +1,4 @@
+import { applyFeedback, type DnaFeedbackDirection } from "./feedback";
 import { DNA_CATEGORIES, DNA_CATEGORY_LABELS } from "./types";
 import type { StoredDnaProfile } from "./repository";
 
@@ -15,9 +16,16 @@ export type DnaTraitPayload = {
   text: string | null;
   unit: string | null;
   display: string | null;
+  /** Measured confidence with the user's correction already applied. */
   confidence: number;
   sourceCount: number;
   weight: number;
+  /** confirmed | disputed | null — the user's verdict, not a measurement. */
+  verdict: "confirmed" | "disputed" | null;
+  /** more | less | null — a wish for the generator, independent of the verdict. */
+  direction: DnaFeedbackDirection | null;
+  /** When the correction that produced the current stance was recorded. */
+  feedbackAt: string | null;
 };
 
 export type DnaProfilePayload = {
@@ -30,11 +38,13 @@ export type DnaProfilePayload = {
   computedAt: string | null;
 };
 
-export function serialiseDnaProfile(stored: StoredDnaProfile | null): {
+export type DnaPayload = {
   profile: DnaProfilePayload | null;
   traits: DnaTraitPayload[];
   categories: { id: string; label: string }[];
-} {
+};
+
+export function serialiseDnaProfile(stored: StoredDnaProfile | null): DnaPayload {
   const categories = DNA_CATEGORIES.map((id) => ({ id, label: DNA_CATEGORY_LABELS[id] }));
 
   if (!stored) {
@@ -51,19 +61,27 @@ export function serialiseDnaProfile(stored: StoredDnaProfile | null): {
       dislikedCount: stored.profile.dislikedCount,
       computedAt: stored.profile.computedAt ? stored.profile.computedAt.toISOString() : null,
     },
-    traits: stored.traits.map((trait) => ({
-      key: trait.traitKey,
-      category: trait.category,
-      label: trait.label,
-      kind: trait.kind,
-      value: trait.valueNumber,
-      text: trait.valueText,
-      unit: trait.unit,
-      display: trait.display,
-      confidence: trait.confidence,
-      sourceCount: trait.sourceCount,
-      weight: trait.weight,
-    })),
+    traits: stored.traits.map((trait) => {
+      const stance = stored.feedback.get(trait.traitKey);
+      const adjustment = applyFeedback(trait.confidence, stance);
+
+      return {
+        key: trait.traitKey,
+        category: trait.category,
+        label: trait.label,
+        kind: trait.kind,
+        value: trait.valueNumber,
+        text: trait.valueText,
+        unit: trait.unit,
+        display: trait.display,
+        confidence: adjustment.confidence,
+        sourceCount: trait.sourceCount,
+        weight: trait.weight,
+        verdict: adjustment.verdict,
+        direction: adjustment.direction,
+        feedbackAt: stance?.updatedAt ?? null,
+      };
+    }),
     categories,
   };
 }

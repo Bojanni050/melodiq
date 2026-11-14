@@ -414,6 +414,20 @@ CREATE TABLE IF NOT EXISTS "dna_traits" (
 CREATE UNIQUE INDEX IF NOT EXISTS "dna_traits_profile_key_unique" ON "dna_traits"("profile_id", "trait_key");
 CREATE INDEX IF NOT EXISTS "dna_traits_user_id_idx" ON "dna_traits"("user_id");
 
+-- User corrections, append-only: the current stance per trait is folded from
+-- these events at read time (lib/dna/feedback.ts), so a recompute cannot erase
+-- them. Mirrors drizzle/0016_dna_feedback.sql.
+CREATE TABLE IF NOT EXISTS "dna_feedback_events" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "trait_key" varchar(60) NOT NULL,
+  "category" varchar(20),
+  "kind" varchar(20) NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "dna_feedback_events_user_idx" ON "dna_feedback_events"("user_id", "created_at");
+
 CREATE INDEX IF NOT EXISTS "tracks_user_id_idx" ON "tracks"("user_id");
 CREATE INDEX IF NOT EXISTS "tracks_user_id_status_idx" ON "tracks"("user_id", "status");
 CREATE INDEX IF NOT EXISTS "tracks_status_idx" ON "tracks"("status");

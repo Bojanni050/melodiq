@@ -793,3 +793,32 @@ export const dnaTraitsRelations = relations(dnaTraits, ({ one }) => ({
     references: [dnaProfiles.id],
   }),
 }));
+
+// Append-only log of the user's corrections. Deliberately not folded into
+// dna_traits: a recompute replaces traits wholesale, while a correction must
+// survive it. The current stance (confirmed / rejected / more / less) is derived
+// from these events in order, so the history stays readable and a "reset" is
+// just another event.
+export const dnaFeedbackEvents = pgTable("dna_feedback_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  // Matches dna_traits.trait_key. Events for a trait that later disappears stay
+  // in the log; they simply match nothing until the trait comes back.
+  traitKey: varchar("trait_key", { length: 60 }).notNull(),
+  // Denormalised so generation context (phase 4) can group preferences without
+  // joining the current trait snapshot.
+  category: varchar("category", { length: 20 }),
+  // confirm | reject | more | less | reset
+  kind: varchar("kind", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  // Chronological read per user: no unique key, because every click is a fact.
+  index("dna_feedback_events_user_idx").on(table.userId, table.createdAt),
+]);
+
+export const dnaFeedbackEventsRelations = relations(dnaFeedbackEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [dnaFeedbackEvents.userId],
+    references: [users.id],
+  }),
+}));

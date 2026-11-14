@@ -1,10 +1,11 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { dnaProfiles, dnaTraits, tracks } from "@/db/schema";
+import { dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
 
 import { buildDnaProfile } from "./aggregate";
+import { foldFeedback, type DnaFeedbackEvent, type DnaFeedbackKind, type DnaFeedbackStance } from "./feedback";
 import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } from "./types";
 
 /**
@@ -106,7 +107,69 @@ export type DnaTraitRow = typeof dnaTraits.$inferSelect;
 export type StoredDnaProfile = {
   profile: DnaProfileRow;
   traits: DnaTraitRow[];
+  /**
+   * Current correction per trait. Kept out of the trait rows on purpose: the
+   * snapshot is measurement, this is the user talking back. Presenting applies
+   * it (see present.ts), so a stored trait always holds its raw confidence.
+   */
+  feedback: Map<string, DnaFeedbackStance>;
 };
+
+/**
+ * Newest events first, capped. A user has at most a handful of traits and
+ * corrections are rare clicks, so this is generous; the cap only protects
+ * against a pathological loop of repeated clicks.
+ */
+const MAX_FEEDBACK_EVENTS = 500;
+
+export async function loadDnaFeedback(userId: string): Promise<Map<string, DnaFeedbackStance>> {
+  const rows = await db
+    .select({
+      traitKey: dnaFeedbackEvents.traitKey,
+      category: dnaFeedbackEvents.category,
+      kind: dnaFeedbackEvents.kind,
+      createdAt: dnaFeedbackEvents.createdAt,
+    })
+    .from(dnaFeedbackEvents)
+    .where(eq(dnaFeedbackEvents.userId, userId))
+    .orderBy(desc(dnaFeedbackEvents.createdAt))
+    .limit(MAX_FEEDBACK_EVENTS);
+
+  // foldFeedback sorts chronologically itself; the query order only decides
+  // which events survive the cap.
+  return foldFeedback(
+    rows.map(
+      (row): DnaFeedbackEvent => ({
+        traitKey: row.traitKey,
+        category: row.category,
+        kind: row.kind as DnaFeedbackKind,
+        createdAt: row.createdAt,
+      }),
+    ),
+  );
+}
+
+/**
+ * Records one correction. Returns false when the trait is not part of the
+ * current snapshot — the UI can only correct what it has seen, so an unknown
+ * key means a stale page rather than a new trait.
+ */
+export async function recordDnaFeedback(
+  userId: string,
+  traitKey: string,
+  kind: DnaFeedbackKind,
+): Promise<boolean> {
+  const [trait] = await db
+    .select({ category: dnaTraits.category })
+    .from(dnaTraits)
+    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, traitKey)))
+    .limit(1);
+
+  if (!trait) return false;
+
+  await db.insert(dnaFeedbackEvents).values({ userId, traitKey, category: trait.category, kind });
+  return true;
+}
 
 const CATEGORY_ORDER: DnaCategory[] = ["sound", "voice", "structure", "words", "taste"];
 
@@ -130,8 +193,9 @@ export async function getDnaProfile(userId: string): Promise<StoredDnaProfile | 
   if (!profile) return null;
 
   const rows = await db.select().from(dnaTraits).where(eq(dnaTraits.profileId, profile.id));
+  const feedback = await loadDnaFeedback(userId);
 
-  return { profile, traits: sortTraits(rows) };
+  return { profile, traits: sortTraits(rows), feedback };
 }
 
 export type RecomputeResult = StoredDnaProfile & { built: DnaBuildResult };
@@ -210,5 +274,7 @@ export async function recomputeDnaProfile(
     return { profile, traits: sortTraits(inserted) };
   });
 
-  return { ...result, built };
+  const feedback = await loadDnaFeedback(userId);
+
+  return { ...result, feedback, built };
 }
