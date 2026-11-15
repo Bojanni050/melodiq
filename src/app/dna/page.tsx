@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import CalibrateModal from "@/components/dna/CalibrateModal";
 import DnaHelix from "@/components/dna/DnaHelix";
 import ShareDnaCard from "@/components/dna/ShareDnaCard";
 import { useLocaleStore, useSidebarStore } from "@/lib/store";
@@ -203,6 +204,7 @@ export default function DnaPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingTrait, setPendingTrait] = useState<string | null>(null);
+  const [calibrating, setCalibrating] = useState(false);
 
   // First visit has no profile to read yet, so it is built once automatically.
   // Guarded with a ref because React may replay the effect (StrictMode) and a
@@ -253,6 +255,18 @@ export default function DnaPage() {
       setError(error instanceof Error && error.message === "rate limited" ? t("dna.rateLimited") : t("dna.rebuildFailed"));
     } finally {
       setRebuilding(false);
+    }
+  }
+
+  /** Answers change the stances, so a closed calibration reloads the profile once. */
+  async function handleCalibrateClose(changed: boolean) {
+    setCalibrating(false);
+    if (!changed) return;
+    try {
+      const res = await fetch("/api/dna");
+      if (res.ok) setData((await res.json()) as DnaResponse);
+    } catch {
+      // The stale profile is still valid; the next visit reloads it.
     }
   }
 
@@ -447,6 +461,17 @@ export default function DnaPage() {
                         />
                         <button
                           type="button"
+                          onClick={() => setCalibrating(true)}
+                          className="inline-flex h-9 items-center gap-2 rounded-full border border-accent/50 bg-accent/10 px-4 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                            <circle cx="12" cy="12" r="9" strokeWidth={2} />
+                            <circle cx="12" cy="12" r="4" strokeWidth={2} />
+                          </svg>
+                          {t("dna.calibrateOpen")}
+                        </button>
+                        <button
+                          type="button"
                           onClick={handleRebuild}
                           disabled={rebuilding}
                           className="inline-flex h-9 items-center gap-2 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-ink transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
@@ -542,6 +567,8 @@ export default function DnaPage() {
                     />
                   </div>
                 </section>
+
+                <CalibrateModal open={calibrating} onClose={handleCalibrateClose} />
 
                 {(error || notice) && (
                   <div className="flex items-start justify-between gap-3 border border-line bg-white/5 px-4 py-3">

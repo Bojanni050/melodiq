@@ -1,10 +1,16 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
+import { dnaCalibrationAnswers, dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
 
 import { buildDnaProfile } from "./aggregate";
+import {
+  CALIBRATION_MAX_CANDIDATES,
+  CALIBRATION_TOTAL,
+  type CalibrationAnswered,
+  type CalibrationCandidate,
+} from "./calibration";
 import { foldFeedback, type DnaFeedbackEvent, type DnaFeedbackKind, type DnaFeedbackStance } from "./feedback";
 import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } from "./types";
 
@@ -168,6 +174,92 @@ export async function recordDnaFeedback(
   if (!trait) return false;
 
   await db.insert(dnaFeedbackEvents).values({ userId, traitKey, category: trait.category, kind });
+  return true;
+}
+
+/** Tracks with audio and a measured tempo/energy: the only ones a duel can use. */
+export async function loadCalibrationCandidates(userId: string): Promise<CalibrationCandidate[]> {
+  const rows = await db
+    .select({
+      id: tracks.id,
+      title: tracks.title,
+      prompt: tracks.prompt,
+      audioUrl: tracks.audioUrl,
+      duration: tracks.duration,
+      audioDna: tracks.audioDna,
+    })
+    .from(tracks)
+    .where(
+      and(
+        eq(tracks.userId, userId),
+        eq(tracks.status, "done"),
+        isNull(tracks.deletedAt),
+        isNull(tracks.hiddenAt),
+        isNotNull(tracks.audioUrl),
+      ),
+    )
+    .orderBy(desc(tracks.createdAt))
+    .limit(CALIBRATION_MAX_CANDIDATES);
+
+  const candidates: CalibrationCandidate[] = [];
+  for (const row of rows) {
+    if (!row.audioUrl) continue;
+    const dna = parseAudioDna(row.audioDna ?? null);
+    candidates.push({
+      id: row.id,
+      title: row.title ?? null,
+      prompt: row.prompt ?? null,
+      audioUrl: row.audioUrl,
+      duration: row.duration ?? null,
+      tempo: dna?.tempo ?? null,
+      energy: dna?.energy ?? null,
+    });
+  }
+  return candidates;
+}
+
+export async function loadCalibrationAnswers(userId: string): Promise<CalibrationAnswered[]> {
+  const rows = await db
+    .select({
+      traitKey: dnaCalibrationAnswers.traitKey,
+      trackAId: dnaCalibrationAnswers.trackAId,
+      trackBId: dnaCalibrationAnswers.trackBId,
+    })
+    .from(dnaCalibrationAnswers)
+    .where(eq(dnaCalibrationAnswers.userId, userId))
+    .orderBy(desc(dnaCalibrationAnswers.createdAt))
+    .limit(CALIBRATION_TOTAL * 10);
+  return rows;
+}
+
+/**
+ * Stores one duel and its verdict together. The pair row and the feedback event
+ * go in one transaction so a failed event never leaves a pair marked as asked.
+ * Returns false when the trait is not in the current snapshot.
+ */
+export async function recordCalibrationAnswer(
+  userId: string,
+  input: { traitKey: string; trackAId: string; trackBId: string; choice: "a" | "b" | "neither"; kind: DnaFeedbackKind },
+): Promise<boolean> {
+  const [trait] = await db
+    .select({ category: dnaTraits.category })
+    .from(dnaTraits)
+    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, input.traitKey)))
+    .limit(1);
+  if (!trait) return false;
+
+  await db.transaction(async (tx) => {
+    await tx.insert(dnaCalibrationAnswers).values({
+      userId,
+      traitKey: input.traitKey,
+      trackAId: input.trackAId,
+      trackBId: input.trackBId,
+      choice: input.choice,
+    });
+    await tx
+      .insert(dnaFeedbackEvents)
+      .values({ userId, traitKey: input.traitKey, category: trait.category, kind: input.kind });
+  });
   return true;
 }
 

@@ -428,6 +428,21 @@ CREATE TABLE IF NOT EXISTS "dna_feedback_events" (
 
 CREATE INDEX IF NOT EXISTS "dna_feedback_events_user_idx" ON "dna_feedback_events"("user_id", "created_at");
 
+-- Calibration duels already asked (pair + answer). The verdict itself is a
+-- dna_feedback_events row, this only prevents repeats and counts progress.
+-- Mirrors drizzle/0018_dna_calibration.sql.
+CREATE TABLE IF NOT EXISTS "dna_calibration_answers" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "trait_key" varchar(60) NOT NULL,
+  "track_a_id" uuid NOT NULL,
+  "track_b_id" uuid NOT NULL,
+  "choice" varchar(10) NOT NULL,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "dna_calibration_answers_user_idx" ON "dna_calibration_answers"("user_id", "created_at");
+
 CREATE INDEX IF NOT EXISTS "tracks_user_id_idx" ON "tracks"("user_id");
 CREATE INDEX IF NOT EXISTS "tracks_user_id_status_idx" ON "tracks"("user_id", "status");
 CREATE INDEX IF NOT EXISTS "tracks_status_idx" ON "tracks"("status");

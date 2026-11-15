@@ -127,6 +127,13 @@
       "when": 1794703681491,
       "tag": "0017_dna_prompt_hint",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794707822580,
+      "tag": "0018_dna_calibration",
+      "breakpoints": true
     }
   ]
 }

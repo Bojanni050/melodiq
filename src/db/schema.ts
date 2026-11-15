@@ -827,3 +827,21 @@ export const dnaFeedbackEventsRelations = relations(dnaFeedbackEvents, ({ one })
     references: [users.id],
   }),
 }));
+
+// One answered calibration duel: two of the user's own tracks, one trait.
+// The verdict itself lands in dna_feedback_events; this table only remembers
+// which pairs were already shown, so the same duel is not asked twice and the
+// progress counter has something to count.
+export const dnaCalibrationAnswers = pgTable("dna_calibration_answers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  traitKey: varchar("trait_key", { length: 60 }).notNull(),
+  // Stored in sorted order (a < b) so (x, y) and (y, x) are the same pair.
+  trackAId: uuid("track_a_id").notNull(),
+  trackBId: uuid("track_b_id").notNull(),
+  // a | b | neither
+  choice: varchar("choice", { length: 10 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("dna_calibration_answers_user_idx").on(table.userId, table.createdAt),
+]);
