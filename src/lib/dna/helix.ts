@@ -1,26 +1,52 @@
 // Geometry for the Melody DNA helix.
 //
-// The page renders this as an SVG: two strands crossing in a projected 2D
-// helix, one rung per trait, a node riding the front-most strand. Pure maths
-// only — no React, no DOM — so the shape is testable and the same layout can be
-// reused by the share card.
+// The page draws this as SVG, but the maths behind it is real 3D: every point
+// lives on a cylinder (radius + phase + row), is spun around the vertical axis
+// and then projected with a perspective divide. Depth drives line weight,
+// opacity and node size, and segments are sorted far-to-near so the front
+// strand genuinely covers the one behind it.
+//
+// Pure maths only — no React, no DOM — so the shape is testable and stays
+// deterministic for a given input. `rotation` is the only thing that changes
+// while the user drags or lets it spin.
 
-export const HELIX_WIDTH = 620;
+export const HELIX_WIDTH = 700;
 /** Horizontal centre of the strands; the right side is reserved for labels. */
-export const HELIX_CENTER_X = 196;
-export const HELIX_RADIUS = 58;
+export const HELIX_CENTER_X = 210;
+/** Cylinder radius in world units. */
+export const HELIX_RADIUS = 112;
+/**
+ * Distance from the viewer to the axis. Smaller than a few radii would distort
+ * badly; this gives roughly a 25% size difference between front and back.
+ */
+export const HELIX_CAMERA = 600;
 /** Vertical distance between two rungs. */
-export const HELIX_ROW_HEIGHT = 34;
+export const HELIX_ROW_HEIGHT = 32;
 /** Extra space inserted where the category changes. */
-export const HELIX_CATEGORY_GAP = 18;
+export const HELIX_CATEGORY_GAP = 20;
 /** Radians of twist per rung; ~0.62 gives a full turn every ten rungs. */
 export const HELIX_PHASE_STEP = 0.62;
-export const HELIX_PADDING_Y = 34;
-/** Labels start here, measured from the left edge. */
-export const HELIX_LABEL_X = HELIX_WIDTH - 8;
-export const HELIX_LABEL_MAX_CHARS = 38;
+export const HELIX_PADDING_Y = 40;
+/**
+ * Labels start here, measured from the left edge. They sit just right of the
+ * widest part of the helix so the text never floats away from its node.
+ */
+export const HELIX_LABEL_X = 356;
+export const HELIX_LABEL_MAX_CHARS = 34;
+/** Curve samples drawn between two rungs. */
+const SEGMENT_SAMPLES = 10;
 
-export type HelixPoint = { x: number; y: number };
+/** A projected point. `depth` is -1 (far) .. 1 (near). */
+export type HelixPoint = { x: number; y: number; depth: number };
+
+/** One drawn piece of a strand, with the depth used for painter's order. */
+export type HelixSegment = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  depth: number;
+};
 
 export type HelixTraitInput = {
   key: string;
@@ -40,21 +66,23 @@ export type HelixNode = {
   confidence: number;
   verdict: string | null;
   direction: string | null;
-  /** Where the label sits on its connector, so text never collides with a rung. */
+  /** Screen position of the near end of the rung: the clickable node. */
   x: number;
   y: number;
-  /** 1 = front of the helix, -1 = behind it. Drives size and opacity. */
+  /** Depth of that near end, -1..1. Drives size and opacity. */
   depth: number;
-  /** Start of the rung (left strand) and end (right strand). */
-  rung: { x1: number; x2: number };
+  /** Both ends of the rung, already projected. */
+  rung: { x1: number; y1: number; x2: number; y2: number };
+  /** The far end, drawn as a dimmer dot behind the helix. */
+  back: { x: number; y: number };
 };
 
-export type HelixLayout = {
+export type HelixScene = {
   width: number;
   height: number;
   nodes: HelixNode[];
-  leftStrand: HelixPoint[];
-  rightStrand: HelixPoint[];
+  /** Both strands merged and sorted far-to-near. */
+  segments: HelixSegment[];
 };
 
 /** Shortens label text for the SVG so one long trait cannot run off the card. */
@@ -66,12 +94,27 @@ export function truncate(text: string, max: number): string {
 }
 
 /**
- * Builds the projected helix. `rotation` (radians) lets the UI spin the shape
- * without rebuilding trait data; the layout stays deterministic for a given
- * input, which is what the tests rely on. `gaps` holds indices that start a new
- * category (see categoryGapIndices).
+ * Perspective projection of one point on the cylinder. `y` is untouched: rows
+ * keep their vertical slot, which is what keeps the label column readable and
+ * the height stable while the helix spins. The depth cue comes from the
+ * horizontal scale plus the shading the renderer derives from `depth`.
  */
-export function buildHelixLayout(traits: HelixTraitInput[], rotation = 0, gaps: number[] = []): HelixLayout {
+function project(phase: number, y: number): HelixPoint {
+  const x = HELIX_RADIUS * Math.sin(phase);
+  const z = HELIX_RADIUS * Math.cos(phase);
+  const scale = HELIX_CAMERA / (HELIX_CAMERA - z);
+  return { x: HELIX_CENTER_X + x * scale, y, depth: z / HELIX_RADIUS };
+}
+
+/**
+ * Builds the scene. `gaps` holds indices that start a new category (see
+ * categoryGapIndices) so the groups separate instead of running together.
+ */
+export function buildHelixScene(
+  traits: HelixTraitInput[],
+  rotation = 0,
+  gaps: number[] = []
+): HelixScene {
   const gapsBefore = new Set(gaps);
 
   // Row positions accumulate so a category change leaves a visible break
@@ -85,16 +128,16 @@ export function buildHelixLayout(traits: HelixTraitInput[], rotation = 0, gaps: 
   });
 
   const lastRow = rows[rows.length - 1] ?? HELIX_PADDING_Y;
-  const height =
-    traits.length === 0 ? HELIX_PADDING_Y * 2 : lastRow + HELIX_PADDING_Y;
+  const height = traits.length === 0 ? HELIX_PADDING_Y * 2 : lastRow + HELIX_PADDING_Y;
 
   const nodes: HelixNode[] = traits.map((trait, index) => {
     const phase = index * HELIX_PHASE_STEP + rotation;
-    const x1 = HELIX_CENTER_X + HELIX_RADIUS * Math.sin(phase);
-    const x2 = HELIX_CENTER_X + HELIX_RADIUS * Math.sin(phase + Math.PI);
-    const depth = Math.cos(phase);
-    // The node rides whichever strand is closest to the viewer.
-    const x = depth >= 0 ? x1 : x2;
+    const rowY = rows[index] ?? HELIX_PADDING_Y;
+    const a = project(phase, rowY);
+    const b = project(phase + Math.PI, rowY);
+    // The node rides whichever end is closer to the viewer.
+    const front = a.depth >= b.depth ? a : b;
+    const back = front === a ? b : a;
     return {
       key: trait.key,
       category: trait.category,
@@ -103,60 +146,67 @@ export function buildHelixLayout(traits: HelixTraitInput[], rotation = 0, gaps: 
       confidence: trait.confidence,
       verdict: trait.verdict ?? null,
       direction: trait.direction ?? null,
-      x,
-      y: rows[index] ?? HELIX_PADDING_Y,
-      depth,
-      rung: { x1, x2 },
+      x: front.x,
+      y: front.y,
+      depth: front.depth,
+      rung: { x1: a.x, y1: a.y, x2: b.x, y2: b.y },
+      back: { x: back.x, y: back.y },
     };
   });
 
-  return {
-    width: HELIX_WIDTH,
-    height,
-    nodes,
-    leftStrand: sampleStrand(rows, rotation, 0),
-    rightStrand: sampleStrand(rows, rotation, Math.PI),
-  };
+  const segments: HelixSegment[] = [];
+  for (const offset of [0, Math.PI]) {
+    const points = sampleStrand(rows, rotation, offset);
+    for (let index = 1; index < points.length; index += 1) {
+      const prev = points[index - 1];
+      const current = points[index];
+      segments.push({
+        x1: prev.x,
+        y1: prev.y,
+        x2: current.x,
+        y2: current.y,
+        depth: (prev.depth + current.depth) / 2,
+      });
+    }
+  }
+  // Painter's algorithm: far pieces first, so the near strand sits on top.
+  segments.sort((left, right) => left.depth - right.depth);
+
+  return { width: HELIX_WIDTH, height, nodes, segments };
 }
 
 /**
- * Samples both strands between rungs so the curve bends instead of drawing a
+ * Samples one strand between rungs so the curve bends instead of drawing a
  * zigzag between nodes.
  */
 function sampleStrand(rows: number[], rotation: number, offset: number): HelixPoint[] {
   if (rows.length === 0) return [];
-  const steps = 6;
   const points: HelixPoint[] = [];
+
+  // A single rung still deserves a visible ring instead of an empty strand.
+  if (rows.length === 1) {
+    for (let step = 0; step <= 24; step += 1) {
+      points.push(project(offset + (step / 24) * Math.PI * 2, rows[0]));
+    }
+    return points;
+  }
+
   let globalRow = 0;
 
   for (let index = 0; index < rows.length - 1; index += 1) {
     const startY = rows[index];
     const endY = rows[index + 1];
-    for (let step = 0; step < steps; step += 1) {
-      const t = step / steps;
+    for (let step = 0; step < SEGMENT_SAMPLES; step += 1) {
+      const t = step / SEGMENT_SAMPLES;
       const phase = (globalRow + t) * HELIX_PHASE_STEP + rotation + offset;
-      points.push({
-        x: HELIX_CENTER_X + HELIX_RADIUS * Math.sin(phase),
-        y: startY + (endY - startY) * t,
-      });
+      points.push(project(phase, startY + (endY - startY) * t));
     }
     globalRow += 1;
   }
 
   const tailPhase = globalRow * HELIX_PHASE_STEP + rotation + offset;
-  points.push({
-    x: HELIX_CENTER_X + HELIX_RADIUS * Math.sin(tailPhase),
-    y: rows[rows.length - 1],
-  });
+  points.push(project(tailPhase, rows[rows.length - 1]));
   return points;
-}
-
-/** Converts points into an SVG path so strands render as one smooth line. */
-export function toPath(points: HelixPoint[]): string {
-  if (points.length === 0) return "";
-  return points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(" ");
 }
 
 /**
@@ -171,6 +221,56 @@ export function categoryGapIndices(traits: { category: string }[]): number[] {
   return gaps;
 }
 
+/** Node size in SVG units: 3 when far, 6 when close. */
 export function nodeRadius(depth: number): number {
-  return 3.2 + 2.6 * ((depth + 1) / 2);
+  return 3 + 3 * ((depth + 1) / 2);
+}
+
+/** Strand width in SVG units; the near side of the helix reads thicker. */
+export function strandWidth(depth: number): number {
+  return 8 + 7 * ((depth + 1) / 2);
+}
+
+/**
+ * Rough advance width of a label string in SVG units. Only used to size the
+ * label pill, so an approximation beats measuring text that does not exist yet.
+ */
+export function estimateTextWidth(text: string, fontSize: number, bold = false): number {
+  return text.length * fontSize * (bold ? 0.6 : 0.54);
+}
+
+/** Dot + gap + right padding inside a label pill. */
+const PILL_CHROME = 34;
+const PILL_GAP = 6;
+
+/**
+ * Fits "label value" into the label column. The value gives way first — a
+ * truncated label ("Signature in…") reads worse than a shortened number.
+ */
+export function fitHelixLabel(
+  label: string,
+  display: string,
+  maxWidth: number
+): { label: string; display: string; width: number } {
+  const fits = (candidateLabel: string, candidateDisplay: string) =>
+    PILL_CHROME +
+    estimateTextWidth(candidateLabel, 11.5, true) +
+    PILL_GAP +
+    estimateTextWidth(candidateDisplay, 11);
+
+  let nextDisplay = display;
+  let guard = display.length;
+  while (nextDisplay.length > 0 && fits(label, nextDisplay) > maxWidth && guard > 0) {
+    nextDisplay = truncate(nextDisplay, nextDisplay.length - 1);
+    guard -= 1;
+  }
+
+  let nextLabel = label;
+  guard = label.length;
+  while (nextLabel.length > 0 && fits(nextLabel, nextDisplay) > maxWidth && guard > 0) {
+    nextLabel = truncate(nextLabel, nextLabel.length - 1);
+    guard -= 1;
+  }
+
+  return { label: nextLabel, display: nextDisplay, width: Math.ceil(fits(nextLabel, nextDisplay)) };
 }

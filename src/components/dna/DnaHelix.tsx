@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  HELIX_LABEL_MAX_CHARS,
+  HELIX_CENTER_X,
   HELIX_LABEL_X,
-  buildHelixLayout,
+  HELIX_WIDTH,
+  buildHelixScene,
   categoryGapIndices,
+  fitHelixLabel,
   nodeRadius,
-  toPath,
-  truncate,
+  strandWidth,
   type HelixTraitInput,
 } from "@/lib/dna/helix";
-import { dnaCategoryColor } from "@/lib/dna/palette";import { useT } from "@/hooks/useT";
+import { dnaCategoryColor } from "@/lib/dna/palette";
+import { useT } from "@/hooks/useT";
 
 type Props = {
   traits: HelixTraitInput[];
@@ -21,10 +23,18 @@ type Props = {
 };
 
 const SPIN_SPEED = 0.0045;
+/** Label column width left of the canvas edge. */
+const LABEL_MAX_WIDTH = HELIX_WIDTH - HELIX_LABEL_X - 6;
+const PILL_HEIGHT = 26;
 
 /**
  * The projected helix from lib/dna/helix.ts, drawn as SVG. Rotation is local
  * state so a drag or the spin toggle never touches the profile payload.
+ *
+ * The look is a translucent ribbon rather than a line drawing: each strand is a
+ * soft halo under a pale body, rungs are light bars with a glowing bead at both
+ * ends, and labels are dark pills with a dotted leader. Painting order does the
+ * 3D work — far strand, back half of the rungs, near strand, front half, beads.
  */
 export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey = null }: Props) {
   const t = useT();
@@ -35,9 +45,22 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
 
   // Traits arrive sorted by category; let the layout break between the groups.
   const gaps = useMemo(() => categoryGapIndices(traits), [traits]);
-  const layout = useMemo(() => buildHelixLayout(traits, rotation, gaps), [traits, rotation, gaps]);
-  const byKey = useMemo(() => new Map(layout.nodes.map((node) => [node.key, node])), [layout]);
+  const scene = useMemo(() => buildHelixScene(traits, rotation, gaps), [traits, rotation, gaps]);
+  const byKey = useMemo(() => new Map(scene.nodes.map((node) => [node.key, node])), [scene]);
   const selected = selectedKey ? byKey.get(selectedKey) : null;
+
+  const labels = useMemo(
+    () =>
+      scene.nodes.map((node) => ({
+        key: node.key,
+        ...fitHelixLabel(node.label, node.display, LABEL_MAX_WIDTH),
+      })),
+    [scene]
+  );
+  const labelByKey = useMemo(() => new Map(labels.map((label) => [label.key, label])), [labels]);
+
+  const farSegments = useMemo(() => scene.segments.filter((segment) => segment.depth < 0), [scene]);
+  const nearSegments = useMemo(() => scene.segments.filter((segment) => segment.depth >= 0), [scene]);
 
   useEffect(() => {
     if (!spinning) return;
@@ -85,13 +108,56 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
     return <p className="px-4 py-8 text-sm text-ink-dim">{t("dna.helixEmpty")}</p>;
   }
 
+  const drawStrand = (segments: typeof scene.segments, keyPrefix: string) =>
+    segments.map((segment, index) => {
+      const near = (segment.depth + 1) / 2;
+      const width = strandWidth(segment.depth);
+      return (
+        <g key={`${keyPrefix}-${index}`}>
+          {/* Halo: the glow spilling out of the ribbon. */}
+          <line
+            x1={segment.x1}
+            y1={segment.y1}
+            x2={segment.x2}
+            y2={segment.y2}
+            stroke="#5ec9a4"
+            strokeWidth={width * 3.2}
+            strokeLinecap="round"
+            opacity={0.06 + 0.12 * near}
+          />
+          {/* Body: near-white, barely opaque, so the rungs read through it. */}
+          <line
+            x1={segment.x1}
+            y1={segment.y1}
+            x2={segment.x2}
+            y2={segment.y2}
+            stroke="#d7f2e6"
+            strokeWidth={width}
+            strokeLinecap="round"
+            opacity={0.12 + 0.3 * near}
+          />
+          {/* Edge highlight along the ribbon. */}
+          <line
+            x1={segment.x1}
+            y1={segment.y1}
+            x2={segment.x2}
+            y2={segment.y2}
+            stroke="#f2fffa"
+            strokeWidth={Math.max(1.4, width * 0.22)}
+            strokeLinecap="round"
+            opacity={near > 0.5 ? 0.3 : 0.12}
+          />
+        </g>
+      );
+    });
+
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_32%_40%,rgba(111,212,165,0.10),transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_45%,rgba(94,201,164,0.13),transparent_62%)]" />
 
       <svg
-        viewBox={`0 0 ${layout.width} ${layout.height}`}
-        className="relative w-full touch-pan-y select-none"
+        viewBox={`0 0 ${scene.width} ${scene.height}`}
+        className="relative mx-auto block w-full max-w-[700px] touch-pan-y select-none"
         role="img"
         aria-label={t("dna.helixTitle")}
         onPointerDown={handlePointerDown}
@@ -99,61 +165,101 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        <path
-          d={toPath(layout.leftStrand)}
-          fill="none"
-          stroke="#31544a"
-          strokeWidth={9}
-          strokeLinecap="round"
-          opacity={0.55}
-        />
-        <path
-          d={toPath(layout.rightStrand)}
-          fill="none"
-          stroke="#3d6a5c"
-          strokeWidth={9}
-          strokeLinecap="round"
-          opacity={0.4}
-        />
+        <defs>
+          <radialGradient id="dna-bead-glow">
+            <stop offset="0%" stopColor="#bdf5e2" stopOpacity="0.55" />
+            <stop offset="55%" stopColor="#54c8a2" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#54c8a2" stopOpacity="0" />
+          </radialGradient>
+        </defs>
 
-        {layout.nodes.map((node) => {
-          const color = dnaCategoryColor(node.category);
-          const front = (node.depth + 1) / 2;
-          const isSelected = node.key === selectedKey;
-          const labelX = HELIX_LABEL_X;
+        {/* Furthest first: back halves of the rungs sit behind the far strand. */}
+        {scene.nodes.map((node) => (
+          <line
+            key={`back-${node.key}`}
+            x1={HELIX_CENTER_X}
+            y1={node.y}
+            x2={node.back.x}
+            y2={node.back.y}
+            stroke="#a9c3b7"
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            opacity={0.26}
+          />
+        ))}
+
+        {drawStrand(farSegments, "far")}
+
+        {/* Front halves of the rungs: pale bars crossing to the visible strand. */}
+        {scene.nodes.map((node) => {
+          const near = (node.depth + 1) / 2;
           return (
-            <g key={node.key}>
-              <line
-                x1={node.rung.x1}
-                y1={node.y}
-                x2={node.rung.x2}
-                y2={node.y}
-                stroke={color}
-                strokeWidth={1.4}
-                opacity={0.16 + 0.4 * front}
-              />
-              <line
-                x1={Math.max(node.rung.x1, node.rung.x2) + 8}
-                y1={node.y}
-                x2={labelX - 10}
-                y2={node.y}
-                stroke={color}
-                strokeWidth={1}
-                opacity={isSelected ? 0.7 : 0.18}
-              />
+            <line
+              key={`front-${node.key}`}
+              x1={HELIX_CENTER_X}
+              y1={node.y}
+              x2={node.x}
+              y2={node.y}
+              stroke="#e6f2ec"
+              strokeWidth={2.8 + 1.6 * near}
+              strokeLinecap="round"
+              opacity={0.32 + 0.4 * near}
+            />
+          );
+        })}
+
+        {drawStrand(nearSegments, "near")}
+
+        {/* Beads sit on the strand, so they go over both rungs and ribbon. */}
+        {scene.nodes.map((node) => {
+          const color = dnaCategoryColor(node.category);
+          const near = (node.depth + 1) / 2;
+          return (
+            <g key={`bead-${node.key}`}>
+              <circle cx={node.back.x} cy={node.back.y} r={6 + 3 * (1 - near)} fill="url(#dna-bead-glow)" opacity={0.5} />
+              <circle cx={node.back.x} cy={node.back.y} r={2.8} fill="#2b7f6c" stroke="#8fd9c2" strokeWidth={0.8} opacity={0.5} />
+              <circle cx={node.x} cy={node.y} r={10 + 8 * near} fill="url(#dna-bead-glow)" opacity={0.7} />
               <circle
                 cx={node.x}
                 cy={node.y}
-                r={nodeRadius(node.depth) + (isSelected ? 2 : 0)}
-                fill={isSelected ? color : "#0a1210"}
+                r={nodeRadius(node.depth) + 1.5}
+                fill="#2b8d78"
+                stroke={node.key === selectedKey ? color : "#b7ecd9"}
+                strokeWidth={node.key === selectedKey ? 2.2 : 1.1}
+                opacity={0.75 + 0.25 * near}
+              />
+            </g>
+          );
+        })}
+
+        {/* Labels last: pills over everything, with a dotted leader to the node. */}
+        {scene.nodes.map((node) => {
+          const color = dnaCategoryColor(node.category);
+          const near = (node.depth + 1) / 2;
+          const isSelected = node.key === selectedKey;
+          const metrics = labelByKey.get(node.key);
+          if (!metrics) return null;
+          const startX = Math.max(node.x, node.back.x) + 9;
+          return (
+            <g key={`label-${node.key}`}>
+              <line
+                x1={startX}
+                y1={node.y}
+                x2={HELIX_LABEL_X - 6}
+                y2={node.y}
                 stroke={color}
-                strokeWidth={isSelected ? 2.4 : 1.8}
-                opacity={0.45 + 0.55 * front}
+                strokeWidth={1}
+                strokeDasharray="1.5 4"
+                strokeLinecap="round"
+                opacity={isSelected ? 0.7 : 0.25}
+              />
+              <g
                 role="button"
                 tabIndex={0}
                 aria-label={`${node.label}: ${node.display}`}
                 aria-pressed={isSelected}
-                className="cursor-pointer outline-none focus-visible:stroke-[3]"
+                className="cursor-pointer outline-none"
+                opacity={0.62 + 0.38 * near}
                 onClick={() => onSelect?.(node.key)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -161,27 +267,40 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
                     onSelect?.(node.key);
                   }
                 }}
-              />
-              <text
-                x={labelX}
-                y={node.y - 3}
-                textAnchor="end"
-                fontSize={12}
-                fill={isSelected ? "#e7eeea" : "#b6c6bf"}
-                opacity={0.55 + 0.45 * front}
               >
-                {truncate(node.label, HELIX_LABEL_MAX_CHARS)}
-              </text>
-              <text
-                x={labelX}
-                y={node.y + 12}
-                textAnchor="end"
-                fontSize={11.5}
-                fill="#7f918a"
-                opacity={0.6 + 0.4 * front}
-              >
-                {truncate(node.display, HELIX_LABEL_MAX_CHARS)}
-              </text>
+                <rect
+                  x={HELIX_LABEL_X}
+                  y={node.y - PILL_HEIGHT / 2}
+                  width={metrics.width}
+                  height={PILL_HEIGHT}
+                  rx={8}
+                  fill="#08120f"
+                  fillOpacity={isSelected ? 0.94 : 0.78}
+                  stroke={isSelected ? color : "#26382f"}
+                  strokeWidth={isSelected ? 1.4 : 1}
+                  className="transition-colors focus-visible:stroke-[2]"
+                />
+                <circle cx={HELIX_LABEL_X + 13} cy={node.y} r={3.4} fill={color} />
+                <text
+                  x={HELIX_LABEL_X + 23}
+                  y={node.y + 4}
+                  fontSize={11.5}
+                  fontWeight={600}
+                  fill={isSelected ? "#f2fffa" : "#dbe7e1"}
+                >
+                  {metrics.label}
+                </text>
+                {metrics.display ? (
+                  <text
+                    x={HELIX_LABEL_X + 23 + metrics.label.length * 11.5 * 0.6 + 6}
+                    y={node.y + 4}
+                    fontSize={11}
+                    fill="#8ba59b"
+                  >
+                    {metrics.display}
+                  </text>
+                ) : null}
+              </g>
             </g>
           );
         })}
@@ -190,11 +309,11 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
           <circle
             cx={selected.x}
             cy={selected.y}
-            r={16}
+            r={18}
             fill="none"
             stroke={dnaCategoryColor(selected.category)}
             strokeWidth={1}
-            opacity={0.5}
+            opacity={0.45}
           />
         ) : null}
       </svg>
@@ -248,4 +367,3 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
     </div>
   );
 }
-
