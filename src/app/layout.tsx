@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { Roboto_Slab, Outfit, DM_Mono } from "next/font/google";
+import { Outfit, DM_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import ClientLayout from "@/components/ClientLayout";
 
 // Editorial font trio (matches the public artist page). Loaded app-wide so
 // every surface shares one typographic system — see the @theme mapping in
 // globals.css. Weights are limited to what the design actually uses.
-const robotoSlab = Roboto_Slab({
-  subsets: ["latin"],
-  weight: ["300", "400", "700", "900"],
+// Roboto Slab is self-hosted. next/font/google downloads its CSS during the
+// build, and when Google answers with something the Turbopack font replacer
+// cannot read, the whole Docker build dies ("Module not found:
+// @vercel/turbopack-next/internal/font/google/font") — that hit two deploys in
+// a row. The variable wght file covers every weight the design uses, so one
+// 34 kB latin file replaces the four Google used to serve.
+const robotoSlab = localFont({
+  src: "./fonts/roboto-slab-latin-variable.woff2",
   variable: "--font-roboto-slab",
+  weight: "100 900",
   display: "swap",
 });
 
