@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
+import { buildApimartInspoBody } from "@/lib/providers/apimart-inspo";
 
 const APIMART_BASE_URL = "https://api.apimart.ai/v1/music";
 const APIMART_ROOT_URL = "https://api.apimart.ai";
@@ -139,24 +140,7 @@ export async function createApimartInspo(
 ): Promise<{ taskId: string }> {
   const apiKey = await getApimartApiKey();
 
-  const body: Record<string, any> = {
-    model: "suno",
-    audio_urls: params.audioUrls,
-    version: params.version,
-  };
-
-  // NOTE: the inspo endpoint does not accept custom/instrumental/persona_id/duration.
-  if (params.tags) body.tags = params.tags;
-  if (params.prompt) body.prompt = params.prompt;
-  if (params.title) body.title = params.title;
-  if (params.negativeTags) body.negative_tags = params.negativeTags;
-  if (typeof params.styleWeight === "number") body.style_weight = params.styleWeight;
-  if (typeof params.weirdness === "number") body.weirdness = params.weirdness;
-  if (typeof params.audioWeight === "number") body.audio_weight = params.audioWeight;
-  if (params.vocalGender) body.vocal_gender = params.vocalGender;
-  if (params.variety && params.variety !== "off") body.variety = params.variety;
-  if (params.maxMode === true) body.max_mode = true;
-  if (params.audioFormat && params.audioFormat !== "mp3") body.audio_format = params.audioFormat;
+  const body = buildApimartInspoBody(params);
 
   try {
     const response = await axios.post(`${APIMART_BASE_URL}/generations/inspo`, body, {

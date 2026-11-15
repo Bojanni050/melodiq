@@ -460,25 +460,9 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
 export async function dispatchApimartInspo(ctx: GenerationContext, track: any): Promise<NextResponse> {
   const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, inspoAudioWeight, negativeTags, apimartVariety, apimartMaxMode, apimartAudioFormat, inspirationTrackIds } = ctx;
 
-  const ids = [...new Set((inspirationTrackIds ?? []).filter((id): id is string => typeof id === "string" && id.trim().length > 0))].slice(0, 4);
-  if (ids.length === 0) throw new Error("Select 1–4 inspiration tracks");
-
-  const rows = await db
-    .select({ id: tracks.id, title: tracks.title, s3Key: tracks.s3Key, s3KeyHd: tracks.s3KeyHd, status: tracks.status })
-    .from(tracks)
-    .where(and(eq(tracks.userId, userId), inArray(tracks.id, ids)));
-  const byId = new Map(rows.map((row) => [row.id, row]));
-
-  const audioUrls: string[] = [];
-  for (const id of ids) {
-    const row = byId.get(id);
-    const key = row?.s3Key ?? row?.s3KeyHd ?? null;
-    if (!row || row.status !== "done" || !key) {
-      throw new Error(`Inspiration track "${row?.title?.trim() || "untitled"}" has no audio yet`);
-    }
-    // S3 is private — APIMart needs a public URL, same pattern as voice cloning.
-    audioUrls.push(await getPresignedUrl(key, INSPO_AUDIO_URL_TTL_SECONDS));
-  }
+  // Same resolution PoYo uses: ownership check, private S3 key → presigned
+  // public URL, in the order the user selected the tracks.
+  const audioUrls = await resolveInspirationAudioUrls(userId, inspirationTrackIds);
 
   const studioLyrics = !instrumental && lyrics?.trim() ? lyrics.trim() : undefined;
   // Dedicated inspo influence slider (0–100% → 0.00–1.00, default 20).
@@ -513,6 +497,6 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
   const allTracks = [t1[0], t2[0]];
   spawnCoverArtBatchAsync(allTracks.map((t) => ({ id: t.id!, userId: t.userId, prompt: t.prompt, instrumental: t.instrumental })), resolvedTitle, "apimart");
 
-  await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: ids.length, audioWeight: inspoWeight01 }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
+  await logApi({ userId, type: "generation", provider: "apimart", endpoint: "/api/generate", request: JSON.stringify({ provider, providerModel, prompt, inspo: true, inspirationTracks: audioUrls.length, audioWeight: inspoWeight01 }), response: JSON.stringify({ status: "generating", taskId: genResult.taskId }), statusCode: 200, duration: Date.now() - startTime });
   return NextResponse.json({ tracks: allTracks });
 }

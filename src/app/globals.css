@@ -49,6 +49,25 @@ body {
   font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* The list a native <select> opens is drawn by the OS, not by our classes: on
+ * Windows it came out white with near-white option text, which made the artist
+ * credit picker unreadable. color-scheme pins the popup to dark rendering and
+ * the explicit option colours cover browsers that ignore it. */
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  background-color: var(--mq-surface-2);
+  color: var(--mq-ink);
+}
+
+select optgroup {
+  font-weight: 600;
+  color: var(--mq-ink-muted);
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-roboto-slab), var(--font-outfit), serif;
 }
