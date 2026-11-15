@@ -121,6 +121,24 @@ describe("buildDnaProfile", () => {
     expect(result.profile.summary).toContain("84 BPM");
   });
 
+  it("counts tracks, not tags, for list traits", () => {
+    const audio = makeTrack().audioDna!;
+    const result = buildDnaProfile(
+      [
+        makeTrack({
+          prompt: "synthpop, dream pop",
+          audioDna: { ...audio, atmosphereTags: ["warm", "nostalgic", "dreamy"] },
+        }),
+        makeTrack({ prompt: "pop", audioDna: { ...audio, atmosphereTags: [] } }),
+      ],
+      { now },
+    );
+
+    // Three genres and three atmosphere tags come from two tracks.
+    expect(trait(result, "genres")?.sourceCount).toBe(2);
+    expect(trait(result, "atmospheres")?.sourceCount).toBe(1);
+  });
+
   it("derives loved and skipped genres from explicit ratings", () => {
     const result = buildDnaProfile(
       [
