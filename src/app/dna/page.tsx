@@ -616,6 +616,7 @@ export default function DnaPage() {
                           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
                             {categoryTraits.map((trait) => {
                               const solid = trait.confidence >= SOLID_CONFIDENCE;
+                              const confidencePct = Math.round(trait.confidence * 100);
                               const labelKey = TRAIT_LABEL_KEYS[trait.key];
                               const items = trait.kind === "list" ? parseList(trait.text) : [];
 
@@ -641,14 +642,13 @@ export default function DnaPage() {
                                               ? style.text
                                               : "text-ink-dim"
                                       }`}
-                                      title={`${Math.round(trait.confidence * 100)}%`}
                                     >
                                       {trait.verdict === "confirmed"
                                         ? t("dna.confirmed")
                                         : trait.verdict === "disputed"
                                           ? t("dna.disputed")
                                           : solid
-                                            ? t("dna.solid")
+                                            ? t("dna.confidenceShort", { value: confidencePct })
                                             : t("dna.learning")}
                                     </span>
                                   </div>

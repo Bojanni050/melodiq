@@ -859,3 +859,9 @@
 - Findings: Het confidence-label `dna.solid` stond in het Nederlands op "Stevig", een letterlijke vertaling van "Solid". Naast een waarde als "0% instrumental" leest dat als een eigenschap van de muziek, terwijl het de zekerheid van de meting is.
 - Conclusions: "Zeker" sluit aan bij het al bestaande `dna.confidenceShort` ("{value}% zeker") en is niet te verwarren met "Sterk", dat elders de Melody DNA-sterktegraad aanduidt (`strongLabel`). Alleen de Nederlandse string; de confidence-drempel (`SOLID_CONFIDENCE = 0.45`) en de Engelse tekst blijven ongewijzigd.
 - Actions: `src/lib/i18n/messages/nl.ts` - `dna.solid` van "Stevig" naar "Zeker"; validated met `npm run build`.
+
+## 2026-11-15 (DNA-kaart toont het confidence-percentage in het label)
+
+- Findings: Het label toonde alleen het woord ("Zeker") en stopte het cijfer in een `title`-tooltip. Op een kaart met "0% instrumental" las dat als twee losse grootheden, en de tooltip is op mobiel onbereikbaar.
+- Conclusions: Het cijfer hoort in het label zelf: `dna.confidenceShort` ("{value}% zeker") bestond al voor de helix. Alleen voor de "solid"-staat, want "Nog aan het leren" bij een lage confidence zegt meer dan "23% zeker" (en de balk eronder toont dezelfde verhouding). Bevestigd/afgewezen houden hun eigen woord, omdat daar de correctie van de gebruiker het verhaal is. De tooltip vervalt daarmee, en `dna.solid` is niet langer nodig: dode i18n-keys verwijderd uit beide talen in plaats van ze te laten staan.
+- Actions: `src/app/dna/page.tsx` - `confidencePct` berekend, label gebruikt `t("dna.confidenceShort", { value: confidencePct })` in plaats van `t("dna.solid")`, `title`-attribuut weg; `src/lib/i18n/messages/nl.ts` en `en.ts` - `dna.solid` verwijderd; validated met `npm run build`.

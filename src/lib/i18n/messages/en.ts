@@ -752,7 +752,6 @@ const en = {
       "Finish a track and Melody DNA starts learning your tempo, energy, language and the words you reach for. Rating tracks sharpens it fastest.",
     emptyCta: "Open the Studio",
     learning: "Still learning",
-    solid: "Solid",
     confirm: "This is right",
     dispute: "This isn't me",
     more: "More of this",
