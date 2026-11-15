@@ -52,6 +52,10 @@ export interface TrackItem {
   translatedLanguage?: string | null;
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
+  melodyGenieArtistInfluence?: string | null;
+  melodyGenieAdditions?: string | null;
+  melodyGenieStyleInfluence?: number | null;
+  melodyGenieDnaInfluence?: boolean | null;
   jobId?: string | null;
 }
 

@@ -24,6 +24,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   apiframe: "APIFrame",
   apimart: "APIMart",
   musicgpt: "MusicGPT",
+  melodygenie: "Melody Genie",
   lyria: "Lyria",
   minimax: "MiniMax",
   upload: "Uploaded",

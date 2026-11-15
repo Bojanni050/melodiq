@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
+import InfluenceSlider from "@/components/ui/InfluenceSlider";
 import SliderWithInput from "@/components/ui/SliderWithInput";
 import {
   isObjectRecord,
@@ -102,6 +103,10 @@ export default function UploadPanel({
         sunoVariety: "off",
         sunoMaxMode: false,
         sunoAudioFormat: "mp3",
+        melodyGenieArtistInfluence: "",
+        melodyGenieAdditions: "",
+        melodyGenieStyleInfluence: 50,
+        melodyGenieDnaInfluence: false,
         licenseFile: null,
       }));
 
@@ -237,6 +242,10 @@ export default function UploadPanel({
             sunoVariety: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoVariety : null,
             sunoMaxMode: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoMaxMode : false,
             sunoAudioFormat: item.sourceProvider === "suno" && isSunoV6Model(item.sourceModel) ? item.sunoAudioFormat : null,
+            melodyGenieArtistInfluence: item.sourceProvider === "melodygenie" ? (item.melodyGenieArtistInfluence.trim() || null) : null,
+            melodyGenieAdditions: item.sourceProvider === "melodygenie" ? (item.melodyGenieAdditions.trim() || null) : null,
+            melodyGenieStyleInfluence: item.sourceProvider === "melodygenie" ? item.melodyGenieStyleInfluence : null,
+            melodyGenieDnaInfluence: item.sourceProvider === "melodygenie" ? item.melodyGenieDnaInfluence : null,
           }))
         )
       );
@@ -798,6 +807,74 @@ export default function UploadPanel({
                           />
                         </div>
                       </div>
+
+                      {item.sourceProvider === "melodygenie" && (
+                        <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
+                          <div className="space-y-1">
+                            <label htmlFor={`upload-item-genie-artist-${item.id}`} className="text-xs text-ink-muted">Artist Influence</label>
+                            <AutocompleteInput
+                              id={`upload-item-genie-artist-${item.id}`}
+                              value={item.melodyGenieArtistInfluence}
+                              onChange={(v) => setQueuedUploads((current) =>
+                                current.map((upload) => upload.id === item.id ? { ...upload, melodyGenieArtistInfluence: v } : upload)
+                              )}
+                              disabled={uploading}
+                              placeholder="e.g. Billie Eilish"
+                              suggestions={knownArtistNames}
+                              className="h-8 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label htmlFor={`upload-item-genie-additions-${item.id}`} className="text-xs text-ink-muted">Additions</label>
+                            <textarea
+                              id={`upload-item-genie-additions-${item.id}`}
+                              value={item.melodyGenieAdditions}
+                              onChange={(event) => {
+                                const v = event.target.value;
+                                setQueuedUploads((current) =>
+                                  current.map((upload) => upload.id === item.id ? { ...upload, melodyGenieAdditions: v } : upload)
+                                );
+                              }}
+                              rows={2}
+                              disabled={uploading}
+                              placeholder="Extra elements you added, e.g. spanish guitar, orchestral strings"
+                              className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
+                            />
+                          </div>
+
+                          <InfluenceSlider
+                            id={`upload-item-genie-style-${item.id}`}
+                            label="Style Influence"
+                            value={item.melodyGenieStyleInfluence}
+                            onChange={(v) => setQueuedUploads((current) =>
+                              current.map((upload) => upload.id === item.id ? { ...upload, melodyGenieStyleInfluence: v } : upload)
+                            )}
+                            leftLabel="Freer"
+                            rightLabel="Exactly their sound"
+                            disabled={uploading}
+                          />
+
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm text-ink">Influence with my DNA</p>
+                              <p className="text-xs text-ink-dim">Your DNA profile steered this generation</p>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={item.melodyGenieDnaInfluence}
+                              disabled={uploading}
+                              onClick={() => setQueuedUploads((current) =>
+                                current.map((upload) => upload.id === item.id ? { ...upload, melodyGenieDnaInfluence: !upload.melodyGenieDnaInfluence } : upload)
+                              )}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${item.melodyGenieDnaInfluence ? "bg-emerald-400" : "bg-white/15"}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.melodyGenieDnaInfluence ? "translate-x-4" : "translate-x-0"}`} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex flex-wrap items-center gap-2">
                         <button

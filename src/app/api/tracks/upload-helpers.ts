@@ -184,6 +184,10 @@ export type UploadItemOverride = {
   sunoVariety: string | null;
   sunoMaxMode: boolean | null;
   sunoAudioFormat: string | null;
+  melodyGenieArtistInfluence: string | null;
+  melodyGenieAdditions: string | null;
+  melodyGenieStyleInfluence: number | null;
+  melodyGenieDnaInfluence: boolean | null;
 };
 
 export function normalizeUploadText(value: FormDataEntryValue | null): string | null {
@@ -252,7 +256,7 @@ export function parseUploadItemOverrides(value: FormDataEntryValue | null): Uplo
     if (!Array.isArray(parsed)) return [];
 
     return parsed.map((item) => {
-      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, writerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null, sourceModel: null, sunoStyleInfluence: null, sunoWeirdness: null, sunoVariety: null, sunoMaxMode: null, sunoAudioFormat: null };
+      if (!isJsonObject(item)) return { title: null, artistName: null, composerName: null, writerName: null, prompt: null, lyrics: null, instrumental: null, sourceProvider: null, sourceModel: null, sunoStyleInfluence: null, sunoWeirdness: null, sunoVariety: null, sunoMaxMode: null, sunoAudioFormat: null, melodyGenieArtistInfluence: null, melodyGenieAdditions: null, melodyGenieStyleInfluence: null, melodyGenieDnaInfluence: null };
       const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : null;
       const artistName = typeof item.artistName === "string" && item.artistName.trim() ? item.artistName.trim() : null;
       const composerName = typeof item.composerName === "string" && item.composerName.trim() ? item.composerName.trim() : null;
@@ -267,7 +271,11 @@ export function parseUploadItemOverrides(value: FormDataEntryValue | null): Uplo
       const sunoVariety = typeof item.sunoVariety === "string" && item.sunoVariety.trim() ? item.sunoVariety.trim() : null;
       const sunoMaxMode = typeof item.sunoMaxMode === "boolean" ? item.sunoMaxMode : null;
       const sunoAudioFormat = typeof item.sunoAudioFormat === "string" && item.sunoAudioFormat.trim() ? item.sunoAudioFormat.trim() : null;
-      return { title, artistName, composerName, writerName, prompt, lyrics, instrumental, sourceProvider, sourceModel, sunoStyleInfluence, sunoWeirdness, sunoVariety, sunoMaxMode, sunoAudioFormat };
+      const melodyGenieArtistInfluence = typeof item.melodyGenieArtistInfluence === "string" && item.melodyGenieArtistInfluence.trim() ? item.melodyGenieArtistInfluence.trim() : null;
+      const melodyGenieAdditions = typeof item.melodyGenieAdditions === "string" && item.melodyGenieAdditions.trim() ? item.melodyGenieAdditions.trim() : null;
+      const melodyGenieStyleInfluence = typeof item.melodyGenieStyleInfluence === "number" ? Math.min(100, Math.max(1, Math.round(item.melodyGenieStyleInfluence))) : null;
+      const melodyGenieDnaInfluence = typeof item.melodyGenieDnaInfluence === "boolean" ? item.melodyGenieDnaInfluence : null;
+      return { title, artistName, composerName, writerName, prompt, lyrics, instrumental, sourceProvider, sourceModel, sunoStyleInfluence, sunoWeirdness, sunoVariety, sunoMaxMode, sunoAudioFormat, melodyGenieArtistInfluence, melodyGenieAdditions, melodyGenieStyleInfluence, melodyGenieDnaInfluence };
     });
   } catch {
     return [];

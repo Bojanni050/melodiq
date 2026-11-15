@@ -176,6 +176,15 @@ export const tracks = pgTable("tracks", {
   sunoVariety: varchar("suno_variety", { length: 10 }),
   sunoMaxMode: boolean("suno_max_mode").default(false).notNull(),
   sunoAudioFormat: varchar("suno_audio_format", { length: 10 }),
+  // Melody Genie options recorded on an uploaded track whose source is Melody
+  // Genie (see the upload panel): the artist that steered the sound, the extra
+  // additions given to the generator, the style-influence slider (1 = freer,
+  // 100 = exactly their sound) and the "influence with my DNA" toggle. Not used
+  // for generation.
+  melodyGenieArtistInfluence: varchar("melody_genie_artist_influence", { length: 255 }),
+  melodyGenieAdditions: text("melody_genie_additions"),
+  melodyGenieStyleInfluence: integer("melody_genie_style_influence"),
+  melodyGenieDnaInfluence: boolean("melody_genie_dna_influence").default(false).notNull(),
   s3KeyLicense: text("s3_key_license"),
   rating: varchar("rating", { length: 10 }),
   playCount: integer("play_count").default(0).notNull(),

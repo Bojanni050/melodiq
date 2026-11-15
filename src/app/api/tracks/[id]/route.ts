@@ -751,6 +751,10 @@ export async function PATCH(
     const restore = body.restore;
     const sunoStyleInfluence = body.sunoStyleInfluence;
     const sunoWeirdness = body.sunoWeirdness;
+    const melodyGenieArtistInfluence = body.melodyGenieArtistInfluence;
+    const melodyGenieAdditions = body.melodyGenieAdditions;
+    const melodyGenieStyleInfluence = body.melodyGenieStyleInfluence;
+    const melodyGenieDnaInfluence = body.melodyGenieDnaInfluence;
     const detectLanguage = body.detectLanguage;
     const releaseStatus = body.releaseStatus;
     const publishDate = body.publishDate;
@@ -761,7 +765,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && melodyGenieArtistInfluence === undefined && melodyGenieAdditions === undefined && melodyGenieStyleInfluence === undefined && melodyGenieDnaInfluence === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -1012,6 +1016,45 @@ export async function PATCH(
       } else {
         return NextResponse.json({ error: "Invalid sunoWeirdness" }, { status: 400 });
       }
+    }
+
+    if (melodyGenieArtistInfluence !== undefined) {
+      if (melodyGenieArtistInfluence === null) {
+        updates.melodyGenieArtistInfluence = null;
+      } else if (typeof melodyGenieArtistInfluence === "string") {
+        const trimmed = melodyGenieArtistInfluence.trim();
+        updates.melodyGenieArtistInfluence = trimmed ? trimmed.slice(0, 255) : null;
+      } else {
+        return NextResponse.json({ error: "Invalid melodyGenieArtistInfluence" }, { status: 400 });
+      }
+    }
+
+    if (melodyGenieAdditions !== undefined) {
+      if (melodyGenieAdditions === null) {
+        updates.melodyGenieAdditions = null;
+      } else if (typeof melodyGenieAdditions === "string") {
+        const trimmed = melodyGenieAdditions.trim();
+        updates.melodyGenieAdditions = trimmed ? trimmed : null;
+      } else {
+        return NextResponse.json({ error: "Invalid melodyGenieAdditions" }, { status: 400 });
+      }
+    }
+
+    if (melodyGenieStyleInfluence !== undefined) {
+      if (melodyGenieStyleInfluence === null) {
+        updates.melodyGenieStyleInfluence = null;
+      } else if (typeof melodyGenieStyleInfluence === "number" && Number.isFinite(melodyGenieStyleInfluence)) {
+        updates.melodyGenieStyleInfluence = Math.min(100, Math.max(1, Math.round(melodyGenieStyleInfluence)));
+      } else {
+        return NextResponse.json({ error: "Invalid melodyGenieStyleInfluence" }, { status: 400 });
+      }
+    }
+
+    if (melodyGenieDnaInfluence !== undefined) {
+      if (typeof melodyGenieDnaInfluence !== "boolean") {
+        return NextResponse.json({ error: "Invalid melodyGenieDnaInfluence" }, { status: 400 });
+      }
+      updates.melodyGenieDnaInfluence = melodyGenieDnaInfluence;
     }
 
     if (releaseStatus !== undefined) {

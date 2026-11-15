@@ -153,6 +153,7 @@ export function formatProviderLabel(provider: string) {
   if (normalized === "tempolor") return "Tempolor";
   if (normalized === "apiframe") return "APIFrame";
   if (normalized === "musicgpt") return "MusicGPT";
+  if (normalized === "melodygenie") return "Melody Genie";
   if (normalized === "lyria") return "Lyria";
   if (normalized === "minimax") return "MiniMax";
   if (normalized === "heartmula") return "HeartMuLa";

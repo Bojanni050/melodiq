@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TrackItem } from "./types";
 import { useUserStore } from "@/lib/store";
+import InfluenceSlider from "@/components/ui/InfluenceSlider";
 import SectionReplaceEditor from "./SectionReplaceEditor";
 
 const PROVIDERS = [
@@ -16,6 +17,7 @@ const PROVIDERS = [
   { value: "apiframe", label: "APIFrame" },
   { value: "apimart", label: "APIMart" },
   { value: "musicgpt", label: "MusicGPT" },
+  { value: "melodygenie", label: "Melody Genie" },
   { value: "lyria", label: "Lyria 3" },
 ];
 
@@ -213,12 +215,39 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
   const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? 50);
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
+  const [melodyGenieArtistInfluence, setMelodyGenieArtistInfluence] = useState<string>(track.melodyGenieArtistInfluence ?? "");
+  const [melodyGenieAdditions, setMelodyGenieAdditions] = useState<string>(track.melodyGenieAdditions ?? "");
+  const [melodyGenieStyleInfluence, setMelodyGenieStyleInfluence] = useState<number>(track.melodyGenieStyleInfluence ?? 50);
+  const [melodyGenieDnaInfluence, setMelodyGenieDnaInfluence] = useState<boolean>(track.melodyGenieDnaInfluence ?? false);
   const [releaseStatus, setReleaseStatus] = useState(track.releaseStatus ?? "concept");
   const [publishDate, setPublishDate] = useState(track.publishDate ? track.publishDate.slice(0, 10) : "");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   const parsedAudioDna = useMemo(() => parseAudioDna(track), [track]);
+
+  // The track list omits the Melody Genie columns (they are only read here), so
+  // hydrate them on open. Without this an edit would save the 50/false defaults
+  // over the values recorded at upload.
+  useEffect(() => {
+    if (provider !== "melodygenie") return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/tracks/${track.id}`);
+        if (!res.ok || !active) return;
+        const full = await res.json();
+        if (!active) return;
+        setMelodyGenieArtistInfluence(typeof full?.melodyGenieArtistInfluence === "string" ? full.melodyGenieArtistInfluence : "");
+        setMelodyGenieAdditions(typeof full?.melodyGenieAdditions === "string" ? full.melodyGenieAdditions : "");
+        setMelodyGenieStyleInfluence(typeof full?.melodyGenieStyleInfluence === "number" ? full.melodyGenieStyleInfluence : 50);
+        setMelodyGenieDnaInfluence(full?.melodyGenieDnaInfluence === true);
+      } catch (error) {
+        console.error("Failed to load Melody Genie settings:", error);
+      }
+    })();
+    return () => { active = false; };
+  }, [provider, track.id]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +285,10 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         lyrics: instrumental ? null : (lyrics.trim() || null),
         sunoStyleInfluence: provider === "suno" ? sunoStyleInfluence : null,
         sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
+        melodyGenieArtistInfluence: provider === "melodygenie" ? (melodyGenieArtistInfluence.trim() || null) : null,
+        melodyGenieAdditions: provider === "melodygenie" ? (melodyGenieAdditions.trim() || null) : null,
+        melodyGenieStyleInfluence: provider === "melodygenie" ? melodyGenieStyleInfluence : null,
+        melodyGenieDnaInfluence: provider === "melodygenie" ? melodyGenieDnaInfluence : false,
         releaseStatus,
         publishDate: publishDate ? new Date(publishDate).toISOString() : null,
         trackDna: knownTrackDna({ ...track, trackDna: storedTrackDna }).trim() || null,
@@ -479,6 +512,57 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={sunoWeirdness}
                 onChange={setSunoWeirdness}
               />
+            </div>
+          )}
+
+          {/* Melody Genie settings */}
+          {provider === "melodygenie" && (
+            <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
+              <div className="space-y-1">
+                <label htmlFor="track-edit-genie-artist" className="text-xs text-ink-muted">Artist Influence</label>
+                <input
+                  id="track-edit-genie-artist"
+                  type="text"
+                  value={melodyGenieArtistInfluence}
+                  onChange={(e) => setMelodyGenieArtistInfluence(e.target.value)}
+                  placeholder="e.g. Billie Eilish"
+                  className="h-8 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="track-edit-genie-additions" className="text-xs text-ink-muted">Additions</label>
+                <textarea
+                  id="track-edit-genie-additions"
+                  value={melodyGenieAdditions}
+                  onChange={(e) => setMelodyGenieAdditions(e.target.value)}
+                  rows={2}
+                  placeholder="Extra elements added to the generation"
+                  className="w-full  border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line/25 resize-none"
+                />
+              </div>
+              <InfluenceSlider
+                id="track-edit-genie-style"
+                label="Style Influence"
+                value={melodyGenieStyleInfluence}
+                onChange={setMelodyGenieStyleInfluence}
+                leftLabel="Freer"
+                rightLabel="Exactly their sound"
+              />
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-ink">Influence with my DNA</p>
+                  <p className="text-xs text-ink-dim">Your DNA profile steered this generation</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={melodyGenieDnaInfluence}
+                  onClick={() => setMelodyGenieDnaInfluence((v) => !v)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${melodyGenieDnaInfluence ? "bg-emerald-400" : "bg-white/15"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${melodyGenieDnaInfluence ? "translate-x-4" : "translate-x-0"}`} />
+                </button>
+              </div>
             </div>
           )}
 

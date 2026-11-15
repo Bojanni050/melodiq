@@ -49,6 +49,7 @@ export const UPLOAD_PROVIDERS = [
   { value: "apiframe", label: "APIFrame" },
   { value: "apimart", label: "APIMart" },
   { value: "musicgpt", label: "MusicGPT" },
+  { value: "melodygenie", label: "Melody Genie" },
 ] as const;
 
 export type QueuedUploadItem = {
@@ -72,6 +73,11 @@ export type QueuedUploadItem = {
   sunoVariety: string | null;
   sunoMaxMode: boolean;
   sunoAudioFormat: string | null;
+  /** Melody Genie options (recorded only when source = Melody Genie). */
+  melodyGenieArtistInfluence: string;
+  melodyGenieAdditions: string;
+  melodyGenieStyleInfluence: number;
+  melodyGenieDnaInfluence: boolean;
   licenseFile: File | null;
 };
 
