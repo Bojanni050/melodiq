@@ -16,6 +16,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check-drift": "node scripts/check-schema-drift.mjs",
     "script:backfill-covers": "tsx --tsconfig tsconfig.json scripts/backfill-cover-webp.ts",
+    "script:backfill-tempo": "tsx --tsconfig tsconfig.json scripts/backfill-tempo.ts",
     "script:grant-first-admin": "tsx --tsconfig tsconfig.json scripts/grant-first-admin.ts"
   },
   "dependencies": {
