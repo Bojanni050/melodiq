@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
+import { invalidateSettingsCache } from "@/lib/settings";
 import { access, readdir, stat } from "node:fs/promises";
 import { ffmpegAvailable } from "@/lib/wav-to-flac";
 import { join } from "node:path";
@@ -132,6 +133,10 @@ export async function POST(request: Request) {
   } else {
     await db.insert(settings).values({ key, value: sanitizedValue });
   }
+
+  // The settings table is cached in-process (src/lib/settings.ts) — drop it so
+  // the next read sees this write immediately.
+  invalidateSettingsCache();
 
   return NextResponse.json({ success: true });
 }

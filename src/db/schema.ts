@@ -9,6 +9,7 @@ import {
   uuid,
   index,
   uniqueIndex,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -577,6 +578,12 @@ export const apiLogs = pgTable("api_logs", {
   response: text("response"),
   statusCode: integer("status_code"),
   duration: integer("duration"),
+  // Token/cost accounting for LLM calls (see src/lib/llm-usage.ts). Null for
+  // non-LLM calls and for providers that report no usage block.
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  cachedTokens: integer("cached_tokens"),
+  costUsd: doublePrecision("cost_usd"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

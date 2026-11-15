@@ -247,6 +247,10 @@ CREATE TABLE IF NOT EXISTS "api_logs" (
   "response" text,
   "status_code" integer,
   "duration" integer,
+  "prompt_tokens" integer,
+  "completion_tokens" integer,
+  "cached_tokens" integer,
+  "cost_usd" double precision,
   "created_at" timestamp NOT NULL DEFAULT now()
 );
 
@@ -451,6 +455,13 @@ CREATE INDEX IF NOT EXISTS "tracks_user_id_created_at_idx" ON "tracks"("user_id"
 
 // These ALTER TABLE statements handle existing databases. On fresh installs,
 // the columns above are already in createTablesSql. IF NOT EXISTS makes this safe either way.
+const alterApiLogsSql = `
+ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS prompt_tokens integer;
+ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS completion_tokens integer;
+ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cached_tokens integer;
+ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cost_usd double precision;
+`;
+
 const alterTracksSql = `
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS format VARCHAR(10) DEFAULT 'mp3';
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS hidden_at timestamp;
@@ -684,6 +695,7 @@ export async function initializeDatabase(): Promise<void> {
 
   try {
     await executeSqlStatements(targetClient, createTablesSql);
+    await executeSqlStatements(targetClient, alterApiLogsSql);
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
     await targetClient.unsafe(stripDnaPromptHintSql);

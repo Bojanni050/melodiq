@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
@@ -196,6 +196,8 @@ Improve these lyrics using LyricIQ™.
 Keep the same song.
 Simply make it feel like it was written by a better songwriter.`;
 
+  let usage: LlmUsage | null = null;
+
   try {
     const llmProvider = await getLLMProviderForPurpose("lyriciq");
     const result = await callLLM(userPrompt, systemPrompt, {
@@ -203,6 +205,9 @@ Simply make it feel like it was written by a better songwriter.`;
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
       openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
+      onUsage: (reported) => {
+        usage = reported;
+      },
     });
 
     const cleaned = result
@@ -219,6 +224,7 @@ Simply make it feel like it was written by a better songwriter.`;
       response: JSON.stringify({ result: cleaned.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ result: cleaned });
@@ -235,6 +241,7 @@ Simply make it feel like it was written by a better songwriter.`;
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
+      usage,
     });
 
     console.error(error);
