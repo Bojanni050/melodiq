@@ -48,7 +48,14 @@ type Outcome =
   | { id: string; title: string; status: "failed"; reason: string };
 
 function parseArgs(argv: string[]) {
-  const options = { apply: false, all: false, limit: 25, user: null as string | null, concurrency: 2 };
+  const options = {
+    apply: false,
+    all: false,
+    limit: 25,
+    user: null as string | null,
+    concurrency: 2,
+    skipRecentDays: 0,
+  };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -57,9 +64,10 @@ function parseArgs(argv: string[]) {
     else if (arg === "--limit") options.limit = Math.max(1, Number(argv[++i]) || options.limit);
     else if (arg === "--concurrency") options.concurrency = Math.min(8, Math.max(1, Number(argv[++i]) || 2));
     else if (arg === "--user") options.user = argv[++i] ?? null;
+    else if (arg === "--skip-recent-days") options.skipRecentDays = Math.max(0, Number(argv[++i]) || 0);
     else if (arg === "--help" || arg === "-h") {
       console.log(
-        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--concurrency N]",
+        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--concurrency N] [--skip-recent-days N]",
       );
       process.exit(0);
     } else {
@@ -160,11 +168,26 @@ async function main() {
     .where(where)
     .orderBy(desc(tracks.createdAt));
 
-  const batch = options.all ? rows : rows.slice(0, options.limit);
+  // Interrupting a run is normal (hours of audio), so a second pass can skip the
+  // tracks whose computedAt was just rewritten instead of downloading them again.
+  const cutoff =
+    options.skipRecentDays > 0 ? Date.now() - options.skipRecentDays * 86_400_000 : null;
+  const eligible = cutoff
+    ? rows.filter((row) => {
+        const computedAt = parseDna(row.audioDna)?.computedAt;
+        const time = computedAt ? Date.parse(computedAt) : Number.NaN;
+        return !Number.isFinite(time) || time < cutoff;
+      })
+    : rows;
+  const skippedRecent = rows.length - eligible.length;
+
+  const batch = options.all ? eligible : eligible.slice(0, options.limit);
 
   console.log(
-    `${options.apply ? "Re-measuring" : "Dry run — nothing is written"}: ${batch.length} of ${rows.length} finished tracks` +
-      `${userFilter ? ` for user ${options.user}` : ""} (concurrency ${options.concurrency})\n`,
+    `${options.apply ? "Re-measuring" : "Dry run — nothing is written"}: ${batch.length} of ${eligible.length} finished tracks` +
+      `${userFilter ? ` for user ${options.user}` : ""}` +
+      `${skippedRecent > 0 ? ` (${skippedRecent} skipped as recently analysed)` : ""}` +
+      ` (concurrency ${options.concurrency})\n`,
   );
 
   const outcomes: Outcome[] = [];
