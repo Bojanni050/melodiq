@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { and, eq, isNull, gt } from "drizzle-orm";
 import { createApimartAlignedLyrics, getApimartRawTaskStatus } from "@/lib/providers/apimart";
+import { isTclAutoGenerateEnabled } from "@/lib/tcl/auto-generate";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 
 // The in-component pollers (TrackDetail/FullscreenPlayer) give up after ~75s,
@@ -35,12 +36,19 @@ export async function retryStaleApimartAlignedLyrics(userId: string): Promise<vo
       )
     );
 
+  let autoTcl: boolean | undefined;
+
   for (const track of candidates) {
     if (!track.jobId) continue;
 
     try {
       if (!track.lyricsTimestamps) {
         // Eager submit at generation time was missed or failed — try again.
+        // Only when the automatic fetch is still switched on in Settings:
+        // otherwise opening the library would keep creating lyrics tasks the
+        // user explicitly turned off.
+        if (autoTcl === undefined) autoTcl = await isTclAutoGenerateEnabled();
+        if (!autoTcl) continue;
         const parentJobId = track.jobId.split(":")[0];
         const audioIndex = apimartAudioIndexForJobId(track.jobId);
         const submitRes = await createApimartAlignedLyrics(parentJobId, audioIndex);

@@ -8,6 +8,7 @@ import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/li
 import { syncPoYoTaskResult } from "@/lib/poyo-sync";
 import { getOriginalPoYoTaskId } from "@/lib/request-wav-conversion";
 import { retryStaleApimartAlignedLyrics } from "@/lib/apimart-lyrics";
+import { isTclAutoGenerateEnabled } from "@/lib/tcl/auto-generate";
 import { retryStaleApimartWavConversions } from "@/lib/apimart-wav";
 import { uploadToS3 } from "@/lib/s3";
 import { type AudioFormat, contentTypeForFormat, detectFormatFromUrl, detectFormatFromContentType } from "@/lib/audio-format";
@@ -382,7 +383,7 @@ export async function GET(request: NextRequest) {
                     }).catch((error) => console.error("[tracks-api] language detection failed (apimart)", error));
                   }
 
-                  if (!track.instrumental) {
+                  if (!track.instrumental && (await isTclAutoGenerateEnabled())) {
                     const audioIndex = isSecond ? 2 : 1;
                     createApimartAlignedLyrics(parentJobId, audioIndex)
                       .then((submitRes) =>

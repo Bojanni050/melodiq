@@ -477,6 +477,16 @@ export default function SettingsPage() {
     });
   }
 
+  async function toggleTclAutoGenerate() {
+    const next = values.TCL_AUTO_GENERATE === "false" ? "true" : "false";
+    setValues((prev) => ({ ...prev, TCL_AUTO_GENERATE: next }));
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "TCL_AUTO_GENERATE", value: next }),
+    });
+  }
+
   const dirtyKeys = TRACKED_SETTINGS_KEYS.filter((key) => (values[key] ?? "") !== (savedValues[key] ?? ""));
 
   async function saveAllChanges() {
@@ -730,6 +740,8 @@ export default function SettingsPage() {
                       <TclEngineSection
                         value={values.TCL_ENGINE ?? "elevenlabs"}
                         onChange={(v) => updateField("TCL_ENGINE", v)}
+                        autoEnabled={values.TCL_AUTO_GENERATE !== "false"}
+                        onAutoToggle={toggleTclAutoGenerate}
                       />
                     </div>
                   )}

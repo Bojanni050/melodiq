@@ -6,6 +6,7 @@ import { toTitleCase } from "@/lib/title-case";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
+import { isTclAutoGenerateEnabled } from "@/lib/tcl/auto-generate";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue, getPoYoTimestampedLyrics } from "@/lib/providers/poyo";
 import { getTempolorStatus } from "@/lib/providers/tempolor";
 import { getApiframeStatus } from "@/lib/providers/apiframe";
@@ -179,6 +180,14 @@ export async function GET(
 
   const track = result[0];
 
+  // The automatic provider fetch is a switch in Settings. Resolved lazily and
+  // once per request: only the branches that would submit actually pay for it.
+  let autoTcl: boolean | undefined;
+  const isAutoTclEnabled = async (): Promise<boolean> => {
+    if (autoTcl === undefined) autoTcl = await isTclAutoGenerateEnabled();
+    return autoTcl;
+  };
+
   if (track.status === "done" || track.status === "failed") {
     // Self-healing: if the stored lyrics timestamps are actually just a task submission receipt
     if (track.status === "done" && track.lyricsTimestamps && isLyricsTaskSubmission(track.lyricsTimestamps)) {
@@ -230,7 +239,8 @@ export async function GET(
       track.audioId &&
       track.jobId &&
       !hasTimings &&
-      !isLyricsTaskSubmission(track.lyricsTimestamps) // avoid double submission if already in progress
+      !isLyricsTaskSubmission(track.lyricsTimestamps) && // avoid double submission if already in progress
+      (await isAutoTclEnabled())
     ) {
       try {
         const resolvedTaskId = getOriginalPoYoTaskId(track.jobId);
@@ -259,7 +269,8 @@ export async function GET(
       !track.instrumental &&
       track.jobId &&
       !hasTimings &&
-      !isLyricsTaskSubmission(track.lyricsTimestamps) // avoid double submission if already in progress
+      !isLyricsTaskSubmission(track.lyricsTimestamps) && // avoid double submission if already in progress
+      (await isAutoTclEnabled())
     ) {
       try {
         const parentJobId = track.jobId.split(":")[0];
@@ -525,7 +536,7 @@ export async function GET(
             }).catch((error) => console.error("[tracks/[id]] language detection failed (apimart)", error));
           }
 
-          if (!track.instrumental) {
+          if (!track.instrumental && (await isAutoTclEnabled())) {
             const audioIndex = isSecond ? 2 : 1;
             createApimartAlignedLyrics(parentJobId, audioIndex)
               .then((submitRes) =>
