@@ -14,7 +14,7 @@ function makeNoise(seed: number) {
 }
 
 /** Kick-like clicks on the beat: a short noise burst plus a 60 Hz thump. */
-function clickTrack(bpm: number, seconds = 12): Float32Array {
+function clickTrack(bpm: number, seconds = 12, strength = 1): Float32Array {
   const noise = makeNoise(42);
   const samples = new Float32Array(Math.floor(SAMPLE_RATE * seconds));
   const period = 60 / bpm;
@@ -27,11 +27,18 @@ function clickTrack(bpm: number, seconds = 12): Float32Array {
       if (index >= samples.length) break;
       const envelope = Math.exp(-i / (SAMPLE_RATE * 0.002));
       const thump = Math.sin((2 * Math.PI * 60 * i) / SAMPLE_RATE);
-      samples[index] += (noise() * 0.6 + thump * 0.8) * envelope;
+      samples[index] += (noise() * 0.6 + thump * 0.8) * envelope * strength;
     }
   }
 
   return samples;
+}
+
+/** On-beat kicks with a quieter off-beat layer on top, like a real backbeat. */
+function offBeatTrack(bpm: number, seconds = 16): Float32Array {
+  const beats = clickTrack(bpm, seconds);
+  const offBeats = clickTrack(bpm * 2, seconds, 0.35);
+  return beats.map((value, index) => value + (offBeats[index] ?? 0));
 }
 
 describe("detectTempo", () => {
@@ -40,4 +47,17 @@ describe("detectTempo", () => {
   it.each([70, 85, 100, 120, 141])("reads a %i BPM click track without doubling it", (bpm) => {
     expect(detectTempo(clickTrack(bpm), SAMPLE_RATE)).toBeCloseTo(bpm, 0);
   });
+
+  // The library has no tempo prior, so the grid with the most beats collects the
+  // most score and a backbeat layer is enough to read everything at double time.
+  it.each([85, 90, 128])("keeps %i BPM when quieter off-beats sit between the beats", (bpm) => {
+    expect(detectTempo(offBeatTrack(bpm), SAMPLE_RATE)).toBeCloseTo(bpm, 0);
+  });
+
+  // Fast material must keep its tempo: halving a genuine 170 BPM track is just as
+  // wrong as doubling an 85 BPM one.
+  it.each([160, 174])("does not halve a genuine %i BPM track", (bpm) => {
+    expect(detectTempo(clickTrack(bpm), SAMPLE_RATE)).toBeCloseTo(bpm, 0);
+  });
 });
+
