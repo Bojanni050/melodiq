@@ -17,6 +17,7 @@
  *   npx tsx scripts/backfill-tempo.ts --all                # dry run, everything
  *   npx tsx scripts/backfill-tempo.ts --apply --all        # write
  *   npx tsx scripts/backfill-tempo.ts --user you@mail.com --apply
+ *   npx tsx scripts/backfill-tempo.ts --track 53ebbf         # one track, by id prefix
  *   npx tsx scripts/backfill-tempo.ts --concurrency 1      # slower, lighter CPU
  *
  * Requires DATABASE_URL (env, .env.local, or the container's env) and the S3
@@ -28,7 +29,7 @@ import "./env";
 
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
-import { and, desc, eq, isNotNull, or } from "drizzle-orm";
+import { and, desc, eq, isNotNull, or, sql } from "drizzle-orm";
 import { extractAudioFeatures, type AudioFeatures } from "@/lib/audio-features";
 import { resolveDnaAudioSource } from "@/lib/dna-audio-source";
 import type { AudioDna } from "@/lib/songs";
@@ -50,6 +51,7 @@ function parseArgs(argv: string[]) {
     all: false,
     limit: 25,
     user: null as string | null,
+    track: null as string | null,
     concurrency: 2,
     skipRecentDays: 0,
   };
@@ -61,10 +63,11 @@ function parseArgs(argv: string[]) {
     else if (arg === "--limit") options.limit = Math.max(1, Number(argv[++i]) || options.limit);
     else if (arg === "--concurrency") options.concurrency = Math.min(8, Math.max(1, Number(argv[++i]) || 2));
     else if (arg === "--user") options.user = argv[++i] ?? null;
+    else if (arg === "--track") options.track = argv[++i] ?? null;
     else if (arg === "--skip-recent-days") options.skipRecentDays = Math.max(0, Number(argv[++i]) || 0);
     else if (arg === "--help" || arg === "-h") {
       console.log(
-        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--concurrency N] [--skip-recent-days N]",
+        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--track <id|prefix>] [--concurrency N] [--skip-recent-days N]",
       );
       process.exit(0);
     } else {
@@ -155,20 +158,38 @@ async function main() {
     userFilter = match.id;
   }
 
-  const where = userFilter
-    ? and(eq(tracks.status, "done"), isNotNull(tracks.audioDna), eq(tracks.userId, userFilter))
-    : and(eq(tracks.status, "done"), isNotNull(tracks.audioDna));
+  // A single track is the fastest way to judge the correction: the dry run on a
+  // random batch only proves something if that batch happens to contain a slow
+  // song. Accepts the short id shown in the UI (any unique prefix, '#' allowed).
+  const trackPrefix = options.track ? options.track.replace(/^#/, "").trim().toLowerCase() : null;
+  if (trackPrefix !== null && !/^[0-9a-f][0-9a-f-]{3,35}$/.test(trackPrefix)) {
+    console.error(`"${options.track}" does not look like a track id or id prefix.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const filters = [eq(tracks.status, "done"), isNotNull(tracks.audioDna)];
+  if (userFilter) filters.push(eq(tracks.userId, userFilter));
+  if (trackPrefix) filters.push(sql`lower(${tracks.id}::text) like ${`${trackPrefix}%`}`);
 
   const rows = await db
     .select({ id: tracks.id, title: tracks.title, audioDna: tracks.audioDna })
     .from(tracks)
-    .where(where)
+    .where(and(...filters))
     .orderBy(desc(tracks.createdAt));
+
+  if (trackPrefix && rows.length === 0) {
+    console.error(`No finished, analysed track whose id starts with "${trackPrefix}".`);
+    process.exitCode = 1;
+    return;
+  }
 
   // Interrupting a run is normal (hours of audio), so a second pass can skip the
   // tracks whose computedAt was just rewritten instead of downloading them again.
   const cutoff =
-    options.skipRecentDays > 0 ? Date.now() - options.skipRecentDays * 86_400_000 : null;
+    options.skipRecentDays > 0 && !trackPrefix
+      ? Date.now() - options.skipRecentDays * 86_400_000
+      : null;
   const eligible = cutoff
     ? rows.filter((row) => {
         const computedAt = parseDna(row.audioDna)?.computedAt;
@@ -178,11 +199,12 @@ async function main() {
     : rows;
   const skippedRecent = rows.length - eligible.length;
 
-  const batch = options.all ? eligible : eligible.slice(0, options.limit);
+  const batch = options.all || trackPrefix ? eligible : eligible.slice(0, options.limit);
 
   console.log(
     `${options.apply ? "Re-measuring" : "Dry run — nothing is written"}: ${batch.length} of ${eligible.length} finished tracks` +
       `${userFilter ? ` for user ${options.user}` : ""}` +
+      `${trackPrefix ? ` matching id ${trackPrefix}*` : ""}` +
       `${skippedRecent > 0 ? ` (${skippedRecent} skipped as recently analysed)` : ""}` +
       ` (concurrency ${options.concurrency})\n`,
   );
