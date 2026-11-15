@@ -8,11 +8,7 @@
  * role defaults to "user"; pass "admin" to create the account as an admin.
  */
 
-import "dotenv/config";
-import { loadEnvConfig } from "@next/env";
-import path from "path";
-
-loadEnvConfig(path.resolve(process.cwd()));
+import "./env";
 
 import bcrypt from "bcrypt";
 import { db } from "@/db";

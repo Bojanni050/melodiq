@@ -13,11 +13,7 @@
  *   npx tsx --tsconfig tsconfig.json scripts/grant-first-admin.ts
  */
 
-import "dotenv/config";
-import { loadEnvConfig } from "@next/env";
-import path from "path";
-
-loadEnvConfig(path.resolve(process.cwd()));
+import "./env";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";

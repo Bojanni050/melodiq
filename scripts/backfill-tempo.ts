@@ -19,15 +19,12 @@
  *   npx tsx scripts/backfill-tempo.ts --user you@mail.com --apply
  *   npx tsx scripts/backfill-tempo.ts --concurrency 1      # slower, lighter CPU
  *
- * Requires DATABASE_URL and the S3 settings (.env / .env.production).
+ * Requires DATABASE_URL (env, .env.local, or the container's env) and the S3
+ * settings. See scripts/env.ts for why that lives in its own module.
  * After writing, rebuild the Melody DNA profile so the new tempos are used.
  */
 
-import "dotenv/config";
-import { loadEnvConfig } from "@next/env";
-import path from "path";
-
-loadEnvConfig(path.resolve(process.cwd()));
+import "./env";
 
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";

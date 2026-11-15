@@ -1,5 +1,4 @@
-import { loadEnvConfig } from "@next/env";
-loadEnvConfig(process.cwd());
+import "./env";
 
 import postgres from "postgres";
 
