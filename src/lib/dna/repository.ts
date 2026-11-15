@@ -32,7 +32,7 @@ import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } 
  * a hash of the track id, so the same catalogue always yields the same sample —
  * a rebuild must not quietly produce different numbers.
  */
-const MAX_SOURCE_TRACKS = 500;
+const MAX_SOURCE_TRACKS = 1500;
 
 /**
  * Variants of one song share a title and would otherwise flood the sample

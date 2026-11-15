@@ -865,3 +865,9 @@
 - Findings: Het label toonde alleen het woord ("Zeker") en stopte het cijfer in een `title`-tooltip. Op een kaart met "0% instrumental" las dat als twee losse grootheden, en de tooltip is op mobiel onbereikbaar.
 - Conclusions: Het cijfer hoort in het label zelf: `dna.confidenceShort` ("{value}% zeker") bestond al voor de helix. Alleen voor de "solid"-staat, want "Nog aan het leren" bij een lage confidence zegt meer dan "23% zeker" (en de balk eronder toont dezelfde verhouding). Bevestigd/afgewezen houden hun eigen woord, omdat daar de correctie van de gebruiker het verhaal is. De tooltip vervalt daarmee, en `dna.solid` is niet langer nodig: dode i18n-keys verwijderd uit beide talen in plaats van ze te laten staan.
 - Actions: `src/app/dna/page.tsx` - `confidencePct` berekend, label gebruikt `t("dna.confidenceShort", { value: confidencePct })` in plaats van `t("dna.solid")`, `title`-attribuut weg; `src/lib/i18n/messages/nl.ts` en `en.ts` - `dna.solid` verwijderd; validated met `npm run build`.
+
+## 2026-11-15 (DNA-bronlimiet naar 1500 tracks)
+
+- Findings: Bo wilde meer dan 500 tracks in de steekproef, zodat het profiel minder van een deelverzameling afhangt. De cap bestond vooral om de recompute-endpoint betaalbaar te houden, niet omdat 500 een statistische grens is.
+- Conclusions: 1500 als nieuwe bovengrens: drie keer zoveel bronnen, terwijl de query nog steeds één CTE met window-functie en `limit` blijft (dus geen unbounded scan) en de aggregatie pure rekenkracht is op rijen die al binnen zijn. De rate limit op `/api/dna/recompute` blijft staan; de comment daar noemt nu hetzelfde getal, zodat code en documentatie niet uit elkaar lopen.
+- Actions: `src/lib/dna/repository.ts` - `MAX_SOURCE_TRACKS` van 500 naar 1500; `src/app/api/dna/recompute/route.ts` - commentaar bijgewerkt; validated met `npm run build`.

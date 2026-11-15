@@ -5,7 +5,7 @@ import { serialiseDnaProfile } from "@/lib/dna/present";
 import { requireAuth } from "@/lib/require-auth";
 import { checkRateLimit } from "@/lib/services/rateLimitService";
 
-// A rebuild reads up to 500 tracks and re-derives every trait, so it gets its
+// A rebuild reads up to 1500 tracks and re-derives every trait, so it gets its
 // own tight budget. The page auto-builds once on first visit, which leaves
 // three manual rebuilds a minute — plenty, and cheap enough to not be abusable.
 const RECOMPUTE_LIMIT = 4;
