@@ -15,28 +15,35 @@ import MusicTempo from "music-tempo";
  *    grid one octave down, and nothing in the library pushes back: it has a
  *    `penaltyFactor` for sloppy timing but no tempo prior. Measured against 40
  *    tracks whose prompt states the BPM, only 11 came back right and most of the
- *    rest were exactly doubled. So when a reading is fast enough to be a
- *    subdivision, compare it with the agents one octave down and prefer the
- *    slower grid if its beats are clearly stronger on average (`perBeat`).
- *    Averaging per beat is what makes the comparison meaningful: the fast grid
- *    has more beats, so its total score is larger even when its extra beats are
- *    weak.
+ *    rest were exactly doubled. So always compare a reading with the agents one
+ *    octave down and prefer the slower grid if its beats are clearly stronger on
+ *    average (`perBeat`). Averaging per beat is what makes the comparison
+ *    meaningful: the fast grid has more beats, so its total score is larger even
+ *    when its extra beats are weak.
+ *
+ *    Note there is deliberately no "music is never slower than N BPM" gate. An
+ *    earlier version only halved above 115 BPM, which left slow songs (a real 56
+ *    read as 112) doubled. Tuned on 24 labelled tracks: with the gate 16/24 came
+ *    out right, without it 17/24, while the same strength test still keeps real
+ *    110-120 BPM material from being halved. Loosening the ratio to 1.1 starts
+ *    halving those (114 → 57); tightening it to 1.6 leaves the doubled slow ones
+ *    alone.
  *
  * Kept separate from audio-features.ts so it can be tested with synthetic
  * click tracks instead of an ffmpeg round-trip.
  */
 const HOP_SAMPLES = 441;
 
-/** Halving anything slower than this is wrong for dance music, so don't try. */
-const HALF_CHECK_MIN_BPM = 115;
 /** How much stronger the slower grid's average onset has to be to win. */
 const HALF_CHECK_SCORE_RATIO = 1.2;
+/** Below this, a beat grid is a subdivision of the bar rather than a tempo. */
+const MIN_PLAUSIBLE_BPM = 40;
 /** Two agents further apart than this are different grids, not one octave. */
 const OCTAVE_TOLERANCE = 0.06;
 /** Guards against a cascade: 200 → 100 → 50 is never a real answer. */
 const MAX_HALVINGS = 2;
 
-interface BeatAgent {
+export interface BeatAgent {
   bpm: number;
   score: number;
   perBeat: number;
@@ -61,13 +68,15 @@ function strongest(agents: BeatAgent[], key: (agent: BeatAgent) => number): Beat
   return agents.reduce((best, agent) => (key(agent) > key(best) ? agent : best), agents[0]);
 }
 
-function chooseBeatLevel(agents: BeatAgent[]): BeatAgent | null {
+export function chooseBeatLevel(agents: BeatAgent[]): BeatAgent | null {
   if (agents.length === 0) return null;
 
   let best = strongest(agents, (agent) => agent.score);
-  for (let step = 0; step < MAX_HALVINGS && best.bpm > HALF_CHECK_MIN_BPM; step++) {
+  for (let step = 0; step < MAX_HALVINGS; step++) {
     const slower = agents.filter(
-      (agent) => Math.abs(agent.bpm * 2 - best.bpm) / best.bpm < OCTAVE_TOLERANCE,
+      (agent) =>
+        agent.bpm >= MIN_PLAUSIBLE_BPM &&
+        Math.abs(agent.bpm * 2 - best.bpm) / best.bpm < OCTAVE_TOLERANCE,
     );
     if (slower.length === 0) break;
 

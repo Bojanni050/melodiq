@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { detectTempo } from "../tempo";
+import { chooseBeatLevel, detectTempo } from "../tempo";
 
 const SAMPLE_RATE = 22050;
 
@@ -50,8 +50,36 @@ describe("detectTempo", () => {
 
   // The library has no tempo prior, so the grid with the most beats collects the
   // most score and a backbeat layer is enough to read everything at double time.
+  // The slow ones matter: an earlier version refused to halve below 115 BPM, so a
+  // real 56 came back as 112 and looked like a plausible tempo.
   it.each([85, 90, 128])("keeps %i BPM when quieter off-beats sit between the beats", (bpm) => {
     expect(detectTempo(offBeatTrack(bpm), SAMPLE_RATE)).toBeCloseTo(bpm, 0);
+  });
+
+  // Synthetic clicks can't reach this case: the library never proposes an agent
+  // below ~90 BPM for them, so the slow-doubling rules are tested on agent lists.
+  it("halves a slow reading when the slower grid has stronger beats", () => {
+    const agents = [
+      { bpm: 112, score: 300, perBeat: 3.4 },
+      { bpm: 56, score: 150, perBeat: 4.3 },
+    ];
+    expect(chooseBeatLevel(agents)?.bpm).toBe(56);
+  });
+
+  it("keeps a 114 BPM reading when the slower grid is only slightly stronger", () => {
+    const agents = [
+      { bpm: 114, score: 300, perBeat: 3.76 },
+      { bpm: 57, score: 150, perBeat: 4.08 },
+    ];
+    expect(chooseBeatLevel(agents)?.bpm).toBe(114);
+  });
+
+  it("never steps below 40 BPM", () => {
+    const agents = [
+      { bpm: 82, score: 300, perBeat: 3 },
+      { bpm: 39, score: 150, perBeat: 5 },
+    ];
+    expect(chooseBeatLevel(agents)?.bpm).toBe(82);
   });
 
   // Fast material must keep its tempo: halving a genuine 170 BPM track is just as
