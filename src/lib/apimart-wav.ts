@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { createApimartWav, getApimartRawTaskStatus } from "@/lib/providers/apimart";
+import { extractApimartDownloadUrl } from "@/lib/providers/apimart-download";
 import { convertWavToFlac } from "@/lib/wav-to-flac";
 import { detectFormatFromUrl, detectFormatFromContentType, contentTypeForFormat } from "@/lib/audio-format";
 import { uploadToS3 } from "@/lib/s3";
@@ -143,11 +144,13 @@ export async function retryStaleApimartWavConversions(
         continue;
       }
 
-      const audioUrl = extractApimartAudioUrl(raw);
+      const audioUrl = extractApimartDownloadUrl(raw, "wav");
       if (!audioUrl) {
+        // Keep wavJobId: the task is done, so the problem is our reading of it,
+        // not a missing task. Resubmitting would be billed again per attempt.
         await db
           .update(tracks)
-          .set({ wavJobId: null, wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
+          .set({ wavRetryAt: new Date(), wavRetryCount: track.wavRetryCount + 1 })
           .where(eq(tracks.id, track.id!));
         await logApi({
           userId, type: "webhook", provider: "apimart",

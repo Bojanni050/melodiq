@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildApimartInspoBody } from "@/lib/providers/apimart-inspo";
+import { buildApimartDownloadBody } from "@/lib/providers/apimart-download";
 
 const APIMART_BASE_URL = "https://api.apimart.ai/v1/music";
 const APIMART_ROOT_URL = "https://api.apimart.ai";
@@ -232,9 +233,13 @@ export async function createApimartWav(
   const apiKey = await getApimartApiKey();
 
   try {
+    // /generations/download replaced the deprecated /generations/wav; asking
+    // for formats:["wav"] is documented as equivalent, and it is the endpoint
+    // new integrations are supposed to use.
+    const body = buildApimartDownloadBody({ taskId, audioIndex, formats: ["wav"] });
     const response = await axios.post(
-      `${APIMART_BASE_URL}/generations/wav`,
-      { model: "suno", task_id: taskId, audio_index: audioIndex },
+      `${APIMART_BASE_URL}/generations/download`,
+      body,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
