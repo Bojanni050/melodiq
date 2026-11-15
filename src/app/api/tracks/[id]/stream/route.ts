@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/require-auth";
 import {
   getCachedAudioStream,
   getContentType,
+  isCached,
 } from "@/lib/audio-cache";
 import { resolveTrackAudioSource } from "@/lib/audio-format";
 import fs from "fs";
@@ -51,12 +52,59 @@ export async function GET(
 
   try {
     // Get audio from cache (streams from S3 and caches in the background on first request)
-    const { filePath, stream, cached, size } = await getCachedAudioStream(s3Key, fmt);
     const contentType = getContentType(fmt);
+    const rangeHeader = request.headers.get("range");
+
+    const cachedOnDisk = isCached(s3Key, fmt);
+
+    // Two range requests must not go through the cache fill, because it can
+    // only serve from byte 0: a tiny leading probe (`bytes=0-0` — the player's
+    // source badge, and Safari's codec check) and a seek into a track that
+    // isn't cached yet. Both used to start a complete S3 download only to
+    // throw most of it away — for the probe right next to the <audio>
+    // element's own request, which doubled bandwidth exactly when playback
+    // started. Proxy just the requested bytes; a from-byte-0 play still fills
+    // the cache via the tee below.
+    const rangeParts = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader ?? "");
+    const rangeStart = rangeParts?.[1] ? parseInt(rangeParts[1], 10) : null;
+    const rangeEnd = rangeParts?.[2] ? parseInt(rangeParts[2], 10) : null;
+    const isTinyProbe = rangeStart === 0 && rangeEnd !== null && rangeEnd <= 65535;
+    const isForwardSeek = rangeStart !== null && rangeStart > 0;
+
+    if (!cachedOnDisk && (isTinyProbe || isForwardSeek)) {
+      const presignedUrl = await getPresignedUrl(s3Key);
+      const ranged = await fetch(presignedUrl, { headers: { Range: rangeHeader as string } });
+      if (ranged.ok && ranged.body) {
+        const rangedLength = ranged.headers.get("content-length");
+        const rangedContentRange = ranged.headers.get("content-range");
+        return new NextResponse(ranged.body, {
+          status: ranged.status === 206 ? 206 : 200,
+          headers: {
+            "Content-Type": ranged.headers.get("content-type") || contentType,
+            ...(rangedLength ? { "Content-Length": rangedLength } : {}),
+            ...(rangedContentRange ? { "Content-Range": rangedContentRange } : {}),
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "private, max-age=31536000, immutable",
+            "x-melodiq-audio-source": "s3",
+            "x-melodiq-audio-cache-state": "miss",
+          },
+        });
+      }
+      // S3 didn't cooperate — fall through to the normal cache path.
+    }
+
+    const { filePath, stream, cached, size } = await getCachedAudioStream(s3Key, fmt);
     const cacheState = cached ? "hit" : "miss";
 
+    // Without a known byte length a Range response would be built on garbage
+    // (Content-Range "bytes 0--1/0"), which the browser reports as a broken
+    // stream. Hand off to the direct-S3 fallback in the catch below instead.
+    if (!Number.isFinite(size) || size <= 0) {
+      stream.destroy();
+      throw new Error(`Unknown audio size for ${s3Key}`);
+    }
+
     // Handle range requests for seeking support
-    const rangeHeader = request.headers.get("range");
     const fileSize = size;
 
     if (rangeHeader) {

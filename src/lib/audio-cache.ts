@@ -62,6 +62,18 @@ export function isCached(s3Key: string, format: string): boolean {
  * response's Content-Length instead of `fs.statSync`, since the on-disk
  * file may still be mid-write when `cached` is false.
  */
+/**
+ * Cache fills that are currently running, keyed by destination path.
+ *
+ * Two requests for the same uncached track can overlap (e.g. the UI's byte
+ * probe next to the <audio> element's own GET, or two open tabs). Both would
+ * teé their S3 body to the *same* `${dest}.tmp` path and rename it, so two
+ * write streams raced on one file: wasted bandwidth and a real chance of a
+ * half-written cache file, which then replayed as clicks/dropouts. Only the
+ * first requester writes now; the others stream straight through.
+ */
+const pendingCacheWrites = new Set<string>();
+
 export async function getCachedAudioStream(
   s3Key: string,
   format: string,
@@ -86,14 +98,25 @@ export async function getCachedAudioStream(
   const size = Number(response.headers.get("content-length") || 0);
   const [clientSide, diskSide] = response.body.tee();
 
-  // Write atomically: write to a temp file then rename, in the background.
-  const tmp = dest + ".tmp";
-  void pipeline(Readable.fromWeb(diskSide as any), fs.createWriteStream(tmp))
-    .then(() => fs.renameSync(tmp, dest))
-    .catch((err) => {
-      console.error(`[audio-cache] background caching failed for ${s3Key}:`, err);
-      try { fs.unlinkSync(tmp); } catch {}
-    });
+  if (pendingCacheWrites.has(dest)) {
+    // Someone else is already filling this exact cache file. Drop our disk
+    // branch (cancelling it releases the tee buffer) and serve the client
+    // without writing — the in-flight write still completes the cache.
+    void diskSide.cancel().catch(() => {});
+  } else {
+    pendingCacheWrites.add(dest);
+    // Write atomically: write to a temp file then rename, in the background.
+    const tmp = dest + ".tmp";
+    void pipeline(Readable.fromWeb(diskSide as any), fs.createWriteStream(tmp))
+      .then(() => fs.renameSync(tmp, dest))
+      .catch((err) => {
+        console.error(`[audio-cache] background caching failed for ${s3Key}:`, err);
+        try { fs.unlinkSync(tmp); } catch {}
+      })
+      .finally(() => {
+        pendingCacheWrites.delete(dest);
+      });
+  }
 
   return { filePath: dest, stream: Readable.fromWeb(clientSide as any), cached: false, size };
 }
