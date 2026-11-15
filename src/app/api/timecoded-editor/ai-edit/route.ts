@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { getSetting } from "@/lib/settings";
 import { requireAuth } from "@/lib/require-auth";
 import { db } from "@/db";
@@ -171,6 +171,10 @@ export async function POST(request: NextRequest) {
   const systemPrompt = buildSystemPrompt(action as AIEditAction, typeof language === "string" ? language : undefined);
   const userPrompt = JSON.stringify(validatedLines, null, 2);
   const resolvedProvider = await getLLMProviderForPurpose("lyrics");
+  // The reply carries one entry per input line, so ~40 tokens per line is a
+  // generous ceiling that still caps a runaway answer.
+  const editMaxTokens = Math.min(8000, Math.max(600, validatedLines.length * 40));
+  let usage: LlmUsage | null = null;
 
   try {
     const rawResult = await callLLM(userPrompt, systemPrompt, {
@@ -181,6 +185,11 @@ export async function POST(request: NextRequest) {
       deepInfraModelOverride: timecodedModelDeepInfra,
       hopscotchModelOverride: timecodedModelHopscotch,
       temperature: 0.3, // low temperature for editing tasks
+      json: true,
+      maxTokens: editMaxTokens,
+      onUsage: (reported) => {
+        usage = reported;
+      },
     });
 
     // Extract JSON from the response (strip any markdown fences)
@@ -217,6 +226,7 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ lineCount: (parsed as unknown[]).length }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ patch: parsed });
@@ -232,6 +242,7 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
+      usage,
     });
 
     console.error("[timecoded-editor/ai-edit]", error);

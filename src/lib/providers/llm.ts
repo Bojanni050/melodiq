@@ -2,6 +2,9 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 import { logToFile } from "@/lib/file-logger";
+import { parseLlmUsage, formatLlmUsage, type LlmUsage } from "@/lib/llm-usage";
+
+export type { LlmUsage };
 
 const LOG_FILE = "track-dna.log";
 
@@ -26,6 +29,12 @@ interface CallLLMOptions {
   hopscotchModelOverride?: string;
   temperature?: number;
   topP?: number;
+  /** Ask for a strict JSON object (`response_format: json_object`); callers that parse JSON should set this. */
+  json?: boolean;
+  /** Hard cap on the completion so a runaway answer can't burn tokens. */
+  maxTokens?: number;
+  /** Receives the provider's usage block (tokens/cost/cache) when the response carries one. */
+  onUsage?: (usage: LlmUsage) => void;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
@@ -52,19 +61,260 @@ async function getPurposeProvider(purpose: LLMPurpose): Promise<LLMProvider | ""
     return normalizeProvider(await getSetting("IMAGE_LLM_PROVIDER")) || "openrouter";
   }
   if (purpose === "trackdna") {
-      return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
-    }
-    if (purpose === "advanced") {
-      return normalizeProvider(await getSetting("ADVANCED_LLM_PROVIDER")) || "openrouter";
-    }
-    if (purpose === "lyriciq") {
-      return normalizeProvider(await getSetting("LYRICIQ_LLM_PROVIDER")) || "openrouter";
-    }
-    return normalizeProvider(await getSetting("LLM_PROVIDER"));
+    return normalizeProvider(await getSetting("TRACKDNA_LLM_PROVIDER")) || "openrouter";
   }
+  if (purpose === "advanced") {
+    return normalizeProvider(await getSetting("ADVANCED_LLM_PROVIDER")) || "openrouter";
+  }
+  if (purpose === "lyriciq") {
+    return normalizeProvider(await getSetting("LYRICIQ_LLM_PROVIDER")) || "openrouter";
+  }
+  return normalizeProvider(await getSetting("LLM_PROVIDER"));
+}
 
 export async function getLLMProviderForPurpose(purpose: LLMPurpose): Promise<LLMProvider> {
   return (await getPurposeProvider(purpose)) || "openrouter";
+}
+
+/**
+ * All five providers speak the OpenAI-compatible chat completions shape, so the
+ * request body, the model cascade and the error mapping live here once and only
+ * the endpoint, settings prefix and default model differ per provider. A new
+ * cross-cutting option (JSON mode, usage reporting, a retry) is one edit now
+ * instead of five copies of the same block.
+ */
+interface ProviderConfig {
+  /** Settings prefix: `<prefix>_API_KEY` and `<prefix>_MODEL`. */
+  prefix: string;
+  /** Name used in error messages. */
+  label: string;
+  /** OpenAI-compatible chat completions endpoint. */
+  url: string;
+  /** Used when neither a per-request override nor a settings value exists. */
+  defaultModel: string;
+  /** Per-purpose model settings; purposes without an entry fall back to `<prefix>_MODEL`. */
+  purposeModelSettings: Partial<Record<LLMPurpose, string>>;
+  /** Wording for the "non-JSON response" hint (OpenAI says service, not model). */
+  overloadHint: string;
+  /** Extra headers the provider wants on every request. */
+  extraHeaders: () => Record<string, string>;
+}
+
+const MODEL_OVERLOAD_HINT = "The model is likely overloaded or unavailable — try again or switch model.";
+
+// OpenAI is the one provider whose overload message talks about the service
+// rather than the model; kept identical to the wording shipped before.
+const SERVICE_OVERLOAD_HINT = "The service is likely overloaded or unavailable — try again or switch model.";
+
+const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
+  openrouter: {
+    prefix: "OPENROUTER",
+    label: "OpenRouter",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    defaultModel: "google/gemini-2.5-flash",
+    purposeModelSettings: {
+      prompt: "OPENROUTER_PROMPT_MODEL",
+      lyrics: "OPENROUTER_LYRICS_MODEL",
+      trackdna: "OPENROUTER_TRACKDNA_MODEL",
+      advanced: "OPENROUTER_ADVANCED_DNA_MODEL",
+      lyriciq: "OPENROUTER_LYRICIQ_MODEL",
+    },
+    overloadHint: MODEL_OVERLOAD_HINT,
+    extraHeaders: () => ({
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    }),
+  },
+  openai: {
+    prefix: "OPENAI",
+    label: "OpenAI",
+    url: "https://api.openai.com/v1/chat/completions",
+    defaultModel: "gpt-4o",
+    purposeModelSettings: {
+      prompt: "OPENAI_PROMPT_MODEL",
+      lyrics: "OPENAI_LYRICS_MODEL",
+      image: "OPENAI_IMAGE_MODEL",
+      trackdna: "OPENAI_TRACKDNA_MODEL",
+      advanced: "OPENAI_ADVANCED_DNA_MODEL",
+      lyriciq: "OPENAI_LYRICIQ_MODEL",
+    },
+    overloadHint: SERVICE_OVERLOAD_HINT,
+    extraHeaders: () => ({}),
+  },
+  edenai: {
+    prefix: "EDENAI",
+    label: "Eden AI",
+    // Eden AI's chat endpoint is OpenAI-compatible: same messages/choices
+    // shape, but the model is namespaced as "provider/model" (e.g.
+    // "openai/gpt-4o-mini") since Eden AI is itself a multi-provider router.
+    url: "https://api.edenai.run/v3/chat/completions",
+    defaultModel: "openai/gpt-4o-mini",
+    purposeModelSettings: {
+      prompt: "EDENAI_PROMPT_MODEL",
+      lyrics: "EDENAI_LYRICS_MODEL",
+      image: "EDENAI_IMAGE_MODEL",
+      trackdna: "EDENAI_TRACKDNA_MODEL",
+      advanced: "EDENAI_ADVANCED_DNA_MODEL",
+      lyriciq: "EDENAI_LYRICIQ_MODEL",
+    },
+    overloadHint: MODEL_OVERLOAD_HINT,
+    extraHeaders: () => ({}),
+  },
+  deepinfra: {
+    prefix: "DEEPINFRA",
+    label: "DeepInfra",
+    // DeepInfra exposes an OpenAI-compatible surface under /v1/openai.
+    url: `${DEEPINFRA_BASE_URL}/chat/completions`,
+    defaultModel: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    purposeModelSettings: {
+      prompt: "DEEPINFRA_PROMPT_MODEL",
+      lyrics: "DEEPINFRA_LYRICS_MODEL",
+      image: "DEEPINFRA_IMAGE_MODEL",
+      trackdna: "DEEPINFRA_TRACKDNA_MODEL",
+      advanced: "DEEPINFRA_ADVANCED_DNA_MODEL",
+      lyriciq: "DEEPINFRA_LYRICIQ_MODEL",
+    },
+    overloadHint: MODEL_OVERLOAD_HINT,
+    extraHeaders: () => ({}),
+  },
+  hopscotch: {
+    prefix: "HOPSCOTCH",
+    label: "Hopscotch",
+    // Hopscotch is an OpenAI-compatible router; the model must be
+    // provider-pinned (e.g. "openai/gpt-4o-mini").
+    url: `${HOPSCOTCH_BASE_URL}/chat/completions`,
+    defaultModel: "openai/gpt-4o-mini",
+    purposeModelSettings: {
+      prompt: "HOPSCOTCH_PROMPT_MODEL",
+      lyrics: "HOPSCOTCH_LYRICS_MODEL",
+      image: "HOPSCOTCH_IMAGE_MODEL",
+      trackdna: "HOPSCOTCH_TRACKDNA_MODEL",
+      advanced: "HOPSCOTCH_ADVANCED_DNA_MODEL",
+      lyriciq: "HOPSCOTCH_LYRICIQ_MODEL",
+    },
+    overloadHint: MODEL_OVERLOAD_HINT,
+    extraHeaders: () => ({}),
+  },
+};
+
+const MODEL_OVERRIDE_KEY: Record<LLMProvider, "openRouterModelOverride" | "openAiModelOverride" | "edenAiModelOverride" | "deepInfraModelOverride" | "hopscotchModelOverride"> = {
+  openrouter: "openRouterModelOverride",
+  openai: "openAiModelOverride",
+  edenai: "edenAiModelOverride",
+  deepinfra: "deepInfraModelOverride",
+  hopscotch: "hopscotchModelOverride",
+};
+
+interface ResolvedChatProvider {
+  provider: LLMProvider;
+  label: string;
+  model: string;
+  url: string;
+  headers: Record<string, string>;
+  overloadHint: string;
+}
+
+/**
+ * Resolves only the provider that is actually going to be called — the previous
+ * version read every provider's key and every provider's model on every call
+ * (11-16 settings reads for one lyrics call, of which two were needed).
+ */
+async function resolveChatProvider(
+  provider: LLMProvider,
+  purpose: LLMPurpose,
+  options: CallLLMOptions
+): Promise<ResolvedChatProvider | null> {
+  const config = PROVIDERS[provider];
+  const apiKey =
+    (await getSetting(`${config.prefix}_API_KEY`)) || process.env[`${config.prefix}_API_KEY`] || "";
+  if (!apiKey) return null;
+
+  const override = options[MODEL_OVERRIDE_KEY[provider]];
+  const purposeModelSetting = config.purposeModelSettings[purpose];
+  const model =
+    (typeof override === "string" && override.trim() ? override.trim() : "") ||
+    (purposeModelSetting ? await getSetting(purposeModelSetting) : "") ||
+    (await getSetting(`${config.prefix}_MODEL`)) ||
+    process.env[`${config.prefix}_MODEL`] ||
+    config.defaultModel;
+
+  return {
+    provider,
+    label: config.label,
+    model,
+    url: config.url,
+    overloadHint: config.overloadHint,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      ...config.extraHeaders(),
+    },
+  };
+}
+
+function toProviderError(resolved: ResolvedChatProvider, error: any): Error {
+  const status = error?.response?.status;
+  const data = error?.response?.data;
+  const looksLikeHtml = typeof data === "string" && data.trimStart().startsWith("<");
+  const isParseError = /Unexpected token|is not valid JSON/i.test(error?.message || "");
+
+  if (looksLikeHtml || isParseError) {
+    return new Error(
+      `${resolved.label} (${resolved.model}) returned a non-JSON response` +
+        (status ? ` (HTTP ${status})` : "") +
+        `. ${resolved.overloadHint}`
+    );
+  }
+
+  const apiMessage =
+    (typeof data === "object" && data && (data?.error?.message || data?.message)) ||
+    error?.message ||
+    `${resolved.label} request failed`;
+  return new Error(
+    `${resolved.label} request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
+  );
+}
+
+/** A 400/422 that mentions response_format means the provider won't take JSON mode. */
+function isJsonModeRejection(error: any): boolean {
+  const status = error?.response?.status;
+  if (status !== 400 && status !== 422) return false;
+  const payload = `${JSON.stringify(error?.response?.data ?? "")} ${error?.message ?? ""}`;
+  return /response_format|response format|json_object|json mode/i.test(payload);
+}
+
+/**
+ * POSTs one chat completion. When `response_format: json_object` is rejected by
+ * an OpenAI-compatible router that doesn't implement it, the field is dropped
+ * and the request is retried once — the prompt already demands strict JSON, so
+ * the hint is optional. A rejected request isn't billed.
+ */
+async function postChatCompletion(
+  resolved: ResolvedChatProvider,
+  body: Record<string, unknown>,
+  allowJsonFallback: boolean
+) {
+  try {
+    return await axios.post(resolved.url, body, {
+      headers: resolved.headers,
+      timeout: 60_000,
+    });
+  } catch (error: any) {
+    if (allowJsonFallback && body.response_format && isJsonModeRejection(error)) {
+      const { response_format: _ignored, ...fallbackBody } = body;
+      console.warn(
+        `[llm] ${resolved.label} (${resolved.model}) rejected response_format — retrying without JSON mode`
+      );
+      try {
+        return await axios.post(resolved.url, fallbackBody, {
+          headers: resolved.headers,
+          timeout: 60_000,
+        });
+      } catch (retryError: any) {
+        throw toProviderError(resolved, retryError);
+      }
+    }
+    throw toProviderError(resolved, error);
+  }
 }
 
 export async function callLLM(
@@ -75,352 +325,43 @@ export async function callLLM(
   const normalizedOptions =
     typeof options === "string" ? { openRouterModelOverride: options } : options;
   const purpose = normalizedOptions.purpose || "default";
-  const requestedProvider =
+  const provider =
     normalizedOptions.provider || (await getPurposeProvider(purpose)) || "openrouter";
 
-  const OPENROUTER_KEY = (await getSetting("OPENROUTER_API_KEY")) || process.env.OPENROUTER_API_KEY || "";
-  const OPENROUTER_MODEL =
-    normalizedOptions.openRouterModelOverride ||
-    (purpose === "prompt" ? await getSetting("OPENROUTER_PROMPT_MODEL") : "") ||
-    (purpose === "lyrics" ? await getSetting("OPENROUTER_LYRICS_MODEL") : "") ||
-    (purpose === "trackdna" ? await getSetting("OPENROUTER_TRACKDNA_MODEL") : "") ||
-    (purpose === "advanced" ? await getSetting("OPENROUTER_ADVANCED_DNA_MODEL") : "") ||
-    (purpose === "lyriciq" ? await getSetting("OPENROUTER_LYRICIQ_MODEL") : "") ||
-    (await getSetting("OPENROUTER_MODEL")) ||
-    process.env.OPENROUTER_MODEL ||
-    "google/gemini-2.5-flash";
-  const OPENAI_KEY = (await getSetting("OPENAI_API_KEY")) || process.env.OPENAI_API_KEY || "";
-  const OPENAI_MODEL =
-    normalizedOptions.openAiModelOverride ||
-    (purpose === "prompt" ? await getSetting("OPENAI_PROMPT_MODEL") : "") ||
-    (purpose === "lyrics" ? await getSetting("OPENAI_LYRICS_MODEL") : "") ||
-    (purpose === "image" ? await getSetting("OPENAI_IMAGE_MODEL") : "") ||
-    (purpose === "trackdna" ? await getSetting("OPENAI_TRACKDNA_MODEL") : "") ||
-    (purpose === "advanced" ? await getSetting("OPENAI_ADVANCED_DNA_MODEL") : "") ||
-    (purpose === "lyriciq" ? await getSetting("OPENAI_LYRICIQ_MODEL") : "") ||
-    (await getSetting("OPENAI_MODEL")) ||
-    process.env.OPENAI_MODEL ||
-    "gpt-4o";
-  const EDENAI_KEY = (await getSetting("EDENAI_API_KEY")) || process.env.EDENAI_API_KEY || "";
-  const EDENAI_MODEL =
-    normalizedOptions.edenAiModelOverride ||
-    (purpose === "prompt" ? await getSetting("EDENAI_PROMPT_MODEL") : "") ||
-    (purpose === "lyrics" ? await getSetting("EDENAI_LYRICS_MODEL") : "") ||
-    (purpose === "image" ? await getSetting("EDENAI_IMAGE_MODEL") : "") ||
-    (purpose === "trackdna" ? await getSetting("EDENAI_TRACKDNA_MODEL") : "") ||
-    (purpose === "advanced" ? await getSetting("EDENAI_ADVANCED_DNA_MODEL") : "") ||
-    (purpose === "lyriciq" ? await getSetting("EDENAI_LYRICIQ_MODEL") : "") ||
-    (await getSetting("EDENAI_MODEL")) ||
-    process.env.EDENAI_MODEL ||
-    "openai/gpt-4o-mini";
-  const DEEPINFRA_KEY = (await getSetting("DEEPINFRA_API_KEY")) || process.env.DEEPINFRA_API_KEY || "";
-  const DEEPINFRA_MODEL =
-    normalizedOptions.deepInfraModelOverride ||
-    (purpose === "prompt" ? await getSetting("DEEPINFRA_PROMPT_MODEL") : "") ||
-    (purpose === "lyrics" ? await getSetting("DEEPINFRA_LYRICS_MODEL") : "") ||
-    (purpose === "image" ? await getSetting("DEEPINFRA_IMAGE_MODEL") : "") ||
-    (purpose === "trackdna" ? await getSetting("DEEPINFRA_TRACKDNA_MODEL") : "") ||
-    (purpose === "advanced" ? await getSetting("DEEPINFRA_ADVANCED_DNA_MODEL") : "") ||
-    (purpose === "lyriciq" ? await getSetting("DEEPINFRA_LYRICIQ_MODEL") : "") ||
-    (await getSetting("DEEPINFRA_MODEL")) ||
-    process.env.DEEPINFRA_MODEL ||
-    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo";
-  const HOPSCOTCH_KEY = (await getSetting("HOPSCOTCH_API_KEY")) || process.env.HOPSCOTCH_API_KEY || "";
-  const HOPSCOTCH_MODEL =
-    normalizedOptions.hopscotchModelOverride ||
-    (purpose === "prompt" ? await getSetting("HOPSCOTCH_PROMPT_MODEL") : "") ||
-    (purpose === "lyrics" ? await getSetting("HOPSCOTCH_LYRICS_MODEL") : "") ||
-    (purpose === "image" ? await getSetting("HOPSCOTCH_IMAGE_MODEL") : "") ||
-    (purpose === "trackdna" ? await getSetting("HOPSCOTCH_TRACKDNA_MODEL") : "") ||
-    (purpose === "advanced" ? await getSetting("HOPSCOTCH_ADVANCED_DNA_MODEL") : "") ||
-    (purpose === "lyriciq" ? await getSetting("HOPSCOTCH_LYRICIQ_MODEL") : "") ||
-    (await getSetting("HOPSCOTCH_MODEL")) ||
-    process.env.HOPSCOTCH_MODEL ||
-    "openai/gpt-4o-mini";
-
-  if (requestedProvider === "openrouter" && OPENROUTER_KEY) {
-    let res;
-    try {
-      res = await axios.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          model: OPENROUTER_MODEL,
-          temperature: normalizedOptions.temperature,
-          top_p: normalizedOptions.topP,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${OPENROUTER_KEY}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-          },
-          timeout: 60_000,
-        }
-      );
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const looksLikeHtml =
-        typeof data === "string" && data.trimStart().startsWith("<");
-      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
-
-      if (looksLikeHtml || isParseError) {
-        throw new Error(
-          `OpenRouter (${OPENROUTER_MODEL}) returned a non-JSON response` +
-          (status ? ` (HTTP ${status})` : "") +
-          `. The model is likely overloaded or unavailable — try again or switch model.`
-        );
-      }
-
-      const apiMessage =
-        (typeof data === "object" && data?.error?.message) ||
-        err?.message ||
-        "OpenRouter request failed";
-      throw new Error(
-        `OpenRouter request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
-      );
-    }
-
-    const content = res.data?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") {
-      throw new Error(
-        `OpenRouter response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-      );
-    }
-    return content;
+  const resolved = await resolveChatProvider(provider, purpose, normalizedOptions);
+  if (!resolved) {
+    throw new Error(`No ${provider} LLM provider configured. Check the selected provider and API key in Settings.`);
   }
 
-  if (requestedProvider === "openai" && OPENAI_KEY) {
-    let res;
-    try {
-      res = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: OPENAI_MODEL,
-          temperature: normalizedOptions.temperature,
-          top_p: normalizedOptions.topP,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${OPENAI_KEY}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 60_000,
-        }
-      );
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const looksLikeHtml =
-        typeof data === "string" && data.trimStart().startsWith("<");
-      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+  const body: Record<string, unknown> = {
+    model: resolved.model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
+    ],
+  };
+  // Left out entirely when undefined (JSON.stringify dropped them before too).
+  if (normalizedOptions.temperature !== undefined) body.temperature = normalizedOptions.temperature;
+  if (normalizedOptions.topP !== undefined) body.top_p = normalizedOptions.topP;
+  if (normalizedOptions.maxTokens !== undefined) body.max_tokens = normalizedOptions.maxTokens;
+  if (normalizedOptions.json) body.response_format = { type: "json_object" };
 
-      if (looksLikeHtml || isParseError) {
-        throw new Error(
-          `OpenAI (${OPENAI_MODEL}) returned a non-JSON response` +
-          (status ? ` (HTTP ${status})` : "") +
-          `. The service is likely overloaded or unavailable — try again or switch model.`
-        );
-      }
+  const res = await postChatCompletion(resolved, body, normalizedOptions.json === true);
 
-      const apiMessage =
-        (typeof data === "object" && data?.error?.message) ||
-        err?.message ||
-        "OpenAI request failed";
-      throw new Error(
-        `OpenAI request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
-      );
-    }
-
-    const content = res.data?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") {
-      throw new Error(
-        `OpenAI response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-      );
-    }
-    return content;
+  const content = res.data?.choices?.[0]?.message?.content;
+  if (typeof content !== "string") {
+    throw new Error(
+      `${resolved.label} response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+    );
   }
 
-  if (requestedProvider === "edenai" && EDENAI_KEY) {
-    let res;
-    try {
-      // Eden AI's chat endpoint is OpenAI-compatible: same messages/choices
-      // shape, but the model is namespaced as "provider/model" (e.g.
-      // "openai/gpt-4o-mini") since Eden AI is itself a multi-provider router.
-      res = await axios.post(
-        "https://api.edenai.run/v3/chat/completions",
-        {
-          model: EDENAI_MODEL,
-          temperature: normalizedOptions.temperature,
-          top_p: normalizedOptions.topP,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${EDENAI_KEY}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 60_000,
-        }
-      );
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const looksLikeHtml =
-        typeof data === "string" && data.trimStart().startsWith("<");
-      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
+  // Token/cost accounting: OpenRouter reports cost + cached tokens on every
+  // response, OpenAI/DeepInfra report tokens. Handed to the caller so it lands
+  // in the api log next to the request it belongs to.
+  const usage = parseLlmUsage(res.data?.usage);
+  if (usage) normalizedOptions.onUsage?.(usage);
 
-      if (looksLikeHtml || isParseError) {
-        throw new Error(
-          `Eden AI (${EDENAI_MODEL}) returned a non-JSON response` +
-          (status ? ` (HTTP ${status})` : "") +
-          `. The model is likely overloaded or unavailable — try again or switch model.`
-        );
-      }
-
-      const apiMessage =
-        (typeof data === "object" && (data?.error?.message || data?.message)) ||
-        err?.message ||
-        "Eden AI request failed";
-      throw new Error(
-        `Eden AI request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
-      );
-    }
-
-    const content = res.data?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") {
-      throw new Error(
-        `Eden AI response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-      );
-    }
-    return content;
-  }
-
-  if (requestedProvider === "deepinfra" && DEEPINFRA_KEY) {
-    let res;
-    try {
-      // DeepInfra exposes an OpenAI-compatible surface under /v1/openai.
-      res = await axios.post(
-        `${DEEPINFRA_BASE_URL}/chat/completions`,
-        {
-          model: DEEPINFRA_MODEL,
-          temperature: normalizedOptions.temperature,
-          top_p: normalizedOptions.topP,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${DEEPINFRA_KEY}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 60_000,
-        }
-      );
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const looksLikeHtml =
-        typeof data === "string" && data.trimStart().startsWith("<");
-      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
-
-      if (looksLikeHtml || isParseError) {
-        throw new Error(
-          `DeepInfra (${DEEPINFRA_MODEL}) returned a non-JSON response` +
-          (status ? ` (HTTP ${status})` : "") +
-          `. The model is likely overloaded or unavailable — try again or switch model.`
-        );
-      }
-
-      const apiMessage =
-        (typeof data === "object" && (data?.error?.message || data?.message)) ||
-        err?.message ||
-        "DeepInfra request failed";
-      throw new Error(
-        `DeepInfra request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
-      );
-    }
-
-    const content = res.data?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") {
-      throw new Error(
-        `DeepInfra response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-      );
-    }
-    return content;
-  }
-
-  if (requestedProvider === "hopscotch" && HOPSCOTCH_KEY) {
-    let res;
-    try {
-      // Hopscotch is an OpenAI-compatible router; the model must be
-      // provider-pinned (e.g. "openai/gpt-4o-mini").
-      res = await axios.post(
-        `${HOPSCOTCH_BASE_URL}/chat/completions`,
-        {
-          model: HOPSCOTCH_MODEL,
-          temperature: normalizedOptions.temperature,
-          top_p: normalizedOptions.topP,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: prompt },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${HOPSCOTCH_KEY}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 60_000,
-        }
-      );
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const looksLikeHtml =
-        typeof data === "string" && data.trimStart().startsWith("<");
-      const isParseError = /Unexpected token|is not valid JSON/i.test(err?.message || "");
-
-      if (looksLikeHtml || isParseError) {
-        throw new Error(
-          `Hopscotch (${HOPSCOTCH_MODEL}) returned a non-JSON response` +
-          (status ? ` (HTTP ${status})` : "") +
-          `. The model is likely overloaded or unavailable — try again or switch model.`
-        );
-      }
-
-      const apiMessage =
-        (typeof data === "object" && (data?.error?.message || data?.message)) ||
-        err?.message ||
-        "Hopscotch request failed";
-      throw new Error(
-        `Hopscotch request failed${status ? ` (HTTP ${status})` : ""}: ${apiMessage}`
-      );
-    }
-
-    const content = res.data?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") {
-      throw new Error(
-        `Hopscotch response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-      );
-    }
-    return content;
-  }
-
-  throw new Error(`No ${requestedProvider} LLM provider configured. Check the selected provider and API key in Settings.`);
+  return content;
 }
 
 export async function generateTitle(lyrics: string): Promise<string> {
@@ -545,10 +486,28 @@ Rules:
 - Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
 - Format exactly: {"score": <number 1-10, one decimal>, "notes": "<one short sentence, max 20 words>"}`;
 
+  let usage: LlmUsage | null = null;
   try {
-    const raw = await callLLM(lyrics.slice(0, 6000), systemPrompt, { purpose: "trackdna" });
+    const raw = await callLLM(lyrics.slice(0, 6000), systemPrompt, {
+      purpose: "trackdna",
+      // The prompt asks for one tiny JSON object: JSON mode keeps it parseable,
+      // the cap stops a runaway answer from being billed.
+      json: true,
+      maxTokens: 300,
+      onUsage: (reported) => {
+        usage = reported;
+      },
+    });
     const parsed = parseJsonObject(raw);
-    if (!parsed) return null;
+    if (!parsed) {
+      // Previously a silent null: the call was paid for and the DNA field just
+      // stayed empty until someone ran the backfill by hand.
+      logToFile(
+        LOG_FILE,
+        `[llm] scoreLyricsQuality: unparseable response${usage ? ` (${formatLlmUsage(usage)})` : ""}: ${JSON.stringify(raw.slice(0, 200))}`
+      );
+      return null;
+    }
 
     const score = Number(parsed.score);
     if (!Number.isFinite(score) || score < 1 || score > 10) return null;
@@ -558,6 +517,8 @@ Rules:
   } catch (error) {
     console.warn("[llm] Failed to score lyrics quality:", error);
     return null;
+  } finally {
+    if (usage) logToFile(LOG_FILE, `[llm] scoreLyricsQuality usage: ${formatLlmUsage(usage)}`);
   }
 }
 
@@ -751,10 +712,24 @@ Rules:
 - Each tag: 1-2 words, capitalized, no punctuation.
 - Minimum 1 tag, maximum 4 tags.`;
 
+  let usage: LlmUsage | null = null;
   try {
-    const raw = await callLLM(prompt.slice(0, 2000), systemPrompt, { purpose: "trackdna" });
+    const raw = await callLLM(prompt.slice(0, 2000), systemPrompt, {
+      purpose: "trackdna",
+      json: true,
+      maxTokens: 200,
+      onUsage: (reported) => {
+        usage = reported;
+      },
+    });
     const parsed = parseJsonObject(raw);
-    if (!parsed || !Array.isArray(parsed.tags)) return null;
+    if (!parsed || !Array.isArray(parsed.tags)) {
+      logToFile(
+        LOG_FILE,
+        `[llm] extractAtmosphereTags: unparseable response${usage ? ` (${formatLlmUsage(usage)})` : ""}: ${JSON.stringify(raw.slice(0, 200))}`
+      );
+      return null;
+    }
 
     const tags = parsed.tags
       .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
@@ -765,6 +740,8 @@ Rules:
   } catch (error) {
     console.warn("[llm] Failed to extract atmosphere tags:", error);
     return null;
+  } finally {
+    if (usage) logToFile(LOG_FILE, `[llm] extractAtmosphereTags usage: ${formatLlmUsage(usage)}`);
   }
 }
 

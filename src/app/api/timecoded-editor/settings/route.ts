@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getSetting } from "@/lib/settings";
+import { getSetting, invalidateSettingsCache } from "@/lib/settings";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -47,6 +47,10 @@ export async function POST(request: NextRequest) {
       .insert(settings)
       .values({ key: "OPENROUTER_TIMECODED_MODEL", value: model });
   }
+
+  // Settings are cached in-process (src/lib/settings.ts) — drop it so the next
+  // read sees this write.
+  invalidateSettingsCache();
 
   return NextResponse.json({ success: true });
 }

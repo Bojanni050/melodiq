@@ -13,7 +13,34 @@ interface ApiLog {
   response: string | null;
   statusCode: number | null;
   duration: number | null;
+  // LLM token/cost accounting — null for non-LLM calls and providers that
+  // report no usage block.
+  promptTokens: number | null;
+  completionTokens: number | null;
+  cachedTokens: number | null;
+  costUsd: number | null;
   createdAt: string;
+}
+
+/** `1234` -> `1.2k`, so the row stays readable next to the status badge. */
+function formatTokenCount(value: number | null): string {
+  if (value == null) return "-";
+  if (value < 1000) return String(value);
+  return `${(value / 1000).toFixed(1)}k`;
+}
+
+/**
+ * Compact usage summary for one log row, e.g. `1.2k→12 tok · $0.000420`.
+ * Returns null when the call reported nothing, so non-LLM logs stay clean.
+ */
+function formatUsageBadge(log: ApiLog): string | null {
+  const parts: string[] = [];
+  if (log.promptTokens != null || log.completionTokens != null) {
+    parts.push(`${formatTokenCount(log.promptTokens)}→${formatTokenCount(log.completionTokens)} tok`);
+  }
+  if (log.cachedTokens != null && log.cachedTokens > 0) parts.push(`${formatTokenCount(log.cachedTokens)} cached`);
+  if (log.costUsd != null) parts.push(`$${log.costUsd.toFixed(6)}`);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 type LogTab = "api" | "track-dna";
@@ -196,6 +223,7 @@ export default function LogsPage() {
               {logs.map((log) => {
                 const isExpanded = expandedLogIds.has(log.id);
                 const isSuccess = Boolean(log.statusCode && log.statusCode >= 200 && log.statusCode < 300);
+                const usageBadge = formatUsageBadge(log);
 
                 return (
                   <section key={log.id} className="section-card overflow-hidden">
@@ -211,6 +239,9 @@ export default function LogsPage() {
                           <p className="mt-1 text-xs text-ink/55 capitalize">
                             {log.type} • {log.provider}
                           </p>
+                          {usageBadge ? (
+                            <p className="mt-1 font-mono text-xs text-emerald-400/80">{usageBadge}</p>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span

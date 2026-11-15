@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
@@ -294,6 +294,8 @@ ${context}
 --- END CONTEXT ---` : ""}
 Now write only the lyrics for: ${blockLabel}`;
 
+  let usage: LlmUsage | null = null;
+
   try {
     const llmProvider = await getLLMProviderForPurpose("lyrics");
     const rawResult = await callLLM(userPrompt, systemPrompt, {
@@ -301,6 +303,9 @@ Now write only the lyrics for: ${blockLabel}`;
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
       openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
+      onUsage: (reported) => {
+        usage = reported;
+      },
     });
     const result = isFixedVocalistTag(vocalistTagValue)
       ? `${buildVocalDirectionTag(blockLabel, vocalistTagValue, performerDirectionsText)}\n${rawResult.trim()}`
@@ -315,6 +320,7 @@ Now write only the lyrics for: ${blockLabel}`;
       response: JSON.stringify({ result: result.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ result });
@@ -331,6 +337,7 @@ Now write only the lyrics for: ${blockLabel}`;
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
+      usage,
     });
 
     console.error(error);

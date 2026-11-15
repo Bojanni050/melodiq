@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { buildStyleSuggestionSystemPrompt, buildStyleSuggestionUserPrompt, sanitizeStyleSuggestionResponse } from "@/lib/lyrics-style-suggestion";
 import { requireAuth } from "@/lib/require-auth";
 
@@ -57,11 +57,16 @@ export async function POST(request: NextRequest) {
     styleHint: typeof styleHint === "string" ? styleHint : undefined,
   });
 
+  let usage: LlmUsage | null = null;
+
   try {
     const llmProvider = await getLLMProviderForPurpose("prompt");
     const result = await callLLM(userPrompt, systemPrompt, {
       purpose: "prompt",
       temperature: typeof temperature === "number" && temperature > 0 ? temperature : undefined,
+      onUsage: (reported) => {
+        usage = reported;
+      },
     });
     const suggestion = sanitizeStyleSuggestionResponse(result);
 
@@ -74,6 +79,7 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ suggestion: suggestion.slice(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ suggestion });
@@ -90,6 +96,7 @@ export async function POST(request: NextRequest) {
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
+      usage,
     });
 
     console.error(error);

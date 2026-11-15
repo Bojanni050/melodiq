@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
 type BlockType =
@@ -115,8 +115,21 @@ ${JSON.stringify(
 
 Return only JSON.`;
 
+  // The reply mirrors the input block-for-block, so half a token per input
+  // character is a generous ceiling that still stops a runaway answer from
+  // being billed for a whole translation nobody asked for.
+  const translateMaxTokens = Math.max(2000, Math.ceil(userPrompt.length / 2));
+  let usage: LlmUsage | null = null;
+
   try {
-    const raw = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics" });
+    const raw = await callLLM(userPrompt, systemPrompt, {
+      purpose: "lyrics",
+      json: true,
+      maxTokens: translateMaxTokens,
+      onUsage: (reported) => {
+        usage = reported;
+      },
+    });
     let parsed: { blocks?: Array<{ id?: unknown; content?: unknown }> } | null = null;
 
     try {
@@ -157,6 +170,7 @@ Return only JSON.`;
       response: JSON.stringify({ translatedCount: translatedById.size }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ blocks: translatedBlocks });
@@ -172,6 +186,7 @@ Return only JSON.`;
       response: JSON.stringify({ error: message }),
       statusCode: 500,
       duration: Date.now() - startTime,
+      usage,
     });
 
     console.error(error);

@@ -1,17 +1,50 @@
 import { db } from "@/db";
 import { settings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+
+// Every getSetting() used to be its own SELECT. One LLM call resolves a dozen
+// settings (and the timecoded AI-edit resolves ~25 on top of that), so the round
+// trips — not the model — dominated those requests. The whole table is cached
+// in-process instead: it is small (one row per key) and the only writers are
+// POST /api/settings and the timecoded settings route, both of which call
+// invalidateSettingsCache(). The TTL bounds anything that writes around them
+// (scripts, manual SQL).
+const SETTINGS_CACHE_TTL_MS = 30_000;
+let cachedValues: Map<string, string> | null = null;
+let cachedAt = 0;
+let inFlight: Promise<Map<string, string>> | null = null;
+
+/** Drops the cache. Call after any write to the settings table. */
+export function invalidateSettingsCache(): void {
+  cachedValues = null;
+  cachedAt = 0;
+}
+
+async function queryAllSettings(): Promise<Map<string, string>> {
+  const rows = await db.select().from(settings);
+  const values = new Map<string, string>();
+  for (const row of rows) values.set(row.key, row.value ?? "");
+  cachedValues = values;
+  cachedAt = Date.now();
+  return values;
+}
+
+async function loadAllSettings(): Promise<Map<string, string>> {
+  if (cachedValues && Date.now() - cachedAt < SETTINGS_CACHE_TTL_MS) {
+    return cachedValues;
+  }
+  // Collapse concurrent requests onto a single query (same pattern as the
+  // disk-cache size memo in src/app/api/settings/route.ts).
+  if (!inFlight) {
+    inFlight = queryAllSettings().finally(() => {
+      inFlight = null;
+    });
+  }
+  return inFlight;
+}
 
 export async function getSetting(key: string): Promise<string> {
-  const result = await db
-    .select()
-    .from(settings)
-    .where(eq(settings.key, key))
-    .limit(1);
-  if (result.length > 0 && result[0].value) {
-    return result[0].value;
-  }
-  return "";
+  const values = await loadAllSettings();
+  return values.get(key) ?? "";
 }
 
 function appendWebhookSecret(url: string): string {

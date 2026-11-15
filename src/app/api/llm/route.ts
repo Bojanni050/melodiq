@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose } from "@/lib/providers/llm";
+import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
 function getErrorMessage(error: unknown) {
@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
 
   let result: string;
   let llmProvider = "openrouter";
+  // Token/cost accounting reported by the provider, logged with the call below.
+  let usage: LlmUsage | null = null;
+  const captureUsage = (reported: LlmUsage) => {
+    usage = reported;
+  };
 
   try {
     if (type === "optimize") {
@@ -76,7 +81,7 @@ ${context ? `Theme/Mood: ${context}` : ""}
 ${structure === "ai-choose" ? "Structure: AI chooses the best structure." : structure ? `Structure: ${customStructure || structure}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt" });
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", onUsage: captureUsage });
     } else if (type === "lyrics") {
       llmProvider = await getLLMProviderForPurpose("lyrics");
       if (instrumental) {
@@ -104,7 +109,7 @@ ${context ? `Topic/Mood: ${context}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}
 ${structure === "ai-choose" ? "Choose the song structure that best fits the song idea and mood." : structure ? `Song structure:\n${customStructure || structure}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics" });
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics", onUsage: captureUsage });
     } else {
       return NextResponse.json({ error: "Unknown type" }, { status: 400 });
     }
@@ -118,6 +123,7 @@ ${structure === "ai-choose" ? "Choose the song structure that best fits the song
       response: JSON.stringify({ result: result?.substring(0, 200) }),
       statusCode: 200,
       duration: Date.now() - startTime,
+      usage,
     });
 
     return NextResponse.json({ result });
