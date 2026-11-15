@@ -7,12 +7,7 @@
  * Requires .env.production (or .env) to be present with S3 and DATABASE_URL set.
  */
 
-import "dotenv/config";
-import { loadEnvConfig } from "@next/env";
-import path from "path";
-
-// Load Next.js env files (.env, .env.production, etc.)
-loadEnvConfig(path.resolve(process.cwd()));
+import "./env";
 
 import { db } from "@/db";
 import { tracks } from "@/db/schema";

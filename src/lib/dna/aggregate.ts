@@ -243,13 +243,19 @@ function listTrait(options: {
   label: string;
   values: { value: string; weight: number }[];
   limit: number;
+  /**
+   * Tracks that carried at least one value — not the number of values. Counting
+   * tags made "2314 tracks" appear under a 500-track sample, because one track
+   * can carry several genres.
+   */
+  sourceCount: number;
 }): DnaTrait | null {
   const ranked = weightedCounts(options.values);
   if (ranked.length === 0) return null;
 
   const top = ranked.slice(0, options.limit);
   const totalWeight = ranked.reduce((sum, item) => sum + item.weight, 0);
-  const sourceCount = ranked.reduce((sum, item) => sum + item.count, 0);
+  const sourceCount = options.sourceCount;
   // A single dominant tag is more meaningful than a scattering of one-offs, so
   // the top tag's share of the weight drives agreement.
   const agreement = totalWeight > 0 ? top[0].weight / totalWeight : 0;
@@ -508,9 +514,17 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
   const loveRateValues: Weighted[] = [];
   const overallValues: Weighted[] = [];
 
+  // List traits report tracks, not tags, so they need their own counters: one
+  // track can add several genres and would otherwise inflate the caption.
+  let atmosphereTracks = 0;
+  let genreTracks = 0;
+  let lovedGenreTracks = 0;
+  let avoidedGenreTracks = 0;
+
   for (const { track, weight } of weighted) {
     const audio = track.audioDna;
     const advanced: AdvancedDnaSummary | null = track.advancedDna;
+    const genres = detectGenres(track.prompt);
 
     if (audio?.tempo != null && Number.isFinite(audio.tempo) && audio.tempo > 0) {
       tempoValues.push({ value: audio.tempo, weight });
@@ -519,6 +533,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       energyValues.push({ value: audio.energy, weight });
     }
     if (audio?.atmosphereTags?.length) {
+      atmosphereTracks += 1;
       for (const tag of audio.atmosphereTags) {
         atmosphereValues.push({ value: tag, weight });
       }
@@ -527,8 +542,11 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       lyricScoreValues.push({ value: audio.lyricsScore, weight });
     }
 
-    for (const genre of detectGenres(track.prompt)) {
-      genreValues.push({ value: genre, weight });
+    if (genres.length > 0) {
+      genreTracks += 1;
+      for (const genre of genres) {
+        genreValues.push({ value: genre, weight });
+      }
     }
 
     // Shares are plain counts: weighting them by rating/plays would make
@@ -566,13 +584,18 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
     }
 
     if (track.rating === "up" || track.rating === "down") {
-      const genreHit = detectGenres(track.prompt);
       if (track.rating === "up") {
         loveRateValues.push({ value: 1, weight: 1 });
-        for (const genre of genreHit) lovedGenreValues.push({ value: genre, weight });
+        if (genres.length > 0) {
+          lovedGenreTracks += 1;
+          for (const genre of genres) lovedGenreValues.push({ value: genre, weight });
+        }
       } else {
         loveRateValues.push({ value: 0, weight: 1 });
-        for (const genre of genreHit) avoidedGenreValues.push({ value: genre, weight });
+        if (genres.length > 0) {
+          avoidedGenreTracks += 1;
+          for (const genre of genres) avoidedGenreValues.push({ value: genre, weight });
+        }
       }
     }
   }
@@ -603,6 +626,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       label: "Atmospheres",
       values: atmosphereValues,
       limit: 3,
+      sourceCount: atmosphereTracks,
     }),
     listTrait({
       key: "genres",
@@ -610,6 +634,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       label: "Genres",
       values: genreValues,
       limit: 3,
+      sourceCount: genreTracks,
     }),
     ratioTrait({
       key: "instrumental_share",
@@ -698,6 +723,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       label: "Genres you love",
       values: lovedGenreValues,
       limit: 3,
+      sourceCount: lovedGenreTracks,
     }),
     listTrait({
       key: "avoided_genres",
@@ -705,6 +731,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       label: "Genres you skip",
       values: avoidedGenreValues,
       limit: 3,
+      sourceCount: avoidedGenreTracks,
     }),
     ratioTrait({
       key: "love_rate",

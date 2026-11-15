@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { dnaCalibrationAnswers, dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
@@ -25,11 +25,21 @@ import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } 
  */
 
 /**
- * Bounds one recompute. A profile does not get more accurate from digging up
- * tracks from three years ago, and an unbounded scan would make the endpoint
- * slow for heavy users.
+ * Bounds one recompute.
+ *
+ * The sample is pseudo-random, not the newest tracks: recency says more about
+ * what someone generated last week than about what their sound is. The order is
+ * a hash of the track id, so the same catalogue always yields the same sample —
+ * a rebuild must not quietly produce different numbers.
  */
-const MAX_SOURCE_TRACKS = 500;
+const MAX_SOURCE_TRACKS = 1500;
+
+/**
+ * Variants of one song share a title and would otherwise flood the sample
+ * ("Rooftop", "Rooftop" — take twelve). Titles are compared trimmed and
+ * case-insensitively; tracks without a title are never grouped.
+ */
+const MAX_TRACKS_PER_TITLE = 12;
 
 function parseAudioDna(raw: string | null): AudioDna | null {
   if (!raw) return null;
@@ -63,26 +73,59 @@ function parseAdvancedDna(raw: string | null): AdvancedDnaSummary | null {
 
 /** Finished, visible tracks only — drafts and deleted tracks say nothing about taste. */
 export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> {
+  // Rank inside each normalised title group first, so the per-title cap is
+  // applied before the catalogue sample is drawn. Without the cap a dozen
+  // variants of one song decide the whole profile.
+  const ranked = db.$with("ranked_dna_tracks").as(
+    db
+      .select({
+        id: tracks.id,
+        createdAt: tracks.createdAt,
+        duration: tracks.duration,
+        prompt: tracks.prompt,
+        lyrics: tracks.lyrics,
+        language: tracks.language,
+        instrumental: tracks.instrumental,
+        vocalGender: tracks.vocalGender,
+        rating: tracks.rating,
+        playCount: tracks.playCount,
+        archivedAt: tracks.archivedAt,
+        hiddenAt: tracks.hiddenAt,
+        audioDna: tracks.audioDna,
+        advancedDna: tracks.advancedDna,
+        titleRank: sql<number>`row_number() over (
+          partition by case
+            when coalesce(btrim(${tracks.title}), '') = '' then ${tracks.id}::text
+            else lower(btrim(${tracks.title}))
+          end
+          order by md5(${tracks.id}::text)
+        )`.as("title_rank"),
+      })
+      .from(tracks)
+      .where(and(eq(tracks.userId, userId), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
+  );
+
   const rows = await db
+    .with(ranked)
     .select({
-      id: tracks.id,
-      createdAt: tracks.createdAt,
-      duration: tracks.duration,
-      prompt: tracks.prompt,
-      lyrics: tracks.lyrics,
-      language: tracks.language,
-      instrumental: tracks.instrumental,
-      vocalGender: tracks.vocalGender,
-      rating: tracks.rating,
-      playCount: tracks.playCount,
-      archivedAt: tracks.archivedAt,
-      hiddenAt: tracks.hiddenAt,
-      audioDna: tracks.audioDna,
-      advancedDna: tracks.advancedDna,
+      id: ranked.id,
+      createdAt: ranked.createdAt,
+      duration: ranked.duration,
+      prompt: ranked.prompt,
+      lyrics: ranked.lyrics,
+      language: ranked.language,
+      instrumental: ranked.instrumental,
+      vocalGender: ranked.vocalGender,
+      rating: ranked.rating,
+      playCount: ranked.playCount,
+      archivedAt: ranked.archivedAt,
+      hiddenAt: ranked.hiddenAt,
+      audioDna: ranked.audioDna,
+      advancedDna: ranked.advancedDna,
     })
-    .from(tracks)
-    .where(and(eq(tracks.userId, userId), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
-    .orderBy(desc(tracks.createdAt))
+    .from(ranked)
+    .where(lte(ranked.titleRank, MAX_TRACKS_PER_TITLE))
+    .orderBy(sql`md5(${ranked.id}::text)`)
     .limit(MAX_SOURCE_TRACKS);
 
   return rows.map((row) => ({

@@ -755,7 +755,6 @@ const nl: typeof en = {
       "Maak een track af en Melody DNA begint je tempo, energie, taal en woordkeuze te leren. Tracks beoordelen versnelt dat het meest.",
     emptyCta: "Naar de Studio",
     learning: "Nog aan het leren",
-    solid: "Stevig",
     confirm: "Dit klopt",
     dispute: "Dit ben ik niet",
     more: "Meer hiervan",

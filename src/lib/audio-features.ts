@@ -1,8 +1,8 @@
 import ffmpegStatic from "ffmpeg-static";
 import { spawn } from "child_process";
 import { Readable } from "stream";
-import MusicTempo from "music-tempo";
 import FFT from "fft.js";
+import { detectTempo } from "@/lib/tempo";
 
 export interface AudioFeatures {
   tempo: number | null;
@@ -60,7 +60,7 @@ export async function extractAudioFeatures(buffer: Buffer): Promise<AudioFeature
   }
 
   return {
-    tempo: detectTempo(pcm),
+    tempo: detectTempo(pcm, SAMPLE_RATE),
     key: detectKey(pcm),
     energy: computeEnergy(pcm),
     loudness,
@@ -133,16 +133,6 @@ function measureLoudness(buffer: Buffer, ffmpegPath: string): Promise<number | n
     readable.pipe(proc.stdin);
     readable.on("error", reject);
   });
-}
-
-function detectTempo(samples: Float32Array): number | null {
-  try {
-    const result = new MusicTempo(samples);
-    return result?.tempo ? Math.round(result.tempo) : null;
-  } catch (error) {
-    console.warn("[audio-features] Tempo detection failed:", error);
-    return null;
-  }
 }
 
 function computeEnergy(samples: Float32Array): number | null {
