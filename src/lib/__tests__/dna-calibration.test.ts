@@ -97,6 +97,50 @@ describe("pickCalibrationPair", () => {
   });
 });
 
+describe("released tracks first", () => {
+  const released = (id: string, tempo: number): CalibrationCandidate => ({ ...track(id, tempo), released: true });
+
+  it("prefers a pair of released tracks over a wider unreleased pair", () => {
+    const pair = pickCalibrationPair({
+      candidates: [track("x", 50), track("y", 180), released("a", 80), released("b", 110)],
+      availableTraitKeys: new Set(["tempo"]),
+      answered: [],
+    });
+    expect([pair?.left.id, pair?.right.id].sort()).toEqual(["a", "b"]);
+  });
+
+  it("prefers one released track over none", () => {
+    const pair = pickCalibrationPair({
+      candidates: [track("x", 50), track("y", 180), released("a", 100)],
+      availableTraitKeys: new Set(["tempo"]),
+      answered: [],
+    });
+    const ids = [pair?.left.id, pair?.right.id];
+    expect(ids).toContain("a");
+  });
+
+  it("falls back to unreleased tracks once released pairs are used up", () => {
+    const pair = pickCalibrationPair({
+      candidates: [track("x", 50), track("y", 180), released("a", 80), released("b", 110)],
+      availableTraitKeys: new Set(["tempo"]),
+      answered: [{ traitKey: "tempo", trackAId: "a", trackBId: "b" }],
+    });
+    expect(pair).not.toBeNull();
+  });
+
+  it("looks across traits for released tracks before rotating", () => {
+    const candidates = [
+      { ...track("a", 100, 10), released: true },
+      { ...track("b", 105, 90), released: true },
+      track("c", 60, 50),
+      track("d", 160, 50),
+    ];
+    const pair = pickCalibrationPair({ candidates, availableTraitKeys: BOTH, answered: [] });
+    expect(pair?.traitKey).toBe("energy");
+    expect([pair?.left.id, pair?.right.id].sort()).toEqual(["a", "b"]);
+  });
+});
+
 describe("feedbackKindForChoice", () => {
   const pair = {
     traitKey: "tempo",

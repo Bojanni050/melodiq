@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { dnaCalibrationAnswers, dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
@@ -179,6 +179,14 @@ export async function recordDnaFeedback(
 
 /** Tracks with audio and a measured tempo/energy: the only ones a duel can use. */
 export async function loadCalibrationCandidates(userId: string): Promise<CalibrationCandidate[]> {
+  // Released tracks sort first so the candidate cap can never push them out in
+  // favour of newer drafts; the picker then prioritises them (calibration.ts).
+  const released = sql<boolean>`exists (
+    select 1 from release_tracks rt
+    join releases r on r.id = rt.release_id
+    where rt.track_id = ${tracks.id} and r.user_id = ${userId}
+  )`;
+
   const rows = await db
     .select({
       id: tracks.id,
@@ -187,6 +195,7 @@ export async function loadCalibrationCandidates(userId: string): Promise<Calibra
       audioUrl: tracks.audioUrl,
       duration: tracks.duration,
       audioDna: tracks.audioDna,
+      released,
     })
     .from(tracks)
     .where(
@@ -198,7 +207,7 @@ export async function loadCalibrationCandidates(userId: string): Promise<Calibra
         isNotNull(tracks.audioUrl),
       ),
     )
-    .orderBy(desc(tracks.createdAt))
+    .orderBy(desc(released), desc(tracks.createdAt))
     .limit(CALIBRATION_MAX_CANDIDATES);
 
   const candidates: CalibrationCandidate[] = [];
@@ -213,6 +222,7 @@ export async function loadCalibrationCandidates(userId: string): Promise<Calibra
       duration: row.duration ?? null,
       tempo: dna?.tempo ?? null,
       energy: dna?.energy ?? null,
+      released: Boolean(row.released),
     });
   }
   return candidates;

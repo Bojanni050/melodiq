@@ -41,6 +41,8 @@ export type CalibrationCandidate = {
   duration: number | null;
   tempo: number | null;
   energy: number | null;
+  /** On one of the user's releases. Released songs are what the user stands behind, so duels start there. */
+  released?: boolean;
 };
 
 export type CalibrationAnswered = {
@@ -77,8 +79,11 @@ export function sortPairIds(firstId: string, secondId: string): [string, string]
 /**
  * Picks the next duel, or null when nothing is left to ask.
  *
- * Traits rotate with the answer count so a run alternates between them. Within
- * a trait the least-used tracks go first (a run should sample the catalogue,
+ * Released songs come first: a pair with two released tracks beats one with a
+ * single released track, which beats a pair of unreleased ones. Only when that
+ * tier is exhausted do the rest follow. Traits rotate with the answer count so
+ * a run alternates between them (the rotation breaks ties between traits that
+ * offer the same tier). Within a tier the least-used tracks go first (a run should sample the catalogue,
  * not replay the two most extreme songs), then the widest gap, then id order
  * for stability. Which track lands on the left flips every other answer so the
  * faster song is not always the same side.
@@ -101,6 +106,15 @@ export function pickCalibrationPair(options: {
     usage.set(entry.trackBId, (usage.get(entry.trackBId) ?? 0) + 1);
   }
 
+  type Best = {
+    a: { candidate: CalibrationCandidate; value: number };
+    b: { candidate: CalibrationCandidate; value: number };
+    tier: number;
+    used: number;
+    gap: number;
+  };
+  let chosen: { trait: CalibrationTrait; best: Best } | null = null;
+
   const start = answered.length % traits.length;
   for (let offset = 0; offset < traits.length; offset += 1) {
     const trait = traits[(start + offset) % traits.length];
@@ -108,12 +122,7 @@ export function pickCalibrationPair(options: {
       .map((candidate) => ({ candidate, value: readValue(candidate, trait.key) }))
       .filter((entry): entry is { candidate: CalibrationCandidate; value: number } => entry.value !== null);
 
-    let best: {
-      a: (typeof valued)[number];
-      b: (typeof valued)[number];
-      used: number;
-      gap: number;
-    } | null = null;
+    let best: Best | null = null;
 
     for (let i = 0; i < valued.length; i += 1) {
       for (let j = i + 1; j < valued.length; j += 1) {
@@ -123,31 +132,38 @@ export function pickCalibrationPair(options: {
         if (gap < trait.minGap) continue;
         if (seen.has(calibrationPairKey(trait.key, a.candidate.id, b.candidate.id))) continue;
 
+        const tier = (a.candidate.released ? 1 : 0) + (b.candidate.released ? 1 : 0);
         const used = (usage.get(a.candidate.id) ?? 0) + (usage.get(b.candidate.id) ?? 0);
         const better =
           best === null ||
-          used < best.used ||
-          (used === best.used && gap > best.gap) ||
-          (used === best.used &&
+          tier > best.tier ||
+          (tier === best.tier && used < best.used) ||
+          (tier === best.tier && used === best.used && gap > best.gap) ||
+          (tier === best.tier &&
+            used === best.used &&
             gap === best.gap &&
             calibrationPairKey(trait.key, a.candidate.id, b.candidate.id) <
               calibrationPairKey(trait.key, best.a.candidate.id, best.b.candidate.id));
-        if (better) best = { a, b, used, gap };
+        if (better) best = { a, b, tier, used, gap };
       }
     }
 
-    if (best) {
-      // Slower track first on even answers, faster first on odd ones.
-      const [lowFirst, highFirst] = best.a.value <= best.b.value ? [best.a, best.b] : [best.b, best.a];
-      const [first, second] = answered.length % 2 === 0 ? [lowFirst, highFirst] : [highFirst, lowFirst];
-      return {
-        traitKey: trait.key,
-        left: first.candidate,
-        right: second.candidate,
-        leftValue: first.value,
-        rightValue: second.value,
-      };
-    }
+    // Strictly greater: on equal tiers the trait that came first in the rotation stays.
+    if (best && (chosen === null || best.tier > chosen.best.tier)) chosen = { trait, best };
+  }
+
+  if (chosen) {
+    const { trait, best } = chosen;
+    // Slower track first on even answers, faster first on odd ones.
+    const [lowFirst, highFirst] = best.a.value <= best.b.value ? [best.a, best.b] : [best.b, best.a];
+    const [first, second] = answered.length % 2 === 0 ? [lowFirst, highFirst] : [highFirst, lowFirst];
+    return {
+      traitKey: trait.key,
+      left: first.candidate,
+      right: second.candidate,
+      leftValue: first.value,
+      rightValue: second.value,
+    };
   }
 
   return null;
