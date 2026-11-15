@@ -19,7 +19,7 @@ export const HELIX_RADIUS = 112;
  * Distance from the viewer to the axis. Smaller than a few radii would distort
  * badly; this gives roughly a 25% size difference between front and back.
  */
-export const HELIX_CAMERA = 600;
+export const HELIX_CAMERA = 480;
 /** Vertical distance between two rungs. */
 export const HELIX_ROW_HEIGHT = 32;
 /** Extra space inserted where the category changes. */
@@ -221,14 +221,14 @@ export function categoryGapIndices(traits: { category: string }[]): number[] {
   return gaps;
 }
 
-/** Node size in SVG units: 3 when far, 6 when close. */
+/** Bead size in SVG units: 6 when far, 11 when close. */
 export function nodeRadius(depth: number): number {
-  return 3 + 3 * ((depth + 1) / 2);
+  return 6 + 5 * ((depth + 1) / 2);
 }
 
-/** Strand width in SVG units; the near side of the helix reads thicker. */
+/** Strand width in SVG units; a slim tube, a little thicker on the near side. */
 export function strandWidth(depth: number): number {
-  return 8 + 7 * ((depth + 1) / 2);
+  return 4 + 4 * ((depth + 1) / 2);
 }
 
 /**
