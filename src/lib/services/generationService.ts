@@ -35,7 +35,12 @@ export type GenerationContext = {
   startTime: number;
   provider: string;
   providerModel: string;
+  /** Style string actually sent to the provider (user prompt + optional DNA hint). */
   prompt: string;
+  /** The user's own style string, without the DNA hint — goes into tracks.prompt. */
+  originalPrompt: string;
+  /** Hint appended to `prompt`, stored next to the track instead of inside it. */
+  dnaPromptHint?: string | null;
   lyrics?: string;
   instrumental: boolean;
   resolvedTitle: string | null;
@@ -104,9 +109,9 @@ async function resolveInspirationAudioUrls(userId: string, inspirationTrackIds: 
 // ---------------------------------------------------------------------------
 
 export async function dispatchMinimaxViaPoYo(ctx: GenerationContext): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, originalPrompt, dnaPromptHint, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender } = ctx;
 
-  const track = await insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) });
+  const track = await insertPendingTrack({ userId, provider, providerModel, prompt: originalPrompt, dnaPromptHint, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) });
   const reserved = await reserveTrackS3Keys(track.id!);
 
   try {
@@ -132,11 +137,11 @@ export async function dispatchMinimaxViaPoYo(ctx: GenerationContext): Promise<Ne
 // ---------------------------------------------------------------------------
 
 export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, originalPrompt, dnaPromptHint, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety } = ctx;
 
   const [track1, track2] = await Promise.all([
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt: originalPrompt, dnaPromptHint, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt: originalPrompt, dnaPromptHint, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
   ]);
 
   const [reserved1, reserved2] = await Promise.all([
@@ -172,7 +177,7 @@ export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse
 // ---------------------------------------------------------------------------
 
 export async function dispatchPoYoInspo(ctx: GenerationContext): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety, inspoAudioWeight, inspirationTrackIds } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, originalPrompt, dnaPromptHint, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety, inspoAudioWeight, inspirationTrackIds } = ctx;
 
   const audioUrls = await resolveInspirationAudioUrls(userId, inspirationTrackIds);
   const inspoWeight01 =
@@ -181,8 +186,8 @@ export async function dispatchPoYoInspo(ctx: GenerationContext): Promise<NextRes
       : 0.2;
 
   const [track1, track2] = await Promise.all([
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
-    insertPendingTrack({ userId, provider, providerModel, prompt, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt: originalPrompt, dnaPromptHint, lyrics: lyrics || null, instrumental, title: resolvedTitle, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
+    insertPendingTrack({ userId, provider, providerModel, prompt: originalPrompt, dnaPromptHint, lyrics: lyrics || null, instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender) }),
   ]);
 
   const [reserved1, reserved2] = await Promise.all([

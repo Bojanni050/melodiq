@@ -761,6 +761,7 @@ const en = {
     confirmed: "Confirmed by you",
     disputed: "You rejected this",
     feedbackFailed: "Could not save that correction. Try again.",
+    rateLimited: "Slow down a moment — try again in a minute.",
     sourceOne: "1 track",
     sourceMany: "{count} tracks",
     stageSeed: "Seed",

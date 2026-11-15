@@ -246,11 +246,11 @@ export default function DnaPage() {
     setNotice(null);
     try {
       const res = await fetch("/api/dna/recompute", { method: "POST" });
-      if (!res.ok) throw new Error("rebuild failed");
+      if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "rebuild failed");
       setData((await res.json()) as DnaResponse);
       setNotice(t("dna.rebuilt"));
-    } catch {
-      setError(t("dna.rebuildFailed"));
+    } catch (error) {
+      setError(error instanceof Error && error.message === "rate limited" ? t("dna.rateLimited") : t("dna.rebuildFailed"));
     } finally {
       setRebuilding(false);
     }
@@ -268,10 +268,10 @@ export default function DnaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ traitKey, kind }),
       });
-      if (!res.ok) throw new Error("feedback failed");
+      if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "feedback failed");
       setData((await res.json()) as DnaResponse);
-    } catch {
-      setError(t("dna.feedbackFailed"));
+    } catch (error) {
+      setError(error instanceof Error && error.message === "rate limited" ? t("dna.rateLimited") : t("dna.feedbackFailed"));
     } finally {
       setPendingTrait(null);
     }

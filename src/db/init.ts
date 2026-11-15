@@ -482,6 +482,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS polls_close_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS completed_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS is_collaboration boolean NOT NULL DEFAULT false;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS archived_at timestamp;
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS dna_prompt_hint text;
 CREATE INDEX IF NOT EXISTS "tracks_archived_at_idx" ON "tracks"("archived_at");
 CREATE INDEX IF NOT EXISTS "tracks_release_status_status_idx" ON "tracks"("release_status", "status");
 ALTER TABLE track_stems ADD COLUMN IF NOT EXISTS completed_at timestamp;
@@ -602,6 +603,20 @@ WHERE rt.track_id = t.id
   AND t.release_status <> 'published'
 `;
 
+// Fase 4 appended the Melody DNA hint to the style string before generation,
+// which meant the hint ended up inside tracks.prompt and travelled back into
+// Reuse Prompt. New tracks keep them apart (dna_prompt_hint); this moves the
+// hint out of prompts stored by an older build. Idempotent: after the first
+// pass no prompt still carries the marker, so the WHERE matches nothing.
+const stripDnaPromptHintSql = `
+UPDATE tracks
+SET dna_prompt_hint = substring(prompt FROM ',\\s*Melody DNA: (.*)$'),
+    prompt = regexp_replace(prompt, ',\\s*Melody DNA: .*$', ''),
+    updated_at = now()
+WHERE dna_prompt_hint IS NULL
+  AND prompt LIKE '%, Melody DNA: %'
+`;
+
 async function executeSqlStatements(client: postgres.Sql, sqlBlob: string) {
   const statements = sqlBlob
     .split(";")
@@ -652,6 +667,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, createTablesSql);
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
+    await targetClient.unsafe(stripDnaPromptHintSql);
     await executeSqlStatements(targetClient, alterPlaylistsSql);
     await executeSqlStatements(targetClient, alterReleasesSql);
     await targetClient.unsafe(tracksWorkspaceFkSql);

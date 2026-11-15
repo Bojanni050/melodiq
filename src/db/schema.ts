@@ -125,6 +125,11 @@ export const tracks = pgTable("tracks", {
   provider: varchar("provider", { length: 50 }).notNull(),
   providerModel: varchar("provider_model", { length: 50 }).notNull(),
   prompt: text("prompt").notNull(),
+  // Melody DNA hint that was appended to `prompt` when this track was sent to
+  // the provider (null = no DNA influence, or a pre-fase-4 track). Kept apart
+  // so `prompt` stays exactly what the user wrote — Reuse Prompt, edits and
+  // cover art should never inherit the hint.
+  dnaPromptHint: text("dna_prompt_hint"),
   lyrics: text("lyrics"),
   lyricsTimestamps: text("lyrics_timestamps"),
   language: varchar("language", { length: 50 }),

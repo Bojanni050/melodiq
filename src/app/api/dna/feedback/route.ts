@@ -4,6 +4,11 @@ import { isDnaFeedbackKind } from "@/lib/dna/feedback";
 import { serialiseDnaProfile } from "@/lib/dna/present";
 import { getDnaProfile, recordDnaFeedback } from "@/lib/dna/repository";
 import { requireAuth } from "@/lib/require-auth";
+import { checkRateLimit } from "@/lib/services/rateLimitService";
+
+// Correcting a profile is a real click, not a batch job, but calibrating all
+// 17 traits in one sitting is legitimate — hence roomy but not unlimited.
+const FEEDBACK_LIMIT = 30;
 
 /**
  * Records one correction ("this is right", "this isn't me", "more of this",
@@ -16,6 +21,10 @@ export async function POST(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
+
+  if (!checkRateLimit(`dna-feedback-${userId}`, FEEDBACK_LIMIT)) {
+    return NextResponse.json({ error: "Too many corrections. Try again in a minute." }, { status: 429 });
+  }
 
   let body: unknown;
   try {

@@ -764,6 +764,7 @@ const nl: typeof en = {
     confirmed: "Door jou bevestigd",
     disputed: "Door jou afgewezen",
     feedbackFailed: "Correctie opslaan lukte niet. Probeer opnieuw.",
+    rateLimited: "Even rustig — probeer het over een minuut opnieuw.",
     sourceOne: "1 track",
     sourceMany: "{count} tracks",
     stageSeed: "Zaad",

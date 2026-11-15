@@ -9,6 +9,12 @@ export type TrackInsertParams = {
   provider: string;
   providerModel?: string;
   prompt: string;
+  /**
+   * Melody DNA hint that was appended to the style string the provider got.
+   * Stored separately so `prompt` stays the user's own text (Reuse Prompt,
+   * edits and cover-art prompts must not inherit the hint).
+   */
+  dnaPromptHint?: string | null;
   lyrics?: string | null;
   instrumental: boolean;
   title?: string | null;
@@ -41,6 +47,7 @@ export async function insertPendingTrack(params: Omit<TrackInsertParams, "status
       provider: params.provider,
       providerModel: params.providerModel ?? "",
       prompt: params.prompt,
+      dnaPromptHint: params.dnaPromptHint ?? null,
       lyrics: params.lyrics,
       instrumental: params.instrumental,
       title: params.title,

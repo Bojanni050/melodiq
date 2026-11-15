@@ -139,13 +139,20 @@ export async function POST(request: NextRequest) {
     const dnaContext = await loadDnaContext(userId, dnaStrength);
     effectivePrompt = mergeDnaIntoPrompt(normalizedPrompt, dnaContext.text, dnaStrength);
   }
+  // The track stores the user's own text plus the hint in its own column, so
+  // Reuse Prompt and edits never drag DNA tags back into the Studio. Merge only
+  // ever appends, so everything past the original prompt is the hint.
+  const dnaPromptHint =
+    effectivePrompt !== normalizedPrompt
+      ? effectivePrompt.slice(normalizedPrompt.length).replace(/^[\s,]+/, "")
+      : null;
 
   // Resolve title (AI + fallbacks). Uses the raw prompt: DNA tags would only
   // pull the title towards genre words.
   const resolvedTitle = await resolveTrackTitle({ userTitle: normalizedTitle, instrumental: instrumental || false, prompt: normalizedPrompt, provider });
 
   const ctx: GenerationContext = {
-    userId, startTime, provider, providerModel, prompt: effectivePrompt, lyrics, instrumental: instrumental || false,
+    userId, startTime, provider, providerModel, prompt: effectivePrompt, originalPrompt: normalizedPrompt, dnaPromptHint, lyrics, instrumental: instrumental || false,
     resolvedTitle, resolvedArtistName, resolvedWriterName,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
     normalizedPoYoModel, isMinimaxViaPoYo,
@@ -164,7 +171,7 @@ export async function POST(request: NextRequest) {
 
   // All remaining providers share a single upfront pending track insert
   const track = await insertPendingTrack({
-    userId, provider, providerModel, prompt: effectivePrompt, lyrics: lyrics || null,
+    userId, provider, providerModel, prompt: normalizedPrompt, dnaPromptHint, lyrics: lyrics || null,
     instrumental: instrumental || false, title: resolvedTitle,
     artistName: resolvedArtistName, writerName: resolvedWriterName,
     vocalGender: normalizeVocalGender(vocalGender),
