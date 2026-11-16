@@ -799,7 +799,10 @@ export async function PATCH(
 
     if (regenerateTitle === true) {
       const track = result[0];
-      const { generateTitle, generateInstrumentalTitleFromPrompt } = await import("@/lib/providers/llm");
+      const { generateTitle } = await import("@/lib/providers/llm");
+      // One implementation of the instrumental-title helper, in the service that
+      // owns title resolution (providers/llm.ts had a byte-identical copy).
+      const { generateInstrumentalTitleFromPrompt } = await import("@/lib/services/titleService");
       const { toTitleCase } = await import("@/lib/title-case");
       
       try {

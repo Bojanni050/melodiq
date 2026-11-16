@@ -1,3 +1,5 @@
+// @vitest-environment node
+// The provider wrapper is server code and imports the file logger (node:fs): node environment, which also keeps it working when the ambient NODE_ENV is production.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // callLLM used to resolve every provider's key and model before each request

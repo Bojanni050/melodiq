@@ -410,6 +410,41 @@ function buildUserContent(
   return [prefixBlock, { type: "text", text: prompt }];
 }
 
+/**
+ * POSTs with the same transient-failure policy as the chat path: one retry on
+ * 429/5xx or a dropped connection, honouring Retry-After. Used by the audio
+ * call, which is the most expensive request in the app — so it retries only
+ * where the failed attempt wasn't billed, and the 90s timeout means at most one
+ * extra attempt.
+ */
+async function postWithRetry(
+  url: string,
+  body: Record<string, unknown>,
+  headers: Record<string, string>,
+  timeout: number
+) {
+  let attempt = 0;
+  let lastError: any;
+
+  for (;;) {
+    try {
+      return await axios.post(url, body, { headers, timeout });
+    } catch (error: any) {
+      lastError = error;
+      attempt += 1;
+      if (attempt >= MAX_CHAT_ATTEMPTS || !isRetryableError(error)) break;
+
+      const delay = retryDelayMs(error, attempt);
+      console.warn(
+        `[llm] ${url} failed (${error?.response?.status ?? error?.code ?? "network"}) — retrying in ${delay}ms`
+      );
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
+
 export async function callLLM(
   prompt: string,
   systemPrompt: string,
@@ -740,7 +775,7 @@ export async function callLLMWithAudio(
   );
   logToFile(LOG_FILE, `${logTag} calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`);
 
-  const res = await axios.post(
+  const res = await postWithRetry(
     config.url,
     {
       model: config.model,
@@ -755,10 +790,8 @@ export async function callLLMWithAudio(
         },
       ],
     },
-    {
-      headers: config.headers,
-      timeout: 90_000,
-    }
+    config.headers,
+    90_000
   );
 
   const raw = res.data?.choices?.[0]?.message?.content;
@@ -953,38 +986,4 @@ ${lyrics ? `Lyrics/Themes:\n${lyrics.slice(0, 1000)}` : ""}`;
     deepInfraModelOverride: deepInfraImageModel || undefined,
     hopscotchModelOverride: hopscotchImageModel || undefined,
   });
-}
-
-export function normalizeAiTitle(raw: string): string | null {
-  const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) || "";
-  const cleaned = firstLine
-    .replace(/^["'\s]+|["'\s]+$/g, "")
-    .replace(/[\[\]{}]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!cleaned) return null;
-  return cleaned.slice(0, 80).trim();
-}
-
-export async function generateInstrumentalTitleFromPrompt(prompt: string): Promise<string | null> {
-  const trimmedPrompt = prompt.trim();
-  if (!trimmedPrompt) return null;
-
-  const systemPrompt = `You generate concise song titles for instrumental tracks.
-
-Rules:
-- Return only the title
-- No quotes, no punctuation at the end, no explanation
-- Maximum 6 words
-- Keep it evocative and based on the style prompt`;
-
-  const userPrompt = `Create one instrumental track title from this style prompt:\n\n${trimmedPrompt}`;
-
-  try {
-    const rawTitle = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", temperature: 0.4 });
-    return normalizeAiTitle(rawTitle);
-  } catch {
-    return null;
-  }
 }

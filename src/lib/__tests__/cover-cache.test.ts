@@ -1,3 +1,5 @@
+// @vitest-environment node
+// Cover-* helpers hash/normalise image buffers and read the cache dir: server code, so it runs in the node environment. Under jsdom the suite's default environment — the `node:` builtins stop resolving when the ambient NODE_ENV is production.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "fs/promises";
 import os from "os";

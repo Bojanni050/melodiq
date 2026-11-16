@@ -1,3 +1,5 @@
+// @vitest-environment node
+// Upload override helpers are server code (filename/format/override parsing next to node: builtins): node environment, which also keeps them working when the ambient NODE_ENV is production.
 import { describe, expect, it } from "vitest";
 import { parseUploadItemOverrides } from "@/app/api/tracks/upload-helpers";
 
