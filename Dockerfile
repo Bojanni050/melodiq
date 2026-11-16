@@ -3,12 +3,16 @@ FROM node:22-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install
+# `npm ci` instead of `npm install`: the lockfile is the source of truth, a
+# mismatch fails the build loudly here instead of silently resolving different
+# versions on the VPS. (It was out of sync — vitest's nested esbuild was missing
+# — which is why this used to be `npm install`.)
+RUN npm ci
 COPY . .
 ENV NODE_ENV=production
 RUN npm run build
