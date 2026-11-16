@@ -13,7 +13,7 @@ vi.mock("@/lib/settings", () => ({
 }));
 vi.mock("@/lib/file-logger", () => ({ logToFile: () => {} }));
 
-import { scoreLyricsAndAtmosphere } from "../providers/llm";
+import { callLLMWithAudio, scoreLyricsAndAtmosphere } from "../providers/llm";
 
 function respond(content: string) {
   return { status: 200, data: { choices: [{ message: { content } }] } };
@@ -100,5 +100,63 @@ describe("scoreLyricsAndAtmosphere", () => {
       lyricsScore: null,
     });
     warn.mockRestore();
+  });
+});
+
+// The Advanced-DNA audio call is the most expensive request in the app; it gets
+// the same transient retry as the chat path, and only for failures that weren't
+// billed.
+describe("callLLMWithAudio retry", () => {
+  const audio = Buffer.from("fake-audio-bytes");
+
+  beforeEach(() => {
+    postMock.mockReset();
+    settingsState.values = {
+      ADVANCED_LLM_PROVIDER: "openrouter",
+      OPENROUTER_API_KEY: "or-key",
+      OPENROUTER_ADVANCED_DNA_MODEL: "google/gemini-2.5-flash",
+    };
+  });
+
+  it("sends the audio as base64 and returns the content", async () => {
+    postMock.mockResolvedValue(respond("analysis"));
+
+    await expect(callLLMWithAudio("advanced", audio, "mp3", "system", "user text")).resolves.toBe("analysis");
+
+    const body = postMock.mock.calls[0][1];
+    expect(body.model).toBe("google/gemini-2.5-flash");
+    expect(body.messages[1].content[1].input_audio.data).toBe(audio.toString("base64"));
+    expect(postMock.mock.calls[0][2].timeout).toBe(90_000);
+  });
+
+  it("retries a rate-limited attempt once", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    postMock
+      .mockRejectedValueOnce({ response: { status: 429, headers: { "retry-after": "0" }, data: {} } })
+      .mockResolvedValueOnce(respond("second try"));
+
+    await expect(callLLMWithAudio("advanced", audio, "mp3", "s", "u")).resolves.toBe("second try");
+    expect(postMock).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
+  it("gives up after one retry", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    postMock.mockRejectedValue({ response: { status: 503, headers: { "retry-after": "0" }, data: {} } });
+
+    await expect(callLLMWithAudio("advanced", audio, "mp3", "s", "u")).rejects.toMatchObject({
+      response: { status: 503 },
+    });
+    expect(postMock).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
+  it("does not retry a 400", async () => {
+    postMock.mockRejectedValue({ response: { status: 400, data: { error: { message: "audio too long" } } } });
+
+    await expect(callLLMWithAudio("advanced", audio, "mp3", "s", "u")).rejects.toMatchObject({
+      response: { status: 400 },
+    });
+    expect(postMock).toHaveBeenCalledTimes(1);
   });
 });
