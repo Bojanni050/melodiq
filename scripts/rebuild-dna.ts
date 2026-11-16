@@ -19,7 +19,7 @@ import "./env";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq, or } from "drizzle-orm";
+import { or, sql } from "drizzle-orm";
 import { recomputeDnaProfile } from "@/lib/dna/repository";
 import type { DnaTrait } from "@/lib/dna/types";
 
@@ -50,11 +50,18 @@ function describeTrait(trait: DnaTrait): string {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
 
+  // Compare the id as text: a bare string against a uuid column makes Postgres
+  // reject the whole query, so an email would never reach the second branch.
   const targets = options.user
     ? await db
         .select({ id: users.id, email: users.email })
         .from(users)
-        .where(or(eq(users.email, options.user), eq(users.id, options.user)))
+        .where(
+          or(
+            sql`lower(${users.email}) = lower(${options.user})`,
+            sql`${users.id}::text = ${options.user}`,
+          ),
+        )
         .limit(1)
     : await db.select({ id: users.id, email: users.email }).from(users);
 
