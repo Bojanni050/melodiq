@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // callLLM used to resolve every provider's key and model before each request
 // (11-16 settings reads for one lyrics call). These tests pin the new
@@ -19,7 +19,7 @@ vi.mock("@/lib/settings", () => ({
   }),
 }));
 
-import { callLLM } from "../providers/llm";
+import { callLLM, retryDelayMs } from "../providers/llm";
 
 function okResponse(body: unknown) {
   return { status: 200, data: { choices: [{ message: { content: "hi" } }], ...(body as object) } };
@@ -198,5 +198,96 @@ describe("callLLM request options", () => {
     await expect(callLLM("prompt", "system", { purpose: "lyrics" })).rejects.toThrow(
       "OpenRouter response missing content"
     );
+  });
+});
+
+describe("callLLM retry behaviour", () => {
+  beforeEach(() => {
+    postMock.mockReset();
+    readKeys.length = 0;
+    settingsState.values = { LYRICS_LLM_PROVIDER: "openrouter", OPENROUTER_API_KEY: "or-key" };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("retries a rate-limited call once and returns the retry's response", async () => {
+    postMock
+      .mockRejectedValueOnce({
+        response: { status: 429, headers: { "retry-after": "0" }, data: { error: { message: "rate limited" } } },
+      })
+      .mockResolvedValueOnce(okResponse({}));
+
+    await expect(callLLM("prompt", "system", { purpose: "lyrics" })).resolves.toBe("hi");
+    expect(postMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a dropped connection that never produced an HTTP response", async () => {
+    postMock
+      .mockRejectedValueOnce(Object.assign(new Error("socket hang up"), { code: "ECONNRESET" }))
+      .mockResolvedValueOnce(okResponse({}));
+
+    await expect(callLLM("prompt", "system", { purpose: "lyrics" })).resolves.toBe("hi");
+    expect(postMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after two attempts and reports the last failure", async () => {
+    postMock.mockRejectedValue({
+      response: { status: 503, headers: { "retry-after": "0" }, data: { error: { message: "overloaded" } } },
+    });
+
+    await expect(callLLM("prompt", "system", { purpose: "lyrics" })).rejects.toThrow(
+      "OpenRouter request failed (HTTP 503): overloaded"
+    );
+    expect(postMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry an authentication failure", async () => {
+    postMock.mockRejectedValue({ response: { status: 401, data: { error: { message: "no auth" } } } });
+
+    await expect(callLLM("prompt", "system", { purpose: "lyrics" })).rejects.toThrow("(HTTP 401)");
+    expect(postMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the JSON-mode correction out of the retry budget", async () => {
+    postMock
+      .mockRejectedValueOnce({ response: { status: 400, data: { error: { message: "response_format unsupported" } } } })
+      .mockRejectedValueOnce({ response: { status: 429, headers: { "retry-after": "0" } } })
+      .mockResolvedValueOnce(okResponse({}));
+
+    await expect(callLLM("prompt", "system", { purpose: "lyrics", json: true })).resolves.toBe("hi");
+    expect(postMock).toHaveBeenCalledTimes(3);
+    // Attempt 2 dropped the field, attempt 3 kept it dropped and succeeded.
+    expect(postMock.mock.calls[1][1].response_format).toBeUndefined();
+    expect(postMock.mock.calls[2][1].response_format).toBeUndefined();
+  });
+});
+
+describe("retryDelayMs", () => {
+  it("honours Retry-After in seconds", () => {
+    expect(retryDelayMs({ response: { status: 429, headers: { "retry-after": "3" } } }, 1)).toBe(3000);
+  });
+
+  it("honours Retry-After as an HTTP date", () => {
+    const when = new Date(Date.now() + 5000).toUTCString();
+    const delay = retryDelayMs({ response: { status: 429, headers: { "retry-after": when } } }, 1);
+    expect(delay).toBeGreaterThan(3000);
+    expect(delay).toBeLessThanOrEqual(5000);
+  });
+
+  it("caps a hostile header instead of parking the request", () => {
+    expect(retryDelayMs({ response: { status: 429, headers: { "retry-after": "99999" } } }, 1)).toBe(20_000);
+  });
+
+  it("doubles the base delay when the provider sends no header", () => {
+    expect(retryDelayMs({ response: { status: 503, headers: {} } }, 1)).toBe(800);
+    expect(retryDelayMs({ response: { status: 503, headers: {} } }, 2)).toBe(1600);
+    expect(retryDelayMs({ response: { status: 503, headers: {} } }, 9)).toBe(20_000);
+  });
+
+  it("falls back to the exponential path when the header is nonsense", () => {
+    expect(retryDelayMs({ response: { status: 429, headers: { "retry-after": "soon" } } }, 1)).toBe(800);
   });
 });

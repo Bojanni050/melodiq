@@ -282,39 +282,98 @@ function isJsonModeRejection(error: any): boolean {
   return /response_format|response format|json_object|json mode/i.test(payload);
 }
 
+// Transient failures worth one retry: rate limits, gateway hiccups and dropped
+// connections. A rejected request in this class wasn't billed, so the retry is
+// free; 4xx (bad key, bad model, bad body) never is, so it fails immediately.
+const RETRYABLE_STATUSES = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+const MAX_CHAT_ATTEMPTS = 2;
+const BASE_RETRY_DELAY_MS = 800;
+const MAX_RETRY_DELAY_MS = 20_000;
+
+function isRetryableError(error: any): boolean {
+  const status = error?.response?.status;
+  if (status === undefined) return true; // network error, timeout, socket reset
+  return RETRYABLE_STATUSES.has(status);
+}
+
 /**
- * POSTs one chat completion. When `response_format: json_object` is rejected by
- * an OpenAI-compatible router that doesn't implement it, the field is dropped
- * and the request is retried once — the prompt already demands strict JSON, so
- * the hint is optional. A rejected request isn't billed.
+ * Backoff before the next attempt: honour `Retry-After` when the provider sends
+ * one (seconds or HTTP-date), otherwise double the base delay. Both paths are
+ * capped so a hostile or absent header can't park the request for minutes.
+ */
+export function retryDelayMs(error: any, attempt: number): number {
+  const header = error?.response?.headers?.["retry-after"];
+  if (typeof header === "string" && header.trim()) {
+    const seconds = Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.min(seconds * 1000, MAX_RETRY_DELAY_MS);
+    }
+    const at = Date.parse(header);
+    if (Number.isFinite(at)) {
+      const wait = at - Date.now();
+      if (wait > 0) return Math.min(wait, MAX_RETRY_DELAY_MS);
+    }
+  }
+  return Math.min(BASE_RETRY_DELAY_MS * 2 ** (attempt - 1), MAX_RETRY_DELAY_MS);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * POSTs one chat completion with two safety nets:
+ *
+ * - transient failures (rate limit, 5xx, connection) get one retry after a
+ *   backoff, which is free because a rejected request isn't billed;
+ * - if an OpenAI-compatible router rejects `response_format: json_object`, the
+ *   field is dropped and the request is redone once — the prompt already asks
+ *   for strict JSON, so the hint is optional. That correction doesn't consume
+ *   the retry budget.
  */
 async function postChatCompletion(
   resolved: ResolvedChatProvider,
   body: Record<string, unknown>,
   allowJsonFallback: boolean
 ) {
-  try {
-    return await axios.post(resolved.url, body, {
-      headers: resolved.headers,
-      timeout: 60_000,
-    });
-  } catch (error: any) {
-    if (allowJsonFallback && body.response_format && isJsonModeRejection(error)) {
-      const { response_format: _ignored, ...fallbackBody } = body;
-      console.warn(
-        `[llm] ${resolved.label} (${resolved.model}) rejected response_format — retrying without JSON mode`
-      );
-      try {
-        return await axios.post(resolved.url, fallbackBody, {
-          headers: resolved.headers,
-          timeout: 60_000,
-        });
-      } catch (retryError: any) {
-        throw toProviderError(resolved, retryError);
+  let currentBody = body;
+  let jsonFallbackUsed = !allowJsonFallback;
+  let attempt = 0;
+  let lastError: any;
+
+  // Bounded: each pass either returns, spends one attempt, or flips
+  // jsonFallbackUsed exactly once.
+  for (;;) {
+    try {
+      return await axios.post(resolved.url, currentBody, {
+        headers: resolved.headers,
+        timeout: 60_000,
+      });
+    } catch (error: any) {
+      lastError = error;
+
+      if (!jsonFallbackUsed && currentBody.response_format && isJsonModeRejection(error)) {
+        jsonFallbackUsed = true;
+        const { response_format: _ignored, ...fallbackBody } = currentBody;
+        currentBody = fallbackBody;
+        console.warn(
+          `[llm] ${resolved.label} (${resolved.model}) rejected response_format — retrying without JSON mode`
+        );
+        continue;
       }
+
+      attempt += 1;
+      if (attempt >= MAX_CHAT_ATTEMPTS || !isRetryableError(error)) break;
+
+      const delay = retryDelayMs(error, attempt);
+      console.warn(
+        `[llm] ${resolved.label} (${resolved.model}) failed (${error?.response?.status ?? error?.code ?? "network"}) — retrying in ${delay}ms`
+      );
+      await sleep(delay);
     }
-    throw toProviderError(resolved, error);
   }
+
+  throw toProviderError(resolved, lastError);
 }
 
 export async function callLLM(
@@ -381,22 +440,6 @@ Rules:
 - Prefer the exact words from the lyrics over paraphrasing`;
 
   return callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
-}
-
-export async function detectLanguageFromLyrics(lyrics: string): Promise<string | null> {
-  const systemPrompt = `You are a language identification tool.
-
-Read the lyrics and identify the language they are written in.
-
-Rules:
-- Return ONLY the language name in English (e.g. "English", "Dutch", "Spanish") — no explanation, no punctuation
-- If the lyrics mix multiple languages, return the dominant one
-- If you cannot determine a language, return exactly "unknown"`;
-
-  const result = await callLLM(lyrics, systemPrompt, { purpose: "lyrics" });
-  const trimmed = result.trim().replace(/^["'.]+|["'.]+$/g, "");
-  if (!trimmed || trimmed.length > 50 || /unknown/i.test(trimmed)) return null;
-  return trimmed;
 }
 
 export async function translateLyrics(
