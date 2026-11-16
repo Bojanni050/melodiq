@@ -57,6 +57,8 @@ const GROWN_AT = 15;
 
 const TRAIT_LABEL_KEYS: Record<string, TranslationKey> = {
   tempo: "dna.traits.tempo",
+  tempo_intent: "dna.traits.tempo_intent",
+  half_time_share: "dna.traits.half_time_share",
   energy: "dna.traits.energy",
   atmospheres: "dna.traits.atmospheres",
   genres: "dna.traits.genres",

@@ -1,3 +1,5 @@
+import { parsePromptBpm, tempoOctaveRelation } from "@/lib/prompt-bpm";
+
 import type {
   AdvancedDnaSummary,
   DnaBuildResult,
@@ -497,6 +499,8 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
   const withVocals = usable.filter((track) => !track.instrumental);
 
   const tempoValues: Weighted[] = [];
+  const intendedTempoValues: Weighted[] = [];
+  const halfTimeValues: Weighted[] = [];
   const energyValues: Weighted[] = [];
   const atmosphereValues: { value: string; weight: number }[] = [];
   const genreValues: { value: string; weight: number }[] = [];
@@ -528,6 +532,18 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
 
     if (audio?.tempo != null && Number.isFinite(audio.tempo) && audio.tempo > 0) {
       tempoValues.push({ value: audio.tempo, weight });
+
+      // Keep the promise next to the measurement. Only tracks where the two sit
+      // an octave apart are counted, so a prompt that is simply vague does not
+      // pollute the share.
+      const intended = parsePromptBpm(track.prompt);
+      if (intended !== null) {
+        intendedTempoValues.push({ value: intended, weight });
+        const relation = tempoOctaveRelation(audio.tempo, intended);
+        if (relation !== null) {
+          halfTimeValues.push({ value: relation === "half" ? 1 : 0, weight: 1 });
+        }
+      }
     }
     if (audio?.energy != null && Number.isFinite(audio.energy)) {
       energyValues.push({ value: audio.energy, weight });
@@ -610,6 +626,22 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       unit: "BPM",
       spreadScale: 40,
       format: (value) => `${Math.round(value)} BPM`,
+    }),
+    numericTrait({
+      key: "tempo_intent",
+      category: "sound",
+      label: "Intended tempo",
+      values: intendedTempoValues,
+      unit: "BPM",
+      spreadScale: 40,
+      format: (value) => `${Math.round(value)} BPM`,
+    }),
+    ratioTrait({
+      key: "half_time_share",
+      category: "sound",
+      label: "Half-time",
+      values: halfTimeValues,
+      display: (ratio) => `${Math.round(ratio * 100)}% half-time`,
     }),
     numericTrait({
       key: "energy",

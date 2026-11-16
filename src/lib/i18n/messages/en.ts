@@ -818,6 +818,8 @@ const en = {
     },
     traits: {
       tempo: "Tempo",
+      tempo_intent: "Intended tempo",
+      half_time_share: "Half-time",
       energy: "Energy",
       atmospheres: "Atmospheres",
       genres: "Genres",

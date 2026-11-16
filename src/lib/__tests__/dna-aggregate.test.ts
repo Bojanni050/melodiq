@@ -204,6 +204,36 @@ describe("sourceWeight", () => {
 
     expect(archived).toBeLessThan(visible);
   });
+
+  it("keeps the promised tempo next to the pulse it measured", () => {
+    const dna = makeTrack().audioDna!;
+    const withTempo = (tempo: number, prompt: string) =>
+      makeTrack({ prompt, audioDna: { ...dna, tempo } });
+
+    const result = buildDnaProfile(
+      [
+        // Half-time: promised 136, heard 68.
+        withTempo(68, "half-time groove, syncopated kick, at 136 BPM"),
+        // Waltz whose eighth notes the tracker locked onto.
+        withTempo(118, "slow 3/4 at 58 BPM"),
+        // On the grid, so it must not count towards the half-time share.
+        withTempo(114, "pop, warm synths, 114 BPM"),
+      ],
+      { now },
+    );
+
+    expect(trait(result, "tempo")?.valueNumber).toBeCloseTo(100, 0);
+    expect(trait(result, "tempo_intent")?.valueNumber).toBeCloseTo(102.7, 0);
+    expect(trait(result, "half_time_share")?.valueNumber).toBeCloseTo(33.3, 0);
+    expect(trait(result, "half_time_share")?.sourceCount).toBe(3);
+  });
+
+  it("leaves the promise out when no prompt states a tempo", () => {
+    const result = buildDnaProfile([makeTrack(), makeTrack({ prompt: "ambient, no numbers" })], { now });
+
+    expect(trait(result, "tempo_intent")).toBeNull();
+    expect(trait(result, "half_time_share")).toBeNull();
+  });
 });
 
 describe("detectGenres", () => {

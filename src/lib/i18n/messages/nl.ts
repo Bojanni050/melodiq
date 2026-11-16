@@ -821,6 +821,8 @@ const nl: typeof en = {
     },
     traits: {
       tempo: "Tempo",
+      tempo_intent: "Bedoeld tempo",
+      half_time_share: "Half-time",
       energy: "Energie",
       atmospheres: "Sferen",
       genres: "Genres",
