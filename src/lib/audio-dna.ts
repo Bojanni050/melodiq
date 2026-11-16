@@ -1,5 +1,5 @@
 import { extractAudioFeatures } from "@/lib/audio-features";
-import { extractAtmosphereTags, scoreLyricsQuality } from "@/lib/providers/llm";
+import { scoreLyricsAndAtmosphere } from "@/lib/providers/llm";
 import type { AudioDna } from "@/lib/songs";
 
 /**
@@ -20,21 +20,20 @@ export async function computeAudioDna(params: {
   lyrics: string | null;
   instrumental: boolean;
 }): Promise<string> {
-  const [features, atmosphereTags, lyricsResult] = await Promise.all([
+  const [features, textAnalysis] = await Promise.all([
     extractAudioFeatures(params.audioBuffer).catch((error) => {
       console.warn("[audio-dna] Audio feature extraction failed:", error);
       return null;
     }),
-    extractAtmosphereTags(params.prompt).catch((error) => {
-      console.warn("[audio-dna] Atmosphere tag extraction failed:", error);
-      return null;
+    scoreLyricsAndAtmosphere({
+      prompt: params.prompt,
+      // An instrumental track has no lyrics to rate; the combined call then only
+      // asks for the tags instead of paying for a second request.
+      lyrics: params.instrumental ? null : params.lyrics,
+    }).catch((error) => {
+      console.warn("[audio-dna] Text analysis failed:", error);
+      return { tags: null, lyricsScore: null };
     }),
-    !params.instrumental && params.lyrics
-      ? scoreLyricsQuality(params.lyrics).catch((error) => {
-          console.warn("[audio-dna] Lyrics scoring failed:", error);
-          return null;
-        })
-      : Promise.resolve(null),
   ]);
 
   const audioDna: AudioDna = {
@@ -42,9 +41,9 @@ export async function computeAudioDna(params: {
     key: features?.key ?? null,
     energy: features?.energy ?? null,
     loudness: features?.loudness ?? null,
-    atmosphereTags: atmosphereTags ?? null,
-    lyricsScore: lyricsResult?.score ?? null,
-    lyricsNotes: lyricsResult?.notes ?? null,
+    atmosphereTags: textAnalysis.tags,
+    lyricsScore: textAnalysis.lyricsScore?.score ?? null,
+    lyricsNotes: textAnalysis.lyricsScore?.notes ?? null,
     compositionScore: null,
     compositionNotes: null,
     computedAt: new Date().toISOString(),

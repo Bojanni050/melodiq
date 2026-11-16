@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
 import { getSetting } from "@/lib/settings";
+import { getOpenRouterCatalog } from "@/lib/openrouter-catalog";
 import type { LLMModel } from "@/lib/settings-utils";
 
 const FALLBACK_LYRICS_MODEL = "google/gemini-2.5-flash";
@@ -23,19 +23,6 @@ const RECOMMENDED_MODEL_PRIORITY = [
   "mistralai/mistral-large-2411",
 ];
 
-function isTextCapable(model: any): boolean {
-  const arch = model?.architecture || {};
-  if (Array.isArray(arch.input_modalities) && Array.isArray(arch.output_modalities)) {
-    return arch.input_modalities.includes("text") && arch.output_modalities.includes("text");
-  }
-  const modality = typeof arch.modality === "string" ? arch.modality : "";
-  if (modality) {
-    const [input, output] = modality.split("->");
-    return (input || "").includes("text") && (output || "").includes("text");
-  }
-  return true;
-}
-
 export async function GET() {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
@@ -46,24 +33,10 @@ export async function GET() {
   }
 
   try {
-    const response = await axios.get("https://openrouter.ai/api/v1/models", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      timeout: 15000,
-    });
-
-    const all: LLMModel[] = (response.data?.data || [])
-      .filter(isTextCapable)
-      .map((m: any) => ({
-        id: m.id as string,
-        name: (m.name || m.id.split("/").pop()) as string,
-        description: m.description || "",
-        pricing: {
-          prompt: m.pricing?.prompt,
-          completion: m.pricing?.completion,
-        },
-        context_length: m.context_length,
-        architecture: m.architecture,
-      }));
+    // Cached for an hour server-side (src/lib/openrouter-catalog.ts) and for an
+    // hour in the browser, so opening the Lyrics Studio twice doesn't re-fetch
+    // ~300 KB of model metadata.
+    const all = await getOpenRouterCatalog();
 
     const byId = new Map(all.map((m) => [m.id, m]));
     const recommended = RECOMMENDED_MODEL_PRIORITY
@@ -87,7 +60,10 @@ export async function GET() {
       pricing: { prompt: null, completion: null },
     };
 
-    return NextResponse.json({ recommended, others, defaultModel });
+    return NextResponse.json(
+      { recommended, others, defaultModel },
+      { headers: { "Cache-Control": "private, max-age=3600" } }
+    );
   } catch (error: any) {
     const message = error?.response?.data?.error?.message || error?.message || "Could not load models";
     return NextResponse.json({ error: message }, { status: error?.response?.status || 500 });

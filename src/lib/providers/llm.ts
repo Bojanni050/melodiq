@@ -33,6 +33,16 @@ interface CallLLMOptions {
   json?: boolean;
   /** Hard cap on the completion so a runaway answer can't burn tokens. */
   maxTokens?: number;
+  /**
+   * A prefix of the user message that is byte-identical across calls (topic,
+   * mood, style, the sections generated so far). It is sent as its own content
+   * block in front of `prompt`, so providers with implicit prompt caching
+   * (Gemini 2.5+, OpenAI) can reuse it, and OpenRouter gets an explicit
+   * `cache_control` breakpoint that it translates for Anthropic and Alibaba.
+   * Only useful when the same prefix is sent at least twice within the cache
+   * TTL — otherwise the cache write costs more than it saves on some providers.
+   */
+  cacheablePrefix?: string;
   /** Receives the provider's usage block (tokens/cost/cache) when the response carries one. */
   onUsage?: (usage: LlmUsage) => void;
 }
@@ -376,6 +386,30 @@ async function postChatCompletion(
   throw toProviderError(resolved, lastError);
 }
 
+type UserContentBlock = { type: "text"; text: string; cache_control?: { type: "ephemeral" } };
+
+/**
+ * Splits the user message into a cacheable prefix block plus the
+ * request-specific remainder. Providers with implicit caching (Gemini 2.5+,
+ * OpenAI) only need the stable ordering; OpenRouter additionally gets an
+ * explicit breakpoint, which it translates to Anthropic/Alibaba `cache_control`
+ * and ignores where the concept doesn't exist. Native OpenAI/DeepInfra requests
+ * get no marker: they'd carry a field those APIs don't define.
+ */
+function buildUserContent(
+  resolved: ResolvedChatProvider,
+  prompt: string,
+  cacheablePrefix?: string
+): string | UserContentBlock[] {
+  if (!cacheablePrefix) return prompt;
+
+  const prefixBlock: UserContentBlock = { type: "text", text: cacheablePrefix };
+  if (resolved.provider === "openrouter") {
+    prefixBlock.cache_control = { type: "ephemeral" };
+  }
+  return [prefixBlock, { type: "text", text: prompt }];
+}
+
 export async function callLLM(
   prompt: string,
   systemPrompt: string,
@@ -396,7 +430,7 @@ export async function callLLM(
     model: resolved.model,
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: prompt },
+      { role: "user", content: buildUserContent(resolved, prompt, normalizedOptions.cacheablePrefix) },
     ],
   };
   // Left out entirely when undefined (JSON.stringify dropped them before too).
@@ -785,6 +819,90 @@ Rules:
     return null;
   } finally {
     if (usage) logToFile(LOG_FILE, `[llm] extractAtmosphereTags usage: ${formatLlmUsage(usage)}`);
+  }
+}
+
+export interface TrackTextAnalysis {
+  tags: string[] | null;
+  lyricsScore: LyricsQualityScore | null;
+}
+
+/**
+ * The two text signals of auto Track DNA — atmosphere tags and the lyrics score
+ * — in ONE call instead of two. Both are derived from the same two stored
+ * strings, and the split version paid for two system prompts, two settings
+ * lookups and two round trips per finalized track.
+ *
+ * Only the fields whose input actually exists are requested (a track without
+ * lyrics doesn't get asked for a score), and with neither input no request is
+ * made at all.
+ */
+export async function scoreLyricsAndAtmosphere(params: {
+  prompt?: string | null;
+  lyrics?: string | null;
+}): Promise<TrackTextAnalysis> {
+  const promptText = params.prompt?.trim() ?? "";
+  const lyricsText = params.lyrics?.trim() ?? "";
+  const empty: TrackTextAnalysis = { tags: null, lyricsScore: null };
+  if (!promptText && !lyricsText) return empty;
+
+  const wantsTags = !!promptText;
+  const wantsScore = !!lyricsText;
+
+  const systemPrompt = `You are a music analyst describing and rating the text side of one track.
+
+Rules:
+- Return ONLY strict JSON, no markdown, no code fences, no explanation outside the JSON.
+- Format exactly: {"tags": ${wantsTags ? '["Tag1", "Tag2"]' : "null"}, "score": ${wantsScore ? "<number 1-10, one decimal>" : "null"}, "notes": ${wantsScore ? '"<one short sentence, max 20 words>"' : "null"}}
+${wantsTags ? `- tags: 2-4 short mood/genre labels for the style/prompt description (e.g. "Melancholic", "Lo-fi", "Synthwave"). 1-2 words each, capitalized, no punctuation, minimum 1 maximum 4.` : "- No style/prompt was given: return tags null."}
+${wantsScore ? "- score: 1-10 for overall lyrics quality (rhyme, structure, coherence, imagery, emotional impact). notes: one short sentence on why." : "- No lyrics were given: return score null and notes null."}`;
+
+  const userPrompt = [
+    wantsTags ? `Style/prompt:\n${promptText.slice(0, 2000)}` : "",
+    wantsScore ? `Lyrics:\n${lyricsText.slice(0, 6000)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  let usage: LlmUsage | null = null;
+  try {
+    const raw = await callLLM(userPrompt, systemPrompt, {
+      purpose: "trackdna",
+      json: true,
+      maxTokens: 400,
+      onUsage: (reported) => {
+        usage = reported;
+      },
+    });
+    const parsed = parseJsonObject(raw);
+    if (!parsed) {
+      logToFile(
+        LOG_FILE,
+        `[llm] scoreLyricsAndAtmosphere: unparseable response${usage ? ` (${formatLlmUsage(usage)})` : ""}: ${JSON.stringify(raw.slice(0, 200))}`
+      );
+      return empty;
+    }
+
+    const tags = wantsTags && Array.isArray(parsed.tags)
+      ? (parsed.tags as unknown[])
+          .filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+          .map((tag) => tag.trim().slice(0, 30))
+          .slice(0, 4)
+      : [];
+
+    const score = wantsScore ? Number(parsed.score) : Number.NaN;
+    const hasScore = Number.isFinite(score) && score >= 1 && score <= 10;
+    const notes = typeof parsed.notes === "string" ? parsed.notes.slice(0, 300) : "";
+
+    return {
+      tags: tags.length > 0 ? tags : null,
+      lyricsScore: hasScore ? { score: Math.round(score * 10) / 10, notes } : null,
+    };
+  } catch (error) {
+    console.warn("[llm] Failed to score lyrics + atmosphere:", error);
+    return empty;
+  } finally {
+    if (usage) logToFile(LOG_FILE, `[llm] scoreLyricsAndAtmosphere usage: ${formatLlmUsage(usage)}`);
   }
 }
 
