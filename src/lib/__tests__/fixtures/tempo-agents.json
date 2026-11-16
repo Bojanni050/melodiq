@@ -5,227 +5,226 @@
     "promptBpm": 88,
     "pulse": 88,
     "relation": "aligned",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 175.9,
-        "score": 1798,
-        "perBeat": 2.52
+        "beatInterval": 0.34110563652845466,
+        "score": 1798.030891418036,
+        "events": 714
       },
       {
-        "bpm": 115.7,
-        "score": 752.8,
-        "perBeat": 2.66
+        "beatInterval": 0.5184939678702598,
+        "score": 752.828207985877,
+        "events": 283
       },
       {
-        "bpm": 115.6,
-        "score": 759.8,
-        "perBeat": 2.64
+        "beatInterval": 0.5188553009679445,
+        "score": 759.7515823706754,
+        "events": 288
       },
       {
-        "bpm": 115.3,
-        "score": 752.8,
-        "perBeat": 2.65
+        "beatInterval": 0.52042642266947,
+        "score": 752.7871300215832,
+        "events": 284
       },
       {
-        "bpm": 114.9,
-        "score": 754.2,
-        "perBeat": 2.65
+        "beatInterval": 0.5223496665889654,
+        "score": 754.151871036092,
+        "events": 285
       },
       {
-        "bpm": 114.6,
-        "score": 759.6,
-        "perBeat": 2.65
+        "beatInterval": 0.5236689706868964,
+        "score": 759.6494851623735,
+        "events": 287
       },
       {
-        "bpm": 114.3,
-        "score": 761.6,
-        "perBeat": 2.64
+        "beatInterval": 0.5249013233850437,
+        "score": 761.5584731980398,
+        "events": 289
       },
       {
-        "bpm": 102.4,
-        "score": 615.1,
-        "perBeat": 2.45
+        "beatInterval": 0.5860591314536615,
+        "score": 615.0801017659156,
+        "events": 251
       },
       {
-        "bpm": 102.2,
-        "score": 619.3,
-        "perBeat": 2.44
+        "beatInterval": 0.5870603422541727,
+        "score": 619.3127821294987,
+        "events": 254
       },
       {
-        "bpm": 101.9,
-        "score": 621.1,
-        "perBeat": 2.44
+        "beatInterval": 0.5889191354090894,
+        "score": 621.1091823721072,
+        "events": 255
       },
       {
-        "bpm": 101.4,
-        "score": 614.9,
-        "perBeat": 2.45
+        "beatInterval": 0.5915212026577782,
+        "score": 614.8505565303077,
+        "events": 251
       },
       {
-        "bpm": 98,
-        "score": 906.3,
-        "perBeat": 2.81
+        "beatInterval": 0.6125494709426097,
+        "score": 906.3075634345299,
+        "events": 323
       },
       {
-        "bpm": 97.9,
-        "score": 930.9,
-        "perBeat": 2.81
+        "beatInterval": 0.6126143615568826,
+        "score": 930.8886467406425,
+        "events": 331
       },
       {
-        "bpm": 97.9,
-        "score": 920.2,
-        "perBeat": 2.81
+        "beatInterval": 0.61294947094261,
+        "score": 920.174879511507,
+        "events": 327
       },
       {
-        "bpm": 97.7,
-        "score": 931.3,
-        "perBeat": 2.81
+        "beatInterval": 0.6140755118941411,
+        "score": 931.2958092121786,
+        "events": 332
       },
       {
-        "bpm": 97.7,
-        "score": 923,
-        "perBeat": 2.81
+        "beatInterval": 0.6140755118941411,
+        "score": 923.013585681963,
+        "events": 328
       },
       {
-        "bpm": 97.7,
-        "score": 927.9,
-        "perBeat": 2.82
+        "beatInterval": 0.6140755118941411,
+        "score": 927.9148432907194,
+        "events": 329
       },
       {
-        "bpm": 97.7,
-        "score": 919.6,
-        "perBeat": 2.82
+        "beatInterval": 0.6140755118941411,
+        "score": 919.5646564110602,
+        "events": 326
       },
       {
-        "bpm": 97.7,
-        "score": 930.1,
-        "perBeat": 2.81
+        "beatInterval": 0.6140755118941411,
+        "score": 930.1499961818289,
+        "events": 331
       },
       {
-        "bpm": 97.7,
-        "score": 928.5,
-        "perBeat": 2.81
+        "beatInterval": 0.6140755118941411,
+        "score": 928.4994989277809,
+        "events": 330
       },
       {
-        "bpm": 88,
-        "score": 1287,
-        "perBeat": 3.85
+        "beatInterval": 0.68181503720012,
+        "score": 1286.9703491226278,
+        "events": 334
       },
       {
-        "bpm": 87.9,
-        "score": 1004.7,
-        "perBeat": 3.71
+        "beatInterval": 0.6823839018124569,
+        "score": 1004.6598736715616,
+        "events": 271
       },
       {
-        "bpm": 87.9,
-        "score": 1126.5,
-        "perBeat": 3.62
+        "beatInterval": 0.6827905075860652,
+        "score": 1126.4570769334332,
+        "events": 311
       },
       {
-        "bpm": 61,
-        "score": 637.6,
-        "perBeat": 2.85
+        "beatInterval": 0.9829045597826583,
+        "score": 637.5953776620598,
+        "events": 224
       },
       {
-        "bpm": 61,
-        "score": 636,
-        "perBeat": 2.85
+        "beatInterval": 0.9829202412179546,
+        "score": 635.9733425319923,
+        "events": 223
       },
       {
-        "bpm": 61,
-        "score": 638.8,
-        "perBeat": 2.85
+        "beatInterval": 0.9829202412179546,
+        "score": 638.8056006884899,
+        "events": 224
       },
       {
-        "bpm": 61,
-        "score": 641.8,
-        "perBeat": 2.85
+        "beatInterval": 0.9836943781460757,
+        "score": 641.7890680868813,
+        "events": 225
       },
       {
-        "bpm": 61,
-        "score": 631.2,
-        "perBeat": 2.86
+        "beatInterval": 0.983823989777862,
+        "score": 631.2075320522288,
+        "events": 221
       },
       {
-        "bpm": 61,
-        "score": 642.8,
-        "perBeat": 2.84
+        "beatInterval": 0.9840464685870051,
+        "score": 642.7991299351478,
+        "events": 226
       },
       {
-        "bpm": 61,
-        "score": 641,
-        "perBeat": 2.85
+        "beatInterval": 0.9840464685870051,
+        "score": 641.0043063673984,
+        "events": 225
       },
       {
-        "bpm": 60.9,
-        "score": 643.9,
-        "perBeat": 2.84
+        "beatInterval": 0.9844204905831544,
+        "score": 643.9450311087318,
+        "events": 227
       },
       {
-        "bpm": 60.9,
-        "score": 634.9,
-        "perBeat": 2.86
+        "beatInterval": 0.984612491038729,
+        "score": 634.8570219619947,
+        "events": 222
       },
       {
-        "bpm": 60.9,
-        "score": 643,
-        "perBeat": 2.83
+        "beatInterval": 0.9847805996657236,
+        "score": 642.9988649771653,
+        "events": 227
       },
       {
-        "bpm": 60.9,
-        "score": 641,
-        "perBeat": 2.86
+        "beatInterval": 0.9849942634143627,
+        "score": 640.9751718418091,
+        "events": 224
       },
       {
-        "bpm": 59.7,
-        "score": 603.5,
-        "perBeat": 2.85
+        "beatInterval": 1.0057335360688866,
+        "score": 603.506397483002,
+        "events": 212
       },
       {
-        "bpm": 59.4,
-        "score": 611,
-        "perBeat": 2.83
+        "beatInterval": 1.0094840887141525,
+        "score": 611.013950211931,
+        "events": 216
       },
       {
-        "bpm": 59.3,
-        "score": 623.8,
-        "perBeat": 2.86
+        "beatInterval": 1.01171415600161,
+        "score": 623.7508291288534,
+        "events": 218
       },
       {
-        "bpm": 59.1,
-        "score": 626.1,
-        "perBeat": 2.85
+        "beatInterval": 1.0143942754239463,
+        "score": 626.0795500870034,
+        "events": 220
       },
       {
-        "bpm": 58.4,
-        "score": 653.8,
-        "perBeat": 3
+        "beatInterval": 1.02692279900106,
+        "score": 653.7904281345868,
+        "events": 218
       },
       {
-        "bpm": 58.3,
-        "score": 664.8,
-        "perBeat": 2.99
+        "beatInterval": 1.0288518173159096,
+        "score": 664.7721377991561,
+        "events": 222
       },
       {
-        "bpm": 58.1,
-        "score": 629.7,
-        "perBeat": 2.97
+        "beatInterval": 1.0328279266500426,
+        "score": 629.744038868798,
+        "events": 212
       },
       {
-        "bpm": 58,
-        "score": 665.1,
-        "perBeat": 2.98
+        "beatInterval": 1.0340986010324267,
+        "score": 665.0685995264296,
+        "events": 223
       },
       {
-        "bpm": 58,
-        "score": 661.9,
-        "perBeat": 2.98
+        "beatInterval": 1.0350512952611277,
+        "score": 661.8888335256656,
+        "events": 222
       },
       {
-        "bpm": 57.9,
-        "score": 664.2,
-        "perBeat": 2.97
+        "beatInterval": 1.036807263968787,
+        "score": 664.2032399607367,
+        "events": 224
       }
     ]
   },
@@ -235,107 +234,106 @@
     "promptBpm": 72,
     "pulse": 72,
     "relation": "aligned",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 145,
-        "score": 1386.7,
-        "perBeat": 2.48
+        "beatInterval": 0.41377693146536465,
+        "score": 1386.7159826839263,
+        "events": 559
       },
       {
-        "bpm": 144.4,
-        "score": 1245.8,
-        "perBeat": 3.31
+        "beatInterval": 0.4156490319372075,
+        "score": 1245.7582350191753,
+        "events": 376
       },
       {
-        "bpm": 143.8,
-        "score": 1233.9,
-        "perBeat": 3.33
+        "beatInterval": 0.4172976650966276,
+        "score": 1233.8713952966289,
+        "events": 371
       },
       {
-        "bpm": 97.4,
-        "score": 664.8,
-        "perBeat": 3.17
+        "beatInterval": 0.6160729711469163,
+        "score": 664.8488310883249,
+        "events": 210
       },
       {
-        "bpm": 97.3,
-        "score": 667.9,
-        "perBeat": 3.2
+        "beatInterval": 0.6163735589509576,
+        "score": 667.9480896200663,
+        "events": 209
       },
       {
-        "bpm": 97.3,
-        "score": 670.4,
-        "perBeat": 3.13
+        "beatInterval": 0.6164091755412688,
+        "score": 670.3579881638631,
+        "events": 214
       },
       {
-        "bpm": 93.3,
-        "score": 639.7,
-        "perBeat": 2.83
+        "beatInterval": 0.643047136190922,
+        "score": 639.7025707902545,
+        "events": 226
       },
       {
-        "bpm": 93.1,
-        "score": 637,
-        "perBeat": 2.83
+        "beatInterval": 0.6444241001988771,
+        "score": 637.0258581545875,
+        "events": 225
       },
       {
-        "bpm": 92.8,
-        "score": 624.2,
-        "perBeat": 2.81
+        "beatInterval": 0.6464908069976016,
+        "score": 624.2168908979978,
+        "events": 222
       },
       {
-        "bpm": 92.6,
-        "score": 638.9,
-        "perBeat": 2.83
+        "beatInterval": 0.6479356181948994,
+        "score": 638.8972974142051,
+        "events": 226
       },
       {
-        "bpm": 92.5,
-        "score": 632.8,
-        "perBeat": 2.81
+        "beatInterval": 0.6484898884260866,
+        "score": 632.8325697626772,
+        "events": 225
       },
       {
-        "bpm": 92.4,
-        "score": 630.7,
-        "perBeat": 2.82
+        "beatInterval": 0.6496769671105073,
+        "score": 630.7112920425986,
+        "events": 224
       },
       {
-        "bpm": 92.1,
-        "score": 643,
-        "perBeat": 2.82
+        "beatInterval": 0.6511378575480987,
+        "score": 642.9635494326898,
+        "events": 228
       },
       {
-        "bpm": 91.9,
-        "score": 643.6,
-        "perBeat": 2.81
+        "beatInterval": 0.652646828944251,
+        "score": 643.5615229997414,
+        "events": 229
       },
       {
-        "bpm": 72.2,
-        "score": 987,
-        "perBeat": 4.25
+        "beatInterval": 0.8306130545744702,
+        "score": 986.9839649250897,
+        "events": 232
       },
       {
-        "bpm": 71.9,
-        "score": 920.6,
-        "perBeat": 4.15
+        "beatInterval": 0.8343630632998482,
+        "score": 920.5953369623539,
+        "events": 222
       },
       {
-        "bpm": 71.8,
-        "score": 919.2,
-        "perBeat": 4.16
+        "beatInterval": 0.835177242717226,
+        "score": 919.2135781678529,
+        "events": 221
       },
       {
-        "bpm": 71.6,
-        "score": 955.1,
-        "perBeat": 4.13
+        "beatInterval": 0.8377128522534705,
+        "score": 955.0679096430423,
+        "events": 231
       },
       {
-        "bpm": 71.4,
-        "score": 939,
-        "perBeat": 4.06
+        "beatInterval": 0.8400290579553846,
+        "score": 939.0108806831948,
+        "events": 231
       },
       {
-        "bpm": 71.4,
-        "score": 936.6,
-        "perBeat": 4.07
+        "beatInterval": 0.8408636020368593,
+        "score": 936.551277788633,
+        "events": 230
       }
     ]
   },
@@ -345,137 +343,136 @@
     "promptBpm": 90,
     "pulse": 90,
     "relation": "aligned",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 180.9,
-        "score": 2627,
-        "perBeat": 2.61
+        "beatInterval": 0.3316747144935163,
+        "score": 2627.020894242632,
+        "events": 1007
       },
       {
-        "bpm": 179.3,
-        "score": 2626.3,
-        "perBeat": 3.03
+        "beatInterval": 0.33460691196082126,
+        "score": 2626.3418838568246,
+        "events": 866
       },
       {
-        "bpm": 90.2,
-        "score": 1661.8,
-        "perBeat": 3.58
+        "beatInterval": 0.6649309028912591,
+        "score": 1661.8054680004298,
+        "events": 464
       },
       {
-        "bpm": 90.1,
-        "score": 1585.3,
-        "perBeat": 3.5
+        "beatInterval": 0.6657492811970569,
+        "score": 1585.2838666238613,
+        "events": 453
       },
       {
-        "bpm": 90.1,
-        "score": 1661,
-        "perBeat": 3.59
+        "beatInterval": 0.665794459664412,
+        "score": 1660.9719566714311,
+        "events": 463
       },
       {
-        "bpm": 89.7,
-        "score": 1662.9,
-        "perBeat": 3.6
+        "beatInterval": 0.6690649551826806,
+        "score": 1662.9226379114154,
+        "events": 462
       },
       {
-        "bpm": 89.4,
-        "score": 1612,
-        "perBeat": 3.51
+        "beatInterval": 0.6710669273280541,
+        "score": 1612.0088032945569,
+        "events": 459
       },
       {
-        "bpm": 89.2,
-        "score": 1610.4,
-        "perBeat": 3.52
+        "beatInterval": 0.6724640514435369,
+        "score": 1610.424694011768,
+        "events": 458
       },
       {
-        "bpm": 89.2,
-        "score": 1663.5,
-        "perBeat": 3.59
+        "beatInterval": 0.6726706650424902,
+        "score": 1663.4858896151197,
+        "events": 463
       },
       {
-        "bpm": 63,
-        "score": 911.3,
-        "perBeat": 2.7
+        "beatInterval": 0.9530113169891375,
+        "score": 911.2674902795782,
+        "events": 337
       },
       {
-        "bpm": 62.8,
-        "score": 915.1,
-        "perBeat": 2.7
+        "beatInterval": 0.9550750033974064,
+        "score": 915.0865924120535,
+        "events": 339
       },
       {
-        "bpm": 62.8,
-        "score": 913.9,
-        "perBeat": 2.7
+        "beatInterval": 0.9559510906493541,
+        "score": 913.888267076374,
+        "events": 338
       },
       {
-        "bpm": 62.7,
-        "score": 911.3,
-        "perBeat": 2.7
+        "beatInterval": 0.956741623397815,
+        "score": 911.2973276523863,
+        "events": 337
       },
       {
-        "bpm": 62.6,
-        "score": 912.1,
-        "perBeat": 2.7
+        "beatInterval": 0.9585932987182514,
+        "score": 912.1378681668915,
+        "events": 338
       },
       {
-        "bpm": 62.4,
-        "score": 916,
-        "perBeat": 2.69
+        "beatInterval": 0.9612090673633974,
+        "score": 915.9601673387991,
+        "events": 340
       },
       {
-        "bpm": 62.3,
-        "score": 915.6,
-        "perBeat": 2.71
+        "beatInterval": 0.9623316161494705,
+        "score": 915.5518385697559,
+        "events": 338
       },
       {
-        "bpm": 62.2,
-        "score": 916,
-        "perBeat": 2.7
+        "beatInterval": 0.9649450868575132,
+        "score": 916.0266043505605,
+        "events": 339
       },
       {
-        "bpm": 60.1,
-        "score": 932.7,
-        "perBeat": 3.09
+        "beatInterval": 0.9982173450298184,
+        "score": 932.690909176905,
+        "events": 302
       },
       {
-        "bpm": 60,
-        "score": 965.8,
-        "perBeat": 3.16
+        "beatInterval": 0.9999912239788457,
+        "score": 965.77296436968,
+        "events": 306
       },
       {
-        "bpm": 59.9,
-        "score": 967.7,
-        "perBeat": 3.15
+        "beatInterval": 1.002391575019692,
+        "score": 967.7402578447956,
+        "events": 307
       },
       {
-        "bpm": 59.8,
-        "score": 971.9,
-        "perBeat": 3.15
+        "beatInterval": 1.0026640799083761,
+        "score": 971.8912519885852,
+        "events": 309
       },
       {
-        "bpm": 59.6,
-        "score": 970.7,
-        "perBeat": 3.16
+        "beatInterval": 1.0062556343260611,
+        "score": 970.6571589852097,
+        "events": 307
       },
       {
-        "bpm": 59.4,
-        "score": 973.1,
-        "perBeat": 3.14
+        "beatInterval": 1.0094576213070503,
+        "score": 973.0864591932304,
+        "events": 310
       },
       {
-        "bpm": 59.4,
-        "score": 965.1,
-        "perBeat": 3.15
+        "beatInterval": 1.009531571908611,
+        "score": 965.0546882614686,
+        "events": 306
       },
       {
-        "bpm": 59.1,
-        "score": 972.7,
-        "perBeat": 3.14
+        "beatInterval": 1.014606848920697,
+        "score": 972.6574034042835,
+        "events": 310
       },
       {
-        "bpm": 59.1,
-        "score": 969.7,
-        "perBeat": 3.15
+        "beatInterval": 1.0160873028516215,
+        "score": 969.6890179787113,
+        "events": 308
       }
     ]
   },
@@ -484,78 +481,78 @@
     "title": "(untitled)",
     "promptBpm": 58,
     "pulse": 58,
-    "relation": "waltz",
-    "knownLimitation": true,
+    "relation": "double",
+    "knownLimitation": "no agent below 112 BPM: the library never proposes the slow grid",
     "agents": [
       {
-        "bpm": 113.9,
-        "score": 1614.6,
-        "perBeat": 3.05
+        "beatInterval": 0.5265978173817151,
+        "score": 1614.5741407711064,
+        "events": 529
       },
       {
-        "bpm": 113.8,
-        "score": 1615.2,
-        "perBeat": 3.05
+        "beatInterval": 0.5274019483388112,
+        "score": 1615.211004993414,
+        "events": 530
       },
       {
-        "bpm": 113.5,
-        "score": 1612,
-        "perBeat": 3.05
+        "beatInterval": 0.5285475693569095,
+        "score": 1611.9641670996746,
+        "events": 529
       },
       {
-        "bpm": 113.3,
-        "score": 1613.7,
-        "perBeat": 3.04
+        "beatInterval": 0.529576617969771,
+        "score": 1613.7442255005865,
+        "events": 530
       },
       {
-        "bpm": 113,
-        "score": 1614.8,
-        "perBeat": 3.04
+        "beatInterval": 0.5309850856103759,
+        "score": 1614.7565415013419,
+        "events": 531
       },
       {
-        "bpm": 112.6,
-        "score": 1616.2,
-        "perBeat": 2.41
+        "beatInterval": 0.5327754608642777,
+        "score": 1616.2394229082981,
+        "events": 672
       },
       {
-        "bpm": 76.9,
-        "score": 999.7,
-        "perBeat": 3.7
+        "beatInterval": 0.7800302031257212,
+        "score": 999.6684514685923,
+        "events": 270
       },
       {
-        "bpm": 76.7,
-        "score": 999.1,
-        "perBeat": 3.71
+        "beatInterval": 0.7821597905592778,
+        "score": 999.100354866698,
+        "events": 269
       },
       {
-        "bpm": 76.6,
-        "score": 1009.8,
-        "perBeat": 3.71
+        "beatInterval": 0.7835394585566792,
+        "score": 1009.8026500769546,
+        "events": 272
       },
       {
-        "bpm": 76.5,
-        "score": 1011.1,
-        "perBeat": 3.69
+        "beatInterval": 0.7845672959978337,
+        "score": 1011.0839180824603,
+        "events": 274
       },
       {
-        "bpm": 76.3,
-        "score": 1001.9,
-        "perBeat": 3.74
+        "beatInterval": 0.7860295906576157,
+        "score": 1001.9459298589537,
+        "events": 268
       },
       {
-        "bpm": 76.2,
-        "score": 1010.5,
-        "perBeat": 3.71
+        "beatInterval": 0.7874004189460996,
+        "score": 1010.4512879264187,
+        "events": 272
       },
       {
-        "bpm": 75.8,
-        "score": 1010.6,
-        "perBeat": 3.72
+        "beatInterval": 0.7911578746683566,
+        "score": 1010.6450381201856,
+        "events": 272
       },
       {
-        "bpm": 75.8,
-        "score": 995.9,
-        "perBeat": 3.69
+        "beatInterval": 0.7919881131383656,
+        "score": 995.9294400278122,
+        "events": 270
       }
     ]
   },
@@ -564,188 +561,188 @@
     "title": "Пиво Стынет Дом Разбух",
     "promptBpm": 60,
     "pulse": 60,
-    "relation": "waltz",
-    "knownLimitation": false,
+    "relation": "double",
+    "knownLimitation": "slow grid is only 0.13% stronger than the threshold requires",
     "agents": [
       {
-        "bpm": 117.9,
-        "score": 1290.8,
-        "perBeat": 2.93
+        "beatInterval": 0.5089443419758423,
+        "score": 1290.8313536280339,
+        "events": 441
       },
       {
-        "bpm": 117.9,
-        "score": 1669.8,
-        "perBeat": 3.44
+        "beatInterval": 0.5089634397399656,
+        "score": 1669.7588693503494,
+        "events": 486
       },
       {
-        "bpm": 117.7,
-        "score": 1671.6,
-        "perBeat": 3.23
+        "beatInterval": 0.509804902150367,
+        "score": 1671.623602759123,
+        "events": 517
       },
       {
-        "bpm": 78.7,
-        "score": 855.5,
-        "perBeat": 3.03
+        "beatInterval": 0.7620297804777864,
+        "score": 855.5130787575433,
+        "events": 282
       },
       {
-        "bpm": 78.6,
-        "score": 861.4,
-        "perBeat": 3.07
+        "beatInterval": 0.7633441477617177,
+        "score": 861.3742950992463,
+        "events": 281
       },
       {
-        "bpm": 78.5,
-        "score": 863.3,
-        "perBeat": 3.06
+        "beatInterval": 0.7644103818512498,
+        "score": 863.2859178060636,
+        "events": 282
       },
       {
-        "bpm": 78.4,
-        "score": 856.4,
-        "perBeat": 3.03
+        "beatInterval": 0.7655613322924737,
+        "score": 856.4422153211228,
+        "events": 283
       },
       {
-        "bpm": 59.8,
-        "score": 930.4,
-        "perBeat": 3.86
+        "beatInterval": 1.0034482067422577,
+        "score": 930.3927644467237,
+        "events": 241
       },
       {
-        "bpm": 59.7,
-        "score": 932.3,
-        "perBeat": 3.85
+        "beatInterval": 1.0045792426074125,
+        "score": 932.3290110859789,
+        "events": 242
       },
       {
-        "bpm": 59.7,
-        "score": 929.6,
-        "perBeat": 3.87
+        "beatInterval": 1.005736598570747,
+        "score": 929.6043205010618,
+        "events": 240
       },
       {
-        "bpm": 59.6,
-        "score": 932.1,
-        "perBeat": 3.85
+        "beatInterval": 1.0072388492428008,
+        "score": 932.1266755332177,
+        "events": 242
       },
       {
-        "bpm": 59.4,
-        "score": 884.7,
-        "perBeat": 3.64
+        "beatInterval": 1.009778216156906,
+        "score": 884.7097822263305,
+        "events": 243
       },
       {
-        "bpm": 59.4,
-        "score": 886.1,
-        "perBeat": 3.63
+        "beatInterval": 1.0105870875106298,
+        "score": 886.1361563221861,
+        "events": 244
       },
       {
-        "bpm": 59.3,
-        "score": 969.1,
-        "perBeat": 3.88
+        "beatInterval": 1.0120576706932476,
+        "score": 969.1140881649242,
+        "events": 250
       }
     ]
   },
   {
     "id": "85f97d3c-4be6-42ac-b8e4-a85bd8c05870",
-    "title": "I'll Meet You Somewhere In The In-between",
+    "title": "I’ll Meet You Somewhere In The In-between",
     "promptBpm": 58,
     "pulse": 58,
-    "relation": "waltz",
-    "knownLimitation": true,
+    "relation": "double",
+    "knownLimitation": "slowest agent sits 7% off the half, outside the 6% octave tolerance",
     "agents": [
       {
-        "bpm": 132.5,
-        "score": 962.3,
-        "perBeat": 2.32
+        "beatInterval": 0.4527643276272895,
+        "score": 962.3103522870756,
+        "events": 415
       },
       {
-        "bpm": 132.5,
-        "score": 956.4,
-        "perBeat": 2.32
+        "beatInterval": 0.452898453680016,
+        "score": 956.408119805948,
+        "events": 412
       },
       {
-        "bpm": 132.4,
-        "score": 965.5,
-        "perBeat": 2.33
+        "beatInterval": 0.45330083183819664,
+        "score": 965.5319484063926,
+        "events": 414
       },
       {
-        "bpm": 132.3,
-        "score": 957.3,
-        "perBeat": 2.31
+        "beatInterval": 0.45342891757601106,
+        "score": 957.3429051827159,
+        "events": 414
       },
       {
-        "bpm": 114.3,
-        "score": 1395.1,
-        "perBeat": 2.81
+        "beatInterval": 0.5247558884684279,
+        "score": 1395.108186462954,
+        "events": 497
       },
       {
-        "bpm": 114,
-        "score": 1395.7,
-        "perBeat": 2.1
+        "beatInterval": 0.526309149593323,
+        "score": 1395.7453595063018,
+        "events": 666
       },
       {
-        "bpm": 76.9,
-        "score": 948.6,
-        "perBeat": 3.4
+        "beatInterval": 0.780310360205559,
+        "score": 948.5880527518211,
+        "events": 279
       },
       {
-        "bpm": 76.7,
-        "score": 955.1,
-        "perBeat": 3.37
+        "beatInterval": 0.7818300048400153,
+        "score": 955.079341736345,
+        "events": 283
       },
       {
-        "bpm": 76.7,
-        "score": 954.7,
-        "perBeat": 3.39
+        "beatInterval": 0.7826547676666842,
+        "score": 954.679494649494,
+        "events": 282
       },
       {
-        "bpm": 76.4,
-        "score": 953.9,
-        "perBeat": 3.39
+        "beatInterval": 0.7849518804964724,
+        "score": 953.9277053021865,
+        "events": 281
       },
       {
-        "bpm": 76.3,
-        "score": 954.7,
-        "perBeat": 3.39
+        "beatInterval": 0.7863538052766144,
+        "score": 954.739395632627,
+        "events": 282
       },
       {
-        "bpm": 76,
-        "score": 941.1,
-        "perBeat": 3.36
+        "beatInterval": 0.7891474994127274,
+        "score": 941.0814578277558,
+        "events": 280
       },
       {
-        "bpm": 76,
-        "score": 941.5,
-        "perBeat": 3.35
+        "beatInterval": 0.7899815994362185,
+        "score": 941.524030282456,
+        "events": 281
       },
       {
-        "bpm": 75.8,
-        "score": 945.5,
-        "perBeat": 3.35
+        "beatInterval": 0.791782703470045,
+        "score": 945.4593381251784,
+        "events": 282
       },
       {
-        "bpm": 61,
-        "score": 751.5,
-        "perBeat": 2.66
+        "beatInterval": 0.9834273835163001,
+        "score": 751.4660027789855,
+        "events": 283
       },
       {
-        "bpm": 60.9,
-        "score": 747.5,
-        "perBeat": 2.66
+        "beatInterval": 0.9847539161068289,
+        "score": 747.4782443138251,
+        "events": 281
       },
       {
-        "bpm": 60.9,
-        "score": 740.6,
-        "perBeat": 2.66
+        "beatInterval": 0.9858647469801148,
+        "score": 740.621222909566,
+        "events": 278
       },
       {
-        "bpm": 60.8,
-        "score": 750.3,
-        "perBeat": 2.63
+        "beatInterval": 0.9861710178964763,
+        "score": 750.345620331466,
+        "events": 285
       },
       {
-        "bpm": 60.8,
-        "score": 749,
-        "perBeat": 2.65
+        "beatInterval": 0.9861710178964763,
+        "score": 748.989760442802,
+        "events": 283
       },
       {
-        "bpm": 60.8,
-        "score": 749.4,
-        "perBeat": 2.64
+        "beatInterval": 0.9861710178964763,
+        "score": 749.3834388905371,
+        "events": 284
       }
     ]
   },
@@ -755,82 +752,81 @@
     "promptBpm": 120,
     "pulse": 60,
     "relation": "half",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 120.3,
-        "score": 1439.6,
-        "perBeat": 3.1
+        "beatInterval": 0.49861366260033785,
+        "score": 1439.6031806808091,
+        "events": 465
       },
       {
-        "bpm": 120,
-        "score": 1332.1,
-        "perBeat": 3.37
+        "beatInterval": 0.49999036291410504,
+        "score": 1332.0746085855646,
+        "events": 395
       },
       {
-        "bpm": 79.8,
-        "score": 780.6,
-        "perBeat": 3.1
+        "beatInterval": 0.7523477011081084,
+        "score": 780.571162411285,
+        "events": 252
       },
       {
-        "bpm": 79.4,
-        "score": 783.9,
-        "perBeat": 3.09
+        "beatInterval": 0.7554210334903569,
+        "score": 783.9490167359795,
+        "events": 254
       },
       {
-        "bpm": 79,
-        "score": 785.7,
-        "perBeat": 3.09
+        "beatInterval": 0.7596325915908222,
+        "score": 785.6673390872246,
+        "events": 254
       },
       {
-        "bpm": 62,
-        "score": 590.8,
-        "perBeat": 3.25
+        "beatInterval": 0.9679611079714656,
+        "score": 590.8301136141461,
+        "events": 182
       },
       {
-        "bpm": 61.8,
-        "score": 597.3,
-        "perBeat": 3.21
+        "beatInterval": 0.9706749642885243,
+        "score": 597.2565933775792,
+        "events": 186
       },
       {
-        "bpm": 61.5,
-        "score": 622.5,
-        "perBeat": 3.28
+        "beatInterval": 0.974836854486189,
+        "score": 622.466541278261,
+        "events": 190
       },
       {
-        "bpm": 61.3,
-        "score": 604.8,
-        "perBeat": 3.18
+        "beatInterval": 0.9785450365848409,
+        "score": 604.8333841526386,
+        "events": 190
       },
       {
-        "bpm": 61.1,
-        "score": 641.2,
-        "perBeat": 3.32
+        "beatInterval": 0.982027211560438,
+        "score": 641.2053900598597,
+        "events": 193
       },
       {
-        "bpm": 59.7,
-        "score": 792.5,
-        "perBeat": 3.62
+        "beatInterval": 1.0055237380835242,
+        "score": 792.456954055521,
+        "events": 219
       },
       {
-        "bpm": 59.6,
-        "score": 837.7,
-        "perBeat": 3.77
+        "beatInterval": 1.006951749529248,
+        "score": 837.6684359700408,
+        "events": 222
       },
       {
-        "bpm": 59.4,
-        "score": 810.2,
-        "perBeat": 3.72
+        "beatInterval": 1.0108279947017098,
+        "score": 810.1846113796589,
+        "events": 218
       },
       {
-        "bpm": 59.3,
-        "score": 803.8,
-        "perBeat": 3.76
+        "beatInterval": 1.012400577651476,
+        "score": 803.8264729229094,
+        "events": 214
       },
       {
-        "bpm": 59.1,
-        "score": 828.7,
-        "perBeat": 3.73
+        "beatInterval": 1.014585889031932,
+        "score": 828.7155115159622,
+        "events": 222
       }
     ]
   },
@@ -840,182 +836,180 @@
     "promptBpm": 120,
     "pulse": 60,
     "relation": "half",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 124.5,
-        "score": 1331.9,
-        "perBeat": 3.39
+        "beatInterval": 0.4819494017592264,
+        "score": 1331.9171844191474,
+        "events": 393
       },
       {
-        "bpm": 124.3,
-        "score": 1461.6,
-        "perBeat": 2.94
+        "beatInterval": 0.4826682297159001,
+        "score": 1461.5610758155171,
+        "events": 497
       },
       {
-        "bpm": 124.2,
-        "score": 1302.9,
-        "perBeat": 3.39
+        "beatInterval": 0.4831899184944266,
+        "score": 1302.872384691728,
+        "events": 384
       },
       {
-        "bpm": 81.6,
-        "score": 775.7,
-        "perBeat": 3.19
+        "beatInterval": 0.7350294761534168,
+        "score": 775.7269520413181,
+        "events": 243
       },
       {
-        "bpm": 81.3,
-        "score": 799.2,
-        "perBeat": 3.17
+        "beatInterval": 0.7376526106565343,
+        "score": 799.1865116054707,
+        "events": 252
       },
       {
-        "bpm": 81.3,
-        "score": 788.3,
-        "perBeat": 3.17
+        "beatInterval": 0.7379872277379286,
+        "score": 788.3128592958569,
+        "events": 249
       },
       {
-        "bpm": 81.2,
-        "score": 796.4,
-        "perBeat": 3.17
+        "beatInterval": 0.7392049049537602,
+        "score": 796.357318445833,
+        "events": 251
       },
       {
-        "bpm": 81,
-        "score": 779.2,
-        "perBeat": 3.18
+        "beatInterval": 0.7408024781154149,
+        "score": 779.18387698466,
+        "events": 245
       },
       {
-        "bpm": 80.8,
-        "score": 800.2,
-        "perBeat": 3.19
+        "beatInterval": 0.7427357279784002,
+        "score": 800.2104781862928,
+        "events": 251
       },
       {
-        "bpm": 80.7,
-        "score": 794.4,
-        "perBeat": 3.18
+        "beatInterval": 0.7436078856922453,
+        "score": 794.3656893316431,
+        "events": 250
       },
       {
-        "bpm": 80.6,
-        "score": 793.3,
-        "perBeat": 3.19
+        "beatInterval": 0.7444978425431071,
+        "score": 793.346086710078,
+        "events": 249
       },
       {
-        "bpm": 80.3,
-        "score": 803.1,
-        "perBeat": 3.19
+        "beatInterval": 0.7468342988592646,
+        "score": 803.0502524627292,
+        "events": 252
       },
       {
-        "bpm": 61.5,
-        "score": 819.6,
-        "perBeat": 3.68
+        "beatInterval": 0.9756374708207882,
+        "score": 819.5992405383611,
+        "events": 223
       },
       {
-        "bpm": 61.3,
-        "score": 797.6,
-        "perBeat": 3.66
+        "beatInterval": 0.9787808876662278,
+        "score": 797.6496228552095,
+        "events": 218
       },
       {
-        "bpm": 61.3,
-        "score": 824.4,
-        "perBeat": 3.68
+        "beatInterval": 0.979411971987957,
+        "score": 824.4076149788514,
+        "events": 224
       },
       {
-        "bpm": 61.2,
-        "score": 786.3,
-        "perBeat": 3.67
+        "beatInterval": 0.9807748671553079,
+        "score": 786.2752613309814,
+        "events": 214
       },
       {
-        "bpm": 61.2,
-        "score": 815.9,
-        "perBeat": 3.66
+        "beatInterval": 0.9811128455846433,
+        "score": 815.9324164867979,
+        "events": 223
       },
       {
-        "bpm": 61.1,
-        "score": 805.6,
-        "perBeat": 3.65
+        "beatInterval": 0.982424368180956,
+        "score": 805.5945496035938,
+        "events": 221
       },
       {
-        "bpm": 61,
-        "score": 791.7,
-        "perBeat": 3.65
+        "beatInterval": 0.9838697365496185,
+        "score": 791.6532061650987,
+        "events": 217
       },
       {
-        "bpm": 60.8,
-        "score": 808.9,
-        "perBeat": 3.64
+        "beatInterval": 0.9863758808173371,
+        "score": 808.8842903450987,
+        "events": 222
       },
       {
-        "bpm": 60.8,
-        "score": 802.6,
-        "perBeat": 3.63
+        "beatInterval": 0.9869342497809562,
+        "score": 802.5548606331893,
+        "events": 221
       },
       {
-        "bpm": 60.7,
-        "score": 796.2,
-        "perBeat": 3.64
+        "beatInterval": 0.9880364949822532,
+        "score": 796.2234376606625,
+        "events": 219
       },
       {
-        "bpm": 60.6,
-        "score": 786.2,
-        "perBeat": 3.66
+        "beatInterval": 0.9893132403801217,
+        "score": 786.1956502162916,
+        "events": 215
       },
       {
-        "bpm": 60.6,
-        "score": 786.9,
-        "perBeat": 3.64
+        "beatInterval": 0.9903269755725191,
+        "score": 786.9164047776144,
+        "events": 216
       }
     ]
   },
   {
     "id": "51678933-faf3-4951-8f9c-50e5ae2f87f8",
-    "title": "I'm Not Mad",
+    "title": "I’m Not Mad",
     "promptBpm": 120,
     "pulse": 60,
     "relation": "half",
-    "knownLimitation": false,
     "agents": [
       {
-        "bpm": 124,
-        "score": 1485.7,
-        "perBeat": 3.33
+        "beatInterval": 0.48388611695081585,
+        "score": 1485.6761417030957,
+        "events": 446
       },
       {
-        "bpm": 124,
-        "score": 1028.6,
-        "perBeat": 2.94
+        "beatInterval": 0.48398304308074414,
+        "score": 1028.579153198082,
+        "events": 350
       },
       {
-        "bpm": 82.5,
-        "score": 773,
-        "perBeat": 3.1
+        "beatInterval": 0.7269120787059165,
+        "score": 772.9551735235078,
+        "events": 249
       },
       {
-        "bpm": 82.3,
-        "score": 776.3,
-        "perBeat": 3.12
+        "beatInterval": 0.7287179151383006,
+        "score": 776.2506611796076,
+        "events": 249
       },
       {
-        "bpm": 82,
-        "score": 784.9,
-        "perBeat": 3.15
+        "beatInterval": 0.731620252280689,
+        "score": 784.8728282595728,
+        "events": 249
       },
       {
-        "bpm": 61.9,
-        "score": 859.3,
-        "perBeat": 4.05
+        "beatInterval": 0.9688817341898284,
+        "score": 859.2551749069531,
+        "events": 212
       },
       {
-        "bpm": 61.7,
-        "score": 852.2,
-        "perBeat": 4
+        "beatInterval": 0.972852018167896,
+        "score": 852.1629444177788,
+        "events": 213
       },
       {
-        "bpm": 61.5,
-        "score": 782.1,
-        "perBeat": 3.76
+        "beatInterval": 0.9758529239652326,
+        "score": 782.0946533131688,
+        "events": 208
       },
       {
-        "bpm": 61.4,
-        "score": 853.8,
-        "perBeat": 3.99
+        "beatInterval": 0.9769331982562968,
+        "score": 853.8296116129255,
+        "events": 214
       }
     ]
   }

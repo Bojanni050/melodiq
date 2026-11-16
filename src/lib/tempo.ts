@@ -49,12 +49,18 @@ export interface BeatAgent {
   perBeat: number;
 }
 
-interface TempoResult {
+export interface TempoResult {
   tempo?: string | number;
   agents?: { beatInterval: number; score: number; events?: unknown[] }[];
 }
 
-function readAgents(result: TempoResult): BeatAgent[] {
+/**
+ * Turns the library's agents into the shape the choice works on.
+ *
+ * Exported so the fixture test can feed captured agent tables through exactly
+ * this mapping instead of re-deriving `perBeat` and drifting from it.
+ */
+export function toBeatAgents(result: TempoResult): BeatAgent[] {
   return (result.agents ?? [])
     .map((agent) => ({
       bpm: 60 / agent.beatInterval,
@@ -93,7 +99,7 @@ export function detectTempo(samples: Float32Array, sampleRate: number): number |
       timeStep: HOP_SAMPLES / sampleRate,
     }) as unknown as TempoResult;
 
-    const chosen = chooseBeatLevel(readAgents(result));
+    const chosen = chooseBeatLevel(toBeatAgents(result));
     const bpm = chosen ? chosen.bpm : Number(result?.tempo);
     if (!Number.isFinite(bpm) || bpm <= 0) return null;
     return Math.round(bpm);
