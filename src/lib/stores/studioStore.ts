@@ -39,7 +39,11 @@ interface StudioState {
   // PoYo Suno V6 options — PoYo's API only exposes variety for the V6 family,
   // no max-mode or output-format equivalent (unlike APIMart).
   poyoVariety: "off" | "normal" | "high" | "extra" | "max";
-  /** How much of the user's Melody DNA is appended to the style prompt. */
+  /**
+   * How much of the user's Melody DNA is appended to the style prompt.
+   * Off by default: a generation should never inherit DNA without the user
+   * asking for it. The page's switch turns it on for the next generations.
+   */
   dnaInfluence: DnaStrength;
   // Inspiration references for APIMart v6 inspo generation (display only —
   // lyrics/style are never copied from these tracks). inspirationEnabled lets
@@ -116,7 +120,7 @@ export const useStudioStore = create<StudioState>()(
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
       poyoVariety: "off",
-      dnaInfluence: "subtle",
+      dnaInfluence: "off",
       inspiration: [],
       inspirationEnabled: true,
       inspoAudioWeight: 20,
@@ -240,7 +244,7 @@ export const useStudioStore = create<StudioState>()(
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",
           poyoVariety: "off",
-          dnaInfluence: "subtle",
+          dnaInfluence: "off",
           inspiration: [],
       inspirationEnabled: true,
           inspoAudioWeight: 20,
@@ -252,11 +256,19 @@ export const useStudioStore = create<StudioState>()(
       skipHydration: true,
       // v1: auto-create a workspace from the generated title is on by default now;
       // older persisted states (which stored the old default `false`) are migrated.
-      version: 1,
-      migrate: (persistedState: any) =>
-        persistedState && typeof persistedState === "object"
-          ? { ...persistedState, autoCreateWorkspaceFromGeneratedTitle: true }
-          : (persistedState as any),
+      // v2: Melody DNA defaults to off. A persisted "subtle" is the old default,
+      // not a deliberate choice — it cannot be told apart from one — so it is
+      // turned off once here. A stored "strong" was always an explicit choice
+      // and stays.
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (!persistedState || typeof persistedState !== "object") {
+          return persistedState as any;
+        }
+        const next = { ...persistedState, autoCreateWorkspaceFromGeneratedTitle: true };
+        if (version < 2 && next.dnaInfluence === "subtle") next.dnaInfluence = "off";
+        return next;
+      },
       partialize: (state) => {
         const { savedLyrics: _sl, savedLyricsLoaded: _sll, ...rest } = state as any;
         return rest;
@@ -278,6 +290,16 @@ export const useStudioStore = create<StudioState>()(
         if (merged.apimartMaxMode === undefined) merged.apimartMaxMode = false;
         if (merged.apimartAudioFormat === undefined) merged.apimartAudioFormat = "mp3";
         if (merged.poyoVariety === undefined) merged.poyoVariety = "off";
+        // A state from before Melody DNA existed has no strength at all; without
+        // this the switch renders with nothing selected and the value travels as
+        // an unknown string.
+        if (
+          merged.dnaInfluence !== "off" &&
+          merged.dnaInfluence !== "subtle" &&
+          merged.dnaInfluence !== "strong"
+        ) {
+          merged.dnaInfluence = "off";
+        }
         if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
         if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
         if (typeof merged.inspoAudioWeight !== "number" || Number.isNaN(merged.inspoAudioWeight)) merged.inspoAudioWeight = 20;
