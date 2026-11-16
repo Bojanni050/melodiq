@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import StyleControlPanel from "@/components/style-studio/StyleControlPanel";
 import StyleSummary from "@/components/style-studio/StyleSummary";
+import DnaInfluenceControl from "@/components/DnaInfluenceControl";
 import StyleSnapshotModals from "@/components/style-studio/StyleSnapshotModals";
 import StyleConfirmModal from "@/components/style-studio/StyleConfirmModal";
 import LyricsNotice from "@/components/lyrics-studio/LyricsNotice";
@@ -371,6 +372,10 @@ export default function MusicBuilderPage() {
                 )}
 
                 <StyleSummary payload={payload} instrumental={instrumental} lyricsCtx={lyricsCtx} />
+
+                <section className=" border border-line bg-surface/80 p-4">
+                  <DnaInfluenceControl />
+                </section>
 
                 <button
                   type="button"
