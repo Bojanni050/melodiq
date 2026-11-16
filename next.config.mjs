@@ -1,9 +1,22 @@
 import withPWA from 'next-pwa';
 
 /** @type {import('next').NextConfig} */
-const pad2 = (value) => String(value).padStart(2, "0");
+// The build number is read by people in the Netherlands, but the image is
+// built in a container that runs on UTC. Formatting with the build machine's
+// clock therefore showed a time one hour behind in winter (two in summer), so
+// the timestamp is pinned to Europe/Amsterdam instead of the host timezone.
 const buildNow = new Date();
-const buildVersion = `0.${buildNow.getFullYear()}${pad2(buildNow.getMonth() + 1)}${pad2(buildNow.getDate())}${pad2(buildNow.getHours())}${pad2(buildNow.getMinutes())}`;
+const buildParts = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Amsterdam",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+}).formatToParts(buildNow);
+const buildPart = (type) => buildParts.find((part) => part.type === type)?.value ?? "00";
+const buildVersion = `0.${buildPart("year")}${buildPart("month")}${buildPart("day")}${buildPart("hour")}${buildPart("minute")}`;
 const uploadProxyLimitMb = Number.parseInt(process.env.UPLOAD_PROXY_MAX_BODY_MB || "200", 10);
 const uploadProxyLimitBytes = Number.isFinite(uploadProxyLimitMb) && uploadProxyLimitMb > 0
   ? uploadProxyLimitMb * 1024 * 1024
