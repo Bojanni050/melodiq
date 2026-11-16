@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { useSidebarStore, usePlayerStore, useWorkspaceStore, selectionModeFromEvent, type SelectionMode } from "@/lib/store";
+import { useSidebarStore, usePlayerStore, useWorkspaceStore, selectionModeFromEvent, type SelectionMode, type Track } from "@/lib/store";
 import { useArchiveTracks, useHideTracks } from "@/lib/hooks/use-archive-tracks";
 import type { ArchiveWarning } from "@/lib/archive-guards";
 import { formatDuration } from "@/lib/track-utils";
@@ -81,6 +81,38 @@ const MATCH_LABELS: Record<string, string> = {
 type SinkableAudioElement = HTMLAudioElement & {
   setSinkId?: (sinkId: string) => Promise<void>;
 };
+
+/** Maps a Smart Archive row to the shape the main player consumes. The page
+ *  only fetches snippets, so lyrics/prompt are intentionally left empty here;
+ *  playback and the player's own queue do not need them. */
+function toPlayerTrack(track: GroupTrack): Track {
+  return {
+    id: track.id,
+    title: track.title,
+    provider: track.provider,
+    providerModel: track.providerModel,
+    prompt: track.prompt ?? "",
+    status: track.status as Track["status"],
+    audioUrl: null,
+    audioUrlHd: null,
+    s3Key: null,
+    s3KeyHd: null,
+    duration: track.duration,
+    lyrics: null,
+    createdAt: track.createdAt ?? "",
+    error: track.error,
+    coverUrl: track.hasCover ? `/api/tracks/${track.id}/cover` : null,
+    s3KeyCover: null,
+    rating: track.rating,
+    lyricsTimestamps: track.lyricsTimestamps,
+    instrumental: track.instrumental,
+    artistName: track.artistName,
+    composerName: track.composerName,
+    writerName: track.writerName,
+    releaseStatus: track.releaseStatus,
+    publishDate: track.publishDate,
+  };
+}
 
 function trackStatusBadge(track: GroupTrack): { color: string; label: string } | null {
   if (track.status === "pending") return { color: "bg-yellow-500/20 text-yellow-300", label: "Queued" };
@@ -223,6 +255,10 @@ export default function SmartArchivePage() {
   const previewAudioRef = useRef<SinkableAudioElement | null>(null);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  // The main player owns the row's regular play button; the preview element
+  // above stays an independent second output.
+  const currentTrackId = usePlayerStore((s) => s.currentTrack?.id ?? null);
+  const isMainPlaying = usePlayerStore((s) => s.isPlaying);
   const [outputSupported, setOutputSupported] = useState(false);
   const [outputDevices, setOutputDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedOutputId, setSelectedOutputId] = useState<string>("");
@@ -248,6 +284,34 @@ export default function SmartArchivePage() {
       audio.src = "";
     };
   }, []);
+
+  // Regular play: goes through the app's global player, exactly like the
+  // Library and Archive rows. The queue is scoped to the track's own group,
+  // since those are the versions the user is comparing.
+  function playTrackInMainPlayer(track: GroupTrack) {
+    const player = usePlayerStore.getState();
+    if (player.currentTrack?.id === track.id) {
+      player.setIsPlaying(!player.isPlaying);
+      return;
+    }
+
+    const group = groups.find((g) => g.tracks.some((t) => t.id === track.id));
+    const context = (group?.tracks ?? [track])
+      .filter((t) => t.status === "done")
+      .map(toPlayerTrack);
+
+    player.setPlayContext(context);
+    if (player.autoPlayNext) {
+      const index = context.findIndex((t) => t.id === track.id);
+      if (index >= 0) player.setQueue(context.slice(index + 1));
+    }
+    player.playTrackFromGesture(toPlayerTrack(track));
+  }
+
+  function playTrackById(trackId: string) {
+    const track = allTracks.find((t) => t.id === trackId);
+    if (track) playTrackInMainPlayer(track);
+  }
 
   function togglePreview(trackId: string) {
     const audio = previewAudioRef.current;
@@ -675,7 +739,10 @@ export default function SmartArchivePage() {
                         {group.tracks.map((track) => {
                           const badge = trackStatusBadge(track);
                           const isPlayable = track.status === "done";
-                          const isThisPlaying = previewTrackId === track.id && previewPlaying;
+                          // Main-player state drives the cover button and the
+                          // "Now playing" chip; the preview keeps its own state.
+                          const isThisPlaying = currentTrackId === track.id && isMainPlaying;
+                          const isThisPreviewing = previewTrackId === track.id && previewPlaying;
                           const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
                           const dnaOpen = dnaOpenIds.has(track.id);
                           return (
@@ -702,9 +769,9 @@ export default function SmartArchivePage() {
 
                               <button
                                 type="button"
-                                onClick={() => isPlayable && togglePreview(track.id)}
+                                onClick={() => isPlayable && playTrackInMainPlayer(track)}
                                 disabled={!isPlayable}
-                                title={isPlayable ? (isThisPlaying ? "Pause preview" : "Play preview") : "Not ready to play"}
+                                title={isPlayable ? (isThisPlaying ? "Pause" : "Play") : "Not ready to play"}
                                 className="w-10 h-10  shrink-0 overflow-hidden bg-white/5 flex items-center justify-center relative group disabled:cursor-not-allowed"
                               >
                                 {track.hasCover ? (
@@ -758,6 +825,24 @@ export default function SmartArchivePage() {
                                   >
                                     Library
                                   </button>
+                                  {isPlayable && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); togglePreview(track.id); }}
+                                      title="Preview on the alternate output — does not interrupt the main player"
+                                      aria-pressed={isThisPreviewing}
+                                      className={`shrink-0 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                                        isThisPreviewing
+                                          ? "border-amber-300/50 bg-amber-400/15 text-amber-200"
+                                          : "border-line-strong text-ink-dim hover:text-ink hover:border-line/30"
+                                      }`}
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 14v-2a8 8 0 1116 0v2M4 14a2 2 0 002 2h1v-5H6a2 2 0 00-2 2zm16 0a2 2 0 00-2-2h-1v5h1a2 2 0 002-2z" />
+                                      </svg>
+                                      {isThisPreviewing ? "Previewing" : "Preview"}
+                                    </button>
+                                  )}
                                   {isThisPlaying && (
                                     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 font-medium">
                                       <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
@@ -950,10 +1035,10 @@ export default function SmartArchivePage() {
                   setShowDetailPanel(false);
                   setDetailTrackId(null);
                 }}
-                // The panel's play button drives the same preview player the rows
-                // use, so clicking it in the panel also highlights the row.
+                // The panel is part of the regular detail UI, so its play
+                // button drives the main player — previews stay on the row.
                 onPlay={() => {
-                  if (detailTrack.status === "done") togglePreview(detailTrack.id);
+                  if (detailTrack.status === "done") playTrackById(detailTrack.id);
                 }}
                 onDownload={() => {
                   if (!detailTrack) return;
