@@ -1,3 +1,8 @@
+// @vitest-environment node
+// Server-side helper + pure formatters: tested in the node environment, which is
+// where they actually run. Under jsdom (the suite default) the dynamically
+// imported upload-helpers module — it pulls in node:crypto — fails to resolve
+// its `node:` builtins whenever the ambient NODE_ENV is production.
 import { describe, it, expect } from "vitest";
 import {
   detectFormatFromUrl,
