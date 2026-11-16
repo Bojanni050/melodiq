@@ -3,9 +3,11 @@ import { PgDialect } from "drizzle-orm/pg-core";
 
 import {
   ARTIST_PAGE_BIO_MAX_LENGTH,
+  ARTIST_PAGE_SHORT_BIO_MAX_LENGTH,
   buildUniqueArtistPageSlug,
   isOwnArtistAlias,
   normalizeArtistPageBio,
+  normalizeArtistPageShortBio,
   publishedArtistTracksFilter,
   slugifyArtistPageSlug,
   validateArtistPageSlug,
@@ -101,6 +103,25 @@ describe("normalizeArtistPageBio", () => {
   it("accepts a bio exactly at the limit", () => {
     const atLimit = "a".repeat(ARTIST_PAGE_BIO_MAX_LENGTH);
     expect(normalizeArtistPageBio(atLimit)).toEqual({ ok: true, bio: atLimit });
+  });
+});
+
+describe("normalizeArtistPageShortBio", () => {
+  it("treats empty values as no short bio, so the hero falls back", () => {
+    expect(normalizeArtistPageShortBio(null)).toEqual({ ok: true, bioShort: null });
+    expect(normalizeArtistPageShortBio("")).toEqual({ ok: true, bioShort: null });
+    expect(normalizeArtistPageShortBio("  \n ")).toEqual({ ok: true, bioShort: null });
+  });
+
+  it("trims stored copy", () => {
+    expect(normalizeArtistPageShortBio("  one line  ")).toEqual({ ok: true, bioShort: "one line" });
+  });
+
+  it("is stricter than the long bio — it is a hero one-liner", () => {
+    expect(normalizeArtistPageShortBio(42).ok).toBe(false);
+    expect(normalizeArtistPageShortBio("a".repeat(ARTIST_PAGE_SHORT_BIO_MAX_LENGTH + 1)).ok).toBe(false);
+    const atLimit = "a".repeat(ARTIST_PAGE_SHORT_BIO_MAX_LENGTH);
+    expect(normalizeArtistPageShortBio(atLimit)).toEqual({ ok: true, bioShort: atLimit });
   });
 });
 

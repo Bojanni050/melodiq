@@ -7,6 +7,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { ensureWorkspaceSchema } from "@/lib/workspaces";
 import {
   normalizeArtistPageBio,
+  normalizeArtistPageShortBio,
   validateArtistPageSlug,
 } from "@/lib/artist-pages";
 
@@ -42,7 +43,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Artist page not found" }, { status: 404 });
   }
 
-  let body: { bio?: unknown; bioNl?: unknown; slug?: unknown };
+  let body: { bio?: unknown; bioNl?: unknown; bioShort?: unknown; bioShortNl?: unknown; slug?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -61,6 +62,18 @@ export async function PATCH(request: Request, { params }: Params) {
     const bioNl = normalizeArtistPageBio(body.bioNl);
     if (!bioNl.ok) return NextResponse.json({ error: bioNl.error }, { status: 400 });
     updates.bioNl = bioNl.bio;
+  }
+
+  if (body.bioShort !== undefined) {
+    const bioShort = normalizeArtistPageShortBio(body.bioShort);
+    if (!bioShort.ok) return NextResponse.json({ error: bioShort.error }, { status: 400 });
+    updates.bioShort = bioShort.bioShort;
+  }
+
+  if (body.bioShortNl !== undefined) {
+    const bioShortNl = normalizeArtistPageShortBio(body.bioShortNl);
+    if (!bioShortNl.ok) return NextResponse.json({ error: bioShortNl.error }, { status: 400 });
+    updates.bioShortNl = bioShortNl.bioShort;
   }
 
   if (body.slug !== undefined) {

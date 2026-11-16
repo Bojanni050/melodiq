@@ -76,6 +76,11 @@ export const artistPages = pgTable("artist_pages", {
   // Dutch version of the page bio. The public page picks by visitor language
   // and falls back to the other language when one is empty.
   bioNl: text("bio_nl"),
+  // Short bio (one or two lines) under the artist name in the hero. Kept apart
+  // from the long bio so the hero stays punchy while the Biography section
+  // keeps the full story; same language fallback as bio/bioNl.
+  bioShort: text("bio_short"),
+  bioShortNl: text("bio_short_nl"),
   imageS3Key: text("image_s3_key"),
   heroS3Key: text("hero_s3_key"),
   // Photo gallery: JSON array of S3 keys in display order (see parseGalleryKeys

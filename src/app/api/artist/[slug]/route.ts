@@ -45,6 +45,8 @@ export async function GET(
       slug: artistPages.slug,
       bio: artistPages.bio,
       bioNl: artistPages.bioNl,
+      bioShort: artistPages.bioShort,
+      bioShortNl: artistPages.bioShortNl,
       imageS3Key: artistPages.imageS3Key,
       heroS3Key: artistPages.heroS3Key,
       galleryS3Keys: artistPages.galleryS3Keys,
@@ -135,6 +137,10 @@ export async function GET(
       // one click still reads as finished.
       bio: page.bio ?? owner?.bio ?? null,
       bioNl: page.bioNl ?? null,
+      // Hero one-liner. No account fallback: the hero drops the line entirely
+      // when empty and the first paragraph of the long bio shows instead.
+      bioShort: page.bioShort ?? null,
+      bioShortNl: page.bioShortNl ?? null,
       genres,
       stats: {
         tracks: trackList.length,

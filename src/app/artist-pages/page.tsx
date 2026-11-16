@@ -10,6 +10,7 @@ import { useT } from "@/hooks/useT";
 import {
   ARTIST_PAGE_BIO_MAX_LENGTH,
   ARTIST_PAGE_GALLERY_MAX,
+  ARTIST_PAGE_SHORT_BIO_MAX_LENGTH,
   galleryPhotoId,
   parseGalleryKeys,
 } from "@/lib/artist-pages";
@@ -20,6 +21,8 @@ interface ArtistPageRow {
   slug: string;
   bio: string | null;
   bioNl: string | null;
+  bioShort: string | null;
+  bioShortNl: string | null;
   imageS3Key: string | null;
   heroS3Key: string | null;
   galleryS3Keys: string | null;
@@ -41,6 +44,8 @@ function imageVersion(updatedAt: string | Date | unknown): string {
 interface Draft {
   bio: string;
   bioNl: string;
+  bioShort: string;
+  bioShortNl: string;
   slug: string;
 }
 
@@ -97,7 +102,18 @@ export default function ArtistPagesPage() {
       setPages(rows);
       setAvailableAliases(data.availableAliases ?? []);
       setDrafts(
-        Object.fromEntries(rows.map((row) => [row.id, { bio: row.bio ?? "", bioNl: row.bioNl ?? "", slug: row.slug }]))
+        Object.fromEntries(
+          rows.map((row) => [
+            row.id,
+            {
+              bio: row.bio ?? "",
+              bioNl: row.bioNl ?? "",
+              bioShort: row.bioShort ?? "",
+              bioShortNl: row.bioShortNl ?? "",
+              slug: row.slug,
+            },
+          ])
+        )
       );
     }
     setLoading(false);
@@ -144,7 +160,13 @@ export default function ArtistPagesPage() {
     const res = await fetch(`/api/artist-pages/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio: draft.bio, bioNl: draft.bioNl, slug: draft.slug }),
+      body: JSON.stringify({
+        bio: draft.bio,
+        bioNl: draft.bioNl,
+        bioShort: draft.bioShort,
+        bioShortNl: draft.bioShortNl,
+        slug: draft.slug,
+      }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -292,7 +314,13 @@ export default function ArtistPagesPage() {
                   </div>
 
                   {pages.filter((page) => page.id === activePage?.id).map((page) => {
-                    const draft = drafts[page.id] ?? { bio: page.bio ?? "", bioNl: page.bioNl ?? "", slug: page.slug };
+                    const draft = drafts[page.id] ?? {
+                      bio: page.bio ?? "",
+                      bioNl: page.bioNl ?? "",
+                      bioShort: page.bioShort ?? "",
+                      bioShortNl: page.bioShortNl ?? "",
+                      slug: page.slug,
+                    };
                     const isSaving = savingId === page.id;
                     return (
                       <article
@@ -463,6 +491,34 @@ export default function ArtistPagesPage() {
                             </Field>
                           );
                         })()}
+
+                        <Field
+                          label={t("artistPages.bioShort")}
+                          hint={draft.bioShort.trim() ? t("artistPages.bioShortHint") : t("artistPages.bioShortFallbackHint")}
+                        >
+                          <textarea
+                            value={draft.bioShort}
+                            onChange={(e) => setDraft(page.id, { bioShort: e.target.value })}
+                            placeholder={t("artistPages.bioShortPlaceholder", { name: page.alias })}
+                            maxLength={ARTIST_PAGE_SHORT_BIO_MAX_LENGTH}
+                            rows={2}
+                            className="input-field text-sm w-full resize-y"
+                          />
+                        </Field>
+
+                        <Field
+                          label={t("artistPages.bioShortNl")}
+                          hint={draft.bioShortNl.trim() ? t("artistPages.bioShortHint") : t("artistPages.bioShortNlFallbackHint")}
+                        >
+                          <textarea
+                            value={draft.bioShortNl}
+                            onChange={(e) => setDraft(page.id, { bioShortNl: e.target.value })}
+                            placeholder={t("artistPages.bioShortPlaceholder", { name: page.alias })}
+                            maxLength={ARTIST_PAGE_SHORT_BIO_MAX_LENGTH}
+                            rows={2}
+                            className="input-field text-sm w-full resize-y"
+                          />
+                        </Field>
 
                         <Field
                           label={t("artistPages.bio")}

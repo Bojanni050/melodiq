@@ -24,6 +24,10 @@ export interface PublicArtist {
   bio: string | null;
   /** Dutch bio; falls back to `bio` when empty (and vice versa). */
   bioNl?: string | null;
+  /** Short hero one-liner under the artist name. When empty the hero falls
+   *  back to the first paragraph of the long bio. */
+  bioShort?: string | null;
+  bioShortNl?: string | null;
   genres: string[];
   stats: { tracks: number; totalPlays: number; sinceYear: number };
   /** Round artist portrait. Null when neither the page nor the account has one. */
@@ -62,8 +66,9 @@ function formatPlays(n: number): string {
  */
 export default function ArtistPublicPage({ artist, tracks, loading, notFound }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Index of the photo open in the lightbox, or null when closed.
-  const [lightbox, setLightbox] = useState<number | null>(null);
+  // Images open in the lightbox (the gallery, or just the portrait) and which
+  // one is on display. Null when closed.
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
   const router = useRouter();
 
   function handleBack() {
@@ -87,6 +92,10 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   const localizedBio = locale === "nl"
     ? (artist?.bioNl?.trim() || artist?.bio || "")
     : (artist?.bio?.trim() || artist?.bioNl || "");
+
+  const localizedShortBio = locale === "nl"
+    ? (artist?.bioShortNl?.trim() || artist?.bioShort?.trim() || "")
+    : (artist?.bioShort?.trim() || artist?.bioShortNl?.trim() || "");
 
   const bioParagraphs = localizedBio
     .split(/\n\s*\n/)
@@ -126,17 +135,20 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   const gallery = artist?.gallery ?? [];
 
   // Keyboard control for the lightbox; only attached while it is open.
+  const lightboxCount = lightbox?.images.length ?? 0;
   useEffect(() => {
-    if (lightbox === null) return;
-    const count = gallery.length;
+    if (!lightboxCount) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setLightbox(null);
-      else if (e.key === "ArrowRight") setLightbox((i) => (i === null ? i : (i + 1) % count));
-      else if (e.key === "ArrowLeft") setLightbox((i) => (i === null ? i : (i - 1 + count) % count));
+      else if (e.key === "ArrowRight") {
+        setLightbox((current) => (current ? { ...current, index: (current.index + 1) % lightboxCount } : current));
+      } else if (e.key === "ArrowLeft") {
+        setLightbox((current) => (current ? { ...current, index: (current.index - 1 + lightboxCount) % lightboxCount } : current));
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox, gallery.length]);
+  }, [lightboxCount]);
 
   if (loading) {
     return <div className="min-h-screen bg-canvas" />;
@@ -153,6 +165,7 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
   }
 
   const hero = artist.heroUrl;
+  const portrait = artist.imageUrl;
   const memberOf = artist.stats.sinceYear ? `Solo Artist · Est. ${artist.stats.sinceYear}` : "Solo Artist";
 
   return (
@@ -207,13 +220,22 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
 
         <div className="relative z-[1] flex flex-1 items-end px-6 pb-20 sm:px-12">
           <div className="max-w-[620px]">
-            {artist.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={artist.imageUrl}
-                alt={artist.name}
-                className="mb-7 h-24 w-24 rounded-full border border-line-strong object-cover"
-              />
+            {portrait && (
+              // The portrait doubles as entry point to the lightbox; same
+              // overlay the gallery uses, so there is one viewer to maintain.
+              <button
+                type="button"
+                onClick={() => setLightbox({ images: [portrait], index: 0 })}
+                aria-label={`${artist.name} portrait`}
+                className="mb-7 block h-48 w-48 cursor-pointer overflow-hidden rounded-full border border-line-strong bg-surface p-0 transition-transform duration-300 hover:scale-[1.02]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={portrait}
+                  alt={artist.name}
+                  className="h-full w-full object-cover"
+                />
+              </button>
             )}
             <div className="mb-6 flex items-center gap-3">
               <span className="inline-block h-px w-7 bg-accent" />
@@ -224,9 +246,9 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
             <h1 className="font-display text-[clamp(48px,10vw,128px)] font-black leading-[0.88] text-ink">
               {artist.name}
             </h1>
-            {bioParagraphs[0] && (
+            {(localizedShortBio || bioParagraphs[0]) && (
               <p className="mt-6 max-w-[420px] font-body text-lg font-light text-ink-muted">
-                {bioParagraphs[0]}
+                {localizedShortBio || bioParagraphs[0]}
               </p>
             )}
             <div className="mt-10 flex gap-4">
@@ -397,7 +419,7 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                 <button
                   key={src}
                   type="button"
-                  onClick={() => setLightbox(index)}
+                  onClick={() => setLightbox({ images: gallery, index })}
                   aria-label={`${artist.name} photo ${index + 1}`}
                   className="group aspect-square cursor-pointer overflow-hidden border border-line bg-surface p-0"
                 >
@@ -415,17 +437,17 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
         </section>
       )}
 
-      {lightbox !== null && gallery[lightbox] && (
+      {lightbox && lightbox.images[lightbox.index] && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`${artist.name} photos`}
+          aria-label={`${artist.name} image`}
           className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/95 p-4"
           onClick={() => setLightbox(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={gallery[lightbox]}
+            src={lightbox.images[lightbox.index]}
             alt=""
             className="max-h-full max-w-full object-contain"
             onClick={(e) => e.stopPropagation()}
@@ -440,13 +462,17 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
               <path d="M3 3l10 10M13 3L3 13" />
             </svg>
           </button>
-          {gallery.length > 1 && (
+          {lightbox.images.length > 1 && (
             <>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightbox((lightbox - 1 + gallery.length) % gallery.length);
+                  setLightbox((current) =>
+                    current
+                      ? { ...current, index: (current.index - 1 + current.images.length) % current.images.length }
+                      : current
+                  );
                 }}
                 aria-label="Previous photo"
                 className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-canvas/70 p-0 text-ink"
@@ -459,7 +485,11 @@ export default function ArtistPublicPage({ artist, tracks, loading, notFound }: 
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightbox((lightbox + 1) % gallery.length);
+                  setLightbox((current) =>
+                    current
+                      ? { ...current, index: (current.index + 1) % current.images.length }
+                      : current
+                  );
                 }}
                 aria-label="Next photo"
                 className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-line-strong bg-canvas/70 p-0 text-ink"

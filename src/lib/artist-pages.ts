@@ -7,6 +7,9 @@ import { tracks } from "@/db/schema";
 // live here rather than in any single route.
 
 export const ARTIST_PAGE_BIO_MAX_LENGTH = 2000;
+// The short bio is the one-liner under the artist name in the hero; the long
+// bio still fills the Biography section, so this one is deliberately tight.
+export const ARTIST_PAGE_SHORT_BIO_MAX_LENGTH = 200;
 const SLUG_MAX_LENGTH = 80;
 
 export interface ArtistPageInput {
@@ -72,14 +75,33 @@ export function validateArtistPageSlug(value: string): { ok: true; slug: string 
 }
 
 export function normalizeArtistPageBio(value: unknown): { ok: true; bio: string | null } | { ok: false; error: string } {
-  if (value === null || value === undefined || value === "") return { ok: true, bio: null };
-  if (typeof value !== "string") return { ok: false, error: "Bio must be text" };
+  const result = normalizeArtistPageText(value, ARTIST_PAGE_BIO_MAX_LENGTH, "Bio");
+  return result.ok ? { ok: true, bio: result.text } : result;
+}
+
+export function normalizeArtistPageShortBio(value: unknown): { ok: true; bioShort: string | null } | { ok: false; error: string } {
+  const result = normalizeArtistPageText(value, ARTIST_PAGE_SHORT_BIO_MAX_LENGTH, "Short bio");
+  return result.ok ? { ok: true, bioShort: result.text } : result;
+}
+
+/**
+ * Shared body for the bio normalizers: empty input means "no page-specific
+ * copy" (the public page falls back), anything longer than the limit is
+ * rejected with a message the form can show verbatim.
+ */
+function normalizeArtistPageText(
+  value: unknown,
+  maxLength: number,
+  label: string
+): { ok: true; text: string | null } | { ok: false; error: string } {
+  if (value === null || value === undefined || value === "") return { ok: true, text: null };
+  if (typeof value !== "string") return { ok: false, error: `${label} must be text` };
   const trimmed = value.trim();
-  if (!trimmed) return { ok: true, bio: null };
-  if (trimmed.length > ARTIST_PAGE_BIO_MAX_LENGTH) {
-    return { ok: false, error: `Bio too long (max ${ARTIST_PAGE_BIO_MAX_LENGTH} characters)` };
+  if (!trimmed) return { ok: true, text: null };
+  if (trimmed.length > maxLength) {
+    return { ok: false, error: `${label} too long (max ${maxLength} characters)` };
   }
-  return { ok: true, bio: trimmed };
+  return { ok: true, text: trimmed };
 }
 
 /** True when `alias` is one of the user's own artist names (account aliases). */

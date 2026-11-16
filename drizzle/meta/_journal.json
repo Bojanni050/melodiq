@@ -148,6 +148,13 @@
       "when": 1794757062534,
       "tag": "0020_living_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794866611251,
+      "tag": "0021_artist_page_short_bio",
+      "breakpoints": true
     }
   ]
 }
