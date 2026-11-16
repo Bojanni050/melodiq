@@ -526,6 +526,10 @@ const TrackCard = memo(function TrackCard({
   }, [track.id]);
 
   const edit = useTrackInlineEdit(track, onTitleUpdate, onArtistUpdate);
+  // Inline editing is owner-only. publicSource marks tracks served by the
+  // public catalogue APIs (Discover/Releases, public playlists, the logged-out
+  // library view): those rows are read-only no matter who is looking at them.
+  const canManage = isOwner && !track.publicSource;
   const actions = useTrackCardActions({ track, tracksById, onDelete, onDeleteTracks, onAddToPlaylist, onMoveToWorkspace: onMoveToWorkspaceProp });
 
   // Workspace derived data (computed once in TrackList and passed as props)
@@ -985,7 +989,7 @@ const TrackCard = memo(function TrackCard({
                 aria-label="New unplayed track"
               />
             )}
-            {edit.isEditingTitle ? (
+            {canManage && edit.isEditingTitle ? (
               <div className="flex items-center gap-1 min-w-0 max-w-full" onClick={(e) => e.stopPropagation()}>
                 <input
                   ref={edit.titleInputRef}
@@ -1010,10 +1014,10 @@ const TrackCard = memo(function TrackCard({
               </div>
             ) : (
               <h3
-                className={`text-sm font-medium truncate cursor-text flex-1 min-w-[6rem] ${isCurrentlyPlaying ? "text-accent" : ""}`}
+                className={`text-sm font-medium truncate flex-1 min-w-[6rem] ${isCurrentlyPlaying ? "text-accent" : ""} ${canManage ? "cursor-text" : ""}`}
                 onClick={(e) => e.stopPropagation()}
-                onDoubleClick={edit.handleTitleDoubleClick}
-                title="Double-click to edit"
+                onDoubleClick={canManage ? edit.handleTitleDoubleClick : undefined}
+                title={canManage ? "Double-click to edit" : undefined}
               >
                 {title}
               </h3>
@@ -1140,7 +1144,7 @@ const TrackCard = memo(function TrackCard({
           </div>
 
           {/* Artist name row */}
-          {edit.isEditingArtist ? (
+          {canManage && edit.isEditingArtist ? (
             <div className="flex items-center gap-1 mt-0.5 min-w-0" onClick={(e) => e.stopPropagation()}>
               <input
                 ref={edit.artistInputRef}
@@ -1166,13 +1170,17 @@ const TrackCard = memo(function TrackCard({
           ) : (
             <div
               className={`text-xs text-ink-dim mt-0.5 truncate select-none transition-colors ${artistPageSlug ? "cursor-pointer hover:text-accent" : "cursor-default"}`}
-              onDoubleClick={(e) => { e.stopPropagation(); edit.setIsEditingArtist(true); }}
+              onDoubleClick={canManage ? (e) => { e.stopPropagation(); edit.setIsEditingArtist(true); } : undefined}
               title={
-                artistPageSlug
-                  ? "Click to view artist page · double-click to edit"
-                  : track.artistName || artistAlias
-                    ? "Double-click to edit"
-                    : "Double-click to add artist name"
+                !canManage
+                  ? artistPageSlug
+                    ? "Click to view artist page"
+                    : undefined
+                  : artistPageSlug
+                    ? "Click to view artist page · double-click to edit"
+                    : track.artistName || artistAlias
+                      ? "Double-click to edit"
+                      : "Double-click to add artist name"
               }
             >
               {track.artistName || artistAlias ? (
@@ -1181,7 +1189,7 @@ const TrackCard = memo(function TrackCard({
                   className="hover:text-accent transition-colors"
                 />
               ) : (
-                <span className="italic opacity-50">no artist — double-click to add</span>
+                <span className="italic opacity-50">{canManage ? "no artist — double-click to add" : "no artist"}</span>
               )}
             </div>
           )}
@@ -1332,7 +1340,7 @@ const TrackCard = memo(function TrackCard({
               )}
             </>
           )}
-          {track.status === "done" && isOwner && (
+          {track.status === "done" && canManage && (
             <TrackActionMenu
               track={track}
               playlists={playlists}
@@ -1354,7 +1362,7 @@ const TrackCard = memo(function TrackCard({
               onArchiveClick={track.status === "done" && !isListenerRole ? handleArchive : undefined}
               // Hiding needs no archive guards and no finished status — it only
               // flips a flag, so it stays available for pending/failed rows too.
-              onHideClick={isOwner ? actions.handleHide : undefined}
+              onHideClick={canManage ? actions.handleHide : undefined}
               onAdvancedDnaClick={track.status === "done" ? handleAdvancedDna : undefined}
                             advancedDnaRunning={advancedDnaRunning}
                             onAnalyzeAudioClick={handleReanalyzeAudio}
@@ -1399,7 +1407,7 @@ const TrackCard = memo(function TrackCard({
               }
             />
           )}
-          {isOwner && (
+          {canManage && (
             <button
               onClick={actions.handleDelete}
               disabled={actions.deleting}
