@@ -1,4 +1,8 @@
-﻿import { callLLM } from "@/lib/providers/llm";
+﻿import { and, eq } from "drizzle-orm";
+
+import { db } from "@/db";
+import { tracks } from "@/db/schema";
+import { callLLM } from "@/lib/providers/llm";
 import { toTitleCase } from "@/lib/title-case";
 
 /**
@@ -71,24 +75,32 @@ Rules:
 
 /**
  * Resolves the final track title for a generation request.
- * Priority: userTitle -> AI title (instrumental only) -> derived fallback -> prompt slice (PoYo)
+ * Priority: userTitle -> AI title (instrumental only, opt-in) -> derived fallback -> prompt slice (PoYo)
+ *
+ * `allowAiTitle` defaults to false: the AI title call used to sit in front of
+ * every instrumental generation (1-3s, plus a paid call) while a deterministic
+ * fallback was already being computed a few lines further down. Callers that
+ * want the AI title now schedule `scheduleInstrumentalTitleUpgrade()` after the
+ * track row exists instead of blocking the provider dispatch on it.
  */
 export async function resolveTrackTitle({
   userTitle,
   instrumental,
   prompt,
   provider,
+  allowAiTitle = false,
 }: {
   userTitle: string;
   instrumental: boolean;
   prompt: string;
   provider: string;
+  allowAiTitle?: boolean;
 }): Promise<string | null> {
   const normalizedTitle = userTitle.trim();
   const normalizedPrompt = prompt.trim();
 
   const aiInstrumentalTitle =
-    !normalizedTitle && instrumental
+    allowAiTitle && !normalizedTitle && instrumental
       ? await generateInstrumentalTitleFromPrompt(normalizedPrompt)
       : null;
 
@@ -103,4 +115,45 @@ export async function resolveTrackTitle({
     (provider === "poyo" && normalizedPrompt ? normalizedPrompt.slice(0, 80) : null);
 
   return resolvedTitleRaw ? toTitleCase(resolvedTitleRaw) : null;
+}
+
+/**
+ * Fire-and-forget title upgrade for an instrumental track: the AI title is nice
+ * to have, but it should not hold up the provider call, and the provider keeps
+ * the derived title it was dispatched with — this only changes what MelodiQ's
+ * own library shows.
+ *
+ * Only overwrites the title this flow set itself (`eq(tracks.title,
+ * currentTitle)`), so a user edit or a title that arrived from a webhook wins.
+ */
+export function scheduleInstrumentalTitleUpgrade(params: {
+  trackId: string;
+  prompt: string;
+  currentTitle: string | null;
+}): void {
+  const prompt = params.prompt.trim();
+  const currentTitle = params.currentTitle?.trim();
+  if (!prompt || !currentTitle) return;
+
+  void (async () => {
+    try {
+      const aiTitle = await generateInstrumentalTitleFromPrompt(prompt);
+      const normalized = aiTitle ? toTitleCase(aiTitle) : null;
+      if (!normalized || normalized === currentTitle) return;
+
+      const updated = await db
+        .update(tracks)
+        .set({ title: normalized })
+        .where(and(eq(tracks.id, params.trackId), eq(tracks.title, currentTitle)))
+        .returning({ id: tracks.id });
+
+      if (updated.length === 0) {
+        console.info(`[title] track ${params.trackId}: title changed in the meantime, keeping the existing one`);
+      } else {
+        console.info(`[title] track ${params.trackId}: AI title "${normalized}" applied`);
+      }
+    } catch (error) {
+      console.warn(`[title] track ${params.trackId}: AI title upgrade failed:`, error);
+    }
+  })();
 }

@@ -7,7 +7,7 @@ import { requireAuth } from "@/lib/require-auth";
 import { validateProviderApiKeys } from "@/lib/settings";
 import { users } from "@/db/schema";
 import { checkRateLimit } from "@/lib/services/rateLimitService";
-import { resolveTrackTitle } from "@/lib/services/titleService";
+import { resolveTrackTitle, scheduleInstrumentalTitleUpgrade } from "@/lib/services/titleService";
 import { insertPendingTrack, markTrackFailed, normalizeVocalGender } from "@/lib/services/trackService";
 import { logApi } from "@/lib/logger";
 import {
@@ -147,8 +147,10 @@ export async function POST(request: NextRequest) {
       ? effectivePrompt.slice(normalizedPrompt.length).replace(/^[\s,]+/, "")
       : null;
 
-  // Resolve title (AI + fallbacks). Uses the raw prompt: DNA tags would only
-  // pull the title towards genre words.
+  // Resolve title from the user's own text plus the deterministic fallback —
+  // uses the raw prompt, since DNA tags would only pull the title towards genre
+  // words. The AI title for instrumental tracks is scheduled *after* the track
+  // row exists (see below): it used to hold up every generation by 1-3s.
   const resolvedTitle = await resolveTrackTitle({ userTitle: normalizedTitle, instrumental: instrumental || false, prompt: normalizedPrompt, provider });
 
   const ctx: GenerationContext = {
@@ -176,6 +178,15 @@ export async function POST(request: NextRequest) {
     artistName: resolvedArtistName, writerName: resolvedWriterName,
     vocalGender: normalizeVocalGender(vocalGender),
   });
+
+  // Instrumental tracks have no lyrics for the client's /api/generate-title to
+  // work from, so their title gets an AI upgrade here: after the row exists and
+  // without holding up the dispatch. Only touches a title this flow set itself.
+  // (Providers that insert their own row — PoYo and MiniMax-via-PoYo — return
+  // earlier and keep the derived title.)
+  if (!normalizedTitle && (instrumental || false)) {
+    scheduleInstrumentalTitleUpgrade({ trackId: track.id!, prompt: normalizedPrompt, currentTitle: resolvedTitle });
+  }
 
   try {
     if (provider === "lyria") return await dispatchLyria(ctx, track);

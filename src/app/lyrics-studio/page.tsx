@@ -308,7 +308,7 @@ export default function LyricsStudioPage() {
     saveSnapshotsToStorage(next);
   }
 
-  async function requestBlockLyrics(block: LyricBlock, contextBlocks: LyricBlock[], options?: { chorusMode?: "repeat" | "variation"; isFirstChorus?: boolean }, signal?: AbortSignal) {
+  async function requestBlockLyrics(block: LyricBlock, contextBlocks: LyricBlock[], options?: { chorusMode?: "repeat" | "variation"; isFirstChorus?: boolean; cachePrefix?: boolean }, signal?: AbortSignal) {
     const response = await fetch("/api/lyric-studio/generate-block", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -325,6 +325,9 @@ export default function LyricsStudioPage() {
         // the model is to leave rhyme behind when it costs authenticity.
         creativityLevel,
         lineCount: resolveBlockLineCount(block),
+        // Whole-song runs reuse the same song-level prompt part on every section,
+        // so only they ask the server to mark it cacheable (see the route).
+        cachePrefix: options?.cachePrefix === true ? true : undefined,
       }),
     });
     const data = await response.json();
@@ -435,6 +438,9 @@ export default function LyricsStudioPage() {
         const result = await requestBlockLyrics(block, generatedBlocks, {
           chorusMode: repetitiveChorus && !forceUniqueChorus ? "repeat" : "variation",
           isFirstChorus: block.type === "chorus" ? !firstChorusContent.trim() : undefined,
+          // Writing the whole song: the song-level prompt part repeats on every
+          // section within minutes, which is where prompt caching pays off.
+          cachePrefix: true,
         }, controller.signal);
         songGenerationAbortRef.current = null;
         if (block.type === "chorus" && repetitiveChorus && !firstChorusContent.trim()) firstChorusContent = result;

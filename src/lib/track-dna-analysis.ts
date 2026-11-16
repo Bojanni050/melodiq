@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { tracks } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { extractAtmosphereTags, scoreLyricsQuality } from "@/lib/providers/llm";
+import { scoreLyricsAndAtmosphere, extractAtmosphereTags, scoreLyricsQuality, type TrackTextAnalysis } from "@/lib/providers/llm";
 import { extractAudioFeatures } from "@/lib/audio-features";
 import { resolveDnaAudioSource, type DnaAudioSource } from "@/lib/dna-audio-source";
 import { logToFile } from "@/lib/file-logger";
@@ -123,29 +123,44 @@ export async function reanalyzeAudioFeatures(trackId: string): Promise<AudioDna 
       }
     }
 
-    const [atmosphereTags, lyricsResult] = await Promise.all([
-      needsAtmosphere
-        ? extractAtmosphereTags(track.prompt!).catch((error) => {
-            warn(`[track-dna-analysis] atmosphere tag extraction failed for track ${trackId}:`, error);
-            return null;
-          })
-        : Promise.resolve(null),
-      needsLyrics
-        ? scoreLyricsQuality(track.lyrics!).catch((error) => {
-            warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
-            return null;
-          })
-        : Promise.resolve(null),
-    ]);
+    // Both text signals missing = one request for both (the cheap half of this
+    // backfill); only one missing = the single-purpose helper, so a track that
+    // already has tags never pays for a second tagging pass.
+    let textAnalysis: TrackTextAnalysis = { tags: null, lyricsScore: null };
+    if (needsAtmosphere && needsLyrics) {
+      textAnalysis = await scoreLyricsAndAtmosphere({
+        prompt: track.prompt,
+        lyrics: track.lyrics,
+      }).catch((error) => {
+        warn(`[track-dna-analysis] combined text analysis failed for track ${trackId}:`, error);
+        return { tags: null, lyricsScore: null };
+      });
+    } else {
+      const [atmosphereTags, lyricsResult] = await Promise.all([
+        needsAtmosphere
+          ? extractAtmosphereTags(track.prompt!).catch((error) => {
+              warn(`[track-dna-analysis] atmosphere tag extraction failed for track ${trackId}:`, error);
+              return null;
+            })
+          : Promise.resolve(null),
+        needsLyrics
+          ? scoreLyricsQuality(track.lyrics!).catch((error) => {
+              warn(`[track-dna-analysis] lyrics scoring failed for track ${trackId}:`, error);
+              return null;
+            })
+          : Promise.resolve(null),
+      ]);
+      textAnalysis = { tags: atmosphereTags, lyricsScore: lyricsResult };
+    }
 
     const audioDna: AudioDna = {
       tempo: features?.tempo ?? existing.tempo ?? null,
       key: features?.key ?? existing.key ?? null,
       energy: features?.energy ?? existing.energy ?? null,
       loudness: features?.loudness ?? existing.loudness ?? null,
-      atmosphereTags: atmosphereTags ?? existing.atmosphereTags ?? null,
-      lyricsScore: lyricsResult?.score ?? existing.lyricsScore ?? null,
-      lyricsNotes: lyricsResult?.notes ?? existing.lyricsNotes ?? null,
+      atmosphereTags: textAnalysis.tags ?? existing.atmosphereTags ?? null,
+      lyricsScore: textAnalysis.lyricsScore?.score ?? existing.lyricsScore ?? null,
+      lyricsNotes: textAnalysis.lyricsScore?.notes ?? existing.lyricsNotes ?? null,
       compositionScore: existing.compositionScore ?? null,
       compositionNotes: existing.compositionNotes ?? null,
       computedAt: new Date().toISOString(),

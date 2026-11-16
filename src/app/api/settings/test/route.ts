@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { requireAuth } from "@/lib/require-auth";
+import { getOpenRouterCatalog } from "@/lib/openrouter-catalog";
+import { orderWaveSpeedCandidates, rememberWaveSpeedUrl } from "@/lib/wave-speed";
 
 async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: string } | { ok: false; info: string }> {
-  const candidates = [
-    "https://api.wavespeed.ai/api/v3/user/info",
-    "https://api.wavespeed.ai/api/v3/user",
-    "https://api.wavespeed.ai/api/v3/account",
-    "https://api.wavespeed.ai/api/v3/credits",
-    "https://api.wavespeed.ai/api/v3/models",
-    "https://api.wavespeed.ai/api/v3/predictions",
-    "https://api.wavespeed.ai/api/v1/user/info",
-    "https://api.wavespeed.ai/api/v1/user",
-    "https://api.wavespeed.ai/api/v1/account",
-    "https://api.wavespeed.ai/api/v1/credits",
-    "https://api.wavespeed.ai/api/v1/models",
-    "https://api.wavespeed.ai/api/v1/predictions",
-  ];
+  // The endpoint that answered last time is tried first (src/lib/wave-speed.ts),
+  // so a repeated key test costs one request instead of twelve.
+  const candidates = orderWaveSpeedCandidates();
 
   let lastMessage = "Request failed";
 
@@ -49,6 +40,7 @@ async function testWaveSpeedApiKey(apiKey: string): Promise<{ ok: true; info: st
         continue;
       }
 
+      rememberWaveSpeedUrl(url);
       const credits = (res.data as any)?.data?.credits ?? (res.data as any)?.credits ?? (res.data as any)?.data?.balance ?? (res.data as any)?.balance;
       const info = credits !== undefined ? `Connected — ${credits} credits` : "Connected — WaveSpeed API is active";
       return { ok: true, info };
@@ -350,28 +342,9 @@ export async function POST(request: Request) {
     } else if (provider === "openrouter") {
       info = `Connected — ${response.data.data?.label || response.data.data?.credits !== undefined ? `${response.data.data.credits} credits` : "authenticated"}`;
       try {
-        const modelsRes = await axios.get("https://openrouter.ai/api/v1/models", {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 15000,
-        });
-        models = (modelsRes.data.data || []).map((m: any) => ({
-          id: m.id,
-          name: m.name || m.id.split("/").pop(),
-          description: m.description || "",
-          pricing: {
-            prompt: m.pricing?.prompt,
-            completion: m.pricing?.completion,
-          },
-          context_length: m.context_length,
-          architecture: m.architecture,
-          capabilities: {
-            inputModalities: m.architecture?.input_modalities || [],
-            outputModalities: m.architecture?.output_modalities || [],
-          },
-        }));
+        // Same hour-cached catalogue the Lyrics Studio picker uses
+        // (src/lib/openrouter-catalog.ts) — no second 850 KB fetch.
+        models = await getOpenRouterCatalog();
       } catch {
         models = [];
       }
