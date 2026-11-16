@@ -42,6 +42,7 @@ interface PublicPlaylist {
   name: string;
   description: string | null;
   trackCount: number;
+  coverUrl: string | null;
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -344,10 +345,22 @@ export default function PlaylistsPage() {
                         href={`/discover/playlist/${playlist.id}?from=playlists`}
                         className="group flex flex-col gap-3 rounded-[26px] border border-line bg-surface p-4 shadow-[0_18px_60px_rgba(0,0,0,0.25)] transition-colors hover:border-line/20"
                       >
-                        <div className="flex aspect-4/3 w-full items-center justify-center  bg-surface-2 overflow-hidden relative">
-                          <svg className="h-12 w-12 text-ink-dim transition-transform duration-500 group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          </svg>
+                        <div className="relative aspect-4/3 w-full overflow-hidden bg-surface-2">
+                          {playlist.coverUrl ? (
+                            <img
+                              src={playlist.coverUrl}
+                              alt={playlist.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <svg className="h-12 w-12 text-ink-dim transition-transform duration-500 group-hover:scale-105" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                              </svg>
+                            </div>
+                          )}
                           <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <div className="min-w-0">
