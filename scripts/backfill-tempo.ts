@@ -19,6 +19,7 @@
  *   npx tsx scripts/backfill-tempo.ts --user you@mail.com --apply
  *   npx tsx scripts/backfill-tempo.ts --track 53ebbf         # one track, by id prefix
  *   npx tsx scripts/backfill-tempo.ts --concurrency 1      # slower, lighter CPU
+ *   npx tsx scripts/backfill-tempo.ts --track-timeout 300  # give up on a track after 5 min
  *
  * Requires DATABASE_URL (env, .env.local, or the container's env) and the S3
  * settings. See scripts/env.ts for why that lives in its own module.
@@ -54,6 +55,7 @@ function parseArgs(argv: string[]) {
     track: null as string | null,
     concurrency: 2,
     skipRecentDays: 0,
+    trackTimeoutMs: 600_000,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -65,9 +67,11 @@ function parseArgs(argv: string[]) {
     else if (arg === "--user") options.user = argv[++i] ?? null;
     else if (arg === "--track") options.track = argv[++i] ?? null;
     else if (arg === "--skip-recent-days") options.skipRecentDays = Math.max(0, Number(argv[++i]) || 0);
+    else if (arg === "--track-timeout")
+      options.trackTimeoutMs = Math.max(30, Number(argv[++i]) || 600) * 1000;
     else if (arg === "--help" || arg === "-h") {
       console.log(
-        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--track <id|prefix>] [--concurrency N] [--skip-recent-days N]",
+        "Usage: npx tsx scripts/backfill-tempo.ts [--apply] [--all | --limit N] [--user <email|id>] [--track <id|prefix>] [--concurrency N] [--skip-recent-days N] [--track-timeout SECONDS]",
       );
       process.exit(0);
     } else {
@@ -102,12 +106,37 @@ async function measure(trackId: string): Promise<{ features: AudioFeatures | nul
   return { features };
 }
 
-async function processTrack(row: Row, apply: boolean): Promise<Outcome> {
+/**
+ * A stalled object-storage read once left three workers waiting for hours with no
+ * output, which looks exactly like a healthy run until you notice the log stopped
+ * growing. The deadline cannot cancel the abandoned work — the socket is only
+ * released when the process exits — but it keeps one bad track from stalling the
+ * whole batch, and a later pass retries it.
+ */
+async function measureWithDeadline(
+  trackId: string,
+  timeoutMs: number,
+): Promise<{ features: AudioFeatures | null; reason?: string }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<{ features: null; reason: string }>((resolve) => {
+    timer = setTimeout(
+      () => resolve({ features: null, reason: `timed out after ${Math.round(timeoutMs / 1000)}s` }),
+      timeoutMs,
+    );
+  });
+  try {
+    return await Promise.race([measure(trackId), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function processTrack(row: Row, apply: boolean, trackTimeoutMs: number): Promise<Outcome> {
   const existing = parseDna(row.audioDna);
   const title = row.title ?? "(untitled)";
   const before = existing?.tempo ?? null;
 
-  const { features, reason } = await measure(row.id);
+  const { features, reason } = await measureWithDeadline(row.id, trackTimeoutMs);
   if (!features) return { id: row.id, title, status: "failed", reason: reason ?? "unknown" };
 
   const next: AudioDna = {
@@ -212,7 +241,9 @@ async function main() {
   const outcomes: Outcome[] = [];
   for (let i = 0; i < batch.length; i += options.concurrency) {
     const slice = batch.slice(i, i + options.concurrency);
-    const results = await Promise.all(slice.map((row) => processTrack(row, options.apply)));
+    const results = await Promise.all(
+      slice.map((row) => processTrack(row, options.apply, options.trackTimeoutMs)),
+    );
     outcomes.push(...results);
 
     for (const result of results) {
