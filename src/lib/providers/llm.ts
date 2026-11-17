@@ -489,6 +489,7 @@ Rules:
 - Preserve section tags exactly as-is (e.g. [Verse], [Chorus], [Bridge], [Outro])
 - Preserve line breaks and overall structure
 - Preserve meaning and emotional tone over literal word-for-word translation
+- Preserve the narrative perspective and the gender of the speaker and of the person addressed exactly as in the source (I/you/he/she must stay the same person) — never switch them for the sake of a smoother line
 - Keep it natural and singable in the target language
 - Return ONLY the translated lyrics — no explanation, no preamble, no quotes around the result`;
 

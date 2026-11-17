@@ -102,7 +102,8 @@ Rules:
 - Keep the same id values as provided
 - Do not omit or add blocks
 - Do not include extra keys
-- Preserve line breaks inside each block`;
+- Preserve line breaks inside each block
+- Preserve the narrative perspective and the gender of the speaker and of the person addressed exactly as in the source (I/you/he/she must stay the same person) — never switch them just because the target language would read more smoothly that way`;
 
   const userPrompt = `Target language: ${targetLanguage.trim()}
 

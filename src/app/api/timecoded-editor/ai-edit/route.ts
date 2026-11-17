@@ -46,7 +46,7 @@ ARTISTIC EXPRESSION TAKES PRECEDENCE: spelling and grammar are always subordinat
       "Fix grammatical errors in the lyrics. Preserve the original meaning, rhythm, and poetic style. Only correct genuine, unintentional grammar mistakes — never normalize deliberate artistic or colloquial phrasing.",
     phonetic:
       "Convert phonetically-spelled words back to their correctly-spelled form. For example, 'Ai lav ju' → 'I love you', 'wanna' stays as 'wanna' (intentional style). Focus on unintentional phonetic misspellings.",
-    translate: `Translate the lyrics into ${language || "English"}. Preserve the poetic style, rhythm, and emotional intent. Do not transliterate — produce natural, singable lyrics in the target language.`,
+    translate: `Translate the lyrics into ${language || "English"}. Preserve the poetic style, rhythm, and emotional intent, and keep the narrative perspective and the gender of the speaker and of the person addressed exactly as in the original. Do not transliterate — produce natural, singable lyrics in the target language.`,
     readability:
       "Improve the readability and flow of the lyrics. Fix awkward phrasing, improve word choice, and make the lines more singable — while preserving the original meaning and emotional tone.",
   };
