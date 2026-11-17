@@ -99,6 +99,7 @@ Rules:
 - compositionScore: 1-10 rating of the composition itself — structure, arrangement, melodic/harmonic development, dynamics and build across sections.
 - vocalScore: 1-10 rating of the vocal performance — pitch accuracy, delivery, emotion, phrasing, how well it sits in the mix. null when the track is an instrumental or has no vocals.
 - productionScore: 1-10 rating of the production/mix — clarity, balance, stereo image, loudness/ mastering feel, overall polish.
+- Never assume the gender, identity, or background of the vocalist, narrator, or protagonist. Only say "he"/"she" (or a gendered noun like "man"/"vrouw") when the lyrics themselves make that explicit; otherwise use neutral wording — "the vocalist", "the narrator", "the protagonist" (in Dutch: "de vocalist", "de verteller", "de hoofdpersoon"). Guessing a gender from the sound of a voice is not allowed.
 - Be honest and critical — the goal is improvement.`;
 
   let userText = hasLyrics ? `Lyrics:\n${lyrics!.slice(0, 4000)}` : "Lyrics: none (instrumental or not provided)";

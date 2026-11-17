@@ -24,13 +24,6 @@
 - De memory-systemen zijn Bo's eigen infrastructuur — stel nooit voor ze te vervangen of te omzeilen
 - Raadpleeg **Context7** voordat je library-specifieke code schrijft of een API aanroept
 
-## Memory Protocol
-Start session: use hindsight recall to load my profile and recent project context. Summarize what you know about me, then we begin.
-
-Before answering, always recall relevant context using the hindsight MCP tool.
-Query: current topic, project name, or user preferences.
-
-After important decisions or changes, store a summary using hindsight retain.
 
 ## 📋 Walkthrough-protocol
 

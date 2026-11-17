@@ -1,0 +1,68 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - link "MelodIQ Create. Refine. Produce. build number 0.202610142135" [ref=e5] [cursor=pointer]:
+        - /url: /discover
+        - generic [ref=e8]:
+          - generic [ref=e9]: MelodIQ
+          - generic [ref=e10]: Create. Refine. Produce.
+          - generic [ref=e11]: build number 0.202610142135
+      - navigation [ref=e12]:
+        - link "Dashboard" [ref=e13] [cursor=pointer]:
+          - /url: /discover
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: BROWSE
+          - generic [ref=e21]:
+            - link "Discover" [ref=e22] [cursor=pointer]:
+              - /url: /discover
+            - link "Explore" [ref=e26] [cursor=pointer]:
+              - /url: /explore
+            - link "Releases" [ref=e30] [cursor=pointer]:
+              - /url: /discover/releases
+            - link "> Library" [ref=e35] [cursor=pointer]:
+              - /url: /library
+              - generic [ref=e38]:
+                - generic [ref=e39]: ">"
+                - text: Library
+            - link "Playlists" [ref=e40] [cursor=pointer]:
+              - /url: /playlists
+      - link "Sign in" [ref=e46] [cursor=pointer]:
+        - /url: /login
+    - button "Sidebar sluiten" [ref=e50]
+    - generic [ref=e53]:
+      - main [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e57]:
+            - generic [ref=e58]:
+              - heading "Library/Tracks" [level=1] [ref=e60]
+              - generic [ref=e61]:
+                - button "Tracks" [ref=e62]
+                - button "Bin" [ref=e63]
+                - button "Archive" [ref=e66]
+            - generic [ref=e69]:
+              - button "Relax" [ref=e70]
+              - button "Upload Files" [ref=e71]
+          - generic [ref=e72]: Loading tracks...
+      - separator "Resize details panel" [ref=e74]
+      - complementary [ref=e75]:
+        - generic [ref=e78]:
+          - heading "Track Details" [level=3] [ref=e79]
+          - paragraph [ref=e80]: Select a track to show song info and lyrics.
+  - generic [ref=e83]:
+    - generic [ref=e84]: No track selected
+    - generic [ref=e89]:
+      - button "Shuffle off" [ref=e90]
+      - button "Repeat off" [ref=e93]
+      - button "Previous" [disabled] [ref=e99]
+      - button "Play" [disabled] [ref=e102]
+      - button "Next" [disabled] [ref=e105]
+      - generic [ref=e108]:
+        - generic [ref=e109]: 0:00
+        - slider "Seek position" [disabled] [ref=e110] [cursor=pointer]: "0"
+        - generic [ref=e111]: 0:00
+    - generic [ref=e112]:
+      - button "Autoplay on" [ref=e113]
+      - button "Hide song details" [ref=e117]
+      - button "Fullscreen" [disabled] [ref=e120]
+      - slider "Volume" [ref=e126] [cursor=pointer]: "0.8"
+  - button "Open Next.js Dev Tools" [ref=e132] [cursor=pointer]
