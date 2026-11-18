@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStudioStore } from "@/lib/store";
 import { useT } from "@/hooks/useT";
+import NameVoiceDialog from "./NameVoiceDialog";
 
 interface ClonedVoice {
   id: string;
@@ -25,6 +26,7 @@ export default function VoiceCloneToggle() {
   const [loaded, setLoaded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNameDialog, setShowNameDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -94,11 +96,45 @@ export default function VoiceCloneToggle() {
 
   return (
     <div className="mb-4 p-3  bg-white/5 border border-line">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-ink-muted">
-            {completedVoice?.name || t("studio.myClonedVoice")}
-          </p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-medium text-ink-muted">
+              {completedVoice?.name || t("studio.myClonedVoice")}
+            </p>
+            {completedVoice &&
+              (completedVoice.name ? (
+                <button
+                  type="button"
+                  onClick={() => setShowNameDialog(true)}
+                  aria-label={t("studio.renameVoice")}
+                  title={t("studio.renameVoice")}
+                  className="shrink-0 text-ink-dim transition-colors hover:text-ink-muted"
+                >
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowNameDialog(true)}
+                  className="shrink-0 text-[10px] text-accent hover:underline"
+                >
+                  {t("studio.nameThisVoice")}
+                </button>
+              ))}
+          </div>
           <p className="text-[10px] text-ink-dim mt-0.5">
             {!loaded && t("library.loading")}
             {loaded && !activeVoice && t("studio.noVoiceUploadedYet")}
@@ -145,6 +181,15 @@ export default function VoiceCloneToggle() {
       {usePersonaVoice && (
         <p className="text-[10px] text-ink-dim mt-1">{t("studio.personaVoiceHint")}</p>
       )}
+
+      <NameVoiceDialog
+        isOpen={showNameDialog}
+        onClose={() => setShowNameDialog(false)}
+        voice={completedVoice ?? null}
+        onSaved={(updated) =>
+          setVoices((prev) => prev.map((v) => (v.id === updated.id ? { ...v, name: updated.name } : v)))
+        }
+      />
     </div>
   );
 }
