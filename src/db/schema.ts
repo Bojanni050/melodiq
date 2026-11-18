@@ -802,10 +802,43 @@ export const dnaTraits = pgTable("dna_traits", {
   sourceCount: integer("source_count").default(0).notNull(),
   // Summed signal weight (recency, ratings, plays) behind the trait.
   weight: real("weight").default(0).notNull(),
+  // When the trait first appeared and when its value last actually changed.
+  // "changed this week" (the pulsing node in the UI) is derived from the second
+  // one, and both survive a recompute that produces the same value.
+  firstSeenAt: timestamp("first_seen_at").defaultNow().notNull(),
+  lastChangedAt: timestamp("last_changed_at").defaultNow().notNull(),
+  // Set when the user pins a trait: a recompute then leaves this row alone, so a
+  // deliberate correction is not overwritten by the next rebuild.
+  lockedAt: timestamp("locked_at"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("dna_traits_profile_key_unique").on(table.profileId, table.traitKey),
   index("dna_traits_user_id_idx").on(table.userId),
+]);
+
+/**
+ * Append-only trail of trait changes, one row per trait per recompute in which
+ * the value really moved. This is what makes "changed this week" explainable:
+ * the current snapshot says what the trait is, this says how it got there.
+ * Mirrored in drizzle/0023_dna_trait_history.sql and src/db/init.ts.
+ */
+export const dnaTraitHistory = pgTable("dna_trait_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  traitKey: varchar("trait_key", { length: 60 }).notNull(),
+  category: varchar("category", { length: 20 }).notNull(),
+  // Human-readable previous and current value ("42% of lines rhyme").
+  previousDisplay: varchar("previous_display", { length: 255 }),
+  display: varchar("display", { length: 255 }),
+  previousNumber: real("previous_number"),
+  valueNumber: real("value_number"),
+  // up | down — derived from the numbers, not from the display text.
+  direction: varchar("direction", { length: 10 }).notNull(),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+}, (table) => [
+  index("dna_trait_history_profile_key_idx").on(table.profileId, table.traitKey),
+  index("dna_trait_history_user_changed_idx").on(table.userId, table.changedAt),
 ]);
 
 export const dnaProfilesRelations = relations(dnaProfiles, ({ one, many }) => ({

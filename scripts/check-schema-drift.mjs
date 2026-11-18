@@ -59,6 +59,11 @@ const splitBlobs = [
   "createTablesSql",
   "alterUsersSql",
   "alterTracksSql",
+  // Both were missing while initializeDatabase() does run them: without these
+  // the checker never saw the api_logs usage columns or the dna_traits
+  // timestamps, so drift in those blocks was invisible.
+  "alterApiLogsSql",
+  "alterDnaSql",
   "alterPlaylistsSql",
   "alterReleasesSql",
   "dropSongsSql",

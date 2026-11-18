@@ -380,7 +380,7 @@ CREATE TABLE IF NOT EXISTS "cloned_voices" (
 CREATE INDEX IF NOT EXISTS "cloned_voices_user_id_idx" ON "cloned_voices"("user_id");
 
 -- Melody DNA: one profile row per user plus the traits a recompute derives from
--- their finished tracks. Mirrors drizzle/0015_melody_dna.sql; kept here because
+-- their finished tracks. Mirrors drizzle/0015_melody_dna.sql — kept here because
 -- deployed databases are maintained through initializeDatabase() on boot.
 CREATE TABLE IF NOT EXISTS "dna_profiles" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -413,11 +413,33 @@ CREATE TABLE IF NOT EXISTS "dna_traits" (
   "confidence" real NOT NULL DEFAULT 0,
   "source_count" integer NOT NULL DEFAULT 0,
   "weight" real NOT NULL DEFAULT 0,
+  "first_seen_at" timestamp NOT NULL DEFAULT now(),
+  "last_changed_at" timestamp NOT NULL DEFAULT now(),
+  "locked_at" timestamp,
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "dna_traits_profile_key_unique" ON "dna_traits"("profile_id", "trait_key");
 CREATE INDEX IF NOT EXISTS "dna_traits_user_id_idx" ON "dna_traits"("user_id");
+
+-- Append-only trail of trait changes: one row per recompute in which the value
+-- really moved. Mirrors drizzle/0022_dna_trait_history.sql.
+CREATE TABLE IF NOT EXISTS "dna_trait_history" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "profile_id" uuid NOT NULL,
+  "user_id" uuid NOT NULL,
+  "trait_key" varchar(60) NOT NULL,
+  "category" varchar(20) NOT NULL,
+  "previous_display" varchar(255),
+  "display" varchar(255),
+  "previous_number" real,
+  "value_number" real,
+  "direction" varchar(10) NOT NULL,
+  "changed_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "dna_trait_history_profile_key_idx" ON "dna_trait_history"("profile_id", "trait_key");
+CREATE INDEX IF NOT EXISTS "dna_trait_history_user_changed_idx" ON "dna_trait_history"("user_id", "changed_at");
 
 -- User corrections, append-only: the current stance per trait is folded from
 -- these events at read time (lib/dna/feedback.ts), so a recompute cannot erase
@@ -464,6 +486,29 @@ ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cost_usd double precision;
 -- A cloned voice can be named after APIMart produced its persona (asked in a
 -- dialog on the track card); existing rows simply keep an empty label.
 ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS name varchar(120);
+`;
+
+// Melody DNA trait timestamps and locks (see schema.ts dnaTraits): additive and
+// idempotent, so deployed databases pick them up on boot.
+const alterDnaSql = `
+ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS first_seen_at timestamp NOT NULL DEFAULT now();
+ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS last_changed_at timestamp NOT NULL DEFAULT now();
+ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS locked_at timestamp;
+CREATE TABLE IF NOT EXISTS "dna_trait_history" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "profile_id" uuid NOT NULL,
+  "user_id" uuid NOT NULL,
+  "trait_key" varchar(60) NOT NULL,
+  "category" varchar(20) NOT NULL,
+  "previous_display" varchar(255),
+  "display" varchar(255),
+  "previous_number" real,
+  "value_number" real,
+  "direction" varchar(10) NOT NULL,
+  "changed_at" timestamp NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS "dna_trait_history_profile_key_idx" ON "dna_trait_history"("profile_id", "trait_key");
+CREATE INDEX IF NOT EXISTS "dna_trait_history_user_changed_idx" ON "dna_trait_history"("user_id", "changed_at");
 `;
 
 const alterTracksSql = `
@@ -702,6 +747,7 @@ export async function initializeDatabase(): Promise<void> {
     await executeSqlStatements(targetClient, alterApiLogsSql);
     await executeSqlStatements(targetClient, alterUsersSql);
     await executeSqlStatements(targetClient, alterTracksSql);
+    await executeSqlStatements(targetClient, alterDnaSql);
     await targetClient.unsafe(stripDnaPromptHintSql);
     await executeSqlStatements(targetClient, alterPlaylistsSql);
     await executeSqlStatements(targetClient, alterReleasesSql);
