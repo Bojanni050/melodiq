@@ -1,0 +1,1 @@
+ALTER TABLE "cloned_voices" ADD COLUMN "name" varchar(120);

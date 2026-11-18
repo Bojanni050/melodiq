@@ -30,6 +30,7 @@ import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
 import TrackPlayButton from "./TrackPlayButton";
 import TrackRating from "./TrackRating";
 import TrackActionMenu from "./TrackActionMenu";
+import CreateVoiceFromTrackDialog from "./CreateVoiceFromTrackDialog";
 import TrackDnaPanel from "./TrackDnaPanel";
 import SectionReplaceEditor from "./SectionReplaceEditor";
 
@@ -223,6 +224,7 @@ const TrackCard = memo(function TrackCard({
   const [tclError, setTclError] = useState<string | null>(null);
   const [confirmRegenerateTcl, setConfirmRegenerateTcl] = useState(false);
   const [showTclDoneDialog, setShowTclDoneDialog] = useState(false);
+  const [showCreateVoiceDialog, setShowCreateVoiceDialog] = useState(false);
   // Local mirror of "this track now has a TCL document", so the TCL badge (and
   // the menu's Open/Regenerate entries) flip the moment the poll reports done.
   // Relying on the parent list refetch alone isn't enough: pages that don't
@@ -621,6 +623,13 @@ const TrackCard = memo(function TrackCard({
     track.status === "done" && !!track.lyrics?.trim() && !!(track.audioUrl || track.s3KeyHd);
   const canGenerateTcl = tclAlignmentPossible && !hasTclDocument;
   const canRegenerateTcl = tclAlignmentPossible && hasTclDocument;
+  // Voice cloning is a Suno feature and needs vocals: an instrumental has no
+  // voice to extract, and both cases need the finished audio.
+  const canCreateVoiceFromTrack =
+    track.status === "done" &&
+    !track.instrumental &&
+    (track.provider === "apimart" || track.provider === "poyo") &&
+    !!(track.audioUrl || track.s3KeyHd);
   const rawCoverUrl = actions.coverOverrideUrl ?? track.coverUrl ?? null;
   const effectiveCoverUrl = rawCoverUrl && (rawCoverUrl.startsWith("http") || rawCoverUrl.startsWith("/"))
     ? rawCoverUrl
@@ -770,6 +779,14 @@ const TrackCard = memo(function TrackCard({
             void handleGenerateTclClick();
           }}
           onCancel={() => setConfirmRegenerateTcl(false)}
+        />
+      )}
+
+      {showCreateVoiceDialog && (
+        <CreateVoiceFromTrackDialog
+          isOpen={showCreateVoiceDialog}
+          onClose={() => setShowCreateVoiceDialog(false)}
+          track={track}
         />
       )}
 
@@ -1411,6 +1428,9 @@ const TrackCard = memo(function TrackCard({
               }
               onRegenerateTclClick={canRegenerateTcl ? () => setConfirmRegenerateTcl(true) : undefined}
               generatingTcl={generatingTcl}
+              onCreateVoiceFromTrack={
+                canCreateVoiceFromTrack ? () => setShowCreateVoiceDialog(true) : undefined
+              }
               isListener={isListenerRole}
               onGoToArtist={
                 artistPageSlug ? () => router.push(`/artist/${artistPageSlug}`) : undefined

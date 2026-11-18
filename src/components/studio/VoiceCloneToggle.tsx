@@ -8,6 +8,8 @@ interface ClonedVoice {
   id: string;
   status: "pending" | "completed" | "failed";
   personaId: string | null;
+  /** Label the user gave it, e.g. when cloning a track from its action menu. */
+  name: string | null;
   error: string | null;
   createdAt: string;
 }
@@ -94,7 +96,9 @@ export default function VoiceCloneToggle() {
     <div className="mb-4 p-3  bg-white/5 border border-line">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-ink-muted">{t("studio.myClonedVoice")}</p>
+          <p className="text-sm font-medium text-ink-muted">
+            {completedVoice?.name || t("studio.myClonedVoice")}
+          </p>
           <p className="text-[10px] text-ink-dim mt-0.5">
             {!loaded && t("library.loading")}
             {loaded && !activeVoice && t("studio.noVoiceUploadedYet")}

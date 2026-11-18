@@ -107,6 +107,9 @@ export const clonedVoices = pgTable("cloned_voices", {
   userId: uuid("user_id").notNull(),
   apimartTaskId: varchar("apimart_task_id", { length: 255 }).notNull(),
   personaId: varchar("persona_id", { length: 255 }),
+  // User-given label, asked for in a dialog once APIMart has produced the
+  // persona. Nullable because a voice is usable before (or without) naming.
+  name: varchar("name", { length: 120 }),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   sourceAudioUrl: text("source_audio_url").notNull(),
   error: text("error"),

@@ -369,6 +369,7 @@ CREATE TABLE IF NOT EXISTS "cloned_voices" (
   "user_id" uuid NOT NULL,
   "apimart_task_id" varchar(255) NOT NULL,
   "persona_id" varchar(255),
+  "name" varchar(120),
   "status" varchar(20) NOT NULL DEFAULT 'pending',
   "source_audio_url" text NOT NULL,
   "error" text,
@@ -460,6 +461,9 @@ ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS prompt_tokens integer;
 ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS completion_tokens integer;
 ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cached_tokens integer;
 ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cost_usd double precision;
+-- A cloned voice can be named after APIMart produced its persona (asked in a
+-- dialog on the track card); existing rows simply keep an empty label.
+ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS name varchar(120);
 `;
 
 const alterTracksSql = `

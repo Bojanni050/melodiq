@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 
 import TrackActionMenu from "./TrackActionMenu";
 import { useTrackCardActions } from "./useTrackCardActions";
 import AlreadyInPlaylistDialog from "./AlreadyInPlaylistDialog";
 import CreatePlaylistDialog from "./CreatePlaylistDialog";
+import CreateVoiceFromTrackDialog from "./CreateVoiceFromTrackDialog";
 import DuplicatePlaylistDialog from "./DuplicatePlaylistDialog";
 import MergeWorkspaceDialog from "./MergeWorkspaceDialog";
 import MoveToWorkspaceDialog from "./MoveToWorkspaceDialog";
@@ -52,6 +53,15 @@ export default function TrackOptionsMenu({
 }: TrackOptionsMenuProps) {
   const actions = useTrackCardActions({ track, tracksById });
   const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const [showCreateVoiceDialog, setShowCreateVoiceDialog] = useState(false);
+
+  // Same gate as TrackCard: a Suno track with vocals and finished audio is the
+  // only thing APIMart can extract a voice from.
+  const canCreateVoiceFromTrack =
+    track.status === "done" &&
+    !track.instrumental &&
+    (track.provider === "apimart" || track.provider === "poyo") &&
+    !!(track.audioUrl || track.s3KeyHd);
 
   // Same derivation as TrackCard, so the workspace dialog lists the same tree.
   const orderedWorkspaceOptions = useMemo(() => {
@@ -111,6 +121,14 @@ export default function TrackOptionsMenu({
         onClose={() => actions.setShowCreatePlaylistDialog(false)}
         onCreate={actions.handleCreatePlaylist}
       />
+
+      {showCreateVoiceDialog && (
+        <CreateVoiceFromTrackDialog
+          isOpen={showCreateVoiceDialog}
+          onClose={() => setShowCreateVoiceDialog(false)}
+          track={track}
+        />
+      )}
 
       <MoveToWorkspaceDialog
         isOpen={actions.workspaceMenuOpen}
@@ -200,6 +218,9 @@ export default function TrackOptionsMenu({
         onHideClick={onHideClick}
         onArchiveClick={onArchiveClick}
         onGoToTrackClick={onGoToTrackClick}
+        onCreateVoiceFromTrack={
+          canCreateVoiceFromTrack ? () => setShowCreateVoiceDialog(true) : undefined
+        }
       />
     </>
   );

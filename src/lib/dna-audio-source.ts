@@ -20,9 +20,10 @@ export interface DnaAudioSource {
 }
 
 /**
- * Resolves the audio sent to Track DNA analyses.
+ * Resolves a track's audio as an in-memory MP3, for the server-side processors
+ * that only speak MP3 — the Track DNA analyses and APIMart voice cloning.
  *
- * Always hands the analysis an MP3: the best available source
+ * Always hands the caller an MP3: the best available source
  * (WAV/FLAC → OGG/MP3 → fallback) is downloaded and, unless it is already
  * an MP3, transcoded to MP3 (192kbps) in-memory. Nothing is uploaded to
  * S3 or written to disk — the buffer lives only for the duration of the

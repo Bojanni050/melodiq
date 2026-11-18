@@ -62,6 +62,9 @@ interface TrackActionMenuProps {
   onOpenTclEditorClick?: () => void;
   onRegenerateTclClick?: () => void;
   generatingTcl?: boolean;
+  /** Clones the voice out of this track via APIMart; absent when the track has
+   *  no vocals or no finished audio. */
+  onCreateVoiceFromTrack?: () => void;
   /** Listeners get a stripped-down menu: only queue/playlist/artist actions. */
   isListener?: boolean;
   onGoToArtist?: () => void;
@@ -147,6 +150,7 @@ export default function TrackActionMenu({
   onTogglePublish,
   togglingPublish,
   onGenerateTclClick,
+  onCreateVoiceFromTrack,
   onOpenTclEditorClick,
   onRegenerateTclClick,
   generatingTcl,
@@ -434,6 +438,18 @@ export default function TrackActionMenu({
                 </button>
               )}
             </MenuSection>
+          )}
+          {onCreateVoiceFromTrack && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateVoiceFromTrack();
+                setMenuOpen(false);
+              }}
+              className="w-full text-left px-2.5 py-1.5 rounded text-sm text-ink-muted hover:bg-white/5"
+            >
+              Create Voice from This Track
+            </button>
           )}
           {canExtractStems && (onStemsClick || onMasteringClick || onEditSectionClick) && (
             <MenuSection
