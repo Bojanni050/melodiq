@@ -484,7 +484,7 @@ ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS completion_tokens integer;
 ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cached_tokens integer;
 ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cost_usd double precision;
 -- A cloned voice can be named after APIMart produced its persona (asked in a
--- dialog on the track card); existing rows simply keep an empty label.
+-- dialog on the track card). Existing rows simply keep an empty label.
 ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS name varchar(120);
 `;
 
