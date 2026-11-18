@@ -169,6 +169,13 @@
       "when": 1795036975362,
       "tag": "0023_dna_trait_history",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795037745416,
+      "tag": "0024_early_freak",
+      "breakpoints": true
     }
   ]
 }

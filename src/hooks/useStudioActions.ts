@@ -158,7 +158,12 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
           const voicesRes = await fetch("/api/voice");
           if (voicesRes.ok) {
             const { voices } = await voicesRes.json();
-            personaId = voices?.find((v: any) => v.status === "completed")?.personaId ?? undefined;
+            // The explicitly selected voice wins; the fallback keeps the old
+            // "first completed" behaviour for selections made before the picker.
+            personaId =
+              voices?.find((v: any) => v.isSelected && v.status === "completed")?.personaId ??
+              voices?.find((v: any) => v.status === "completed")?.personaId ??
+              undefined;
           }
         } catch {}
       }

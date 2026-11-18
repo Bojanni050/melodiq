@@ -382,6 +382,8 @@ const nl: typeof en = {
     voiceNamePlaceholder: "bijv. Warme bariton",
     saveVoiceName: "Naam opslaan",
     nameVoiceFailed: "Naam opslaan mislukt",
+    voicePickerLabel: "Te gebruiken stem",
+    unnamedVoiceOption: "Naamloze stem",
   },
   melody: {
     heading: "Melodie",

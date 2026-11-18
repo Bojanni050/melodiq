@@ -379,6 +379,8 @@ const en = {
     voiceNamePlaceholder: "e.g. Warm baritone",
     saveVoiceName: "Save name",
     nameVoiceFailed: "Could not save the name",
+    voicePickerLabel: "Voice to use",
+    unnamedVoiceOption: "Unnamed voice",
   },
   melody: {
     heading: "Melody",

@@ -50,12 +50,25 @@ export async function GET(
       console.log(`[voice/status] APIMart createVoice completed for ${voice.id}, raw result:`, JSON.stringify(status.rawResult));
 
       const personaId = extractPersonaId(status.rawResult);
+
+      // The first voice to complete selects itself, so a user with existing
+      // clones keeps hearing their voice without touching a picker. Once a
+      // selection exists it is never stolen — choosing is /api/voice/select.
+      const existingSelection = personaId
+        ? await db
+            .select({ id: clonedVoices.id })
+            .from(clonedVoices)
+            .where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.isSelected, true)))
+            .limit(1)
+        : [];
+
       const updated = await db
         .update(clonedVoices)
         .set({
           status: personaId ? "completed" : "failed",
           personaId,
           error: personaId ? null : "APIMart did not return a usable persona id",
+          ...(personaId && existingSelection.length === 0 ? { isSelected: true } : {}),
           updatedAt: new Date(),
         })
         .where(eq(clonedVoices.id, voice.id))

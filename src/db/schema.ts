@@ -110,6 +110,11 @@ export const clonedVoices = pgTable("cloned_voices", {
   // User-given label, asked for in a dialog once APIMart has produced the
   // persona. Nullable because a voice is usable before (or without) naming.
   name: varchar("name", { length: 120 }),
+  // The one voice the Studio sends as persona_id — at most one per user. The
+  // first voice to complete auto-selects itself (so existing users keep their
+  // sound), but once the user picks one explicitly, later clones never steal
+  // the selection.
+  isSelected: boolean("is_selected").notNull().default(false),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   sourceAudioUrl: text("source_audio_url").notNull(),
   error: text("error"),

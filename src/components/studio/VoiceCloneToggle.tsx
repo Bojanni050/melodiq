@@ -11,6 +11,8 @@ interface ClonedVoice {
   personaId: string | null;
   /** Label the user gave it, e.g. when cloning a track from its action menu. */
   name: string | null;
+  /** The one voice the Studio sends as persona_id — set via /api/voice/select. */
+  isSelected: boolean;
   error: string | null;
   createdAt: string;
 }
@@ -46,7 +48,10 @@ export default function VoiceCloneToggle() {
   }, [fetchVoices]);
 
   const activeVoice = voices[0];
-  const completedVoice = voices.find((v) => v.status === "completed");
+  const completedVoices = voices.filter((v) => v.status === "completed");
+  // The explicit pick wins; before the user ever picks one, the first
+  // completed voice keeps the pre-picker behaviour.
+  const selectedVoice = completedVoices.find((v) => v.isSelected) ?? completedVoices[0];
 
   useEffect(() => {
     if (pollTimerRef.current) {
@@ -71,8 +76,26 @@ export default function VoiceCloneToggle() {
   }, [activeVoice]);
 
   useEffect(() => {
-    if (!completedVoice && usePersonaVoice) setUsePersonaVoice(false);
-  }, [completedVoice, usePersonaVoice, setUsePersonaVoice]);
+    if (!selectedVoice && usePersonaVoice) setUsePersonaVoice(false);
+  }, [selectedVoice, usePersonaVoice, setUsePersonaVoice]);
+
+  const handleSelectVoice = useCallback(async (voiceId: string) => {
+    try {
+      const res = await fetch("/api/voice/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voiceId }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      // The route returns the full refreshed list, so the header, picker and
+      // checkbox all flip to the new selection from one source of truth.
+      if (data.voices) setVoices(data.voices);
+    } catch {
+      // A failed selection is not worth an error banner — the old selection
+      // simply stays active and the user can retry.
+    }
+  }, []);
 
   const handleFileSelected = useCallback(async (file: File) => {
     setError(null);
@@ -100,10 +123,10 @@ export default function VoiceCloneToggle() {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-medium text-ink-muted">
-              {completedVoice?.name || t("studio.myClonedVoice")}
+              {selectedVoice?.name || t("studio.myClonedVoice")}
             </p>
-            {completedVoice &&
-              (completedVoice.name ? (
+            {selectedVoice &&
+              (selectedVoice.name ? (
                 <button
                   type="button"
                   onClick={() => setShowNameDialog(true)}
@@ -140,7 +163,7 @@ export default function VoiceCloneToggle() {
             {loaded && !activeVoice && t("studio.noVoiceUploadedYet")}
             {loaded && activeVoice?.status === "pending" && t("studio.voiceCloningInProgress")}
             {loaded && activeVoice?.status === "failed" && (activeVoice.error || t("studio.cloningFailed"))}
-            {loaded && completedVoice && t("studio.voiceReadyToUse")}
+            {loaded && selectedVoice && t("studio.voiceReadyToUse")}
           </p>
         </div>
         <button
@@ -166,15 +189,34 @@ export default function VoiceCloneToggle() {
 
       {error && <p className="text-[10px] text-red-400 mt-2">{error}</p>}
 
+      {completedVoices.length > 1 && (
+        <label className="mt-2 flex items-center gap-2">
+          <span className="text-[10px] text-ink-dim shrink-0">{t("studio.voicePickerLabel")}</span>
+          <select
+            value={selectedVoice?.id ?? ""}
+            onChange={(e) => void handleSelectVoice(e.target.value)}
+            aria-label={t("studio.voicePickerLabel")}
+            className="input-field text-sm py-1.5 min-w-0"
+          >
+            {completedVoices.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name ||
+                  `${t("studio.unnamedVoiceOption")} · ${new Date(v.createdAt).toLocaleDateString()}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
         <input
           type="checkbox"
           checked={usePersonaVoice}
-          disabled={!completedVoice}
+          disabled={!selectedVoice}
           onChange={(e) => setUsePersonaVoice(e.target.checked)}
           className="accent-accent disabled:opacity-40"
         />
-        <span className={`text-sm ${completedVoice ? "text-ink-muted" : "text-ink-dim"}`}>
+        <span className={`text-sm ${selectedVoice ? "text-ink-muted" : "text-ink-dim"}`}>
           {t("studio.useMyVoiceLabel")}
         </span>
       </label>
@@ -185,7 +227,7 @@ export default function VoiceCloneToggle() {
       <NameVoiceDialog
         isOpen={showNameDialog}
         onClose={() => setShowNameDialog(false)}
-        voice={completedVoice ?? null}
+        voice={selectedVoice ?? null}
         onSaved={(updated) =>
           setVoices((prev) => prev.map((v) => (v.id === updated.id ? { ...v, name: updated.name } : v)))
         }

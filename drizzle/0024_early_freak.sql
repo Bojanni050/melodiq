@@ -1,0 +1,1 @@
+ALTER TABLE "cloned_voices" ADD COLUMN "is_selected" boolean DEFAULT false NOT NULL;
