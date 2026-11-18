@@ -73,29 +73,47 @@ export default function CreateVoiceFromTrackDialog({
 
   // APIMart reports completion through the voice row, so poll it while the
   // dialog is open — the Studio's own poller only runs on its own page.
+  //
+  // The poll has to keep itself alive: a one-shot timeout dies the moment the
+  // task is still pending, because nothing in the effect's dependencies
+  // changes then. An interval keeps firing until the phase flips.
   useEffect(() => {
     if (!isOpen || phase !== "waiting" || !voiceId) return;
 
     let cancelled = false;
-    const timer = setTimeout(async () => {
+
+    const poll = async () => {
       try {
         const res = await fetch(`/api/voice/status/${voiceId}`);
-        if (!res.ok || cancelled) return;
+        if (cancelled) return;
+        if (!res.ok) {
+          setError("Could not check the voice status");
+          setPhase("error");
+          return;
+        }
         const data = await res.json();
-        if (data.voice?.status === "completed") {
+        if (cancelled) return;
+        if (!data.voice) {
+          setError("Could not check the voice status");
+          setPhase("error");
+          return;
+        }
+        if (data.voice.status === "completed") {
           setPhase("naming");
-        } else if (data.voice?.status === "failed") {
+        } else if (data.voice.status === "failed") {
           setError(data.voice.error || "Voice cloning failed");
           setPhase("error");
         }
       } catch {
         // Keep waiting; a single failed poll says nothing about the task.
       }
-    }, POLL_INTERVAL_MS);
+    };
+
+    const timer = setInterval(() => void poll(), POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      clearInterval(timer);
     };
   }, [isOpen, phase, voiceId]);
 

@@ -121,4 +121,49 @@ describe("CreateVoiceFromTrackDialog", () => {
     expect(screen.getByText("No vocals detected")).toBeTruthy();
     expect(screen.queryByLabelText("Voice name")).toBeNull();
   });
+
+  it("keeps polling while the task is still pending", async () => {
+    // A pending answer changes nothing in the dialog, so a one-shot poll would
+    // stop right here and the dialog would hang forever.
+    let polls = 0;
+    const fetchMock = mockApi({
+      "GET /api/voice/status/voice-1": () => {
+        polls += 1;
+        return new Response(JSON.stringify({ voice: { id: "voice-1", status: "pending" } }), {
+          status: 200,
+        });
+      },
+    });
+
+    render(<CreateVoiceFromTrackDialog isOpen onClose={vi.fn()} track={track} />);
+    await act(async () => {});
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+
+    expect(polls).toBe(2);
+    expect(screen.getByText(/Extracting the voice/)).toBeTruthy();
+    const statusCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).includes("/api/voice/status/voice-1")
+    );
+    expect(statusCalls).toHaveLength(2);
+  });
+
+  it("reports a failing status request instead of waiting forever", async () => {
+    mockApi({
+      "GET /api/voice/status/voice-1": () => new Response("boom", { status: 500 }),
+    });
+
+    render(<CreateVoiceFromTrackDialog isOpen onClose={vi.fn()} track={track} />);
+    await act(async () => {});
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+
+    expect(screen.getByText("Could not check the voice status")).toBeTruthy();
+    expect(screen.queryByText(/Extracting the voice/)).toBeNull();
+  });
 });

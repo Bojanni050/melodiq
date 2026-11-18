@@ -2,6 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildApimartInspoBody } from "@/lib/providers/apimart-inspo";
 import { buildApimartDownloadBody } from "@/lib/providers/apimart-download";
+import { buildApimartPersonaBody } from "@/lib/providers/apimart-persona";
 
 const APIMART_BASE_URL = "https://api.apimart.ai/v1/music";
 const APIMART_ROOT_URL = "https://api.apimart.ai";
@@ -187,6 +188,48 @@ export async function createApimartVoice(audioUrl: string): Promise<{ taskId: st
     }
 
     console.log(`[apimart] voice creation submitted — taskId=${taskId}`);
+    return { taskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a Singer Persona straight from a finished Suno generation.
+ *
+ * This is the documented way to reuse a voice: it takes the `task_id` of the
+ * generation (plus the 1-based `audio_index`) and returns a persona id once
+ * the task completes. The `createVoice` endpoint takes a raw audio URL
+ * instead, but it has no fixed result shape and it fails outright on longer
+ * tracks — so the persona route is preferred wherever the source track is
+ * still known to APIMart.
+ */
+export async function createApimartPersona(params: {
+  taskId: string;
+  audioIndex?: number;
+  name: string;
+  vocalStartS?: number;
+  vocalEndS?: number;
+}): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+  const body = buildApimartPersonaBody(params);
+
+  try {
+    const response = await axios.post(`${APIMART_BASE_URL}/generations/persona`, body, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    });
+
+    const taskId = response.data?.data?.[0]?.task_id;
+    if (!taskId) {
+      throw new Error(`APIMart returned no task_id for persona. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] persona creation submitted — taskId=${taskId}`);
     return { taskId };
   } catch (error: any) {
     if (error.response) throw mapApimartError(error);

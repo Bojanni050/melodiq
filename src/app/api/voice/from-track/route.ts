@@ -4,20 +4,33 @@ import { clonedVoices, tracks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { uploadToS3, getPresignedUrl, downloadFromS3 } from "@/lib/s3";
-import { createApimartVoice } from "@/lib/providers/apimart";
+import { createApimartVoice, createApimartPersona } from "@/lib/providers/apimart";
 import { resolveDnaAudioSource } from "@/lib/dna-audio-source";
 import { logApi } from "@/lib/logger";
+import { apimartAudioIndexForJobId } from "@/lib/apimart-lyrics";
 
 // APIMart only accepts MP3/WAV sample URLs, so whatever source the track has
 // is resolved to MP3 first and parked on S3 under a stable key. The presigned
 // URL has to outlive APIMart's own fetch, which can sit in a queue.
 const PUBLIC_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+// The persona endpoint takes the voice clip from a bounded window of the
+// source track. A full song contains long instrumental stretches that APIMart
+// has to analyse for nothing; a slice around the vocals is both faster and
+// more likely to be accepted.
+const PERSONA_CLIP_MAX_SECONDS = 120;
+
 /**
  * Creates a cloned voice out of a finished track, instead of the manual audio
  * upload in the Studio. The voice itself is APIMart's; this route only turns
  * the track's audio into something APIMart can fetch and records a pending
  * `cloned_voices` row that `/api/voice/status/[id]` keeps filling in.
+ *
+ * Two routes lead to APIMart:
+ * - a track that APIMart generated itself is referenced by its generation
+ *   `task_id`, which the documented persona endpoint turns into a persona id;
+ * - anything else (an upload, a track from another provider) has to be sent as
+ *   an audio URL, which is what the createVoice endpoint is for.
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -50,6 +63,56 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // The persona route is the documented one and returns a stable persona id,
+    // so it wins whenever APIMart still knows the generation that made this
+    // track. `job_id` holds the generation task id, optionally suffixed with
+    // the variant that produced this particular track.
+    const generationTaskId = track.jobId?.split(":")[0] ?? null;
+    if (generationTaskId && generationTaskId.startsWith("task_")) {
+      const audioIndex = apimartAudioIndexForJobId(track.jobId!);
+      const duration = track.duration ?? 0;
+
+      const genResult = await createApimartPersona({
+        taskId: generationTaskId,
+        audioIndex,
+        name: track.title || "Cloned voice",
+        ...(duration > 0
+          ? { vocalStartS: 0, vocalEndS: Math.min(duration, PERSONA_CLIP_MAX_SECONDS) }
+          : {}),
+      });
+
+      const [voice] = await db
+        .insert(clonedVoices)
+        .values({
+          userId,
+          apimartTaskId: genResult.taskId,
+          status: "pending",
+          // The persona route needs no audio URL; the generation task id is
+          // what APIMart will read the voice from.
+          sourceAudioUrl: `apimart-persona:${generationTaskId}#${audioIndex}`,
+        })
+        .returning();
+
+      await logApi({
+        userId,
+        type: "generation",
+        provider: "apimart",
+        endpoint: "/api/voice/from-track",
+        request: JSON.stringify({
+          trackId: track.id,
+          title: track.title,
+          route: "persona",
+          generationTaskId,
+          audioIndex,
+        }),
+        response: JSON.stringify({ status: "pending", taskId: genResult.taskId }),
+        statusCode: 200,
+        duration: Date.now() - startTime,
+      });
+
+      return NextResponse.json({ voice });
+    }
+
     // A track that already has an MP3 is the cheapest sample: no transcode, and
     // the copy APIMart fetches is exactly what the user hears. Only tracks
     // without one go through the general "best source → MP3" resolver.
@@ -90,7 +153,7 @@ export async function POST(request: NextRequest) {
       type: "generation",
       provider: "apimart",
       endpoint: "/api/voice/from-track",
-      request: JSON.stringify({ trackId: track.id, title: track.title }),
+      request: JSON.stringify({ trackId: track.id, title: track.title, route: "createVoice" }),
       response: JSON.stringify({ status: "pending", taskId: genResult.taskId }),
       statusCode: 200,
       duration: Date.now() - startTime,

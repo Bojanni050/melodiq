@@ -6,18 +6,41 @@ import { requireAuth } from "@/lib/require-auth";
 import { getApimartTaskStatus } from "@/lib/providers/apimart";
 
 // The APIMart createVoice docs don't pin down the exact field name for the
-// resulting persona id — probe the likely candidates and log the raw result
-// the first time a task completes, so we can confirm which one it actually is.
+// resulting persona id — they explicitly warn that there is "no fixed
+// result.voice_id response format". So probe the likely candidates, both at
+// the top level and one level deeper, and log the raw result whenever a task
+// completes so we can confirm which field it actually is.
 function extractPersonaId(result: any): string | null {
   if (!result || typeof result !== "object") return null;
-  return (
+
+  const direct =
     result.persona_id ??
+    result.personaId ??
     result.audio_id ??
+    result.audioId ??
     result.voice_id ??
+    result.voiceId ??
     result.id ??
-    (Array.isArray(result.music) ? result.music[0]?.audio_id ?? result.music[0]?.id : null) ??
-    null
-  );
+    (Array.isArray(result.music) ? result.music[0]?.audio_id ?? result.music[0]?.id : null);
+
+  if (typeof direct === "string" && direct) return direct;
+
+  // Some responses nest the persona in a list or an object.
+  const nested = [
+    ...(Array.isArray(result.voices) ? result.voices : []),
+    ...(Array.isArray(result.voice_list) ? result.voice_list : []),
+    ...(Array.isArray(result.personas) ? result.personas : []),
+    result.persona,
+    result.voice,
+  ].filter((entry) => entry && typeof entry === "object");
+
+  for (const entry of nested) {
+    const id =
+      entry.persona_id ?? entry.personaId ?? entry.voice_id ?? entry.voiceId ?? entry.audio_id ?? entry.id;
+    if (typeof id === "string" && id) return id;
+  }
+
+  return null;
 }
 
 export async function GET(
@@ -46,9 +69,14 @@ export async function GET(
   try {
     const status = await getApimartTaskStatus(voice.apimartTaskId);
 
-    if (status.status === "completed") {
-      console.log(`[voice/status] APIMart createVoice completed for ${voice.id}, raw result:`, JSON.stringify(status.rawResult));
+    // Log every poll, not just the successful one: a createVoice task that
+    // never completes is the hard case to debug, and the raw payload is the
+    // only thing that shows what APIMart actually returns.
+    console.log(
+      `[voice/status] task ${voice.apimartTaskId} → status=${status.status} raw=${JSON.stringify(status.rawResult ?? null)} error=${status.error ?? "none"}`
+    );
 
+    if (status.status === "completed") {
       const personaId = extractPersonaId(status.rawResult);
 
       // The first voice to complete selects itself, so a user with existing
