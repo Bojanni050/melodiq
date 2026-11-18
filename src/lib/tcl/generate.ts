@@ -132,6 +132,15 @@ export async function runTimeCodedLyricsAlignment(songId: string): Promise<Gener
     const doc = await engine.align({ audioUrl, lyrics: track.lyrics });
     const confidence = computeConfidence(doc, track.lyrics);
 
+    // Write the list mirror first: the client polls trackAlignments.status and
+    // refetches /api/tracks the instant it sees "done", so flipping the status
+    // before the timings exist leaves the library (and the TCL badge) stale
+    // until the next poll.
+    await db
+      .update(tracks)
+      .set({ lyricsTimestamps: toLyricsTimestampsMirror(doc) })
+      .where(eq(tracks.id, track.id));
+
     await db
       .update(trackAlignments)
       .set({
@@ -143,11 +152,6 @@ export async function runTimeCodedLyricsAlignment(songId: string): Promise<Gener
         updatedAt: new Date(),
       })
       .where(eq(trackAlignments.trackId, track.id));
-
-    await db
-      .update(tracks)
-      .set({ lyricsTimestamps: toLyricsTimestampsMirror(doc) })
-      .where(eq(tracks.id, track.id));
 
     return { success: true, confidence, lyrics: doc };
   } catch (error: any) {

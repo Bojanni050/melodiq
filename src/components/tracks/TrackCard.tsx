@@ -223,6 +223,14 @@ const TrackCard = memo(function TrackCard({
   const [tclError, setTclError] = useState<string | null>(null);
   const [confirmRegenerateTcl, setConfirmRegenerateTcl] = useState(false);
   const [showTclDoneDialog, setShowTclDoneDialog] = useState(false);
+  // Local mirror of "this track now has a TCL document", so the TCL badge (and
+  // the menu's Open/Regenerate entries) flip the moment the poll reports done.
+  // Relying on the parent list refetch alone isn't enough: pages that don't
+  // listen for tracks-changed (Studio, Workspaces, Releases) only pick it up on
+  // their next full fetch, and the alignment row is marked done just before
+  // tracks.lyricsTimestamps is written, so a refetch fired at that instant can
+  // still carry the old row.
+  const [tclReadyLocally, setTclReadyLocally] = useState(false);
   const { data: appSettings } = useSWR<Record<string, string>>("/api/settings", settingsFetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
@@ -273,6 +281,7 @@ const TrackCard = memo(function TrackCard({
         }
         if (data?.status === "done") {
           setGeneratingTcl(false);
+          setTclReadyLocally(true);
           void mutate("/api/tracks");
           window.dispatchEvent(new CustomEvent("tracks-changed"));
           if (tclEditorBehavior === "always") router.push(`/timecoded-editor/${track.id}`);
@@ -598,13 +607,14 @@ const TrackCard = memo(function TrackCard({
   const mp3Label = (effectiveFormat ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
-  const hasTcl = !!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps);
+  const hasTcl =
+    (!!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps)) || tclReadyLocally;
   // The editor works on the alignment document, not on lyricsTimestamps —
   // provider-supplied timings (APIMart) fill the latter without producing
   // anything editable — so the menu keys off hasTclDocument. A track with
   // provider timings and no document therefore still offers "Generate", which
   // is what gives it editable timings.
-  const hasTclDocument = !!track.hasTclDocument;
+  const hasTclDocument = !!track.hasTclDocument || tclReadyLocally;
   // Alignment needs finished audio and lyrics either way; whether this reads as
   // a first run or a re-run is just whether a document already exists.
   const tclAlignmentPossible =
