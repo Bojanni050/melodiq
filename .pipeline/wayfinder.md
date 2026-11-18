@@ -9,12 +9,21 @@
 | Teardown | vijf ronden pre-build, twee aanscherpingen doorgevoerd (spectra blijven dark; signature words op documentfrequentie) | PASS | goldfish-lezing op spec + plan, geen code aanwezig |
 | Build (slice 1) | `style-dna/types.ts` + `style-dna/features.ts` + 18 tests, eerst rood toen groen | PASS | `vitest run style-dna-features` 18/18 |
 | Verify (slice 1) | volledige suite 409 tests groen (41 bestanden), `tsc --noEmit` schoon | PASS | echte output, geen aanname |
-| Commit | nog niet — fase 1 is pas af na `aggregate.ts` + repository-wiring | — | één feature, één commit |
+| Build (slice 2) | `style-dna/aggregate.ts` met per-taal-sets + `collectWritingSources`, 12 tests | PASS | `vitest run style-dna-aggregate` 12/12 |
+| Verify (slice 2) | 424 tests in 42 bestanden groen, `tsc --noEmit` schoon, `npm run build` exit 0, praktijkproef over 400 tracks | PASS | echte output; `npm run lint` is pre-existent stuk (`next lint` weg in Next 16) |
+| Commit | `feat(dna): schrijf-DNA …` op `feature/style-dna-words` | PASS | één feature per commit |
 
-## Open
+## Fase 1 — afgerond
 
-- `style-dna/aggregate.ts`: features → traits in `DnaTrait`-vorm, per taal
-  (keysuffix `:nl`, `:en`, …) plus een `overall`-set; confidence volgens dezelfde
-  coverage×agreement-regel als `dna/aggregate.ts`.
-- Repository-wiring: de nieuwe traits in de bestaande snapshot opnemen.
-- Daarna fase 2 (signalen-ledger + trait-historie) en fase 3 (calibratie op tekst).
+Twaalf `words`-traits uit eigen teksten, per taal (`:<lang>` keysuffix, vanaf vijf
+teksten) naast een overall-set, gewired in `recomputeDnaProfile`. Geen
+schemawijziging nodig.
+
+## Open (fase 2 en verder)
+
+- Fase 2: `dna_signals`-ledger (bron: song/edit/calibration/rating/voice) plus
+  trait-historie → pulsing, "changed this week", trend.
+- Fase 3: calibratie verbreden (audio-duels voor length/density/chorus, en een
+  tekst-duel voor de words-traits op het lyricscorpus).
+- Fase 4: persona's (alter ego's), naam-generator, seed/nudges.
+- Los: `npm run lint` repareren (repo-breed, niet van deze fase).

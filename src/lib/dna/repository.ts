@@ -4,7 +4,9 @@ import { db } from "@/db";
 import { dnaCalibrationAnswers, dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
 
-import { buildDnaProfile } from "./aggregate";
+import { buildWritingDna, collectWritingSources } from "@/lib/style-dna/aggregate";
+
+import { buildDnaProfile, sourceWeight } from "./aggregate";
 import {
   CALIBRATION_MAX_CANDIDATES,
   CALIBRATION_TOTAL,
@@ -355,8 +357,25 @@ export async function recomputeDnaProfile(
   options: { now?: Date } = {},
 ): Promise<RecomputeResult> {
   const sources = await loadDnaSources(userId);
-  const built = buildDnaProfile(sources, options);
   const now = options.now ?? new Date();
+  const audioBuilt = buildDnaProfile(sources, options);
+
+  // The writing traits are derived from the same sample, with the same
+  // recency/rating weighting, so a rebuild stays deterministic and both halves of
+  // the profile move together. `built.traits` is the full set the caller stores.
+  const writing = buildWritingDna(
+    collectWritingSources(
+      sources.map((track) => ({
+        lyrics: track.lyrics,
+        language: track.language,
+        weight: sourceWeight(track, now),
+      })),
+    ),
+  );
+  const built = {
+    ...audioBuilt,
+    traits: [...audioBuilt.traits, ...writing.overall, ...writing.byLanguage.flatMap((entry) => entry.traits)],
+  };
 
   const result = await db.transaction(async (tx) => {
     const [profile] = await tx

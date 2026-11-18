@@ -5,6 +5,7 @@
  *   npx tsx scripts/style-dna-probe.ts /path/to/sample.json
  */
 import { readFileSync } from "node:fs";
+import { buildWritingDna } from "../src/lib/style-dna/aggregate";
 import { extractWritingFeatures } from "../src/lib/style-dna/features";
 
 type Row = { id: string; language: string | null; lyrics: string | null };
@@ -62,3 +63,18 @@ console.log(`top thema's:`, top(themeCounts, 10));
 console.log(`signature words (documentfrequentie):`, top(wordTracks, 15));
 const explicit = features.filter((f) => (f.feature!.explicitness ?? 0) > 0).length;
 console.log(`tracks met expliciete taal: ${explicit}`);
+
+// Dezelfde steekproef door de aggregator: laat zien welke traits eruit komen,
+// per taal, met de confidence die de UI als zekerheid toont.
+const dna = buildWritingDna(features.map((entry) => ({ features: entry.feature!, weight: 1 })));
+console.log(`\n=== overall (${dna.overall.length} traits) ===`);
+for (const trait of dna.overall) {
+  console.log(`  ${trait.key.padEnd(22)} conf ${trait.confidence.toFixed(2)} src ${String(trait.sourceCount).padStart(4)}  ${trait.display}`);
+}
+console.log(`\n=== per taal ===`);
+for (const entry of dna.byLanguage) {
+  console.log(`  ${entry.language} (${entry.sourceCount} tracks, ${entry.traits.length} traits)`);
+  for (const trait of entry.traits.slice(0, 4)) {
+    console.log(`    ${trait.key.padEnd(26)} conf ${trait.confidence.toFixed(2)}  ${trait.display}`);
+  }
+}
