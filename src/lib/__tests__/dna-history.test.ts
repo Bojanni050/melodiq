@@ -94,6 +94,35 @@ describe("applyLocks", () => {
   });
 });
 
+describe("de rebuild-reeks zoals de repository die draait", () => {
+  it("schrijft niets als de tweede rebuild dezelfde waarden oplevert", () => {
+    const previous = [trait({ traitKey: "rhyme_density", valueNumber: 46, display: "46% of lines rhyme" })];
+    const fresh = [trait({ traitKey: "rhyme_density", valueNumber: 46, display: "46% of lines rhyme" })];
+    const stored = stampTimeline(previous, applyLocks(previous, fresh), { now: NOW });
+    expect(diffTraits(previous, stored)).toEqual([]);
+    expect(stored[0].lastChangedAt).toEqual(OLD);
+  });
+
+  it("schrijft precies één wijziging als de waarde echt beweegt", () => {
+    const previous = [trait({ traitKey: "rhyme_density", valueNumber: 40 })];
+    const fresh = [trait({ traitKey: "rhyme_density", valueNumber: 52 })];
+    const stored = stampTimeline(previous, applyLocks(previous, fresh), { now: NOW });
+    const changes = diffTraits(previous, stored);
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toMatchObject({ traitKey: "rhyme_density", direction: "up", previousNumber: 40, valueNumber: 52 });
+    expect(stored[0].lastChangedAt).toEqual(NOW);
+  });
+
+  it("laat een vergrendelde trait geen wijziging opleveren", () => {
+    const previous = [trait({ traitKey: "tempo", valueNumber: 85, lockedAt: OLD })];
+    const fresh = [trait({ traitKey: "tempo", valueNumber: 130 })];
+    const stored = stampTimeline(previous, applyLocks(previous, fresh), { now: NOW });
+    expect(diffTraits(previous, stored)).toEqual([]);
+    expect(stored[0].valueNumber).toBe(85);
+    expect(stored[0].lastChangedAt).toEqual(OLD);
+  });
+});
+
 describe("stampTimeline", () => {
   it("moves lastChangedAt only when the value really moved", () => {
     const previous = [trait({ traitKey: "tempo", valueNumber: 85 })];

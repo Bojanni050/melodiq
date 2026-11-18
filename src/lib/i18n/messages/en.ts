@@ -825,6 +825,13 @@ const en = {
     statLoved: "Loved",
     statSkipped: "Skipped",
     noSignal: "No signal yet — needs lyrics, audio analysis or ratings.",
+    locked: "Pinned by you",
+    lock: "Pin",
+    unlock: "Unpin",
+    pulsing: "Changed this week",
+    statEdits: "Your edits",
+    statCalibrations: "Calibrations",
+    lockFailed: "Could not change the pin — try again.",
     categories: {
       sound: "Sound",
       voice: "Voice",

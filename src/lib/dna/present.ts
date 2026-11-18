@@ -1,4 +1,5 @@
 import { applyFeedback, type DnaFeedbackDirection } from "./feedback";
+import { traitState, traitTrend, type ProfileSignals, type TraitState } from "./states";
 import { DNA_CATEGORIES, DNA_CATEGORY_LABELS } from "./types";
 import type { StoredDnaProfile } from "./repository";
 
@@ -26,6 +27,33 @@ export type DnaTraitPayload = {
   direction: DnaFeedbackDirection | null;
   /** When the correction that produced the current stance was recorded. */
   feedbackAt: string | null;
+  /**
+   * Derived state the UI renders: dark (no row at all), learning, sure,
+   * pulsing (changed in the last seven days) or locked (pinned by the user).
+   * Computed from the adjusted confidence, so what the user sees and what the
+   * badge says cannot disagree.
+   */
+  state: TraitState;
+  /** Direction of the last few real changes: up | down | steady. */
+  trend: "up" | "down" | "steady";
+  pulsing: boolean;
+  /** Set when the user pinned this trait; a recompute then leaves it alone. */
+  lockedAt: string | null;
+  firstSeenAt: string | null;
+  lastChangedAt: string | null;
+};
+
+/** Cap on the change log in one payload; the page shows the recent tail. */
+const MAX_PAYLOAD_CHANGES = 60;
+
+/** One recorded change, newest first in the payload. */
+export type DnaChangePayload = {
+  traitKey: string;
+  category: string;
+  from: string | null;
+  to: string | null;
+  direction: string;
+  changedAt: string;
 };
 
 export type DnaProfilePayload = {
@@ -42,16 +70,48 @@ export type DnaPayload = {
   profile: DnaProfilePayload | null;
   traits: DnaTraitPayload[];
   categories: { id: string; label: string }[];
+  /** "1200 songs · 0 edits · 2 calibrations" plus the raw counters. */
+  signals: ProfileSignals;
+  /** The recent tail of the change log, newest first. */
+  changes: DnaChangePayload[];
 };
 
-export function serialiseDnaProfile(stored: StoredDnaProfile | null): DnaPayload {
+/** Recent changes per trait, newest first, so a state and a trend can be read. */
+function changesByTrait(changes: DnaChangePayload[]): Map<string, DnaChangePayload[]> {
+  const grouped = new Map<string, DnaChangePayload[]>();
+  for (const change of changes) {
+    const bucket = grouped.get(change.traitKey);
+    if (bucket) bucket.push(change);
+    else grouped.set(change.traitKey, [change]);
+  }
+  return grouped;
+}
+
+export function serialiseDnaProfile(
+  stored: StoredDnaProfile | null,
+  options: { now?: Date } = {},
+): DnaPayload {
   const categories = DNA_CATEGORIES.map((id) => ({ id, label: DNA_CATEGORY_LABELS[id] }));
+  const emptySignals = { songs: 0, edits: 0, calibrations: 0, label: "0 songs · 0 edits · 0 calibrations" };
 
   if (!stored) {
-    return { profile: null, traits: [], categories };
+    return { profile: null, traits: [], categories, signals: emptySignals, changes: [] };
   }
 
+  const now = options.now ?? new Date();
+  const changes: DnaChangePayload[] = (stored.history ?? []).slice(0, MAX_PAYLOAD_CHANGES).map((row) => ({
+    traitKey: row.traitKey,
+    category: row.category,
+    from: row.previousDisplay,
+    to: row.display,
+    direction: row.direction,
+    changedAt: row.changedAt.toISOString(),
+  }));
+  const grouped = changesByTrait(changes);
+
   return {
+    signals: stored.signals ?? emptySignals,
+    changes,
     profile: {
       name: stored.profile.name,
       summary: stored.profile.summary,
@@ -64,6 +124,14 @@ export function serialiseDnaProfile(stored: StoredDnaProfile | null): DnaPayload
     traits: stored.traits.map((trait) => {
       const stance = stored.feedback.get(trait.traitKey);
       const adjustment = applyFeedback(trait.confidence, stance);
+      const state = traitState(
+        {
+          confidence: adjustment.confidence,
+          lockedAt: trait.lockedAt ?? null,
+          lastChangedAt: trait.lastChangedAt ?? null,
+        },
+        { now },
+      );
 
       return {
         key: trait.traitKey,
@@ -80,6 +148,12 @@ export function serialiseDnaProfile(stored: StoredDnaProfile | null): DnaPayload
         verdict: adjustment.verdict,
         direction: adjustment.direction,
         feedbackAt: stance?.updatedAt ?? null,
+        state,
+        trend: traitTrend(grouped.get(trait.traitKey) ?? []),
+        pulsing: state === "pulsing",
+        lockedAt: trait.lockedAt ? trait.lockedAt.toISOString() : null,
+        firstSeenAt: trait.firstSeenAt ? trait.firstSeenAt.toISOString() : null,
+        lastChangedAt: trait.lastChangedAt ? trait.lastChangedAt.toISOString() : null,
       };
     }),
     categories,

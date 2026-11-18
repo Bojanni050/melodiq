@@ -1,7 +1,14 @@
 import { and, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { dnaCalibrationAnswers, dnaFeedbackEvents, dnaProfiles, dnaTraits, tracks } from "@/db/schema";
+import {
+  dnaCalibrationAnswers,
+  dnaFeedbackEvents,
+  dnaProfiles,
+  dnaTraitHistory,
+  dnaTraits,
+  tracks,
+} from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
 
 import { buildWritingDna, collectWritingSources } from "@/lib/style-dna/aggregate";
@@ -14,6 +21,8 @@ import {
   type CalibrationCandidate,
 } from "./calibration";
 import { foldFeedback, type DnaFeedbackEvent, type DnaFeedbackKind, type DnaFeedbackStance } from "./feedback";
+import { applyLocks, diffTraits, stampTimeline, type TraitSnapshot } from "./history";
+import { profileSignals, type ProfileSignals } from "./states";
 import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } from "./types";
 
 /**
@@ -155,6 +164,8 @@ function truncate(value: string, max: number): string {
 export type DnaProfileRow = typeof dnaProfiles.$inferSelect;
 export type DnaTraitRow = typeof dnaTraits.$inferSelect;
 
+export type DnaTraitHistoryRow = typeof dnaTraitHistory.$inferSelect;
+
 export type StoredDnaProfile = {
   profile: DnaProfileRow;
   traits: DnaTraitRow[];
@@ -164,7 +175,21 @@ export type StoredDnaProfile = {
    * it (see present.ts), so a stored trait always holds its raw confidence.
    */
   feedback: Map<string, DnaFeedbackStance>;
+  /**
+   * Recent changes, newest first. The snapshot says what a trait is; this says
+   * how it got there, which is what the "changed this week" state and the trend
+   * arrow are read from. Bounded on read and on write (see MAX_HISTORY_*).
+   */
+  history: DnaTraitHistoryRow[];
+  /** The counters above the trait list: songs, edits, calibrations. */
+  signals: ProfileSignals;
 };
+
+/** Kept per trait; a trait that changes weekly keeps a year of context. */
+const MAX_HISTORY_PER_TRAIT = 50;
+
+/** Cap on what one read returns; the page only shows the recent tail anyway. */
+const MAX_HISTORY_ROWS = 400;
 
 /**
  * Newest events first, capped. A user has at most a handful of traits and
@@ -198,6 +223,45 @@ export async function loadDnaFeedback(userId: string): Promise<Map<string, DnaFe
       }),
     ),
   );
+}
+
+/** Recent changes for one profile, newest first. */
+export async function loadDnaHistory(
+  profileId: string,
+  limit: number = MAX_HISTORY_ROWS,
+): Promise<DnaTraitHistoryRow[]> {
+  return db
+    .select()
+    .from(dnaTraitHistory)
+    .where(eq(dnaTraitHistory.profileId, profileId))
+    .orderBy(desc(dnaTraitHistory.changedAt))
+    .limit(limit);
+}
+
+/**
+ * The three counters the profile header shows. Reads the raw event kinds rather
+ * than the folded stance, because "how often did the user correct something" is
+ * a count of clicks and not of current opinions.
+ */
+async function loadDnaSignals(userId: string, sourceCount: number): Promise<ProfileSignals> {
+  const [kinds, calibrations] = await Promise.all([
+    db
+      .select({ kind: dnaFeedbackEvents.kind })
+      .from(dnaFeedbackEvents)
+      .where(eq(dnaFeedbackEvents.userId, userId))
+      .orderBy(desc(dnaFeedbackEvents.createdAt))
+      .limit(MAX_FEEDBACK_EVENTS),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(dnaCalibrationAnswers)
+      .where(eq(dnaCalibrationAnswers.userId, userId)),
+  ]);
+
+  return profileSignals({
+    sourceCount,
+    feedbackKinds: kinds.map((row) => row.kind),
+    calibrationAnswers: calibrations[0]?.count ?? 0,
+  });
 }
 
 /**
@@ -340,9 +404,33 @@ export async function getDnaProfile(userId: string): Promise<StoredDnaProfile | 
   if (!profile) return null;
 
   const rows = await db.select().from(dnaTraits).where(eq(dnaTraits.profileId, profile.id));
-  const feedback = await loadDnaFeedback(userId);
+  const [feedback, history, signals] = await Promise.all([
+    loadDnaFeedback(userId),
+    loadDnaHistory(profile.id),
+    loadDnaSignals(userId, profile.sourceCount),
+  ]);
 
-  return { profile, traits: sortTraits(rows), feedback };
+  return { profile, traits: sortTraits(rows), feedback, history, signals };
+}
+
+/**
+ * Pins or unpins one trait. A pinned trait is left alone by the next recompute
+ * (see applyLocks), which is how a deliberate correction survives the build.
+ * Returns false when the key is not in the current snapshot.
+ */
+export async function setTraitLock(
+  userId: string,
+  traitKey: string,
+  locked: boolean,
+  options: { now?: Date } = {},
+): Promise<boolean> {
+  const updated = await db
+    .update(dnaTraits)
+    .set({ lockedAt: locked ? options.now ?? new Date() : null })
+    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, traitKey)))
+    .returning({ id: dnaTraits.id });
+
+  return updated.length > 0;
 }
 
 export type RecomputeResult = StoredDnaProfile & { built: DnaBuildResult };
@@ -406,39 +494,130 @@ export async function recomputeDnaProfile(
       })
       .returning();
 
-    // Wholesale replace: a trait that no longer has evidence must disappear
-    // instead of lingering with a stale value.
+    // The previous snapshot is read before the wholesale replace: it is the only
+    // source of "what did this trait say last time", which the history, the locks
+    // and the timestamps all depend on.
+    const previousRows = await tx.select().from(dnaTraits).where(eq(dnaTraits.profileId, profile.id));
+    const previous = previousRows.map(rowToSnapshot);
+
+    const next: TraitSnapshot[] = built.traits.map((trait) => ({
+      traitKey: trait.key,
+      category: trait.category,
+      kind: trait.kind,
+      valueNumber: trait.valueNumber,
+      valueText: trait.valueText,
+      display: trait.display,
+      confidence: trait.confidence,
+      sourceCount: trait.sourceCount,
+      weight: trait.weight,
+      firstSeenAt: now,
+      lastChangedAt: now,
+      lockedAt: null,
+    }));
+
+    const stored = stampTimeline(previous, applyLocks(previous, next), { now });
+    // Diffed after locking and stamping, so a pinned trait that did not move can
+    // never show up as a change.
+    const changes = diffTraits(previous, stored);
+
     await tx.delete(dnaTraits).where(eq(dnaTraits.profileId, profile.id));
 
+    // Labels and units come from whichever side knows them: the fresh build, or
+    // the pinned row the build no longer produces.
+    const meta = new Map<string, { label: string; unit: string | null }>();
+    for (const trait of built.traits) {
+      meta.set(trait.key, { label: truncate(trait.label, 160), unit: trait.unit ?? null });
+    }
+    for (const row of previousRows) {
+      if (!meta.has(row.traitKey)) meta.set(row.traitKey, { label: row.label, unit: row.unit ?? null });
+    }
+
     let inserted: DnaTraitRow[] = [];
-    if (built.traits.length > 0) {
+    if (stored.length > 0) {
       inserted = await tx
         .insert(dnaTraits)
         .values(
-          built.traits.map((trait) => ({
+          stored.map((trait) => ({
             profileId: profile.id,
             userId,
             category: trait.category,
-            traitKey: trait.key,
-            label: truncate(trait.label, 160),
+            traitKey: trait.traitKey,
+            label: meta.get(trait.traitKey)?.label ?? trait.traitKey,
             kind: trait.kind,
             valueNumber: trait.valueNumber,
             valueText: trait.valueText,
-            unit: trait.unit,
+            unit: meta.get(trait.traitKey)?.unit ?? null,
             display: trait.display ? truncate(trait.display, 255) : null,
             confidence: trait.confidence,
             sourceCount: trait.sourceCount,
             weight: trait.weight,
+            firstSeenAt: trait.firstSeenAt,
+            lastChangedAt: trait.lastChangedAt,
+            lockedAt: trait.lockedAt,
             updatedAt: now,
           })),
         )
         .returning();
     }
 
+    if (changes.length > 0) {
+      await tx.insert(dnaTraitHistory).values(
+        changes.map((change) => ({
+          profileId: profile.id,
+          userId,
+          traitKey: change.traitKey,
+          category: change.category,
+          previousDisplay: change.previousDisplay ? truncate(change.previousDisplay, 255) : null,
+          display: change.display ? truncate(change.display, 255) : null,
+          previousNumber: change.previousNumber,
+          valueNumber: change.valueNumber,
+          direction: change.direction,
+          changedAt: now,
+        })),
+      );
+
+      // Bounded per trait, so a profile rebuilt daily for years cannot grow this
+      // table without limit. The UI only reads the recent tail.
+      await tx.execute(sql`
+        delete from dna_trait_history
+        where profile_id = ${profile.id}
+          and id in (
+            select id from (
+              select id, row_number() over (partition by trait_key order by changed_at desc) as rn
+              from dna_trait_history
+              where profile_id = ${profile.id}
+            ) ranked
+            where ranked.rn > ${MAX_HISTORY_PER_TRAIT}
+          )
+      `);
+    }
+
     return { profile, traits: sortTraits(inserted) };
   });
 
-  const feedback = await loadDnaFeedback(userId);
+  const [feedback, history, signals] = await Promise.all([
+    loadDnaFeedback(userId),
+    loadDnaHistory(result.profile.id),
+    loadDnaSignals(userId, built.profile.sourceCount),
+  ]);
 
-  return { ...result, feedback, built };
+  return { profile: result.profile, traits: result.traits, feedback, history, signals, built };
+}
+
+/** A stored trait as the history/lock logic sees it. */
+function rowToSnapshot(row: DnaTraitRow): TraitSnapshot {
+  return {
+    traitKey: row.traitKey,
+    category: row.category,
+    kind: row.kind,
+    valueNumber: row.valueNumber,
+    valueText: row.valueText,
+    display: row.display,
+    confidence: row.confidence,
+    sourceCount: row.sourceCount,
+    weight: row.weight,
+    firstSeenAt: row.firstSeenAt,
+    lastChangedAt: row.lastChangedAt,
+    lockedAt: row.lockedAt,
+  };
 }

@@ -828,6 +828,13 @@ const nl: typeof en = {
     statLoved: "Geliefd",
     statSkipped: "Overgeslagen",
     noSignal: "Nog geen signaal — heeft songtekst, audio-analyse of beoordelingen nodig.",
+    locked: "Door jou vastgezet",
+    lock: "Vastzetten",
+    unlock: "Loslaten",
+    pulsing: "Deze week veranderd",
+    statEdits: "Jouw correcties",
+    statCalibrations: "Kalibraties",
+    lockFailed: "Vastzetten mislukte — probeer het opnieuw.",
     categories: {
       sound: "Klank",
       voice: "Stem",

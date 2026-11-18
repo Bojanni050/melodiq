@@ -25,6 +25,11 @@ type DnaTraitPayload = {
   verdict: "confirmed" | "disputed" | null;
   direction: "more" | "less" | null;
   feedbackAt: string | null;
+  /** Derived server-side: dark | learning | sure | pulsing | locked. */
+  state?: "dark" | "learning" | "sure" | "pulsing" | "locked";
+  trend?: "up" | "down" | "steady";
+  pulsing?: boolean;
+  lockedAt?: string | null;
 };
 
 type DnaFeedbackKind = "confirm" | "reject" | "more" | "less" | "reset";
@@ -43,6 +48,9 @@ type DnaResponse = {
   profile: DnaProfilePayload | null;
   traits: DnaTraitPayload[];
   categories: Array<{ id: string; label: string }>;
+  /** "1200 songs · 0 edits · 2 calibrations" plus the raw counters. */
+  signals?: { songs: number; edits: number; calibrations: number; label: string };
+  changes?: Array<{ traitKey: string; direction: string; changedAt: string }>;
 };
 
 // A trait only reads as settled once the aggregator's confidence clears this.
@@ -293,6 +301,26 @@ export default function DnaPage() {
     }
   }
 
+  async function handleLock(traitKey: string, locked: boolean) {
+    if (pendingTrait) return;
+    setPendingTrait(traitKey);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/dna/lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ traitKey, locked }),
+      });
+      if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "lock failed");
+      setData((await res.json()) as DnaResponse);
+    } catch (error) {
+      setError(error instanceof Error && error.message === "rate limited" ? t("dna.rateLimited") : t("dna.lockFailed"));
+    } finally {
+      setPendingTrait(null);
+    }
+  }
+
   const profile = data?.profile ?? null;
   const traits = data?.traits ?? [];
 
@@ -512,6 +540,11 @@ export default function DnaPage() {
                       { label: t("dna.statTracks"), value: sourceCount },
                       { label: t("dna.statRated"), value: profile?.ratedCount ?? 0 },
                       { label: t("dna.statLoved"), value: profile?.likedCount ?? 0 },
+                      // Melody Genie's header line, split into the two counters that
+                      // are not already in the list above: how often the user
+                      // corrected a trait, and how many duels they answered.
+                      { label: t("dna.statEdits"), value: data?.signals?.edits ?? 0 },
+                      { label: t("dna.statCalibrations"), value: data?.signals?.calibrations ?? 0 },
                       { label: t("dna.statSkipped"), value: profile?.dislikedCount ?? 0 },
                     ].map((stat) => (
                       <div key={stat.label} className="bg-canvas/70 px-4 py-3">
@@ -631,27 +664,48 @@ export default function DnaPage() {
                                   }`}
                                 >
                                   <div className="flex items-start justify-between gap-2">
-                                    <p className="text-xs text-ink-muted">
+                                    <p className="flex items-center gap-1.5 text-xs text-ink-muted">
                                       {labelKey ? t(labelKey) : trait.label}
+                                      {trait.pulsing ? (
+                                        <span
+                                          title={t("dna.pulsing")}
+                                          className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent"
+                                        />
+                                      ) : null}
                                     </p>
-                                    <span
-                                      className={`shrink-0 text-[10px] uppercase tracking-wide ${
-                                        trait.verdict === "confirmed"
-                                          ? "text-emerald-300"
-                                          : trait.verdict === "disputed"
-                                            ? "text-amber-300"
-                                            : solid
-                                              ? style.text
-                                              : "text-ink-dim"
-                                      }`}
-                                    >
-                                      {trait.verdict === "confirmed"
-                                        ? t("dna.confirmed")
-                                        : trait.verdict === "disputed"
-                                          ? t("dna.disputed")
-                                          : solid
-                                            ? t("dna.confidenceShort", { value: confidencePct })
-                                            : t("dna.learning")}
+                                    <span className="flex shrink-0 flex-col items-end gap-0.5">
+                                      <span
+                                        className={`text-[10px] uppercase tracking-wide ${
+                                          trait.lockedAt
+                                            ? "text-accent"
+                                            : trait.verdict === "confirmed"
+                                              ? "text-emerald-300"
+                                              : trait.verdict === "disputed"
+                                                ? "text-amber-300"
+                                                : solid
+                                                  ? style.text
+                                                  : "text-ink-dim"
+                                        }`}
+                                      >
+                                        {trait.lockedAt
+                                          ? t("dna.locked")
+                                          : trait.verdict === "confirmed"
+                                            ? t("dna.confirmed")
+                                            : trait.verdict === "disputed"
+                                              ? t("dna.disputed")
+                                              : solid
+                                                ? t("dna.confidenceShort", { value: confidencePct })
+                                                : t("dna.learning")}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleLock(trait.key, !trait.lockedAt)}
+                                        disabled={pendingTrait === trait.key}
+                                        title={trait.lockedAt ? t("dna.unlock") : t("dna.lock")}
+                                        className="text-[10px] uppercase tracking-wide text-ink-dim transition-colors hover:text-ink disabled:opacity-40"
+                                      >
+                                        {trait.lockedAt ? t("dna.unlock") : t("dna.lock")}
+                                      </button>
                                     </span>
                                   </div>
 
