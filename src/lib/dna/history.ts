@@ -44,13 +44,21 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-/** Two values are the same when the number (rounded) and the text agree. */
+/**
+ * "Changed" means the user would see a different value.
+ *
+ * Comparing raw numbers first made the log noisy in production: a ratio that
+ * moved 0.2 points wrote "first 61% → first 61%", because the display rounds to
+ * whole percent while the trait kept one decimal. So the comparison uses the
+ * display string whenever both sides have one, and falls back to the rounded
+ * number only for traits without a display.
+ */
 function sameTraitValue(a: TraitSnapshot, b: TraitSnapshot): boolean {
+  if ((a.valueText ?? null) !== (b.valueText ?? null)) return false;
+  if (a.display && b.display) return a.display === b.display;
   const numberA = a.valueNumber === null ? null : round1(a.valueNumber);
   const numberB = b.valueNumber === null ? null : round1(b.valueNumber);
-  const textA = a.valueText ?? null;
-  const textB = b.valueText ?? null;
-  return numberA === numberB && textA === textB;
+  return numberA === numberB;
 }
 
 function byKey(traits: TraitSnapshot[]): Map<string, TraitSnapshot> {

@@ -44,8 +44,8 @@ describe("diffTraits", () => {
   });
 
   it("records direction down when the number falls", () => {
-    const previous = [trait({ traitKey: "tempo", category: "sound", valueNumber: 90 })];
-    const next = [trait({ traitKey: "tempo", category: "sound", valueNumber: 85 })];
+    const previous = [trait({ traitKey: "tempo", category: "sound", valueNumber: 90, display: "90 BPM" })];
+    const next = [trait({ traitKey: "tempo", category: "sound", valueNumber: 85, display: "85 BPM" })];
     expect(diffTraits(previous, next)[0]).toMatchObject({ traitKey: "tempo", direction: "down" });
   });
 
@@ -59,6 +59,19 @@ describe("diffTraits", () => {
     const previous = [trait({ traitKey: "tempo" })];
     const next = [trait({ traitKey: "rhyme_density" })];
     expect(diffTraits(previous, next)).toEqual([]);
+  });
+
+  it("negeert een verschuiving die de gebruiker niet ziet", () => {
+    // Praktijkgeval: 61,4% -> 61,6% toonde in de UI twee keer "first 61%".
+    const previous = [trait({ traitKey: "pov", kind: "text", valueNumber: 61.4, valueText: "first", display: "first 61%" })];
+    const next = [trait({ traitKey: "pov", kind: "text", valueNumber: 61.6, valueText: "first", display: "first 61%" })];
+    expect(diffTraits(previous, next)).toEqual([]);
+  });
+
+  it("merkt een wijziging op die de weergave wel raakt", () => {
+    const previous = [trait({ traitKey: "internal_rhyme", valueNumber: 64.6, display: "65% of lines rhyme inside the line" })];
+    const next = [trait({ traitKey: "internal_rhyme", valueNumber: 65.6, display: "66% of lines rhyme inside the line" })];
+    expect(diffTraits(previous, next)).toHaveLength(1);
   });
 
   it("does not treat a confidence-only shift as a value change", () => {
@@ -104,8 +117,8 @@ describe("de rebuild-reeks zoals de repository die draait", () => {
   });
 
   it("schrijft precies één wijziging als de waarde echt beweegt", () => {
-    const previous = [trait({ traitKey: "rhyme_density", valueNumber: 40 })];
-    const fresh = [trait({ traitKey: "rhyme_density", valueNumber: 52 })];
+    const previous = [trait({ traitKey: "rhyme_density", valueNumber: 40, display: "40% of lines rhyme" })];
+    const fresh = [trait({ traitKey: "rhyme_density", valueNumber: 52, display: "52% of lines rhyme" })];
     const stored = stampTimeline(previous, applyLocks(previous, fresh), { now: NOW });
     const changes = diffTraits(previous, stored);
     expect(changes).toHaveLength(1);
@@ -125,11 +138,11 @@ describe("de rebuild-reeks zoals de repository die draait", () => {
 
 describe("stampTimeline", () => {
   it("moves lastChangedAt only when the value really moved", () => {
-    const previous = [trait({ traitKey: "tempo", valueNumber: 85 })];
-    const same = stampTimeline(previous, [trait({ traitKey: "tempo", valueNumber: 85 })], { now: NOW });
+    const previous = [trait({ traitKey: "tempo", valueNumber: 85, display: "85 BPM" })];
+    const same = stampTimeline(previous, [trait({ traitKey: "tempo", valueNumber: 85, display: "85 BPM" })], { now: NOW });
     expect(same[0].lastChangedAt).toEqual(OLD);
 
-    const moved = stampTimeline(previous, [trait({ traitKey: "tempo", valueNumber: 88 })], { now: NOW });
+    const moved = stampTimeline(previous, [trait({ traitKey: "tempo", valueNumber: 88, display: "88 BPM" })], { now: NOW });
     expect(moved[0].lastChangedAt).toEqual(NOW);
     expect(moved[0].firstSeenAt).toEqual(OLD);
   });
