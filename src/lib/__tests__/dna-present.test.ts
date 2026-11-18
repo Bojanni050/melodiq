@@ -81,18 +81,35 @@ describe("serialiseDnaProfile", () => {
     expect(payload.signals.songs).toBe(0);
   });
 
-  it("marks a trait that changed this week as pulsing", () => {
+  it("marks a trait with a recorded change this week as pulsing", () => {
     const payload = serialiseDnaProfile(
-      profile({ traits: [trait({ traitKey: "rhyme_density", lastChangedAt: RECENT })] }),
+      profile({
+        traits: [trait({ traitKey: "rhyme_density", lastChangedAt: RECENT })],
+        history: [change("rhyme_density", "up", RECENT)],
+      }),
       { now: NOW },
     );
     expect(payload.traits[0].state).toBe("pulsing");
     expect(payload.traits[0].pulsing).toBe(true);
   });
 
+  it("laat een recente tijdstempel zonder vastgelegde wijziging niet pulseren", () => {
+    // De migratie zette last_changed_at op "nu" voor alle bestaande traits; zonder
+    // deze regel zou een heel profiel een week lang pulseren om niets.
+    const payload = serialiseDnaProfile(
+      profile({ traits: [trait({ traitKey: "rhyme_density", lastChangedAt: RECENT, confidence: 0.9 })] }),
+      { now: NOW },
+    );
+    expect(payload.traits[0].state).toBe("sure");
+    expect(payload.traits[0].pulsing).toBe(false);
+  });
+
   it("lets a lock outrank a recent change", () => {
     const payload = serialiseDnaProfile(
-      profile({ traits: [trait({ traitKey: "tempo", lastChangedAt: RECENT, lockedAt: RECENT })] }),
+      profile({
+        traits: [trait({ traitKey: "tempo", lastChangedAt: RECENT, lockedAt: RECENT })],
+        history: [change("tempo", "up", RECENT)],
+      }),
       { now: NOW },
     );
     expect(payload.traits[0].state).toBe("locked");

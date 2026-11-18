@@ -1,5 +1,5 @@
 import { applyFeedback, type DnaFeedbackDirection } from "./feedback";
-import { traitState, traitTrend, type ProfileSignals, type TraitState } from "./states";
+import { PULSE_WINDOW_DAYS, traitState, traitTrend, type ProfileSignals, type TraitState } from "./states";
 import { DNA_CATEGORIES, DNA_CATEGORY_LABELS } from "./types";
 import type { StoredDnaProfile } from "./repository";
 
@@ -124,11 +124,20 @@ export function serialiseDnaProfile(
     traits: stored.traits.map((trait) => {
       const stance = stored.feedback.get(trait.traitKey);
       const adjustment = applyFeedback(trait.confidence, stance);
+      const changesForTrait = grouped.get(trait.traitKey) ?? [];
+      // Pulsing needs a *recorded* change inside the window, not just a recent
+      // timestamp: the migration that introduced history stamped every existing
+      // row with "now", and without this a whole profile would pulse for a week
+      // over changes that were never observed.
+      const pulsed = changesForTrait.some((change) => {
+        const age = now.getTime() - new Date(change.changedAt).getTime();
+        return age >= 0 && age < PULSE_WINDOW_DAYS * 86_400_000;
+      });
       const state = traitState(
         {
           confidence: adjustment.confidence,
           lockedAt: trait.lockedAt ?? null,
-          lastChangedAt: trait.lastChangedAt ?? null,
+          lastChangedAt: pulsed ? trait.lastChangedAt ?? null : null,
         },
         { now },
       );
@@ -149,7 +158,7 @@ export function serialiseDnaProfile(
         direction: adjustment.direction,
         feedbackAt: stance?.updatedAt ?? null,
         state,
-        trend: traitTrend(grouped.get(trait.traitKey) ?? []),
+        trend: traitTrend(changesForTrait),
         pulsing: state === "pulsing",
         lockedAt: trait.lockedAt ? trait.lockedAt.toISOString() : null,
         firstSeenAt: trait.firstSeenAt ? trait.firstSeenAt.toISOString() : null,
