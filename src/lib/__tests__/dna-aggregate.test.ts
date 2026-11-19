@@ -16,6 +16,7 @@ function makeTrack(overrides: Partial<DnaSourceTrack> = {}): DnaSourceTrack {
     lyrics: "a line of lyrics here",
     language: "en",
     instrumental: false,
+    ownVoice: null,
     vocalGender: "female",
     rating: null,
     playCount: 0,
@@ -271,6 +272,44 @@ describe("sourceWeight", () => {
     const result = buildDnaProfile([makeTrack()], { now, voice: null });
 
     expect(trait(result, "own_voice")).toBeNull();
+  });
+
+  it("measures own voice as a share of the tracks that recorded an answer", () => {
+    const result = buildDnaProfile(
+      [
+        makeTrack({ ownVoice: true }),
+        makeTrack({ ownVoice: false }),
+        makeTrack({ ownVoice: null }),
+        makeTrack({ ownVoice: true }),
+      ],
+      { now, voice: { voiceCount: 1, selectedName: "Nova" } },
+    );
+
+    const own = trait(result, "own_voice");
+    expect(own?.kind).toBe("ratio");
+    expect(own?.valueNumber).toBeCloseTo(66.7, 1);
+    expect(own?.sourceCount).toBe(3);
+    expect(own?.display).toBe("67% with your cloned voice");
+  });
+
+  it("reports a spectrum only once three tracks name one of its poles", () => {
+    const prompts = ["rap, trap", "rap, boom bap", "hip hop, drill"];
+    const two = buildDnaProfile(
+      prompts.slice(0, 2).map((prompt) => makeTrack({ prompt })),
+      { now },
+    );
+    const three = buildDnaProfile(
+      prompts.map((prompt) => makeTrack({ prompt })),
+      { now },
+    );
+
+    expect(trait(two, "rap_melodic")).toBeNull();
+
+    const spectrum = trait(three, "rap_melodic");
+    expect(spectrum?.category).toBe("sound");
+    expect(spectrum?.valueNumber).toBe(0);
+    expect(spectrum?.display).toBe("0% rap");
+    expect(spectrum?.sourceCount).toBe(3);
   });
 });
 

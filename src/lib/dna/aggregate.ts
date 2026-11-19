@@ -1,6 +1,8 @@
 import { PROVIDER_LABELS } from "@/lib/format-generator";
 import { parsePromptBpm, tempoOctaveRelation } from "@/lib/prompt-bpm";
 
+import { SPECTRA, spectrumScores, type SpectrumDefinition, type SpectrumKey } from "./spectra";
+
 import type {
   AdvancedDnaSummary,
   DnaBuildResult,
@@ -380,10 +382,10 @@ function ratioTrait(options: {
 }
 
 /**
- * "Own voice" is an account fact, not a per-track measurement: the Studio sends
- * a cloned persona with an APIMart generation when one is selected, but the
- * track row does not record whether it did. Emitting it from the voice library
- * keeps the card honest instead of guessing per track.
+ * Fallback for "Own voice" when no track carries the per-track `own_voice`
+ * flag (pre-migration catalogue, or only instrumentals). Since the migration
+ * the ratio above is the real measurement; this keeps the card informative for
+ * users whose tracks predate it instead of leaving the section empty.
  */
 function ownVoiceTrait(voice: DnaVoiceProfile | null): DnaTrait | null {
   if (!voice || voice.voiceCount === 0) return null;
@@ -406,6 +408,30 @@ function ownVoiceTrait(voice: DnaVoiceProfile | null): DnaTrait | null {
     sourceCount: voice.voiceCount,
     weight: voice.voiceCount,
   };
+}
+
+/** Tracks that must name a spectrum's poles before it is reported at all. */
+const MIN_SPECTRUM_SOURCES = 3;
+
+/**
+ * One spectrum as a 0..100 trait. Below the minimum the trait is absent rather
+ * than based on a single prompt; above it the mean is the position and the
+ * spread still decides confidence, so a catalogue that splits between both
+ * poles reads as uncertain instead of as a stable middle.
+ */
+function spectrumTrait(definition: SpectrumDefinition, values: Weighted[]): DnaTrait | null {
+  const sources = values.filter((value) => value.weight > 0).length;
+  if (sources < MIN_SPECTRUM_SOURCES) return null;
+
+  return numericTrait({
+    key: definition.key,
+    category: "sound",
+    label: `${definition.left} ↔ ${definition.right}`,
+    values,
+    unit: "%",
+    spreadScale: 60,
+    format: (value) => `${Math.round(value)}% ${value >= 50 ? definition.right : definition.left}`,
+  });
 }
 
 /** Longest tags first, so "indie pop" wins and then hides the generic "pop". */
@@ -548,12 +574,19 @@ export function buildDnaProfile(
   const intendedTempoValues: Weighted[] = [];
   const halfTimeValues: Weighted[] = [];
   const energyValues: Weighted[] = [];
+  const spectrumValues: Record<SpectrumKey, Weighted[]> = {
+    rap_melodic: [],
+    intimate_open: [],
+    minimal_dense: [],
+    electronic_organic: [],
+  };
   const atmosphereValues: { value: string; weight: number }[] = [];
   const genreValues: { value: string; weight: number }[] = [];
   const engineValues: { value: string; weight: number }[] = [];
   const instrumentalValues: Weighted[] = [];
   const productionValues: Weighted[] = [];
   const genderValues: { value: string; weight: number }[] = [];
+  const ownVoiceValues: Weighted[] = [];
   const vocalScoreValues: Weighted[] = [];
   const lengthValues: Weighted[] = [];
   const compositionValues: Weighted[] = [];
@@ -595,6 +628,11 @@ export function buildDnaProfile(
     }
     if (audio?.energy != null && Number.isFinite(audio.energy)) {
       energyValues.push({ value: audio.energy, weight });
+    }
+
+    // Spectra come from the user's own words, so they do not need audio DNA.
+    for (const [key, score] of Object.entries(spectrumScores(track.prompt))) {
+      spectrumValues[key as SpectrumKey].push({ value: score, weight });
     }
     if (audio?.atmosphereTags?.length) {
       atmosphereTracks += 1;
@@ -641,6 +679,12 @@ export function buildDnaProfile(
 
     if (!track.instrumental && track.vocalGender) {
       genderValues.push({ value: track.vocalGender, weight });
+    }
+
+    // Only tracks that recorded an answer count: pre-migration rows, other
+    // providers and instrumentals are null, not "no".
+    if (!track.instrumental && track.ownVoice !== null) {
+      ownVoiceValues.push({ value: track.ownVoice ? 1 : 0, weight });
     }
 
     if (track.duration != null && track.duration > 0) {
@@ -709,6 +753,7 @@ export function buildDnaProfile(
       spreadScale: 30,
       format: (value) => `${Math.round(value)}/100`,
     }),
+    ...SPECTRA.map((definition) => spectrumTrait(definition, spectrumValues[definition.key])),
     listTrait({
       key: "atmospheres",
       category: "sound",
@@ -758,7 +803,13 @@ export function buildDnaProfile(
       label: "Vocal gender",
       values: genderValues,
     }),
-    ownVoiceTrait(options.voice ?? null),
+    ratioTrait({
+      key: "own_voice",
+      category: "voice",
+      label: "Own voice",
+      values: ownVoiceValues,
+      display: (ratio) => `${Math.round(ratio * 100)}% with your cloned voice`,
+    }) ?? ownVoiceTrait(options.voice ?? null),
     numericTrait({
       key: "vocal_score",
       category: "voice",

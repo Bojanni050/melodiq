@@ -153,6 +153,11 @@ export const tracks = pgTable("tracks", {
   // Vocal gender chosen at generation ("female" | "male"; null = auto/unknown,
   // e.g. pre-migration tracks). Restored into the Studio by Reuse Prompt.
   vocalGender: varchar("vocal_gender", { length: 10 }),
+  // True when this generation sent the user's cloned voice as persona_id.
+  // Nullable on purpose: null means "not known / not applicable" (instrumentals,
+  // providers without persona support, and tracks from before this column), so
+  // the DNA ratio only counts tracks that could have answered the question.
+  ownVoice: boolean("own_voice"),
   isCollaboration: boolean("is_collaboration").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),

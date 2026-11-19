@@ -46,11 +46,9 @@ export type AdvancedDnaSummary = {
 };
 
 /**
- * The user's voice-clone library as Melody DNA sees it. A track does not
- * record which persona sang it, so this is a fact about the account (does a
- * cloned voice exist, and is one selected in the Studio) rather than a
- * per-track measurement. The trait is only emitted when there is at least one
- * finished clone.
+ * The user's voice-clone library as Melody DNA sees it. Used as the fallback
+ * for "Own voice" when no track records whether a persona sang it (tracks from
+ * before the `own_voice` migration, or only instrumentals).
  */
 export type DnaVoiceProfile = {
   /** Completed clones in the library. */
@@ -74,6 +72,8 @@ export type DnaSourceTrack = {
   lyrics: string | null;
   language: string | null;
   instrumental: boolean;
+  /** Whether this generation used the user's cloned voice. Null = unknown. */
+  ownVoice: boolean | null;
   vocalGender: string | null;
   /** "up" | "down" | null */
   rating: string | null;

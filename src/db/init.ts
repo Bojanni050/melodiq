@@ -550,6 +550,7 @@ ALTER TABLE tracks ADD COLUMN IF NOT EXISTS melody_genie_additions TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS melody_genie_style_influence integer;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS melody_genie_dna_influence boolean NOT NULL DEFAULT false;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS vocal_gender VARCHAR(10);
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS own_voice boolean;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS s3_key_license TEXT;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS deleted_at timestamp;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS voted_at timestamp;
