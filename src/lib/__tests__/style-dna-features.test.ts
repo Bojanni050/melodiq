@@ -167,4 +167,67 @@ describe("extractWritingFeatures", () => {
     expect(f).not.toBeNull();
     expect(f?.avgSyllables).toBeGreaterThan(0);
   });
+
+  it("reads the section order, chorus length and bridge from the headings", () => {
+    const f = extractWritingFeatures({
+      lyrics: [
+        "[Intro]",
+        "oh oh",
+        "[Verse 1]",
+        "I keep the light on when I go",
+        "I never learned to let it show",
+        "[Chorus]",
+        "we run into the night",
+        "we run into the light",
+        "we never say goodbye",
+        "[Verse 2]",
+        "I see the morning in your eyes",
+        "I carry every alibi",
+        "[Chorus]",
+        "we run into the night",
+        "we run into the light",
+        "we never say goodbye",
+        "[Bridge]",
+        "hold on to me tonight",
+        "[Outro]",
+        "oh oh",
+      ].join("\n"),
+      language: "en",
+    });
+    expect(f?.sectionStructure).toBe("i-v-c-v-c-b-o");
+    expect(f?.chorusLines).toBe(3);
+    expect(f?.hasBridge).toBe(true);
+    expect(f?.repetition).toBeGreaterThan(0.4);
+  });
+
+  it("recognises Dutch and Spanish section labels", () => {
+    const dutch = extractWritingFeatures({
+      lyrics: "[Couplet 1]\nik zie de nacht voorbij gaan\njij blijft hier nog even staan\n[Refrein]\nwij dansen in het licht\nwij dansen in het zicht",
+      language: "nl",
+    });
+    expect(dutch?.sectionStructure).toBe("v-c");
+    const spanish = extractWritingFeatures({
+      lyrics: "[Verso 1]\ncamino por la calle\nbuscando tu mirada\n[Estribillo]\nven aquí conmigo\nno me dejes solo",
+      language: "es",
+    });
+    expect(spanish?.sectionStructure).toBe("v-c");
+  });
+
+  it("counts parenthetical ad-libs per line", () => {
+    const f = extractWritingFeatures({
+      lyrics: "[Chorus]\nwe run into the night (yeah)\nwe run into the light\nwe never say goodbye (oh-oh)",
+      language: "en",
+    });
+    expect(f?.adLibs).toBeCloseTo(0.67, 1);
+  });
+
+  it("returns no structure when the headings are not section labels", () => {
+    const f = extractWritingFeatures({
+      lyrics: "[Part 1]\nI keep the light on when I go\nI never learned to let it show",
+      language: "en",
+    });
+    expect(f?.sectionStructure).toBeNull();
+    expect(f?.chorusLines).toBeNull();
+    expect(f?.hasBridge).toBe(false);
+  });
 });

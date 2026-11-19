@@ -138,6 +138,48 @@ const THEME_KEYWORDS: Record<string, string[]> = {
 const SECTION_HEADING = /^\s*\[([^\]]{1,60})\]\s*$/;
 const INLINE_TAG = /\[[^\]]*\]/g;
 
+/** A song is described by its block order, so eight to twelve blocks is plenty. */
+const MAX_STRUCTURE_SECTIONS = 16;
+
+/** Parenthetical backing vocals and ad-libs, e.g. "(yeah)" or "(oh-oh)". */
+const AD_LIB = /\([^()]{1,80}\)/;
+
+/**
+ * Section labels are free text and come in several languages. They are matched
+ * after lowercasing and dropping digits, so "Verse 1", "verse" and "Couplet 2"
+ * collapse to the same code. Unknown labels return null: a structure string full
+ * of "x" says less than no structure at all.
+ */
+const SECTION_CODES: { code: string; pattern: RegExp }[] = [
+  { code: "i", pattern: /^(intro|introduction|introduccion|introductie|inleiding|entrada)\b/ },
+  { code: "o", pattern: /^(outro|ending|slot|finale|einde|final|salida)\b/ },
+  { code: "p", pattern: /^(pre[- ]?chorus|prechorus|pre[- ]?refrein|voorrefrein|pre[- ]?estribillo|build[- ]?up)\b/ },
+  { code: "h", pattern: /^(post[- ]?chorus|postchorus|post[- ]?refrein|post[- ]?estribillo|hook)\b/ },
+  { code: "c", pattern: /^(chorus|refrein|refrain|refrao|estribillo|ritornello|chant)\b/ },
+  { code: "v", pattern: /^(verse|couplet|strofe|strophe|strofa|stanza|vers|verso|estrofa)\b/ },
+  { code: "b", pattern: /^(bridge|brug|pont|puente|ponte|middle[- ]?8|breakdown)\b/ },
+  { code: "d", pattern: /^(drop)\b/ },
+  { code: "n", pattern: /^(interlude|break|instrumental|solo|spoken)\b/ },
+];
+
+export function sectionCode(label: string): string | null {
+  const normalised = stripAccents(label.toLowerCase())
+    .replace(/\d+/g, " ")
+    .replace(/[^a-z\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalised) return null;
+  return SECTION_CODES.find((entry) => entry.pattern.test(normalised))?.code ?? null;
+}
+
+function normaliseLine(line: string): string {
+  return stripAccents(line.toLowerCase())
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^a-z'\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function resolveWritingLanguage(raw: string | null | undefined): WritingLanguage {
   if (!raw) return "xx";
   const key = String(raw).trim().toLowerCase();
@@ -440,6 +482,31 @@ export function extractWritingFeatures(input: WritingFeatureInput): WritingFeatu
   const explicit = EXPLICIT_WORDS[language] ?? EXPLICIT_WORDS.xx!;
   const explicitLines = lines.filter((line) => wordsOf(line).some((word) => explicit.has(word))).length;
 
+  const codes = sections
+    .map((section) => sectionCode(section.label))
+    .filter((code): code is string => code !== null);
+  const sectionStructure = codes.length >= 2 ? codes.slice(0, MAX_STRUCTURE_SECTIONS).join("-") : null;
+
+  const chorusSections = sections.filter((section) => sectionCode(section.label) === "c");
+  const chorusLines =
+    chorusSections.length > 0
+      ? round2(chorusSections.reduce((sum, section) => sum + section.lines.length, 0) / chorusSections.length)
+      : null;
+
+  const lineCounts = new Map<string, number>();
+  for (const line of lines) {
+    const key = normaliseLine(line);
+    if (!key) continue;
+    lineCounts.set(key, (lineCounts.get(key) ?? 0) + 1);
+  }
+  // A line counts as repeated when the same text appears more than once in the
+  // song — the chorus therefore counts, which is precisely the repetition this
+  // trait is about.
+  const repeatedLines = [...lineCounts.values()].reduce((sum, count) => sum + (count > 1 ? count : 0), 0);
+  const repetition = lines.length > 0 ? round2(repeatedLines / lines.length) : null;
+  const adLibLines = lines.filter((line) => AD_LIB.test(line)).length;
+  const adLibs = lines.length > 0 ? round2(adLibLines / lines.length) : null;
+
   return {
     language,
     lineCount: lines.length,
@@ -453,6 +520,11 @@ export function extractWritingFeatures(input: WritingFeatureInput): WritingFeatu
     pov: detectPov(words, language),
     tense: detectTense(words, language),
     explicitness: lines.length > 0 ? round2(explicitLines / lines.length) : null,
+    sectionStructure,
+    chorusLines,
+    repetition,
+    adLibs,
+    hasBridge: codes.includes("b"),
     contentWords: contentWordsOf(words, language),
     themes: detectThemes(lines),
   };

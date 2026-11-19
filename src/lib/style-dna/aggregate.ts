@@ -87,8 +87,10 @@ export type WritingDnaLanguage = {
 export type WritingDnaResult = {
   /** Per-language trait sets, keys suffixed with `:<lang>`. */
   byLanguage: WritingDnaLanguage[];
-  /** Whole-catalogue traits, bare keys. */
+  /** Whole-catalogue writing traits, bare keys. */
   overall: DnaTrait[];
+  /** Section-level traits for the `structure` category, bare keys. */
+  structure: DnaTrait[];
 };
 
 type Weighted = { value: number; weight: number };
@@ -141,6 +143,8 @@ function ratioTrait(options: {
   label: string;
   values: Weighted[];
   display: (ratio: number) => string;
+  /** Defaults to `words`; structure traits reuse the same confidence rules. */
+  category?: DnaCategory;
 }): DnaTrait | null {
   const stats = weightedStats(options.values);
   if (!stats) return null;
@@ -148,7 +152,7 @@ function ratioTrait(options: {
   const ratio = clamp01(stats.mean);
   return {
     key: options.key,
-    category: "words" as DnaCategory,
+    category: options.category ?? "words",
     label: options.label,
     kind: "ratio",
     valueNumber: round1(ratio * 100),
@@ -167,6 +171,7 @@ function numericTrait(options: {
   values: Weighted[];
   spreadScale: number;
   format: (value: number) => string;
+  category?: DnaCategory;
 }): DnaTrait | null {
   const stats = weightedStats(options.values);
   if (!stats) return null;
@@ -174,7 +179,7 @@ function numericTrait(options: {
   const agreement = clamp01(1 - stats.spread / options.spreadScale);
   return {
     key: options.key,
-    category: "words" as DnaCategory,
+    category: options.category ?? "words",
     label: options.label,
     kind: "number",
     valueNumber: round1(stats.mean),
@@ -192,6 +197,7 @@ function textTrait(options: {
   label: string;
   values: { value: string; weight: number }[];
   labels?: Record<string, string>;
+  category?: DnaCategory;
 }): DnaTrait | null {
   const ranked = weightedCounts(options.values);
   if (ranked.length === 0) return null;
@@ -202,7 +208,7 @@ function textTrait(options: {
   const value = options.labels?.[top.value] ?? top.value;
   return {
     key: options.key,
-    category: "words" as DnaCategory,
+    category: options.category ?? "words",
     label: options.label,
     kind: "text",
     valueNumber: round1(share * 100),
@@ -361,8 +367,67 @@ function buildTraits(sources: WritingDnaSource[], suffix: string): DnaTrait[] {
   return traits.filter((entry): entry is DnaTrait => entry !== null);
 }
 
+/**
+ * Section-level traits — how the songs are built rather than how they are
+ * written. These live in the `structure` category and are deliberately not split
+ * per language: a verse-chorus-bridge order is the same shape in every language.
+ */
+function buildStructureTraits(sources: WritingDnaSource[]): DnaTrait[] {
+  const usable = sources.filter((source) => source.weight > 0);
+
+  const numbers = (pick: (features: WritingFeatures) => number | null): Weighted[] =>
+    usable
+      .map((source) => ({ value: pick(source.features), weight: source.weight }))
+      .filter((sample): sample is Weighted => sample.value !== null);
+
+  const structures = usable
+    .map((source) => ({ value: source.features.sectionStructure, weight: source.weight }))
+    .filter((entry): entry is { value: string; weight: number } => entry.value !== null);
+
+  const traits: (DnaTrait | null)[] = [
+    textTrait({
+      key: "song_structure",
+      label: "Favorite structure",
+      values: structures,
+      category: "structure",
+    }),
+    numericTrait({
+      key: "chorus_lines",
+      label: "Chorus length",
+      values: numbers((features) => features.chorusLines),
+      spreadScale: 3,
+      format: (value) => `${round1(value)} lines`,
+      category: "structure",
+    }),
+    ratioTrait({
+      key: "repetition",
+      label: "Repetition",
+      values: numbers((features) => features.repetition),
+      display: (ratio) => `${Math.round(ratio * 100)}% of lines repeat`,
+      category: "structure",
+    }),
+    ratioTrait({
+      key: "ad_libs",
+      label: "Ad-libs",
+      values: numbers((features) => features.adLibs),
+      display: (ratio) => `${Math.round(ratio * 100)}% of lines carry ad-libs`,
+      category: "structure",
+    }),
+    ratioTrait({
+      key: "bridge",
+      label: "Bridge",
+      values: usable.map((source) => ({ value: source.features.hasBridge ? 1 : 0, weight: source.weight })),
+      display: (ratio) => `${Math.round(ratio * 100)}% of songs have a bridge`,
+      category: "structure",
+    }),
+  ];
+
+  return traits.filter((entry): entry is DnaTrait => entry !== null);
+}
+
 export function buildWritingDna(sources: WritingDnaSource[]): WritingDnaResult {
   const overall = buildTraits(sources, "");
+  const structure = buildStructureTraits(sources);
 
   const groups = new Map<WritingLanguage, WritingDnaSource[]>();
   for (const source of sources) {
@@ -383,7 +448,7 @@ export function buildWritingDna(sources: WritingDnaSource[]): WritingDnaResult {
     }))
     .sort((a, b) => b.sourceCount - a.sourceCount || a.language.localeCompare(b.language));
 
-  return { byLanguage, overall };
+  return { byLanguage, overall, structure };
 }
 
 /** Language name for the UI, mirroring the map in `dna/aggregate.ts`. */

@@ -878,6 +878,11 @@ const nl: typeof en = {
       signature_words: "Kenmerkende woorden",
       themes: "Thema's",
       writing_languages: "Talen waarin je schrijft",
+      song_structure: "Favoriete structuur",
+      chorus_lines: "Lengte refrein",
+      repetition: "Repetitie",
+      ad_libs: "Ad-libs",
+      bridge: "Brug",
     },
   },
 };

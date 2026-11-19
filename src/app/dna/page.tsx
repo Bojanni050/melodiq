@@ -95,6 +95,11 @@ const TRAIT_LABEL_KEYS: Record<string, TranslationKey> = {
   signature_words: "dna.traits.signature_words",
   themes: "dna.traits.themes",
   writing_languages: "dna.traits.writing_languages",
+  song_structure: "dna.traits.song_structure",
+  chorus_lines: "dna.traits.chorus_lines",
+  repetition: "dna.traits.repetition",
+  ad_libs: "dna.traits.ad_libs",
+  bridge: "dna.traits.bridge",
 };
 
 const CATEGORY_LABEL_KEYS: Record<string, TranslationKey> = {

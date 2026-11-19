@@ -43,7 +43,7 @@ describe("collectWritingSources", () => {
 
 describe("buildWritingDna", () => {
   it("returns nothing for an empty catalogue", () => {
-    expect(buildWritingDna([])).toEqual({ byLanguage: [], overall: [] });
+    expect(buildWritingDna([])).toEqual({ byLanguage: [], overall: [], structure: [] });
   });
 
   it("suffixes per-language keys and keeps the overall keys bare", () => {
@@ -83,8 +83,33 @@ describe("buildWritingDna", () => {
     );
   });
 
-  it("ranks signature words by how many tracks carry them, not by repetition", () => {
-    const repeated = source(
+  it("builds the structure traits from the section headings", () => {
+    const lyrics = [
+      "[Intro]",
+      "oh oh",
+      "[Verse 1]",
+      "I keep the light on when I go",
+      "I never learned to let it show",
+      "[Chorus]",
+      "we run into the night",
+      "we run into the light",
+      "[Bridge]",
+      "hold on to me tonight",
+    ].join("\n");
+    const result = buildWritingDna([source(lyrics, "en"), source(lyrics, "en")]);
+
+    expect(result.structure.map((trait) => trait.key)).toEqual(
+      expect.arrayContaining(["song_structure", "chorus_lines", "repetition", "ad_libs", "bridge"]),
+    );
+    expect(result.structure.every((trait) => trait.category === "structure")).toBe(true);
+    expect(result.structure.find((trait) => trait.key === "song_structure")?.valueText).toBe("i-v-c-b");
+    expect(result.structure.find((trait) => trait.key === "chorus_lines")?.valueNumber).toBe(2);
+    expect(result.structure.find((trait) => trait.key === "bridge")?.valueNumber).toBe(100);
+    // Structure is language-independent, so it never lands in the words sets.
+    expect(result.overall.some((trait) => trait.key === "song_structure")).toBe(false);
+  });
+
+  it("ranks signature words by how many tracks carry them, not by repetition", () => {    const repeated = source(
       "[Verse 1]\nmidnight midnight midnight midnight\nmidnight midnight midnight midnight",
       "English",
     );

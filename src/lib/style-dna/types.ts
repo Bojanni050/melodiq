@@ -36,6 +36,19 @@ export type WritingFeatures = {
   tense: WritingTense | null;
   /** Share of lines containing explicit language (0..1). */
   explicitness: number | null;
+  /**
+   * Section order as single-letter codes, e.g. "v-c-v-c-b-c-o". Null when the
+   * lyrics carry no recognisable section headings at all.
+   */
+  sectionStructure: string | null;
+  /** Mean number of lines per chorus; null when the song has no chorus. */
+  chorusLines: number | null;
+  /** Share of lines that appear more than once in the same song (0..1). */
+  repetition: number | null;
+  /** Share of lines carrying a parenthetical ad-lib, e.g. "(yeah)" (0..1). */
+  adLibs: number | null;
+  /** Whether the song has a bridge section. */
+  hasBridge: boolean;
   /** Distinct content words, capped; used for document-frequency aggregation. */
   contentWords: string[];
   /** Theme slugs mapped from keyword families. */

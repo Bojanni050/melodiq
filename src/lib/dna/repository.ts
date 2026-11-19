@@ -462,7 +462,12 @@ export async function recomputeDnaProfile(
   );
   const built = {
     ...audioBuilt,
-    traits: [...audioBuilt.traits, ...writing.overall, ...writing.byLanguage.flatMap((entry) => entry.traits)],
+    traits: [
+      ...audioBuilt.traits,
+      ...writing.overall,
+      ...writing.structure,
+      ...writing.byLanguage.flatMap((entry) => entry.traits),
+    ],
   };
 
   const result = await db.transaction(async (tx) => {

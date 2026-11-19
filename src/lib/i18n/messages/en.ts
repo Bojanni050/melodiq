@@ -875,6 +875,11 @@ const en = {
       signature_words: "Signature words",
       themes: "Themes",
       writing_languages: "Languages you write in",
+      song_structure: "Favorite structure",
+      chorus_lines: "Chorus length",
+      repetition: "Repetition",
+      ad_libs: "Ad-libs",
+      bridge: "Bridge",
     },
   },
 };
