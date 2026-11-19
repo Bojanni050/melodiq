@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
+  clonedVoices,
   dnaCalibrationAnswers,
   dnaFeedbackEvents,
   dnaProfiles,
@@ -23,7 +24,13 @@ import {
 import { foldFeedback, type DnaFeedbackEvent, type DnaFeedbackKind, type DnaFeedbackStance } from "./feedback";
 import { applyLocks, diffTraits, stampTimeline, type TraitSnapshot } from "./history";
 import { profileSignals, type ProfileSignals } from "./states";
-import type { AdvancedDnaSummary, DnaBuildResult, DnaCategory, DnaSourceTrack } from "./types";
+import type {
+  AdvancedDnaSummary,
+  DnaBuildResult,
+  DnaCategory,
+  DnaSourceTrack,
+  DnaVoiceProfile,
+} from "./types";
 
 /**
  * Persistence for Melody DNA.
@@ -94,6 +101,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
         createdAt: tracks.createdAt,
         duration: tracks.duration,
         prompt: tracks.prompt,
+        provider: tracks.provider,
         lyrics: tracks.lyrics,
         language: tracks.language,
         instrumental: tracks.instrumental,
@@ -123,6 +131,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
       createdAt: ranked.createdAt,
       duration: ranked.duration,
       prompt: ranked.prompt,
+      provider: ranked.provider,
       lyrics: ranked.lyrics,
       language: ranked.language,
       instrumental: ranked.instrumental,
@@ -144,6 +153,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
     createdAt: row.createdAt ?? null,
     duration: row.duration ?? null,
     prompt: row.prompt ?? null,
+    provider: row.provider,
     lyrics: row.lyrics ?? null,
     language: row.language ?? null,
     instrumental: Boolean(row.instrumental),
@@ -155,6 +165,28 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
     audioDna: parseAudioDna(row.audioDna ?? null),
     advancedDna: parseAdvancedDna(row.advancedDna ?? null),
   }));
+}
+
+/**
+ * The voice-clone library, as far as the DNA profile cares: finished clones and
+ * which one the Studio currently sends. Null when no clone ever finished, so
+ * the trait is absent rather than reporting a borrowed voice as "own".
+ */
+export async function loadDnaVoiceProfile(userId: string): Promise<DnaVoiceProfile | null> {
+  const rows = await db
+    .select({ name: clonedVoices.name, isSelected: clonedVoices.isSelected })
+    .from(clonedVoices)
+    .where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.status, "completed")));
+
+  if (rows.length === 0) return null;
+
+  // The Studio falls back to the first ready voice when nothing is explicitly
+  // selected, so the trait reports that voice rather than claiming there is none.
+  const selected = rows.find((row) => row.isSelected) ?? rows[0];
+  return {
+    voiceCount: rows.length,
+    selectedName: selected.name?.trim() || null,
+  };
 }
 
 function truncate(value: string, max: number): string {
@@ -444,9 +476,12 @@ export async function recomputeDnaProfile(
   userId: string,
   options: { now?: Date } = {},
 ): Promise<RecomputeResult> {
-  const sources = await loadDnaSources(userId);
+  const [sources, voice] = await Promise.all([
+    loadDnaSources(userId),
+    loadDnaVoiceProfile(userId),
+  ]);
   const now = options.now ?? new Date();
-  const audioBuilt = buildDnaProfile(sources, options);
+  const audioBuilt = buildDnaProfile(sources, { ...options, voice });
 
   // The writing traits are derived from the same sample, with the same
   // recency/rating weighting, so a rebuild stays deterministic and both halves of

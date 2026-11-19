@@ -12,6 +12,7 @@ function makeTrack(overrides: Partial<DnaSourceTrack> = {}): DnaSourceTrack {
     createdAt: new Date("2026-01-01T00:00:00Z"),
     duration: 210,
     prompt: "pop, warm synths",
+    provider: "suno",
     lyrics: "a line of lyrics here",
     language: "en",
     instrumental: false,
@@ -233,6 +234,43 @@ describe("sourceWeight", () => {
 
     expect(trait(result, "tempo_intent")).toBeNull();
     expect(trait(result, "half_time_share")).toBeNull();
+  });
+
+  it("names the engine you generate with, merges PoYo into Suno and skips uploads", () => {
+    const result = buildDnaProfile(
+      [
+        makeTrack({ provider: "poyo" }),
+        makeTrack({ provider: "suno" }),
+        makeTrack({ provider: "apimart" }),
+        makeTrack({ provider: "upload" }),
+      ],
+      { now },
+    );
+
+    const engine = trait(result, "preferred_engine");
+    expect(engine?.category).toBe("sound");
+    expect(JSON.parse(engine!.valueText!)).toEqual(["Suno", "APIMart"]);
+    expect(engine?.display).toBe("Suno, APIMart");
+    // The upload has no engine, so it is not evidence either way.
+    expect(engine?.sourceCount).toBe(3);
+  });
+
+  it("reports a finished clone as the own-voice trait", () => {
+    const result = buildDnaProfile([makeTrack()], {
+      now,
+      voice: { voiceCount: 2, selectedName: "Nova" },
+    });
+
+    const own = trait(result, "own_voice");
+    expect(own?.category).toBe("voice");
+    expect(own?.display).toBe("Nova");
+    expect(own?.sourceCount).toBe(2);
+  });
+
+  it("leaves own voice out when no clone ever finished", () => {
+    const result = buildDnaProfile([makeTrack()], { now, voice: null });
+
+    expect(trait(result, "own_voice")).toBeNull();
   });
 });
 

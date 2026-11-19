@@ -1,3 +1,4 @@
+import { PROVIDER_LABELS } from "@/lib/format-generator";
 import { parsePromptBpm, tempoOctaveRelation } from "@/lib/prompt-bpm";
 
 import type {
@@ -7,6 +8,7 @@ import type {
   DnaProfileSummary,
   DnaSourceTrack,
   DnaTrait,
+  DnaVoiceProfile,
 } from "./types";
 
 /**
@@ -251,11 +253,14 @@ function listTrait(options: {
    * can carry several genres.
    */
   sourceCount: number;
+  /** Display form of a tag; grouping still uses the lowercased value. */
+  displayValue?: (value: string) => string;
 }): DnaTrait | null {
   const ranked = weightedCounts(options.values);
   if (ranked.length === 0) return null;
 
   const top = ranked.slice(0, options.limit);
+  const labels = top.map((item) => (options.displayValue ? options.displayValue(item.value) : item.value));
   const totalWeight = ranked.reduce((sum, item) => sum + item.weight, 0);
   const sourceCount = options.sourceCount;
   // A single dominant tag is more meaningful than a scattering of one-offs, so
@@ -268,9 +273,9 @@ function listTrait(options: {
     label: options.label,
     kind: "list",
     valueNumber: round1(agreement * 100),
-    valueText: JSON.stringify(top.map((item) => item.value)),
+    valueText: JSON.stringify(labels),
     unit: null,
-    display: top.map((item) => item.value).join(", "),
+    display: labels.join(", "),
     confidence: round1(clamp01(coverage(sourceCount) * Math.max(0.35, agreement)) * 100) / 100,
     sourceCount,
     weight: round1(totalWeight),
@@ -374,8 +379,46 @@ function ratioTrait(options: {
   };
 }
 
+/**
+ * "Own voice" is an account fact, not a per-track measurement: the Studio sends
+ * a cloned persona with an APIMart generation when one is selected, but the
+ * track row does not record whether it did. Emitting it from the voice library
+ * keeps the card honest instead of guessing per track.
+ */
+function ownVoiceTrait(voice: DnaVoiceProfile | null): DnaTrait | null {
+  if (!voice || voice.voiceCount === 0) return null;
+
+  const extra = voice.voiceCount > 1 ? `${voice.voiceCount} cloned voices` : "Cloned voice";
+  return {
+    key: "own_voice",
+    category: "voice",
+    label: "Own voice",
+    kind: "text",
+    valueNumber: 100,
+    valueText: "cloned",
+    unit: null,
+    // The card's label already says what this is, so the value stays short and
+    // language-neutral: the voice's name, or how many are in the library.
+    display: voice.selectedName ?? extra,
+    // A finished clone is a fact about the account, not a guess from tracks.
+    // Selecting one in the Studio is what makes it the default sound.
+    confidence: voice.selectedName ? 0.9 : 0.7,
+    sourceCount: voice.voiceCount,
+    weight: voice.voiceCount,
+  };
+}
+
 /** Longest tags first, so "indie pop" wins and then hides the generic "pop". */
 const GENRE_TERMS_BY_LENGTH = [...GENRE_TERMS].sort((a, b) => b.length - a.length);
+
+/** Restores a provider's display casing after weightedCounts lowercases it. */
+const ENGINE_DISPLAY = new Map(
+  Object.values(PROVIDER_LABELS).map((label) => [label.toLowerCase(), label]),
+);
+
+function engineDisplay(value: string): string {
+  return ENGINE_DISPLAY.get(value) ?? capitalise(value);
+}
 
 export function detectGenres(prompt: string | null): string[] {
   if (!prompt) return [];
@@ -474,7 +517,10 @@ function buildName(context: {
  * Builds the whole profile in one pass. Pure: same sources + same `now` always
  * yields the same traits, which is what makes the API recompute idempotent.
  */
-export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date } = {}): DnaBuildResult {
+export function buildDnaProfile(
+  sources: DnaSourceTrack[],
+  options: { now?: Date; voice?: DnaVoiceProfile | null } = {},
+): DnaBuildResult {
   const now = options.now ?? new Date();
   const usable = sources.filter((track) => track && track.id);
 
@@ -504,6 +550,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
   const energyValues: Weighted[] = [];
   const atmosphereValues: { value: string; weight: number }[] = [];
   const genreValues: { value: string; weight: number }[] = [];
+  const engineValues: { value: string; weight: number }[] = [];
   const instrumentalValues: Weighted[] = [];
   const productionValues: Weighted[] = [];
   const genderValues: { value: string; weight: number }[] = [];
@@ -522,6 +569,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
   // track can add several genres and would otherwise inflate the caption.
   let atmosphereTracks = 0;
   let genreTracks = 0;
+  let engineTracks = 0;
   let lovedGenreTracks = 0;
   let avoidedGenreTracks = 0;
 
@@ -563,6 +611,15 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       for (const genre of genres) {
         genreValues.push({ value: genre, weight });
       }
+    }
+
+    // Uploaded audio has no engine of its own, so it would answer "what do you
+    // generate with?" with "Uploaded" — a non-answer. Provider ids are
+    // normalised to their display names ("poyo" is Suno) to match the Studio.
+    const engine = track.provider?.trim().toLowerCase();
+    if (engine && engine !== "upload") {
+      engineTracks += 1;
+      engineValues.push({ value: PROVIDER_LABELS[engine] ?? capitalise(engine), weight });
     }
 
     // Shares are plain counts: weighting them by rating/plays would make
@@ -668,6 +725,15 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       limit: 3,
       sourceCount: genreTracks,
     }),
+    listTrait({
+      key: "preferred_engine",
+      category: "sound",
+      label: "Preferred engine",
+      values: engineValues,
+      limit: 3,
+      sourceCount: engineTracks,
+      displayValue: engineDisplay,
+    }),
     ratioTrait({
       key: "instrumental_share",
       category: "sound",
@@ -692,6 +758,7 @@ export function buildDnaProfile(sources: DnaSourceTrack[], options: { now?: Date
       label: "Vocal gender",
       values: genderValues,
     }),
+    ownVoiceTrait(options.voice ?? null),
     numericTrait({
       key: "vocal_score",
       category: "voice",

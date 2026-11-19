@@ -13,8 +13,12 @@
  * provider is added.
  */
 
-/** provider -> display name. Used on its own when no model is known. */
-const PROVIDER_LABEL: Record<string, string> = {
+/**
+ * provider -> display name. Used on its own when no model is known, and by
+ * Melody DNA's "Preferred engine" trait so both surfaces name a provider the
+ * same way.
+ */
+export const PROVIDER_LABELS: Record<string, string> = {
   suno: "Suno",
   mureka: "Mureka",
   heartmula: "HeartMuLa",
@@ -149,10 +153,10 @@ export function formatGenerator(
   // A model that is already a friendly name (older rows, or a provider we have
   // no entry for) is shown as-is rather than replaced by the provider name.
   if (!modelLabel && rawModel) {
-    return /[a-z]/i.test(rawModel) && !modelKey ? rawModel : PROVIDER_LABEL[providerKey] ?? rawModel;
+    return /[a-z]/i.test(rawModel) && !modelKey ? rawModel : PROVIDER_LABELS[providerKey] ?? rawModel;
   }
 
-  const providerLabel = PROVIDER_LABEL[providerKey];
+  const providerLabel = PROVIDER_LABELS[providerKey];
   if (modelLabel && providerLabel) {
     const standAlone =
       SELF_PROVIDERS.has(providerKey) || STANDALONE_MODEL[`${providerKey}/${modelKey}`]?.has(modelKey);

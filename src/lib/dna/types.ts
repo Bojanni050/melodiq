@@ -46,6 +46,20 @@ export type AdvancedDnaSummary = {
 };
 
 /**
+ * The user's voice-clone library as Melody DNA sees it. A track does not
+ * record which persona sang it, so this is a fact about the account (does a
+ * cloned voice exist, and is one selected in the Studio) rather than a
+ * per-track measurement. The trait is only emitted when there is at least one
+ * finished clone.
+ */
+export type DnaVoiceProfile = {
+  /** Completed clones in the library. */
+  voiceCount: number;
+  /** The one the Studio sends as persona_id, if any. */
+  selectedName: string | null;
+};
+
+/**
  * One finished track as the aggregator sees it. Deliberately decoupled from
  * the full track row so tests can build sources without a database.
  */
@@ -55,6 +69,8 @@ export type DnaSourceTrack = {
   /** Seconds. */
   duration: number | null;
   prompt: string | null;
+  /** Generation provider id (see PROVIDER_LABELS); "upload" for imported audio. */
+  provider: string;
   lyrics: string | null;
   language: string | null;
   instrumental: boolean;
