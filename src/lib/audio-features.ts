@@ -81,7 +81,7 @@ export async function extractAudioFeatures(buffer: Buffer): Promise<AudioFeature
     energy: computeEnergy(pcm),
     loudness,
     energyArc,
-    hookEarly: detectHookEarly(pcm, energyArc),
+    hookEarly: detectHookEarly(pcm),
   };
 }
 
@@ -195,30 +195,41 @@ function medianOf(values: number[]): number {
 }
 
 /**
- * "Hook before 0:30" without section detection: the first 30 seconds already
- * reach the track's own median energy, i.e. the song is at its typical level
- * early on. It is a proxy, not a chorus detector — a slow-burn intro reads
- * false, an early drop reads true.
+ * "Hook before 0:30" without section detection: the point where the track first
+ * reaches its own median energy, i.e. where it settles at its typical level.
+ * It is a proxy, not a chorus detector — a slow-burn intro reads false, an
+ * early drop reads true.
  *
- * Measured against the median rather than the peak: on a mastered track the
- * peak sits near 100 while a quiet intro sits at 40-60, so a peak-relative rule
- * called virtually every song "no hook". Returns null when the track is too
- * short or too quiet to judge.
+ * Measured at one-second resolution, not on the twelve-bucket arc: with a
+ * three-minute track the 30-second window is only two buckets, so the arc
+ * cannot tell "quiet for 25 s, then full" from "quiet the whole time". The
+ * reference is the median rather than the peak: on a mastered track the peak
+ * sits near 100 and a quiet intro at 40-50, so a peak-relative rule calls
+ * virtually every song "no hook".
+ *
+ * Returns null when the track is too short or too quiet to judge.
  */
-export function hookEarlyFromArc(arc: number[] | null, durationSeconds: number): boolean | null {
-  if (!arc || arc.length === 0) return null;
-  if (durationSeconds < HOOK_WINDOW_SECONDS) return null;
+export function hookEarlyFromEnergies(perSecond: number[]): boolean | null {
+  if (perSecond.length <= HOOK_WINDOW_SECONDS) return null;
 
-  const median = medianOf(arc);
+  const median = medianOf(perSecond);
   if (median < HOOK_ENERGY_FLOOR) return null;
 
-  const windowBuckets = Math.max(1, Math.round((HOOK_WINDOW_SECONDS / durationSeconds) * arc.length));
-  const earlyPeak = Math.max(...arc.slice(0, windowBuckets));
-  return earlyPeak >= median * HOOK_MEDIAN_SHARE;
+  const threshold = median * HOOK_MEDIAN_SHARE;
+  const reached = perSecond.findIndex((value) => value >= threshold);
+  return reached >= 0 && reached < HOOK_WINDOW_SECONDS;
 }
 
-function detectHookEarly(samples: Float32Array, arc: number[] | null): boolean | null {
-  return hookEarlyFromArc(arc, samples.length / SAMPLE_RATE);
+function secondEnergies(samples: Float32Array): number[] {
+  const energies: number[] = [];
+  for (let start = 0; start + SAMPLE_RATE <= samples.length; start += SAMPLE_RATE) {
+    energies.push(energyOf(rms(samples, start, start + SAMPLE_RATE)));
+  }
+  return energies;
+}
+
+function detectHookEarly(samples: Float32Array): boolean | null {
+  return hookEarlyFromEnergies(secondEnergies(samples));
 }
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];

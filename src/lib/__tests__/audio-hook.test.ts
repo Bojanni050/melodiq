@@ -1,49 +1,45 @@
 import { describe, expect, it } from "vitest";
 
-import { hookEarlyFromArc } from "../audio-features";
+import { hookEarlyFromEnergies } from "../audio-features";
 
-const ARC = 12;
+/** A track of `seconds` length whose energy sits at `value` for `count` seconds. */
+function seconds(count: number, value: number): number[] {
+  return new Array(count).fill(value);
+}
 
-/** Twelve buckets over a three-minute track: window = first two buckets. */
-const THREE_MINUTES = 180;
-
-describe("hookEarlyFromArc", () => {
-  it("abstains without an arc", () => {
-    expect(hookEarlyFromArc(null, THREE_MINUTES)).toBeNull();
-    expect(hookEarlyFromArc([], THREE_MINUTES)).toBeNull();
-  });
-
-  it("abstains on a track shorter than the hook window", () => {
-    expect(hookEarlyFromArc(new Array(ARC).fill(60), 20)).toBeNull();
+describe("hookEarlyFromEnergies", () => {
+  it("abstains on a track that cannot fit the hook window", () => {
+    expect(hookEarlyFromEnergies(seconds(30, 60))).toBeNull();
+    expect(hookEarlyFromEnergies([])).toBeNull();
   });
 
   it("abstains when the track is too quiet to judge", () => {
-    expect(hookEarlyFromArc(new Array(ARC).fill(6), THREE_MINUTES)).toBeNull();
+    expect(hookEarlyFromEnergies(seconds(120, 6))).toBeNull();
   });
 
   it("calls a track that is loud from the start an early hook", () => {
-    expect(hookEarlyFromArc(new Array(ARC).fill(60), THREE_MINUTES)).toBe(true);
+    expect(hookEarlyFromEnergies(seconds(120, 60))).toBe(true);
   });
 
-  it("calls a quiet intro without an early hook", () => {
-    // First two buckets (0:00-0:30) at 30, the body at 70: median 70.
-    const arc = [30, 30, 70, 70, 70, 70, 70, 70, 70, 70, 70, 70];
-    expect(hookEarlyFromArc(arc, THREE_MINUTES)).toBe(false);
+  it("accepts a quiet intro that reaches the typical level within 30 seconds", () => {
+    expect(hookEarlyFromEnergies([...seconds(25, 35), ...seconds(95, 60)])).toBe(true);
   });
 
-  it("accepts an early drop that then settles lower", () => {
-    const arc = [80, 80, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45];
-    expect(hookEarlyFromArc(arc, THREE_MINUTES)).toBe(true);
+  it("rejects a slow burn that only settles after 30 seconds", () => {
+    expect(hookEarlyFromEnergies([...seconds(40, 35), ...seconds(80, 60)])).toBe(false);
   });
 
   it("uses the median, so one loud chorus does not disqualify an early hook", () => {
-    // A single 100 bucket would make a peak-relative rule fail; the median is 55.
-    const arc = [60, 60, 55, 55, 55, 55, 55, 55, 55, 55, 100, 55];
-    expect(hookEarlyFromArc(arc, THREE_MINUTES)).toBe(true);
+    // Median is 55; the single 100 second would fail a peak-relative rule.
+    expect(hookEarlyFromEnergies([...seconds(60, 55), 100, ...seconds(59, 55)])).toBe(true);
   });
 
   it("allows a slightly quieter intro within the share", () => {
-    const arc = [54, 54, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60];
-    expect(hookEarlyFromArc(arc, THREE_MINUTES)).toBe(true);
+    expect(hookEarlyFromEnergies([...seconds(20, 54), ...seconds(100, 60)])).toBe(true);
+  });
+
+  it("rejects a track that never reaches its own median level early", () => {
+    const energies = [...seconds(45, 20), ...seconds(60, 70)];
+    expect(hookEarlyFromEnergies(energies)).toBe(false);
   });
 });
