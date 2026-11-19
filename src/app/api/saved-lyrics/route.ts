@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { savedLyrics } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
+import { refreshDnaProfileInBackground } from "@/lib/dna/repository";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export async function POST(request: NextRequest) {
     .returning();
 
   const row = inserted[0];
+  // Writing style DNA reads this library, so refresh the stored snapshot.
+  refreshDnaProfileInBackground(auth.userId);
   return NextResponse.json({
     savedLyric: {
       id: row.id,

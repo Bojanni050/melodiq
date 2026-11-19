@@ -158,6 +158,10 @@ export const tracks = pgTable("tracks", {
   // providers without persona support, and tracks from before this column), so
   // the DNA ratio only counts tracks that could have answered the question.
   ownVoice: boolean("own_voice"),
+  // Which cloned voice sang it. Kept next to own_voice so "Favorite voices" can
+  // rank by actual use instead of library order; null means the same as for
+  // own_voice (instrumental, provider without persona support, or pre-migration).
+  voiceId: uuid("voice_id"),
   isCollaboration: boolean("is_collaboration").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),

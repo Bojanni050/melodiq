@@ -432,18 +432,23 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
   const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId, apimartVariety, apimartMaxMode, apimartAudioFormat } = ctx;
 
   let verifiedPersonaId: string | undefined;
+  let verifiedVoiceId: string | null = null;
   if (personaId) {
     const [ownedVoice] = await db.select({ id: clonedVoices.id }).from(clonedVoices).where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.personaId, personaId), eq(clonedVoices.status, "completed")));
     if (!ownedVoice) throw new Error("Cloned voice not found or not ready yet");
     verifiedPersonaId = personaId;
+    verifiedVoiceId = ownedVoice.id;
   }
+  // Both track rows answer "which voice sang this" in the same way own_voice
+  // answers whether one did, so Melody DNA can rank voices by real use.
+  const voiceFields = { ownVoice: instrumental ? null : Boolean(verifiedPersonaId), voiceId: instrumental ? null : verifiedVoiceId };
 
   const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId;
   const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v6", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined, variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined, maxMode: apimartMaxMode === true ? true : undefined, audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined });
 
   const [t1, t2] = await Promise.all([
-    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ownVoice: instrumental ? null : Boolean(verifiedPersonaId) }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ownVoice: instrumental ? null : Boolean(verifiedPersonaId), status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...voiceFields }).where(eq(tracks.id, track.id!)).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...voiceFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];

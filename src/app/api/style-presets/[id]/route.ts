@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { stylePresets } from "@/db/schema";
 import { requireAuth } from "@/lib/require-auth";
+import { refreshDnaProfileInBackground } from "@/lib/dna/repository";
 
 export async function DELETE(
   _request: NextRequest,
@@ -17,5 +18,6 @@ export async function DELETE(
     .delete(stylePresets)
     .where(and(eq(stylePresets.id, id), eq(stylePresets.userId, auth.userId)));
 
+  refreshDnaProfileInBackground(auth.userId);
   return NextResponse.json({ ok: true });
 }

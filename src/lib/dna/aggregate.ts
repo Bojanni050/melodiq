@@ -9,6 +9,7 @@ import type {
   AdvancedDnaSummary,
   DnaBuildResult,
   DnaCategory,
+  DnaLibraryProfile,
   DnaProfileSummary,
   DnaSourceTrack,
   DnaTrait,
@@ -412,10 +413,88 @@ function ownVoiceTrait(voice: DnaVoiceProfile | null): DnaTrait | null {
   };
 }
 
-/** Tracks that must name a spectrum's poles before it is reported at all. */
-const MIN_SPECTRUM_SOURCES = 3;
+/**
+ * "Favorite voices": the clones this catalogue actually used, ranked by use.
+ * Before any generation has sent a persona, the library itself is the only
+ * honest answer, so it falls back to listing the saved voices instead of
+ * inventing a favourite.
+ */
+function favoriteVoicesTrait(
+  usage: { value: string; weight: number }[],
+  tracksWithVoice: number,
+  voice: DnaVoiceProfile | null,
+): DnaTrait | null {
+  const library = voice?.voices ?? [];
+  const names = new Map(library.map((entry) => [entry.id, entry.name?.trim() || "Cloned voice"]));
+
+  if (usage.length > 0) {
+    return listTrait({
+      key: "favorite_voices",
+      category: "voice",
+      label: "Favorite voices",
+      values: usage,
+      limit: 3,
+      sourceCount: tracksWithVoice,
+      displayValue: (id) => names.get(id) ?? "Cloned voice",
+    });
+  }
+
+  // Selected voice first, then the rest as the user saved them.
+  const labels = [...library]
+    .sort((a, b) => Number(b.isSelected) - Number(a.isSelected))
+    .map((entry) => entry.name?.trim())
+    .filter((name): name is string => Boolean(name))
+    .slice(0, 3);
+  if (labels.length === 0) return null;
+
+  return {
+    key: "favorite_voices",
+    category: "voice",
+    label: "Favorite voices",
+    kind: "list",
+    valueNumber: 100,
+    valueText: JSON.stringify(labels),
+    unit: null,
+    display: labels.join(", "),
+    // A saved voice is a fact about the account, not a guess from the catalogue.
+    confidence: voice?.selectedName ? 0.85 : 0.7,
+    sourceCount: library.length,
+    weight: library.length,
+  };
+}
 
 /**
+ * A trait built from a library the user curates (saved lyrics, style presets).
+ * Unlike track-derived traits, confidence reflects that keeping something is a
+ * deliberate act, not how many finished songs happen to exist.
+ */
+function libraryTrait(options: {
+  key: string;
+  category: DnaCategory;
+  label: string;
+  names: string[];
+  limit?: number;
+}): DnaTrait | null {
+  const top = options.names.slice(0, options.limit ?? 3);
+  if (top.length === 0) return null;
+
+  return {
+    key: options.key,
+    category: options.category,
+    label: options.label,
+    kind: "list",
+    valueNumber: 100,
+    valueText: JSON.stringify(top),
+    unit: null,
+    display: top.join(", "),
+    confidence: options.names.length > 1 ? 0.9 : 0.75,
+    sourceCount: options.names.length,
+    weight: options.names.length,
+  };
+}
+
+/** Tracks that must name a spectrum's poles before it is reported at all. */
+const MIN_SPECTRUM_SOURCES = 3;/**
  * One spectrum as a 0..100 trait. Below the minimum the trait is absent rather
  * than based on a single prompt; above it the mean is the position and the
  * spread still decides confidence, so a catalogue that splits between both
@@ -547,7 +626,7 @@ function buildName(context: {
  */
 export function buildDnaProfile(
   sources: DnaSourceTrack[],
-  options: { now?: Date; voice?: DnaVoiceProfile | null } = {},
+  options: { now?: Date; voice?: DnaVoiceProfile | null; library?: DnaLibraryProfile | null } = {},
 ): DnaBuildResult {
   const now = options.now ?? new Date();
   const usable = sources.filter((track) => track && track.id);
@@ -592,6 +671,7 @@ export function buildDnaProfile(
   const productionValues: Weighted[] = [];
   const genderValues: { value: string; weight: number }[] = [];
   const ownVoiceValues: Weighted[] = [];
+  const voiceUsageValues: { value: string; weight: number }[] = [];
   const vocalScoreValues: Weighted[] = [];
   const lengthValues: Weighted[] = [];
   const compositionValues: Weighted[] = [];
@@ -713,6 +793,12 @@ export function buildDnaProfile(
       ownVoiceValues.push({ value: track.ownVoice ? 1 : 0, weight });
     }
 
+    // Which voice actually sang it. Weighted like everything else, so a voice
+    // used on tracks the user loved outranks one used on throwaways.
+    if (!track.instrumental && track.voiceId) {
+      voiceUsageValues.push({ value: track.voiceId, weight });
+    }
+
     if (track.duration != null && track.duration > 0) {
       lengthValues.push({ value: track.duration, weight });
     }
@@ -742,6 +828,9 @@ export function buildDnaProfile(
       }
     }
   }
+
+  // Tracks that named a voice, not the number of voices, for the card caption.
+  const voiceTracks = voiceUsageValues.filter((entry) => entry.weight > 0).length;
 
   const traits: (DnaTrait | null)[] = [
     // ── Sound ────────────────────────────────────────────────────────────────
@@ -851,6 +940,7 @@ export function buildDnaProfile(
       values: ownVoiceValues,
       display: (ratio) => `${Math.round(ratio * 100)}% with your cloned voice`,
     }) ?? ownVoiceTrait(options.voice ?? null),
+    favoriteVoicesTrait(voiceUsageValues, voiceTracks, options.voice ?? null),
     numericTrait({
       key: "vocal_score",
       category: "voice",
@@ -915,6 +1005,18 @@ export function buildDnaProfile(
     }),
 
     // ── Taste ────────────────────────────────────────────────────────────────
+    libraryTrait({
+      key: "writing_style_dna",
+      category: "taste",
+      label: "Writing style DNA",
+      names: options.library?.writingTitles ?? [],
+    }),
+    libraryTrait({
+      key: "music_style_dna",
+      category: "taste",
+      label: "Music style DNA",
+      names: options.library?.musicNames ?? [],
+    }),
     listTrait({
       key: "loved_genres",
       category: "taste",

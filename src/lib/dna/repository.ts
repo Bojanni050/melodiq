@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -8,6 +8,8 @@ import {
   dnaProfiles,
   dnaTraitHistory,
   dnaTraits,
+  savedLyrics,
+  stylePresets,
   tracks,
 } from "@/db/schema";
 import type { AudioDna } from "@/lib/songs";
@@ -28,6 +30,7 @@ import type {
   AdvancedDnaSummary,
   DnaBuildResult,
   DnaCategory,
+  DnaLibraryProfile,
   DnaSourceTrack,
   DnaVoiceProfile,
 } from "./types";
@@ -106,6 +109,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
         language: tracks.language,
         instrumental: tracks.instrumental,
         ownVoice: tracks.ownVoice,
+        voiceId: tracks.voiceId,
         vocalGender: tracks.vocalGender,
         rating: tracks.rating,
         playCount: tracks.playCount,
@@ -137,6 +141,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
       language: ranked.language,
       instrumental: ranked.instrumental,
       ownVoice: ranked.ownVoice,
+      voiceId: ranked.voiceId,
       vocalGender: ranked.vocalGender,
       rating: ranked.rating,
       playCount: ranked.playCount,
@@ -160,6 +165,7 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
     language: row.language ?? null,
     instrumental: Boolean(row.instrumental),
     ownVoice: row.ownVoice ?? null,
+    voiceId: row.voiceId ?? null,
     vocalGender: row.vocalGender ?? null,
     rating: row.rating ?? null,
     playCount: row.playCount ?? 0,
@@ -177,9 +183,10 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
  */
 export async function loadDnaVoiceProfile(userId: string): Promise<DnaVoiceProfile | null> {
   const rows = await db
-    .select({ name: clonedVoices.name, isSelected: clonedVoices.isSelected })
+    .select({ id: clonedVoices.id, name: clonedVoices.name, isSelected: clonedVoices.isSelected })
     .from(clonedVoices)
-    .where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.status, "completed")));
+    .where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.status, "completed")))
+    .orderBy(desc(clonedVoices.createdAt));
 
   if (rows.length === 0) return null;
 
@@ -189,6 +196,41 @@ export async function loadDnaVoiceProfile(userId: string): Promise<DnaVoiceProfi
   return {
     voiceCount: rows.length,
     selectedName: selected.name?.trim() || null,
+    voices: rows.map((row) => ({
+      id: row.id,
+      name: row.name?.trim() || null,
+      isSelected: row.isSelected,
+    })),
+  };
+}
+
+/** Kept per library; the DNA card only names the first few anyway. */
+const MAX_LIBRARY_TITLES = 60;
+
+/**
+ * The two libraries whose contents the DNA profile reports as kept style:
+ * saved lyrics (writing) and saved style presets (music). Both are facts about
+ * the account, not measurements of the track history.
+ */
+export async function loadDnaLibrary(userId: string): Promise<DnaLibraryProfile> {
+  const [writing, music] = await Promise.all([
+    db
+      .select({ title: savedLyrics.title })
+      .from(savedLyrics)
+      .where(eq(savedLyrics.userId, userId))
+      .orderBy(desc(savedLyrics.createdAt))
+      .limit(MAX_LIBRARY_TITLES),
+    db
+      .select({ name: stylePresets.name })
+      .from(stylePresets)
+      .where(eq(stylePresets.userId, userId))
+      .orderBy(asc(stylePresets.createdAt))
+      .limit(MAX_LIBRARY_TITLES),
+  ]);
+
+  return {
+    writingTitles: writing.map((row) => row.title.trim()).filter(Boolean),
+    musicNames: music.map((row) => row.name.trim()).filter(Boolean),
   };
 }
 
@@ -479,12 +521,13 @@ export async function recomputeDnaProfile(
   userId: string,
   options: { now?: Date } = {},
 ): Promise<RecomputeResult> {
-  const [sources, voice] = await Promise.all([
+  const [sources, voice, library] = await Promise.all([
     loadDnaSources(userId),
     loadDnaVoiceProfile(userId),
+    loadDnaLibrary(userId),
   ]);
   const now = options.now ?? new Date();
-  const audioBuilt = buildDnaProfile(sources, { ...options, voice });
+  const audioBuilt = buildDnaProfile(sources, { ...options, voice, library });
 
   // The writing traits are derived from the same sample, with the same
   // recency/rating weighting, so a rebuild stays deterministic and both halves of
@@ -645,6 +688,18 @@ export async function recomputeDnaProfile(
   ]);
 
   return { profile: result.profile, traits: result.traits, feedback, history, signals, built };
+}
+
+/**
+ * Rebuilds the profile after the user changes something the DNA reads but the
+ * track history does not (saved lyrics, style presets). Fire-and-forget: the
+ * save request should not wait for a full catalogue pass, and the next DNA
+ * read picks up the stored snapshot.
+ */
+export function refreshDnaProfileInBackground(userId: string): void {
+  void recomputeDnaProfile(userId).catch((error) => {
+    console.error("[dna] background recompute failed", error);
+  });
 }
 
 /** A stored trait as the history/lock logic sees it. */

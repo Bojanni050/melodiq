@@ -17,6 +17,7 @@ function makeTrack(overrides: Partial<DnaSourceTrack> = {}): DnaSourceTrack {
     language: "en",
     instrumental: false,
     ownVoice: null,
+    voiceId: null,
     vocalGender: "female",
     rating: null,
     playCount: 0,
@@ -290,6 +291,75 @@ describe("sourceWeight", () => {
     expect(own?.valueNumber).toBeCloseTo(66.7, 1);
     expect(own?.sourceCount).toBe(3);
     expect(own?.display).toBe("67% with your cloned voice");
+  });
+
+  it("ranks favorite voices by how often the catalogue used them", () => {
+    const voices = [
+      { id: "voice-nova", name: "Nova", isSelected: true },
+      { id: "voice-ember", name: "Ember", isSelected: false },
+    ];
+    const result = buildDnaProfile(
+      [
+        makeTrack({ voiceId: "voice-nova" }),
+        makeTrack({ voiceId: "voice-nova" }),
+        makeTrack({ voiceId: "voice-ember" }),
+      ],
+      { now, voice: { voiceCount: 2, selectedName: "Nova", voices } },
+    );
+
+    const favorite = trait(result, "favorite_voices");
+    expect(favorite?.category).toBe("voice");
+    expect(favorite?.kind).toBe("list");
+    expect(favorite?.valueText).toBe(JSON.stringify(["Nova", "Ember"]));
+    expect(favorite?.display).toBe("Nova, Ember");
+    expect(favorite?.sourceCount).toBe(3);
+  });
+
+  it("lists the saved voices when no generation used a clone yet", () => {
+    const result = buildDnaProfile([makeTrack()], {
+      now,
+      voice: {
+        voiceCount: 2,
+        selectedName: "Nova",
+        voices: [
+          { id: "voice-old", name: "Old", isSelected: false },
+          { id: "voice-nova", name: "Nova", isSelected: true },
+        ],
+      },
+    });
+
+    const favorite = trait(result, "favorite_voices");
+    expect(favorite?.valueText).toBe(JSON.stringify(["Nova", "Old"]));
+    expect(favorite?.sourceCount).toBe(2);
+    expect(favorite?.confidence).toBe(0.85);
+  });
+
+  it("reports the writing and music libraries the user kept", () => {
+    const result = buildDnaProfile([makeTrack()], {
+      now,
+      library: {
+        writingTitles: ["Night drive", "Harbour lights"],
+        musicNames: ["Synth pop"],
+      },
+    });
+
+    const writing = trait(result, "writing_style_dna");
+    expect(writing?.category).toBe("taste");
+    expect(writing?.kind).toBe("list");
+    expect(writing?.valueText).toBe(JSON.stringify(["Night drive", "Harbour lights"]));
+    expect(writing?.sourceCount).toBe(2);
+    expect(writing?.confidence).toBe(0.9);
+
+    const music = trait(result, "music_style_dna");
+    expect(music?.valueText).toBe(JSON.stringify(["Synth pop"]));
+    expect(music?.confidence).toBe(0.75);
+  });
+
+  it("leaves the style DNA cards out when nothing was saved", () => {
+    const result = buildDnaProfile([makeTrack()], { now });
+
+    expect(trait(result, "writing_style_dna")).toBeNull();
+    expect(trait(result, "music_style_dna")).toBeNull();
   });
 
   it("reports a spectrum only once three tracks name one of its poles", () => {

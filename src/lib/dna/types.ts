@@ -46,15 +46,39 @@ export type AdvancedDnaSummary = {
 };
 
 /**
+ * One completed clone in the user's voice library, as Melody DNA sees it.
+ * `id` is what tracks record in `voice_id`, so usage can be counted per voice.
+ */
+export type DnaVoice = {
+  id: string;
+  /** User-given label; null when the clone was never named. */
+  name: string | null;
+  isSelected: boolean;
+};
+
+/**
  * The user's voice-clone library as Melody DNA sees it. Used as the fallback
  * for "Own voice" when no track records whether a persona sang it (tracks from
- * before the `own_voice` migration, or only instrumentals).
+ * before the `own_voice` migration, or only instrumentals), and as the pool for
+ * "Favorite voices".
  */
 export type DnaVoiceProfile = {
   /** Completed clones in the library. */
   voiceCount: number;
   /** The one the Studio sends as persona_id, if any. */
   selectedName: string | null;
+  /** Full library, newest first. Absent on older callers/tests. */
+  voices?: DnaVoice[];
+};
+
+/**
+ * Things the user deliberately kept, independent of track history: saved
+ * lyrics (writing) and saved style presets (music). Titles only — the DNA card
+ * shows what survived, not the full text.
+ */
+export type DnaLibraryProfile = {
+  writingTitles: string[];
+  musicNames: string[];
 };
 
 /**
@@ -74,6 +98,8 @@ export type DnaSourceTrack = {
   instrumental: boolean;
   /** Whether this generation used the user's cloned voice. Null = unknown. */
   ownVoice: boolean | null;
+  /** Which clone sang it (cloned_voices.id). Null = unknown/not applicable. */
+  voiceId: string | null;
   vocalGender: string | null;
   /** "up" | "down" | null */
   rating: string | null;
