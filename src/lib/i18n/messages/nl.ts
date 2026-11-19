@@ -383,6 +383,8 @@ const nl: typeof en = {
     saveVoiceName: "Naam opslaan",
     nameVoiceFailed: "Naam opslaan mislukt",
     voicePickerLabel: "Te gebruiken stem",
+    voiceHeading: "Stem",
+    noSavedVoiceOption: "Geen opgeslagen stem",
     unnamedVoiceOption: "Naamloze stem",
   },
   melody: {

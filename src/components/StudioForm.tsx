@@ -1038,13 +1038,6 @@ ${t("studio.yourChorusHere")}`}
           </>
         )}
 
-        {/* APIMart voice cloning — only for APIMart provider */}
-        {Object.keys(selectedProviders).length > 0 && Object.keys(selectedProviders)[0] === "apimart" && (
-          <>
-            <div className="my-4 h-px bg-white/10" />
-            <VoiceCloneToggle />
-          </>
-        )}
       </section>
 
       {!instrumental && (
@@ -1074,6 +1067,16 @@ ${t("studio.yourChorusHere")}`}
               👨‍🎤 {t("studio.maleOption")}
             </button>
           </div>
+        </section>
+      )}
+
+      {/* Saved voice (APIMart persona) — sits with the vocal controls, not in
+          the provider sliders, so picking a voice is part of the normal form.
+          Persona requires lyrics, so an instrumental track hides it. */}
+      {!instrumental && selectedProviders.apimart && (
+        <section className="section-card">
+          <h3 className="text-sm font-semibold text-ink-muted mb-3">{t("studio.voiceHeading")}</h3>
+          <VoiceCloneToggle />
         </section>
       )}
 

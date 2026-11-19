@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import VoiceCloneToggle from "@/components/studio/VoiceCloneToggle";
+import { useStudioStore } from "@/lib/store";
 
 const baritone = {
   id: "voice-1",
@@ -42,10 +43,12 @@ function mockVoicesApi(voices: unknown[], selectResponse?: unknown[]) {
 describe("VoiceCloneToggle", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    useStudioStore.setState({ usePersonaVoice: false });
   });
 
   it("shows the explicitly selected voice, not just the newest one", async () => {
     mockVoicesApi([unnamed, baritone]);
+    useStudioStore.setState({ usePersonaVoice: true });
 
     render(<VoiceCloneToggle />);
     await act(async () => {});
@@ -63,13 +66,15 @@ describe("VoiceCloneToggle", () => {
       { ...baritone, isSelected: false },
     ];
     const fetchMock = mockVoicesApi([unnamed, baritone], afterSelect);
+    useStudioStore.setState({ usePersonaVoice: true });
 
     render(<VoiceCloneToggle />);
     await act(async () => {});
 
     const picker = screen.getByLabelText("Voice to use") as HTMLSelectElement;
     expect(picker.value).toBe("voice-1");
-    expect(picker.options.length).toBe(2);
+    // Two saved voices plus the "No saved voice" entry.
+    expect(picker.options.length).toBe(3);
     expect(screen.getByText(/Unnamed voice/)).toBeTruthy();
 
     await act(async () => {
@@ -84,15 +89,33 @@ describe("VoiceCloneToggle", () => {
     expect(screen.getByText("My cloned voice", { selector: "p" })).toBeTruthy();
     expect(screen.getByText("Name it")).toBeTruthy();
     expect((picker as HTMLSelectElement).value).toBe("voice-2");
+    expect(useStudioStore.getState().usePersonaVoice).toBe(true);
   });
 
-  it("hides the picker when there is only one finished voice", async () => {
+  it("offers a single finished voice plus the no-voice option", async () => {
     mockVoicesApi([baritone]);
 
     render(<VoiceCloneToggle />);
     await act(async () => {});
 
-    expect(screen.getByText("Night Baritone")).toBeTruthy();
-    expect(screen.queryByLabelText("Voice to use")).toBeNull();
+    expect(screen.getByText("Night Baritone", { selector: "p" })).toBeTruthy();
+    const picker = screen.getByLabelText("Voice to use") as HTMLSelectElement;
+    expect(picker.options.length).toBe(2);
+    expect(picker.options[0].textContent).toBe("No saved voice");
+  });
+
+  it("choosing no saved voice turns the persona off without a request", async () => {
+    const fetchMock = mockVoicesApi([baritone]);
+    useStudioStore.setState({ usePersonaVoice: true });
+
+    render(<VoiceCloneToggle />);
+    await act(async () => {});
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Voice to use"), { target: { value: "" } });
+    });
+
+    expect(useStudioStore.getState().usePersonaVoice).toBe(false);
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 });

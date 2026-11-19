@@ -76,8 +76,10 @@ export default function VoiceCloneToggle() {
   }, [activeVoice]);
 
   useEffect(() => {
-    if (!selectedVoice && usePersonaVoice) setUsePersonaVoice(false);
-  }, [selectedVoice, usePersonaVoice, setUsePersonaVoice]);
+    // Wait for the list to arrive: on the first render there is no voice yet,
+    // and turning the persona off then would undo the stored choice.
+    if (loaded && !selectedVoice && usePersonaVoice) setUsePersonaVoice(false);
+  }, [loaded, selectedVoice, usePersonaVoice, setUsePersonaVoice]);
 
   const handleSelectVoice = useCallback(async (voiceId: string) => {
     try {
@@ -86,16 +88,35 @@ export default function VoiceCloneToggle() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ voiceId }),
       });
-      if (!res.ok) return;
+      if (!res.ok) return false;
       const data = await res.json();
-      // The route returns the full refreshed list, so the header, picker and
-      // checkbox all flip to the new selection from one source of truth.
+      // The route returns the full refreshed list, so the header and picker
+      // both flip to the new selection from one source of truth.
       if (data.voices) setVoices(data.voices);
+      return true;
     } catch {
       // A failed selection is not worth an error banner — the old selection
       // simply stays active and the user can retry.
+      return false;
     }
   }, []);
+
+  /**
+   * The picker is the whole control: choosing a voice turns it on for the next
+   * generation, choosing "no saved voice" turns the persona off. The selection
+   * only becomes active after the server accepted it, because
+   * useStudioActions reads the stored selection when it builds the request.
+   */
+  const handleVoiceChange = useCallback(
+    async (voiceId: string) => {
+      if (!voiceId) {
+        setUsePersonaVoice(false);
+        return;
+      }
+      if (await handleSelectVoice(voiceId)) setUsePersonaVoice(true);
+    },
+    [handleSelectVoice, setUsePersonaVoice]
+  );
 
   const handleFileSelected = useCallback(async (file: File) => {
     setError(null);
@@ -118,7 +139,7 @@ export default function VoiceCloneToggle() {
   }, [t]);
 
   return (
-    <div className="mb-4 p-3  bg-white/5 border border-line">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -189,15 +210,16 @@ export default function VoiceCloneToggle() {
 
       {error && <p className="text-[10px] text-red-400 mt-2">{error}</p>}
 
-      {completedVoices.length > 1 && (
-        <label className="mt-2 flex items-center gap-2">
+      {completedVoices.length > 0 && (
+        <label className="flex items-center gap-2">
           <span className="text-[10px] text-ink-dim shrink-0">{t("studio.voicePickerLabel")}</span>
           <select
-            value={selectedVoice?.id ?? ""}
-            onChange={(e) => void handleSelectVoice(e.target.value)}
+            value={usePersonaVoice && selectedVoice ? selectedVoice.id : ""}
+            onChange={(e) => void handleVoiceChange(e.target.value)}
             aria-label={t("studio.voicePickerLabel")}
             className="input-field text-sm py-1.5 min-w-0"
           >
+            <option value="">{t("studio.noSavedVoiceOption")}</option>
             {completedVoices.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name ||
@@ -208,20 +230,8 @@ export default function VoiceCloneToggle() {
         </label>
       )}
 
-      <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={usePersonaVoice}
-          disabled={!selectedVoice}
-          onChange={(e) => setUsePersonaVoice(e.target.checked)}
-          className="accent-accent disabled:opacity-40"
-        />
-        <span className={`text-sm ${selectedVoice ? "text-ink-muted" : "text-ink-dim"}`}>
-          {t("studio.useMyVoiceLabel")}
-        </span>
-      </label>
-      {usePersonaVoice && (
-        <p className="text-[10px] text-ink-dim mt-1">{t("studio.personaVoiceHint")}</p>
+      {usePersonaVoice && selectedVoice && (
+        <p className="text-[10px] text-ink-dim">{t("studio.personaVoiceHint")}</p>
       )}
 
       <NameVoiceDialog

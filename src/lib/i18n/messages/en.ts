@@ -380,6 +380,8 @@ const en = {
     saveVoiceName: "Save name",
     nameVoiceFailed: "Could not save the name",
     voicePickerLabel: "Voice to use",
+    voiceHeading: "Voice",
+    noSavedVoiceOption: "No saved voice",
     unnamedVoiceOption: "Unnamed voice",
   },
   melody: {
