@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   if (provider === "heartmula" && !lyrics?.trim()) {
     return NextResponse.json({ error: "HeartMuLa requires lyrics with structure tags (e.g. [Verse], [Chorus], [intro-short])" }, { status: 400 });
   }
-  if (provider === "apimart" && personaId && !lyrics?.trim()) {
+  if (provider === "apimart" && personaId && !instrumental && !lyrics?.trim()) {
     return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
   // Empty or missing = no inspiration = normal generation. Only a

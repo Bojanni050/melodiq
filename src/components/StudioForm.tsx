@@ -185,6 +185,10 @@ export default memo(function StudioForm({
     Object.keys(selectedProviders).length > 0 &&
     !!songIdea.trim();
 
+  // A persona (cloned voice) needs lyrics: APIMart rejects persona_id without
+  // them, so an empty lyrics field means "pick lyrics or go instrumental".
+  const personaActive = !instrumental && !!selectedProviders.apimart && usePersonaVoice;
+
   async function handleOptimize() {
     if (!songIdea) return;
     setOptimizing(true);
@@ -286,18 +290,29 @@ export default memo(function StudioForm({
           iconBgClassName="bg-violet-500/20"
           message={
             <>
-              <p className="text-sm font-semibold text-ink mb-1">{t("studio.noLyricsTitle")}</p>
+              <p className="text-sm font-semibold text-ink mb-1">
+                {personaActive ? t("studio.noLyricsPersonaTitle") : t("studio.noLyricsTitle")}
+              </p>
               <p className="text-sm text-ink/65 leading-relaxed">
-                {t("studio.noLyricsBody")}
+                {personaActive ? t("studio.noLyricsPersonaBody") : t("studio.noLyricsBody")}
+              </p>
+              <p className="text-sm text-ink/65 leading-relaxed mt-2">
+                {t("studio.noLyricsInstrumentalHint")}
               </p>
             </>
           }
           cancelLabel={t("common.cancel")}
-          confirmLabel={t("studio.continueAnyway")}
+          confirmLabel={personaActive ? t("studio.enableInstrumental") : t("studio.continueAnyway")}
           confirmClassName="border-violet-400/25 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25"
           onCancel={() => setShowEmptyLyricsConfirm(false)}
           onConfirm={() => {
             setShowEmptyLyricsConfirm(false);
+            // With a persona there is no safe "continue anyway": the request
+            // would be rejected. Tick the box instead and let the user review.
+            if (personaActive) {
+              setInstrumental(true);
+              return;
+            }
             if (!instrumental && vocalGender === "auto") {
               setShowVocalGenderConfirm(true);
             } else {

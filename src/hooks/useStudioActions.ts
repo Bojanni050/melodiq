@@ -156,7 +156,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       const effectiveLanguage = getEffectiveLanguage();
 
       let personaId: string | undefined;
-      if (usePersonaVoice && providerEntries.some(([provider]) => provider === "apimart")) {
+      if (!instrumental && usePersonaVoice && providerEntries.some(([provider]) => provider === "apimart")) {
         try {
           const voicesRes = await fetch("/api/voice");
           if (voicesRes.ok) {
@@ -201,7 +201,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               // Habits (Melody DNA): where this prompt came from and how far the
               // user went beyond it. Server-side it becomes one event row.
               habit,
-              personaId: provider === "apimart" ? personaId : undefined,
+              // A persona only makes sense on a vocal track: APIMart rejects
+              // persona_id without lyrics, and an instrumental has no singer.
+              personaId: provider === "apimart" && !instrumental ? personaId : undefined,
               // APIMart Suno V6 options
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
               apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,
