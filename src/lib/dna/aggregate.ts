@@ -1,6 +1,8 @@
 import { PROVIDER_LABELS } from "@/lib/format-generator";
 import { parsePromptBpm, tempoOctaveRelation } from "@/lib/prompt-bpm";
 
+import { classifyEnergyArc } from "./arc";
+import { detectInstruments, instrumentDisplay } from "./instruments";
 import { SPECTRA, spectrumScores, type SpectrumDefinition, type SpectrumKey } from "./spectra";
 
 import type {
@@ -574,6 +576,9 @@ export function buildDnaProfile(
   const intendedTempoValues: Weighted[] = [];
   const halfTimeValues: Weighted[] = [];
   const energyValues: Weighted[] = [];
+  const energyArcValues: { value: string; weight: number }[] = [];
+  const hookValues: Weighted[] = [];
+  const instrumentValues: { value: string; weight: number }[] = [];
   const spectrumValues: Record<SpectrumKey, Weighted[]> = {
     rap_melodic: [],
     intimate_open: [],
@@ -603,6 +608,7 @@ export function buildDnaProfile(
   let atmosphereTracks = 0;
   let genreTracks = 0;
   let engineTracks = 0;
+  let instrumentTracks = 0;
   let lovedGenreTracks = 0;
   let avoidedGenreTracks = 0;
 
@@ -630,6 +636,18 @@ export function buildDnaProfile(
       energyValues.push({ value: audio.energy, weight });
     }
 
+    // Arc and hook need the segment analysis added in phase 4; older rows have
+    // neither until scripts/backfill-tempo.ts has re-measured them.
+    const arcShape = classifyEnergyArc(audio?.energyArc);
+    if (arcShape) {
+      energyArcValues.push({ value: arcShape, weight });
+    }
+    if (audio?.hookEarly != null) {
+      // A plain share of songs, like instrumental_share: weighting it by
+      // rating would turn "hook early" into "hooks I happened to like".
+      hookValues.push({ value: audio.hookEarly ? 1 : 0, weight: 1 });
+    }
+
     // Spectra come from the user's own words, so they do not need audio DNA.
     for (const [key, score] of Object.entries(spectrumScores(track.prompt))) {
       spectrumValues[key as SpectrumKey].push({ value: score, weight });
@@ -648,6 +666,14 @@ export function buildDnaProfile(
       genreTracks += 1;
       for (const genre of genres) {
         genreValues.push({ value: genre, weight });
+      }
+    }
+
+    const instruments = detectInstruments(track.prompt);
+    if (instruments.length > 0) {
+      instrumentTracks += 1;
+      for (const instrument of instruments) {
+        instrumentValues.push({ value: instrument, weight });
       }
     }
 
@@ -753,6 +779,12 @@ export function buildDnaProfile(
       spreadScale: 30,
       format: (value) => `${Math.round(value)}/100`,
     }),
+    textTrait({
+      key: "energy_arc",
+      category: "sound",
+      label: "Energy arc",
+      values: energyArcValues,
+    }),
     ...SPECTRA.map((definition) => spectrumTrait(definition, spectrumValues[definition.key])),
     listTrait({
       key: "atmospheres",
@@ -769,6 +801,15 @@ export function buildDnaProfile(
       values: genreValues,
       limit: 3,
       sourceCount: genreTracks,
+    }),
+    listTrait({
+      key: "signature_instruments",
+      category: "sound",
+      label: "Signature instruments",
+      values: instrumentValues,
+      limit: 3,
+      sourceCount: instrumentTracks,
+      displayValue: instrumentDisplay,
     }),
     listTrait({
       key: "preferred_engine",
@@ -821,6 +862,13 @@ export function buildDnaProfile(
     }),
 
     // ── Structure ────────────────────────────────────────────────────────────
+    ratioTrait({
+      key: "hook_before_30",
+      category: "structure",
+      label: "Hook before 0:30",
+      values: hookValues,
+      display: (ratio) => `${Math.round(ratio * 100)}% hook in the first 30s`,
+    }),
     numericTrait({
       key: "length",
       category: "structure",

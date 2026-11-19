@@ -41,6 +41,8 @@ export async function computeAudioDna(params: {
     key: features?.key ?? null,
     energy: features?.energy ?? null,
     loudness: features?.loudness ?? null,
+    energyArc: features?.energyArc ?? null,
+    hookEarly: features?.hookEarly ?? null,
     atmosphereTags: textAnalysis.tags,
     lyricsScore: textAnalysis.lyricsScore?.score ?? null,
     lyricsNotes: textAnalysis.lyricsScore?.notes ?? null,

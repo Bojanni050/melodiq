@@ -9,9 +9,22 @@ export interface AudioFeatures {
   key: string | null;
   energy: number | null;
   loudness: number | null;
+  /** RMS energy (0-100) per equal slice of the track: the shape of the song. */
+  energyArc: number[] | null;
+  /**
+   * Whether the track reaches (near) its own peak energy inside the first 30
+   * seconds — a DSP stand-in for "the hook arrives early", since the audio DNA
+   * has no section timestamps.
+   */
+  hookEarly: boolean | null;
 }
 
 const SAMPLE_RATE = 22050;
+const ARC_BUCKETS = 12;
+const HOOK_WINDOW_SECONDS = 30;
+const HOOK_SHARE = 0.8;
+// Below this the track is so quiet that a "peak" says nothing about a hook.
+const HOOK_ENERGY_FLOOR = 30;
 
 // ffmpeg-static's bundled binary is built against glibc and fails silently
 // (ENOENT/exec-format error) on the Alpine/musl base image this app is
@@ -56,14 +69,18 @@ export async function extractAudioFeatures(buffer: Buffer): Promise<AudioFeature
   ]);
 
   if (!pcm) {
-    return { tempo: null, key: null, energy: null, loudness };
+    return { tempo: null, key: null, energy: null, loudness, energyArc: null, hookEarly: null };
   }
+
+  const energyArc = computeEnergyArc(pcm);
 
   return {
     tempo: detectTempo(pcm, SAMPLE_RATE),
     key: detectKey(pcm),
     energy: computeEnergy(pcm),
     loudness,
+    energyArc,
+    hookEarly: detectHookEarly(pcm, energyArc),
   };
 }
 
@@ -135,14 +152,58 @@ function measureLoudness(buffer: Buffer, ffmpegPath: string): Promise<number | n
   });
 }
 
+function rms(samples: Float32Array, start: number, end: number): number {
+  let sumSquares = 0;
+  for (let i = start; i < end; i++) sumSquares += samples[i] * samples[i];
+  const length = end - start;
+  return length > 0 ? Math.sqrt(sumSquares / length) : 0;
+}
+
+// 0.3 RMS is a loud, heavily-limited master; used as a practical ceiling to
+// scale into a 0-100 "energy" figure rather than a raw, hard-to-read RMS value.
+function energyOf(rmsValue: number): number {
+  return Math.round(Math.min(1, rmsValue / 0.3) * 100);
+}
+
 function computeEnergy(samples: Float32Array): number | null {
   if (samples.length === 0) return null;
-  let sumSquares = 0;
-  for (let i = 0; i < samples.length; i++) sumSquares += samples[i] * samples[i];
-  const rms = Math.sqrt(sumSquares / samples.length);
-  // 0.3 RMS is a loud, heavily-limited master; used as a practical ceiling to
-  // scale into a 0-100 "energy" figure rather than a raw, hard-to-read RMS value.
-  return Math.round(Math.min(1, rms / 0.3) * 100);
+  return energyOf(rms(samples, 0, samples.length));
+}
+
+/**
+ * Splits the track into equal buckets and measures RMS energy in each, so the
+ * DNA can describe the arc (builds / starts strong / steady) rather than only
+ * one average. Twelve buckets is enough for a shape and cheap to compute: the
+ * PCM is already decoded for tempo and key.
+ */
+function computeEnergyArc(samples: Float32Array): number[] | null {
+  if (samples.length < ARC_BUCKETS) return null;
+  const bucketSize = Math.floor(samples.length / ARC_BUCKETS);
+  if (bucketSize === 0) return null;
+  const arc: number[] = [];
+  for (let bucket = 0; bucket < ARC_BUCKETS; bucket++) {
+    arc.push(energyOf(rms(samples, bucket * bucketSize, (bucket + 1) * bucketSize)));
+  }
+  return arc;
+}
+
+/**
+ * "Hook before 0:30" without section detection: the first 30 seconds already
+ * carry at least 80% of the track's own peak energy. It is a proxy, not a
+ * chorus detector — a slow-burn intro reads false, an early drop reads true.
+ * Returns null when the track is too short or too quiet to judge.
+ */
+function detectHookEarly(samples: Float32Array, arc: number[] | null): boolean | null {
+  if (!arc || arc.length === 0) return null;
+  const duration = samples.length / SAMPLE_RATE;
+  if (duration < HOOK_WINDOW_SECONDS) return null;
+
+  const peak = Math.max(...arc);
+  if (peak < HOOK_ENERGY_FLOOR) return null;
+
+  const windowBuckets = Math.max(1, Math.round((HOOK_WINDOW_SECONDS / duration) * arc.length));
+  const earlyPeak = Math.max(...arc.slice(0, windowBuckets));
+  return earlyPeak >= peak * HOOK_SHARE && earlyPeak >= HOOK_ENERGY_FLOOR;
 }
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];

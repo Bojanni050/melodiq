@@ -15,6 +15,8 @@
  * every value can be traced back to words the user typed.
  */
 
+import { consume, normalise, termsByLength } from "./text-terms";
+
 export type SpectrumKey =
   | "rap_melodic"
   | "intimate_open"
@@ -164,20 +166,6 @@ export const SPECTRA: SpectrumDefinition[] = [
   },
 ];
 
-/** Lowercased, punctuation collapsed; padded so terms match whole words. */
-function normalise(text: string): string {
-  return ` ${text.toLowerCase().replace(/[^a-z0-9&]+/g, " ").trim()} `;
-}
-
-/** Longest first, so "acoustic guitar" is not also counted as "guitar". */
-function termsByLength(terms: string[]): string[] {
-  return [...terms]
-    .map((term) => normalise(term).trim())
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length)
-    .map((term) => ` ${term} `);
-}
-
 const PREPARED = SPECTRA.map((definition) => ({
   definition,
   left: termsByLength(definition.leftTerms),
@@ -204,12 +192,12 @@ export function spectrumScores(prompt: string | null): Partial<Record<SpectrumKe
     for (const term of entry.left) {
       if (!haystack.includes(term)) continue;
       leftHits += 1;
-      haystack = haystack.split(term).join(" ".repeat(term.length));
+      haystack = consume(haystack, term);
     }
     for (const term of entry.right) {
       if (!haystack.includes(term)) continue;
       rightHits += 1;
-      haystack = haystack.split(term).join(" ".repeat(term.length));
+      haystack = consume(haystack, term);
     }
 
     const total = leftHits + rightHits;

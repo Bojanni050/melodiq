@@ -127,6 +127,9 @@ export type AudioDna = {
   key: string | null;
   energy: number | null;
   loudness: number | null;
+  /** Added after the first backfill; older rows simply have no arc yet. */
+  energyArc?: number[] | null;
+  hookEarly?: boolean | null;
   atmosphereTags: string[] | null;
   lyricsScore: number | null;
   lyricsNotes: string | null;

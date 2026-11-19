@@ -8,8 +8,11 @@
  * in tracks.audio_dna. It cannot be repaired by halving: a stored 170 can be a
  * real 170 as well as a doubled 85. The audio has to be measured again.
  *
- * Only tempo/key/energy/loudness are recomputed. Atmosphere tags, lyrics score
+ * Only the DSP half (tempo/key/energy/loudness, plus the energy arc and the
+ * early-hook flag added later) is recomputed. Atmosphere tags, lyrics score
  * and composition notes are kept as they are, so no paid LLM call is repeated.
+ * Rows analysed before the arc existed show up as changed even when their
+ * tempo is already correct: that is the arc being filled in.
  *
  * Run with:
  *   npx tsx scripts/backfill-tempo.ts                      # dry run, first 25
@@ -144,6 +147,8 @@ async function processTrack(row: Row, apply: boolean, trackTimeoutMs: number): P
     key: features.key ?? existing?.key ?? null,
     energy: features.energy ?? existing?.energy ?? null,
     loudness: features.loudness ?? existing?.loudness ?? null,
+    energyArc: features.energyArc ?? existing?.energyArc ?? null,
+    hookEarly: features.hookEarly ?? existing?.hookEarly ?? null,
     atmosphereTags: existing?.atmosphereTags ?? null,
     lyricsScore: existing?.lyricsScore ?? null,
     lyricsNotes: existing?.lyricsNotes ?? null,
@@ -156,7 +161,9 @@ async function processTrack(row: Row, apply: boolean, trackTimeoutMs: number): P
     next.tempo !== (existing?.tempo ?? null) ||
     next.key !== (existing?.key ?? null) ||
     next.energy !== (existing?.energy ?? null) ||
-    next.loudness !== (existing?.loudness ?? null);
+    next.loudness !== (existing?.loudness ?? null) ||
+    JSON.stringify(next.energyArc ?? null) !== JSON.stringify(existing?.energyArc ?? null) ||
+    (next.hookEarly ?? null) !== (existing?.hookEarly ?? null);
 
   if (!changed) {
     return { id: row.id, title, status: "same", before, after: next.tempo };

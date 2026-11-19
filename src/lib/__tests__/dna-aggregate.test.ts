@@ -311,6 +311,56 @@ describe("sourceWeight", () => {
     expect(spectrum?.display).toBe("0% rap");
     expect(spectrum?.sourceCount).toBe(3);
   });
+
+  it("describes the dominant energy arc", () => {
+    const building = [10, 18, 26, 34, 42, 50, 58, 66, 74, 82];
+    const result = buildDnaProfile(
+      [makeTrack(), makeTrack(), makeTrack()].map((track) => ({
+        ...track,
+        audioDna: { ...track.audioDna!, energyArc: building },
+      })),
+      { now },
+    );
+
+    const arc = trait(result, "energy_arc");
+    expect(arc?.category).toBe("sound");
+    expect(arc?.valueText).toBe("Builds");
+    expect(arc?.display).toBe("Builds 100%");
+  });
+
+  it("measures the hook-before-30 share over the tracks that could be judged", () => {
+    const result = buildDnaProfile(
+      [
+        makeTrack({ audioDna: { ...makeTrack().audioDna!, hookEarly: true } }),
+        makeTrack({ audioDna: { ...makeTrack().audioDna!, hookEarly: true } }),
+        makeTrack({ audioDna: { ...makeTrack().audioDna!, hookEarly: false } }),
+        // Analysed before the arc existed: no answer, so not part of the share.
+        makeTrack(),
+      ],
+      { now },
+    );
+
+    const hook = trait(result, "hook_before_30");
+    expect(hook?.category).toBe("structure");
+    expect(hook?.valueNumber).toBeCloseTo(66.7, 1);
+    expect(hook?.sourceCount).toBe(3);
+    expect(hook?.display).toBe("67% hook in the first 30s");
+  });
+
+  it("reads signature instruments from the prompts", () => {
+    const result = buildDnaProfile(
+      ["upright piano, brushed drums, warm strings", "piano and strings", "solo piano"].map((prompt) =>
+        makeTrack({ prompt }),
+      ),
+      { now },
+    );
+
+    const instruments = trait(result, "signature_instruments");
+    expect(instruments?.category).toBe("sound");
+    expect(instruments?.kind).toBe("list");
+    expect(instruments?.sourceCount).toBe(3);
+    expect(JSON.parse(instruments!.valueText!)).toEqual(["Piano", "Strings", "Drums"]);
+  });
 });
 
 describe("detectGenres", () => {
