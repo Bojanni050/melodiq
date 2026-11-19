@@ -1,8 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
+import { callLLM } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 import {
   buildBlockPrompts,
@@ -58,12 +57,7 @@ function isExistingBlock(value: unknown): value is ExistingBlock {
   );
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "AI provider failed";
-}
-
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
@@ -158,10 +152,7 @@ export async function POST(request: NextRequest) {
     lineCount: lineCountValue,
   });
 
-  let usage: LlmUsage | null = null;
-
   try {
-    const llmProvider = await getLLMProviderForPurpose("lyrics");
     const rawResult = await callLLM(userPrompt, systemPrompt, {
       purpose: "lyrics",
       temperature: typeof temperature === "number" ? temperature : undefined,
@@ -170,43 +161,14 @@ export async function POST(request: NextRequest) {
       // Only when the caller is writing the whole song: a one-off section would
       // pay for a cache write it never reads back.
       cacheablePrefix: cachePrefix ? cacheablePrefix : undefined,
-      onUsage: (reported) => {
-        usage = reported;
-      },
+      userId: auth.userId,
     });
     const result = isFixedVocalistTag(vocalistTagValue)
       ? `${buildVocalDirectionTag(blockLabel, vocalistTagValue, performerDirectionsText)}\n${rawResult.trim()}`
       : rawResult;
 
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, style, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP, llmModel, literalnessLevel: literalnessLevelValue, lineCount: lineCountValue, cachePrefix }),
-      response: JSON.stringify({ result: result.substring(0, 200) }),
-      statusCode: 200,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     return NextResponse.json({ result });
   } catch (error) {
-    const message = getErrorMessage(error);
-    const llmProvider = await getLLMProviderForPurpose("lyrics");
-
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/generate-block",
-      request: JSON.stringify({ blockType, blockLabel, topic, mood, language, vocalistTag: vocalistTagValue, performerDirections: performerDirectionsText, temperature, topP }),
-      response: JSON.stringify({ error: message }),
-      statusCode: 500,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     console.error(error);
     return NextResponse.json({ error: "AI provider failed" }, { status: 500 });
   }

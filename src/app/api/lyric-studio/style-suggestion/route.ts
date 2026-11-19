@@ -1,17 +1,11 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
+import { callLLM } from "@/lib/providers/llm";
 import { buildStyleSuggestionSystemPrompt, buildStyleSuggestionUserPrompt, sanitizeStyleSuggestionResponse } from "@/lib/lyrics-style-suggestion";
 import { requireAuth } from "@/lib/require-auth";
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "AI provider failed";
-}
-
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
@@ -57,48 +51,16 @@ export async function POST(request: NextRequest) {
     styleHint: typeof styleHint === "string" ? styleHint : undefined,
   });
 
-  let usage: LlmUsage | null = null;
-
   try {
-    const llmProvider = await getLLMProviderForPurpose("prompt");
     const result = await callLLM(userPrompt, systemPrompt, {
       purpose: "prompt",
       temperature: typeof temperature === "number" && temperature > 0 ? temperature : undefined,
-      onUsage: (reported) => {
-        usage = reported;
-      },
+      userId: auth.userId,
     });
     const suggestion = sanitizeStyleSuggestionResponse(result);
 
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/style-suggestion",
-      request: JSON.stringify({ topic, mood, language }),
-      response: JSON.stringify({ suggestion: suggestion.slice(0, 200) }),
-      statusCode: 200,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     return NextResponse.json({ suggestion });
   } catch (error) {
-    const message = getErrorMessage(error);
-    const llmProvider = await getLLMProviderForPurpose("prompt");
-
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/style-suggestion",
-      request: JSON.stringify({ topic, mood, language }),
-      response: JSON.stringify({ error: message }),
-      statusCode: 500,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     console.error(error);
     return NextResponse.json({ error: "AI provider failed" }, { status: 500 });
   }

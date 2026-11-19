@@ -2,6 +2,7 @@ import axios from "axios";
 import { getSetting } from "@/lib/settings";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 import { logToFile } from "@/lib/file-logger";
+import { logLlmCall } from "@/lib/logger";
 import { parseLlmUsage, formatLlmUsage, type LlmUsage } from "@/lib/llm-usage";
 
 export type { LlmUsage };
@@ -45,6 +46,11 @@ interface CallLLMOptions {
   cacheablePrefix?: string;
   /** Receives the provider's usage block (tokens/cost/cache) when the response carries one. */
   onUsage?: (usage: LlmUsage) => void;
+  /**
+   * Attribution for the central LLM log row (type "llm") written by callLLM.
+   * Routes pass their authenticated user id here.
+   */
+  userId?: string | null;
 }
 
 function normalizeProvider(value: string): LLMProvider | "" {
@@ -439,20 +445,60 @@ export async function callLLM(
   if (normalizedOptions.maxTokens !== undefined) body.max_tokens = normalizedOptions.maxTokens;
   if (normalizedOptions.json) body.response_format = { type: "json_object" };
 
-  const res = await postChatCompletion(resolved, body, normalizedOptions.json === true);
+  // Central LLM logging: one row per callLLM invocation with model, prompts,
+  // response, duration and usage. Gated by the ENABLE_LLM_LOGGING setting and
+  // never throws, so logging can't break the provider call.
+  const requestLog = JSON.stringify({
+    model: resolved.model,
+    system: systemPrompt,
+    user: prompt,
+  });
+  const startedAt = Date.now();
 
-  const content = res.data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error(
-      `${resolved.label} response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
-    );
+  let content: string;
+  let usage: LlmUsage | null = null;
+  try {
+    const res = await postChatCompletion(resolved, body, normalizedOptions.json === true);
+
+    const parsedContent = res.data?.choices?.[0]?.message?.content;
+    if (typeof parsedContent !== "string") {
+      throw new Error(
+        `${resolved.label} response missing content. Body: ${JSON.stringify(res.data).slice(0, 200)}`
+      );
+    }
+    content = parsedContent;
+
+    // Token/cost accounting: OpenRouter reports cost + cached tokens on every
+    // response, OpenAI/DeepInfra report tokens. Handed to the caller so it lands
+    // in the api log next to the request it belongs to.
+    usage = parseLlmUsage(res.data?.usage);
+  } catch (e) {
+    await logLlmCall({
+      userId: normalizedOptions.userId ?? null,
+      type: "llm",
+      provider,
+      endpoint: `llm/${purpose}`,
+      request: requestLog,
+      response: e instanceof Error ? e.message : String(e),
+      statusCode: (axios.isAxiosError(e) && e.response?.status) || 500,
+      duration: Date.now() - startedAt,
+    });
+    throw e;
   }
 
-  // Token/cost accounting: OpenRouter reports cost + cached tokens on every
-  // response, OpenAI/DeepInfra report tokens. Handed to the caller so it lands
-  // in the api log next to the request it belongs to.
-  const usage = parseLlmUsage(res.data?.usage);
   if (usage) normalizedOptions.onUsage?.(usage);
+
+  await logLlmCall({
+    userId: normalizedOptions.userId ?? null,
+    type: "llm",
+    provider,
+    endpoint: `llm/${purpose}`,
+    request: requestLog,
+    response: content,
+    statusCode: 200,
+    duration: Date.now() - startedAt,
+    usage,
+  });
 
   return content;
 }
@@ -741,37 +787,77 @@ export async function callLLMWithAudio(
   );
   logToFile(LOG_FILE, `${logTag} calling ${config.provider}/${config.model} (format=${format}, audioBytes=${audioBuffer.length})`);
 
-  const res = await axios.post(
-    config.url,
-    {
-      model: config.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: userText },
-            { type: "input_audio", input_audio: { data: audioBuffer.toString("base64"), format } },
-          ],
-        },
-      ],
-    },
-    {
-      headers: config.headers,
-      timeout: 90_000,
+  // Central LLM logging: audio is summarized by format + size, never embedded
+  // as base64 (a single call would flood the api_logs row and the console).
+  const requestLog = JSON.stringify({
+    model: config.model,
+    system: systemPrompt,
+    user: userText,
+    audioFormat: format,
+    audioBytes: audioBuffer.length,
+  });
+  const startedAt = Date.now();
+
+  let raw: string;
+  let usage: LlmUsage | null = null;
+  try {
+    const res = await axios.post(
+      config.url,
+      {
+        model: config.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText },
+              { type: "input_audio", input_audio: { data: audioBuffer.toString("base64"), format } },
+            ],
+          },
+        ],
+      },
+      {
+        headers: config.headers,
+        timeout: 90_000,
+      }
+    );
+
+    const parsedRaw = res.data?.choices?.[0]?.message?.content;
+    const logLine = `${logTag} response HTTP ${res.status}, content: ${
+      typeof parsedRaw === "string" ? JSON.stringify(parsedRaw.slice(0, 500)) : `<no content> body=${JSON.stringify(res.data).slice(0, 500)}`
+    }`;
+    console.info(logLine);
+    logToFile(LOG_FILE, logLine);
+
+    if (typeof parsedRaw !== "string") {
+      throw new Error("response had no string content");
     }
-  );
-
-  const raw = res.data?.choices?.[0]?.message?.content;
-  const logLine = `${logTag} response HTTP ${res.status}, content: ${
-    typeof raw === "string" ? JSON.stringify(raw.slice(0, 500)) : `<no content> body=${JSON.stringify(res.data).slice(0, 500)}`
-  }`;
-  console.info(logLine);
-  logToFile(LOG_FILE, logLine);
-
-  if (typeof raw !== "string") {
-    throw new Error("response had no string content");
+    raw = parsedRaw;
+    usage = parseLlmUsage(res.data?.usage);
+  } catch (e) {
+    await logLlmCall({
+      type: "llm",
+      provider: config.provider,
+      endpoint: `llm-audio/${purpose}`,
+      request: requestLog,
+      response: e instanceof Error ? e.message : String(e),
+      statusCode: (axios.isAxiosError(e) && e.response?.status) || 500,
+      duration: Date.now() - startedAt,
+    });
+    throw e;
   }
+
+  await logLlmCall({
+    type: "llm",
+    provider: config.provider,
+    endpoint: `llm-audio/${purpose}`,
+    request: requestLog,
+    response: raw,
+    statusCode: 200,
+    duration: Date.now() - startedAt,
+    usage,
+  });
+
   return raw;
 }
 

@@ -10,17 +10,7 @@ function truncateForConsole(value: string) {
   return `${value.slice(0, MAX_LOG_CHARS)}... [truncated ${value.length - MAX_LOG_CHARS} chars]`;
 }
 
-export async function logApi({
-  userId,
-  type,
-  provider,
-  endpoint,
-  request,
-  response,
-  statusCode,
-  duration,
-  usage,
-}: {
+type ApiLogEntry = {
   userId?: string | null;
   type: string;
   provider: string;
@@ -35,33 +25,39 @@ export async function logApi({
    * instead of being parsed back out of the response text.
    */
   usage?: LlmUsage | null;
-}) {
-  const logging = await getSetting("ENABLE_API_LOGGING");
-  const enabled = logging
-    ? logging === "true"
-    : process.env.ENABLE_API_LOGGING === "true";
-  if (!enabled) return;
+};
+
+async function isSettingEnabled(key: string, envFallback: string) {
+  const setting = await getSetting(key);
+  return setting ? setting === "true" : process.env[envFallback] === "true";
+}
+
+/**
+ * Shared insert + console output. Both logApi and logLlmCall funnel into this
+ * after their own enable-gate. Never throws.
+ */
+async function insertApiLog(entry: ApiLogEntry) {
   try {
     await db.insert(apiLogs).values({
-      userId: userId || null,
-      type,
-      provider,
-      endpoint,
-      request,
-      response: response || null,
-      statusCode: statusCode || null,
-      duration: duration || null,
-      promptTokens: usage?.promptTokens ?? null,
-      completionTokens: usage?.completionTokens ?? null,
-      cachedTokens: usage?.cachedTokens ?? null,
-      costUsd: usage?.costUsd ?? null,
+      userId: entry.userId || null,
+      type: entry.type,
+      provider: entry.provider,
+      endpoint: entry.endpoint,
+      request: entry.request,
+      response: entry.response || null,
+      statusCode: entry.statusCode || null,
+      duration: entry.duration || null,
+      promptTokens: entry.usage?.promptTokens ?? null,
+      completionTokens: entry.usage?.completionTokens ?? null,
+      cachedTokens: entry.usage?.cachedTokens ?? null,
+      costUsd: entry.usage?.costUsd ?? null,
     });
 
-    const requestLog = truncateForConsole(request || "");
-    const responseLog = truncateForConsole(response || "");
-    const usageLog = formatLlmUsage(usage);
+    const requestLog = truncateForConsole(entry.request || "");
+    const responseLog = truncateForConsole(entry.response || "");
+    const usageLog = formatLlmUsage(entry.usage);
     console.log(
-      `[api-log] ${type.toUpperCase()} ${provider} ${endpoint} status=${statusCode ?? "n/a"} duration=${duration ?? "n/a"}ms` +
+      `[api-log] ${entry.type.toUpperCase()} ${entry.provider} ${entry.endpoint} status=${entry.statusCode ?? "n/a"} duration=${entry.duration ?? "n/a"}ms` +
         (usageLog ? ` usage: ${usageLog}` : "") +
         `\n  sent: ${requestLog || "(empty)"}\n  received: ${responseLog || "(empty)"}`
     );
@@ -70,3 +66,24 @@ export async function logApi({
   }
 }
 
+export async function logApi(entry: ApiLogEntry) {
+  if (!(await isSettingEnabled("ENABLE_API_LOGGING", "ENABLE_API_LOGGING"))) return;
+  await insertApiLog(entry);
+}
+
+/**
+ * Central LLM call logging (type "llm"). Called from callLLM/callLLMWithAudio
+ * in src/lib/providers/llm.ts so every LLM request in the app is captured —
+ * routes, services and internal helpers alike. Gated by its own
+ * ENABLE_LLM_LOGGING setting (default off) so it can be toggled independently
+ * of the general API logging for generation providers. Never throws: a
+ * logging failure must not break the provider call it belongs to.
+ */
+export async function logLlmCall(entry: ApiLogEntry) {
+  try {
+    if (!(await isSettingEnabled("ENABLE_LLM_LOGGING", "ENABLE_LLM_LOGGING"))) return;
+    await insertApiLog(entry);
+  } catch (e) {
+    console.error("Failed to log LLM call:", e);
+  }
+}

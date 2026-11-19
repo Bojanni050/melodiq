@@ -1,8 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
+import { callLLM } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
 
@@ -46,12 +45,7 @@ interface LyricIQBody {
   llmModel?: unknown;
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "AI provider failed";
-}
-
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
@@ -196,18 +190,13 @@ Improve these lyrics using LyricIQ™.
 Keep the same song.
 Simply make it feel like it was written by a better songwriter.`;
 
-  let usage: LlmUsage | null = null;
-
   try {
-    const llmProvider = await getLLMProviderForPurpose("lyriciq");
     const result = await callLLM(userPrompt, systemPrompt, {
       purpose: "lyriciq",
       temperature: typeof temperature === "number" ? temperature : undefined,
       topP: typeof topP === "number" ? topP : undefined,
       openRouterModelOverride: typeof llmModel === "string" && llmModel.trim() ? llmModel.trim() : undefined,
-      onUsage: (reported) => {
-        usage = reported;
-      },
+      userId: auth.userId,
     });
 
     const cleaned = result
@@ -215,35 +204,8 @@ Simply make it feel like it was written by a better songwriter.`;
       .replace(/\s*```$/g, "")
       .trim();
 
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/lyric-iq",
-      request: JSON.stringify({ blockType, blockLabel, language, topic, mood, style, temperature, topP, llmModel }),
-      response: JSON.stringify({ result: cleaned.substring(0, 200) }),
-      statusCode: 200,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     return NextResponse.json({ result: cleaned });
   } catch (error) {
-    const message = getErrorMessage(error);
-    const llmProvider = await getLLMProviderForPurpose("lyriciq");
-
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/lyric-iq",
-      request: JSON.stringify({ blockType, blockLabel, language, topic, mood, style, temperature, topP }),
-      response: JSON.stringify({ error: message }),
-      statusCode: 500,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     console.error(error);
     return NextResponse.json({ error: "AI provider failed" }, { status: 500 });
   }

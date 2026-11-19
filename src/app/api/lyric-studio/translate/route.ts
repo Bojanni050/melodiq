@@ -1,8 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
+import { callLLM } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
 type BlockType =
@@ -53,12 +52,7 @@ function isTranslateBlock(value: unknown): value is TranslateBlock {
   );
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "AI provider failed";
-}
-
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
@@ -85,8 +79,6 @@ export async function POST(request: NextRequest) {
   if (translatableBlocks.length === 0) {
     return NextResponse.json({ error: "No lyrics to translate" }, { status: 400 });
   }
-
-  const llmProvider = await getLLMProviderForPurpose("lyrics");
 
   const systemPrompt = `You are a professional lyric translator.
 
@@ -120,16 +112,13 @@ Return only JSON.`;
   // character is a generous ceiling that still stops a runaway answer from
   // being billed for a whole translation nobody asked for.
   const translateMaxTokens = Math.max(2000, Math.ceil(userPrompt.length / 2));
-  let usage: LlmUsage | null = null;
 
   try {
     const raw = await callLLM(userPrompt, systemPrompt, {
       purpose: "lyrics",
       json: true,
       maxTokens: translateMaxTokens,
-      onUsage: (reported) => {
-        usage = reported;
-      },
+      userId: auth.userId,
     });
     let parsed: { blocks?: Array<{ id?: unknown; content?: unknown }> } | null = null;
 
@@ -162,34 +151,8 @@ Return only JSON.`;
       };
     });
 
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/translate",
-      request: JSON.stringify({ targetLanguage, blocks: translatableBlocks.map((block) => ({ id: block.id, label: block.label })) }),
-      response: JSON.stringify({ translatedCount: translatedById.size }),
-      statusCode: 200,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     return NextResponse.json({ blocks: translatedBlocks });
   } catch (error) {
-    const message = getErrorMessage(error);
-
-    await logApi({
-      userId: auth.userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/lyric-studio/translate",
-      request: JSON.stringify({ targetLanguage, blockCount: translatableBlocks.length }),
-      response: JSON.stringify({ error: message }),
-      statusCode: 500,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     console.error(error);
     return NextResponse.json({ error: "Vertalen is mislukt" }, { status: 500 });
   }

@@ -1,8 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
-import { logApi } from "@/lib/logger";
-import { callLLM, getLLMProviderForPurpose, type LlmUsage } from "@/lib/providers/llm";
+import { callLLM } from "@/lib/providers/llm";
 import { requireAuth } from "@/lib/require-auth";
 
 function getErrorMessage(error: unknown) {
@@ -10,7 +9,6 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
   const { userId } = auth;
@@ -22,7 +20,6 @@ export async function POST(request: NextRequest) {
     structure,
     customStructure,
     vocalGender,
-    provider,
     language,
     instrumental,
   } = await request.json();
@@ -38,16 +35,9 @@ export async function POST(request: NextRequest) {
   }
 
   let result: string;
-  let llmProvider = "openrouter";
-  // Token/cost accounting reported by the provider, logged with the call below.
-  let usage: LlmUsage | null = null;
-  const captureUsage = (reported: LlmUsage) => {
-    usage = reported;
-  };
 
   try {
     if (type === "optimize") {
-      llmProvider = await getLLMProviderForPurpose("prompt");
       const systemPrompt = `You are a creative assistant that generates optimized music style prompts for Suno.
 
 The song's language, structure, theme, mood, tempo, key, and BPM are provided via the app. 
@@ -81,9 +71,8 @@ ${context ? `Theme/Mood: ${context}` : ""}
 ${structure === "ai-choose" ? "Structure: AI chooses the best structure." : structure ? `Structure: ${customStructure || structure}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", onUsage: captureUsage });
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "prompt", userId });
     } else if (type === "lyrics") {
-      llmProvider = await getLLMProviderForPurpose("lyrics");
       if (instrumental) {
         return NextResponse.json({ lyrics: "" });
       }
@@ -109,38 +98,14 @@ ${context ? `Topic/Mood: ${context}` : ""}
 ${vocalGender && vocalGender !== "auto" ? `Vocal gender: ${vocalGender}` : ""}
 ${structure === "ai-choose" ? "Choose the song structure that best fits the song idea and mood." : structure ? `Song structure:\n${customStructure || structure}` : ""}`;
 
-      result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics", onUsage: captureUsage });
+      result = await callLLM(userPrompt, systemPrompt, { purpose: "lyrics", userId });
     } else {
       return NextResponse.json({ error: "Unknown type" }, { status: 400 });
     }
 
-    await logApi({
-      userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/llm",
-      request: JSON.stringify({ type, idea, provider, language }),
-      response: JSON.stringify({ result: result?.substring(0, 200) }),
-      statusCode: 200,
-      duration: Date.now() - startTime,
-      usage,
-    });
-
     return NextResponse.json({ result });
   } catch (error) {
     const message = getErrorMessage(error);
-
-    await logApi({
-      userId,
-      type: "llm",
-      provider: llmProvider,
-      endpoint: "/api/llm",
-      request: JSON.stringify({ type, idea }),
-      response: JSON.stringify({ error: message }),
-      statusCode: 500,
-      duration: Date.now() - startTime,
-    });
-
     console.error(error);
     return NextResponse.json({ error: message || "AI provider failed" }, { status: 500 });
   }

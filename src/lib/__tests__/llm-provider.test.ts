@@ -5,21 +5,37 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // behaviour: only the provider that is actually called is resolved, and the
 // cross-cutting options (JSON mode, token cap, usage reporting) are applied to
 // the one shared request path.
-const { postMock, settingsState, readKeys } = vi.hoisted(() => ({
+const { postMock, settingsState, readKeys, logLlmCallMock } = vi.hoisted(() => ({
   postMock: vi.fn(),
   settingsState: { values: {} as Record<string, string> },
   readKeys: [] as string[],
+  logLlmCallMock: vi.fn(),
 }));
 
-vi.mock("axios", () => ({ default: { post: postMock } }));
+vi.mock("axios", () => ({
+  default: {
+    post: postMock,
+    // Minimal stand-in for the helper callLLM's failure logging uses to tell
+    // provider HTTP errors (which carry a status) from wrapped/network errors.
+    isAxiosError: (e: unknown) =>
+      Boolean((e as { isAxiosError?: boolean } | null)?.isAxiosError),
+  },
+}));
 vi.mock("@/lib/settings", () => ({
   getSetting: vi.fn(async (key: string) => {
     readKeys.push(key);
     return settingsState.values[key] ?? "";
   }),
 }));
+// Central LLM logging is asserted here as a call; its own enable-gate and DB
+// insert are covered by logger-usage.test.ts.
+vi.mock("@/lib/logger", () => ({ logLlmCall: logLlmCallMock }));
 
 import { callLLM, retryDelayMs } from "../providers/llm";
+
+beforeEach(() => {
+  logLlmCallMock.mockReset();
+});
 
 function okResponse(body: unknown) {
   return { status: 200, data: { choices: [{ message: { content: "hi" } }], ...(body as object) } };
@@ -198,6 +214,66 @@ describe("callLLM request options", () => {
     await expect(callLLM("prompt", "system", { purpose: "lyrics" })).rejects.toThrow(
       "OpenRouter response missing content"
     );
+  });
+});
+
+describe("callLLM central LLM logging", () => {
+  beforeEach(() => {
+    postMock.mockReset();
+    readKeys.length = 0;
+    settingsState.values = { LYRICS_LLM_PROVIDER: "openrouter", OPENROUTER_API_KEY: "or-key" };
+    postMock.mockResolvedValue(okResponse({}));
+  });
+
+  it("logs a successful call with prompts, model and usage", async () => {
+    postMock.mockResolvedValue(
+      okResponse({ usage: { prompt_tokens: 100, completion_tokens: 5, total_tokens: 105 } })
+    );
+
+    await callLLM("user text", "system text", { purpose: "lyrics", userId: "u-123" });
+
+    expect(logLlmCallMock).toHaveBeenCalledTimes(1);
+    const entry = logLlmCallMock.mock.calls[0][0];
+    expect(entry).toMatchObject({
+      userId: "u-123",
+      type: "llm",
+      provider: "openrouter",
+      endpoint: "llm/lyrics",
+      response: "hi",
+      statusCode: 200,
+    });
+    expect(JSON.parse(entry.request)).toEqual({
+      model: "google/gemini-2.5-flash",
+      system: "system text",
+      user: "user text",
+    });
+    expect(entry.usage).toMatchObject({ promptTokens: 100, completionTokens: 5 });
+    expect(entry.duration).toBeGreaterThanOrEqual(0);
+  });
+
+  it("logs a failed call with the error message, then rethrows", async () => {
+    postMock.mockRejectedValue({ response: { status: 401, data: { error: { message: "no auth" } } } });
+
+    await expect(callLLM("user text", "system text", { purpose: "lyrics" })).rejects.toThrow(
+      "OpenRouter request failed (HTTP 401): no auth"
+    );
+
+    expect(logLlmCallMock).toHaveBeenCalledTimes(1);
+    const entry = logLlmCallMock.mock.calls[0][0];
+    expect(entry).toMatchObject({
+      userId: null,
+      type: "llm",
+      provider: "openrouter",
+      endpoint: "llm/lyrics",
+      statusCode: 500,
+    });
+    expect(entry.response).toContain("HTTP 401");
+  });
+
+  it("logs every purpose under its own endpoint tag", async () => {
+    await callLLM("p", "s", { purpose: "default" });
+    expect(logLlmCallMock).toHaveBeenCalledTimes(1);
+    expect(logLlmCallMock.mock.calls[0][0].endpoint).toBe("llm/default");
   });
 });
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import AiRoutingSection from "@/components/settings/AiRoutingSection";
 import ApiLoggingCard from "@/components/settings/ApiLoggingCard";
+import LlmLoggingCard from "@/components/settings/LlmLoggingCard";
 import CoverArtSection from "@/components/settings/CoverArtSection";
 import MinimaxSection from "@/components/settings/MinimaxSection";
 import ModelDetailModal from "@/components/settings/ModelDetailModal";
@@ -465,6 +466,16 @@ export default function SettingsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key: "ENABLE_API_LOGGING", value: next }),
+    });
+  }
+
+  async function toggleLlmLogging() {
+    const next = values.ENABLE_LLM_LOGGING === "true" ? "false" : "true";
+    setValues((prev) => ({ ...prev, ENABLE_LLM_LOGGING: next }));
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "ENABLE_LLM_LOGGING", value: next }),
     });
   }
 
@@ -1028,6 +1039,7 @@ export default function SettingsPage() {
                   </section>
 
                   <ApiLoggingCard enabled={values.ENABLE_API_LOGGING === "true"} onToggle={toggleApiLogging} />
+                  <LlmLoggingCard enabled={values.ENABLE_LLM_LOGGING === "true"} onToggle={toggleLlmLogging} />
                 </div>
               )}
 
