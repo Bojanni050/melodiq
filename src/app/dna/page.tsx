@@ -83,6 +83,18 @@ const TRAIT_LABEL_KEYS: Record<string, TranslationKey> = {
   avoided_genres: "dna.traits.avoided_genres",
   love_rate: "dna.traits.love_rate",
   overall_score: "dna.traits.overall_score",
+  rhyme_scheme: "dna.traits.rhyme_scheme",
+  rhyme_density: "dna.traits.rhyme_density",
+  internal_rhyme: "dna.traits.internal_rhyme",
+  multisyllabic_rhyme: "dna.traits.multisyllabic_rhyme",
+  line_syllables: "dna.traits.line_syllables",
+  line_length_spread: "dna.traits.line_length_spread",
+  pov: "dna.traits.pov",
+  tense: "dna.traits.tense",
+  explicitness: "dna.traits.explicitness",
+  signature_words: "dna.traits.signature_words",
+  themes: "dna.traits.themes",
+  writing_languages: "dna.traits.writing_languages",
 };
 
 const CATEGORY_LABEL_KEYS: Record<string, TranslationKey> = {
@@ -116,8 +128,27 @@ function parseList(raw: string | null): string[] {
   }
 }
 
-function formatWhen(iso: string, locale: string): string {
-  const date = new Date(iso);
+/**
+ * Per-language writing traits carry their language in the key, e.g.
+ * `rhyme_density:nl`. The bare key is the whole-catalogue value.
+ */
+function splitTraitKey(key: string): { base: string; language: string | null } {
+  const separator = key.indexOf(":");
+  if (separator === -1) return { base: key, language: null };
+  return { base: key.slice(0, separator), language: key.slice(separator + 1) };
+}
+
+/** Language code → the reader's own name for it ("nl" → "Nederlands"). */
+function languageLabel(code: string, locale: string): string {
+  try {
+    const names = new Intl.DisplayNames([locale === "nl" ? "nl" : "en"], { type: "language" });
+    return names.of(code) ?? code.toUpperCase();
+  } catch {
+    return code.toUpperCase();
+  }
+}
+
+function formatWhen(iso: string, locale: string): string {  const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", {
     day: "numeric",
@@ -215,6 +246,8 @@ export default function DnaPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingTrait, setPendingTrait] = useState<string | null>(null);
   const [calibrating, setCalibrating] = useState(false);
+  /** "" = the whole-catalogue `words` traits; otherwise a language suffix. */
+  const [wordsLanguage, setWordsLanguage] = useState("");
 
   // First visit has no profile to read yet, so it is built once automatically.
   // Guarded with a ref because React may replay the effect (StrictMode) and a
@@ -332,6 +365,27 @@ export default function DnaPage() {
     return map;
   }, [traits]);
 
+  // Languages that own a per-language `words` set, most tracks first. The
+  // overall set (bare keys) is the default view — showing every language at
+  // once buries the whole-catalogue picture under a wall of suffixed cards.
+  const wordsLanguages = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const trait of traitsByCategory.words ?? []) {
+      const { language } = splitTraitKey(trait.key);
+      if (!language) continue;
+      counts.set(language, Math.max(counts.get(language) ?? 0, trait.sourceCount));
+    }
+    return [...counts.entries()]
+      .map(([code, sourceCount]) => ({ code, sourceCount, label: languageLabel(code, locale) }))
+      .sort((a, b) => b.sourceCount - a.sourceCount || a.label.localeCompare(b.label));
+  }, [traitsByCategory, locale]);
+
+  // A rebuild can drop a language below its threshold; fall back to the
+  // overall set instead of leaving an empty section with a stale selection.
+  const activeWordsLanguage = wordsLanguages.some((entry) => entry.code === wordsLanguage)
+    ? wordsLanguage
+    : "";
+
   const solidCount = traits.filter((trait) => trait.confidence >= SOLID_CONFIDENCE).length;
   const coverage = traits.length > 0 ? Math.round((solidCount / traits.length) * 100) : 0;
 
@@ -384,11 +438,15 @@ export default function DnaPage() {
   const helixTraits = useMemo(
     () =>
       traits.map((trait) => {
-        const labelKey = TRAIT_LABEL_KEYS[trait.key];
+        const { base, language } = splitTraitKey(trait.key);
+        const labelKey = TRAIT_LABEL_KEYS[base];
+        const label = labelKey ? t(labelKey) : trait.label;
         return {
           key: trait.key,
           category: trait.category,
-          label: labelKey ? t(labelKey) : trait.label,
+          // The helix mixes every set, so the language stays visible here even
+          // though the filtered cards below already say it.
+          label: language ? `${label} (${language.toUpperCase()})` : label,
           display: trait.display ?? "",
           confidence: trait.confidence,
           verdict: trait.verdict,
@@ -628,7 +686,15 @@ export default function DnaPage() {
                   {(data?.categories ?? []).map((category) => {
                     const categoryTraits = traitsByCategory[category.id] ?? [];
                     const style = CATEGORY_STYLES[category.id] ?? FALLBACK_STYLE;
-                    const categorySolid = categoryTraits.filter(
+                    const isWords = category.id === "words";
+                    // Only the words category is split per language; the other
+                    // categories are language-agnostic and stay untouched.
+                    const visibleTraits = isWords
+                      ? categoryTraits.filter(
+                          (trait) => splitTraitKey(trait.key).language === (activeWordsLanguage || null)
+                        )
+                      : categoryTraits;
+                    const categorySolid = visibleTraits.filter(
                       (trait) => trait.confidence >= SOLID_CONFIDENCE
                     ).length;
                     const labelKey = CATEGORY_LABEL_KEYS[category.id];
@@ -640,19 +706,37 @@ export default function DnaPage() {
                           <h2 className="text-sm font-medium">
                             {labelKey ? t(labelKey) : category.label}
                           </h2>
-                          <span className="ml-auto text-xs tabular-nums text-ink-dim">
-                            {categorySolid}/{categoryTraits.length}
+                          <span className="ml-auto flex items-center gap-2">
+                            {isWords && wordsLanguages.length > 0 && (
+                              <select
+                                value={activeWordsLanguage}
+                                onChange={(event) => setWordsLanguage(event.target.value)}
+                                aria-label={t("dna.wordsLanguage")}
+                                title={t("dna.wordsLanguage")}
+                                className="border border-line bg-white/5 px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
+                              >
+                                <option value="">{t("dna.wordsAllLanguages")}</option>
+                                {wordsLanguages.map((language) => (
+                                  <option key={language.code} value={language.code}>
+                                    {language.label} · {language.sourceCount}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            <span className="text-xs tabular-nums text-ink-dim">
+                              {categorySolid}/{visibleTraits.length}
+                            </span>
                           </span>
                         </header>
 
-                        {categoryTraits.length === 0 ? (
+                        {visibleTraits.length === 0 ? (
                           <p className="px-4 py-5 text-sm text-ink-dim">{t("dna.noSignal")}</p>
                         ) : (
                           <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-                            {categoryTraits.map((trait) => {
+                            {visibleTraits.map((trait) => {
                               const solid = trait.confidence >= SOLID_CONFIDENCE;
                               const confidencePct = Math.round(trait.confidence * 100);
-                              const labelKey = TRAIT_LABEL_KEYS[trait.key];
+                              const labelKey = TRAIT_LABEL_KEYS[splitTraitKey(trait.key).base];
                               const items = trait.kind === "list" ? parseList(trait.text) : [];
 
                               return (
