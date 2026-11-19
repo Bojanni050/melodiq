@@ -149,18 +149,35 @@ async function testHopscotchApiKey(
         const ext = m.uniblock || {};
         const capabilities = ext.capabilities || {};
         const families: string[] = Array.isArray(ext.endpoint_families) ? ext.endpoint_families : [];
+        // Hopscotch names the OpenAI chat family "chat_completions" (verified
+        // live 2026-11-19: 647 of 763 catalog entries carry it alone), so the
+        // match list needs that spelling too — otherwise the picker drops
+        // nearly every model and shows only the responses/messages strays.
         const servesChat =
           families.length === 0 ||
           families.some((f) =>
-            ["chat", "responses", "completions", "messages"].includes(String(f).toLowerCase())
+            ["chat", "chat_completions", "responses", "completions", "messages"].includes(
+              String(f).toLowerCase()
+            )
           );
         if (!servesChat) return null;
 
         const promptRate = perToken(ext.input_rate_thousandths);
         const completionRate = perToken(ext.output_rate_thousandths) ?? promptRate;
+        // Hopscotch records what a model accepts in uniblock.modalities_in
+        // (text/image/audio/pdf/video); capabilities.vision/audio exist but
+        // are false across the whole catalog. Read both so the Advanced DNA
+        // audio filter and the vision flag survive either source changing.
+        const modalitiesIn: string[] = Array.isArray(ext.modalities_in)
+          ? ext.modalities_in.map((x: unknown) => String(x).toLowerCase())
+          : [];
         const inputModalities = ["text"];
-        if (isYes(capabilities.vision)) inputModalities.push("image");
-        if (isYes(capabilities.audio)) inputModalities.push("audio");
+        if (isYes(capabilities.vision) || modalitiesIn.includes("image")) {
+          inputModalities.push("image");
+        }
+        if (isYes(capabilities.audio) || modalitiesIn.includes("audio")) {
+          inputModalities.push("audio");
+        }
 
         const providers: string[] = Array.isArray(ext.provider_display_names)
           ? ext.provider_display_names.filter(Boolean)
