@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TrackItem } from "./types";
+
+/**
+ * Only the identity of a finished track is needed, so the dialog accepts the
+ * player's track snapshot as well as a full list row.
+ */
+export interface VoiceSourceTrack {
+  id: string;
+  title?: string | null;
+}
 
 const POLL_INTERVAL_MS = 4000;
 const MAX_NAME_LENGTH = 120;
@@ -11,7 +19,7 @@ type Phase = "starting" | "waiting" | "naming" | "error";
 interface CreateVoiceFromTrackDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  track: TrackItem;
+  track: VoiceSourceTrack;
 }
 
 /**

@@ -14,6 +14,7 @@ import {
 } from "./playerUtils";
 
 const AudioVisualizer = dynamic(() => import("./AudioVisualizer"), { ssr: false });
+import CreateVoiceFromTrackDialog from "@/components/tracks/CreateVoiceFromTrackDialog";
 
 export default function FullscreenPlayer({
   audioSource,
@@ -44,6 +45,7 @@ export default function FullscreenPlayer({
   });
   const [controlsVisible, setControlsVisible] = useState(true);
   const [lyricsVisible, setLyricsVisible] = useState(true);
+  const [voiceDialogOpen, setVoiceDialogOpen] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const audioElement = usePlayerStore((state) => state.audioElement);
 
@@ -327,6 +329,17 @@ export default function FullscreenPlayer({
 
   const swipeTouchStartX = useRef<number | null>(null);
 
+  // The dialog clones the track that is playing, so a track switch underneath
+  // it must close it instead of quietly cloning something else.
+  useEffect(() => {
+    setVoiceDialogOpen(false);
+  }, [currentTrack?.id]);
+
+  // APIMart clones the vocal take, so a finished non-instrumental track is the
+  // only thing worth offering here.
+  const canCloneVoice =
+    !!currentTrack && currentTrack.status === "done" && !currentTrack.instrumental;
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     swipeTouchStartX.current = e.touches[0].clientX;
   }, []);
@@ -413,6 +426,18 @@ export default function FullscreenPlayer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6M9 16h6M7 8h10M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
               </svg>
             </button>
+            {canCloneVoice && (
+              <button
+                onClick={() => setVoiceDialogOpen(true)}
+                className="w-10 h-10 rounded-full bg-white/8 text-ink-dim hover:bg-white/15 hover:text-ink-muted flex items-center justify-center transition-colors"
+                title="Create a voice from this track"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11a7 7 0 0014 0M12 18v3M9 21h6" />
+                </svg>
+              </button>
+            )}
             <div>
               <h2 className="text-xl font-semibold">
                 {cleanTitle || currentTrack?.prompt.substring(0, 50) || "No track"}
@@ -637,6 +662,13 @@ export default function FullscreenPlayer({
         enabled={visualizerEnabled}
         coverUrl={coverUrl}
       />
+      {currentTrack && (
+        <CreateVoiceFromTrackDialog
+          isOpen={voiceDialogOpen}
+          onClose={() => setVoiceDialogOpen(false)}
+          track={{ id: currentTrack.id, title: currentTrack.title }}
+        />
+      )}
     </div>
   );
 }
