@@ -22,9 +22,10 @@ export interface AudioFeatures {
 const SAMPLE_RATE = 22050;
 const ARC_BUCKETS = 12;
 const HOOK_WINDOW_SECONDS = 30;
-const HOOK_SHARE = 0.8;
-// Below this the track is so quiet that a "peak" says nothing about a hook.
-const HOOK_ENERGY_FLOOR = 30;
+// Relative to the track's median bucket energy, not its peak (see hookEarlyFromArc).
+const HOOK_MEDIAN_SHARE = 0.9;
+// Below this the track is so quiet that its median says nothing about a hook.
+const HOOK_ENERGY_FLOOR = 10;
 
 // ffmpeg-static's bundled binary is built against glibc and fails silently
 // (ENOENT/exec-format error) on the Alpine/musl base image this app is
@@ -187,23 +188,37 @@ function computeEnergyArc(samples: Float32Array): number[] | null {
   return arc;
 }
 
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
+}
+
 /**
  * "Hook before 0:30" without section detection: the first 30 seconds already
- * carry at least 80% of the track's own peak energy. It is a proxy, not a
- * chorus detector — a slow-burn intro reads false, an early drop reads true.
- * Returns null when the track is too short or too quiet to judge.
+ * reach the track's own median energy, i.e. the song is at its typical level
+ * early on. It is a proxy, not a chorus detector — a slow-burn intro reads
+ * false, an early drop reads true.
+ *
+ * Measured against the median rather than the peak: on a mastered track the
+ * peak sits near 100 while a quiet intro sits at 40-60, so a peak-relative rule
+ * called virtually every song "no hook". Returns null when the track is too
+ * short or too quiet to judge.
  */
-function detectHookEarly(samples: Float32Array, arc: number[] | null): boolean | null {
+export function hookEarlyFromArc(arc: number[] | null, durationSeconds: number): boolean | null {
   if (!arc || arc.length === 0) return null;
-  const duration = samples.length / SAMPLE_RATE;
-  if (duration < HOOK_WINDOW_SECONDS) return null;
+  if (durationSeconds < HOOK_WINDOW_SECONDS) return null;
 
-  const peak = Math.max(...arc);
-  if (peak < HOOK_ENERGY_FLOOR) return null;
+  const median = medianOf(arc);
+  if (median < HOOK_ENERGY_FLOOR) return null;
 
-  const windowBuckets = Math.max(1, Math.round((HOOK_WINDOW_SECONDS / duration) * arc.length));
+  const windowBuckets = Math.max(1, Math.round((HOOK_WINDOW_SECONDS / durationSeconds) * arc.length));
   const earlyPeak = Math.max(...arc.slice(0, windowBuckets));
-  return earlyPeak >= peak * HOOK_SHARE && earlyPeak >= HOOK_ENERGY_FLOOR;
+  return earlyPeak >= median * HOOK_MEDIAN_SHARE;
+}
+
+function detectHookEarly(samples: Float32Array, arc: number[] | null): boolean | null {
+  return hookEarlyFromArc(arc, samples.length / SAMPLE_RATE);
 }
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
