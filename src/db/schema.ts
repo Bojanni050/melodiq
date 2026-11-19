@@ -795,8 +795,8 @@ export const dnaTraits = pgTable("dna_traits", {
   id: uuid("id").primaryKey().defaultRandom(),
   profileId: uuid("profile_id").notNull(),
   userId: uuid("user_id").notNull(),
-  // One of the five DNA groups shown in the UI: sound | voice | structure |
-  // words | taste (see lib/dna/types.ts).
+  // One of the DNA groups shown in the UI: sound | voice | structure | words |
+  // taste | habits (see lib/dna/types.ts).
   category: varchar("category", { length: 20 }).notNull(),
   // Stable trait id ("tempo", "genres", ...): unique per profile so a
   // recompute replaces the same row rather than growing the table.
@@ -915,4 +915,29 @@ export const dnaCalibrationAnswers = pgTable("dna_calibration_answers", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("dna_calibration_answers_user_idx").on(table.userId, table.createdAt),
+]);
+
+/**
+ * One generation request, as the Studio saw it: where the prompt came from, how
+ * far the user went beyond the basic form, and whether they edited it first.
+ *
+ * Kept out of `tracks` on purpose. Habits describe the action, not the song, and
+ * some providers (PoYo, MiniMax-via-PoYo) insert their own track row, so a column
+ * on `tracks` could not be filled from one place. Append-only and separate from
+ * dna_traits, which are replaced on every recompute.
+ */
+export const generationEvents = pgTable("generation_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  providerModel: varchar("provider_model", { length: 50 }),
+  // scratch | saved_lyrics | preset | reuse (see lib/dna/habits.ts)
+  origin: varchar("origin", { length: 20 }).notNull(),
+  // simple | advanced
+  mode: varchar("mode", { length: 10 }).notNull(),
+  edited: boolean("edited").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  // Newest-first reads per user; the DNA build only needs the recent tail.
+  index("generation_events_user_created_idx").on(table.userId, table.createdAt),
 ]);

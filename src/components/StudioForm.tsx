@@ -61,6 +61,8 @@ export default memo(function StudioForm({
     poyoVariety,
     setSongIdea,
     setLyrics,
+    markEdited,
+    applyPresetPrompt,
     setTitle,
     setArtistName,
     setWriterName,
@@ -495,7 +497,10 @@ export default memo(function StudioForm({
             <div className="relative">
               <textarea
                 value={lyrics}
-                onChange={(e) => setLyrics(e.target.value)}
+                onChange={(e) => {
+                  setLyrics(e.target.value);
+                  markEdited();
+                }}
                 placeholder={isHeartMulaSelected ? `${t("studio.lyricsPlaceholderHeartMulaIntro")}
 
 [Verse]
@@ -589,7 +594,10 @@ ${t("studio.yourChorusHere")}`}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLyrics("")}
+                  onClick={() => {
+                    setLyrics("");
+                    markEdited();
+                  }}
                   disabled={!lyrics.trim()}
                   className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title={t("studio.clearLyrics")}
@@ -667,7 +675,10 @@ ${t("studio.yourChorusHere")}`}
         <div className="relative">
           <textarea
             value={songIdea}
-            onChange={(e) => setSongIdea(e.target.value)}
+            onChange={(e) => {
+              setSongIdea(e.target.value);
+              markEdited();
+            }}
             placeholder={isHeartMulaSelected
               ? t("studio.stylePlaceholderHeartMula")
               : t("studio.stylePlaceholderDefault")}
@@ -689,7 +700,7 @@ ${t("studio.yourChorusHere")}`}
               {t("studio.generateStyle")}
             </button>
 
-            <PresetsManager songIdea={songIdea} setSongIdea={setSongIdea} />
+            <PresetsManager songIdea={songIdea} applyPresetPrompt={applyPresetPrompt} />
           </div>
 
           <div className="flex items-center gap-1.5 bg-surface/85 px-2 py-1  border border-line shadow-md">
@@ -713,7 +724,10 @@ ${t("studio.yourChorusHere")}`}
             </button>
             <button
               type="button"
-              onClick={() => setSongIdea("")}
+              onClick={() => {
+                setSongIdea("");
+                markEdited();
+              }}
               disabled={!songIdea.trim()}
               className="p-1 rounded hover:bg-white/10 text-ink-dim hover:text-ink-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={t("studio.clearStyle")}

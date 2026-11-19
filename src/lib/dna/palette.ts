@@ -6,6 +6,7 @@ export const DNA_CATEGORY_COLORS: Record<string, string> = {
   structure: "#f0c069",
   words: "#6fd4a5",
   taste: "#f18bb6",
+  habits: "#a3e635",
 };
 
 export const DNA_FALLBACK_COLOR = "#9fb4ac";
@@ -15,4 +16,4 @@ export function dnaCategoryColor(category: string): string {
 }
 
 /** Order the card and helix read categories in, matching DNA_CATEGORIES. */
-export const DNA_CATEGORY_ORDER = ["sound", "voice", "structure", "words", "taste"];
+export const DNA_CATEGORY_ORDER = ["sound", "voice", "structure", "words", "taste", "habits"];

@@ -1,12 +1,14 @@
 import type { AudioDna } from "@/lib/songs";
 
+import type { HabitMode, HabitOrigin } from "./habits";
+
 /**
  * Melody DNA sits on top of the per-track Track DNA. These are the shared
  * shapes between the pure aggregator (lib/dna/aggregate.ts), the persistence
  * layer (lib/dna/repository.ts) and the API routes, so they stay free of any
  * Drizzle or React imports.
  */
-export const DNA_CATEGORIES = ["sound", "voice", "structure", "words", "taste"] as const;
+export const DNA_CATEGORIES = ["sound", "voice", "structure", "words", "taste", "habits"] as const;
 
 export type DnaCategory = (typeof DNA_CATEGORIES)[number];
 
@@ -16,6 +18,7 @@ export const DNA_CATEGORY_LABELS: Record<DnaCategory, string> = {
   structure: "Structure",
   words: "Words",
   taste: "Taste",
+  habits: "Habits",
 };
 
 /** How the UI should read a trait: a scalar, a phrase, a tag list or a share. */
@@ -79,6 +82,25 @@ export type DnaVoiceProfile = {
 export type DnaLibraryProfile = {
   writingTitles: string[];
   musicNames: string[];
+};
+
+/** One generation request, reduced to what the habits traits ask about. */
+export type DnaHabitEvent = {
+  origin: HabitOrigin;
+  mode: HabitMode;
+  edited: boolean;
+};
+
+/**
+ * Generation history plus the public/private split of the catalogue. The
+ * events cover how songs start; the counts cover whether they end up public,
+ * which is a property of the tracks rather than of a single action.
+ */
+export type DnaHabitProfile = {
+  /** Newest first; bounded by the repository. */
+  events: DnaHabitEvent[];
+  publicTracks: number;
+  totalTracks: number;
 };
 
 /**

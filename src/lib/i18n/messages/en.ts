@@ -842,6 +842,7 @@ const en = {
       structure: "Structure",
       words: "Words",
       taste: "Taste",
+      habits: "Habits",
     },
     traits: {
       tempo: "Tempo",
@@ -892,6 +893,10 @@ const en = {
       repetition: "Repetition",
       ad_libs: "Ad-libs",
       bridge: "Bridge",
+      how_you_start: "How you start",
+      simple_or_advanced: "Simple or advanced",
+      edits_before_generate: "Edits before generating",
+      public_by_default: "Public by default",
     },
   },
 };

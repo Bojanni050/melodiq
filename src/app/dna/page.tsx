@@ -112,6 +112,10 @@ const TRAIT_LABEL_KEYS: Record<string, TranslationKey> = {
   repetition: "dna.traits.repetition",
   ad_libs: "dna.traits.ad_libs",
   bridge: "dna.traits.bridge",
+  how_you_start: "dna.traits.how_you_start",
+  simple_or_advanced: "dna.traits.simple_or_advanced",
+  edits_before_generate: "dna.traits.edits_before_generate",
+  public_by_default: "dna.traits.public_by_default",
 };
 
 const CATEGORY_LABEL_KEYS: Record<string, TranslationKey> = {
@@ -120,6 +124,7 @@ const CATEGORY_LABEL_KEYS: Record<string, TranslationKey> = {
   structure: "dna.categories.structure",
   words: "dna.categories.words",
   taste: "dna.categories.taste",
+  habits: "dna.categories.habits",
 };
 
 // Each category keeps one hue across its dot, meter and value, so the five
@@ -130,6 +135,7 @@ const CATEGORY_STYLES: Record<string, { dot: string; bar: string; text: string }
   structure: { dot: "bg-amber-300", bar: "bg-amber-300/70", text: "text-amber-200" },
   words: { dot: "bg-emerald-300", bar: "bg-emerald-300/70", text: "text-emerald-200" },
   taste: { dot: "bg-pink-400", bar: "bg-pink-400/70", text: "text-pink-200" },
+  habits: { dot: "bg-lime-300", bar: "bg-lime-300/70", text: "text-lime-200" },
 };
 
 const FALLBACK_STYLE = { dot: "bg-accent", bar: "bg-accent/70", text: "text-accent" };

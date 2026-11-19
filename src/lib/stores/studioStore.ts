@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
 import { MAX_INSPIRATION_TRACKS, type InspirationTrack } from "@/lib/inspiration";
 import type { DnaStrength } from "@/lib/dna/context";
+import type { HabitOrigin, HabitSnapshot } from "@/lib/dna/habits";
 
 export interface SavedLyric {
   id: string;
@@ -54,6 +55,23 @@ interface StudioState {
   inspoAudioWeight: number;
   savedLyrics: SavedLyric[];
   savedLyricsLoaded: boolean;
+  /**
+   * How the current prompt came to be, for the Habits block of Melody DNA.
+   * Session state, never persisted: a reload starts a new generation from
+   * scratch, and an old "preset" flag would mislabel the next blank prompt.
+   */
+  habitOrigin: HabitOrigin;
+  /** True once an advanced control was touched beyond prompt and lyrics. */
+  habitAdvanced: boolean;
+  /** True once the prompt, lyrics or optimization changed before generating. */
+  habitEdited: boolean;
+  markStart: (origin: HabitOrigin) => void;
+  markAdvanced: () => void;
+  markEdited: () => void;
+  /** Preset load: the prompt comes from the library, not from typing. */
+  applyPresetPrompt: (prompt: string) => void;
+  /** Reads the pending habit and resets it, so one generation logs one event. */
+  consumeHabit: () => HabitSnapshot;
   setSongIdea: (idea: string) => void;
   setLyrics: (lyrics: string) => void;
   setLyricsContext: (context: string) => void;
@@ -126,6 +144,22 @@ export const useStudioStore = create<StudioState>()(
       inspoAudioWeight: 20,
       savedLyrics: [],
       savedLyricsLoaded: false,
+      habitOrigin: "scratch",
+      habitAdvanced: false,
+      habitEdited: false,
+      markStart: (origin) => set({ habitOrigin: origin }),
+      markAdvanced: () => set({ habitAdvanced: true }),
+      markEdited: () => set({ habitEdited: true }),
+      applyPresetPrompt: (prompt) => set({ songIdea: prompt, habitOrigin: "preset" }),
+      consumeHabit: () => {
+        const { habitOrigin, habitAdvanced, habitEdited } = get();
+        set({ habitOrigin: "scratch", habitAdvanced: false, habitEdited: false });
+        return {
+          origin: habitOrigin,
+          mode: habitAdvanced ? "advanced" : "simple",
+          edited: habitEdited,
+        };
+      },
       setSongIdea: (idea) => set({ songIdea: idea }),
       setLyrics: (lyrics) => set({ lyrics }),
       setLyricsContext: (context) => set({ lyricsContext: context }),
@@ -153,33 +187,37 @@ export const useStudioStore = create<StudioState>()(
       setLanguage: (lang) => set({ language: lang }),
       setCustomLanguage: (lang) => set({ customLanguage: lang }),
       setInstrumental: (val) => set({ instrumental: val }),
+      // Vocal gender and instrumental change the request itself (who sings,
+      // whether there are lyrics), not how finely it is tuned. Counting them as
+      // "advanced" would label nearly every instrumental generation advanced and
+      // would trip on Reuse Prompt restoring a gender automatically.
       setVocalGender: (val) => set({ vocalGender: val }),
       setStructure: (val) => set({ structure: val }),
       setCustomStructure: (val) => set({ customStructure: val }),
-      setWeirdness: (val) => set({ weirdness: val }),
-      setStyleInfluence: (val) => set({ styleInfluence: val }),
-      setAudioWeight: (val) => set({ audioWeight: val }),
-      setNegativeTags: (val) => set({ negativeTags: val }),
-      setUsePersonaVoice: (val) => set({ usePersonaVoice: val }),
-      setApimartVariety: (val) => set({ apimartVariety: val }),
-      setApimartMaxMode: (val) => set({ apimartMaxMode: val }),
-      setApimartAudioFormat: (val) => set({ apimartAudioFormat: val }),
-      setPoyoVariety: (val) => set({ poyoVariety: val }),
-      setDnaInfluence: (val) => set({ dnaInfluence: val }),
+      setWeirdness: (val) => set({ weirdness: val, habitAdvanced: true }),
+      setStyleInfluence: (val) => set({ styleInfluence: val, habitAdvanced: true }),
+      setAudioWeight: (val) => set({ audioWeight: val, habitAdvanced: true }),
+      setNegativeTags: (val) => set({ negativeTags: val, habitAdvanced: true }),
+      setUsePersonaVoice: (val) => set({ usePersonaVoice: val, habitAdvanced: true }),
+      setApimartVariety: (val) => set({ apimartVariety: val, habitAdvanced: true }),
+      setApimartMaxMode: (val) => set({ apimartMaxMode: val, habitAdvanced: true }),
+      setApimartAudioFormat: (val) => set({ apimartAudioFormat: val, habitAdvanced: true }),
+      setPoyoVariety: (val) => set({ poyoVariety: val, habitAdvanced: true }),
+      setDnaInfluence: (val) => set({ dnaInfluence: val, habitAdvanced: true }),
       addInspirationTrack: (track) => {
         const current = get().inspiration;
         if (current.some((t) => t.id === track.id)) return true;
         if (current.length >= MAX_INSPIRATION_TRACKS) return false;
         // Dropping a new reference means the user wants inspo again.
-        set({ inspiration: [...current, track], inspirationEnabled: true });
+        set({ inspiration: [...current, track], inspirationEnabled: true, habitAdvanced: true });
         return true;
       },
       removeInspirationTrack: (id) =>
         set((state) => ({ inspiration: state.inspiration.filter((t) => t.id !== id) })),
       clearInspiration: () => set({ inspiration: [] }),
-      setInspirationEnabled: (enabled) => set({ inspirationEnabled: enabled }),
+      setInspirationEnabled: (enabled) => set({ inspirationEnabled: enabled, habitAdvanced: true }),
       setInspoAudioWeight: (val) =>
-        set({ inspoAudioWeight: Math.min(100, Math.max(0, Math.round(val))) }),
+        set({ inspoAudioWeight: Math.min(100, Math.max(0, Math.round(val))), habitAdvanced: true }),
       fetchSavedLyrics: async () => {
         if (typeof window === "undefined") return;
         try {
@@ -211,7 +249,9 @@ export const useStudioStore = create<StudioState>()(
         set((state) => {
           const entry = state.savedLyrics.find((s) => s.id === id);
           if (!entry) return state;
-          return { lyrics: entry.lyrics, title: entry.title };
+          // Loading a kept lyric is a start, not an edit: the text is the
+          // user's own work, chosen rather than typed into this session.
+          return { lyrics: entry.lyrics, title: entry.title, habitOrigin: "saved_lyrics" };
         }),
       deleteSavedLyric: async (id) => {
         set((state) => ({ savedLyrics: state.savedLyrics.filter((s) => s.id !== id) }));
@@ -248,6 +288,9 @@ export const useStudioStore = create<StudioState>()(
           inspiration: [],
       inspirationEnabled: true,
           inspoAudioWeight: 20,
+          habitOrigin: "scratch",
+          habitAdvanced: false,
+          habitEdited: false,
         }),
     }),
     {
@@ -270,7 +313,14 @@ export const useStudioStore = create<StudioState>()(
         return next;
       },
       partialize: (state) => {
-        const { savedLyrics: _sl, savedLyricsLoaded: _sll, ...rest } = state as any;
+        const {
+          savedLyrics: _sl,
+          savedLyricsLoaded: _sll,
+          habitOrigin: _ho,
+          habitAdvanced: _ha,
+          habitEdited: _he,
+          ...rest
+        } = state as any;
         return rest;
       },
       merge: (persistedState: any, currentState) => {

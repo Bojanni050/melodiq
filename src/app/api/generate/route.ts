@@ -28,6 +28,8 @@ import {
 import { supportsInspiration } from "@/lib/inspiration";
 import { isDnaStrength, loadDnaContext } from "@/lib/dna/context-service";
 import { mergeDnaIntoPrompt } from "@/lib/dna/context";
+import { parseHabit } from "@/lib/dna/habits";
+import { recordGenerationHabit } from "@/lib/dna/repository";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -127,6 +129,21 @@ export async function POST(request: NextRequest) {
   const validation = await validateProviderApiKeys(provider);
   if (!validation.valid) {
     return NextResponse.json({ error: `Missing API configuration: ${validation.missing.join(", ")}. Please configure these in Settings.` }, { status: 400 });
+  }
+
+  // Habits (Melody DNA): one row per request, written before dispatch so a
+  // provider failure still says something about how the user starts. Fire and
+  // forget — logging a habit must never delay or fail a generation.
+  const habit = parseHabit(body.habit);
+  if (habit) {
+    void recordGenerationHabit({
+      userId,
+      provider,
+      providerModel: typeof providerModel === "string" ? providerModel : null,
+      ...habit,
+    }).catch((error) => {
+      console.error("Failed to record generation habit:", error);
+    });
   }
 
   // Melody DNA: opt-in per request ("off" when the field is absent, so API

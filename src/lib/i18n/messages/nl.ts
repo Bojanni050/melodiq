@@ -845,6 +845,7 @@ const nl: typeof en = {
       structure: "Structuur",
       words: "Woorden",
       taste: "Smaak",
+      habits: "Gewoonten",
     },
     traits: {
       tempo: "Tempo",
@@ -895,6 +896,10 @@ const nl: typeof en = {
       repetition: "Repetitie",
       ad_libs: "Ad-libs",
       bridge: "Brug",
+      how_you_start: "Hoe je start",
+      simple_or_advanced: "Simpel of geavanceerd",
+      edits_before_generate: "Bewerkingen voor genereren",
+      public_by_default: "Standaard openbaar",
     },
   },
 };

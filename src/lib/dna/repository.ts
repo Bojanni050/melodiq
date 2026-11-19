@@ -8,6 +8,7 @@ import {
   dnaProfiles,
   dnaTraitHistory,
   dnaTraits,
+  generationEvents,
   savedLyrics,
   stylePresets,
   tracks,
@@ -24,12 +25,14 @@ import {
   type CalibrationCandidate,
 } from "./calibration";
 import { foldFeedback, type DnaFeedbackEvent, type DnaFeedbackKind, type DnaFeedbackStance } from "./feedback";
+import type { HabitMode, HabitOrigin } from "./habits";
 import { applyLocks, diffTraits, stampTimeline, type TraitSnapshot } from "./history";
 import { profileSignals, type ProfileSignals } from "./states";
 import type {
   AdvancedDnaSummary,
   DnaBuildResult,
   DnaCategory,
+  DnaHabitProfile,
   DnaLibraryProfile,
   DnaSourceTrack,
   DnaVoiceProfile,
@@ -231,6 +234,91 @@ export async function loadDnaLibrary(userId: string): Promise<DnaLibraryProfile>
   return {
     writingTitles: writing.map((row) => row.title.trim()).filter(Boolean),
     musicNames: music.map((row) => row.name.trim()).filter(Boolean),
+  };
+}
+
+/**
+ * A habit event is one generation request. More than this and the oldest rows
+ * stop saying anything new about how someone starts — the trait is a share, not
+ * a total.
+ */
+const MAX_HABIT_EVENTS = 500;
+
+/**
+ * Records how one generation started. Called fire-and-forget from the generate
+ * route: a failed insert must never block or fail a generation, so the caller
+ * swallows the error.
+ */
+export async function recordGenerationHabit(input: {
+  userId: string;
+  provider: string;
+  providerModel: string | null;
+  origin: HabitOrigin;
+  mode: HabitMode;
+  edited: boolean;
+}): Promise<void> {
+  await db.insert(generationEvents).values({
+    userId: input.userId,
+    provider: input.provider,
+    providerModel: input.providerModel,
+    origin: input.origin,
+    mode: input.mode,
+    edited: input.edited,
+  });
+}
+
+/**
+ * The habits half of the profile: recent generation events plus how much of the
+ * catalogue ended up public.
+ *
+ * Public is derived from the same sharing surfaces the product already has —
+ * a track is public when a public playlist or a public release contains it —
+ * because `tracks` has no is_public flag of its own. Null when there is neither
+ * an event nor a finished track, so the category stays absent instead of
+ * claiming "0% public" for someone who never generated anything.
+ */
+export async function loadDnaHabitProfile(userId: string): Promise<DnaHabitProfile | null> {
+  const [events, [counts]] = await Promise.all([
+    db
+      .select({
+        origin: generationEvents.origin,
+        mode: generationEvents.mode,
+        edited: generationEvents.edited,
+      })
+      .from(generationEvents)
+      .where(eq(generationEvents.userId, userId))
+      .orderBy(desc(generationEvents.createdAt))
+      .limit(MAX_HABIT_EVENTS),
+    db
+      .select({
+        totalTracks: sql<number>`count(*)`.mapWith(Number),
+        publicTracks: sql<number>`count(*) filter (where exists (
+          select 1 from "playlist_tracks" "pt"
+          join "playlists" "p" on "p"."id" = "pt"."playlist_id"
+          where "pt"."track_id" = "tracks"."id" and "p"."is_public" = true
+        ) or exists (
+          select 1 from "release_tracks" "rt"
+          join "releases" "r" on "r"."id" = "rt"."release_id"
+          where "rt"."track_id" = "tracks"."id" and "r"."is_public" = true
+        ))`.mapWith(Number),
+      })
+      .from(tracks)
+      .where(and(eq(tracks.userId, userId), eq(tracks.status, "done"), isNull(tracks.deletedAt))),
+  ]);
+
+  const totalTracks = counts?.totalTracks ?? 0;
+  if (events.length === 0 && totalTracks === 0) return null;
+
+  return {
+    events: events
+      .filter((row) => row.origin && row.mode)
+      .map((row) => ({
+        origin: row.origin as HabitOrigin,
+        mode: row.mode as HabitMode,
+        edited: row.edited,
+      })),
+    publicTracks: counts?.publicTracks ?? 0,
+    totalTracks,
   };
 }
 
@@ -459,7 +547,7 @@ export async function recordCalibrationAnswer(
   return true;
 }
 
-const CATEGORY_ORDER: DnaCategory[] = ["sound", "voice", "structure", "words", "taste"];
+const CATEGORY_ORDER: DnaCategory[] = ["sound", "voice", "structure", "words", "taste", "habits"];
 
 function sortTraits(rows: DnaTraitRow[]): DnaTraitRow[] {
   return [...rows].sort((a, b) => {
@@ -521,13 +609,14 @@ export async function recomputeDnaProfile(
   userId: string,
   options: { now?: Date } = {},
 ): Promise<RecomputeResult> {
-  const [sources, voice, library] = await Promise.all([
+  const [sources, voice, library, habits] = await Promise.all([
     loadDnaSources(userId),
     loadDnaVoiceProfile(userId),
     loadDnaLibrary(userId),
+    loadDnaHabitProfile(userId),
   ]);
   const now = options.now ?? new Date();
-  const audioBuilt = buildDnaProfile(sources, { ...options, voice, library });
+  const audioBuilt = buildDnaProfile(sources, { ...options, voice, library, habits });
 
   // The writing traits are derived from the same sample, with the same
   // recency/rating weighting, so a rebuild stays deterministic and both halves of

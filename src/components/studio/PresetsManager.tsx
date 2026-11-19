@@ -6,10 +6,10 @@ import { useT } from "@/hooks/useT";
 
 export default function PresetsManager({
   songIdea,
-  setSongIdea,
+  applyPresetPrompt,
 }: {
   songIdea: string;
-  setSongIdea: (idea: string) => void;
+  applyPresetPrompt: (idea: string) => void;
 }) {
   const t = useT();
   const presets = usePresetsStore((state) => state.presets);
@@ -153,7 +153,7 @@ export default function PresetsManager({
                       <button
                         type="button"
                         onClick={() => {
-                          setSongIdea(preset.prompt);
+                          applyPresetPrompt(preset.prompt);
                           setLoadedPresetId(preset.id);
                           setTimeout(() => setLoadedPresetId(null), 1500);
                         }}

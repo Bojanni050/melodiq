@@ -2,6 +2,7 @@ import { PROVIDER_LABELS } from "@/lib/format-generator";
 import { parsePromptBpm, tempoOctaveRelation } from "@/lib/prompt-bpm";
 
 import { classifyEnergyArc } from "./arc";
+import { HABIT_ORIGIN_LABELS } from "./habits";
 import { detectInstruments, instrumentDisplay } from "./instruments";
 import { SPECTRA, spectrumScores, type SpectrumDefinition, type SpectrumKey } from "./spectra";
 
@@ -9,6 +10,7 @@ import type {
   AdvancedDnaSummary,
   DnaBuildResult,
   DnaCategory,
+  DnaHabitProfile,
   DnaLibraryProfile,
   DnaProfileSummary,
   DnaSourceTrack,
@@ -362,11 +364,17 @@ function ratioTrait(options: {
   /** Numerator / denominator over weighted counts. */
   values: Weighted[];
   display: (ratio: number) => string;
+  /**
+   * Rows behind the ratio when the counts are already aggregated (the public
+   * split arrives as two totals, not one entry per track). Defaults to the
+   * number of entries with weight.
+   */
+  sourceCount?: number;
 }): DnaTrait | null {
   const stats = weightedStats(options.values);
   if (!stats) return null;
 
-  const sourceCount = options.values.filter((s) => s.weight > 0).length;
+  const sourceCount = options.sourceCount ?? options.values.filter((s) => s.weight > 0).length;
   const ratio = clamp01(stats.mean);
 
   return {
@@ -493,8 +501,73 @@ function libraryTrait(options: {
   };
 }
 
+/**
+ * Habits are about actions, not songs, so every event weighs the same: rating a
+ * track says nothing about whether its prompt started from a preset. The public
+ * split is a property of the catalogue instead, counted over finished tracks.
+ */
+function buildHabitTraits(habits: DnaHabitProfile | null): DnaTrait[] {
+  if (!habits) return [];
+
+  const traits: (DnaTrait | null)[] = [];
+  const events = habits.events;
+
+  if (events.length > 0) {
+    traits.push(
+      textTrait({
+        key: "how_you_start",
+        category: "habits",
+        label: "How you start",
+        values: events.map((event) => ({
+          value: HABIT_ORIGIN_LABELS[event.origin] ?? event.origin,
+          weight: 1,
+        })),
+      }),
+      textTrait({
+        key: "simple_or_advanced",
+        category: "habits",
+        label: "Simple or advanced",
+        values: events.map((event) => ({
+          value: event.mode === "advanced" ? "Advanced" : "Simple",
+          weight: 1,
+        })),
+      }),
+      ratioTrait({
+        key: "edits_before_generate",
+        category: "habits",
+        label: "Edits before generating",
+        values: events.map((event) => ({ value: event.edited ? 1 : 0, weight: 1 })),
+        display: (ratio) => `${Math.round(ratio * 100)}% of prompts edited before generating`,
+      }),
+    );
+  }
+
+  if (habits.totalTracks > 0) {
+    const publicTracks = Math.min(habits.publicTracks, habits.totalTracks);
+    traits.push(
+      ratioTrait({
+        key: "public_by_default",
+        category: "habits",
+        label: "Public by default",
+        // Two totals instead of one entry per track: the split is already
+        // counted in SQL, and 1500 entries would only repeat the same number.
+        values: [
+          { value: 1, weight: publicTracks },
+          { value: 0, weight: habits.totalTracks - publicTracks },
+        ],
+        display: (ratio) => `${Math.round(ratio * 100)}% of your tracks are public`,
+        sourceCount: habits.totalTracks,
+      }),
+    );
+  }
+
+  return traits.filter((trait): trait is DnaTrait => trait !== null);
+}
+
 /** Tracks that must name a spectrum's poles before it is reported at all. */
-const MIN_SPECTRUM_SOURCES = 3;/**
+const MIN_SPECTRUM_SOURCES = 3;
+
+/**
  * One spectrum as a 0..100 trait. Below the minimum the trait is absent rather
  * than based on a single prompt; above it the mean is the position and the
  * spread still decides confidence, so a catalogue that splits between both
@@ -626,7 +699,12 @@ function buildName(context: {
  */
 export function buildDnaProfile(
   sources: DnaSourceTrack[],
-  options: { now?: Date; voice?: DnaVoiceProfile | null; library?: DnaLibraryProfile | null } = {},
+  options: {
+    now?: Date;
+    voice?: DnaVoiceProfile | null;
+    library?: DnaLibraryProfile | null;
+    habits?: DnaHabitProfile | null;
+  } = {},
 ): DnaBuildResult {
   const now = options.now ?? new Date();
   const usable = sources.filter((track) => track && track.id);
@@ -1049,6 +1127,9 @@ export function buildDnaProfile(
       spreadScale: 4,
       format: (value) => `${round1(value)}/10`,
     }),
+
+    // ── Habits ───────────────────────────────────────────────────────────────
+    ...buildHabitTraits(options.habits ?? null),
   ];
 
   const builtTraits = traits.filter((trait): trait is DnaTrait => trait !== null);
@@ -1096,7 +1177,7 @@ export function buildDnaProfile(
 
   // Stable, predictable order: category order, then the order the builders
   // declared (which is the order the UI renders).
-  const categoryOrder: DnaCategory[] = ["sound", "voice", "structure", "words", "taste"];
+  const categoryOrder: DnaCategory[] = ["sound", "voice", "structure", "words", "taste", "habits"];
   builtTraits.sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
 
   return { profile, traits: builtTraits };

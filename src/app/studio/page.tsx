@@ -124,6 +124,9 @@ export default function StudioPage() {
           studio.setSongIdea(payload.style);
           studio.setTitle(payload.title);
         }
+        // Handed over from the lyrics editor: the user starts from lyrics they
+        // already had, not from a blank Studio.
+        studio.markStart("saved_lyrics");
       }
 
       const reuseRaw = sessionStorage.getItem("melodiq-reuse-prompt-payload");
@@ -138,6 +141,7 @@ export default function StudioPage() {
         if (payload.clearTitle) studio.setTitle("");
         else if (typeof payload.title === "string" && payload.title.trim()) studio.setTitle(payload.title.trim());
         if (payload.vocalGender === "female" || payload.vocalGender === "male") studio.setVocalGender(payload.vocalGender);
+        studio.markStart("reuse");
       }
     } catch {
       // ignore

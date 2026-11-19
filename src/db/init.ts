@@ -471,6 +471,23 @@ CREATE TABLE IF NOT EXISTS "dna_calibration_answers" (
 
 CREATE INDEX IF NOT EXISTS "dna_calibration_answers_user_idx" ON "dna_calibration_answers"("user_id", "created_at");
 
+-- Habits from the Studio: one row per generation request. Append-only, and
+-- deliberately separate from tracks (a habit is about the action, and some
+-- providers insert their own track row) and from dna_traits (replaced on every
+-- recompute). Mirrors drizzle/0027_green_ezekiel_stane.sql and schema.ts.
+CREATE TABLE IF NOT EXISTS "generation_events" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "provider" varchar(50) NOT NULL,
+  "provider_model" varchar(50),
+  "origin" varchar(20) NOT NULL,
+  "mode" varchar(10) NOT NULL,
+  "edited" boolean NOT NULL DEFAULT false,
+  "created_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "generation_events_user_created_idx" ON "generation_events"("user_id", "created_at");
+
 CREATE INDEX IF NOT EXISTS "tracks_user_id_idx" ON "tracks"("user_id");
 CREATE INDEX IF NOT EXISTS "tracks_user_id_status_idx" ON "tracks"("user_id", "status");
 CREATE INDEX IF NOT EXISTS "tracks_status_idx" ON "tracks"("status");

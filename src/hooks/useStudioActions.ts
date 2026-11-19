@@ -53,6 +53,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
     if (res.ok) {
       const data = await res.json();
       useStudioStore.getState().setSongIdea(data.result);
+      // Rewriting the prompt is an edit even though it did not come from the
+      // keyboard: what gets sent is not what the user first typed.
+      useStudioStore.getState().markEdited();
     }
   }, [getEffectiveLanguage]);
 
@@ -168,6 +171,10 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
         } catch {}
       }
 
+      // Read once, right before the requests: the habit describes this
+      // generation, and consuming it resets the flags for the next one.
+      const habit = useStudioStore.getState().consumeHabit();
+
       const results = await Promise.allSettled(
         providerEntries.map(([provider, providerModel]) =>
           fetch("/api/generate", {
@@ -191,6 +198,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               // "off" when the user turned Melody DNA off; the server appends a
               // trimmed hint to the style prompt and stores what it sent.
               dnaInfluence,
+              // Habits (Melody DNA): where this prompt came from and how far the
+              // user went beyond it. Server-side it becomes one event row.
+              habit,
               personaId: provider === "apimart" ? personaId : undefined,
               // APIMart Suno V6 options
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
@@ -310,6 +320,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       if (title) studio.setTitle(title);
     }
     if (track.vocalGender === "female" || track.vocalGender === "male") studio.setVocalGender(track.vocalGender);
+    studio.markStart("reuse");
   }, []);
 
   return {
