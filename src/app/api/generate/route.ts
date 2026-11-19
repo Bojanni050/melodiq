@@ -29,7 +29,7 @@ import { supportsInspiration } from "@/lib/inspiration";
 import { isDnaStrength, loadDnaContext } from "@/lib/dna/context-service";
 import { mergeDnaIntoPrompt } from "@/lib/dna/context";
 import { parseHabit } from "@/lib/dna/habits";
-import { recordGenerationHabit } from "@/lib/dna/repository";
+import { recordGenerationHabit, refreshDnaProfileInBackground } from "@/lib/dna/repository";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -141,9 +141,14 @@ export async function POST(request: NextRequest) {
       provider,
       providerModel: typeof providerModel === "string" ? providerModel : null,
       ...habit,
-    }).catch((error) => {
-      console.error("Failed to record generation habit:", error);
-    });
+    })
+      // The habits cards read the stored snapshot, so without this a new event
+      // only shows up after a manual rebuild. Same pattern as saved lyrics and
+      // presets: refresh in the background, never on the request's critical path.
+      .then(() => refreshDnaProfileInBackground(userId))
+      .catch((error) => {
+        console.error("Failed to record generation habit:", error);
+      });
   }
 
   // Melody DNA: opt-in per request ("off" when the field is absent, so API
