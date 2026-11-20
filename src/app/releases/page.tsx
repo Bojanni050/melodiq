@@ -10,6 +10,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import ArtistLink from "@/components/artist/ArtistLink";
 import { useSidebarStore, useReleaseStore, useUserStore, usePlayerStore, usePlaylistStore } from "@/lib/store";
 import { formatTotalDuration } from "@/lib/track-utils";
+import { stripVariantSuffix } from "@/lib/track-title";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import { useJumpToCurrentTrack } from "@/hooks/useJumpToCurrentTrack";
 import JumpToCurrentTrackButton from "@/components/tracks/JumpToCurrentTrackButton";
@@ -295,7 +296,9 @@ export default function ReleasesPage() {
 
   function openEditRelease(release: { id: string; title: string; artistName?: string | null; writerName?: string | null; composerName?: string | null; credits?: string | null }) {
     setEditingReleaseId(release.id);
-    setEditTitle(release.title);
+    // Editing shows the clean title too, so saving it also drops the internal
+    // " (2)" variant marker from releases that were auto-created before this.
+    setEditTitle(stripVariantSuffix(release.title));
     setEditArtistAlias(release.artistName ?? "");
     setEditWriterName(release.writerName ?? "");
     setEditComposerName(release.composerName ?? "");
@@ -564,7 +567,7 @@ export default function ReleasesPage() {
                                   aria-label={t("releases.published")}
                                 />
                               )}
-                              <span className="truncate">{release.title}</span>
+                              <span className="truncate">{stripVariantSuffix(release.title)}</span>
                             </h3>
                             {(release.artistName?.trim()) && (
                               <div className="truncate text-sm text-ink/85" onClick={(e) => e.stopPropagation()}>
@@ -633,8 +636,8 @@ export default function ReleasesPage() {
                                   playReleaseTrack(release.id, releaseTrackItems[0]);
                                 }}
                                 className="absolute inset-0 transition-colors group-hover/cover:bg-black/45"
-                                aria-label={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
-                                title={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: release.title }) : t("releases.play", { title: release.title })}
+                                aria-label={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: stripVariantSuffix(release.title) }) : t("releases.play", { title: stripVariantSuffix(release.title) })}
+                                title={currentTrack?.id === releaseTrackItems[0].id && isPlaying ? t("releases.pause", { title: stripVariantSuffix(release.title) }) : t("releases.play", { title: stripVariantSuffix(release.title) })}
                               >
                                 <span
                                   className={`absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-all duration-200 ${
@@ -671,7 +674,7 @@ export default function ReleasesPage() {
                                   aria-label={t("releases.published")}
                                 />
                               )}
-                              <span className="truncate">{release.title}</span>
+                              <span className="truncate">{stripVariantSuffix(release.title)}</span>
                             </button>
                             {(() => {
                               const artistLabel =

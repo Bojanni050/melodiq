@@ -2,7 +2,7 @@ import { callLLMWithAudio } from "@/lib/providers/llm";
 import { db } from "@/db";
 import { tracks, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { resolveDnaAudioSource } from "@/lib/dna-audio-source";
+import { resolveDnaAudioSource, LLM_AUDIO_MAX_BYTES } from "@/lib/dna-audio-source";
 import { logToFile } from "@/lib/file-logger";
 
 const ANALYSIS_LANGUAGE_NAME: Record<string, string> = {
@@ -65,8 +65,10 @@ export async function analyzeAdvancedDna(
   log(`[advanced-dna] track ${trackId}: starting analysis (forceRefresh=${forceRefresh}, instrumental=${!!track.instrumental})`);
 
   // Always analyse the smallest available audio file: ogg -> mp3 -> transcode
-  // Always analysed as MP3 (see resolveDnaAudioSource).
-  const audioSource = await resolveDnaAudioSource(track);
+  // Always analysed as MP3 (see resolveDnaAudioSource). The byte budget keeps
+  // the upload under the provider's request limit — long tracks used to fail
+  // with HTTP 413 because the base64 body crossed it.
+  const audioSource = await resolveDnaAudioSource(track, { maxBytes: LLM_AUDIO_MAX_BYTES });
   if (!audioSource) {
     warn(`[advanced-dna] track ${trackId}: no audio file available (no mp3/ogg and transcode failed)`);
     return null;

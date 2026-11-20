@@ -13,6 +13,7 @@ import ResizablePanel from "@/components/studio/ResizablePanel";
 import { usePlayerStore, usePlaylistStore, useReleaseStore, useSidebarStore } from "@/lib/store";
 import type { TrackItem } from "@/components/tracks/types";
 import { formatTotalDuration } from "@/lib/track-utils";
+import { stripVariantSuffix } from "@/lib/track-title";
 import { useTrackDetailsPanel } from "@/hooks/useTrackDetailsPanel";
 import { useT } from "@/hooks/useT";
 
@@ -348,10 +349,10 @@ export default function ReleaseDetailPage() {
                     ) : (
                       <h2
                         className="text-lg font-semibold truncate cursor-text"
-                        onClick={() => { if (!selectedRelease) return; setTitleDraft(selectedRelease.title); setEditingTitle(true); }}
+                        onClick={() => { if (!selectedRelease) return; setTitleDraft(stripVariantSuffix(selectedRelease.title)); setEditingTitle(true); }}
                         title={t("releases.clickToRename")}
                       >
-                        {selectedRelease?.title}
+                        {stripVariantSuffix(selectedRelease?.title)}
                       </h2>
                     )}
                     <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">

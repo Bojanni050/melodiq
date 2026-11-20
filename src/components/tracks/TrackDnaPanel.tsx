@@ -71,6 +71,7 @@ export default function TrackDnaPanel({
   refreshKey,
   advancedDnaResult,
   advancedDnaRunning,
+  advancedDnaLoading,
   onRunAdvancedDna,
   trackStatus,
   onReanalyzeAudio,
@@ -80,6 +81,9 @@ export default function TrackDnaPanel({
   refreshKey?: number;
   advancedDnaResult?: AdvancedDnaResult | null;
   advancedDnaRunning?: boolean;
+  /** True while the stored analysis is being read — keeps the panel from
+   *  showing "nothing here yet" (and inviting a re-run) for that moment. */
+  advancedDnaLoading?: boolean;
   onRunAdvancedDna?: () => void;
   trackStatus?: string;
   onReanalyzeAudio?: () => void;
@@ -241,7 +245,7 @@ export default function TrackDnaPanel({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onRunAdvancedDna(); }}
-                disabled={advancedDnaRunning}
+                disabled={advancedDnaRunning || advancedDnaLoading}
                 className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-line bg-white/[0.04] text-ink-dim hover:text-ink-muted hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 {advancedDnaRunning ? (
@@ -251,6 +255,8 @@ export default function TrackDnaPanel({
                   </>
                 ) : advancedDnaResult ? (
                   "Re-run"
+                ) : advancedDnaLoading ? (
+                  "Loading…"
                 ) : (
                   "Run analysis"
                 )}
@@ -260,6 +266,10 @@ export default function TrackDnaPanel({
 
           {advancedDnaRunning && !advancedDnaResult && (
             <p className="text-xs text-ink-dim italic">Running advanced analysis…</p>
+          )}
+
+          {advancedDnaLoading && !advancedDnaResult && !advancedDnaRunning && (
+            <p className="text-xs text-ink-dim italic">Loading the stored analysis…</p>
           )}
 
           {advancedDnaResult ? (
@@ -324,7 +334,7 @@ export default function TrackDnaPanel({
                 </div>
               )}
             </div>
-          ) : !advancedDnaRunning && (
+          ) : !advancedDnaRunning && !advancedDnaLoading && (
             <p className="text-xs text-ink-dim italic">
               Run an advanced analysis for a deep-dive into lyrics, composition, vocal and production scores, and improvement tips.
             </p>

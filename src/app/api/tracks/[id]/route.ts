@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tracks, workspaces, releases, releaseTracks } from "@/db/schema";
 import { RELEASE_STATUSES, type ReleaseStatus } from "@/lib/release-status";
 import { toTitleCase } from "@/lib/title-case";
+import { stripVariantSuffix } from "@/lib/track-title";
 import { isLyricsTaskSubmission, parseLyrics } from "@/lib/parse-lyrics";
 import { eq, and, inArray } from "drizzle-orm";
 import { getPresignedUrl, deleteFromS3 } from "@/lib/s3";
@@ -89,7 +90,7 @@ async function syncTrackReleaseStatus(
       .insert(releases)
       .values({
         userId,
-        title: track.title || "Untitled",
+        title: stripVariantSuffix(track.title) || "Untitled",
         type: "single",
         artistName: track.artistName ?? null,
         isPublic: true,

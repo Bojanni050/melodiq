@@ -25,12 +25,23 @@ export function resolveFfmpegPath(): string | null {
   return null;
 }
 
+export interface Mp3TranscodeOptions {
+  /** Output channel count. Mono halves the payload at the same bitrate. */
+  channels?: 1 | 2;
+  /** Output sample rate in Hz (default 44100). */
+  sampleRate?: number;
+}
+
 /**
  * Transcode any audio buffer to MP3 using ffmpeg.
  * Bitrate in kbps, default 192 (analysis/transcode); upload pipeline uses 320.
  * Returns the MP3 as a Buffer.
  */
-export function transcodeToMp3(input: Buffer, bitrateKbps: number = 192): Promise<Buffer> {
+export function transcodeToMp3(
+  input: Buffer,
+  bitrateKbps: number = 192,
+  options: Mp3TranscodeOptions = {}
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const bin = resolveFfmpegPath();
     if (!bin) {
@@ -43,8 +54,8 @@ export function transcodeToMp3(input: Buffer, bitrateKbps: number = 192): Promis
     const proc = spawn(bin, [
       "-i", "pipe:0",
       "-vn",
-      "-ar", "44100",
-      "-ac", "2",
+      "-ar", String(options.sampleRate ?? 44100),
+      "-ac", String(options.channels ?? 2),
       "-b:a", `${bitrateKbps}k`,
       "-f", "mp3",
       "pipe:1",

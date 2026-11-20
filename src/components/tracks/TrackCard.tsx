@@ -329,25 +329,36 @@ const TrackCard = memo(function TrackCard({
       // the 🧬 badge reads the flag while the text itself is fetched only when
       // the DNA panel is actually opened.
       const hasAdvancedDna = Boolean(advancedDnaResult) || Boolean(track.hasAdvancedDna);
+      // True while the stored analysis is being pulled in, so the panel can say
+      // "loading" instead of showing the empty state and inviting a re-run.
+      const [advancedDnaLoading, setAdvancedDnaLoading] = useState(false);
+      const [advancedDnaLoaded, setAdvancedDnaLoaded] = useState(false);
 
-      // Pull the stored analysis body the first time the panel is opened for a
-      // track the list flagged but didn't send the text for.
+      // Pull the stored analysis body the first time the panel is opened.
+      // Runs for every track, not just the ones the list flagged: the flag is a
+      // convenience for the badge, and hydrating regardless keeps the panel
+      // correct when the list payload is stale (e.g. analysis generated in this
+      // session or in another tab).
       useEffect(() => {
-        if (!dnaMounted || advancedDnaResult || !track.hasAdvancedDna) return;
+        if (!dnaMounted || advancedDnaResult || advancedDnaLoaded) return;
         let active = true;
+        setAdvancedDnaLoading(true);
         (async () => {
           try {
-            const res = await fetch(`/api/tracks/${track.id}`);
+            const res = await fetch(`/api/tracks/${track.id}/analyze-advanced`);
             if (!res.ok || !active) return;
-            const full = await res.json();
-            if (!active || !full?.advancedDna) return;
-            setAdvancedDnaResult(JSON.parse(full.advancedDna));
+            const payload = await res.json();
+            if (!active) return;
+            setAdvancedDnaLoaded(true);
+            if (payload?.analysis) setAdvancedDnaResult(payload.analysis);
           } catch (error) {
             console.error("Failed to load stored advanced DNA:", error);
+          } finally {
+            if (active) setAdvancedDnaLoading(false);
           }
         })();
         return () => { active = false; };
-      }, [dnaMounted, advancedDnaResult, track.hasAdvancedDna, track.id]);
+      }, [dnaMounted, advancedDnaResult, advancedDnaLoaded, track.id]);
 
       async function handleAdvancedDna() {
         setAdvancedDnaRunning(true);
@@ -748,6 +759,7 @@ const TrackCard = memo(function TrackCard({
                 refreshKey={dnaRefreshKey}
                 advancedDnaResult={advancedDnaResult}
                 advancedDnaRunning={advancedDnaRunning}
+                advancedDnaLoading={advancedDnaLoading}
                 onRunAdvancedDna={isListenerRole ? undefined : handleAdvancedDna}
                 trackStatus={track.status}
                 onReanalyzeAudio={isListenerRole ? undefined : handleReanalyzeAudio}
@@ -1471,6 +1483,7 @@ const TrackCard = memo(function TrackCard({
               refreshKey={dnaRefreshKey}
               advancedDnaResult={advancedDnaResult}
               advancedDnaRunning={advancedDnaRunning}
+              advancedDnaLoading={advancedDnaLoading}
               onRunAdvancedDna={isListenerRole ? undefined : handleAdvancedDna}
               trackStatus={track.status}
               onReanalyzeAudio={isListenerRole ? undefined : handleReanalyzeAudio}
