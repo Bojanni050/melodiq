@@ -15,6 +15,7 @@ import { uploadToS3, getPresignedUrl } from "@/lib/s3";
 import { logApi } from "@/lib/logger";
 import { getSetting, getWebhookUrl } from "@/lib/settings";
 import { type AudioFormat, contentTypeForFormat, detectFormatFromContentType } from "@/lib/audio-format";
+import { ensureInspoMp3Source } from "@/lib/inspo-audio-source";
 import { extractAudioDuration } from "@/lib/audio-duration";
 import { computeAudioDna } from "@/lib/audio-dna";
 import {
@@ -87,7 +88,17 @@ async function resolveInspirationAudioUrls(userId: string, inspirationTrackIds: 
   if (ids.length === 0) throw new Error("Select 1-4 inspiration tracks");
 
   const rows = await db
-    .select({ id: tracks.id, title: tracks.title, s3Key: tracks.s3Key, s3KeyHd: tracks.s3KeyHd, status: tracks.status })
+    .select({
+      id: tracks.id,
+      title: tracks.title,
+      s3Key: tracks.s3Key,
+      s3KeyHd: tracks.s3KeyHd,
+      s3KeyMp3: tracks.s3KeyMp3,
+      s3KeyOgg: tracks.s3KeyOgg,
+      format: tracks.format,
+      formatHd: tracks.formatHd,
+      status: tracks.status,
+    })
     .from(tracks)
     .where(and(eq(tracks.userId, userId), inArray(tracks.id, ids)));
   const byId = new Map(rows.map((row) => [row.id, row]));
@@ -95,10 +106,12 @@ async function resolveInspirationAudioUrls(userId: string, inspirationTrackIds: 
   const audioUrls: string[] = [];
   for (const id of ids) {
     const row = byId.get(id);
-    const key = row?.s3Key ?? row?.s3KeyHd ?? null;
-    if (!row || row.status !== "done" || !key) {
+    if (!row || row.status !== "done") {
       throw new Error(`Inspiration track "${row?.title?.trim() || "untitled"}" has no audio yet`);
     }
+    // Inspiration gateways only get MP3: transcode and cache MP3 derivatives
+    // for WAV/FLAC/OGG-only tracks instead of sending the original container.
+    const key = await ensureInspoMp3Source(userId, row);
     audioUrls.push(await getPresignedUrl(key, INSPO_AUDIO_URL_TTL_SECONDS));
   }
   return audioUrls;
@@ -179,7 +192,19 @@ export async function dispatchPoYo(ctx: GenerationContext): Promise<NextResponse
 export async function dispatchPoYoInspo(ctx: GenerationContext): Promise<NextResponse> {
   const { userId, startTime, provider, providerModel, prompt, originalPrompt, dnaPromptHint, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, normalizedPoYoModel, vocalGender, weirdness, styleInfluence, poyoVariety, inspoAudioWeight, inspirationTrackIds } = ctx;
 
-  const audioUrls = await resolveInspirationAudioUrls(userId, inspirationTrackIds);
+  // Audio prep runs before any track exists, so a failure (no audio, failed
+  // MP3 transcode) must return a JSON error here — this provider branch sits
+  // outside the route's shared try/catch. Without it the client would get an
+  // unhandled 500 instead of the reason.
+  let audioUrls: string[];
+  try {
+    audioUrls = await resolveInspirationAudioUrls(userId, inspirationTrackIds);
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || "Could not prepare inspiration audio" },
+      { status: 400 }
+    );
+  }
   const inspoWeight01 =
     typeof inspoAudioWeight === "number" && Number.isFinite(inspoAudioWeight)
       ? Math.min(100, Math.max(0, Math.round(inspoAudioWeight))) / 100

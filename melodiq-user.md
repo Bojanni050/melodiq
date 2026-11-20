@@ -1,6 +1,6 @@
 # MelodIQ — User Guide
 
-**Versie: 202610072038**
+**Versie: 202611201030**
 
 > AI Music Generation Web App
 
@@ -115,6 +115,7 @@ Use **Lyric Studio** to build lyrics as separate editable blocks before sending 
 ### Inspiration (APIMart v6)
 
 - Via de trackopties (**⋯ → Use As Inspiration**) zet je een track als inspiratie voor een nieuwe song; in Studio verschijnt boven de lyrics een **Inspiration**-kaart met cover en titel (lyrics en stijl worden níet overgenomen).
+- Bestaat een inspiratietrack alleen als WAV, FLAC of OGG, dan wordt er vóór het genereren eenmalig een **MP3**-versie van gemaakt en hergebruikt; de gateways krijgen dus altijd MP3.
 - Er kunnen maximaal **4** inspiratietracks klaarstaan (ook via slepen naar de kaart); genereren met inspiratie werkt alleen met **APIMart v6**.
 - Met het **schakelaartje** naast de teller zet je inspiratie aan of uit zonder de tracks te verwijderen: uit = normale generatie, de tracks blijven geparkeerd staan. Een nieuwe track toevoegen schakelt inspiratie automatisch weer in.
 - Zodra inspiratie actief is (aan + minimaal 1 track) verschijnt in de kaart een **Invloed-slider**: hoe sterk de inspiratie-audio het resultaat stuurt (APIMart `audio_weight` 0,00–1,00). Standaard staat deze op **20%**.
