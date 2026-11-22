@@ -266,6 +266,7 @@ The Settings page lets you configure each provider independently:
 - **LLM Routing** also supports **Hopscotch** (`https://api.hopscotchlabs.ai`), an OpenAI-compatible router across OpenAI, Anthropic, Google, Meta and others. Paste a `ub_live_…` key and pick a model per purpose; model ids are provider-pinned (`openai/gpt-4o-mini`, `google/gemini-2.5-flash`, …) and its model list comes from `GET /v1/models` (so it needs your key). The pickers show context size, pricing and vision/audio capabilities, and Advanced DNA only lists models the catalog marks audio-capable.
 - **Retrieve Models** buttons exist for OpenRouter and Hopscotch (both need your API key) and Eden AI/DeepInfra (public catalog, no key) — on the LLM tab inside the provider card, and in AI Routing per provider that is actually in use. Use them to (re)load the model dropdowns if they show "Retrieve models to select".
 - MusicGPT recovery can now retry both stuck `generating` tracks and already-failed MusicGPT tracks from the same recovery button
+- Under **Providers → Music** a **Cloned voices** section lists every APIMart persona: its status, the styles and description it was created with, and the track it came from ("From an uploaded sample" for direct uploads). **Use** picks the voice for the Studio, **Delete** removes it from MelodIQ — APIMart has no persona delete, so tracks that already used it keep their audio, and if you delete the voice in use the newest finished one takes over.
 
 ---
 

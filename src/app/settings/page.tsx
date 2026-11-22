@@ -7,6 +7,7 @@ import ApiLoggingCard from "@/components/settings/ApiLoggingCard";
 import LlmLoggingCard from "@/components/settings/LlmLoggingCard";
 import CoverArtSection from "@/components/settings/CoverArtSection";
 import MinimaxSection from "@/components/settings/MinimaxSection";
+import ClonedVoicesSection from "@/components/settings/ClonedVoicesSection";
 import ModelDetailModal from "@/components/settings/ModelDetailModal";
 import MusicGptRecoverySection from "@/components/settings/MusicGptRecoverySection";
 import WavRecoverySection from "@/components/settings/WavRecoverySection";
@@ -689,6 +690,7 @@ export default function SettingsPage() {
                       ))}
                       <MinimaxSection values={values} onFieldChange={updateField} />
                       <WebhooksSection values={values} onFieldChange={updateField} />
+                      <ClonedVoicesSection />
                     </div>
                   )}
 

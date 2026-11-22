@@ -9,6 +9,19 @@ import { logApi } from "@/lib/logger";
 const ALLOWED_MIME_TYPES = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave"];
 const MAX_SIZE_BYTES = 20 * 1024 * 1024;
 
+// Mirrors the `cloned_voices` columns; the upload route only stores labels —
+// createVoice takes no name or descriptors.
+const MAX_NAME_LENGTH = 120;
+const MAX_STYLES_LENGTH = 200;
+const MAX_DESCRIBE_LENGTH = 1000;
+
+function optionalText(value: FormDataEntryValue | null, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
 function detectExtension(file: File): "mp3" | "wav" | null {
   const type = file.type.toLowerCase();
   if (type.includes("wav")) return "wav";
@@ -27,6 +40,9 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData();
   const file = formData.get("audio");
+  const name = optionalText(formData.get("name"), MAX_NAME_LENGTH);
+  const styles = optionalText(formData.get("styles"), MAX_STYLES_LENGTH);
+  const describe = optionalText(formData.get("describe"), MAX_DESCRIBE_LENGTH);
 
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
@@ -55,6 +71,9 @@ export async function POST(request: NextRequest) {
       .values({
         userId,
         apimartTaskId: genResult.taskId,
+        name,
+        styles,
+        describe,
         status: "pending",
         sourceAudioUrl: publicAudioUrl,
       })

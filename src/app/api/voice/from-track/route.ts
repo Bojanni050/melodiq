@@ -20,6 +20,20 @@ const PUBLIC_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 // more likely to be accepted.
 const PERSONA_CLIP_MAX_SECONDS = 120;
 
+// The persona endpoint requires a name and has no documented limits for the
+// descriptors, so the route is the place that keeps them sane. Trimming to
+// these lengths mirrors the `cloned_voices` columns.
+const MAX_NAME_LENGTH = 120;
+const MAX_STYLES_LENGTH = 200;
+const MAX_DESCRIBE_LENGTH = 1000;
+
+function optionalText(value: unknown, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, maxLength);
+}
+
 /**
  * Creates a cloned voice out of a finished track, instead of the manual audio
  * upload in the Studio. The voice itself is APIMart's; this route only turns
@@ -43,6 +57,13 @@ export async function POST(request: NextRequest) {
   if (typeof trackId !== "string" || !trackId) {
     return NextResponse.json({ error: "No track provided" }, { status: 400 });
   }
+
+  // Everything the user filled in before submitting. The name and descriptors
+  // are only labels for the voice list on the createVoice route (an audio
+  // upload), but APIMart's persona endpoint stores all three on the persona.
+  const requestedName = optionalText(body?.name, MAX_NAME_LENGTH);
+  const styles = optionalText(body?.styles, MAX_STYLES_LENGTH);
+  const describe = optionalText(body?.describe, MAX_DESCRIBE_LENGTH);
 
   const rows = await db
     .select()
@@ -75,7 +96,11 @@ export async function POST(request: NextRequest) {
       const genResult = await createApimartPersona({
         taskId: generationTaskId,
         audioIndex,
-        name: track.title || "Cloned voice",
+        // APIMart refuses a persona without a name; the dialog always sends
+        // one, so the track title is only a fallback for direct API calls.
+        name: requestedName ?? track.title?.trim() ?? "Cloned voice",
+        ...(styles ? { styles } : {}),
+        ...(describe ? { describe } : {}),
         ...(duration > 0
           ? { vocalStartS: 0, vocalEndS: Math.min(duration, PERSONA_CLIP_MAX_SECONDS) }
           : {}),
@@ -86,6 +111,10 @@ export async function POST(request: NextRequest) {
         .values({
           userId,
           apimartTaskId: genResult.taskId,
+          name: requestedName,
+          styles,
+          describe,
+          sourceTrackId: track.id,
           status: "pending",
           // The persona route needs no audio URL; the generation task id is
           // what APIMart will read the voice from.
@@ -104,6 +133,8 @@ export async function POST(request: NextRequest) {
           route: "persona",
           generationTaskId,
           audioIndex,
+          name: requestedName,
+          styles,
         }),
         response: JSON.stringify({ status: "pending", taskId: genResult.taskId }),
         statusCode: 200,
@@ -143,6 +174,10 @@ export async function POST(request: NextRequest) {
       .values({
         userId,
         apimartTaskId: genResult.taskId,
+        name: requestedName,
+        styles,
+        describe,
+        sourceTrackId: track.id,
         status: "pending",
         sourceAudioUrl: publicAudioUrl,
       })

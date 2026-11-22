@@ -45,4 +45,26 @@ describe("buildApimartPersonaBody", () => {
     expect(body.vocal_start_s).toBe(0);
     expect(body.vocal_end_s).toBe(120);
   });
+
+  it("attaches styles and describe only when the user filled them in", () => {
+    const body = buildApimartPersonaBody({
+      taskId: "task_abc",
+      name: "Stem",
+      styles: "  soul  ",
+      describe: "  Warm and close  ",
+    });
+
+    expect(body.styles).toBe("soul");
+    expect(body.describe).toBe("Warm and close");
+
+    const blank = buildApimartPersonaBody({
+      taskId: "task_abc",
+      name: "Stem",
+      styles: "   ",
+      describe: "",
+    });
+
+    expect(blank).not.toHaveProperty("styles");
+    expect(blank).not.toHaveProperty("describe");
+  });
 });

@@ -209,6 +209,8 @@ export async function createApimartPersona(params: {
   taskId: string;
   audioIndex?: number;
   name: string;
+  styles?: string;
+  describe?: string;
   vocalStartS?: number;
   vocalEndS?: number;
 }): Promise<{ taskId: string }> {

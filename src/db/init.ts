@@ -370,6 +370,9 @@ CREATE TABLE IF NOT EXISTS "cloned_voices" (
   "apimart_task_id" varchar(255) NOT NULL,
   "persona_id" varchar(255),
   "name" varchar(120),
+  "styles" varchar(200),
+  "describe" text,
+  "source_track_id" uuid,
   "is_selected" boolean NOT NULL DEFAULT false,
   "status" varchar(20) NOT NULL DEFAULT 'pending',
   "source_audio_url" text NOT NULL,
@@ -505,6 +508,11 @@ ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS cost_usd double precision;
 -- dialog on the track card). Existing rows simply keep an empty label.
 ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS name varchar(120);
 ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS is_selected boolean NOT NULL DEFAULT false;
+-- Persona metadata asked for before the clone is submitted, plus the track it
+-- came from (null for a direct audio upload).
+ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS styles varchar(200);
+ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS "describe" text;
+ALTER TABLE cloned_voices ADD COLUMN IF NOT EXISTS source_track_id uuid;
 `;
 
 // Melody DNA trait timestamps and locks (see schema.ts dnaTraits): additive and

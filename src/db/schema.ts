@@ -107,9 +107,18 @@ export const clonedVoices = pgTable("cloned_voices", {
   userId: uuid("user_id").notNull(),
   apimartTaskId: varchar("apimart_task_id", { length: 255 }).notNull(),
   personaId: varchar("persona_id", { length: 255 }),
-  // User-given label, asked for in a dialog once APIMart has produced the
-  // persona. Nullable because a voice is usable before (or without) naming.
+  // User-given label, asked for before the persona is submitted. Nullable
+  // because rows created before the dialog asked for a name (or a direct API
+  // call) are still usable; the Studio can name them later.
   name: varchar("name", { length: 120 }),
+  // APIMart's own persona descriptors. `styles` and `describe` are sent with
+  // the persona request when the user fills them in; for the createVoice route
+  // (an audio upload) APIMart takes neither, so they stay local labels there.
+  styles: varchar("styles", { length: 200 }),
+  describe: text("describe"),
+  // Track the voice was cloned from — null for a direct audio upload. Kept so
+  // the voice list can say where a voice came from after the fact.
+  sourceTrackId: uuid("source_track_id"),
   // The one voice the Studio sends as persona_id — at most one per user. The
   // first voice to complete auto-selects itself (so existing users keep their
   // sound), but once the user picks one explicitly, later clones never steal
