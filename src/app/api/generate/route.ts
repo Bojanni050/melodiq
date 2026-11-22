@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   const {
     provider, providerModel, prompt, lyrics, instrumental, title,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags,
-    personaId, artistName, writerName,
+    personaId, dnaModelId, artistName, writerName,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
     poyoVariety,
     inspirationTrackIds, inspirationAudioWeight,
@@ -103,6 +103,17 @@ export async function POST(request: NextRequest) {
   if (provider === "apimart" && personaId && !instrumental && !lyrics?.trim()) {
     return NextResponse.json({ error: "Using a cloned voice requires lyrics (custom mode)" }, { status: 400 });
   }
+  // A DNA model carries both the style and the vocals it was trained on, so
+  // APIMart refuses it together with a persona. The UI lets the user pick one;
+  // the API enforces it too.
+  const normalizedDnaModelId =
+    typeof dnaModelId === "string" && dnaModelId.trim() ? dnaModelId.trim() : undefined;
+  if (normalizedDnaModelId && provider !== "apimart") {
+    return NextResponse.json({ error: "A DNA model only works with APIMart" }, { status: 400 });
+  }
+  if (normalizedDnaModelId && personaId) {
+    return NextResponse.json({ error: "Choose a cloned voice or a DNA model, not both" }, { status: 400 });
+  }
   // Empty or missing = no inspiration = normal generation. Only a
   // non-empty list takes the inspo path (and then requires APIMart or PoYo v6).
   const normalizedInspirationTrackIds = Array.isArray(inspirationTrackIds)
@@ -110,6 +121,14 @@ export async function POST(request: NextRequest) {
     : [];
   if (normalizedInspirationTrackIds.length > 0 && !supportsInspiration(provider, providerModel)) {
     return NextResponse.json({ error: "Inspiration requires APIMart v6 or PoYo v6/v5.5" }, { status: 400 });
+  }
+  // The inspiration path sends reference audio instead of a custom model, so the
+  // two cannot travel together.
+  if (normalizedDnaModelId && normalizedInspirationTrackIds.length > 0) {
+    return NextResponse.json(
+      { error: "A DNA model cannot be combined with inspiration references" },
+      { status: 400 },
+    );
   }
   const normalizedInspirationAudioWeight =
     typeof inspirationAudioWeight === "number" && Number.isFinite(inspirationAudioWeight)
@@ -179,6 +198,7 @@ export async function POST(request: NextRequest) {
     userId, startTime, provider, providerModel, prompt: effectivePrompt, originalPrompt: normalizedPrompt, dnaPromptHint, lyrics, instrumental: instrumental || false,
     resolvedTitle, resolvedArtistName, resolvedWriterName,
     vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId,
+    dnaModelId: normalizedDnaModelId,
     normalizedPoYoModel, isMinimaxViaPoYo,
     apimartVariety, apimartMaxMode, apimartAudioFormat,
     poyoVariety: normalizedPoYoVariety,

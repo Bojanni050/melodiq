@@ -3,30 +3,12 @@ import { getSetting } from "@/lib/settings";
 import { buildApimartInspoBody } from "@/lib/providers/apimart-inspo";
 import { buildApimartDownloadBody } from "@/lib/providers/apimart-download";
 import { buildApimartPersonaBody } from "@/lib/providers/apimart-persona";
+import { buildApimartGenerationBody, type ApimartGenerationParams } from "@/lib/providers/apimart-generation-body";
+
+export type { ApimartGenerationParams };
 
 const APIMART_BASE_URL = "https://api.apimart.ai/v1/music";
 const APIMART_ROOT_URL = "https://api.apimart.ai";
-
-export interface ApimartGenerationParams {
-  prompt: string;
-  custom: boolean;
-  version: string;
-  lyrics?: string;
-  title?: string;
-  style?: string;
-  instrumental?: boolean;
-  vocalGender?: "Male" | "Female";
-  negativeTags?: string;
-  styleWeight?: number;
-  weirdnessConstraint?: number;
-  audioWeight?: number;
-  personaId?: string;
-  // V6-specific options
-  variety?: "off" | "normal" | "high" | "extra" | "max";
-  maxMode?: boolean;
-  audioFormat?: "mp3" | "m4a" | "wav";
-  durationS?: number;
-}
 
 export interface ApimartTrackResult {
   audioUrl: string;
@@ -72,32 +54,7 @@ export async function createApimartGeneration(
 ): Promise<{ taskId: string }> {
   const apiKey = await getApimartApiKey();
 
-  const body: Record<string, any> = {
-    model: "suno",
-    custom: params.custom,
-    version: params.version,
-    prompt: params.custom ? params.lyrics : params.prompt,
-  };
-
-  if (params.custom) {
-    body.instrumental = !!params.instrumental;
-    if (params.title) body.title = params.title;
-    if (params.style) body.style = params.style;
-    if (params.negativeTags) body.negative_tags = params.negativeTags;
-    if (typeof params.styleWeight === "number") body.style_weight = params.styleWeight;
-    if (typeof params.weirdnessConstraint === "number") body.weirdness_constraint = params.weirdnessConstraint;
-    if (typeof params.audioWeight === "number") body.audio_weight = params.audioWeight;
-    if (params.personaId) body.persona_id = params.personaId;
-  }
-  if (params.vocalGender) body.vocal_gender = params.vocalGender;
-
-  // V6-specific options (only send when explicitly set)
-  if (params.variety && params.variety !== "off") body.variety = params.variety;
-  if (params.maxMode === true) body.max_mode = true;
-  if (params.audioFormat && params.audioFormat !== "mp3") body.audio_format = params.audioFormat;
-  if (typeof params.durationS === "number" && params.durationS >= 10 && params.durationS <= 360) {
-    body.duration_s = params.durationS;
-  }
+  const body = buildApimartGenerationBody(params);
 
   try {
     const response = await axios.post(`${APIMART_BASE_URL}/generations`, body, {
@@ -232,6 +189,47 @@ export async function createApimartPersona(params: {
     }
 
     console.log(`[apimart] persona creation submitted — taskId=${taskId}`);
+    return { taskId };
+  } catch (error: any) {
+    if (error.response) throw mapApimartError(error);
+    throw error;
+  }
+}
+
+/**
+ * Trains a custom Suno model from reference clips (`createModel`).
+ *
+ * This is the only documented route from outside audio to a reusable sound:
+ * 6–24 publicly reachable MP3/WAV/M4A URLs, and APIMart returns a `model_id`
+ * that is passed to a generation as `custom_model_id`. Everything is trained —
+ * the voice in the clips as much as the production — and one bad file fails the
+ * whole run, so callers resolve the URLs and check them before calling.
+ */
+export async function createApimartModel(params: {
+  name: string;
+  audioUrls: string[];
+}): Promise<{ taskId: string }> {
+  const apiKey = await getApimartApiKey();
+
+  try {
+    const response = await axios.post(
+      `${APIMART_BASE_URL}/generations/createModel`,
+      { model: "suno", name: params.name, audio_urls: params.audioUrls },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 30000,
+      }
+    );
+
+    const taskId = response.data?.data?.[0]?.task_id;
+    if (!taskId) {
+      throw new Error(`APIMart returned no task_id for createModel. Response: ${JSON.stringify(response.data)}`);
+    }
+
+    console.log(`[apimart] model creation submitted — taskId=${taskId} clips=${params.audioUrls.length}`);
     return { taskId };
   } catch (error: any) {
     if (error.response) throw mapApimartError(error);

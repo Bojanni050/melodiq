@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { tracks, clonedVoices } from "@/db/schema";
+import { tracks, clonedVoices, dnaModels } from "@/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { generateLyria } from "@/lib/providers/lyria";
 import { generatePoYo, generateMinimaxMusic26 } from "@/lib/providers/poyo";
@@ -53,6 +53,12 @@ export type GenerationContext = {
   audioWeight?: number;
   negativeTags?: string;
   personaId?: string;
+  /**
+   * APIMart custom model trained from the user's own tracks (Melody DNA).
+   * It brings its own style and vocals, so it excludes `personaId` and the
+   * inspiration reference path.
+   */
+  dnaModelId?: string;
   normalizedPoYoModel: string;
   isMinimaxViaPoYo: boolean;
   // APIMart Suno V6 options
@@ -454,7 +460,7 @@ export async function dispatchApiframe(ctx: GenerationContext, track: any): Prom
 // ---------------------------------------------------------------------------
 
 export async function dispatchApimart(ctx: GenerationContext, track: any): Promise<NextResponse> {
-  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId, apimartVariety, apimartMaxMode, apimartAudioFormat } = ctx;
+  const { userId, startTime, provider, providerModel, prompt, lyrics, instrumental, resolvedTitle, resolvedArtistName, resolvedWriterName, vocalGender, weirdness, styleInfluence, audioWeight, negativeTags, personaId, dnaModelId, apimartVariety, apimartMaxMode, apimartAudioFormat } = ctx;
 
   let verifiedPersonaId: string | undefined;
   let verifiedVoiceId: string | null = null;
@@ -464,16 +470,37 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
     verifiedPersonaId = personaId;
     verifiedVoiceId = ownedVoice.id;
   }
+
+  // A DNA model is identified by its APIMart model id, but the row id is what
+  // the track points at, so ownership is checked on our own record.
+  let verifiedDnaModelId: string | undefined;
+  let verifiedDnaModelRowId: string | null = null;
+  if (dnaModelId) {
+    const [ownedModel] = await db
+      .select({ id: dnaModels.id, modelId: dnaModels.modelId })
+      .from(dnaModels)
+      .where(and(eq(dnaModels.userId, userId), eq(dnaModels.id, dnaModelId), eq(dnaModels.status, "completed")));
+    if (!ownedModel?.modelId) throw new Error("DNA model not found or not ready yet");
+    verifiedDnaModelId = ownedModel.modelId;
+    verifiedDnaModelRowId = ownedModel.id;
+  }
+  // APIMart rejects persona_id together with custom_model_id, so the persona
+  // wins only when no model was picked (the UI prevents both).
+  if (verifiedDnaModelId) verifiedPersonaId = undefined;
+
   // Both track rows answer "which voice sang this" in the same way own_voice
   // answers whether one did, so Melody DNA can rank voices by real use.
-  const voiceFields = { ownVoice: instrumental ? null : Boolean(verifiedPersonaId), voiceId: instrumental ? null : verifiedVoiceId };
+  const voiceFields = { ownVoice: instrumental ? null : Boolean(verifiedPersonaId || verifiedDnaModelId), voiceId: instrumental ? null : verifiedVoiceId };
+  // The model that shaped the sound is remembered on the track, so a later DNA
+  // rebuild can tell which model a result came from.
+  const modelFields = { dnaModelId: verifiedDnaModelRowId };
 
-  const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId;
-  const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v6", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined, variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined, maxMode: apimartMaxMode === true ? true : undefined, audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined });
+  const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId || !!verifiedDnaModelId;
+  const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v6", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, customModelId: verifiedDnaModelId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined, variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined, maxMode: apimartMaxMode === true ? true : undefined, audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined });
 
   const [t1, t2] = await Promise.all([
-    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...voiceFields }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...voiceFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...voiceFields, ...modelFields }).where(eq(tracks.id, track.id!)).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...voiceFields, ...modelFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];

@@ -46,6 +46,7 @@ export default memo(function StudioForm({
     audioWeight,
     negativeTags,
     usePersonaVoice,
+    useDnaModel,
     inspiration,
     addInspirationTrack,
     removeInspirationTrack,
@@ -949,8 +950,9 @@ ${t("studio.yourChorusHere")}`}
               <p className="text-[10px] text-ink-dim mt-1">{t("studio.customTrueHint")}</p>
             </div>
 
-            {/* Audio Weight — only relevant when a cloned/uploaded voice is used */}
-            {usePersonaVoice && (
+            {/* Audio Weight — relevant to a cloned voice and to a DNA model,
+                both of which pull the result towards their reference audio */}
+            {(usePersonaVoice || useDnaModel) && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-sm font-medium text-ink-muted">{t("studio.audioWeightLabel")}</label>
@@ -1085,13 +1087,14 @@ ${t("studio.yourChorusHere")}`}
         </section>
       )}
 
-      {/* Saved voice (APIMart persona) — sits with the vocal controls, not in
-          the provider sliders, so picking a voice is part of the normal form.
-          Persona requires lyrics, so an instrumental track hides it. */}
-      {!instrumental && selectedProviders.apimart && (
+      {/* Voice / model — sits with the vocal controls, not in the provider
+          sliders, so picking one is part of the normal form. A saved voice
+          needs lyrics, so it hides itself on an instrumental; a DNA model also
+          works instrumentally, which is why the section stays. */}
+      {selectedProviders.apimart && (
         <section className="section-card">
           <h3 className="text-sm font-semibold text-ink-muted mb-3">{t("studio.voiceHeading")}</h3>
-          <VoiceCloneToggle />
+          <VoiceCloneToggle instrumental={instrumental} />
         </section>
       )}
 

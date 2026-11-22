@@ -390,6 +390,11 @@ const nl: typeof en = {
     voiceHeading: "Stem",
     noSavedVoiceOption: "Geen opgeslagen stem",
     unnamedVoiceOption: "Naamloze stem",
+    dnaModelPickerLabel: "DNA-model",
+    noDnaModelOption: "Geen DNA-model",
+    dnaModelHint:
+      "Suno zingt en speelt in de stem en stijl waarop dit model is getraind. Kies een stem óf een DNA-model, niet beide.",
+    dnaModelNotReady: "Dat DNA-model is nog niet klaar",
   },
   melody: {
     heading: "Melodie",

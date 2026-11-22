@@ -387,6 +387,11 @@ const en = {
     voiceHeading: "Voice",
     noSavedVoiceOption: "No saved voice",
     unnamedVoiceOption: "Unnamed voice",
+    dnaModelPickerLabel: "DNA model",
+    noDnaModelOption: "No DNA model",
+    dnaModelHint:
+      "Suno sings and plays in the voice and style this model was trained on. Pick a voice or a DNA model — not both.",
+    dnaModelNotReady: "That DNA model is not ready yet",
   },
   melody: {
     heading: "Melody",

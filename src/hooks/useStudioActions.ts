@@ -90,6 +90,7 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
       audioWeight,
       negativeTags,
       usePersonaVoice,
+      useDnaModel,
       apimartVariety,
       apimartMaxMode,
       apimartAudioFormat,
@@ -171,6 +172,24 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
         } catch {}
       }
 
+      // A DNA model is the alternative to a cloned voice: it brings style and
+      // vocals in one, and APIMart rejects the two together. The selected model
+      // wins when both somehow ended up on.
+      let dnaModelId: string | undefined;
+      if (useDnaModel && providerEntries.some(([provider]) => provider === "apimart")) {
+        try {
+          const modelsRes = await fetch("/api/dna-model");
+          if (modelsRes.ok) {
+            const { models } = await modelsRes.json();
+            dnaModelId =
+              models?.find((m: any) => m.isSelected && m.status === "completed")?.id ??
+              models?.find((m: any) => m.status === "completed")?.id ??
+              undefined;
+          }
+        } catch {}
+      }
+      if (dnaModelId) personaId = undefined;
+
       // Read once, right before the requests: the habit describes this
       // generation, and consuming it resets the flags for the next one.
       const habit = useStudioStore.getState().consumeHabit();
@@ -204,6 +223,9 @@ export function useStudioActions({ tracksRef, fetchTracks, onWorkspaceOpened }: 
               // A persona only makes sense on a vocal track: APIMart rejects
               // persona_id without lyrics, and an instrumental has no singer.
               personaId: provider === "apimart" && !instrumental ? personaId : undefined,
+              // The custom model trained from the user's own music (Melody DNA).
+              // It excludes personaId server-side, so only one is ever sent.
+              dnaModelId: provider === "apimart" ? dnaModelId : undefined,
               // APIMart Suno V6 options
               apimartVariety: provider === "apimart" ? apimartVariety : undefined,
               apimartMaxMode: provider === "apimart" ? apimartMaxMode : undefined,

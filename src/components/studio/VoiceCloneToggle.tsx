@@ -19,18 +19,34 @@ interface ClonedVoice {
 
 const POLL_INTERVAL_MS = 4000;
 
-export default function VoiceCloneToggle() {
+/** A custom APIMart model trained from the user's own tracks (Melody DNA). */
+interface DnaModel {
+  id: string;
+  name: string;
+  status: "pending" | "completed" | "failed";
+  modelId: string | null;
+  isSelected: boolean;
+  error: string | null;
+  createdAt: string;
+}
+
+export default function VoiceCloneToggle({ instrumental = false }: { instrumental?: boolean }) {
   const t = useT();
   const usePersonaVoice = useStudioStore((s) => s.usePersonaVoice);
   const setUsePersonaVoice = useStudioStore((s) => s.setUsePersonaVoice);
+  const useDnaModel = useStudioStore((s) => s.useDnaModel);
+  const setUseDnaModel = useStudioStore((s) => s.setUseDnaModel);
 
   const [voices, setVoices] = useState<ClonedVoice[]>([]);
+  const [models, setModels] = useState<DnaModel[]>([]);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchVoices = useCallback(async () => {
     try {
@@ -47,11 +63,30 @@ export default function VoiceCloneToggle() {
     void fetchVoices();
   }, [fetchVoices]);
 
+  const fetchModels = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dna-model");
+      if (!res.ok) return;
+      const data = await res.json();
+      setModels(data.models ?? []);
+    } finally {
+      setModelsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchModels();
+  }, [fetchModels]);
+
   const activeVoice = voices[0];
   const completedVoices = voices.filter((v) => v.status === "completed");
   // The explicit pick wins; before the user ever picks one, the first
   // completed voice keeps the pre-picker behaviour.
   const selectedVoice = completedVoices.find((v) => v.isSelected) ?? completedVoices[0];
+
+  const pendingModel = models.find((m) => m.status === "pending");
+  const completedModels = models.filter((m) => m.status === "completed");
+  const selectedModel = completedModels.find((m) => m.isSelected) ?? completedModels[0];
 
   useEffect(() => {
     if (pollTimerRef.current) {
@@ -80,6 +115,34 @@ export default function VoiceCloneToggle() {
     // and turning the persona off then would undo the stored choice.
     if (loaded && !selectedVoice && usePersonaVoice) setUsePersonaVoice(false);
   }, [loaded, selectedVoice, usePersonaVoice, setUsePersonaVoice]);
+
+  // A model can finish training while the Studio is open — same 4s cadence as
+  // the voice poll, so the picker fills in without a reload.
+  useEffect(() => {
+    if (modelPollTimerRef.current) {
+      clearTimeout(modelPollTimerRef.current);
+      modelPollTimerRef.current = null;
+    }
+    if (!pendingModel) return;
+
+    modelPollTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/dna-model/status/${pendingModel.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setModels((prev) => prev.map((m) => (m.id === data.model.id ? data.model : m)));
+        }
+      } catch {}
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      if (modelPollTimerRef.current) clearTimeout(modelPollTimerRef.current);
+    };
+  }, [pendingModel]);
+
+  useEffect(() => {
+    if (modelsLoaded && !selectedModel && useDnaModel) setUseDnaModel(false);
+  }, [modelsLoaded, selectedModel, useDnaModel, setUseDnaModel]);
 
   const handleSelectVoice = useCallback(async (voiceId: string) => {
     try {
@@ -118,6 +181,38 @@ export default function VoiceCloneToggle() {
     [handleSelectVoice, setUsePersonaVoice]
   );
 
+  /**
+   * Same contract as the voice picker: the selection only becomes active after
+   * the server accepted it, because useStudioActions reads the stored selection
+   * when it builds the request. Picking a model turns the persona off (the
+   * store keeps the two mutually exclusive).
+   */
+  const handleModelChange = useCallback(
+    async (modelId: string) => {
+      if (!modelId) {
+        setUseDnaModel(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/dna-model/select", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: modelId }),
+        });
+        if (!res.ok) {
+          setError(t("studio.dnaModelNotReady"));
+          return;
+        }
+        const data = await res.json();
+        if (data.models) setModels(data.models);
+        setUseDnaModel(true);
+      } catch {
+        setError(t("studio.dnaModelNotReady"));
+      }
+    },
+    [setUseDnaModel, t]
+  );
+
   const handleFileSelected = useCallback(async (file: File) => {
     setError(null);
     setUploading(true);
@@ -140,6 +235,9 @@ export default function VoiceCloneToggle() {
 
   return (
     <div className="space-y-3">
+      {/* An instrumental has no singer, and APIMart rejects persona_id without
+          lyrics — the voice controls only make sense on a vocal track. */}
+      {!instrumental && (
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -207,10 +305,11 @@ export default function VoiceCloneToggle() {
           }}
         />
       </div>
+      )}
 
       {error && <p className="text-[10px] text-red-400 mt-2">{error}</p>}
 
-      {completedVoices.length > 0 && (
+      {!instrumental && completedVoices.length > 0 && (
         <label className="flex items-center gap-2">
           <span className="text-[10px] text-ink-dim shrink-0">{t("studio.voicePickerLabel")}</span>
           <select
@@ -230,8 +329,31 @@ export default function VoiceCloneToggle() {
         </label>
       )}
 
+      {completedModels.length > 0 && (
+        <label className="flex items-center gap-2">
+          <span className="text-[10px] text-ink-dim shrink-0">{t("studio.dnaModelPickerLabel")}</span>
+          <select
+            value={useDnaModel && selectedModel ? selectedModel.id : ""}
+            onChange={(e) => void handleModelChange(e.target.value)}
+            aria-label={t("studio.dnaModelPickerLabel")}
+            className="input-field text-sm py-1.5 min-w-0"
+          >
+            <option value="">{t("studio.noDnaModelOption")}</option>
+            {completedModels.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       {usePersonaVoice && selectedVoice && (
         <p className="text-[10px] text-ink-dim">{t("studio.personaVoiceHint")}</p>
+      )}
+
+      {useDnaModel && selectedModel && (
+        <p className="text-[10px] text-ink-dim">{t("studio.dnaModelHint")}</p>
       )}
 
       <NameVoiceDialog

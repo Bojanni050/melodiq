@@ -33,6 +33,11 @@ interface StudioState {
   audioWeight: number;
   negativeTags: string;
   usePersonaVoice: boolean;
+  /**
+   * APIMart custom model trained from the user's music (Melody DNA). APIMart
+   * takes a persona or a model, never both, so the two toggles clear each other.
+   */
+  useDnaModel: boolean;
   // APIMart Suno V6 options
   apimartVariety: "off" | "normal" | "high" | "extra" | "max";
   apimartMaxMode: boolean;
@@ -94,6 +99,7 @@ interface StudioState {
   setAudioWeight: (val: number) => void;
   setNegativeTags: (val: string) => void;
   setUsePersonaVoice: (val: boolean) => void;
+  setUseDnaModel: (val: boolean) => void;
   setApimartVariety: (val: "off" | "normal" | "high" | "extra" | "max") => void;
   setApimartMaxMode: (val: boolean) => void;
   setApimartAudioFormat: (val: "mp3" | "m4a" | "wav") => void;
@@ -134,6 +140,7 @@ export const useStudioStore = create<StudioState>()(
       audioWeight: 50,
       negativeTags: "",
       usePersonaVoice: false,
+      useDnaModel: false,
       apimartVariety: "off",
       apimartMaxMode: false,
       apimartAudioFormat: "mp3",
@@ -198,7 +205,8 @@ export const useStudioStore = create<StudioState>()(
       setStyleInfluence: (val) => set({ styleInfluence: val, habitAdvanced: true }),
       setAudioWeight: (val) => set({ audioWeight: val, habitAdvanced: true }),
       setNegativeTags: (val) => set({ negativeTags: val, habitAdvanced: true }),
-      setUsePersonaVoice: (val) => set({ usePersonaVoice: val, habitAdvanced: true }),
+      setUsePersonaVoice: (val) => set({ usePersonaVoice: val, useDnaModel: false, habitAdvanced: true }),
+      setUseDnaModel: (val) => set({ useDnaModel: val, usePersonaVoice: false, habitAdvanced: true }),
       setApimartVariety: (val) => set({ apimartVariety: val, habitAdvanced: true }),
       setApimartMaxMode: (val) => set({ apimartMaxMode: val, habitAdvanced: true }),
       setApimartAudioFormat: (val) => set({ apimartAudioFormat: val, habitAdvanced: true }),
@@ -280,6 +288,7 @@ export const useStudioStore = create<StudioState>()(
           audioWeight: 50,
           negativeTags: "",
           usePersonaVoice: false,
+          useDnaModel: false,
           apimartVariety: "off",
           apimartMaxMode: false,
           apimartAudioFormat: "mp3",

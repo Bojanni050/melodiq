@@ -536,6 +536,29 @@ CREATE TABLE IF NOT EXISTS "dna_trait_history" (
 );
 CREATE INDEX IF NOT EXISTS "dna_trait_history_profile_key_idx" ON "dna_trait_history"("profile_id", "trait_key");
 CREATE INDEX IF NOT EXISTS "dna_trait_history_user_changed_idx" ON "dna_trait_history"("user_id", "changed_at");
+-- Custom APIMart models trained from the user's own tracks (see schema.ts
+-- dnaModels): one row per training job, keyed by APIMart's task id first and its
+-- model id once the job completes.
+CREATE TABLE IF NOT EXISTS "dna_models" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL,
+  "apimart_task_id" varchar(255) NOT NULL,
+  "model_id" varchar(255),
+  "name" varchar(160) NOT NULL,
+  "status" varchar(20) DEFAULT 'pending' NOT NULL,
+  "training_track_ids" text NOT NULL,
+  "training_track_count" integer DEFAULT 0 NOT NULL,
+  "dna_profile_name" varchar(160),
+  "dna_profile_computed_at" timestamp,
+  "training_dna_snapshot" text,
+  "is_selected" boolean DEFAULT false NOT NULL,
+  "error" text,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "dna_models_user_id_idx" ON "dna_models"("user_id");
+-- Which model shaped a track; mutually exclusive with voice_id (persona).
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS dna_model_id uuid;
 `;
 
 const alterTracksSql = `

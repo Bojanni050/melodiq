@@ -171,6 +171,10 @@ export const tracks = pgTable("tracks", {
   // rank by actual use instead of library order; null means the same as for
   // own_voice (instrumental, provider without persona support, or pre-migration).
   voiceId: uuid("voice_id"),
+  // The DNA model (APIMart custom model trained on this user's own catalogue)
+  // that generated this track. APIMart allows either a persona or a custom
+  // model, never both, so this is the model counterpart of voice_id.
+  dnaModelId: uuid("dna_model_id"),
   isCollaboration: boolean("is_collaboration").default(false).notNull(),
   status: varchar("status", { length: 20 }).default("pending").notNull(),
   audioUrl: text("audio_url"),
@@ -863,6 +867,51 @@ export const dnaTraitHistory = pgTable("dna_trait_history", {
   index("dna_trait_history_profile_key_idx").on(table.profileId, table.traitKey),
   index("dna_trait_history_user_changed_idx").on(table.userId, table.changedAt),
 ]);
+
+/**
+ * APIMart custom models trained on the user's own catalogue ("DNA models").
+ * APIMart trains from 6–24 reference audio clips and returns a model id that is
+ * used as `custom_model_id` instead of a persona — the two are mutually
+ * exclusive, so a DNA model and a cloned voice cannot sing the same track.
+ *
+ * The reference clips are picked from `tracks` by DNA fit (lib/dna/model-fit.ts)
+ * but only their ids are stored. `trainingDnaSnapshot` keeps the trait values
+ * the selection was ranked against: a model is a frozen snapshot, and without
+ * that record there is no way to tell a year later what "your style" meant.
+ */
+export const dnaModels = pgTable("dna_models", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull(),
+  apimartTaskId: varchar("apimart_task_id", { length: 255 }).notNull(),
+  // The custom model id the generation request needs; null until training ends.
+  modelId: varchar("model_id", { length: 255 }),
+  name: varchar("name", { length: 160 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  // JSON array of track ids used as reference clips. Text on purpose: the list
+  // is written once, never queried into, and read by the UI only.
+  trainingTrackIds: text("training_track_ids").notNull(),
+  trainingTrackCount: integer("training_track_count").default(0).notNull(),
+  // DNA profile the selection came from, so a model can be traced back to it.
+  dnaProfileName: varchar("dna_profile_name", { length: 160 }),
+  dnaProfileComputedAt: timestamp("dna_profile_computed_at"),
+  trainingDnaSnapshot: text("training_dna_snapshot"),
+  // The one model the Studio sends as custom_model_id — at most one per user,
+  // mirroring cloned_voices.is_selected. Never auto-selected: training costs
+  // money and switching sound is a user decision.
+  isSelected: boolean("is_selected").notNull().default(false),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("dna_models_user_id_idx").on(table.userId),
+]);
+
+export const dnaModelsRelations = relations(dnaModels, ({ one }) => ({
+  user: one(users, {
+    fields: [dnaModels.userId],
+    references: [users.id],
+  }),
+}));
 
 export const dnaProfilesRelations = relations(dnaProfiles, ({ one, many }) => ({
   user: one(users, {
