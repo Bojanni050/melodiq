@@ -49,6 +49,18 @@ interface Draft {
   slug: string;
 }
 
+const DRAFT_FIELDS = ["bio", "bioNl", "bioShort", "bioShortNl", "slug"] as const;
+
+function draftFromRow(row: ArtistPageRow): Draft {
+  return {
+    bio: row.bio ?? "",
+    bioNl: row.bioNl ?? "",
+    bioShort: row.bioShort ?? "",
+    bioShortNl: row.bioShortNl ?? "",
+    slug: row.slug,
+  };
+}
+
 function Field({
   label,
   hint,
@@ -90,7 +102,15 @@ export default function ArtistPagesPage() {
   // Fall back to the first page when nothing is selected or the selected page was deleted.
   const activePage = pages.find((p) => p.id === activeId) ?? pages[0] ?? null;
 
-  const load = useCallback(async () => {
+  /**
+   * Reloads the rows from the server.
+   *
+   * `keepDrafts` re-seeds only the pages that are new to this response: uploads
+   * (image, hero, gallery) and create/delete all go through this reload, and
+   * resetting the drafts there would throw away bio text the user typed but has
+   * not saved yet. Saving itself does not reload, so dropped keys are safe.
+   */
+  const load = useCallback(async (options?: { keepDrafts?: boolean }) => {
     const res = await fetch("/api/artist-pages");
     if (res.status === 401) {
       router.replace("/login");
@@ -99,22 +119,16 @@ export default function ArtistPagesPage() {
     if (res.ok) {
       const data = await res.json();
       const rows: ArtistPageRow[] = data.pages ?? [];
+      const keepDrafts = options?.keepDrafts === true;
       setPages(rows);
       setAvailableAliases(data.availableAliases ?? []);
-      setDrafts(
-        Object.fromEntries(
-          rows.map((row) => [
-            row.id,
-            {
-              bio: row.bio ?? "",
-              bioNl: row.bioNl ?? "",
-              bioShort: row.bioShort ?? "",
-              bioShortNl: row.bioShortNl ?? "",
-              slug: row.slug,
-            },
-          ])
-        )
-      );
+      setDrafts((prev) => {
+        const next: Record<string, Draft> = {};
+        rows.forEach((row) => {
+          next[row.id] = keepDrafts && prev[row.id] ? prev[row.id] : draftFromRow(row);
+        });
+        return next;
+      });
     }
     setLoading(false);
   }, [router]);
@@ -143,7 +157,7 @@ export default function ArtistPagesPage() {
     });
     if (res.ok) {
       setMessage(t("artistPages.created"));
-      await load();
+      await load({ keepDrafts: true });
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error || t("artistPages.createFailed"));
@@ -170,7 +184,22 @@ export default function ArtistPagesPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      setPages((prev) => prev.map((row) => (row.id === id ? { ...row, ...data.page } : row)));
+      const page = data.page as Partial<ArtistPageRow>;
+      setPages((prev) => prev.map((row) => (row.id === id ? { ...row, ...page } : row)));
+      // The server normalizes and trims what it stores (notably the slug), so
+      // mirror the saved row back into the form — but only for fields the user
+      // did not touch again while the request was in flight.
+      setDrafts((prev) => {
+        const current = prev[id];
+        if (!current) return prev;
+        const next = { ...current };
+        for (const field of DRAFT_FIELDS) {
+          if (current[field] === draft[field]) {
+            next[field] = (page[field] as string | null | undefined) ?? "";
+          }
+        }
+        return { ...prev, [id]: next };
+      });
       setMessage(t("artistPages.saved"));
       flash(id);
     } else {
@@ -186,7 +215,7 @@ export default function ArtistPagesPage() {
     setError("");
     const res = await fetch(`/api/artist-pages/${id}`, { method: "DELETE" });
     if (res.ok) {
-      await load();
+      await load({ keepDrafts: true });
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error || t("artistPages.deleteFailed"));
@@ -204,7 +233,8 @@ export default function ArtistPagesPage() {
     if (res.ok) {
       // Re-read instead of trusting the local flag: the image URL is derived
       // from the slug server-side, so the row has to come back with the key.
-      await load();
+      // Unsaved bio text stays put in the drafts.
+      await load({ keepDrafts: true });
       setMessage(t("account.imageUploaded"));
     } else {
       const data = await res.json().catch(() => ({}));
@@ -221,7 +251,7 @@ export default function ArtistPagesPage() {
     files.forEach((file) => fd.append("files", file));
     const res = await fetch(`/api/artist-pages/${id}/gallery`, { method: "POST", body: fd });
     if (res.ok) {
-      await load();
+      await load({ keepDrafts: true });
       setMessage(t("account.imageUploaded"));
     } else {
       const data = await res.json().catch(() => ({}));
@@ -240,7 +270,7 @@ export default function ArtistPagesPage() {
       body: JSON.stringify({ photoId }),
     });
     if (res.ok) {
-      await load();
+      await load({ keepDrafts: true });
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error || t("artistPages.deleteFailed"));
@@ -314,13 +344,7 @@ export default function ArtistPagesPage() {
                   </div>
 
                   {pages.filter((page) => page.id === activePage?.id).map((page) => {
-                    const draft = drafts[page.id] ?? {
-                      bio: page.bio ?? "",
-                      bioNl: page.bioNl ?? "",
-                      bioShort: page.bioShort ?? "",
-                      bioShortNl: page.bioShortNl ?? "",
-                      slug: page.slug,
-                    };
+                    const draft = drafts[page.id] ?? draftFromRow(page);
                     const isSaving = savingId === page.id;
                     return (
                       <article

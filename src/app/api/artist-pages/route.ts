@@ -26,6 +26,8 @@ export async function GET() {
         slug: artistPages.slug,
         bio: artistPages.bio,
         bioNl: artistPages.bioNl,
+        bioShort: artistPages.bioShort,
+        bioShortNl: artistPages.bioShortNl,
         imageS3Key: artistPages.imageS3Key,
         heroS3Key: artistPages.heroS3Key,
         galleryS3Keys: artistPages.galleryS3Keys,
