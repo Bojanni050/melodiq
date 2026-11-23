@@ -221,14 +221,17 @@ export function categoryGapIndices(traits: { category: string }[]): number[] {
   return gaps;
 }
 
-/** Bead size in SVG units: 6 when far, 11 when close. */
+/** Bead size in SVG units: 6 when far, 10 when close. */
 export function nodeRadius(depth: number): number {
-  return 6 + 5 * ((depth + 1) / 2);
+  return 6 + 4 * ((depth + 1) / 2);
 }
 
-/** Strand width in SVG units; a slim tube, a little thicker on the near side. */
+/**
+ * Strand width in SVG units. Proportioned to the reference artwork: the tube is
+ * over half a row tall, and the near side is noticeably fatter.
+ */
 export function strandWidth(depth: number): number {
-  return 4 + 4 * ((depth + 1) / 2);
+  return 8 + 5 * ((depth + 1) / 2);
 }
 
 /**

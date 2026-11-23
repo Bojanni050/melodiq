@@ -30,20 +30,20 @@ const LABEL_OFFSET = 14;
 const LABEL_MAX_WIDTH = HELIX_WIDTH - HELIX_LABEL_X - 6;
 const PILL_HEIGHT = 26;
 
-// Illustration palette for the helix, blended by depth. Not UI chrome.
+// Illustration palette for the helix: glossy teal tubes, pale mint crossbars and
+// glassy joints, following the reference artwork. Not UI chrome.
 // ds-allow-hardcode:start
 const HELIX_COLORS = {
-  strandFar: [63, 107, 94],
-  strandNear: [180, 216, 203],
-  strandEdge: "#effff9",
-  outline: "#07130f",
-  rungFar: [88, 106, 98],
-  rungNear: [196, 208, 202],
-  rungEdge: "#f4fbf8",
-  beadLight: "#7fe0c3",
-  beadMid: "#20806a",
-  beadDark: "#0b362d",
-  beadRim: "#a6ecd5",
+  strandNear: "url(#dna-strand-near)",
+  strandFar: "url(#dna-strand-far)",
+  outlineNear: "#102e2b",
+  outlineFar: "#183d39",
+  sheen: "#eaf6ef",
+  rungBody: "#a8c0b7",
+  rungOutline: "#0d2b26",
+  rungEdge: "#dce7df",
+  beadRim: "#6eaa9b",
+  beadSpecular: "#e1eee6",
   pillFill: "#08120f",
   pillStroke: "#26382f",
   pillText: "#dbe7e1",
@@ -52,22 +52,16 @@ const HELIX_COLORS = {
 } as const;
 // ds-allow-hardcode:end
 
-/** Blends two RGB triples; `t` 0 gives `far`, 1 gives `near`. */
-function mix(far: readonly number[], near: readonly number[], t: number): string {
-  const channel = (index: number) => Math.round(far[index] + (near[index] - far[index]) * t);
-  return `rgb(${channel(0)}, ${channel(1)}, ${channel(2)})`;
-}
-
 /**
  * The projected helix from lib/dna/helix.ts, drawn as SVG. Rotation is local
  * state so a drag or the spin toggle never touches the profile payload.
  *
- * The look is a slim glassy tube with chunky rungs: each strand is a dark
- * outline under a pale body, rungs are grey bars ending in shaded beads, and
- * labels are dark pills that sit right next to their bead. Depth is encoded in
- * colour and size rather than opacity, so overlapping pieces never stack into
- * blotches. Painting order does the 3D work: far strand, back half of the
- * rungs, near strand, front half, beads.
+ * The look follows the teal reference artwork: two glossy gradient tubes with a
+ * dark under-stroke, pale mint crossbars and glassy spherical joints. Depth is
+ * encoded in colour, size and opacity rather than filters — a Gaussian blur on
+ * every segment would re-render on every spin frame — so the shape keeps its 3D
+ * read while staying cheap on mobile. Painting order does the rest: far strand,
+ * back half of the rungs, near strand, front half, beads.
  */
 export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey = null }: Props) {
   const t = useT();
@@ -142,11 +136,18 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
   }
 
   /**
-   * One strand group in three passes (outline, body, highlight). Drawing the
-   * passes separately keeps a segment's wider outline from cutting notches into
-   * the body of the segment painted just before it.
+   * One strand in three passes (dark under-stroke, gradient body, top sheen).
+   * The passes are separate so a segment's wider under-stroke never cuts a notch
+   * into the body of the segment painted just before it.
    */
-  const drawStrand = (segments: typeof scene.segments, keyPrefix: string) => {
+  const drawStrand = (
+    segments: typeof scene.segments,
+    keyPrefix: string,
+    body: string,
+    outline: string,
+    underOpacity: number,
+    fade = 1
+  ) => {
     const line = (
       segment: (typeof segments)[number],
       key: string,
@@ -166,26 +167,28 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
         opacity={opacity}
       />
     );
+    const nearness = (depth: number) => (depth + 1) / 2;
     return (
       <g>
         {segments.map((segment, index) =>
-          line(segment, `${keyPrefix}-o-${index}`, HELIX_COLORS.outline, strandWidth(segment.depth) + 2.4, 0.9)
+          line(segment, `${keyPrefix}-o-${index}`, outline, strandWidth(segment.depth) + 5, underOpacity)
         )}
         {segments.map((segment, index) =>
           line(
             segment,
             `${keyPrefix}-b-${index}`,
-            mix(HELIX_COLORS.strandFar, HELIX_COLORS.strandNear, (segment.depth + 1) / 2),
-            strandWidth(segment.depth)
+            body,
+            strandWidth(segment.depth),
+            fade * (0.85 + 0.15 * nearness(segment.depth))
           )
         )}
         {segments.map((segment, index) =>
           line(
             segment,
             `${keyPrefix}-h-${index}`,
-            HELIX_COLORS.strandEdge,
-            Math.max(1, strandWidth(segment.depth) * 0.25),
-            0.12 + 0.3 * ((segment.depth + 1) / 2)
+            HELIX_COLORS.sheen,
+            Math.max(1, strandWidth(segment.depth) * 0.22),
+            0.05 + 0.16 * nearness(segment.depth)
           )
         )}
       </g>
@@ -208,54 +211,84 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
       >
         <defs>
           <radialGradient id="dna-bead-glow">
-            <stop offset="0%" stopColor={HELIX_COLORS.beadLight} stopOpacity="0.5" />
-            <stop offset="55%" stopColor={HELIX_COLORS.beadMid} stopOpacity="0.16" />
-            <stop offset="100%" stopColor={HELIX_COLORS.beadMid} stopOpacity="0" />
+            <stop offset="0%" stopColor="#7fe0c3" stopOpacity="0.5" />
+            <stop offset="55%" stopColor="#20806a" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#20806a" stopOpacity="0" />
           </radialGradient>
-          {/* A lit sphere: highlight up and left, shadow down and right. */}
-          <radialGradient id="dna-bead" cx="0.5" cy="0.5" r="0.5" fx="0.34" fy="0.3">
-            <stop offset="0%" stopColor={HELIX_COLORS.beadLight} />
-            <stop offset="45%" stopColor={HELIX_COLORS.beadMid} />
-            <stop offset="100%" stopColor={HELIX_COLORS.beadDark} />
+          {/* A glassy joint: highlight up-left, deep teal shadow down-right. */}
+          <radialGradient id="dna-bead" cx="0.32" cy="0.25" r="0.78">
+            <stop offset="0%" stopColor="#b5d2c7" />
+            <stop offset="22%" stopColor="#4e9b89" />
+            <stop offset="62%" stopColor="#176c5e" />
+            <stop offset="100%" stopColor="#073d37" />
           </radialGradient>
+          {/*
+           * The strands are short segments, so the gradient lives in user space
+           * and runs down the whole helix: together the pieces read as one glossy
+           * tube whose colour shifts with height, like the reference artwork.
+           */}
+          <linearGradient
+            id="dna-strand-near"
+            gradientUnits="userSpaceOnUse"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2={scene.height}
+          >
+            <stop offset="0%" stopColor="#8fb8ab" />
+            <stop offset="20%" stopColor="#4d9184" />
+            <stop offset="45%" stopColor="#1c6a5d" />
+            <stop offset="68%" stopColor="#7db3a4" />
+            <stop offset="100%" stopColor="#2b655c" />
+          </linearGradient>
+          <linearGradient
+            id="dna-strand-far"
+            gradientUnits="userSpaceOnUse"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2={scene.height}
+          >
+            <stop offset="0%" stopColor="#6f9a8e" />
+            <stop offset="22%" stopColor="#2f6f64" />
+            <stop offset="52%" stopColor="#124f46" />
+            <stop offset="78%" stopColor="#5a8c80" />
+            <stop offset="100%" stopColor="#1d574e" />
+          </linearGradient>
         </defs>
 
         {/* Furthest first: back halves of the rungs sit behind the far strand. */}
+        {scene.nodes.map((node) => (
+          <g key={`back-${node.key}`}>
+            <line
+              x1={HELIX_CENTER_X}
+              y1={node.y}
+              x2={node.back.x}
+              y2={node.back.y}
+              stroke={HELIX_COLORS.rungOutline}
+              strokeWidth={7.5}
+              strokeLinecap="round"
+              opacity={0.45}
+            />
+            <line
+              x1={HELIX_CENTER_X}
+              y1={node.y}
+              x2={node.back.x}
+              y2={node.back.y}
+              stroke={HELIX_COLORS.rungBody}
+              strokeWidth={4.5}
+              strokeLinecap="round"
+              opacity={0.55}
+            />
+          </g>
+        ))}
+
+        {drawStrand(farSegments, "far", HELIX_COLORS.strandFar, HELIX_COLORS.outlineFar, 0.5, 0.55)}
+
+        {/* Front halves of the rungs: mint bars crossing to the visible strand. */}
         {scene.nodes.map((node) => {
           const near = (node.depth + 1) / 2;
-          // The back end is as far away as the front end is near.
-          const backBar = mix(HELIX_COLORS.rungFar, HELIX_COLORS.rungNear, 1 - near);
-          return (
-            <g key={`back-${node.key}`}>
-              <line
-                x1={HELIX_CENTER_X}
-                y1={node.y}
-                x2={node.back.x}
-                y2={node.back.y}
-                stroke={HELIX_COLORS.outline}
-                strokeWidth={7.4}
-                strokeLinecap="round"
-                opacity={0.7}
-              />
-              <line
-                x1={HELIX_CENTER_X}
-                y1={node.y}
-                x2={node.back.x}
-                y2={node.back.y}
-                stroke={backBar}
-                strokeWidth={5}
-                strokeLinecap="round"
-              />
-            </g>
-          );
-        })}
-
-        {drawStrand(farSegments, "far")}
-
-        {/* Front halves of the rungs: chunky bars crossing to the visible strand. */}
-        {scene.nodes.map((node) => {
-          const near = (node.depth + 1) / 2;
-          const width = 5 + 2.5 * near;
+          const width = 6 + 2.5 * near;
           return (
             <g key={`front-${node.key}`}>
               <line
@@ -263,35 +296,35 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
                 y1={node.y}
                 x2={node.x}
                 y2={node.y}
-                stroke={HELIX_COLORS.outline}
-                strokeWidth={width + 2.4}
+                stroke={HELIX_COLORS.rungOutline}
+                strokeWidth={width + 3}
                 strokeLinecap="round"
-                opacity={0.75}
+                opacity={0.55}
               />
               <line
                 x1={HELIX_CENTER_X}
                 y1={node.y}
                 x2={node.x}
                 y2={node.y}
-                stroke={mix(HELIX_COLORS.rungFar, HELIX_COLORS.rungNear, near)}
+                stroke={HELIX_COLORS.rungBody}
                 strokeWidth={width}
                 strokeLinecap="round"
               />
               <line
                 x1={HELIX_CENTER_X}
-                y1={node.y - width * 0.22}
+                y1={node.y - width * 0.2}
                 x2={node.x}
-                y2={node.y - width * 0.22}
+                y2={node.y - width * 0.2}
                 stroke={HELIX_COLORS.rungEdge}
-                strokeWidth={1.2}
+                strokeWidth={1.6}
                 strokeLinecap="round"
-                opacity={0.14 + 0.2 * near}
+                opacity={0.2 + 0.24 * near}
               />
             </g>
           );
         })}
 
-        {drawStrand(nearSegments, "near")}
+        {drawStrand(nearSegments, "near", HELIX_COLORS.strandNear, HELIX_COLORS.outlineNear, 0.6)}
 
         {/* Beads sit on the strand, so they go over both rungs and tube. */}
         {scene.nodes.map((node) => {
@@ -300,28 +333,48 @@ export default function DnaHelix({ traits, categoryLabels, onSelect, selectedKey
           const isSelected = node.key === selectedKey;
           const frontRadius = nodeRadius(node.depth);
           const backRadius = nodeRadius(-node.depth);
+          // The reference gets its gloss from a lit sphere plus one hard
+          // specular dot; drawing that dot by hand beats a filter per bead.
+          const specular = (x: number, y: number, radius: number) => (
+            <>
+              <circle cx={x} cy={y} r={radius} fill="url(#dna-bead)" />
+              <circle
+                cx={x - radius * 0.32}
+                cy={y - radius * 0.36}
+                r={Math.max(1, radius * 0.24)}
+                fill={HELIX_COLORS.beadSpecular}
+                opacity={0.45}
+              />
+            </>
+          );
           return (
             <g key={`bead-${node.key}`}>
-              <circle cx={node.back.x} cy={node.back.y} r={backRadius * 1.9} fill="url(#dna-bead-glow)" opacity={0.45} />
-              <circle
-                cx={node.back.x}
-                cy={node.back.y}
-                r={backRadius}
-                fill="url(#dna-bead)"
-                stroke={HELIX_COLORS.beadRim}
-                strokeWidth={0.7}
-                strokeOpacity={0.35}
-              />
+              <circle cx={node.back.x} cy={node.back.y} r={backRadius * 1.9} fill="url(#dna-bead-glow)" opacity={0.4} />
+              <g>
+                {specular(node.back.x, node.back.y, backRadius)}
+                <circle
+                  cx={node.back.x}
+                  cy={node.back.y}
+                  r={backRadius}
+                  fill="none"
+                  stroke={HELIX_COLORS.beadRim}
+                  strokeWidth={1}
+                  strokeOpacity={0.28}
+                />
+              </g>
               <circle cx={node.x} cy={node.y} r={frontRadius * 2} fill="url(#dna-bead-glow)" opacity={0.55 + 0.25 * near} />
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={frontRadius}
-                fill="url(#dna-bead)"
-                stroke={isSelected ? color : HELIX_COLORS.beadRim}
-                strokeWidth={isSelected ? 2.2 : 0.9}
-                strokeOpacity={isSelected ? 1 : 0.55}
-              />
+              <g>
+                {specular(node.x, node.y, frontRadius)}
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={frontRadius}
+                  fill="none"
+                  stroke={isSelected ? color : HELIX_COLORS.beadRim}
+                  strokeWidth={isSelected ? 2.2 : 1.1}
+                  strokeOpacity={isSelected ? 1 : 0.4}
+                />
+              </g>
             </g>
           );
         })}
