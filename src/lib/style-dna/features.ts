@@ -1,3 +1,4 @@
+import { lyricSpectrumScores } from "@/lib/dna/lyric-spectra";
 import type {
   LyricSection,
   WritingFeatureInput,
@@ -527,6 +528,7 @@ export function extractWritingFeatures(input: WritingFeatureInput): WritingFeatu
     hasBridge: codes.includes("b"),
     contentWords: contentWordsOf(words, language),
     themes: detectThemes(lines),
+    lyricSpectra: lyricSpectrumScores(lines.join("\n")),
   };
 }
 

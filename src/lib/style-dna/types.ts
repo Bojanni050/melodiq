@@ -8,6 +8,8 @@
  * writes rather than a verdict on any single line.
  */
 
+import type { LyricSpectrumKey } from "@/lib/dna/lyric-spectra";
+
 export type WritingLanguage = "en" | "nl" | "es" | "pt" | "fr" | "de" | "it" | "xx";
 
 export type WritingPov = "first" | "second" | "third" | "mixed";
@@ -53,6 +55,11 @@ export type WritingFeatures = {
   contentWords: string[];
   /** Theme slugs mapped from keyword families. */
   themes: string[];
+  /**
+   * Position per lyric spectrum, 0..100 (100 = the right pole). An axis is
+   * absent when the song's vocabulary gave too little evidence.
+   */
+  lyricSpectra?: Partial<Record<LyricSpectrumKey, number>>;
 };
 
 export type LyricSection = {

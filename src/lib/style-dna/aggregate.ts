@@ -1,4 +1,8 @@
 import type { DnaCategory, DnaTrait } from "@/lib/dna/types";
+import {
+  LYRIC_SPECTRA,
+  type LyricSpectrumDefinition,
+} from "@/lib/dna/lyric-spectra";
 import { extractWritingFeatures } from "@/lib/style-dna/features";
 import type { WritingFeatures, WritingLanguage } from "@/lib/style-dna/types";
 
@@ -32,6 +36,9 @@ export const MIN_LANGUAGE_TRACKS = 5;
 
 /** Separates a trait from its language, e.g. `rhyme_density:nl`. */
 export const LANGUAGE_KEY_SEPARATOR = ":";
+
+/** Mirrors `MIN_SPECTRUM_SOURCES` in `dna/aggregate.ts`: one song is not a profile. */
+const MIN_SPECTRUM_SOURCES = 3;
 
 /** Signature words and themes are top-N lists in the UI, not full dumps. */
 const SIGNATURE_WORD_LIMIT = 12;
@@ -103,6 +110,10 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+function capitalise(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function coverage(count: number): number {
   if (count <= 0) return 0;
   return count / (count + COVERAGE_HALF_POINT);
@@ -171,6 +182,8 @@ function numericTrait(options: {
   values: Weighted[];
   spreadScale: number;
   format: (value: number) => string;
+  /** Spectra sit on a 0..100 line and show "%"; averages leave it null. */
+  unit?: string | null;
   category?: DnaCategory;
 }): DnaTrait | null {
   const stats = weightedStats(options.values);
@@ -184,7 +197,7 @@ function numericTrait(options: {
     kind: "number",
     valueNumber: round1(stats.mean),
     valueText: null,
-    unit: null,
+    unit: options.unit ?? null,
     display: options.format(stats.mean),
     confidence: round1(clamp01(coverage(sourceCount) * Math.max(0.3, agreement)) * 100) / 100,
     sourceCount,
@@ -284,7 +297,41 @@ function buildTraits(sources: WritingDnaSource[], suffix: string): DnaTrait[] {
   const signatures = listValues((features) => features.contentWords);
   const themes = listValues((features) => features.themes);
 
+  /**
+   * A writing-style spectrum: the weighted mean position across songs. Same
+   * rules as the audio spectra — a handful of songs is not a profile, and the
+   * spread between them lowers the confidence instead of hiding disagreement.
+   */
+  const spectrumTrait = (definition: LyricSpectrumDefinition): DnaTrait | null => {
+    const values = usable
+      .map((source) => ({
+        value: source.features.lyricSpectra?.[definition.key] ?? null,
+        weight: source.weight,
+      }))
+      .filter((sample): sample is Weighted => sample.value !== null);
+    if (values.filter((sample) => sample.weight > 0).length < MIN_SPECTRUM_SOURCES) return null;
+
+    return numericTrait({
+      key: trait(definition.key),
+      label: withSuffix(capitalise(`${definition.left} ↔ ${definition.right}`)),
+      values,
+      spreadScale: 60,
+      unit: "%",
+      // Show the share of the side the song actually leans to: a song at 25 on
+      // the line is 75% colloquial, not "25% colloquial".
+      format: (value) => {
+        const rounded = Math.round(value);
+        return value >= 50
+          ? `${rounded}% ${definition.right}`
+          : `${100 - rounded}% ${definition.left}`;
+      },
+    });
+  };
+
   const traits: (DnaTrait | null)[] = [
+    // Style spectra first: they describe the writing as a whole, the rhyme and
+    // cadence traits below zoom in on the mechanics.
+    ...LYRIC_SPECTRA.map(spectrumTrait),
     textTrait({
       key: trait("rhyme_scheme"),
       label: withSuffix("Rhyme scheme"),

@@ -584,7 +584,14 @@ function spectrumTrait(definition: SpectrumDefinition, values: Weighted[]): DnaT
     values,
     unit: "%",
     spreadScale: 60,
-    format: (value) => `${Math.round(value)}% ${value >= 50 ? definition.right : definition.left}`,
+    // Show the share of the side the catalogue leans to: 25 on the line means
+    // 75% rap, not "25% rap".
+    format: (value) => {
+      const rounded = Math.round(value);
+      return value >= 50
+        ? `${rounded}% ${definition.right}`
+        : `${100 - rounded}% ${definition.left}`;
+    },
   });
 }
 

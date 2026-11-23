@@ -378,7 +378,7 @@ describe("sourceWeight", () => {
     const spectrum = trait(three, "rap_melodic");
     expect(spectrum?.category).toBe("sound");
     expect(spectrum?.valueNumber).toBe(0);
-    expect(spectrum?.display).toBe("0% rap");
+    expect(spectrum?.display).toBe("100% rap");
     expect(spectrum?.sourceCount).toBe(3);
   });
 

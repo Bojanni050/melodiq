@@ -176,3 +176,58 @@ describe("buildWritingDna", () => {
     expect(density?.valueNumber).toBe(100);
   });
 });
+
+describe("buildWritingDna — lyric spectra", () => {
+  const literary = (first: string) =>
+    `[Verse 1]\n${first}\nvelvet moonlight and porcelain stars`;
+
+  it("averages the writing-style spectra over the catalogue", () => {
+    const result = buildWritingDna([
+      source(literary("cathedral whispers in the dark"), "English"),
+      source(literary("an elegy for the horizon"), "English"),
+      source(literary("oblivion upon the sea"), "English"),
+    ]);
+    const spectrum = result.overall.find((trait) => trait.key === "colloquial_literary");
+
+    expect(spectrum).toBeDefined();
+    expect(spectrum?.category).toBe("words");
+    expect(spectrum?.kind).toBe("number");
+    expect(spectrum?.unit).toBe("%");
+    expect(spectrum?.valueNumber).toBe(100);
+    expect(spectrum?.display).toBe("100% literary");
+    expect(spectrum?.sourceCount).toBe(3);
+  });
+
+  it("keeps a direction dark until three songs carry it", () => {
+    const result = buildWritingDna([
+      source(literary("cathedral whispers in the dark"), "English"),
+      source(literary("an elegy for the horizon"), "English"),
+    ]);
+
+    expect(result.overall.find((trait) => trait.key === "colloquial_literary")).toBeUndefined();
+  });
+
+  it("shows the share of the side the writing leans to", () => {
+    const result = buildWritingDna([
+      source("[Verse 1]\ngonna wanna gotta velvet\ngonna wanna gotta velvet", "English"),
+      source("[Verse 1]\ngonna wanna gotta velvet\ngonna wanna gotta velvet", "English"),
+      source("[Verse 1]\ngonna wanna gotta velvet\ngonna wanna gotta velvet", "English"),
+    ]);
+    const spectrum = result.overall.find((trait) => trait.key === "colloquial_literary");
+
+    // 3 colloquial markers against 1 literary one: 25 on the line, 75% colloquial.
+    expect(spectrum?.valueNumber).toBe(25);
+    expect(spectrum?.display).toBe("75% colloquial");
+  });
+
+  it("suffixes the spectrum keys per language", () => {
+    const tracks = Array.from({ length: MIN_LANGUAGE_TRACKS }, (_, index) =>
+      source(`[Verse 1]\nmoonlight on the sea tonight ${index}\nstars above the ocean ${index}`, "English"),
+    );
+    const english = buildWritingDna(tracks).byLanguage.find((entry) => entry.language === "en");
+    const spectrum = english?.traits.find((trait) => trait.key === "literal_imagery:en");
+
+    expect(spectrum?.valueNumber).toBe(100);
+    expect(spectrum?.display).toBe("100% imagery");
+  });
+});
