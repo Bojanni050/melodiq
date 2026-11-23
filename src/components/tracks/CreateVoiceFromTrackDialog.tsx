@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { notifyVoicesChanged } from "@/lib/voice-sync";
+
 /**
  * Only the identity of a finished track is needed, so the dialog accepts the
  * player's track snapshot as well as a full list row.
@@ -94,6 +96,9 @@ export default function CreateVoiceFromTrackDialog({
       }
       setVoiceId(data.voice.id);
       setPhase("waiting");
+      // The Studio's picker can be mounted behind the player; let it refetch
+      // so the new (pending) voice shows up right away.
+      notifyVoicesChanged();
     } catch {
       setError("Could not start voice cloning");
       setPhase("error");
@@ -128,8 +133,10 @@ export default function CreateVoiceFromTrackDialog({
           return;
         }
         if (data.voice.status === "completed") {
+          notifyVoicesChanged();
           setPhase("done");
         } else if (data.voice.status === "failed") {
+          notifyVoicesChanged();
           setError(data.voice.error || "Voice cloning failed");
           setPhase("error");
         }

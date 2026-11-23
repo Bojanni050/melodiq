@@ -9,6 +9,10 @@ import { requireAuth } from "@/lib/require-auth";
  * one per user. This lives on the voice rows instead of the settings table
  * (which is app-global) so it is per-user and follows the voice list across
  * devices.
+ *
+ * `voiceId: null` clears the selection: the picker's "no saved voice" option
+ * has to mean the same thing on the server as it does on screen, otherwise a
+ * reload would quietly switch the persona back on.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -16,9 +20,25 @@ export async function POST(request: NextRequest) {
   const { userId } = auth;
 
   const body = await request.json().catch(() => null);
-  if (typeof body?.voiceId !== "string") {
-    return NextResponse.json({ error: "A voiceId is required" }, { status: 400 });
+  if (!body || (body.voiceId !== null && typeof body.voiceId !== "string")) {
+    return NextResponse.json({ error: "A voiceId or null is required" }, { status: 400 });
   }
+
+  if (body.voiceId === null) {
+    await db
+      .update(clonedVoices)
+      .set({ isSelected: false, updatedAt: new Date() })
+      .where(eq(clonedVoices.userId, userId));
+
+    const cleared = await db
+      .select()
+      .from(clonedVoices)
+      .where(eq(clonedVoices.userId, userId))
+      .orderBy(desc(clonedVoices.createdAt));
+
+    return NextResponse.json({ voices: cleared });
+  }
+
   const voiceId = body.voiceId;
 
   const rows = await db
