@@ -47,9 +47,10 @@ export function validateArtistAliases(value: unknown): { ok: true; aliases: stri
 }
 
 // Composer / writer aliases use the same JSON-array storage as artist aliases,
-// with 5 slots each (the scalar composerAlias/writerAlias mirrors slot 0).
-export const MAX_COMPOSER_ALIASES = 5;
-export const MAX_WRITER_ALIASES = 5;
+// with the same number of slots (the scalar composerAlias/writerAlias mirrors
+// slot 0).
+export const MAX_COMPOSER_ALIASES = 20;
+export const MAX_WRITER_ALIASES = 20;
 
 export function parseAliasList(raw: string | null | undefined, max: number): string[] {
   if (!raw) return [];
