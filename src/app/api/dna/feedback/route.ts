@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { resolveDnaAlias } from "@/lib/dna/alias";
 import { isDnaFeedbackKind } from "@/lib/dna/feedback";
 import { serialiseDnaProfile } from "@/lib/dna/present";
 import { getDnaProfile, recordDnaFeedback } from "@/lib/dna/repository";
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const payload = (body ?? {}) as { traitKey?: unknown; kind?: unknown };
+  const payload = (body ?? {}) as { traitKey?: unknown; kind?: unknown; alias?: unknown };
   const traitKey = typeof payload.traitKey === "string" ? payload.traitKey.trim() : "";
 
   if (!traitKey || traitKey.length > 60) {
@@ -43,13 +44,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown feedback kind" }, { status: 400 });
   }
 
+  const alias = await resolveDnaAlias(userId, payload.alias);
+  if (alias === null) {
+    return NextResponse.json({ error: "Unknown artist alias" }, { status: 400 });
+  }
+
   try {
-    const accepted = await recordDnaFeedback(userId, traitKey, payload.kind);
+    const accepted = await recordDnaFeedback(userId, alias, traitKey, payload.kind);
     if (!accepted) {
       return NextResponse.json({ error: "Unknown trait" }, { status: 404 });
     }
 
-    const stored = await getDnaProfile(userId);
+    const stored = await getDnaProfile(userId, alias);
     return NextResponse.json(serialiseDnaProfile(stored));
   } catch (error) {
     console.error("Failed to record DNA feedback:", error);

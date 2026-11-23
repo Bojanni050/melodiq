@@ -1,4 +1,4 @@
-export const MAX_ARTIST_ALIASES = 15;
+export const MAX_ARTIST_ALIASES = 20;
 const ALIAS_MAX_LENGTH = 255;
 
 // artistAliases is stored as a JSON-encoded array of strings on the user

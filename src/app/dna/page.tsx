@@ -6,7 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import CalibrateModal from "@/components/dna/CalibrateModal";
 import DnaHelix from "@/components/dna/DnaHelix";
 import ShareDnaCard from "@/components/dna/ShareDnaCard";
-import { useLocaleStore, useSidebarStore } from "@/lib/store";
+import { useLocaleStore, useSidebarStore, useUserStore } from "@/lib/store";
 import { useT } from "@/hooks/useT";
 import type { TranslationKey } from "@/lib/i18n/translate";
 
@@ -35,6 +35,8 @@ type DnaTraitPayload = {
 type DnaFeedbackKind = "confirm" | "reject" | "more" | "less" | "reset";
 
 type DnaProfilePayload = {
+  /** '' = the account-wide tab, otherwise the artist alias it was built for. */
+  artistAlias: string;
   name: string | null;
   summary: string | null;
   sourceCount: number;
@@ -303,6 +305,8 @@ export default function DnaPage() {
   const sidebarCollapsed = useSidebarStore((s) => s.collapsed);
   const isQHD = useSidebarStore((s) => s.isQHD);
   const isDesktop = useSidebarStore((s) => s.isDesktop);
+  const user = useUserStore((s) => s.user);
+  const loadUser = useUserStore((s) => s.loadUser);
 
   const [data, setData] = useState<DnaResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -311,6 +315,8 @@ export default function DnaPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingTrait, setPendingTrait] = useState<string | null>(null);
   const [calibrating, setCalibrating] = useState(false);
+  /** '' = the account-wide profile; any other value is one artist alias. */
+  const [activeAlias, setActiveAlias] = useState("");
   /**
    * "" = the whole-catalogue `words` traits; otherwise a language suffix.
    * English is the default because it is the most common writing language, and
@@ -318,25 +324,66 @@ export default function DnaPage() {
    */
   const [wordsLanguage, setWordsLanguage] = useState("en");
 
-  // First visit has no profile to read yet, so it is built once automatically.
-  // Guarded with a ref because React may replay the effect (StrictMode) and a
-  // second POST would only repeat the same work.
-  const autoBuiltRef = useRef(false);
+  /**
+   * One tab per artist alias plus the account-wide default. The default is the
+   * profile the user already knew: every finished track, whatever name it was
+   * saved under. An alias tab only counts tracks saved under that name.
+   */
+  const aliasTabs = useMemo(() => {
+    const tabs: Array<{ alias: string; label: string; hint?: string }> = [
+      { alias: "", label: t("dna.tabDefault"), hint: t("dna.tabDefaultHint") },
+    ];
+    const seen = new Set<string>();
+    for (const raw of user?.artistAliases ?? []) {
+      const alias = raw.trim();
+      if (!alias || seen.has(alias.toLowerCase())) continue;
+      seen.add(alias.toLowerCase());
+      tabs.push({ alias, label: alias });
+    }
+    return tabs;
+  }, [user?.artistAliases, t]);
+
+  // An alias can be removed on the account page while this tab is open; fall
+  // back to the default profile instead of leaving a tab that no longer exists.
+  useEffect(() => {
+    if (activeAlias && !aliasTabs.some((tab) => tab.alias === activeAlias)) {
+      setActiveAlias("");
+    }
+  }, [activeAlias, aliasTabs]);
+
+  // Aliases live on the user store, which the layout may not have loaded yet.
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
+
+  // First visit of a tab has no profile to read yet, so it is built once
+  // automatically. Guarded per alias because React may replay the effect
+  // (StrictMode) and a second POST would only repeat the same work.
+  const autoBuiltRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
+    const alias = activeAlias;
+    setLoading(true);
+    setError(null);
+    setData(null);
+    const query = alias ? `?alias=${encodeURIComponent(alias)}` : "";
 
     void (async () => {
       try {
-        const res = await fetch("/api/dna");
+        const res = await fetch(`/api/dna${query}`);
         if (!res.ok) throw new Error("load failed");
         const json = (await res.json()) as DnaResponse;
         if (!active) return;
         setData(json);
 
-        if (!json.profile && !autoBuiltRef.current) {
-          autoBuiltRef.current = true;
-          const built = await fetch("/api/dna/recompute", { method: "POST" });
+        if (!json.profile && !autoBuiltRef.current.has(alias)) {
+          autoBuiltRef.current.add(alias);
+          const built = await fetch("/api/dna/recompute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ alias }),
+          });
           if (built.ok) {
             const next = (await built.json()) as DnaResponse;
             if (active) setData(next);
@@ -352,14 +399,18 @@ export default function DnaPage() {
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [activeAlias, t]);
 
   async function handleRebuild() {
     setRebuilding(true);
     setError(null);
     setNotice(null);
     try {
-      const res = await fetch("/api/dna/recompute", { method: "POST" });
+      const res = await fetch("/api/dna/recompute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias: activeAlias }),
+      });
       if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "rebuild failed");
       setData((await res.json()) as DnaResponse);
       setNotice(t("dna.rebuilt"));
@@ -375,7 +426,8 @@ export default function DnaPage() {
     setCalibrating(false);
     if (!changed) return;
     try {
-      const res = await fetch("/api/dna");
+      const query = activeAlias ? `?alias=${encodeURIComponent(activeAlias)}` : "";
+      const res = await fetch(`/api/dna${query}`);
       if (res.ok) setData((await res.json()) as DnaResponse);
     } catch {
       // The stale profile is still valid; the next visit reloads it.
@@ -392,7 +444,7 @@ export default function DnaPage() {
       const res = await fetch("/api/dna/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ traitKey, kind }),
+        body: JSON.stringify({ traitKey, kind, alias: activeAlias }),
       });
       if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "feedback failed");
       setData((await res.json()) as DnaResponse);
@@ -412,7 +464,7 @@ export default function DnaPage() {
       const res = await fetch("/api/dna/lock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ traitKey, locked }),
+        body: JSON.stringify({ traitKey, locked, alias: activeAlias }),
       });
       if (!res.ok) throw new Error(res.status === 429 ? "rate limited" : "lock failed");
       setData((await res.json()) as DnaResponse);
@@ -466,7 +518,9 @@ export default function DnaPage() {
     .join("|");
 
   useEffect(() => {
-    if (traits.length === 0) {
+    // The generator's DNA hint is the account-wide profile, so an alias tab
+    // does not preview it — that would show a hint those tracks never use.
+    if (traits.length === 0 || activeAlias) {
       setDnaHint("");
       return;
     }
@@ -483,7 +537,7 @@ export default function DnaPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hintSignature]);
+  }, [hintSignature, activeAlias]);
 
   const sourceCount = profile?.sourceCount ?? 0;
   const stage = sourceCount >= GROWN_AT ? "grown" : sourceCount >= SPROUT_AT ? "sprout" : "seed";
@@ -550,6 +604,35 @@ export default function DnaPage() {
       >
         <main className="relative z-10 min-w-0 px-4 sm:px-6 lg:px-8 py-5 pb-24 pt-18.25 lg:pt-5">
           <div className="max-w-400 mx-auto space-y-6">
+            {aliasTabs.length > 1 && (
+              <div
+                role="tablist"
+                aria-label={t("dna.tabsLabel")}
+                className="flex flex-wrap items-center gap-1.5"
+              >
+                {aliasTabs.map((tab) => {
+                  const active = tab.alias === activeAlias;
+                  return (
+                    <button
+                      key={tab.alias || "default"}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      title={tab.hint}
+                      onClick={() => setActiveAlias(tab.alias)}
+                      className={`inline-flex h-8 max-w-56 items-center truncate rounded-full border px-3 text-xs font-medium transition-colors ${
+                        active
+                          ? "border-accent/60 bg-accent/10 text-accent"
+                          : "border-line bg-white/5 text-ink-muted hover:bg-white/10 hover:text-ink"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {loading ? (
               <div className="border border-line bg-white/5 p-8 text-sm text-ink-muted">
                 {t("dna.rebuilding")}
@@ -566,8 +649,16 @@ export default function DnaPage() {
                     />
                   </svg>
                 </div>
-                <h1 className="mt-4 text-lg font-medium">{t("dna.emptyTitle")}</h1>
-                <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{t("dna.emptyBody")}</p>
+                <h1 className="mt-4 text-lg font-medium">
+                  {activeAlias
+                    ? t("dna.aliasEmptyTitle", { alias: activeAlias })
+                    : t("dna.emptyTitle")}
+                </h1>
+                <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
+                  {activeAlias
+                    ? t("dna.aliasEmptyBody", { alias: activeAlias })
+                    : t("dna.emptyBody")}
+                </p>
                 <Link
                   href="/studio"
                   className="mt-5 inline-flex h-9 items-center rounded-full bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-accent-strong"
@@ -741,7 +832,7 @@ export default function DnaPage() {
                   </div>
                 </section>
 
-                <CalibrateModal open={calibrating} onClose={handleCalibrateClose} />
+                <CalibrateModal open={calibrating} alias={activeAlias} onClose={handleCalibrateClose} />
 
                 {(error || notice) && (
                   <div className="flex items-start justify-between gap-3 border border-line bg-white/5 px-4 py-3">

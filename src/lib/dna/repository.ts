@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -95,8 +95,16 @@ function parseAdvancedDna(raw: string | null): AdvancedDnaSummary | null {
   }
 }
 
+/** '' = account-wide; otherwise only tracks saved under that artist name. */
+function matchesArtistAlias(alias: string) {
+  return sql`lower(btrim(${tracks.artistName})) = lower(btrim(${alias}))`;
+}
+
 /** Finished, visible tracks only — drafts and deleted tracks say nothing about taste. */
-export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> {
+export async function loadDnaSources(
+  userId: string,
+  artistAlias: string = "",
+): Promise<DnaSourceTrack[]> {
   // Rank inside each normalised title group first, so the per-title cap is
   // applied before the catalogue sample is drawn. Without the cap a dozen
   // variants of one song decide the whole profile.
@@ -129,7 +137,14 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
         )`.as("title_rank"),
       })
       .from(tracks)
-      .where(and(eq(tracks.userId, userId), eq(tracks.status, "done"), isNull(tracks.deletedAt)))
+      .where(
+        and(
+          eq(tracks.userId, userId),
+          eq(tracks.status, "done"),
+          isNull(tracks.deletedAt),
+          artistAlias ? matchesArtistAlias(artistAlias) : undefined,
+        ),
+      )
   );
 
   const rows = await db
@@ -183,8 +198,15 @@ export async function loadDnaSources(userId: string): Promise<DnaSourceTrack[]> 
  * The voice-clone library, as far as the DNA profile cares: finished clones and
  * which one the Studio currently sends. Null when no clone ever finished, so
  * the trait is absent rather than reporting a borrowed voice as "own".
+ *
+ * Clones belong to the account, not to an artist name, so a per-alias profile
+ * does not claim them — otherwise every alias would report the same voice.
  */
-export async function loadDnaVoiceProfile(userId: string): Promise<DnaVoiceProfile | null> {
+export async function loadDnaVoiceProfile(
+  userId: string,
+  artistAlias: string = "",
+): Promise<DnaVoiceProfile | null> {
+  if (artistAlias) return null;
   const rows = await db
     .select({ id: clonedVoices.id, name: clonedVoices.name, isSelected: clonedVoices.isSelected })
     .from(clonedVoices)
@@ -213,9 +235,14 @@ const MAX_LIBRARY_TITLES = 60;
 /**
  * The two libraries whose contents the DNA profile reports as kept style:
  * saved lyrics (writing) and saved style presets (music). Both are facts about
- * the account, not measurements of the track history.
+ * the account, not measurements of the track history, so a per-alias profile
+ * gets an empty library and leaves those traits out.
  */
-export async function loadDnaLibrary(userId: string): Promise<DnaLibraryProfile> {
+export async function loadDnaLibrary(
+  userId: string,
+  artistAlias: string = "",
+): Promise<DnaLibraryProfile> {
+  if (artistAlias) return { writingTitles: [], musicNames: [] };
   const [writing, music] = await Promise.all([
     db
       .select({ title: savedLyrics.title })
@@ -256,6 +283,8 @@ export async function recordGenerationHabit(input: {
   origin: HabitOrigin;
   mode: HabitMode;
   edited: boolean;
+  /** Artist name the generation ran under, so per-alias habits can find it. */
+  artistAlias?: string | null;
 }): Promise<void> {
   await db.insert(generationEvents).values({
     userId: input.userId,
@@ -264,6 +293,7 @@ export async function recordGenerationHabit(input: {
     origin: input.origin,
     mode: input.mode,
     edited: input.edited,
+    artistAlias: input.artistAlias?.trim() || null,
   });
 }
 
@@ -277,7 +307,15 @@ export async function recordGenerationHabit(input: {
  * an event nor a finished track, so the category stays absent instead of
  * claiming "0% public" for someone who never generated anything.
  */
-export async function loadDnaHabitProfile(userId: string): Promise<DnaHabitProfile | null> {
+export async function loadDnaHabitProfile(
+  userId: string,
+  artistAlias: string = "",
+): Promise<DnaHabitProfile | null> {
+  // A per-alias profile only learns from generations made under that name; the
+  // default profile stays account-wide and therefore includes every alias.
+  const eventFilter = artistAlias
+    ? sql`lower(btrim(${generationEvents.artistAlias})) = lower(btrim(${artistAlias}))`
+    : undefined;
   const [events, [counts]] = await Promise.all([
     db
       .select({
@@ -286,7 +324,7 @@ export async function loadDnaHabitProfile(userId: string): Promise<DnaHabitProfi
         edited: generationEvents.edited,
       })
       .from(generationEvents)
-      .where(eq(generationEvents.userId, userId))
+      .where(and(eq(generationEvents.userId, userId), eventFilter))
       .orderBy(desc(generationEvents.createdAt))
       .limit(MAX_HABIT_EVENTS),
     db
@@ -303,7 +341,14 @@ export async function loadDnaHabitProfile(userId: string): Promise<DnaHabitProfi
         ))`.mapWith(Number),
       })
       .from(tracks)
-      .where(and(eq(tracks.userId, userId), eq(tracks.status, "done"), isNull(tracks.deletedAt))),
+      .where(
+        and(
+          eq(tracks.userId, userId),
+          eq(tracks.status, "done"),
+          isNull(tracks.deletedAt),
+          artistAlias ? matchesArtistAlias(artistAlias) : undefined,
+        ),
+      ),
   ]);
 
   const totalTracks = counts?.totalTracks ?? 0;
@@ -363,7 +408,10 @@ const MAX_HISTORY_ROWS = 400;
  */
 const MAX_FEEDBACK_EVENTS = 500;
 
-export async function loadDnaFeedback(userId: string): Promise<Map<string, DnaFeedbackStance>> {
+export async function loadDnaFeedback(
+  profileId: string,
+  includeLegacy: boolean,
+): Promise<Map<string, DnaFeedbackStance>> {
   const rows = await db
     .select({
       traitKey: dnaFeedbackEvents.traitKey,
@@ -372,7 +420,11 @@ export async function loadDnaFeedback(userId: string): Promise<Map<string, DnaFe
       createdAt: dnaFeedbackEvents.createdAt,
     })
     .from(dnaFeedbackEvents)
-    .where(eq(dnaFeedbackEvents.userId, userId))
+    .where(
+      includeLegacy
+        ? or(eq(dnaFeedbackEvents.profileId, profileId), isNull(dnaFeedbackEvents.profileId))
+        : eq(dnaFeedbackEvents.profileId, profileId),
+    )
     .orderBy(desc(dnaFeedbackEvents.createdAt))
     .limit(MAX_FEEDBACK_EVENTS);
 
@@ -408,18 +460,33 @@ export async function loadDnaHistory(
  * than the folded stance, because "how often did the user correct something" is
  * a count of clicks and not of current opinions.
  */
-async function loadDnaSignals(userId: string, sourceCount: number): Promise<ProfileSignals> {
+async function loadDnaSignals(
+  profileId: string,
+  sourceCount: number,
+  includeLegacy: boolean,
+): Promise<ProfileSignals> {
   const [kinds, calibrations] = await Promise.all([
     db
       .select({ kind: dnaFeedbackEvents.kind })
       .from(dnaFeedbackEvents)
-      .where(eq(dnaFeedbackEvents.userId, userId))
+      .where(
+        includeLegacy
+          ? or(eq(dnaFeedbackEvents.profileId, profileId), isNull(dnaFeedbackEvents.profileId))
+          : eq(dnaFeedbackEvents.profileId, profileId),
+      )
       .orderBy(desc(dnaFeedbackEvents.createdAt))
       .limit(MAX_FEEDBACK_EVENTS),
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(dnaCalibrationAnswers)
-      .where(eq(dnaCalibrationAnswers.userId, userId)),
+      .where(
+        includeLegacy
+          ? or(
+              eq(dnaCalibrationAnswers.profileId, profileId),
+              isNull(dnaCalibrationAnswers.profileId),
+            )
+          : eq(dnaCalibrationAnswers.profileId, profileId),
+      ),
   ]);
 
   return profileSignals({
@@ -430,29 +497,51 @@ async function loadDnaSignals(userId: string, sourceCount: number): Promise<Prof
 }
 
 /**
+ * The id of one alias profile ('' = account-wide), or null when that tab has
+ * never been built. Feedback and locks hang off the profile, not the account.
+ */
+async function findDnaProfileId(userId: string, artistAlias: string): Promise<string | null> {
+  const [profile] = await db
+    .select({ id: dnaProfiles.id })
+    .from(dnaProfiles)
+    .where(and(eq(dnaProfiles.userId, userId), eq(dnaProfiles.artistAlias, artistAlias)))
+    .limit(1);
+  return profile?.id ?? null;
+}
+
+/**
  * Records one correction. Returns false when the trait is not part of the
  * current snapshot — the UI can only correct what it has seen, so an unknown
  * key means a stale page rather than a new trait.
  */
 export async function recordDnaFeedback(
   userId: string,
+  artistAlias: string,
   traitKey: string,
   kind: DnaFeedbackKind,
 ): Promise<boolean> {
+  const profileId = await findDnaProfileId(userId, artistAlias);
+  if (!profileId) return false;
+
   const [trait] = await db
     .select({ category: dnaTraits.category })
     .from(dnaTraits)
-    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, traitKey)))
+    .where(and(eq(dnaTraits.profileId, profileId), eq(dnaTraits.traitKey, traitKey)))
     .limit(1);
 
   if (!trait) return false;
 
-  await db.insert(dnaFeedbackEvents).values({ userId, traitKey, category: trait.category, kind });
+  await db
+    .insert(dnaFeedbackEvents)
+    .values({ userId, profileId, traitKey, category: trait.category, kind });
   return true;
 }
 
 /** Tracks with audio and a measured tempo/energy: the only ones a duel can use. */
-export async function loadCalibrationCandidates(userId: string): Promise<CalibrationCandidate[]> {
+export async function loadCalibrationCandidates(
+  userId: string,
+  artistAlias: string = "",
+): Promise<CalibrationCandidate[]> {
   // Released tracks sort first so the candidate cap can never push them out in
   // favour of newer drafts; the picker then prioritises them (calibration.ts).
   const released = sql<boolean>`exists (
@@ -479,6 +568,7 @@ export async function loadCalibrationCandidates(userId: string): Promise<Calibra
         isNull(tracks.deletedAt),
         isNull(tracks.hiddenAt),
         isNotNull(tracks.audioUrl),
+        artistAlias ? matchesArtistAlias(artistAlias) : undefined,
       ),
     )
     .orderBy(desc(released), desc(tracks.createdAt))
@@ -502,7 +592,13 @@ export async function loadCalibrationCandidates(userId: string): Promise<Calibra
   return candidates;
 }
 
-export async function loadCalibrationAnswers(userId: string): Promise<CalibrationAnswered[]> {
+export async function loadCalibrationAnswers(
+  userId: string,
+  artistAlias: string = "",
+): Promise<CalibrationAnswered[]> {
+  const profileId = await findDnaProfileId(userId, artistAlias);
+  if (!profileId) return [];
+
   const rows = await db
     .select({
       traitKey: dnaCalibrationAnswers.traitKey,
@@ -510,7 +606,14 @@ export async function loadCalibrationAnswers(userId: string): Promise<Calibratio
       trackBId: dnaCalibrationAnswers.trackBId,
     })
     .from(dnaCalibrationAnswers)
-    .where(eq(dnaCalibrationAnswers.userId, userId))
+    .where(
+      artistAlias
+        ? eq(dnaCalibrationAnswers.profileId, profileId)
+        : or(
+            eq(dnaCalibrationAnswers.profileId, profileId),
+            isNull(dnaCalibrationAnswers.profileId),
+          ),
+    )
     .orderBy(desc(dnaCalibrationAnswers.createdAt))
     .limit(CALIBRATION_TOTAL * 10);
   return rows;
@@ -523,18 +626,23 @@ export async function loadCalibrationAnswers(userId: string): Promise<Calibratio
  */
 export async function recordCalibrationAnswer(
   userId: string,
+  artistAlias: string,
   input: { traitKey: string; trackAId: string; trackBId: string; choice: "a" | "b" | "neither"; kind: DnaFeedbackKind },
 ): Promise<boolean> {
+  const profileId = await findDnaProfileId(userId, artistAlias);
+  if (!profileId) return false;
+
   const [trait] = await db
     .select({ category: dnaTraits.category })
     .from(dnaTraits)
-    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, input.traitKey)))
+    .where(and(eq(dnaTraits.profileId, profileId), eq(dnaTraits.traitKey, input.traitKey)))
     .limit(1);
   if (!trait) return false;
 
   await db.transaction(async (tx) => {
     await tx.insert(dnaCalibrationAnswers).values({
       userId,
+      profileId,
       traitKey: input.traitKey,
       trackAId: input.trackAId,
       trackBId: input.trackBId,
@@ -542,7 +650,7 @@ export async function recordCalibrationAnswer(
     });
     await tx
       .insert(dnaFeedbackEvents)
-      .values({ userId, traitKey: input.traitKey, category: trait.category, kind: input.kind });
+      .values({ userId, profileId, traitKey: input.traitKey, category: trait.category, kind: input.kind });
   });
   return true;
 }
@@ -558,21 +666,25 @@ function sortTraits(rows: DnaTraitRow[]): DnaTraitRow[] {
   });
 }
 
-/** The current snapshot, or null when the user never built one. */
-export async function getDnaProfile(userId: string): Promise<StoredDnaProfile | null> {
+/** The current snapshot for one tab ('' = account-wide), or null when never built. */
+export async function getDnaProfile(
+  userId: string,
+  artistAlias: string = "",
+): Promise<StoredDnaProfile | null> {
   const [profile] = await db
     .select()
     .from(dnaProfiles)
-    .where(eq(dnaProfiles.userId, userId))
+    .where(and(eq(dnaProfiles.userId, userId), eq(dnaProfiles.artistAlias, artistAlias)))
     .limit(1);
 
   if (!profile) return null;
 
+  const includeLegacy = !artistAlias;
   const rows = await db.select().from(dnaTraits).where(eq(dnaTraits.profileId, profile.id));
   const [feedback, history, signals] = await Promise.all([
-    loadDnaFeedback(userId),
+    loadDnaFeedback(profile.id, includeLegacy),
     loadDnaHistory(profile.id),
-    loadDnaSignals(userId, profile.sourceCount),
+    loadDnaSignals(profile.id, profile.sourceCount, includeLegacy),
   ]);
 
   return { profile, traits: sortTraits(rows), feedback, history, signals };
@@ -585,14 +697,18 @@ export async function getDnaProfile(userId: string): Promise<StoredDnaProfile | 
  */
 export async function setTraitLock(
   userId: string,
+  artistAlias: string,
   traitKey: string,
   locked: boolean,
   options: { now?: Date } = {},
 ): Promise<boolean> {
+  const profileId = await findDnaProfileId(userId, artistAlias);
+  if (!profileId) return false;
+
   const updated = await db
     .update(dnaTraits)
     .set({ lockedAt: locked ? options.now ?? new Date() : null })
-    .where(and(eq(dnaTraits.userId, userId), eq(dnaTraits.traitKey, traitKey)))
+    .where(and(eq(dnaTraits.profileId, profileId), eq(dnaTraits.traitKey, traitKey)))
     .returning({ id: dnaTraits.id });
 
   return updated.length > 0;
@@ -607,13 +723,14 @@ export type RecomputeResult = StoredDnaProfile & { built: DnaBuildResult };
  */
 export async function recomputeDnaProfile(
   userId: string,
-  options: { now?: Date } = {},
+  options: { now?: Date; artistAlias?: string } = {},
 ): Promise<RecomputeResult> {
+  const artistAlias = options.artistAlias?.trim() ?? "";
   const [sources, voice, library, habits] = await Promise.all([
-    loadDnaSources(userId),
-    loadDnaVoiceProfile(userId),
-    loadDnaLibrary(userId),
-    loadDnaHabitProfile(userId),
+    loadDnaSources(userId, artistAlias),
+    loadDnaVoiceProfile(userId, artistAlias),
+    loadDnaLibrary(userId, artistAlias),
+    loadDnaHabitProfile(userId, artistAlias),
   ]);
   const now = options.now ?? new Date();
   const audioBuilt = buildDnaProfile(sources, { ...options, voice, library, habits });
@@ -645,6 +762,7 @@ export async function recomputeDnaProfile(
       .insert(dnaProfiles)
       .values({
         userId,
+        artistAlias,
         name: truncate(built.profile.name, 160),
         summary: built.profile.summary,
         sourceCount: built.profile.sourceCount,
@@ -655,7 +773,7 @@ export async function recomputeDnaProfile(
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: dnaProfiles.userId,
+        target: [dnaProfiles.userId, dnaProfiles.artistAlias],
         set: {
           name: truncate(built.profile.name, 160),
           summary: built.profile.summary,
@@ -771,9 +889,9 @@ export async function recomputeDnaProfile(
   });
 
   const [feedback, history, signals] = await Promise.all([
-    loadDnaFeedback(userId),
+    loadDnaFeedback(result.profile.id, !artistAlias),
     loadDnaHistory(result.profile.id),
-    loadDnaSignals(userId, built.profile.sourceCount),
+    loadDnaSignals(result.profile.id, built.profile.sourceCount, !artistAlias),
   ]);
 
   return { profile: result.profile, traits: result.traits, feedback, history, signals, built };
@@ -785,8 +903,33 @@ export async function recomputeDnaProfile(
  * save request should not wait for a full catalogue pass, and the next DNA
  * read picks up the stored snapshot.
  */
-export function refreshDnaProfileInBackground(userId: string): void {
-  void recomputeDnaProfile(userId).catch((error) => {
+export function refreshDnaProfileInBackground(userId: string, artistAlias: string = ""): void {
+  void recomputeDnaProfile(userId, { artistAlias }).catch((error) => {
+    console.error("[dna] background recompute failed", error);
+  });
+}
+
+/**
+ * A generation can move two snapshots: the account-wide profile (it includes
+ * every track and every habit event) and the alias tab it was saved under.
+ * The alias is only rebuilt when that tab already exists — an unvisited tab
+ * builds itself on first visit, and a free-text artist name should not leave a
+ * profile row nobody asked for behind.
+ */
+export function refreshDnaAfterGeneration(userId: string, artistAlias: string | null): void {
+  const alias = artistAlias?.trim() ?? "";
+  void (async () => {
+    const jobs = [recomputeDnaProfile(userId)];
+    if (alias) {
+      const [profile] = await db
+        .select({ id: dnaProfiles.id })
+        .from(dnaProfiles)
+        .where(and(eq(dnaProfiles.userId, userId), eq(dnaProfiles.artistAlias, alias)))
+        .limit(1);
+      if (profile) jobs.push(recomputeDnaProfile(userId, { artistAlias: alias }));
+    }
+    await Promise.allSettled(jobs);
+  })().catch((error) => {
     console.error("[dna] background recompute failed", error);
   });
 }

@@ -25,6 +25,8 @@ type Choice = "left" | "right" | "neither";
 
 type Props = {
   open: boolean;
+  /** Which alias profile the duels are for ('' = account-wide). */
+  alias: string;
   /** `changed` is true when at least one answer was saved, so the page can refresh the profile. */
   onClose: (changed: boolean) => void;
 };
@@ -40,7 +42,7 @@ const SWIPE_DISTANCE = 60;
  * feedback event and hands back the next pair, so this component holds no
  * scoring logic of its own.
  */
-export default function CalibrateModal({ open, onClose }: Props) {
+export default function CalibrateModal({ open, alias, onClose }: Props) {
   const t = useT();
   const [state, setState] = useState<CalibrationState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,7 +67,8 @@ export default function CalibrateModal({ open, onClose }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/dna/calibrate");
+      const query = alias ? `?alias=${encodeURIComponent(alias)}` : "";
+      const res = await fetch(`/api/dna/calibrate${query}`);
       if (!res.ok) throw new Error("load failed");
       setState((await res.json()) as CalibrationState);
     } catch {
@@ -73,7 +76,7 @@ export default function CalibrateModal({ open, onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [alias, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +111,7 @@ export default function CalibrateModal({ open, onClose }: Props) {
             leftId: pair.left.id,
             rightId: pair.right.id,
             choice,
+            alias,
           }),
         });
         if (!res.ok) throw new Error("save failed");
@@ -119,7 +123,7 @@ export default function CalibrateModal({ open, onClose }: Props) {
         setSaving(false);
       }
     },
-    [saving, state, stopPreview, t]
+    [alias, saving, state, stopPreview, t]
   );
 
   const togglePreview = (card: Card) => {

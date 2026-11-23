@@ -39,6 +39,7 @@ function profile(input: {
     profile: {
       id: "profile-1",
       userId: "user-1",
+      artistAlias: "",
       name: "Midtempo cinematic pop",
       summary: null,
       sourceCount: 1200,

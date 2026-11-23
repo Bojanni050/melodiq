@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { resolveDnaAlias } from "@/lib/dna/alias";
 import {
   CALIBRATION_TOTAL,
   calibrationCardText,
@@ -52,11 +53,11 @@ function presentPair(pair: CalibrationPair | null) {
 }
 
 /** Next duel plus progress. Shared by GET and by the POST response. */
-async function nextState(userId: string) {
+async function nextState(userId: string, artistAlias: string) {
   const [stored, candidates, answered] = await Promise.all([
-    getDnaProfile(userId),
-    loadCalibrationCandidates(userId),
-    loadCalibrationAnswers(userId),
+    getDnaProfile(userId, artistAlias),
+    loadCalibrationCandidates(userId, artistAlias),
+    loadCalibrationAnswers(userId, artistAlias),
   ]);
 
   const done = answered.length >= CALIBRATION_TOTAL;
@@ -73,12 +74,18 @@ async function nextState(userId: string) {
 }
 
 /** Returns the next calibration duel and how far the user is. */
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAuth();
   if (auth instanceof NextResponse) return auth;
 
+  const url = new URL(request.url);
+  const alias = await resolveDnaAlias(auth.userId, url.searchParams.get("alias"));
+  if (alias === null) {
+    return NextResponse.json({ error: "Unknown artist alias" }, { status: 400 });
+  }
+
   try {
-    return NextResponse.json(await nextState(auth.userId));
+    return NextResponse.json(await nextState(auth.userId, alias));
   } catch (error) {
     console.error("Failed to load calibration duel:", error);
     return NextResponse.json({ error: "Failed to load calibration" }, { status: 500 });
@@ -111,6 +118,7 @@ export async function POST(request: Request) {
     leftId?: unknown;
     rightId?: unknown;
     choice?: unknown;
+    alias?: unknown;
   };
   const traitKey = typeof payload.traitKey === "string" ? payload.traitKey.trim() : "";
   const leftId = typeof payload.leftId === "string" ? payload.leftId : "";
@@ -124,8 +132,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown choice" }, { status: 400 });
   }
 
+  const alias = await resolveDnaAlias(userId, payload.alias);
+  if (alias === null) {
+    return NextResponse.json({ error: "Unknown artist alias" }, { status: 400 });
+  }
+
   try {
-    const candidates = await loadCalibrationCandidates(userId);
+    const candidates = await loadCalibrationCandidates(userId, alias);
     const left = candidates.find((candidate) => candidate.id === leftId);
     const right = candidates.find((candidate) => candidate.id === rightId);
     const leftValue = left ? (traitKey === "tempo" ? left.tempo : traitKey === "energy" ? left.energy : null) : null;
@@ -135,7 +148,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unknown duel" }, { status: 404 });
     }
 
-    const answered = await loadCalibrationAnswers(userId);
+    const answered = await loadCalibrationAnswers(userId, alias);
     const key = calibrationPairKey(traitKey, leftId, rightId);
     const alreadyAnswered = answered.some(
       (entry) => calibrationPairKey(entry.traitKey, entry.trackAId, entry.trackBId) === key,
@@ -144,7 +157,7 @@ export async function POST(request: Request) {
     if (!alreadyAnswered && answered.length < CALIBRATION_TOTAL) {
       const pair: CalibrationPair = { traitKey, left, right, leftValue, rightValue };
       const [trackAId, trackBId] = sortPairIds(leftId, rightId);
-      const stored = await recordCalibrationAnswer(userId, {
+      const stored = await recordCalibrationAnswer(userId, alias, {
         traitKey,
         trackAId,
         trackBId,
@@ -156,7 +169,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json(await nextState(userId));
+    return NextResponse.json(await nextState(userId, alias));
   } catch (error) {
     console.error("Failed to record calibration answer:", error);
     return NextResponse.json({ error: "Failed to save answer" }, { status: 500 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { resolveDnaAlias } from "@/lib/dna/alias";
 import { serialiseDnaProfile } from "@/lib/dna/present";
 import { getDnaProfile, setTraitLock } from "@/lib/dna/repository";
 import { requireAuth } from "@/lib/require-auth";
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const payload = (body ?? {}) as { traitKey?: unknown; locked?: unknown };
+  const payload = (body ?? {}) as { traitKey?: unknown; locked?: unknown; alias?: unknown };
   const traitKey = typeof payload.traitKey === "string" ? payload.traitKey.trim() : "";
   const locked = payload.locked !== false;
 
@@ -40,13 +41,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A valid traitKey is required" }, { status: 400 });
   }
 
+  const alias = await resolveDnaAlias(userId, payload.alias);
+  if (alias === null) {
+    return NextResponse.json({ error: "Unknown artist alias" }, { status: 400 });
+  }
+
   try {
-    const updated = await setTraitLock(userId, traitKey, locked);
+    const updated = await setTraitLock(userId, alias, traitKey, locked);
     if (!updated) {
       return NextResponse.json({ error: "Unknown trait for this profile" }, { status: 404 });
     }
 
-    const stored = await getDnaProfile(userId);
+    const stored = await getDnaProfile(userId, alias);
     return NextResponse.json(serialiseDnaProfile(stored));
   } catch (error) {
     console.error("[dna] failed to change a trait lock", error);

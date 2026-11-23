@@ -57,6 +57,8 @@ export type DnaChangePayload = {
 };
 
 export type DnaProfilePayload = {
+  /** '' = account-wide default tab, otherwise the artist alias. */
+  artistAlias: string;
   name: string | null;
   summary: string | null;
   sourceCount: number;
@@ -113,6 +115,7 @@ export function serialiseDnaProfile(
     signals: stored.signals ?? emptySignals,
     changes,
     profile: {
+      artistAlias: stored.profile.artistAlias,
       name: stored.profile.name,
       summary: stored.profile.summary,
       sourceCount: stored.profile.sourceCount,

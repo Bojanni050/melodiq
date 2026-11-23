@@ -780,6 +780,12 @@ const en = {
     emptyBody:
       "Finish a track and Melody DNA starts learning your tempo, energy, language and the words you reach for. Rating tracks sharpens it fastest.",
     emptyCta: "Open the Studio",
+    tabDefault: "Default",
+    tabDefaultHint: "Every finished track, whatever the artist name",
+    tabsLabel: "Artist profile",
+    aliasEmptyTitle: "No finished tracks under {alias} yet",
+    aliasEmptyBody:
+      "This tab only counts tracks saved with {alias} as the artist. Generate or rename a track, then rebuild the profile.",
     learning: "Still learning",
     confirm: "This is right",
     dispute: "This isn't me",

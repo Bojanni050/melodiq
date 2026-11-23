@@ -783,6 +783,12 @@ const nl: typeof en = {
     emptyBody:
       "Maak een track af en Melody DNA begint je tempo, energie, taal en woordkeuze te leren. Tracks beoordelen versnelt dat het meest.",
     emptyCta: "Naar de Studio",
+    tabDefault: "Standaard",
+    tabDefaultHint: "Alle afgeronde tracks, ongeacht de artiestennaam",
+    tabsLabel: "Artiestprofiel",
+    aliasEmptyTitle: "Nog geen afgeronde tracks onder {alias}",
+    aliasEmptyBody:
+      "Deze tab telt alleen tracks die met {alias} als artiest zijn opgeslagen. Genereer of hernoem een track en bouw het profiel opnieuw.",
     learning: "Nog aan het leren",
     confirm: "Dit klopt",
     dispute: "Dit ben ik niet",

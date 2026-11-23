@@ -383,12 +383,15 @@ CREATE TABLE IF NOT EXISTS "cloned_voices" (
 
 CREATE INDEX IF NOT EXISTS "cloned_voices_user_id_idx" ON "cloned_voices"("user_id");
 
--- Melody DNA: one profile row per user plus the traits a recompute derives from
--- their finished tracks. Mirrors drizzle/0015_melody_dna.sql — kept here because
--- deployed databases are maintained through initializeDatabase() on boot.
+-- Melody DNA: one profile row per artist alias ('' = the account-wide profile)
+-- plus the traits a recompute derives from their finished tracks. Mirrors
+-- drizzle/0015_melody_dna.sql and drizzle/0030_bitter_marvel_apes.sql — kept
+-- here because deployed databases are maintained through initializeDatabase()
+-- on boot.
 CREATE TABLE IF NOT EXISTS "dna_profiles" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL,
+  "artist_alias" varchar(255) NOT NULL DEFAULT '',
   "name" varchar(160),
   "summary" text,
   "source_count" integer NOT NULL DEFAULT 0,
@@ -400,7 +403,7 @@ CREATE TABLE IF NOT EXISTS "dna_profiles" (
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "dna_profiles_user_unique" ON "dna_profiles"("user_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "dna_profiles_user_alias_unique" ON "dna_profiles"("user_id", "artist_alias");
 
 CREATE TABLE IF NOT EXISTS "dna_traits" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -451,6 +454,7 @@ CREATE INDEX IF NOT EXISTS "dna_trait_history_user_changed_idx" ON "dna_trait_hi
 CREATE TABLE IF NOT EXISTS "dna_feedback_events" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL,
+  "profile_id" uuid,
   "trait_key" varchar(60) NOT NULL,
   "category" varchar(20),
   "kind" varchar(20) NOT NULL,
@@ -465,6 +469,7 @@ CREATE INDEX IF NOT EXISTS "dna_feedback_events_user_idx" ON "dna_feedback_event
 CREATE TABLE IF NOT EXISTS "dna_calibration_answers" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL,
+  "profile_id" uuid,
   "trait_key" varchar(60) NOT NULL,
   "track_a_id" uuid NOT NULL,
   "track_b_id" uuid NOT NULL,
@@ -486,6 +491,7 @@ CREATE TABLE IF NOT EXISTS "generation_events" (
   "origin" varchar(20) NOT NULL,
   "mode" varchar(10) NOT NULL,
   "edited" boolean NOT NULL DEFAULT false,
+  "artist_alias" varchar(255),
   "created_at" timestamp NOT NULL DEFAULT now()
 );
 
@@ -521,6 +527,15 @@ const alterDnaSql = `
 ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS first_seen_at timestamp NOT NULL DEFAULT now();
 ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS last_changed_at timestamp NOT NULL DEFAULT now();
 ALTER TABLE dna_traits ADD COLUMN IF NOT EXISTS locked_at timestamp;
+-- Per-alias DNA: '' is the account-wide profile, any other value only counts
+-- tracks whose artist_name matches. The old per-user unique index would block a
+-- second profile per account, so it is replaced rather than amended.
+ALTER TABLE dna_profiles ADD COLUMN IF NOT EXISTS artist_alias varchar(255) NOT NULL DEFAULT '';
+DROP INDEX IF EXISTS "dna_profiles_user_unique";
+CREATE UNIQUE INDEX IF NOT EXISTS "dna_profiles_user_alias_unique" ON "dna_profiles"("user_id", "artist_alias");
+ALTER TABLE dna_feedback_events ADD COLUMN IF NOT EXISTS profile_id uuid;
+ALTER TABLE dna_calibration_answers ADD COLUMN IF NOT EXISTS profile_id uuid;
+ALTER TABLE generation_events ADD COLUMN IF NOT EXISTS artist_alias varchar(255);
 CREATE TABLE IF NOT EXISTS "dna_trait_history" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "profile_id" uuid NOT NULL,

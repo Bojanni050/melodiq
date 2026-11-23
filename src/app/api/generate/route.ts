@@ -29,7 +29,7 @@ import { supportsInspiration } from "@/lib/inspiration";
 import { isDnaStrength, loadDnaContext } from "@/lib/dna/context-service";
 import { mergeDnaIntoPrompt } from "@/lib/dna/context";
 import { parseHabit } from "@/lib/dna/habits";
-import { recordGenerationHabit, refreshDnaProfileInBackground } from "@/lib/dna/repository";
+import { recordGenerationHabit, refreshDnaAfterGeneration } from "@/lib/dna/repository";
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -160,11 +160,14 @@ export async function POST(request: NextRequest) {
       provider,
       providerModel: typeof providerModel === "string" ? providerModel : null,
       ...habit,
+      // The name the track will actually be saved under, so this event can be
+      // counted in that alias's profile (and in the account-wide one).
+      artistAlias: resolvedArtistName,
     })
       // The habits cards read the stored snapshot, so without this a new event
       // only shows up after a manual rebuild. Same pattern as saved lyrics and
       // presets: refresh in the background, never on the request's critical path.
-      .then(() => refreshDnaProfileInBackground(userId))
+      .then(() => refreshDnaAfterGeneration(userId, resolvedArtistName))
       .catch((error) => {
         console.error("Failed to record generation habit:", error);
       });

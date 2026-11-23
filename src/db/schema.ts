@@ -785,6 +785,12 @@ export const coverImagesRelations = relations(coverImages, ({ one }) => ({
 export const dnaProfiles = pgTable("dna_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
+  // Which artist alias this snapshot describes. Empty string = the account-wide
+  // profile (every finished track); another value = only tracks whose
+  // artist_name matches that alias (see lib/dna/repository.ts loadDnaSources).
+  // A string instead of null so the (user_id, artist_alias) unique index also
+  // covers the default profile — Postgres treats NULLs as distinct.
+  artistAlias: varchar("artist_alias", { length: 255 }).default("").notNull(),
   // Derived human-readable shape of the profile ("Midtempo cinematic pop").
   // Derived, not user-authored, so a recompute may freely rewrite it.
   name: varchar("name", { length: 160 }),
@@ -799,9 +805,9 @@ export const dnaProfiles = pgTable("dna_profiles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
-  // One profile per user; recompute upserts on this key instead of appending
-  // history, so /api/dna always reads one current snapshot.
-  uniqueIndex("dna_profiles_user_unique").on(table.userId),
+  // One profile per alias per user; recompute upserts on this key instead of
+  // appending history, so /api/dna always reads one current snapshot per tab.
+  uniqueIndex("dna_profiles_user_alias_unique").on(table.userId, table.artistAlias),
 ]);
 
 export const dnaTraits = pgTable("dna_traits", {
@@ -936,6 +942,10 @@ export const dnaTraitsRelations = relations(dnaTraits, ({ one }) => ({
 export const dnaFeedbackEvents = pgTable("dna_feedback_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
+  // Which alias profile the correction belongs to. Nullable for rows written
+  // before per-alias DNA existed; those count as the default (account-wide)
+  // profile, which is what they were made against.
+  profileId: uuid("profile_id"),
   // Matches dna_traits.trait_key. Events for a trait that later disappears stay
   // in the log; they simply match nothing until the trait comes back.
   traitKey: varchar("trait_key", { length: 60 }).notNull(),
@@ -964,6 +974,9 @@ export const dnaFeedbackEventsRelations = relations(dnaFeedbackEvents, ({ one })
 export const dnaCalibrationAnswers = pgTable("dna_calibration_answers", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),
+  // Alias profile the duel was answered for; null = pre-per-alias rows, read as
+  // the default profile.
+  profileId: uuid("profile_id"),
   traitKey: varchar("trait_key", { length: 60 }).notNull(),
   // Stored in sorted order (a < b) so (x, y) and (y, x) are the same pair.
   trackAId: uuid("track_a_id").notNull(),
@@ -994,6 +1007,11 @@ export const generationEvents = pgTable("generation_events", {
   // simple | advanced
   mode: varchar("mode", { length: 10 }).notNull(),
   edited: boolean("edited").default(false).notNull(),
+  // Artist name the generation was made under (resolved server-side, so a
+  // request without an explicit name still records the account's primary
+  // alias). Per-alias DNA filters habits on this; null on older rows, which
+  // therefore only count towards the default profile.
+  artistAlias: varchar("artist_alias", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   // Newest-first reads per user; the DNA build only needs the recent tail.
