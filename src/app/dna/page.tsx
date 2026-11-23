@@ -161,6 +161,16 @@ function splitTraitKey(key: string): { base: string; language: string | null } {
   return { base: key.slice(0, separator), language: key.slice(separator + 1) };
 }
 
+/**
+ * `words` is the only category with per-language sets (`rhyme_density:nl`).
+ * An empty language shows the overall set (bare keys); a language shows only
+ * that set. Every other category is language-agnostic and always passes.
+ */
+function matchesLanguageView(trait: { key: string; category: string }, language: string): boolean {
+  if (trait.category !== "words") return true;
+  return splitTraitKey(trait.key).language === (language || null);
+}
+
 /** Language code → the reader's own name for it ("nl" → "Nederlands"). */
 function languageLabel(code: string, locale: string): string {
   try {
@@ -200,6 +210,35 @@ function isFeedbackActive(trait: DnaTraitPayload, kind: DnaFeedbackKind): boolea
   if (kind === "confirm") return trait.verdict === "confirmed";
   if (kind === "reject") return trait.verdict === "disputed";
   return trait.direction === kind;
+}
+
+/** One language selector, used by the helix header and the words header. */
+function LanguageSelect({
+  value,
+  languages,
+  onChange,
+}: {
+  value: string;
+  languages: Array<{ code: string; sourceCount: number; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  const t = useT();
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label={t("dna.wordsLanguage")}
+      title={t("dna.wordsLanguage")}
+      className="border border-line bg-white/5 px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
+    >
+      <option value="">{t("dna.wordsAllLanguages")}</option>
+      {languages.map((language) => (
+        <option key={language.code} value={language.code}>
+          {language.label} · {language.sourceCount}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 function TraitFeedback({
@@ -269,8 +308,12 @@ export default function DnaPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingTrait, setPendingTrait] = useState<string | null>(null);
   const [calibrating, setCalibrating] = useState(false);
-  /** "" = the whole-catalogue `words` traits; otherwise a language suffix. */
-  const [wordsLanguage, setWordsLanguage] = useState("");
+  /**
+   * "" = the whole-catalogue `words` traits; otherwise a language suffix.
+   * English is the default because it is the most common writing language, and
+   * the unfiltered view (every set side by side) makes the helix unreadable.
+   */
+  const [wordsLanguage, setWordsLanguage] = useState("en");
 
   // First visit has no profile to read yet, so it is built once automatically.
   // Guarded with a ref because React may replay the effect (StrictMode) and a
@@ -389,8 +432,8 @@ export default function DnaPage() {
   }, [traits]);
 
   // Languages that own a per-language `words` set, most tracks first. The
-  // overall set (bare keys) is the default view — showing every language at
-  // once buries the whole-catalogue picture under a wall of suffixed cards.
+  // overall set (bare keys) stays one dropdown entry — showing every language
+  // at once buries the whole-catalogue picture under a wall of suffixed cards.
   const wordsLanguages = useMemo(() => {
     const counts = new Map<string, number>();
     for (const trait of traitsByCategory.words ?? []) {
@@ -447,7 +490,8 @@ export default function DnaPage() {
   const nextStageAt = stage === "seed" ? SPROUT_AT : stage === "sprout" ? GROWN_AT : null;
 
   // The helix and the share card read the same localised traits as the cards
-  // below, so a node label never contradicts the section it points at.
+  // below, so a node label never contradicts the section it points at. The
+  // language filter applies here too: one set per node keeps the shape short.
   const categoryLabels = useMemo(() => {
     const map: Record<string, string> = {};
     for (const category of data?.categories ?? []) {
@@ -460,24 +504,25 @@ export default function DnaPage() {
 
   const helixTraits = useMemo(
     () =>
-      traits.map((trait) => {
-        const { base, language } = splitTraitKey(trait.key);
-        const labelKey = TRAIT_LABEL_KEYS[base];
-        const label = labelKey ? t(labelKey) : trait.label;
-        return {
-          key: trait.key,
-          category: trait.category,
-          // The helix mixes every set, so the language stays visible here even
-          // though the filtered cards below already say it.
-          label: language ? `${label} (${language.toUpperCase()})` : label,
-          display: trait.display ?? "",
-          confidence: trait.confidence,
-          verdict: trait.verdict,
-          direction: trait.direction,
-        };
-      }),
+      traits
+        .filter((trait) => matchesLanguageView(trait, activeWordsLanguage))
+        .map((trait) => {
+          const { base } = splitTraitKey(trait.key);
+          const labelKey = TRAIT_LABEL_KEYS[base];
+          return {
+            key: trait.key,
+            category: trait.category,
+            // The selector above the helix already names the set, so the label
+            // stays clean instead of repeating "(EN)" on every writing node.
+            label: labelKey ? t(labelKey) : trait.label,
+            display: trait.display ?? "",
+            confidence: trait.confidence,
+            verdict: trait.verdict,
+            direction: trait.direction,
+          };
+        }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [traits, locale]
+    [traits, locale, activeWordsLanguage]
   );
 
   const [selectedTrait, setSelectedTrait] = useState<string | null>(null);
@@ -670,7 +715,16 @@ export default function DnaPage() {
                   <header className="flex items-center gap-2 border-b border-line px-4 py-3">
                     <span className="h-2 w-2 rounded-full bg-accent" />
                     <h2 className="text-sm font-medium">{t("dna.helixTitle")}</h2>
-                    <span className="ml-auto text-xs tabular-nums text-ink-dim">{traits.length}</span>
+                    <span className="ml-auto flex items-center gap-2">
+                      {wordsLanguages.length > 0 && (
+                        <LanguageSelect
+                          value={activeWordsLanguage}
+                          languages={wordsLanguages}
+                          onChange={setWordsLanguage}
+                        />
+                      )}
+                      <span className="text-xs tabular-nums text-ink-dim">{helixTraits.length}</span>
+                    </span>
                   </header>
                   <div className="px-2 py-3 sm:px-4">
                     <DnaHelix
@@ -712,11 +766,9 @@ export default function DnaPage() {
                     const isWords = category.id === "words";
                     // Only the words category is split per language; the other
                     // categories are language-agnostic and stay untouched.
-                    const visibleTraits = isWords
-                      ? categoryTraits.filter(
-                          (trait) => splitTraitKey(trait.key).language === (activeWordsLanguage || null)
-                        )
-                      : categoryTraits;
+                    const visibleTraits = categoryTraits.filter((trait) =>
+                      matchesLanguageView(trait, activeWordsLanguage)
+                    );
                     const categorySolid = visibleTraits.filter(
                       (trait) => trait.confidence >= SOLID_CONFIDENCE
                     ).length;
@@ -731,20 +783,11 @@ export default function DnaPage() {
                           </h2>
                           <span className="ml-auto flex items-center gap-2">
                             {isWords && wordsLanguages.length > 0 && (
-                              <select
+                              <LanguageSelect
                                 value={activeWordsLanguage}
-                                onChange={(event) => setWordsLanguage(event.target.value)}
-                                aria-label={t("dna.wordsLanguage")}
-                                title={t("dna.wordsLanguage")}
-                                className="border border-line bg-white/5 px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
-                              >
-                                <option value="">{t("dna.wordsAllLanguages")}</option>
-                                {wordsLanguages.map((language) => (
-                                  <option key={language.code} value={language.code}>
-                                    {language.label} · {language.sourceCount}
-                                  </option>
-                                ))}
-                              </select>
+                                languages={wordsLanguages}
+                                onChange={setWordsLanguage}
+                              />
                             )}
                             <span className="text-xs tabular-nums text-ink-dim">
                               {categorySolid}/{visibleTraits.length}
