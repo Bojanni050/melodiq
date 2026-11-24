@@ -42,6 +42,7 @@ export default memo(function TrackList({
   hideCovers = false,
   showTrackNumbers = false,
   relaxed = false,
+  showGenerationMeta = false,
 }: {
   tracks: TrackItem[];
   isGenerating?: boolean;
@@ -73,6 +74,8 @@ export default memo(function TrackList({
   hideCovers?: boolean;
   /** Number rows 1-based in display order (release track listings). */
   showTrackNumbers?: boolean;
+  /** Show generation provenance (Suno Max, cloned voice) on each row. */
+  showGenerationMeta?: boolean;
 }) {
   const { playTrackFromGesture, setQueue, setPlayContext, autoPlayNext } = usePlayerStore();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -1070,6 +1073,7 @@ export default memo(function TrackList({
                     isDetailSelected={selectedTrackId === track.id}
                     relaxed={relaxed}
                     hideCover={hideCovers}
+                    showGenerationMeta={showGenerationMeta}
                     trackNumber={showTrackNumbers ? index + 1 : undefined}
                   />
                 </div>

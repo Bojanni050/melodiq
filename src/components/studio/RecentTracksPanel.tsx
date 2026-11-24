@@ -49,6 +49,7 @@ export default function RecentTracksPanel({
           tracks={tracks}
           enableDragReorder={false}
           autoQueueAfterPlay
+          showGenerationMeta
           isGenerating={isGenerating}
           onSelect={onSelect}
           onDelete={onDelete}

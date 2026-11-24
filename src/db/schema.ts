@@ -207,9 +207,12 @@ export const tracks = pgTable("tracks", {
   writerName: varchar("writer_name", { length: 255 }),
   sunoStyleInfluence: integer("suno_style_influence"),
   sunoWeirdness: integer("suno_weirdness"),
-  // APIMart Suno v6 options recorded on an uploaded track whose source is Suno
-  // v6 (see the upload panel). Not used for generation.
+  // APIMart Suno v6 options. Variety/audio format are recorded on an uploaded
+  // track whose source is Suno v6 (see the upload panel); Max mode is also
+  // written by dispatchApimart/dispatchApimartInspo for generated tracks.
   sunoVariety: varchar("suno_variety", { length: 10 }),
+  // Suno Max mode (APIMart only): true when the generation (or an upload of a
+  // Suno v6 track) used Max. PoYo has no Max mode, so it stays false there.
   sunoMaxMode: boolean("suno_max_mode").default(false).notNull(),
   sunoAudioFormat: varchar("suno_audio_format", { length: 10 }),
   // Melody Genie options recorded on an uploaded track whose source is Melody

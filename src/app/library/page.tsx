@@ -602,6 +602,7 @@ export default function LibraryPage() {
                     tracks={tracks}
                     autoQueueAfterPlay
                     relaxed={relaxed}
+                    showGenerationMeta
                     onReusePrompt={handleReusePrompt}
                     onSelect={(track) => {
                       openTrackDetails({

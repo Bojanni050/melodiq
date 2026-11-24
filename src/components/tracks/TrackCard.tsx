@@ -112,6 +112,7 @@ const TrackCard = memo(function TrackCard({
   isOwner = true,
   relaxed = false,
   hideCover = false,
+  showGenerationMeta = false,
   trackNumber,
 }: {
   track: TrackItem;
@@ -143,6 +144,8 @@ const TrackCard = memo(function TrackCard({
   relaxed?: boolean;
   /** Hide the cover artwork (e.g. release listings, where the release cover leads). A compact play button takes its place. */
   hideCover?: boolean;
+  /** Show how the track was generated (Suno Max, cloned voice) — Studio recent tracks and the Library. */
+  showGenerationMeta?: boolean;
   /** 1-based position shown in front of the row (release track listings). */
   trackNumber?: number;
 }) {
@@ -620,6 +623,14 @@ const TrackCard = memo(function TrackCard({
   const mp3Label = (effectiveFormat ?? "mp3").toUpperCase();
   const hdLabel = track.formatHd ? track.formatHd.toUpperCase() : "HD";
   const isUploadedTrack = track.provider === "upload";
+  // Generation provenance labels only where the caller opts in (Studio recent
+  // tracks and the Library), so releases/workspaces/discover stay unchanged.
+  const showSunoMax = showGenerationMeta && track.sunoMaxMode === true;
+  // "Which voice sang this" — only when a cloned voice was actually used. The
+  // name is joined into the list payload; older rows may lack it, so fall back
+  // to a generic label rather than hiding the fact that a voice was used.
+  const generationVoiceName =
+    showGenerationMeta && track.voiceId ? (track.voiceName?.trim() || "Cloned voice") : null;
   const hasTcl =
     (!!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps)) || tclReadyLocally;
   // The editor works on the alignment document, not on lyricsTimestamps —
@@ -718,6 +729,16 @@ const TrackCard = memo(function TrackCard({
                 <ArtistLink name={track.artistName || artistAlias} className="hover:text-accent transition-colors" />
               ) : (
                 <span className="italic opacity-50">no artist</span>
+              )}
+              {showSunoMax && (
+                <span className="ml-2 text-[10px] text-amber-200" title="Generated with Suno Max mode (APIMart)">
+                  · Suno Max
+                </span>
+              )}
+              {generationVoiceName && (
+                <span className="ml-2 text-[10px] text-fuchsia-200" title={`Cloned voice: ${generationVoiceName}`}>
+                  · {generationVoiceName}
+                </span>
               )}
             </p>
           </div>
@@ -1138,6 +1159,26 @@ const TrackCard = memo(function TrackCard({
             )}
             {isUploadedTrack && (
               <span className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-emerald-300/30 bg-emerald-400/10 text-emerald-200 shrink-0">Uploaded</span>
+            )}
+            {showSunoMax && (
+              <span
+                className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border border-amber-300/30 bg-amber-400/10 text-amber-200 shrink-0"
+                title="Generated with Suno Max mode (APIMart)"
+              >
+                Suno Max
+              </span>
+            )}
+            {generationVoiceName && (
+              <span
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-fuchsia-300/30 bg-fuchsia-400/10 text-fuchsia-200 truncate max-w-[140px] shrink-0"
+                title={`Cloned voice: ${generationVoiceName}`}
+              >
+                <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v1a7 7 0 01-14 0v-1M12 17v4M8 21h8" />
+                </svg>
+                {generationVoiceName}
+              </span>
             )}
             {assignedWorkspaceName && (
               <span
@@ -1574,6 +1615,10 @@ const TrackCard = memo(function TrackCard({
     prevProps.track.lyricsTimestamps === nextProps.track.lyricsTimestamps &&
     prevProps.track.instrumental === nextProps.track.instrumental &&
     prevProps.track.isCollaboration === nextProps.track.isCollaboration &&
+    prevProps.track.sunoMaxMode === nextProps.track.sunoMaxMode &&
+    prevProps.track.voiceId === nextProps.track.voiceId &&
+    prevProps.track.voiceName === nextProps.track.voiceName &&
+    prevProps.showGenerationMeta === nextProps.showGenerationMeta &&
     prevProps.playlists?.length === nextProps.playlists?.length &&
     prevProps.workspaceById?.size === nextProps.workspaceById?.size &&
     prevProps.relaxed === nextProps.relaxed

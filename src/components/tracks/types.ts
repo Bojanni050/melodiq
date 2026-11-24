@@ -52,6 +52,12 @@ export interface TrackItem {
   translatedLanguage?: string | null;
   sunoStyleInfluence?: number | null;
   sunoWeirdness?: number | null;
+  /** True when this track was generated with APIMart's Suno Max mode. */
+  sunoMaxMode?: boolean | null;
+  /** Cloned voice used as persona, if any (null = instrumental/no voice). */
+  voiceId?: string | null;
+  /** Display name of that cloned voice, joined in by GET /api/tracks. */
+  voiceName?: string | null;
   melodyGenieArtistInfluence?: string | null;
   melodyGenieAdditions?: string | null;
   melodyGenieStyleInfluence?: number | null;

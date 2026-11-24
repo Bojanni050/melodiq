@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { db } from "@/db";
-import { tracks, users, trackAlignments } from "@/db/schema";
+import { tracks, users, trackAlignments, clonedVoices } from "@/db/schema";
 import { eq, desc, and, or, inArray, ne, lt, isNull, isNotNull, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/require-auth";
 import { extractPoYoErrorMessage, getPoYoStatus, getPoYoStatusValue } from "@/lib/providers/poyo";
@@ -76,6 +76,11 @@ export async function GET(request: NextRequest) {
     translatedLanguage: tracks.translatedLanguage,
     instrumental: tracks.instrumental,
     vocalGender: tracks.vocalGender,
+    // Generation provenance shown in the Studio/Library track lists: whether
+    // Suno Max mode was used and which cloned voice sang it (null = none).
+    sunoMaxMode: tracks.sunoMaxMode,
+    voiceId: tracks.voiceId,
+    voiceName: clonedVoices.name,
     isCollaboration: tracks.isCollaboration,
     status: tracks.status,
     audioUrl: tracks.audioUrl,
@@ -505,6 +510,9 @@ export async function GET(request: NextRequest) {
     // One index lookup per row (track_alignments_track_id_unique) for the
     // hasTclDocument flag above.
     .leftJoin(trackAlignments, eq(trackAlignments.trackId, tracks.id))
+    // Voice name for the "which voice sang this" label; both joins are
+    // one-to-zero, so they cannot multiply the list.
+    .leftJoin(clonedVoices, eq(clonedVoices.id, tracks.voiceId))
     .where(baseWhere)
     .orderBy(desc(tracks.createdAt));
 

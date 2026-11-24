@@ -43,6 +43,12 @@ export interface Track {
   audioDna?: string | null;
   hasAdvancedDna?: boolean | null;
   hasTclDocument?: boolean | null;
+  /** True when this track was generated with APIMart's Suno Max mode. */
+  sunoMaxMode?: boolean | null;
+  /** Cloned voice used as persona, if any (null = instrumental/no voice). */
+  voiceId?: string | null;
+  /** Display name of that cloned voice, joined in by GET /api/tracks. */
+  voiceName?: string | null;
 }
 
 export type TracksResponse = { tracks: Track[]; workspaces?: Workspace[] };

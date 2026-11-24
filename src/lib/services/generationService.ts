@@ -494,13 +494,16 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
   // The model that shaped the sound is remembered on the track, so a later DNA
   // rebuild can tell which model a result came from.
   const modelFields = { dnaModelId: verifiedDnaModelRowId };
+  // Suno Max is an APIMart-only option (PoYo has no equivalent), so both rows
+  // record it and the track lists can show it without asking the provider again.
+  const sunoFields = { sunoMaxMode: apimartMaxMode === true };
 
   const isCustom = (!!lyrics?.trim() && !instrumental) || !!verifiedPersonaId || !!verifiedDnaModelId;
   const genResult = await createApimartGeneration({ prompt, custom: isCustom, version: providerModel || "v6", lyrics: isCustom ? lyrics : undefined, title: resolvedTitle || undefined, style: isCustom ? prompt : undefined, instrumental: instrumental || false, vocalGender: vocalGender && vocalGender !== "auto" ? vocalGender as "Male" | "Female" : undefined, personaId: verifiedPersonaId, customModelId: verifiedDnaModelId, weirdnessConstraint: typeof weirdness === "number" ? Math.round(weirdness) / 100 : undefined, styleWeight: typeof styleInfluence === "number" ? Math.round(styleInfluence) / 100 : undefined, audioWeight: typeof audioWeight === "number" ? Math.round(audioWeight) / 100 : undefined, negativeTags: typeof negativeTags === "string" && negativeTags.trim() ? negativeTags.trim() : undefined, variety: apimartVariety && apimartVariety !== "off" ? apimartVariety : undefined, maxMode: apimartMaxMode === true ? true : undefined, audioFormat: apimartAudioFormat && apimartAudioFormat !== "mp3" ? apimartAudioFormat : undefined });
 
   const [t1, t2] = await Promise.all([
-    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...voiceFields, ...modelFields }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...voiceFields, ...modelFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...voiceFields, ...modelFields, ...sunoFields }).where(eq(tracks.id, track.id!)).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...voiceFields, ...modelFields, ...sunoFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];
@@ -546,9 +549,10 @@ export async function dispatchApimartInspo(ctx: GenerationContext, track: any): 
 
   // Same dual-track fan-out + jobId convention as dispatchApimart, so the
   // existing APIMart completion polling in GET /api/tracks picks these up.
+  const sunoFields = { sunoMaxMode: apimartMaxMode === true };
   const [t1, t2] = await Promise.all([
-    db.update(tracks).set({ status: "generating", jobId: genResult.taskId }).where(eq(tracks.id, track.id!)).returning(),
-    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
+    db.update(tracks).set({ status: "generating", jobId: genResult.taskId, ...sunoFields }).where(eq(tracks.id, track.id!)).returning(),
+    db.insert(tracks).values({ userId, provider: "apimart", providerModel, prompt, lyrics: instrumental ? null : (lyrics || null), instrumental, title: resolvedTitle ? `${resolvedTitle} (2)` : null, artistName: resolvedArtistName, writerName: resolvedWriterName, vocalGender: normalizeVocalGender(vocalGender), ...sunoFields, status: "generating", jobId: `${genResult.taskId}:1` }).returning(),
   ]);
 
   const allTracks = [t1[0], t2[0]];

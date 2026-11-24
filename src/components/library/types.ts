@@ -28,6 +28,12 @@ export interface LibraryTrack {
   artistId?: string | null;
   composerName?: string | null;
   writerName?: string | null;
+  /** True when this track was generated with APIMart's Suno Max mode. */
+  sunoMaxMode?: boolean | null;
+  /** Cloned voice used as persona, if any (null = instrumental/no voice). */
+  voiceId?: string | null;
+  /** Display name of that cloned voice, joined in by GET /api/tracks. */
+  voiceName?: string | null;
   deletedAt?: string | null;
   archivedAt?: string | null;
   hiddenAt?: string | null;
