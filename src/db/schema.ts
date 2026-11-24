@@ -171,6 +171,11 @@ export const tracks = pgTable("tracks", {
   // rank by actual use instead of library order; null means the same as for
   // own_voice (instrumental, provider without persona support, or pre-migration).
   voiceId: uuid("voice_id"),
+  // Snapshot of that voice's name at generation time. The row above can be
+  // deleted (the user removes a cloned voice), and voice_id has no foreign key,
+  // so joining cloned_voices later loses the name. The track keeps its own copy
+  // so the track list can still say which voice sang it.
+  voiceName: varchar("voice_name", { length: 120 }),
   // The DNA model (APIMart custom model trained on this user's own catalogue)
   // that generated this track. APIMart allows either a persona or a custom
   // model, never both, so this is the model counterpart of voice_id.

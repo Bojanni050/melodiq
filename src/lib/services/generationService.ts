@@ -464,11 +464,13 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
 
   let verifiedPersonaId: string | undefined;
   let verifiedVoiceId: string | null = null;
+  let verifiedVoiceName: string | null = null;
   if (personaId) {
-    const [ownedVoice] = await db.select({ id: clonedVoices.id }).from(clonedVoices).where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.personaId, personaId), eq(clonedVoices.status, "completed")));
+    const [ownedVoice] = await db.select({ id: clonedVoices.id, name: clonedVoices.name }).from(clonedVoices).where(and(eq(clonedVoices.userId, userId), eq(clonedVoices.personaId, personaId), eq(clonedVoices.status, "completed")));
     if (!ownedVoice) throw new Error("Cloned voice not found or not ready yet");
     verifiedPersonaId = personaId;
     verifiedVoiceId = ownedVoice.id;
+    verifiedVoiceName = ownedVoice.name?.trim() || null;
   }
 
   // A DNA model is identified by its APIMart model id, but the row id is what
@@ -489,8 +491,10 @@ export async function dispatchApimart(ctx: GenerationContext, track: any): Promi
   if (verifiedDnaModelId) verifiedPersonaId = undefined;
 
   // Both track rows answer "which voice sang this" in the same way own_voice
-  // answers whether one did, so Melody DNA can rank voices by real use.
-  const voiceFields = { ownVoice: instrumental ? null : Boolean(verifiedPersonaId || verifiedDnaModelId), voiceId: instrumental ? null : verifiedVoiceId };
+  // answers whether one did, so Melody DNA can rank voices by real use. The name
+  // is snapshotted here as well: cloned_voices rows can be deleted while the
+  // track stays, and the list must keep saying which voice sang it.
+  const voiceFields = { ownVoice: instrumental ? null : Boolean(verifiedPersonaId || verifiedDnaModelId), voiceId: instrumental ? null : verifiedVoiceId, voiceName: instrumental ? null : verifiedVoiceName };
   // The model that shaped the sound is remembered on the track, so a later DNA
   // rebuild can tell which model a result came from.
   const modelFields = { dnaModelId: verifiedDnaModelRowId };

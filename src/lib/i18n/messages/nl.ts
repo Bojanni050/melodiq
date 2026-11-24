@@ -37,6 +37,9 @@ const nl: typeof en = {
     confirm: "Bevestigen",
     trackDetails: "Trackdetails",
     selectTrackHint: "Selecteer een track om songinfo en songtekst te tonen.",
+    /** Label for a track whose vocal came from one of the user's cloned voices. */
+    clonedVoice: "Gekloonde stem",
+    clonedVoiceTitle: "Gekloonde stem: {name}",
   },
   settings: {
     language: "Taal",

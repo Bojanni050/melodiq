@@ -218,6 +218,13 @@
       "when": 1795437883769,
       "tag": "0030_bitter_marvel_apes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795518565704,
+      "tag": "0031_spicy_captain_universe",
+      "breakpoints": true
     }
   ]
 }

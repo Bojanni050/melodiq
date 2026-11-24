@@ -1,0 +1,1 @@
+ALTER TABLE "tracks" ADD COLUMN "voice_name" varchar(120);

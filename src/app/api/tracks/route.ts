@@ -78,9 +78,12 @@ export async function GET(request: NextRequest) {
     vocalGender: tracks.vocalGender,
     // Generation provenance shown in the Studio/Library track lists: whether
     // Suno Max mode was used and which cloned voice sang it (null = none).
+    // The track keeps its own snapshot of the name (voice_name) because a
+    // deleted cloned voice must not erase that fact; the join is the older
+    // fallback for rows generated before the snapshot existed.
     sunoMaxMode: tracks.sunoMaxMode,
     voiceId: tracks.voiceId,
-    voiceName: clonedVoices.name,
+    voiceName: sql<string | null>`coalesce(${tracks.voiceName}, ${clonedVoices.name})`,
     isCollaboration: tracks.isCollaboration,
     status: tracks.status,
     audioUrl: tracks.audioUrl,

@@ -34,6 +34,9 @@ const en = {
     confirm: "Confirm",
     trackDetails: "Track Details",
     selectTrackHint: "Select a track to show song info and lyrics.",
+    /** Label for a track whose vocal came from one of the user's cloned voices. */
+    clonedVoice: "Cloned voice",
+    clonedVoiceTitle: "Cloned voice: {name}",
   },
   settings: {
     language: "Language",

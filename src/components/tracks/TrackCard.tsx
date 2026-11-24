@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import ConfirmDialog from "@/components/tracks/ConfirmDialog";
 import ArtistLink from "@/components/artist/ArtistLink";
 import { resolveArtistSlug, useArtistSlugMap } from "@/hooks/useArtistSlugMap";
+import { useT } from "@/hooks/useT";
 import { isLyricsTaskSubmission } from "@/lib/parse-lyrics";
 import useSWR from "swr";
 import { usePlayerStore, useWorkspaceStore, useSelectionStore, useUserStore, usePlaylistStore, useArchiveLinksStore, useReleaseStore, selectionModeFromEvent, type Workspace, type SelectionMode } from "@/lib/store";
@@ -153,6 +154,7 @@ const TrackCard = memo(function TrackCard({
   const user = useUserStore((state) => state.user);
   const isListenerRole = user?.role === "listener" || user?.role == null;
   const artistAlias = useUserStore((state) => state.user?.artistAlias);
+  const t = useT();
   const allPlaylists = usePlaylistStore((state) => state.playlists);
   const setSelectedPlaylistId = usePlaylistStore((state) => state.setSelectedPlaylistId);
   const router = useRouter();
@@ -627,10 +629,13 @@ const TrackCard = memo(function TrackCard({
   // tracks and the Library), so releases/workspaces/discover stay unchanged.
   const showSunoMax = showGenerationMeta && track.sunoMaxMode === true;
   // "Which voice sang this" — only when a cloned voice was actually used. The
-  // name is joined into the list payload; older rows may lack it, so fall back
-  // to a generic label rather than hiding the fact that a voice was used.
+  // name comes from the track's own snapshot (voice_name), which survives the
+  // cloned voice being deleted; older rows have none, so fall back to a generic
+  // label rather than hiding the fact that a voice was used.
   const generationVoiceName =
-    showGenerationMeta && track.voiceId ? (track.voiceName?.trim() || "Cloned voice") : null;
+    showGenerationMeta && track.voiceId
+      ? track.voiceName?.trim() || t("common.clonedVoice")
+      : null;
   const hasTcl =
     (!!track.lyricsTimestamps && !isLyricsTaskSubmission(track.lyricsTimestamps)) || tclReadyLocally;
   // The editor works on the alignment document, not on lyricsTimestamps —
@@ -736,7 +741,7 @@ const TrackCard = memo(function TrackCard({
                 </span>
               )}
               {generationVoiceName && (
-                <span className="ml-2 text-[10px] text-fuchsia-200" title={`Cloned voice: ${generationVoiceName}`}>
+                <span className="ml-2 text-[10px] text-fuchsia-200" title={t("common.clonedVoiceTitle", { name: generationVoiceName })}>
                   · {generationVoiceName}
                 </span>
               )}
@@ -1171,7 +1176,7 @@ const TrackCard = memo(function TrackCard({
             {generationVoiceName && (
               <span
                 className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-fuchsia-300/30 bg-fuchsia-400/10 text-fuchsia-200 truncate max-w-[140px] shrink-0"
-                title={`Cloned voice: ${generationVoiceName}`}
+                title={t("common.clonedVoiceTitle", { name: generationVoiceName })}
               >
                 <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3z" />
