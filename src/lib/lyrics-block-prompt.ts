@@ -1,4 +1,5 @@
 import { buildAvoidWordsInstruction } from "@/lib/lyrics-avoid-words";
+import type { PromptLyricPersona } from "@/lib/lyric-personas";
 
 export type BlockType =
   | "intro"
@@ -76,6 +77,8 @@ export interface BlockPromptParams {
   literalnessLevel: number;
   creativityLevel: number;
   lineCount: number;
+  /** Saved writing voice the section should stay in, if the user picked one. */
+  persona?: PromptLyricPersona;
 }
 
 export interface BlockPrompts {
@@ -202,6 +205,26 @@ Chorus lines should be punchy and memorable — build around one crucial, hook-w
 Bridge should contrast emotionally with the verses
 Return only the raw lyric text, nothing else`;
 
+  const personaBlock = (() => {
+    if (!params.persona) return "";
+    const { name, bio, fragments } = params.persona;
+    const fragmentLines = fragments
+      .map((fragment) => `[${fragment.kind}]\n${fragment.text}`)
+      .join("\n\n");
+    return [
+      "--- WRITING PERSONA (applies to every section) ---",
+      `Persona: ${name}`,
+      bio ? `Persona bio: ${bio}` : "",
+      "Write this section in the persona's voice: its vocabulary, perspective, imagery and level of directness.",
+      fragmentLines
+        ? `Earlier lines from this persona — use them as a voice reference only. Do not reuse these lines, phrases or exact images:\n${fragmentLines}`
+        : "",
+      "--- END WRITING PERSONA ---",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  })();
+
   // Everything here is a property of the SONG, not of the section being written:
   // the same strings are sent for every block of the same song, in the same
   // order, which is what makes the provider's prefix cache hit. Sections are
@@ -218,6 +241,7 @@ Return only the raw lyric text, nothing else`;
     literalnessInstruction,
     rhymeInstruction,
     performerTagInstruction,
+    personaBlock,
     context ? `--- EXISTING SECTIONS (for context and coherence) ---\n${context}` : "",
   ]
     .filter(Boolean)

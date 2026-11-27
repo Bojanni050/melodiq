@@ -1,5 +1,6 @@
 import type { LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
 import type { BlockType, LyricBlock } from "@/lib/lyrics-utils";
+import type { LyricPersona } from "@/lib/lyric-personas";
 import { clampBlockLineCount } from "@/lib/lyrics-utils";
 
 export type LyricsStudioDraftPayload = {
@@ -21,6 +22,7 @@ export type LyricsStudioDraftPayload = {
   contextLevel: number;
   styleSuggestion: string;
   llmModel: string;
+  activePersona: LyricPersona | null;
 };
 
 export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload): LyricsStudioDraftPayload {
@@ -43,6 +45,7 @@ export function buildLyricsStudioDraftPayload(payload: LyricsStudioDraftPayload)
     contextLevel: payload.contextLevel,
     styleSuggestion: payload.styleSuggestion,
     llmModel: payload.llmModel,
+    activePersona: payload.activePersona,
   };
 }
 

@@ -77,6 +77,11 @@ type LyricsControlPanelProps = {
   onCopyAll: () => void;
   onSaveCurrentStructure?: (name: string) => void;
   onDeleteCustomPreset?: (name: string) => void;
+  personaName: string | null;
+  personaBio: string;
+  personaFragmentCount: number;
+  onOpenPersona: () => void;
+  onClearPersona: () => void;
 };
 
 export default function LyricsControlPanel({
@@ -141,6 +146,11 @@ export default function LyricsControlPanel({
   onCopyAll,
   onSaveCurrentStructure,
   onDeleteCustomPreset,
+  personaName,
+  personaBio,
+  personaFragmentCount,
+  onOpenPersona,
+  onClearPersona,
 }: LyricsControlPanelProps) {
   const t = useT();
   const [displayedMoods, setDisplayedMoods] = useState<string[]>([]);
@@ -226,6 +236,47 @@ export default function LyricsControlPanel({
   }
   return (
     <aside className="space-y-4 lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto lg:pr-1">
+      <section className="section-card">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-ink-muted">{t("lyricsStudio.personaHeading")}</h3>
+            <p className="mt-1 line-clamp-2 text-sm text-ink-dim">
+              {personaName && personaBio ? personaBio : t("lyricsStudio.personaHint")}
+            </p>
+          </div>
+          {personaName ? (
+            <button
+              type="button"
+              onClick={onClearPersona}
+              title={t("lyricsStudio.personaClearTooltip")}
+              className="shrink-0 border border-line bg-white/5 px-2 py-1 text-xs text-ink-dim transition hover:bg-white/10 hover:text-ink"
+            >
+              x
+            </button>
+          ) : null}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {personaName ? (
+            <>
+              <span className="border border-accent/50 bg-accent/10 px-2.5 py-1 text-sm font-medium text-ink">{personaName}</span>
+              <span className="text-xs text-ink-dim">
+                {t("lyricsStudio.personaFragmentsCount", { count: personaFragmentCount })}
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-ink-dim">{t("lyricsStudio.personaNone")}</span>
+          )}
+          <button
+            type="button"
+            onClick={onOpenPersona}
+            className="ml-auto border border-line bg-white/5 px-3 py-1.5 text-sm font-medium text-ink-muted transition hover:bg-white/10 hover:text-ink"
+          >
+            {personaName ? t("lyricsStudio.personaChange") : t("lyricsStudio.personaAdd")}
+          </button>
+        </div>
+      </section>
+
       <section className="section-card">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-ink-muted">{t("lyricsStudio.songMetadataHeading")}</h3>

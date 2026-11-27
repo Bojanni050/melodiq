@@ -225,6 +225,13 @@
       "when": 1795518565704,
       "tag": "0031_spicy_captain_universe",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795741026413,
+      "tag": "0032_watery_carlie_cooper",
+      "breakpoints": true
     }
   ]
 }

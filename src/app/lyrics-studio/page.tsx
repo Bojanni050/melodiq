@@ -8,6 +8,7 @@ import LyricBlockEditor from "@/components/lyrics-studio/LyricBlockEditor";
 import LyricsConfirmModal from "@/components/lyrics-studio/LyricsConfirmModal";
 import LyricsControlPanel from "@/components/lyrics-studio/LyricsControlPanel";
 import LyricsNotice from "@/components/lyrics-studio/LyricsNotice";
+import LyricsPersonaModal from "@/components/lyrics-studio/LyricsPersonaModal";
 import LyricsSnapshotModals from "@/components/lyrics-studio/LyricsSnapshotModals";
 import TranslationReview from "@/components/lyrics-studio/TranslationReview";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/lib/lyrics-studio-constants";
 import { buildLyricsStudioDraftPayload } from "@/lib/lyrics-studio-draft";
 import type { ConfirmAction, LyricsStudioNotice, LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
+import type { LyricPersona } from "@/lib/lyric-personas";
 import {
   autoGrowTextarea,
   BLOCK_LABELS,
@@ -53,6 +55,7 @@ export default function LyricsStudioPage() {
     contextLevel, setContextLevel,
     styleSuggestion, setStyleSuggestion,
     llmModel, setLlmModel,
+    activePersona, setActivePersona,
     savedSnapshots, setSavedSnapshots,
   } = draft;
 
@@ -164,6 +167,7 @@ export default function LyricsStudioPage() {
   const [showTranslationView, setShowTranslationView] = useState(false);
   const [showLoadSnapshots, setShowLoadSnapshots] = useState(false);
   const [showSaveSnapshotModal, setShowSaveSnapshotModal] = useState(false);
+  const [showPersonaModal, setShowPersonaModal] = useState(false);
   const [snapshotNameInput, setSnapshotNameInput] = useState("");
   const [saveTitleMode, setSaveTitleMode] = useState(false);
   const [notice, setNotice] = useState<LyricsStudioNotice | null>(null);
@@ -195,6 +199,16 @@ export default function LyricsStudioPage() {
   const contextZone = contextLevel <= 3 ? t("lyricsStudio.zoneNarrow") : contextLevel <= 7 ? t("lyricsStudio.zoneBalanced") : t("lyricsStudio.zoneWide");
   const canGenerateBlocks = Boolean(topic.trim() && mood.trim() && effectiveLanguage.trim());
   const combinedLyrics = useMemo(() => combineLyrics(blocks), [blocks]);
+  const personaExtraLyrics = useMemo(
+    () =>
+      savedSnapshots
+        .map((snapshot) => ({
+          title: snapshot.name,
+          lyrics: Array.isArray(snapshot.payload.blocks) ? combineLyrics(snapshot.payload.blocks) : "",
+        }))
+        .filter((item) => item.lyrics.trim().length > 0),
+    [savedSnapshots]
+  );
   const canGenerateTitle = combinedLyrics.trim().length >= 20;
   const effectiveTranslationLanguage =
     translationLanguage === "other"
@@ -287,7 +301,7 @@ export default function LyricsStudioPage() {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: new Date().toISOString(),
-      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel }),
+      payload: buildLyricsStudioDraftPayload({ topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols, structure, customStructure, language, customLanguage, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel, activePersona }),
     };
     const next = [snapshot, ...savedSnapshots].slice(0, 30);
     setSavedSnapshots(next);
@@ -325,6 +339,15 @@ export default function LyricsStudioPage() {
         // the model is to leave rhyme behind when it costs authenticity.
         creativityLevel,
         lineCount: resolveBlockLineCount(block),
+        // The persona is song-level, so the server folds it into the cacheable
+        // prefix; only the fields the prompt needs are sent.
+        persona: activePersona
+          ? {
+              name: activePersona.name,
+              bio: activePersona.bio,
+              fragments: activePersona.fragments.map(({ kind, text }) => ({ kind, text })),
+            }
+          : undefined,
         // Whole-song runs reuse the same song-level prompt part on every section,
         // so only they ask the server to mark it cacheable (see the route).
         cachePrefix: options?.cachePrefix === true ? true : undefined,
@@ -606,6 +629,7 @@ export default function LyricsStudioPage() {
     setCreativityLevel(5); setLiteralnessLevel(5); setContextLevel(5); setLanguage("English"); setCustomLanguage("");
     setLlmModel(""); setVocalistTag("auto");
     setStyleSuggestion(""); setShowLoadSnapshots(false);
+    setActivePersona(null);
     window.localStorage.removeItem("melodiq-lyrics-studio");
     setNotice({ type: "info", message: t("lyricsStudio.noticeCleared") });
   }
@@ -670,6 +694,18 @@ export default function LyricsStudioPage() {
               onCancel={() => { setConfirmAction(null); setPendingPresetName(null); }}
             />
 
+            <LyricsPersonaModal
+              open={showPersonaModal}
+              activePersona={activePersona}
+              extraLyrics={personaExtraLyrics}
+              onClose={() => setShowPersonaModal(false)}
+              onApply={(persona: LyricPersona) => {
+                setActivePersona(persona);
+                setNotice({ type: "success", message: t("lyricsStudio.personaSaved") });
+              }}
+              onClear={() => setActivePersona(null)}
+            />
+
             <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)_320px]">
               <LyricsControlPanel
                 topic={topic} mood={mood} style={style}
@@ -710,6 +746,11 @@ export default function LyricsStudioPage() {
                 onCopyAll={copyAllLyrics}
                 onSaveCurrentStructure={handleSaveCurrentStructure}
                 onDeleteCustomPreset={handleDeleteCustomPreset}
+                personaName={activePersona?.name ?? null}
+                personaBio={activePersona?.bio ?? ""}
+                personaFragmentCount={activePersona?.fragments.length ?? 0}
+                onOpenPersona={() => setShowPersonaModal(true)}
+                onClearPersona={() => setActivePersona(null)}
               />
 
               <section className="min-h-[620px]  border border-line bg-surface/80 p-4 lg:p-5">

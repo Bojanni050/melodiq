@@ -1,4 +1,5 @@
 import type { LyricBlock } from "@/lib/lyrics-utils";
+import type { LyricPersona } from "@/lib/lyric-personas";
 
 export interface LyricStudioSnapshot {
   id: string;
@@ -23,6 +24,7 @@ export interface LyricStudioSnapshot {
     contextLevel: number;
     styleSuggestion: string;
     llmModel: string;
+    activePersona: LyricPersona | null;
   };
 }
 

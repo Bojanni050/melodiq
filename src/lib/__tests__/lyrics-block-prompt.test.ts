@@ -131,4 +131,28 @@ describe("buildBlockPrompts", () => {
     expect(auto.cacheablePrefix).toContain("Prefix every non-empty lyric line");
     expect(auto.cacheablePrefix).toContain("Performer direction: whispered verses");
   });
+
+  it("puts the writing persona in the song-level prefix, never in the system prompt", () => {
+    const persona = {
+      name: "Nachtbraker",
+      bio: "Schrijft nachtelijke, onderkoelde liefdesliedjes.",
+      fragments: [
+        { kind: "couplet" as const, text: "De stad slaapt\nmaar ik niet" },
+        { kind: "chorus" as const, text: "Blijf nog even\nblijf nog even" },
+      ],
+    };
+    const verse = buildBlockPrompts({ ...base, persona });
+    const chorus = buildBlockPrompts({ ...base, blockType: "chorus", blockLabel: "Chorus", persona });
+    const without = buildBlockPrompts(base);
+
+    expect(verse.cacheablePrefix).toContain("WRITING PERSONA");
+    expect(verse.cacheablePrefix).toContain("Persona: Nachtbraker");
+    expect(verse.cacheablePrefix).toContain("De stad slaapt");
+    expect(verse.cacheablePrefix).toContain("Do not reuse these lines");
+    expect(verse.systemPrompt).not.toContain("Nachtbraker");
+    expect(verse.userPrompt).not.toContain("Nachtbraker");
+    // Persona is a song-level property: the prefix stays identical per section.
+    expect(chorus.cacheablePrefix).toBe(verse.cacheablePrefix);
+    expect(without.cacheablePrefix).not.toContain("WRITING PERSONA");
+  });
 });

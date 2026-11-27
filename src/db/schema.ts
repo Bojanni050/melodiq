@@ -660,6 +660,28 @@ export const savedLyricsRelations = relations(savedLyrics, ({ one }) => ({
   }),
 }));
 
+// A reusable writing voice: name + bio, plus the couplets/choruses the user
+// picked from their own earlier lyrics. The fragments are stored as JSON text
+// because they are only ever read and written as a whole.
+export const lyricPersonas = pgTable("lyric_personas", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 120 }).notNull(),
+  bio: text("bio").default("").notNull(),
+  fragments: text("fragments").default("[]").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("lyric_personas_user_id_idx").on(table.userId),
+]);
+
+export const lyricPersonasRelations = relations(lyricPersonas, ({ one }) => ({
+  user: one(users, {
+    fields: [lyricPersonas.userId],
+    references: [users.id],
+  }),
+}));
+
 export const stylePresets = pgTable("style_presets", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull(),

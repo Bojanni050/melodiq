@@ -13,6 +13,7 @@ import {
   type BlockType,
   type VocalistTag,
 } from "@/lib/lyrics-block-prompt";
+import { sanitizePromptPersona } from "@/lib/lyric-personas";
 
 interface ExistingBlock {
   type: BlockType;
@@ -38,6 +39,8 @@ interface GenerateBlockBody {
   literalnessLevel?: unknown;
   lineCount?: unknown;
   creativityLevel?: unknown;
+  /** Saved writing persona (name, bio, selected fragments) for this song. */
+  persona?: unknown;
   /**
    * Set by the client when it writes a whole song section by section: the
    * song-level part of the prompt is then reused across up to a dozen calls
@@ -125,6 +128,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "lineCount must be between 1 and 16" }, { status: 400 });
   }
 
+  const persona = body.persona === undefined ? undefined : sanitizePromptPersona(body.persona);
+  if (body.persona !== undefined && !persona) {
+    return NextResponse.json({ error: "persona is invalid" }, { status: 400 });
+  }
+
   const contextBlocks = existingBlocks.filter((block) => block.content.trim());
   const styleText = typeof style === "string" ? style.trim() : "";
   const performerDirectionsText = typeof performerDirections === "string" ? performerDirections.trim() : "";
@@ -150,6 +158,7 @@ export async function POST(request: NextRequest) {
     literalnessLevel: literalnessLevelValue,
     creativityLevel: creativityLevelValue,
     lineCount: lineCountValue,
+    persona: persona ?? undefined,
   });
 
   try {

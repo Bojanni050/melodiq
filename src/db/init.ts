@@ -270,6 +270,18 @@ CREATE TABLE IF NOT EXISTS "saved_lyrics" (
 
 CREATE INDEX IF NOT EXISTS "saved_lyrics_user_id_idx" ON "saved_lyrics"("user_id");
 
+CREATE TABLE IF NOT EXISTS "lyric_personas" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+  "name" varchar(120) NOT NULL,
+  "bio" text NOT NULL DEFAULT '',
+  "fragments" text NOT NULL DEFAULT '[]',
+  "created_at" timestamp NOT NULL DEFAULT now(),
+  "updated_at" timestamp NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "lyric_personas_user_id_idx" ON "lyric_personas"("user_id");
+
 CREATE TABLE IF NOT EXISTS "style_presets" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
@@ -572,7 +584,7 @@ CREATE TABLE IF NOT EXISTS "dna_models" (
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "dna_models_user_id_idx" ON "dna_models"("user_id");
--- Which model shaped a track; mutually exclusive with voice_id (persona).
+-- Which model shaped a track, mutually exclusive with voice_id (persona).
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS dna_model_id uuid;
 `;
 

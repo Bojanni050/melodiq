@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BLOCK_TYPES } from "@/lib/lyrics-studio-constants";
 import { buildLyricsStudioDraftPayload, parseSavedLyricsSnapshots, sanitizeLyricBlocksForLoad } from "@/lib/lyrics-studio-draft";
 import type { LyricStudioSnapshot } from "@/lib/lyrics-studio-types";
+import { sanitizePersona, type LyricPersona } from "@/lib/lyric-personas";
 import { BLOCK_LABELS, type BlockType, type LyricBlock } from "@/lib/lyrics-utils";
 import { clampBlockLineCount } from "@/lib/lyrics-utils";
 import { useStudioStore } from "@/lib/store";
@@ -40,6 +41,8 @@ export interface LyricsDraftState {
   setStyleSuggestion: (v: string) => void;
   llmModel: string;
   setLlmModel: (v: string) => void;
+  activePersona: LyricPersona | null;
+  setActivePersona: (v: LyricPersona | null) => void;
   savedSnapshots: LyricStudioSnapshot[];
   setSavedSnapshots: (v: LyricStudioSnapshot[]) => void;
   hasRestoredDraft: boolean;
@@ -62,6 +65,7 @@ export function useLyricsDraft(): LyricsDraftState {
   const [contextLevel, setContextLevel] = useState(5);
   const [styleSuggestion, setStyleSuggestion] = useState("");
   const [llmModel, setLlmModel] = useState("");
+  const [activePersona, setActivePersona] = useState<LyricPersona | null>(null);
   const [savedSnapshots, setSavedSnapshots] = useState<LyricStudioSnapshot[]>([]);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
@@ -84,6 +88,7 @@ export function useLyricsDraft(): LyricsDraftState {
         language?: string; customLanguage?: string;
         repetitiveChorus?: boolean; creativityLevel?: number; literalnessLevel?: number;
         contextLevel?: number; styleSuggestion?: string; llmModel?: string;
+        activePersona?: unknown;
       };
 
       if (typeof parsed.topic === "string") setTopic(parsed.topic);
@@ -111,6 +116,10 @@ export function useLyricsDraft(): LyricsDraftState {
       }
       if (typeof parsed.styleSuggestion === "string") setStyleSuggestion(parsed.styleSuggestion);
       if (typeof parsed.llmModel === "string") setLlmModel(parsed.llmModel);
+      if (parsed.activePersona !== undefined) {
+        const restoredPersona = sanitizePersona(parsed.activePersona);
+        if (restoredPersona) setActivePersona(restoredPersona);
+      }
 
       if (Array.isArray(parsed.blocks)) {
         const validTypes = new Set<BlockType>(BLOCK_TYPES);
@@ -147,12 +156,13 @@ export function useLyricsDraft(): LyricsDraftState {
       topic, mood, style, vocalistTag, performerDirections, blocks, activePreset, lyricCols,
       structure, customStructure, language, customLanguage,
       repetitiveChorus, creativityLevel, literalnessLevel, contextLevel, styleSuggestion, llmModel,
+      activePersona,
     });
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
     activePreset, blocks, customLanguage, customStructure, hasRestoredDraft,
     language, lyricCols, mood, repetitiveChorus, creativityLevel, literalnessLevel, contextLevel,
-    styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections,
+    styleSuggestion, llmModel, structure, style, topic, vocalistTag, performerDirections, activePersona,
   ]);
 
   return {
@@ -170,6 +180,7 @@ export function useLyricsDraft(): LyricsDraftState {
     contextLevel, setContextLevel,
     styleSuggestion, setStyleSuggestion,
     llmModel, setLlmModel,
+    activePersona, setActivePersona,
     savedSnapshots, setSavedSnapshots,
     hasRestoredDraft,
   };
@@ -205,4 +216,5 @@ export function loadSnapshotIntoState(
   state.setContextLevel(typeof payload.contextLevel === "number" && payload.contextLevel >= 1 && payload.contextLevel <= 10 ? Math.round(payload.contextLevel) : 7);
   state.setStyleSuggestion(payload.styleSuggestion || "");
   state.setLlmModel(typeof payload.llmModel === "string" ? payload.llmModel : "");
+  state.setActivePersona(sanitizePersona((payload as { activePersona?: unknown }).activePersona) || null);
 }
