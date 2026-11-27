@@ -652,7 +652,8 @@ const nl: typeof en = {
     personaShuffleButton: "Schudden",
     personaAvailableHeading: "Kies coupletten en refreinen",
     personaSelectedHeading: "Geselecteerd ({count})",
-    personaPickHint: "Een paar regels is genoeg. Ze sturen de stem; de AI kopieert ze nooit.",
+    personaPickHint:
+      "Fragmenten zijn minimaal vier regels, of de hele strofe als die korter is. Ze sturen de stem; de AI kopieert ze nooit.",
     personaNoFragments: "Nog geen eerdere lyrics gevonden.",
     personaNoFragmentsHint: "Sla eerst wat lyrics op of archiveer een nummer en kom dan terug.",
     personaNoMoreFragments: "Geen nieuw materiaal meer — schud om eerdere suggesties terug te zien.",

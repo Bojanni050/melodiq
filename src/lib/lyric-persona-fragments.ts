@@ -13,9 +13,10 @@ import {
  *  - plain lyrics without headers, where stanzas that repeat are treated as
  *    choruses and the rest as verses.
  *
- * Couplets are line pairs from non-chorus sections; choruses are complete
- * chorus sections. The result is deliberately small and deterministic so the
- * same library always yields the same candidate pool.
+ * Couplets are four-line blocks (or the whole stanza when it is shorter than
+ * four lines) from non-chorus sections; choruses are complete chorus sections.
+ * The result is deliberately small and deterministic so the same library
+ * always yields the same candidate pool.
  */
 
 const HEADER_PATTERN =
@@ -24,7 +25,8 @@ const HEADER_PATTERN =
 const CHORUS_HEADERS = new Set(["chorus", "refrein", "hook", "post-chorus", "postchorus", "post chorus"]);
 const MAX_COUPLETS_PER_SOURCE = 8;
 const MAX_CHORUSES_PER_SOURCE = 4;
-const MAX_CHORUS_LINES = 8;
+const MIN_FRAGMENT_LINES = 4;
+const MAX_FRAGMENT_LINES = 8;
 
 interface RawSection {
   kind: "chorus" | "other";
@@ -46,6 +48,10 @@ function cleanStanza(lines: string[]): string[] {
   return lines
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !isPerformerTagOnly(line));
+}
+
+function hasSubstance(lines: string[]): boolean {
+  return lines.some((line) => line.replace(/[^\p{L}\p{N}]/gu, "").length >= 2);
 }
 
 function pushSection(sections: RawSection[], kind: "chorus" | "other", lines: string[]) {
@@ -153,22 +159,33 @@ export function extractPromotedFragments(lyrics: string, sourceTitle = ""): Lyri
   };
 
   for (const section of parseSections(text)) {
+    if (coupletCount >= MAX_COUPLETS_PER_SOURCE) break;
+
     for (const stanza of section.stanzas) {
       if (section.kind === "chorus") {
-        if (chorusCount < MAX_CHORUSES_PER_SOURCE && stanza.length >= 2) {
-          add("chorus", stanza.slice(0, MAX_CHORUS_LINES).join("\n"));
+        if (chorusCount < MAX_CHORUSES_PER_SOURCE && hasSubstance(stanza)) {
+          add("chorus", stanza.slice(0, MAX_FRAGMENT_LINES).join("\n"));
           chorusCount++;
         }
         continue;
       }
 
-      // Non-overlapping pairs: a four-line stanza is two couplets, not three.
-      for (let i = 0; i < stanza.length - 1 && coupletCount < MAX_COUPLETS_PER_SOURCE; i += 2) {
-        const first = stanza[i];
-        const second = stanza[i + 1];
-        if (first.replace(/[^\p{L}\p{N}]/gu, "").length < 2) continue;
-        if (second.replace(/[^\p{L}\p{N}]/gu, "").length < 2) continue;
-        add("couplet", `${first}\n${second}`);
+      // A stanza shorter than four lines is used whole (there is nothing more
+      // to take). Longer stanzas are split into non-overlapping four-line
+      // blocks, so a leftover of one to three lines is dropped.
+      const chunks: string[][] =
+        stanza.length <= MAX_FRAGMENT_LINES
+          ? [stanza]
+          : Array.from(
+              { length: Math.floor(stanza.length / MIN_FRAGMENT_LINES) },
+              (_, index) =>
+                stanza.slice(index * MIN_FRAGMENT_LINES, (index + 1) * MIN_FRAGMENT_LINES)
+            );
+
+      for (const chunk of chunks) {
+        if (coupletCount >= MAX_COUPLETS_PER_SOURCE) break;
+        if (!hasSubstance(chunk)) continue;
+        add("couplet", chunk.join("\n"));
         coupletCount++;
       }
     }

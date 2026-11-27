@@ -649,7 +649,8 @@ const en = {
     personaShuffleButton: "Shuffle",
     personaAvailableHeading: "Pick couplets and choruses",
     personaSelectedHeading: "Selected ({count})",
-    personaPickHint: "A few lines are enough. They steer the voice; the AI never copies them.",
+    personaPickHint:
+      "Fragments are at least four lines, or the whole stanza when it is shorter. They steer the voice; the AI never copies them.",
     personaNoFragments: "No earlier lyrics found yet.",
     personaNoFragmentsHint: "Save some lyrics or archive a song first, then come back.",
     personaNoMoreFragments: "No new material left — shuffle to see earlier suggestions again.",

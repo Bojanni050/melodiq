@@ -24,14 +24,32 @@ describe("extractPromotedFragments", () => {
       "Natte Straat"
     );
 
-    expect(fragments).toHaveLength(3);
-    expect(fragments.map((f) => f.kind)).toEqual(["couplet", "couplet", "chorus"]);
-    expect(fragments[0].text).toBe("De straat is nat\nDe lichten laag");
-    expect(fragments[1].text).toBe("Ik tel de stappen\nTot aan de brug");
-    expect(fragments[2].text).toBe("Dit is de hook\nEn hij blijft hangen");
+    expect(fragments).toHaveLength(2);
+    expect(fragments.map((f) => f.kind)).toEqual(["couplet", "chorus"]);
+    expect(fragments[0].text).toBe(
+      "De straat is nat\nDe lichten laag\nIk tel de stappen\nTot aan de brug"
+    );
+    expect(fragments[1].text).toBe("Dit is de hook\nEn hij blijft hangen");
     expect(fragments[0].sourceTitle).toBe("Natte Straat");
     // Headers and performer tags never end up in the material.
     expect(fragments.some((f) => f.text.includes("[Verse"))).toBe(false);
+  });
+
+  it("uses a whole short stanza and splits longer ones into four-line blocks", () => {
+    const short = extractPromotedFragments(
+      ["[Verse]", "een", "twee", "drie"].join("\n")
+    );
+    expect(short).toHaveLength(1);
+    expect(short[0].text.split("\n")).toHaveLength(3);
+
+    const longLines: string[] = ["[Verse]"];
+    for (let i = 0; i < 9; i++) longLines.push(`regel ${i}`);
+    const long = extractPromotedFragments(longLines.join("\n"));
+    const couplets = long.filter((f) => f.kind === "couplet");
+    expect(couplets).toHaveLength(2);
+    for (const couplet of couplets) {
+      expect(couplet.text.split("\n")).toHaveLength(4);
+    }
   });
 
   it("keeps one copy of a chorus that repeats and still emits its couplets only once", () => {
