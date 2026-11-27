@@ -82,6 +82,10 @@ export async function GET(request: NextRequest) {
     // deleted cloned voice must not erase that fact; the join is the older
     // fallback for rows generated before the snapshot existed.
     sunoMaxMode: tracks.sunoMaxMode,
+    sunoStyleInfluence: tracks.sunoStyleInfluence,
+    sunoWeirdness: tracks.sunoWeirdness,
+    sunoVariety: tracks.sunoVariety,
+    sunoAudioFormat: tracks.sunoAudioFormat,
     voiceId: tracks.voiceId,
     voiceName: sql<string | null>`coalesce(${tracks.voiceName}, ${clonedVoices.name})`,
     isCollaboration: tracks.isCollaboration,

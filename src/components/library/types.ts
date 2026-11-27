@@ -30,6 +30,9 @@ export interface LibraryTrack {
   writerName?: string | null;
   /** True when this track was generated with APIMart's Suno Max mode. */
   sunoMaxMode?: boolean | null;
+  /** Suno v6 options recorded at upload (variety / audio format). */
+  sunoVariety?: string | null;
+  sunoAudioFormat?: string | null;
   /** Cloned voice used as persona, if any (null = instrumental/no voice). */
   voiceId?: string | null;
   /** Display name of that cloned voice, joined in by GET /api/tracks. */

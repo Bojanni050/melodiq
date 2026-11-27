@@ -759,10 +759,14 @@ export async function PATCH(
     const isCollaboration = body.isCollaboration;
     const language = body.language;
     const provider = body.provider;
+    const providerModel = body.providerModel;
     const duration = body.duration;
     const restore = body.restore;
     const sunoStyleInfluence = body.sunoStyleInfluence;
     const sunoWeirdness = body.sunoWeirdness;
+    const sunoVariety = body.sunoVariety;
+    const sunoMaxMode = body.sunoMaxMode;
+    const sunoAudioFormat = body.sunoAudioFormat;
     const melodyGenieArtistInfluence = body.melodyGenieArtistInfluence;
     const melodyGenieAdditions = body.melodyGenieAdditions;
     const melodyGenieStyleInfluence = body.melodyGenieStyleInfluence;
@@ -777,7 +781,7 @@ export async function PATCH(
       return NextResponse.json({ success: true });
     }
 
-    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && melodyGenieArtistInfluence === undefined && melodyGenieAdditions === undefined && melodyGenieStyleInfluence === undefined && melodyGenieDnaInfluence === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
+    if (title === undefined && prompt === undefined && lyrics === undefined && regenerateCoverArt !== true && regenerateTitle !== true && workspaceId === undefined && artistName === undefined && composerName === undefined && writerName === undefined && instrumental === undefined && isCollaboration === undefined && language === undefined && provider === undefined && providerModel === undefined && duration === undefined && sunoStyleInfluence === undefined && sunoWeirdness === undefined && sunoVariety === undefined && sunoMaxMode === undefined && sunoAudioFormat === undefined && melodyGenieArtistInfluence === undefined && melodyGenieAdditions === undefined && melodyGenieStyleInfluence === undefined && melodyGenieDnaInfluence === undefined && detectLanguage !== true && releaseStatus === undefined && publishDate === undefined && trackDna === undefined) {
       return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
     }
 
@@ -975,6 +979,17 @@ export async function PATCH(
       updates.provider = provider.trim();
     }
 
+    if (providerModel !== undefined) {
+      if (typeof providerModel !== "string" || !providerModel.trim()) {
+        return NextResponse.json({ error: "Invalid providerModel" }, { status: 400 });
+      }
+      const trimmedModel = providerModel.trim();
+      if (trimmedModel.length > 50) {
+        return NextResponse.json({ error: "Provider model too long (max 50 characters)" }, { status: 400 });
+      }
+      updates.providerModel = trimmedModel;
+    }
+
     if (workspaceId !== undefined) {
       if (workspaceId === null) {
         updates.workspaceId = null;
@@ -1027,6 +1042,41 @@ export async function PATCH(
         updates.sunoWeirdness = Math.min(100, Math.max(1, Math.round(sunoWeirdness)));
       } else {
         return NextResponse.json({ error: "Invalid sunoWeirdness" }, { status: 400 });
+      }
+    }
+
+    if (sunoVariety !== undefined) {
+      if (sunoVariety === null) {
+        updates.sunoVariety = null;
+      } else if (typeof sunoVariety === "string") {
+        const trimmed = sunoVariety.trim();
+        if (trimmed.length > 10) {
+          return NextResponse.json({ error: "Invalid sunoVariety" }, { status: 400 });
+        }
+        updates.sunoVariety = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid sunoVariety" }, { status: 400 });
+      }
+    }
+
+    if (sunoMaxMode !== undefined) {
+      if (typeof sunoMaxMode !== "boolean") {
+        return NextResponse.json({ error: "Invalid sunoMaxMode" }, { status: 400 });
+      }
+      updates.sunoMaxMode = sunoMaxMode;
+    }
+
+    if (sunoAudioFormat !== undefined) {
+      if (sunoAudioFormat === null) {
+        updates.sunoAudioFormat = null;
+      } else if (typeof sunoAudioFormat === "string") {
+        const trimmed = sunoAudioFormat.trim();
+        if (trimmed.length > 10) {
+          return NextResponse.json({ error: "Invalid sunoAudioFormat" }, { status: 400 });
+        }
+        updates.sunoAudioFormat = trimmed || null;
+      } else {
+        return NextResponse.json({ error: "Invalid sunoAudioFormat" }, { status: 400 });
       }
     }
 

@@ -5,21 +5,14 @@ import type { TrackItem } from "./types";
 import { useUserStore } from "@/lib/store";
 import InfluenceSlider from "@/components/ui/InfluenceSlider";
 import SectionReplaceEditor from "./SectionReplaceEditor";
+import {
+  UPLOAD_PROVIDERS,
+  UPLOAD_PROVIDER_MODELS,
+  isSunoV6Model,
+} from "@/components/library/types";
 
-const PROVIDERS = [
-  { value: "upload", label: "Unknown / Other" },
-  { value: "suno", label: "Suno" },
-  { value: "mureka", label: "Mureka" },
-  { value: "heartmula", label: "HeartMuLa" },
-  { value: "udio", label: "Udio" },
-  { value: "poyo", label: "PoYo" },
-  { value: "tempolor", label: "Tempolor" },
-  { value: "apiframe", label: "APIFrame" },
-  { value: "apimart", label: "APIMart" },
-  { value: "musicgpt", label: "MusicGPT" },
-  { value: "melodygenie", label: "Melody Genie" },
-  { value: "lyria", label: "Lyria 3" },
-];
+// The edit panel and the upload panel describe the same provenance, so they
+// share one list. Keeping a local copy is what let them drift apart before.
 
 interface ParsedAudioDna {
   tempo?: number; key?: string; energy?: number; loudness?: number;
@@ -183,21 +176,34 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
     return Array.from(names).sort();
   }, [knownWriterNames, user]);
 
-  // The track list omits the trackDna body (it is only ever read here), so
-  // hydrate it on open. Without this a save would round-trip the derived
-  // fallback from knownTrackDna() over the stored value.
+  // The track list omits some columns that only the edit panel reads (the
+  // trackDna body, and on some surfaces the Suno/Melody Genie provenance), so
+  // hydrate the full row once on open. Without this a save would round-trip
+  // defaults over the values recorded at upload/generation.
   const [storedTrackDna, setStoredTrackDna] = useState<string | null>(track.trackDna ?? null);
   useEffect(() => {
-    if (track.trackDna != null) return;
     let active = true;
     (async () => {
       try {
         const res = await fetch(`/api/tracks/${track.id}`);
         if (!res.ok || !active) return;
         const full = await res.json();
-        if (active) setStoredTrackDna(full?.trackDna ?? null);
+        if (!active) return;
+        if (track.trackDna == null) setStoredTrackDna(full?.trackDna ?? null);
+        if (typeof full?.providerModel === "string" && full.providerModel) {
+          setProviderModel(full.providerModel);
+        }
+        setSunoStyleInfluence(typeof full?.sunoStyleInfluence === "number" ? full.sunoStyleInfluence : 50);
+        setSunoWeirdness(typeof full?.sunoWeirdness === "number" ? full.sunoWeirdness : 50);
+        setSunoVariety(typeof full?.sunoVariety === "string" ? full.sunoVariety : "off");
+        setSunoMaxMode(full?.sunoMaxMode === true);
+        setSunoAudioFormat(typeof full?.sunoAudioFormat === "string" ? full.sunoAudioFormat : "mp3");
+        setMelodyGenieArtistInfluence(typeof full?.melodyGenieArtistInfluence === "string" ? full.melodyGenieArtistInfluence : "");
+        setMelodyGenieAdditions(typeof full?.melodyGenieAdditions === "string" ? full.melodyGenieAdditions : "");
+        setMelodyGenieStyleInfluence(typeof full?.melodyGenieStyleInfluence === "number" ? full.melodyGenieStyleInfluence : 50);
+        setMelodyGenieDnaInfluence(full?.melodyGenieDnaInfluence === true);
       } catch (error) {
-        console.error("Failed to load stored track DNA:", error);
+        console.error("Failed to load track details:", error);
       }
     })();
     return () => { active = false; };
@@ -208,6 +214,7 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [composerName, setComposerName] = useState(track.composerName ?? user?.composerAlias ?? "");
   const [writerName, setWriterName] = useState(track.writerName ?? user?.writerAlias ?? "");
   const [provider, setProvider] = useState(track.provider ?? "upload");
+  const [providerModel, setProviderModel] = useState(track.providerModel ?? "manual-upload");
   const [language, setLanguage] = useState(track.language ?? "");
   const [instrumental, setInstrumental] = useState(track.instrumental ?? false);
   const [isCollaboration, setIsCollaboration] = useState(track.isCollaboration ?? false);
@@ -215,6 +222,9 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [lyrics, setLyrics] = useState(track.lyrics ?? "");
   const [sunoStyleInfluence, setSunoStyleInfluence] = useState<number | null>(track.sunoStyleInfluence ?? 50);
   const [sunoWeirdness, setSunoWeirdness] = useState<number | null>(track.sunoWeirdness ?? 50);
+  const [sunoVariety, setSunoVariety] = useState<string | null>(track.sunoVariety ?? "off");
+  const [sunoMaxMode, setSunoMaxMode] = useState<boolean>(track.sunoMaxMode ?? false);
+  const [sunoAudioFormat, setSunoAudioFormat] = useState<string | null>(track.sunoAudioFormat ?? "mp3");
   const [melodyGenieArtistInfluence, setMelodyGenieArtistInfluence] = useState<string>(track.melodyGenieArtistInfluence ?? "");
   const [melodyGenieAdditions, setMelodyGenieAdditions] = useState<string>(track.melodyGenieAdditions ?? "");
   const [melodyGenieStyleInfluence, setMelodyGenieStyleInfluence] = useState<number>(track.melodyGenieStyleInfluence ?? 50);
@@ -225,29 +235,6 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   const parsedAudioDna = useMemo(() => parseAudioDna(track), [track]);
-
-  // The track list omits the Melody Genie columns (they are only read here), so
-  // hydrate them on open. Without this an edit would save the 50/false defaults
-  // over the values recorded at upload.
-  useEffect(() => {
-    if (provider !== "melodygenie") return;
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch(`/api/tracks/${track.id}`);
-        if (!res.ok || !active) return;
-        const full = await res.json();
-        if (!active) return;
-        setMelodyGenieArtistInfluence(typeof full?.melodyGenieArtistInfluence === "string" ? full.melodyGenieArtistInfluence : "");
-        setMelodyGenieAdditions(typeof full?.melodyGenieAdditions === "string" ? full.melodyGenieAdditions : "");
-        setMelodyGenieStyleInfluence(typeof full?.melodyGenieStyleInfluence === "number" ? full.melodyGenieStyleInfluence : 50);
-        setMelodyGenieDnaInfluence(full?.melodyGenieDnaInfluence === true);
-      } catch (error) {
-        console.error("Failed to load Melody Genie settings:", error);
-      }
-    })();
-    return () => { active = false; };
-  }, [provider, track.id]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -272,12 +259,20 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         }
       }
 
+      const modelsForProvider = UPLOAD_PROVIDER_MODELS[provider];
+      const savedProviderModel = modelsForProvider
+        && !modelsForProvider.some((m) => m.value === providerModel)
+        ? modelsForProvider[0].value
+        : (providerModel.trim() || "manual-upload");
+      const isSunoV6 = provider === "suno" && isSunoV6Model(savedProviderModel);
+
       const body: Record<string, unknown> = {
         title: title.trim() || null,
         artistName: artistName.trim() || null,
         composerName: composerName.trim() || null,
         writerName: writerName.trim() || null,
         provider: provider.trim() || "upload",
+        providerModel: savedProviderModel,
         language: language.trim() || null,
         instrumental,
         isCollaboration,
@@ -285,6 +280,9 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
         lyrics: instrumental ? null : (lyrics.trim() || null),
         sunoStyleInfluence: provider === "suno" ? sunoStyleInfluence : null,
         sunoWeirdness: provider === "suno" ? sunoWeirdness : null,
+        sunoVariety: isSunoV6 ? sunoVariety : null,
+        sunoMaxMode: isSunoV6 ? sunoMaxMode : false,
+        sunoAudioFormat: isSunoV6 ? sunoAudioFormat : null,
         melodyGenieArtistInfluence: provider === "melodygenie" ? (melodyGenieArtistInfluence.trim() || null) : null,
         melodyGenieAdditions: provider === "melodygenie" ? (melodyGenieAdditions.trim() || null) : null,
         melodyGenieStyleInfluence: provider === "melodygenie" ? melodyGenieStyleInfluence : null,
@@ -320,7 +318,8 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
     }
   }
 
-  const knownProvider = PROVIDERS.some((p) => p.value === provider);
+  const knownProvider = UPLOAD_PROVIDERS.some((p) => p.value === provider);
+  const providerModels = UPLOAD_PROVIDER_MODELS[provider];
 
   return (
     <div className="fixed inset-0 z-70">
@@ -475,11 +474,14 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={knownProvider ? provider : "__custom__"}
                 onChange={(e) => {
                   const v = e.target.value;
-                  setProvider(v === "__custom__" ? provider : v);
+                  if (v === "__custom__") return;
+                  const models = UPLOAD_PROVIDER_MODELS[v];
+                  setProvider(v);
+                  setProviderModel(models ? models[0].value : "manual-upload");
                 }}
                 className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
               >
-                {PROVIDERS.map((p) => (
+                {UPLOAD_PROVIDERS.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
                 {!knownProvider && (
@@ -499,6 +501,22 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
             </div>
           </div>
 
+          {/* Model / version for the chosen source (Suno v3.5–v6, Mureka V6–V9.5) */}
+          {providerModels && (
+            <div className="space-y-1">
+              <label className="text-sm text-ink-muted">Version</label>
+              <select
+                value={providerModels.some((m) => m.value === providerModel) ? providerModel : providerModels[0].value}
+                onChange={(e) => setProviderModel(e.target.value)}
+                className="h-9 w-full  border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-line/25"
+              >
+                {providerModels.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Suno sliders */}
           {provider === "suno" && (
             <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
@@ -512,6 +530,54 @@ export default function TrackEditPanel({ track, onClose, onSaved, knownArtistNam
                 value={sunoWeirdness}
                 onChange={setSunoWeirdness}
               />
+            </div>
+          )}
+
+          {/* Suno v6 extra options — same fields the upload panel records */}
+          {provider === "suno" && isSunoV6Model(providerModel) && (
+            <div className="space-y-3  border border-line bg-white/3 px-3 py-3">
+              <div>
+                <label className="block text-sm text-ink-muted mb-2">Style Variety</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(["off", "normal", "high", "extra", "max"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setSunoVariety(v)}
+                      className={`px-2.5 py-1 text-xs font-medium transition-colors border ${sunoVariety === v ? "border-violet-400/40 bg-violet-500/40 text-violet-200" : "border-line bg-white/5 text-ink-dim hover:bg-white/10"}`}
+                    >
+                      {v.charAt(0).toUpperCase() + v.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-ink-muted">Max Mode</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={sunoMaxMode}
+                  onClick={() => setSunoMaxMode((v) => !v)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${sunoMaxMode ? "bg-violet-500" : "bg-white/15"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${sunoMaxMode ? "translate-x-4" : "translate-x-0"}`} />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm text-ink-muted mb-2">Audio Format</label>
+                <div className="flex gap-1.5">
+                  {(["mp3", "m4a", "wav"] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setSunoAudioFormat(fmt)}
+                      className={`flex-1 py-1.5 text-xs font-medium uppercase tracking-wide transition-colors border ${sunoAudioFormat === fmt ? "border-violet-400/40 bg-violet-500/40 text-violet-200" : "border-line bg-white/5 text-ink-dim hover:bg-white/10"}`}
+                    >
+                      {fmt}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
