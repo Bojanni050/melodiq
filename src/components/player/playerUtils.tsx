@@ -78,17 +78,49 @@ function audioVersionToken(track: Track): string {
   return (hash >>> 0).toString(36);
 }
 
+/** True when the track has a lossless (FLAC or WAV) version in either the HD
+ * slot or the primary slot. Uploaded WAV/FLAC files live in the primary slot
+ * (`s3Key`) and only carry an MP3 derivative in `s3KeyMp3`, so checking the HD
+ * slot alone misses exactly those tracks. */
+export function trackHasLossless(track: Track | null | undefined): boolean {
+  if (!track) return false;
+  return Boolean(
+    (track.formatHd === "flac" && track.s3KeyHd) ||
+      (track.format === "flac" && track.s3Key) ||
+      (track.formatHd === "wav" && track.s3KeyHd) ||
+      (track.format === "wav" && track.s3Key),
+  );
+}
+
 export function resolveStreamSuffix(track: Track, playHighestQuality: boolean): string {
   const v = audioVersionToken(track);
 
   if (!playHighestQuality) return `?v=${v}`;
 
-  // Prefer FLAC, then WAV — check HD slot first, then primary slot
-  for (const fmt of ["flac", "wav"] as const) {
-    if (track.formatHd === fmt && track.s3KeyHd) return `?hd=true&v=${v}`;
-    if (track.format === fmt && track.s3Key) return `?v=${v}`;
-  }
+  // Ask for the HD chain whenever a lossless version exists at all. The
+  // server's non-HD chain is OGG -> MP3 -> FLAC -> WAV, so for a WAV/FLAC
+  // upload (lossless primary key + generated MP3 derivative) requesting the
+  // plain URL resolves to that MP3 first — "play highest quality" then
+  // silently streamed the lossy copy.
+  if (trackHasLossless(track)) return `?hd=true&v=${v}`;
   return `?v=${v}`;
+}
+
+/** Reads the format the stream endpoint actually resolved and served, so the
+ * player chip reflects the delivered audio instead of re-deriving it from the
+ * track row (which can disagree once a track has several derivatives). */
+export function detectStreamFormat(headers: Headers): string | null {
+  const explicit = (headers.get("x-melodiq-audio-format") || "").toLowerCase().trim();
+  if (explicit) return explicit;
+
+  const contentType = (headers.get("content-type") || "").toLowerCase();
+  if (!contentType.startsWith("audio/")) return null;
+  if (contentType.includes("flac")) return "flac";
+  if (contentType.includes("wav")) return "wav";
+  if (contentType.includes("ogg") || contentType.includes("vorbis")) return "ogg";
+  if (contentType.includes("mpeg") || contentType.includes("mp3")) return "mp3";
+  if (contentType.includes("mp4") || contentType.includes("m4a")) return "m4a";
+  return null;
 }
 
 export function getPlayingFormat(track: Track | null | undefined, playHighestQuality: boolean): string {

@@ -858,7 +858,7 @@ export default function SettingsPage() {
                   <section className="section-card">
                     <h2 className="text-sm font-semibold mb-1">Playback Quality</h2>
                     <p className="text-sm text-ink-dim mb-3">
-                      When enabled, FLAC is preferred over WAV, then MP3 as fallback. Off always uses MP3 when available.
+                      When enabled, the lossless version is streamed when one exists (FLAC first, then WAV); tracks that only have a compressed source fall back to OGG/MP3. Off always uses the compressed version when available.
                     </p>
                     <label className="flex items-center justify-between gap-3">
                       <span className="text-sm text-ink-muted">Play highest quality</span>

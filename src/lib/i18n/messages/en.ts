@@ -704,6 +704,9 @@ const en = {
     goToTrack: "Go to track",
     goToRelease: "Go to release",
     trackNotInRelease: "Track is not in any release",
+    audioQualityHighest: "Highest quality on — streaming {format}",
+    audioQualityStandard: "Highest quality off — streaming {format}",
+    audioQualityNoLossless: "No lossless version for this track — streaming {format}",
   },
   auth: {
     signIn: "Sign In",

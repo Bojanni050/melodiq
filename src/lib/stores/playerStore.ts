@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "./debouncedStorage";
 import { shouldResumePlayback } from "@/lib/playerResume";
 import { withCdn } from "@/lib/cdn-client";
+import { resolveStreamSuffix } from "@/components/player/playerUtils";
 
 // Playback repeat behaviour:
 // - "off"   → stop after the queue drains (default)
@@ -299,13 +300,13 @@ export const usePlayerStore = create<PlayerState>()(
           // Externe URL, gebruik direct
           url = track.audioUrl;
         } else {
-          // Streaming API endpoint via MelodIQ
-          const wantsHd = Boolean(
-            (track.audioUrl || "").includes("hd=true") ||
-            (get().playHighestQuality && (track.s3KeyHd || track.formatHd === "flac" || track.formatHd === "wav"))
-          );
+          // Streaming API endpoint via MelodIQ. Same resolver Player.tsx's
+          // effect uses, so the gesture-loaded URL matches the quality chip:
+          // it carries the cache-busting version token and asks for the
+          // lossless chain whenever the track has one.
+          const suffix = resolveStreamSuffix(track, get().playHighestQuality);
           const base = track.publicSource ? withCdn(`/api/discover/${track.id}`) : `/api/tracks/${track.id}`;
-          url = `${base}/stream${wantsHd ? "?hd=true" : ""}`;
+          url = `${base}/stream${suffix}`;
         }
 
         // Debug logging

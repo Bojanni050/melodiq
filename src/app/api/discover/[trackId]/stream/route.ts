@@ -14,13 +14,17 @@ export async function GET(
   { params }: { params: Promise<{ trackId: string }> }
 ) {
   const { trackId } = await params;
+  const hd = new URL(request.url).searchParams.get("hd") === "true";
 
   const track = await getPublishedTrackById(trackId);
   if (!track) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 
-  const resolved = resolveTrackAudioSource(track);
+  // Honour the listener's "highest quality" choice here too. This route used
+  // to ignore ?hd=true entirely, so the public player kept streaming the
+  // default (OGG/MP3) chain while the quality chip claimed lossless.
+  const resolved = resolveTrackAudioSource(track, { hd });
   if (!resolved || !resolved.s3Key) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
@@ -58,6 +62,7 @@ export async function GET(
             ...(s3Response.headers.get("content-range") ? { "Content-Range": s3Response.headers.get("content-range")! } : {}),
             "Accept-Ranges": "bytes",
             "Cache-Control": "public, max-age=31536000, immutable",
+            "x-melodiq-audio-format": fmt,
             "x-melodiq-audio-source": "s3",
             "x-melodiq-audio-cache-state": "miss",
           },
@@ -82,6 +87,7 @@ export async function GET(
           "Content-Range": `bytes ${start}-${end}/${fileSize}`,
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=31536000, immutable",
+          "x-melodiq-audio-format": fmt,
           "x-melodiq-audio-source": "cache",
           "x-melodiq-audio-cache-state": cacheState,
         },
@@ -103,6 +109,7 @@ export async function GET(
         "Content-Length": String(fileSize),
         "Accept-Ranges": "bytes",
         "Cache-Control": "public, max-age=31536000, immutable",
+        "x-melodiq-audio-format": fmt,
         "x-melodiq-audio-source": "cache",
         "x-melodiq-audio-cache-state": cacheState,
       },
@@ -135,6 +142,7 @@ export async function GET(
           ...(fallbackContentRange ? { "Content-Range": fallbackContentRange } : {}),
           "Accept-Ranges": "bytes",
           "Cache-Control": "public, max-age=300",
+          "x-melodiq-audio-format": fmt,
           "x-melodiq-audio-source": "s3",
           "x-melodiq-audio-cache-state": "fallback",
         },

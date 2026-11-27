@@ -15,6 +15,8 @@ import {
   mediaBase,
   resolveStreamSuffix,
   getPlayingFormat,
+  detectStreamFormat,
+  trackHasLossless,
   AudioSourceBadge,
   getSharedAudioElement,
   formatProviderLabel,
@@ -94,6 +96,9 @@ export default function Player() {
   const [resolvingUrl, setResolvingUrl] = useState(false);
   const [audioSource, setAudioSource] = useState<AudioSource>("unknown");
   const [audioSourceState, setAudioSourceState] = useState<AudioSourceState>("unknown");
+  // Format the stream endpoint actually resolved (from x-melodiq-audio-format).
+  // Null until that probe answers, and reset on every track/quality change.
+  const [streamFormat, setStreamFormat] = useState<string | null>(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +108,17 @@ export default function Player() {
   const composerLabel = (currentTrack?.composerName || "").trim() || (user?.composerAlias || "").trim() || "";
   const writerLabel = (currentTrack?.writerName || "").trim() || (user?.writerAlias || "").trim() || "";
   const cleanTitle = currentTrack?.title ? currentTrack.title.replace(/\s*\(2\)\s*$/, "") : "";
+  // What the player chip claims is playing. Prefer the format the stream
+  // endpoint reported for the URL it actually requested, and only fall back to
+  // deriving it from the track row while the probe is still in flight.
+  const deliveredFormatLabel = (streamFormat ?? getPlayingFormat(currentTrack, playHighestQuality)).toUpperCase();
+  const deliveredFormatTitle = !currentTrack
+    ? undefined
+    : !trackHasLossless(currentTrack)
+      ? t("discover.audioQualityNoLossless", { format: deliveredFormatLabel })
+      : playHighestQuality
+        ? t("discover.audioQualityHighest", { format: deliveredFormatLabel })
+        : t("discover.audioQualityStandard", { format: deliveredFormatLabel });
 
   useEffect(() => {
     setRatingLoading(false);
@@ -571,6 +587,7 @@ export default function Player() {
     async function resolveAndLoad() {
       const trackId = trackSnapshot.id;
       const suffix = resolveStreamSuffix(trackSnapshot, usePlayerStore.getState().playHighestQuality);
+      setStreamFormat(null);
 
       const audioEl = audioRef.current;
       if (!audioEl) return;
@@ -602,6 +619,8 @@ export default function Player() {
       void fetch(streamUrl, { headers: { Range: "bytes=0-0" } })
         .then((response) => {
           if (!response.ok || isSuperseded()) return;
+          const resolvedFormat = detectStreamFormat(response.headers);
+          if (resolvedFormat) setStreamFormat(resolvedFormat);
           const cacheStateHeader = (response.headers.get("x-melodiq-audio-cache-state") || "").toLowerCase();
           const sourceHeader = (response.headers.get("x-melodiq-audio-source") || "").toLowerCase();
           const source: AudioSource =
@@ -1101,8 +1120,11 @@ export default function Player() {
               {currentTrack && (
                 <>
                   <AudioSourceBadge source={audioSource} state={audioSourceState} />
-                  <span className="inline-flex items-center rounded-full border border-line bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-ink-dim">
-                    {getPlayingFormat(currentTrack, playHighestQuality)}
+                  <span
+                    className="inline-flex items-center rounded-full border border-line bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-ink-dim"
+                    title={deliveredFormatTitle}
+                  >
+                    {deliveredFormatLabel}
                   </span>
                 </>
               )}

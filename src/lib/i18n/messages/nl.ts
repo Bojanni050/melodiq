@@ -707,6 +707,9 @@ const nl: typeof en = {
     goToTrack: "Naar track",
     goToRelease: "Naar release",
     trackNotInRelease: "Track staat op geen enkele release",
+    audioQualityHighest: "Hoogste kwaliteit aan — {format} wordt gestreamd",
+    audioQualityStandard: "Hoogste kwaliteit uit — {format} wordt gestreamd",
+    audioQualityNoLossless: "Geen lossless versie van dit nummer — {format} wordt gestreamd",
   },
   auth: {
     signIn: "Inloggen",
