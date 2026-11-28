@@ -366,10 +366,11 @@ export default memo(function StudioForm({
               type="button"
               role="switch"
               aria-checked={inspirationEnabled}
+              disabled={inspiration.length === 0}
               onClick={() => setInspirationEnabled(!inspirationEnabled)}
               className={`relative w-10 h-[22px] rounded-full transition-colors flex-shrink-0 ${
                 inspirationEnabled ? "bg-violet-500" : "bg-white/15"
-              }`}
+              } ${inspiration.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
               title={t("studio.inspirationToggleLabel")}
               aria-label={t("studio.inspirationToggleLabel")}
             >
@@ -382,7 +383,7 @@ export default memo(function StudioForm({
           </div>
         </div>
 
-        {!inspirationEnabled && (
+        {!inspirationEnabled && inspiration.length > 0 && (
           <p className="mb-3 text-xs text-ink-dim italic">{t("studio.inspirationDisabledHint")}</p>
         )}
 

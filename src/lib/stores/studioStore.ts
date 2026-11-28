@@ -147,7 +147,9 @@ export const useStudioStore = create<StudioState>()(
       poyoVariety: "off",
       dnaInfluence: "off",
       inspiration: [],
-      inspirationEnabled: true,
+      // Empty inspiration is off by definition: the toggle only parks tracks
+      // that are already there, so there is nothing to enable without one.
+      inspirationEnabled: false,
       inspoAudioWeight: 20,
       savedLyrics: [],
       savedLyricsLoaded: false,
@@ -221,9 +223,21 @@ export const useStudioStore = create<StudioState>()(
         return true;
       },
       removeInspirationTrack: (id) =>
-        set((state) => ({ inspiration: state.inspiration.filter((t) => t.id !== id) })),
-      clearInspiration: () => set({ inspiration: [] }),
-      setInspirationEnabled: (enabled) => set({ inspirationEnabled: enabled, habitAdvanced: true }),
+        set((state) => {
+          const inspiration = state.inspiration.filter((t) => t.id !== id);
+          // Removing the last reference leaves nothing to steer, so the toggle
+          // goes off with it instead of showing an active but empty state.
+          return {
+            inspiration,
+            inspirationEnabled: inspiration.length > 0 ? state.inspirationEnabled : false,
+          };
+        }),
+      clearInspiration: () => set({ inspiration: [], inspirationEnabled: false }),
+      setInspirationEnabled: (enabled) =>
+        set((state) => ({
+          inspirationEnabled: enabled && state.inspiration.length > 0,
+          habitAdvanced: true,
+        })),
       setInspoAudioWeight: (val) =>
         set({ inspoAudioWeight: Math.min(100, Math.max(0, Math.round(val))), habitAdvanced: true }),
       fetchSavedLyrics: async () => {
@@ -295,7 +309,7 @@ export const useStudioStore = create<StudioState>()(
           poyoVariety: "off",
           dnaInfluence: "off",
           inspiration: [],
-      inspirationEnabled: true,
+          inspirationEnabled: false,
           inspoAudioWeight: 20,
           habitOrigin: "scratch",
           habitAdvanced: false,
@@ -360,7 +374,10 @@ export const useStudioStore = create<StudioState>()(
           merged.dnaInfluence = "off";
         }
         if (!Array.isArray(merged.inspiration)) merged.inspiration = [];
-        if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
+        // A persisted state from before this rule could carry an enabled but
+        // empty inspiration card; empty is always off.
+        if (merged.inspiration.length === 0) merged.inspirationEnabled = false;
+        else if (typeof merged.inspirationEnabled !== "boolean") merged.inspirationEnabled = true;
         if (typeof merged.inspoAudioWeight !== "number" || Number.isNaN(merged.inspoAudioWeight)) merged.inspoAudioWeight = 20;
         return merged;
       },
